@@ -25,7 +25,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Refresh EliteBGS snapshot
+      - name: Refresh EliteHub Vault snapshot
+        env:
+          ELITEHUB_VAULT_API_KEY: ${{ secrets.ELITEHUB_VAULT_API_KEY }}
         run: python scripts/update_bgs.py
 
       - name: Commit updated snapshot
