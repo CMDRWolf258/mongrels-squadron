@@ -85,8 +85,35 @@ query MongrelsSchema {
       name
       fields(includeDeprecated: true) {
         name
-        args { name type { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } }
-        type { kind name ofType { kind name ofType { kind name ofType { kind name } } } }
+        args {
+          name
+          type {
+            kind
+            name
+            ofType {
+              kind
+              name
+              ofType {
+                kind
+                name
+                ofType { kind name }
+              }
+            }
+          }
+        }
+        type {
+          kind
+          name
+          ofType {
+            kind
+            name
+            ofType {
+              kind
+              name
+              ofType { kind name }
+            }
+          }
+        }
       }
     }
   }
