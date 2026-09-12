@@ -1,0 +1,218 @@
+[
+  {
+    "src": "wing-bounty-hunting.webp",
+    "title": "Wing Bounty Hunting",
+    "caption": "Mongrel commanders working together in a bounty hunting wing.",
+    "tags": [
+      "Combat",
+      "Community"
+    ]
+  },
+  {
+    "src": "cargo-colonization.webp",
+    "title": "Colonization Logistics",
+    "caption": "Cargo running in support of squadron colonization efforts.",
+    "tags": [
+      "Colonization",
+      "Operations"
+    ]
+  },
+  {
+    "src": "black-hole-neutron.webp",
+    "title": "Into the Extreme",
+    "caption": "Exploration among black holes and neutron stars.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "milky-way-expedition.webp",
+    "title": "Milky Way Expedition",
+    "caption": "A group exploration photo from a Mongrel expedition.",
+    "tags": [
+      "Community",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "crimson-cutlass.webp",
+    "title": "Crimson Cutlass",
+    "caption": "Combat ship under fire with shields holding.",
+    "tags": [
+      "Combat",
+      "Ships"
+    ]
+  },
+  {
+    "src": "corvette-bounty.webp",
+    "title": "Federal Corvette Bounty Hunt",
+    "caption": "A Federal Corvette engaging targets during bounty hunting operations.",
+    "tags": [
+      "Combat",
+      "Ships"
+    ]
+  },
+  {
+    "src": "firestorm-anaconda.webp",
+    "title": "Firestorm",
+    "caption": "Combat Anaconda Firestorm on patrol.",
+    "tags": [
+      "Combat",
+      "Ships"
+    ]
+  },
+  {
+    "src": "spitfire-fdl.webp",
+    "title": "Spitfire",
+    "caption": "Combat Fer-de-Lance Spitfire framed by a ringed world.",
+    "tags": [
+      "Combat",
+      "Ships"
+    ]
+  },
+  {
+    "src": "titan-assault.webp",
+    "title": "AX Hellhounds \u2014 Titan Assault",
+    "caption": "Anti-Xeno combat during the war against the Thargoid Titans.",
+    "tags": [
+      "AX",
+      "Combat"
+    ]
+  },
+  {
+    "src": "interceptor-fight.webp",
+    "title": "AX Hellhounds \u2014 Interceptor Fight",
+    "caption": "Engaging a Thargoid Interceptor at close range.",
+    "tags": [
+      "AX",
+      "Combat"
+    ]
+  },
+  {
+    "src": "ax-settlement.webp",
+    "title": "AX Settlement Reactivation",
+    "caption": "On-foot Anti-Xeno operations at a threatened settlement.",
+    "tags": [
+      "AX",
+      "Operations"
+    ]
+  },
+  {
+    "src": "spire-infiltration.webp",
+    "title": "Spire Infiltration",
+    "caption": "A commander infiltrating a Thargoid Spire site.",
+    "tags": [
+      "AX",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "mining-session.webp",
+    "title": "Squad Mining Session",
+    "caption": "Multiple Mongrel ships working an asteroid field together.",
+    "tags": [
+      "Mining",
+      "Community"
+    ]
+  },
+  {
+    "src": "mining-1016.webp",
+    "title": "Mining in 10-16",
+    "caption": "Resource gathering in the Mongrel frontier hub of 10-16.",
+    "tags": [
+      "Mining",
+      "Operations"
+    ]
+  },
+  {
+    "src": "type11-surface-mining.webp",
+    "title": "Surface Mining Run",
+    "caption": "A Type-11 preparing for a surface mining operation.",
+    "tags": [
+      "Mining",
+      "Ships"
+    ]
+  },
+  {
+    "src": "exploration-rings.webp",
+    "title": "Ringside Exploration",
+    "caption": "Exploring the galaxy from the edge of a ring system.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "exploration-neutron.webp",
+    "title": "Neutron Star Passage",
+    "caption": "A deep-space passage through a brilliant stellar environment.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "thargoid-probe.webp",
+    "title": "Thargoid Probe Study",
+    "caption": "Exploration and study of Thargoid technology.",
+    "tags": [
+      "Exploration",
+      "AX"
+    ]
+  },
+  {
+    "src": "exobiology-blue.webp",
+    "title": "Exobiology Field Work",
+    "caption": "Field research among luminous alien plant life.",
+    "tags": [
+      "Exobiology",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "exobiology-white.webp",
+    "title": "Exobiology Survey",
+    "caption": "A commander surveying alien biology on a distant world.",
+    "tags": [
+      "Exobiology",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "kings-mountain-view.webp",
+    "title": "King's Mountain View",
+    "caption": "The Mongrel colony at King's Mountain View in 10-16.",
+    "tags": [
+      "Colonization",
+      "Operations"
+    ]
+  },
+  {
+    "src": "pneuma-carrier.webp",
+    "title": "Pneuma",
+    "caption": "Wolf's fleet carrier Pneuma operating near a ringed world.",
+    "tags": [
+      "Carriers",
+      "Ships"
+    ]
+  },
+  {
+    "src": "team-study.webp",
+    "title": "Field Study",
+    "caption": "Mongrel commanders conducting a team exploration and study session.",
+    "tags": [
+      "Community",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "team-mining.webp",
+    "title": "Mining Shenanigans",
+    "caption": "Sometimes squad mining becomes something less organized.",
+    "tags": [
+      "Community",
+      "Mining"
+    ]
+  }
+]
