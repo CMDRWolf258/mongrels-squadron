@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Member Access | The Mongrels</title>
+  <meta name="description" content="Discord-authenticated member portal for the Regiment of Imperial Mongrels.">
+  <link rel="stylesheet" href="../css/global.css?v=33">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero member-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Secure Squadron Access</p>
+        <h1>Member Portal</h1>
+        <p>Discord will verify who you are. The Mongrels website will independently decide what you are allowed to see and manage.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section member-access-section">
+    <div class="container member-access-layout">
+      <article class="member-login-panel" data-auth-signed-out>
+        <p class="eyebrow">Phase One</p>
+        <h2>Discord Login Foundation</h2>
+        <p>The interface is now in place, but this version deliberately does <strong>not</strong> pretend to provide security while the site is still hosted as a public GitHub Pages site.</p>
+        <div class="member-auth-status">
+          <span class="member-auth-indicator" aria-hidden="true"></span>
+          <div><strong data-auth-status>Checking authentication…</strong><span data-auth-detail>Looking for the secure member-access backend.</span></div>
+        </div>
+        <a class="btn btn-primary member-discord-button" href="./api/login" data-discord-login>Sign in with Discord</a>
+        <p class="member-login-note">No Discord token, secret, or private squad data will ever be stored in the public JavaScript files.</p>
+      </article>
+
+      <article class="member-profile-panel" data-auth-profile hidden>
+        <p class="eyebrow">Authenticated</p>
+        <h2 data-member-name>Mongrel Member</h2>
+        <p>Access level: <strong data-member-level>Member</strong></p>
+        <a class="btn btn-ghost" href="./api/logout">Sign out</a>
+      </article>
+
+      <div class="member-access-explainer">
+        <p class="eyebrow">Website Permissions</p>
+        <h2>Discord proves identity. The website controls authority.</h2>
+        <p>This separation is intentional. A Discord role can establish membership or officer status, but it does not grant ownership of the website.</p>
+        <div class="member-role-grid">
+          <article><span>01</span><h3>Public</h3><p>Recruitment, history, rules, public ship builds, public BGS status, gallery, and other open squad resources.</p></article>
+          <article><span>02</span><h3>Member</h3><p>Private Daily Orders, internal projects, member resources, and future squad-only tools.</p></article>
+          <article><span>03</span><h3>Officer</h3><p>Member access plus approved management tools such as publishing operational tasking.</p></article>
+          <article class="member-role-admin"><span>04</span><h3>Site Admin</h3><p>Website access rules, security configuration, and administrative controls. This level remains Wolf only.</p></article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sm member-roadmap-section">
+    <div class="container">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">Next Technical Phase</p><h2>What gets connected next</h2></div>
+        <p>We will add the secure pieces behind this interface before moving any private information onto the site.</p>
+      </div>
+      <div class="member-roadmap-grid">
+        <article><strong>Discord OAuth</strong><p>Members authenticate directly with Discord instead of creating another password.</p></article>
+        <article><strong>Server Membership</strong><p>The backend verifies that the signed-in Commander belongs to the Mongrels Discord server.</p></article>
+        <article><strong>Role Mapping</strong><p>Selected Discord roles map to Member or Officer access. Site Admin is separately pinned to Wolf's Discord user ID.</p></article>
+        <article><strong>Protected Data</strong><p>Daily Orders and other private information move behind authenticated API endpoints rather than public JSON files.</p></article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div>
+    <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
+  </div>
+</footer>
+<script src="../js/site.js?v=33"></script>
+<script src="../js/auth-ui.js?v=33"></script>
+</body>
+</html>
