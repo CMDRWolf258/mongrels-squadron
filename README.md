@@ -9,3 +9,7 @@ This release addresses three issues reported during cross-device testing:
 New backend endpoint: `functions/api/auth/complete.js`.
 
 Recommended: upload the full package contents so the new function, CSS, JS, and v36 cache-busting references all deploy together.
+
+
+## v37 — Sticky section navigation fix
+Replaced the global horizontal overflow lock from `overflow-x: hidden` to `overflow-x: clip`. The hidden overflow created a scroll container that could disable `position: sticky` for the About and Operations shortcut bars, particularly in Safari/iPadOS. `clip` prevents horizontal page drift without breaking sticky positioning. Added the WebKit sticky fallback and bumped the global CSS cache version to 37.

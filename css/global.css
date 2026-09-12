@@ -264,7 +264,7 @@ html{scroll-behavior:smooth}
 
 
 /* v36 — auth handoff + responsive header stabilization */
-html,body{max-width:100%;overflow-x:hidden}
+html,body{max-width:100%;overflow-x:clip}
 
 /* Collapse the full navigation before it can crowd the brand/login controls. */
 @media(max-width:1200px){
@@ -297,3 +297,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .member-access-link{max-width:122px;font-size:.58rem;padding:0 9px}
   .brand-text strong{font-size:.92rem}
 }
+
+/* v37 — preserve sticky section shortcuts while preventing horizontal page drift */
+html,body{max-width:100%;overflow-x:clip}
+.section-jump-wrap{position:-webkit-sticky;position:sticky}
