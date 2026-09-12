@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=42">
+  <link rel="stylesheet" href="../css/global.css?v=43">
 </head>
 <body>
 <header class="site-header">
@@ -114,7 +114,7 @@
           <p data-orders-lock-detail>Exact operational tasking is private. Sign in with an approved Mongrel Discord account to view current INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes.</p>
           <div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private tasking</span><span>No public data file</span></div>
         </div>
-        <div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="../member/">Member Access →</a></div>
+        <div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="/api/auth/login?return=%2Foperations%2F%23daily-orders">Sign In to View →</a></div>
       </div>
 
       <div class="private-orders-loading" data-orders-loading hidden aria-live="polite">
@@ -156,7 +156,7 @@
                 <input type="text" maxlength="120" data-orders-edit-title placeholder="Squadron Daily Orders">
               </label>
               <label class="orders-editor-wide">
-                <span>Briefing summary</span>
+                <span>Briefing overview</span>
                 <textarea rows="3" maxlength="1200" data-orders-edit-briefing placeholder="Overall intent, priorities, and context for today's operations."></textarea>
               </label>
               <label class="orders-editor-wide">
@@ -166,8 +166,8 @@
             </div>
 
             <div class="orders-editor-list-heading">
-              <div><strong>Tasking</strong><span>Add up to 24 operational orders.</span></div>
-              <button class="btn btn-secondary" type="button" data-orders-add>Add Order</button>
+              <div><strong>Operational Tasks</strong><span>Add up to 24 system-specific or squad-wide tasks.</span></div>
+              <button class="btn btn-secondary" type="button" data-orders-add>Add Task</button>
             </div>
             <div class="orders-editor-list" data-orders-editor-list></div>
 
@@ -175,7 +175,7 @@
               <span class="orders-editor-status" data-orders-editor-status aria-live="polite"></span>
               <div>
                 <button class="btn btn-secondary" type="button" data-orders-clear>Clear Published Orders</button>
-                <button class="btn" type="submit" data-orders-save>Publish Orders</button>
+                <button class="btn btn-primary" type="submit" data-orders-save>Publish Orders</button>
               </div>
             </div>
           </form>
@@ -242,8 +242,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=42"></script>
+<script src="../js/site.js?v=43"></script>
 <script src="../js/operations.js"></script>
-<script src="../js/daily-orders.js?v=42"></script>
+<script src="../js/daily-orders.js?v=43"></script>
 </body>
 </html>

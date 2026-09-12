@@ -433,3 +433,42 @@ button{color:inherit}
 .orders-editor button.btn:disabled{
   opacity:.55;
 }
+
+
+/* v43 — batched Daily Orders + navigation improvements */
+/* Daily Orders: system context, copy affordance, and a clear primary publish action. */
+.private-order-system{display:flex;align-items:center;gap:8px;min-width:0;margin:0 0 9px;color:#d9e7eb;font-size:.72rem;line-height:1.4}
+.private-order-system-label{color:var(--muted);font-size:.6rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.private-order-system strong{min-width:0;overflow-wrap:anywhere;color:#dff9fd;font-size:.75rem;font-weight:800}
+.system-copy-button{appearance:none;-webkit-appearance:none;display:inline-grid;place-items:center;width:27px;height:27px;flex:0 0 auto;padding:0;border:1px solid var(--line);border-radius:7px;background:#0c1216;color:var(--accent);cursor:pointer;font-size:.9rem;line-height:1}
+.system-copy-button:hover,.system-copy-button:focus-visible{border-color:var(--line-accent);background:var(--accent-soft);color:#efffff;outline:none}
+.system-copy-feedback{min-width:42px;color:var(--accent);font-size:.6rem;font-weight:800;letter-spacing:.04em}
+.orders-editor [data-order-field="system"]{font-family:inherit}
+.orders-editor [data-orders-save]{background:var(--accent);color:#001014;border-color:var(--accent);box-shadow:0 0 28px rgba(34,211,238,.12)}
+.orders-editor [data-orders-save]:hover,.orders-editor [data-orders-save]:focus-visible{background:#56e3f5;color:#001014;border-color:#56e3f5}
+
+/* Progressive header collapse: keep priority links visible while space permits. */
+@media (min-width:861px) and (max-width:1280px){
+  .nav-wrap{gap:12px}
+  .nav-links{position:static;inset:auto;display:flex;flex:1;flex-direction:row;align-items:center;justify-content:flex-end;gap:1px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;min-width:0}
+  .nav-links a{padding:10px 7px;font-size:.68rem;white-space:nowrap}
+  .nav-links a:nth-child(4),
+  .nav-links a:nth-child(5),
+  .nav-links a:nth-child(7),
+  .nav-links a:nth-child(9),
+  .nav-links a:nth-child(10){display:none}
+  .menu-toggle{display:inline-flex;flex:0 0 auto;margin-left:0}
+  .nav-links.open{position:fixed;top:79px;right:16px;left:auto;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;align-items:stretch;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(8,11,14,.985);box-shadow:var(--shadow)}
+  .nav-links.open a{display:block;padding:13px 12px;font-size:.76rem}
+}
+@media (min-width:861px) and (max-width:1080px){
+  .nav-links a:nth-child(8){display:none}
+  .nav-links.open a:nth-child(8){display:block}
+}
+@media (max-width:860px){
+  .nav-links{position:fixed;inset:79px 16px auto 16px;display:none;flex-direction:column;align-items:stretch;background:rgba(8,11,14,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+  .nav-links.open{display:flex}
+  .nav-links a{display:block;padding:13px 12px}
+  .menu-toggle{display:inline-flex}
+}
+@media (max-width:520px){.nav-links{top:69px}}

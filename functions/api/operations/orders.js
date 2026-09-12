@@ -213,6 +213,7 @@ function normalizeOrder(order, index) {
   const source = order && typeof order === 'object' ? order : {};
   return {
     id: cleanText(source.id, `order-${index + 1}`, 80),
+    system: cleanText(source.system, '', 120),
     priority: cleanText(source.priority, '', 40),
     task: cleanText(source.task, 'Operational task', 220),
     detail: cleanText(source.detail, '', 900),

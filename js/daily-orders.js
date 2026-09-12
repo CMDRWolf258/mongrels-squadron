@@ -34,6 +34,28 @@
 
   const escapeText = value => String(value == null ? '' : value);
 
+  const copyText = async value => {
+    const text = String(value || '');
+    if (!text) return false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+
+    const fallback = document.createElement('textarea');
+    fallback.value = text;
+    fallback.setAttribute('readonly', '');
+    fallback.style.position = 'fixed';
+    fallback.style.opacity = '0';
+    document.body.appendChild(fallback);
+    fallback.select();
+    const copied = document.execCommand('copy');
+    fallback.remove();
+    return copied;
+  };
+
   const formatUpdated = value => {
     if (!value) return '';
     const date = new Date(value);
@@ -97,12 +119,45 @@
             top.appendChild(status);
           }
 
+          if (order.system) {
+            const systemRow = document.createElement('div');
+            systemRow.className = 'private-order-system';
+
+            const systemLabel = document.createElement('span');
+            systemLabel.className = 'private-order-system-label';
+            systemLabel.textContent = 'System';
+
+            const systemName = document.createElement('strong');
+            systemName.textContent = escapeText(order.system);
+
+            const copyButton = document.createElement('button');
+            copyButton.type = 'button';
+            copyButton.className = 'system-copy-button';
+            copyButton.setAttribute('aria-label', `Copy system name ${order.system}`);
+            copyButton.title = 'Copy system name';
+            copyButton.textContent = '⧉';
+
+            const copyFeedback = document.createElement('span');
+            copyFeedback.className = 'system-copy-feedback';
+            copyFeedback.setAttribute('aria-live', 'polite');
+
+            copyButton.addEventListener('click', async () => {
+              const copied = await copyText(order.system);
+              copyFeedback.textContent = copied ? 'Copied' : 'Copy failed';
+              window.setTimeout(() => { copyFeedback.textContent = ''; }, 1400);
+            });
+
+            systemRow.append(systemLabel, systemName, copyButton, copyFeedback);
+            card.appendChild(systemRow);
+          }
+
           const heading = document.createElement('h3');
           heading.textContent = escapeText(order.task || 'Operational task');
           const detail = document.createElement('p');
           detail.textContent = escapeText(order.detail || '');
 
-          card.append(top, heading);
+          card.prepend(top);
+          card.appendChild(heading);
           if (order.detail) card.appendChild(detail);
           list.appendChild(card);
         });
@@ -124,6 +179,9 @@
   const createOrderEditor = order => {
     const card = document.createElement('div');
     card.className = 'orders-editor-item';
+
+    const system = makeField('System', 'text', order?.system || '', 120, 'NGC 2546 Sector UZ-G d10-16');
+    system.classList.add('orders-editor-field-wide');
 
     const row = document.createElement('div');
     row.className = 'orders-editor-item-row';
@@ -154,7 +212,7 @@
     remove.textContent = 'Remove';
     remove.addEventListener('click', () => card.remove());
 
-    card.append(row, task, detail, remove);
+    card.append(system, row, task, detail, remove);
     return card;
   };
 
@@ -188,6 +246,7 @@
         const value = field => card.querySelector(`[data-order-field="${field}"]`)?.value?.trim() || '';
         return {
           id: `order-${index + 1}`,
+          system: value('system'),
           priority: value('priority'),
           task: value('task'),
           detail: value('detail'),

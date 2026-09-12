@@ -14,3 +14,13 @@ Daily Orders presentation fixes:
 - Ensured the unmodified Publish Orders `.btn` also has an explicit readable foreground/background.
 - Preserved officer-authored line breaks in briefing summaries, leadership notes, and task details.
 - Bumped front-end asset query versions to v42 to reduce stale-cache problems.
+
+
+## v43 batched improvements
+- Added an optional System field to each Daily Orders task.
+- Added one-click system-name copy controls with brief confirmation.
+- Made Publish Orders the clear primary action.
+- Clarified Briefing Overview / Operational Tasks editor wording.
+- Added a prominent Daily Orders shortcut on the homepage.
+- Daily Orders sign-in now returns directly to `/operations/#daily-orders`.
+- Added progressive header navigation: priority links remain visible at medium desktop/tablet-landscape widths while lower-priority links move behind Menu.
