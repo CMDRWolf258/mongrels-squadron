@@ -24,7 +24,7 @@ CONFIG_PATH = ROOT / "data" / "systems.json"
 LIVE_PATH = ROOT / "data" / "live-bgs.json"
 FACTION_NAME = "Regiment of Imperial Mongrels"
 API_URL = "https://vault.elitehub.eu/graphql"
-USER_AGENT = "MongrelsSquadronSite-BGS/3.1 (+GitHub Pages)"
+USER_AGENT = "MongrelsSquadronSite-BGS/3.2 (+GitHub Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
 
 
@@ -393,7 +393,7 @@ def main() -> int:
 
     paging = relation_paging(relation)
     if meta["mode"] == "connection" and paging["first"] and paging["after"]:
-        query = f"query MongrelsFaction($name: String!, $after: String) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
+        query = f"query MongrelsFaction($name: String!, $after: Cursor) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
     else:
         query = f"query MongrelsFaction($name: String!) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
 
