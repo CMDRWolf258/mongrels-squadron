@@ -5,33 +5,116 @@
       "ship": "Imperial Cutter",
       "commander": "CMDR Wolf258",
       "role": "multi-role",
+      "engineering": "Fully Engineered",
       "description": "Designed to fight almost any opposition, survive an ambush, and complete a wide variety of missions for the faction. Honey Badger is built as one of the fleet's most formidable all-around forces.",
       "image": "../assets/images/gallery/honeybadger-cutter.webp",
       "buildSite": "edsy",
       "buildUrl": "https://edsy.org/s/z5RbrJv",
-      "tags": ["Multi-role", "Combat", "Missions", "Survivability"]
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Multi-role",
+        "Missions",
+        "Survivability"
+      ]
     },
     {
       "name": "Fire Storm",
       "ship": "Anaconda",
       "commander": "CMDR Wolf258",
       "role": "combat",
-      "description": "A close-range brawler based on the popular Frag-Conda concept, with most of its firepower centered on frag cannons. Fire Storm has proven itself relentless in a wide variety of combat situations.",
+      "engineering": "Fully Engineered",
+      "description": "One of the fleet's deadliest close-range ships, Fire Storm is based on the popular Frag-Conda concept, with most of its firepower centered on frag cannons. It has proven itself a relentless brawler across a wide variety of combat situations.",
       "image": "../assets/images/gallery/firestorm-anaconda.webp",
       "buildSite": "edsy",
       "buildUrl": "https://edsy.org/s/zSDFlZg",
-      "tags": ["Combat", "PvE", "Frag Cannons", "Close Range"]
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Frag Cannons",
+        "Close Range"
+      ]
     },
     {
       "name": "Nightshade",
       "ship": "Alliance Challenger",
       "commander": "CMDR Wolf258",
       "role": "combat",
-      "description": "As sturdy as Alliance Challengers come. Nightshade can dish out heavy hits while taking punishment in return, making it one of the fleet's primary medium-class ships for combat engagements.",
+      "engineering": "Fully Engineered",
+      "description": "As sturdy as Alliance Challengers come, Nightshade can dish out heavy hits while taking punishment in return. It is one of the fleet's primary medium-class ships for combat engagements.",
       "image": "../assets/images/gallery/nightshade-challenger.webp",
       "buildSite": "edsy",
       "buildUrl": "https://edsy.org/s/zbA0dbb",
-      "tags": ["Combat", "PvE", "Medium", "Durable"]
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Medium",
+        "Durable"
+      ]
+    },
+    {
+      "name": "Canis Minor",
+      "ship": "Vulture",
+      "commander": "CMDR Wolf258",
+      "role": "combat",
+      "engineering": "Fully Engineered",
+      "description": "This small dog has a large bite in close-quarters combat. Used mainly in conflict zones, Canis Minor has also proven itself an effective bounty hunter and a threatening opponent in one-on-one dogfights.",
+      "image": "../assets/images/gallery/canis-minor-vulture.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/zejbmHg",
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Conflict Zone",
+        "Bounty Hunting",
+        "Dogfighter"
+      ]
+    },
+    {
+      "name": "Spitfire",
+      "ship": "Fer-de-Lance",
+      "commander": "CMDR Wolf258",
+      "role": "combat",
+      "engineering": "Fully Engineered",
+      "description": "A dangerous ship designed for one-on-one combat. Spitfire is a short-range strike fighter capable of taking on all but the most heavily shielded opponents.",
+      "image": "../assets/images/gallery/spitfire-fdl.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/z0C2UxB",
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Duelist",
+        "Short-Range Strike"
+      ]
+    },
+    {
+      "name": "Triad",
+      "ship": "Corsair",
+      "commander": "CMDR Wolf258",
+      "role": "combat",
+      "engineering": "Fully Engineered",
+      "description": "Considered one of the most lethal ships in the fleet, Triad is built for high-end combat and supports two primary hardpoint packages: an all-frag configuration for brutal close-range pressure and a Plasma Accelerator / Rail Gun variant for a more technical precision-fighting style.",
+      "image": "",
+      "buildSite": "edsy",
+      "buildLinks": [
+        {
+          "label": "View All-Frag Build",
+          "site": "edsy",
+          "url": "https://edsy.org/s/zXMq55z"
+        },
+        {
+          "label": "PA / Rail Build",
+          "site": "edsy",
+          "url": "",
+          "status": "coming-soon"
+        }
+      ],
+      "tags": [
+        "Open-Ready",
+        "PvP / PvE",
+        "Heavy Combat",
+        "Multi-Loadout"
+      ]
     }
   ]
 }
