@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>PvP | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/" aria-current="page">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero pvp-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Combat Division</p>
+        <h1>PvP</h1>
+        <p>The Mongrels' home for player-versus-player activity: combat statistics, fight reporting, squad challenges, and an in-game bounty board.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container">
+      <div class="operations-status-strip pvp-status-strip">
+        <div class="operations-status-item"><span>Combat Records</span><strong>Member-Built PvP Stats</strong></div>
+        <div class="operations-status-item"><span>Fight Reports</span><strong class="accent">Token Access</strong></div>
+        <div class="operations-status-item"><span>Bounty Board</span><strong>In-Game Targets</strong></div>
+        <div class="operations-status-item"><span>Submissions</span><strong>Member Access · Planned</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section pvp-stats-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Combat Statistics</p><h2>Squad PvP Records</h2></div>
+        <p>A dedicated launch point for the existing member-built PvP statistics project. Once we have its URL and access flow, this card can link directly to it or display selected stats here.</p>
+      </div>
+      <article class="pvp-feature-card">
+        <div>
+          <span class="tag">Existing Squad Tool</span>
+          <h3>PvP Combat Statistics</h3>
+          <p>Record engagements through the existing token-backed fight report form and review squad PvP performance. The current project stays independent while this site becomes its permanent front door.</p>
+          <div class="tool-card-footer"><span>Fight reports</span><span>Commander stats</span><span>Token access</span><span>External project</span></div>
+        </div>
+        <div class="pvp-feature-action">
+          <span class="pvp-tool-state">Link pending</span>
+          <a class="btn btn-primary is-disabled" href="#" aria-disabled="true">Open PvP Stats</a>
+          <small>Add the project URL when ready.</small>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section bounty-board-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">In-Game Bounty Board</p><h2>Wanted by the Mongrels</h2></div>
+        <p>Custom squad bounties on other Elite Dangerous Commanders. Rewards, terms, proof requirements, and expiration can all be set per contract.</p>
+      </div>
+
+      <div class="bounty-toolbar">
+        <div class="bounty-board-note"><strong>Elite Dangerous only.</strong><span>This board is for consensual in-game PvP objectives and squad roleplay.</span></div>
+        <label><span>View</span><select id="bountyFilter"><option value="active">Active bounties</option><option value="all">All bounties</option><option value="claimed">Claimed</option><option value="expired">Expired</option></select></label>
+      </div>
+
+      <div id="bountyBoard" class="bounty-grid" aria-live="polite">
+        <div class="data-empty-state">
+          <span class="data-empty-icon">◇</span>
+          <div><strong>No bounties posted yet.</strong><p>Add contracts to <code>data/bounties.json</code> and they will appear here automatically.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section private-orders-section pvp-submit-section">
+    <div class="container">
+      <div class="private-orders-panel">
+        <div class="private-orders-lock" aria-hidden="true">⌁</div>
+        <div class="private-orders-copy">
+          <p class="eyebrow">Future Member Tool</p>
+          <h2>Post a Bounty</h2>
+          <p>Once member authentication is in place, approved members or officers can submit and manage bounty contracts from a form instead of editing the site's data file by hand.</p>
+          <div class="private-order-tags"><span>Target CMDR</span><span>Reward</span><span>Reason / terms</span><span>Proof required</span><span>Expiration</span></div>
+        </div>
+        <div class="private-orders-state"><span class="tag">Member access planned</span><small>Manual entries for now</small></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div>
+    <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
+  </div>
+</footer>
+<script src="../js/site.js"></script>
+<script src="../js/pvp.js"></script>
+</body>
+</html>
