@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607">
   <title>Member Access | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member portal for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=33">
+  <link rel="stylesheet" href="../css/global.css?v=34">
 </head>
 <body>
 <header class="site-header">
@@ -37,22 +37,23 @@
   <section class="section member-access-section">
     <div class="container member-access-layout">
       <article class="member-login-panel" data-auth-signed-out>
-        <p class="eyebrow">Phase One</p>
-        <h2>Discord Login Foundation</h2>
-        <p>The interface is now in place, but this version deliberately does <strong>not</strong> pretend to provide security while the site is still hosted as a public GitHub Pages site.</p>
+        <p class="eyebrow">Secure Access Online</p>
+        <h2>Sign in with Discord</h2>
+        <p>The member portal now uses the Cloudflare-hosted authentication backend. Discord verifies your identity, then the site assigns the appropriate Mongrel access level.</p>
         <div class="member-auth-status">
           <span class="member-auth-indicator" aria-hidden="true"></span>
           <div><strong data-auth-status>Checking authentication…</strong><span data-auth-detail>Looking for the secure member-access backend.</span></div>
         </div>
-        <a class="btn btn-primary member-discord-button" href="./api/login" data-discord-login>Sign in with Discord</a>
-        <p class="member-login-note">No Discord token, secret, or private squad data will ever be stored in the public JavaScript files.</p>
+        <a class="btn btn-primary member-discord-button" href="/api/auth/login?return=%2Fmember%2F" data-discord-login>Sign in with Discord</a>
+        <p class="member-login-note">Discord tokens and website secrets remain on the Cloudflare backend and are never stored in public JavaScript.</p>
       </article>
 
       <article class="member-profile-panel" data-auth-profile hidden>
         <p class="eyebrow">Authenticated</p>
         <h2 data-member-name>Mongrel Member</h2>
         <p>Access level: <strong data-member-level>Member</strong></p>
-        <a class="btn btn-ghost" href="./api/logout">Sign out</a>
+        <p data-member-session-detail>Secure session active.</p>
+        <a class="btn btn-ghost" href="/api/auth/logout?return=%2Fmember%2F">Sign out</a>
       </article>
 
       <div class="member-access-explainer">
@@ -72,14 +73,14 @@
   <section class="section-sm member-roadmap-section">
     <div class="container">
       <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Next Technical Phase</p><h2>What gets connected next</h2></div>
-        <p>We will add the secure pieces behind this interface before moving any private information onto the site.</p>
+        <div><p class="eyebrow">Authentication Milestone</p><h2>Secure identity and access are now connected</h2></div>
+        <p>The next phase is to move actual member-only information behind protected endpoints and verify Member/Officer role mapping with additional accounts.</p>
       </div>
       <div class="member-roadmap-grid">
-        <article><strong>Discord OAuth</strong><p>Members authenticate directly with Discord instead of creating another password.</p></article>
-        <article><strong>Server Membership</strong><p>The backend verifies that the signed-in Commander belongs to the Mongrels Discord server.</p></article>
-        <article><strong>Role Mapping</strong><p>Selected Discord roles map to Member or Officer access. Site Admin is separately pinned to Wolf's Discord user ID.</p></article>
-        <article><strong>Protected Data</strong><p>Daily Orders and other private information move behind authenticated API endpoints rather than public JSON files.</p></article>
+        <article><strong>Discord OAuth</strong><p>Online now. Members authenticate directly with Discord instead of creating another password.</p></article>
+        <article><strong>Server Membership</strong><p>Online now. The backend checks the signed-in Commander against the Mongrels Discord server.</p></article>
+        <article><strong>Role Mapping</strong><p>Configured. Selected Discord roles map to Member or Officer access; Site Admin is pinned separately to Wolf's Discord user ID.</p></article>
+        <article><strong>Protected Data</strong><p>Next. Daily Orders and other private information will move behind authenticated API endpoints rather than public JSON files.</p></article>
       </div>
     </div>
   </section>
@@ -91,7 +92,7 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=33"></script>
-<script src="../js/auth-ui.js?v=33"></script>
+<script src="../js/site.js?v=34"></script>
+<script src="../js/auth-ui.js?v=34"></script>
 </body>
 </html>
