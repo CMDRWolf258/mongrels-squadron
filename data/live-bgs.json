@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T03:30:11Z",
+  "generatedAt": "2026-09-12T03:36:19Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
   "refreshInterval": "Every 2 hours",
@@ -8,7 +8,7 @@
   "errors": [
     {
       "name": "schema",
-      "error": "GraphQL error: Syntax Error: Unexpected \"}\"."
+      "error": "Could not discover a system-by-name query in Vault schema"
     }
   ],
   "systems": []
