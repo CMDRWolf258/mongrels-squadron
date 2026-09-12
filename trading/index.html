@@ -1,1 +1,96 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><title>Trader's Outpost | The Mongrels</title><link rel="stylesheet" href="../css/global.css"></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main><section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Trade Desk</p><h1>Trader's Outpost</h1><p>A two-part trade board: strategic hauling that helps the squadron, plus good opportunities that simply make members richer.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section><section class="section"><div class="container"><div class="card-grid"><div class="card"><span class="tag">Squad Priority</span><h3 style="margin-top:18px">Support the Mongrels</h3><p>Current hauling and commodity objectives that directly support squadron projects or BGS goals.</p></div><div class="card"><span class="tag">Credits</span><h3 style="margin-top:18px">Make Some Money</h3><p>Profitable routes elsewhere in the bubble for commanders looking to build their wallets.</p></div><div class="card"><span class="tag">Future</span><h3 style="margin-top:18px">Live Data</h3><p>We can later evaluate automatic commodity and market data instead of relying only on manual entries.</p></div></div></div></section></main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Trader's Outpost | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero trading-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Trade Desk</p>
+        <h1>Trader's Outpost</h1>
+        <p>Squadron logistics when the Mongrels need cargo moved, and profitable routes when Commanders simply want to fill the bank account.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container trading-status-strip">
+      <div class="status-item"><span>Squad Routes</span><strong id="squadRouteCount" class="accent">—</strong></div>
+      <div class="status-item"><span>Credit Routes</span><strong id="creditRouteCount">—</strong></div>
+      <div class="status-item"><span>Highest Listed Profit</span><strong id="topProfit">—</strong></div>
+      <div class="status-item"><span>Data Source</span><strong>Squad-curated</strong></div>
+    </div>
+  </section>
+
+  <section class="section trading-priority-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Squad Priority</p><h2>Support the Mongrels</h2></div>
+        <p>Current hauling objectives tied to BGS, colonization, construction, carrier logistics, or another squadron goal. These routes do not have to be the most profitable — the objective comes first.</p>
+      </div>
+      <div id="squadTradeGrid" class="trade-grid"></div>
+      <div id="squadTradeEmpty" class="data-empty-state" hidden>
+        <div class="data-empty-icon">↔</div>
+        <div><strong>No squad trade objective is posted.</strong><p>When leadership adds a logistics objective to <code>data/trades.json</code>, it will appear here automatically.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section trading-profit-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Make Some Credits</p><h2>Member Trade Board</h2></div>
+        <p>Useful routes discovered by squad members. These are for personal profit and do not imply a squadron objective.</p>
+      </div>
+
+      <div class="trade-toolbar">
+        <label><span>Search routes</span><input id="tradeSearch" type="search" placeholder="Commodity, station, system…"></label>
+        <label><span>Pad size</span><select id="tradePadFilter"><option value="all">All pads</option><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option></select></label>
+        <label><span>Sort</span><select id="tradeSort"><option value="profit-desc">Profit: high to low</option><option value="updated-desc">Recently updated</option><option value="commodity-asc">Commodity A–Z</option></select></label>
+      </div>
+
+      <div id="creditTradeGrid" class="trade-grid"></div>
+      <div id="creditTradeEmpty" class="data-empty-state" hidden>
+        <div class="data-empty-icon">₡</div>
+        <div><strong>No member routes match the current filters.</strong><p>Profitable routes added to <code>data/trades.json</code> will populate this board.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container trade-info-panel">
+      <div>
+        <p class="eyebrow">How this board works</p>
+        <h2>Useful now. Smarter later.</h2>
+        <p>For the first version, routes are intentionally squad-curated so we control what members see. Later we can evaluate live market sources, automatic expiration, carrier loading requests, and member submissions without changing the basic layout.</p>
+      </div>
+      <div class="trade-info-tags"><span>Manual entries</span><span>Last-updated stamps</span><span>Future live markets</span><span>Future member submissions</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js"></script>
+<script src="../js/trading.js"></script>
+</body>
+</html>
