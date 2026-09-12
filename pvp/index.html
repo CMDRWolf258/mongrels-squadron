@@ -27,7 +27,7 @@
       <div>
         <p class="eyebrow">Combat Division</p>
         <h1>PvP</h1>
-        <p>The Mongrels' home for player-versus-player activity: combat statistics, fight reporting, squad challenges, and an in-game bounty board.</p>
+        <p>The Mongrels' home for organized duels, combat training, squad challenges, bounty contracts, and player-versus-player events.</p>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
     </div>
@@ -36,33 +36,40 @@
   <section class="section-sm">
     <div class="container">
       <div class="operations-status-strip pvp-status-strip">
-        <div class="operations-status-item"><span>Combat Records</span><strong>Member-Built PvP Stats</strong></div>
-        <div class="operations-status-item"><span>Fight Reports</span><strong class="accent">Token Access</strong></div>
-        <div class="operations-status-item"><span>Bounty Board</span><strong>In-Game Targets</strong></div>
-        <div class="operations-status-item"><span>Submissions</span><strong>Member Access · Planned</strong></div>
+        <div class="operations-status-item"><span>Duels</span><strong>Organized Combat</strong></div>
+        <div class="operations-status-item"><span>Training</span><strong class="accent">All Skill Levels</strong></div>
+        <div class="operations-status-item"><span>Bounty Board</span><strong>Squad Contracts</strong></div>
+        <div class="operations-status-item"><span>Combat Records</span><strong>Integration Planned</strong></div>
       </div>
     </div>
   </section>
 
-  <section class="section pvp-stats-section">
+  <section class="section">
     <div class="container">
       <div class="section-heading">
-        <div><p class="eyebrow">Combat Statistics</p><h2>Squad PvP Records</h2></div>
-        <p>A dedicated launch point for the existing member-built PvP statistics project. Once we have its URL and access flow, this card can link directly to it or display selected stats here.</p>
+        <div><p class="eyebrow">Combat Activities</p><h2>Find a Fight</h2></div>
+        <p>Whether you're learning your first PvP engagement or looking for a serious test, the squad can support everything from casual training to organized combat.</p>
       </div>
-      <article class="pvp-feature-card">
-        <div>
-          <span class="tag">Existing Squad Tool</span>
-          <h3>PvP Combat Statistics</h3>
-          <p>Record engagements through the existing token-backed fight report form and review squad PvP performance. The current project stays independent while this site becomes its permanent front door.</p>
-          <div class="tool-card-footer"><span>Fight reports</span><span>Commander stats</span><span>Token access</span><span>External project</span></div>
-        </div>
-        <div class="pvp-feature-action">
-          <span class="pvp-tool-state">Link pending</span>
-          <a class="btn btn-primary is-disabled" href="#" aria-disabled="true">Open PvP Stats</a>
-          <small>Add the project URL when ready.</small>
-        </div>
-      </article>
+      <div class="pvp-activity-grid">
+        <article class="pvp-activity-card">
+          <span class="tag">Training</span>
+          <h3>PvP Practice</h3>
+          <p>Learn positioning, pip management, defensive flying, module targeting, and practical combat habits in a low-pressure environment.</p>
+          <div class="tool-card-footer"><span>New pilots welcome</span><span>Build advice</span><span>1v1 practice</span></div>
+        </article>
+        <article class="pvp-activity-card">
+          <span class="tag">Competition</span>
+          <h3>Organized Duels</h3>
+          <p>Challenge squadmates, test new ship builds, and sharpen technique through structured one-on-one or small-group engagements.</p>
+          <div class="tool-card-footer"><span>Duels</span><span>Build testing</span><span>Friendly competition</span></div>
+        </article>
+        <article class="pvp-activity-card">
+          <span class="tag">Operations</span>
+          <h3>Squad Combat</h3>
+          <p>Coordinate wings for squad objectives, defensive response, combat support, and PvP activity tied to larger Mongrel operations.</p>
+          <div class="tool-card-footer"><span>Wing combat</span><span>Response teams</span><span>Squad objectives</span></div>
+        </article>
+      </div>
     </div>
   </section>
 
@@ -74,7 +81,7 @@
       </div>
 
       <div class="bounty-toolbar">
-        <div class="bounty-board-note"><strong>Elite Dangerous only.</strong><span>This board is for consensual in-game PvP objectives and squad roleplay.</span></div>
+        <div class="bounty-board-note"><strong>Elite Dangerous only.</strong><span>This board is for in-game PvP objectives and squad roleplay.</span></div>
         <label><span>View</span><select id="bountyFilter"><option value="active">Active bounties</option><option value="all">All bounties</option><option value="claimed">Claimed</option><option value="expired">Expired</option></select></label>
       </div>
 
@@ -84,6 +91,44 @@
           <div><strong>No bounties posted yet.</strong><p>Add contracts to <code>data/bounties.json</code> and they will appear here automatically.</p></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="section pvp-events-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Events & Challenges</p><h2>Combat Calendar</h2></div>
+        <p>A future home for scheduled fight nights, tournaments, training sessions, and squad combat challenges.</p>
+      </div>
+      <div class="pvp-event-placeholder">
+        <div>
+          <span class="tag">Coming Soon</span>
+          <h3>No combat events posted yet.</h3>
+          <p>When the squad schedules a PvP night or tournament, it can be featured here with date, time, format, location, and participation notes.</p>
+        </div>
+        <div class="pvp-event-fields"><span>Date & UTC time</span><span>System / location</span><span>Format</span><span>Rules</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section pvp-stats-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Combat Records</p><h2>PvP Statistics</h2></div>
+        <p>A squad member already maintains a dedicated PvP reporting and statistics project. We'll leave its integration untouched until we decide together how it should connect to this site.</p>
+      </div>
+      <article class="pvp-feature-card pvp-feature-card-muted">
+        <div>
+          <span class="tag">Integration Pending</span>
+          <h3>Squad PvP Records</h3>
+          <p>This space is reserved for the existing combat statistics project. It can eventually become a launch point, embedded dashboard, or selected-stat display depending on how its owner wants it integrated.</p>
+          <div class="tool-card-footer"><span>Fight reports</span><span>Commander stats</span><span>History</span><span>Leaderboard</span></div>
+        </div>
+        <div class="pvp-feature-action">
+          <span class="pvp-tool-state">Awaiting integration plan</span>
+          <a class="btn btn-primary is-disabled" href="#" aria-disabled="true">Open PvP Stats</a>
+        </div>
+      </article>
     </div>
   </section>
 
