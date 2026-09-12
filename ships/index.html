@@ -1,1 +1,124 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><title>Ship Catalogue | The Mongrels</title><link rel="stylesheet" href="../css/global.css"></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/" aria-current="page">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main><section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Member Builds</p><h1>Ship Catalogue</h1><p>A searchable library of squadron ship builds with screenshots, descriptions, external build links, and engineering help.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section><section class="section"><div class="container"><div class="placeholder"><strong>Build cards will be data-driven.</strong><p class="muted">Planned filters include Combat, PvP, AX, Trade, Exploration, Mining, and Multipurpose. Each build can show commander, ship, role, screenshot, description, engineering status, and EDSY/Coriolis links.</p></div><div class="card-grid" style="margin-top:18px"><div class="card"><h3>Example Build</h3><p>Ship image area<br>Build name · ship type · role<br>Submitted by CMDR<br>External build link</p></div><div class="card"><h3>Engineering Guides</h3><p>Engineer unlocks, recommended modifications, materials guidance, and build-specific engineering requirements.</p></div><div class="card"><h3>Submit a Build</h3><p>For now we can add builds manually. Later, member accounts could support direct submissions and moderation.</p></div></div></div></section></main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Ship Catalogue | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/" aria-current="page">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero ship-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Mongrel Hangar</p>
+        <h1>Ship Catalogue</h1>
+        <p>Squadron-tested builds, member favorites, and practical engineering guidance for Commanders who want a proven starting point—or something new to experiment with.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#catalogue">Browse Builds</a>
+          <a class="btn btn-ghost" href="#engineering">Engineering Desk</a>
+        </div>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container ship-status-strip">
+      <div class="status-item"><span>Published Builds</span><strong class="accent" data-build-count>0</strong></div>
+      <div class="status-item"><span>Contributors</span><strong data-builder-count>0</strong></div>
+      <div class="status-item"><span>Roles Covered</span><strong data-role-count>0</strong></div>
+      <div class="status-item"><span>Build Sources</span><strong>EDSY · Coriolis</strong></div>
+    </div>
+  </section>
+
+  <section class="section ship-catalogue-section" id="catalogue">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Member Builds</p><h2>Browse the Hangar</h2></div>
+        <p>Search by ship, build name, commander, or role. Each entry can include a screenshot, a short description, engineering level, and a direct link to the full external build.</p>
+      </div>
+
+      <div class="ship-toolbar">
+        <label><span>Search</span><input type="search" placeholder="Ship, build, CMDR, role…" data-ship-search></label>
+        <label><span>Role</span><select data-ship-role><option value="all">All roles</option></select></label>
+        <label><span>Platform</span><select data-ship-platform><option value="all">All build sites</option><option value="edsy">EDSY</option><option value="coriolis">Coriolis</option></select></label>
+      </div>
+
+      <div class="ship-grid" data-ship-grid></div>
+      <div class="ship-empty" data-ship-empty>
+        <strong>No builds have been published yet.</strong>
+        <p>The catalogue is ready for real squadron builds. We can begin adding them to <code>data/ships.json</code> whenever members are ready to contribute.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ship-engineering-section" id="engineering">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Engineering Desk</p><h2>Turn a Blueprint Into a Ship</h2></div>
+        <p>This area will grow into the practical companion to the catalogue: what to engineer, who unlocks it, and what materials a Commander should gather before heading to the workshop.</p>
+      </div>
+
+      <div class="engineering-grid">
+        <article class="engineering-card">
+          <span class="engineering-number">01</span>
+          <h3>Engineer Unlocks</h3>
+          <p>A clean progression guide for unlocking important Engineers, including prerequisites and where each Engineer fits into common builds.</p>
+          <span class="engineering-state">Planned Guide</span>
+        </article>
+        <article class="engineering-card">
+          <span class="engineering-number">02</span>
+          <h3>Modification Library</h3>
+          <p>Plain-language explanations of popular engineering choices, experimental effects, tradeoffs, and when each modification makes sense.</p>
+          <span class="engineering-state">Planned Guide</span>
+        </article>
+        <article class="engineering-card">
+          <span class="engineering-number">03</span>
+          <h3>Materials Planner</h3>
+          <p>Eventually, a selected ship build can show the materials needed to reproduce its engineering and help a member prepare a shopping list.</p>
+          <span class="engineering-state">Future Tool</span>
+        </article>
+        <article class="engineering-card">
+          <span class="engineering-number">04</span>
+          <h3>Squad Recommendations</h3>
+          <p>Quick-reference advice from experienced Mongrels for combat, trade, exploration, AX, mining, and specialty engineering.</p>
+          <span class="engineering-state">Community Knowledge</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container ship-submit-panel">
+      <div>
+        <p class="eyebrow">Share Your Ship</p>
+        <h2>Built Something Worth Flying?</h2>
+        <p>For now, builds can be added manually. Later, the member area can support direct submissions with screenshots, notes, and EDSY or Coriolis links for leadership to review.</p>
+      </div>
+      <div class="ship-submit-tags"><span>Screenshot</span><span>Description</span><span>Role</span><span>Engineering</span><span>EDSY / Coriolis</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div>
+</footer>
+<script src="../js/site.js"></script>
+<script src="../js/ships.js"></script>
+</body>
+</html>
