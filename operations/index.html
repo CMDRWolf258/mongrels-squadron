@@ -1,1 +1,129 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><title>Operations | The Mongrels</title><link rel="stylesheet" href="../css/global.css"></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Operations</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main><section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Background Simulation</p><h1>Operations</h1><p>Public system information will live here. Private daily BGS orders are intentionally being reserved for a future authenticated member area.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section><section class="section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Priority Systems</p><h2>Operational Overview</h2></div><p>We will make the priority systems easy to change without redesigning this page.</p></div><div class="placeholder"><strong>Private Squadron Orders — planned</strong><p class="muted">The eventual design will use Discord/member authentication rather than a secret URL, so exact influence targets, mission priorities, and strategic instructions can stay restricted to authorized members.</p></div><div class="card-grid" style="margin-top:18px"><div class="card"><h3>Priority System Slot</h3><p>System name, Mongrel influence, controlling status, state, objective, and last update.</p></div><div class="card"><h3>Priority System Slot</h3><p>Additional highlighted systems can be switched on or off from the data layer.</p></div><div class="card"><h3>All Mongrel Systems</h3><p>A complete faction/system table will be added once we choose the data source and update method.</p></div></div></div></section></main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Operations | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Operations</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero operations-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Background Simulation</p>
+        <h1>Operations</h1>
+        <p>Track Mongrel territory, focus attention on priority systems, and give members one place to find the squadron's operational picture. Public information stays visible here while sensitive daily orders are reserved for members.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container">
+      <div class="operations-status-strip">
+        <div class="operations-status-item"><span>Territory</span><strong>Public BGS Overview</strong></div>
+        <div class="operations-status-item"><span>Priority Systems</span><strong class="accent">Quick-Swap Ready</strong></div>
+        <div class="operations-status-item"><span>Daily Orders</span><strong>Members Only · Planned</strong></div>
+        <div class="operations-status-item"><span>System Data</span><strong>Ready to Connect</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section operations-priority-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
+        <p>These cards are driven by the data layer, so leadership can change which systems are highlighted without rebuilding the page.</p>
+      </div>
+      <div id="prioritySystems" class="priority-system-grid" aria-live="polite">
+        <div class="data-empty-state">
+          <span class="data-empty-icon">◇</span>
+          <div><strong>Priority system slots are ready.</strong><p>Add priority systems to <code>data/systems.json</code> and they will appear here automatically.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section private-orders-section">
+    <div class="container">
+      <div class="private-orders-panel">
+        <div class="private-orders-lock" aria-hidden="true">⌁</div>
+        <div class="private-orders-copy">
+          <p class="eyebrow">Future Member Area</p>
+          <h2>Squadron Daily Orders</h2>
+          <p>The public site will not expose exact influence targets, factions to support or suppress, mission priorities, or other sensitive BGS instructions. Those will live behind member authentication when we add the private side of the site.</p>
+          <div class="private-order-tags"><span>Discord authentication</span><span>Daily objectives</span><span>Strategic notes</span><span>Role-based access</span></div>
+        </div>
+        <div class="private-orders-state"><span class="tag">Locked by design</span><small>Authentication planned</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section all-systems-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Mongrel Territory</p><h2>All Systems</h2></div>
+        <p>This will become the full searchable list of systems where the Regiment is present, including control status, influence, state, and operational priority.</p>
+      </div>
+      <div class="systems-toolbar">
+        <label class="systems-search"><span>Search systems</span><input id="systemSearch" type="search" placeholder="Search by system name…" autocomplete="off"></label>
+        <label class="systems-filter"><span>View</span><select id="systemFilter"><option value="all">All systems</option><option value="priority">Priority only</option><option value="control">Controlled systems</option></select></label>
+        <div class="systems-update"><span>Last updated</span><strong id="systemsUpdated">Not connected</strong></div>
+      </div>
+      <div class="systems-table-wrap">
+        <table class="systems-table">
+          <thead><tr><th>System</th><th>Control</th><th>Influence</th><th>State</th><th>Priority</th><th>Objective</th></tr></thead>
+          <tbody id="systemsTableBody"><tr class="systems-empty-row"><td colspan="6">System data has not been connected yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section squad-tools-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Squad Tools</p><h2>Operations Toolbox</h2></div>
+        <p>Independent squad projects can live alongside the main site without losing what already makes them useful.</p>
+      </div>
+      <div class="card-grid squad-tools-grid">
+        <article class="card tool-card">
+          <div class="tool-card-top"><span class="tag">External Squad Tool</span><span class="tool-status">Integration planned</span></div>
+          <h3>PvP Combat Statistics</h3>
+          <p>A member-built statistics project records PvP engagements through a token-backed fight report form. We can provide a permanent launch point here and later decide whether to link to it, share authentication, or integrate selected statistics directly into the Mongrels site.</p>
+          <div class="tool-card-footer"><span>Fight reports</span><span>Squad PvP stats</span><span>Token access</span></div>
+        </article>
+        <article class="card tool-card tool-card-muted">
+          <div class="tool-card-top"><span class="tag">Future</span></div>
+          <h3>More Squadron Tools</h3>
+          <p>This area gives us room for future operational utilities without crowding the main navigation.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div>
+    <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
+  </div>
+</footer>
+<script src="../js/site.js"></script>
+<script src="../js/operations.js"></script>
+</body>
+</html>
