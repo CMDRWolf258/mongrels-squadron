@@ -136,3 +136,40 @@ a{color:inherit}img{max-width:100%;display:block}button,input,textarea,select{fo
 
 /* v24 — About history imagery + gallery correction */
 .history-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:24px}.history-media{position:relative;margin:0;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#080c0f;box-shadow:0 16px 36px rgba(0,0,0,.28)}.history-media-wide{grid-column:1/-1}.history-media img{display:block;width:100%;height:210px;object-fit:cover}.history-media-wide img{height:285px;object-position:center 48%}.history-media figcaption{display:flex;flex-direction:column;gap:3px;padding:12px 14px 14px;background:linear-gradient(180deg,rgba(8,12,15,.92),rgba(8,12,15,.99))}.history-media figcaption strong{font-size:.82rem;text-transform:uppercase;letter-spacing:.045em;color:#eef5f7}.history-media figcaption span{font-size:.72rem;line-height:1.45;color:var(--muted)}.ax-history-media{margin-bottom:6px}.frontier-history-media{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr);gap:12px;margin-top:24px}.frontier-history-main img,.frontier-history-side img{height:250px}.frontier-history-main img{object-position:center 54%}.frontier-history-side img{object-position:center 56%}@media(max-width:760px){.history-media-grid,.frontier-history-media{grid-template-columns:1fr}.history-media-wide{grid-column:auto}.history-media img,.history-media-wide img,.frontier-history-main img,.frontier-history-side img{height:220px}}@media(max-width:520px){.history-media img,.history-media-wide img,.frontier-history-main img,.frontier-history-side img{height:180px}.history-media figcaption{padding:10px 11px 12px}}
+
+
+/* v25 — selective recruitment and carrier imagery */
+.recruitment-community-section{padding-top:22px;padding-bottom:26px}
+.recruitment-community-card{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:linear-gradient(145deg,rgba(12,18,22,.97),rgba(6,9,11,.99));box-shadow:var(--shadow)}
+.recruitment-community-media{margin:0;min-height:330px;position:relative;overflow:hidden;background:#050708}
+.recruitment-community-media::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 58%,rgba(7,10,12,.55));pointer-events:none}
+.recruitment-community-media img{width:100%;height:100%;min-height:330px;object-fit:cover;object-position:center;display:block;transition:transform .45s ease}
+.recruitment-community-card:hover .recruitment-community-media img{transform:scale(1.015)}
+.recruitment-community-copy{padding:34px;display:flex;flex-direction:column;justify-content:center}
+.recruitment-community-copy h2{margin:0 0 14px;font-size:clamp(1.65rem,3vw,2.45rem);text-transform:uppercase;letter-spacing:-.02em}
+.recruitment-community-copy p:not(.eyebrow){margin:0 0 13px;color:#b9c6cc;line-height:1.72}
+.recruitment-community-copy p:last-child{margin-bottom:0}
+
+.carrier-feature-section{padding-top:24px;padding-bottom:26px}
+.carrier-feature-card{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr);border:1px solid var(--line-accent);border-radius:var(--radius);overflow:hidden;background:linear-gradient(125deg,rgba(34,211,238,.06),rgba(9,13,16,.98) 55%,rgba(5,8,10,.99));box-shadow:var(--shadow)}
+.carrier-feature-media{margin:0;min-height:360px;position:relative;overflow:hidden;background:#050708}
+.carrier-feature-media::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 62%,rgba(7,10,12,.52));pointer-events:none}
+.carrier-feature-media img{width:100%;height:100%;min-height:360px;object-fit:cover;object-position:center;display:block;transition:transform .45s ease}
+.carrier-feature-card:hover .carrier-feature-media img{transform:scale(1.012)}
+.carrier-feature-copy{padding:36px;display:flex;flex-direction:column;justify-content:center}
+.carrier-feature-copy h2{margin:0;font-size:clamp(2rem,4vw,3.3rem);text-transform:uppercase;letter-spacing:-.025em}
+.carrier-feature-owner{margin:6px 0 17px!important;color:var(--accent)!important;font-size:.78rem!important;font-weight:850;text-transform:uppercase;letter-spacing:.11em}
+.carrier-feature-copy p:not(.eyebrow):not(.carrier-feature-owner){margin:0 0 18px;color:#b9c6cc;line-height:1.72}
+.carrier-feature-copy .text-link{align-self:flex-start}
+
+@media(max-width:900px){
+  .recruitment-community-card,.carrier-feature-card{grid-template-columns:1fr}
+  .recruitment-community-media,.recruitment-community-media img{min-height:300px}
+  .carrier-feature-media,.carrier-feature-media img{min-height:320px}
+  .recruitment-community-media::after,.carrier-feature-media::after{background:linear-gradient(180deg,transparent 68%,rgba(7,10,12,.48))}
+}
+@media(max-width:600px){
+  .recruitment-community-copy,.carrier-feature-copy{padding:24px}
+  .recruitment-community-media,.recruitment-community-media img{min-height:230px}
+  .carrier-feature-media,.carrier-feature-media img{min-height:240px}
+}
