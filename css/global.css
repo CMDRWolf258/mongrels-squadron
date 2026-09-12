@@ -223,3 +223,28 @@ html{scroll-behavior:smooth}
 .section-jump-nav a:hover,.section-jump-nav a:focus-visible{color:var(--text);border-color:var(--line-accent);background:rgba(34,211,238,.06);outline:none}
 #overview,#history,#hellhounds,#structure,#ranks,#squad-rules{scroll-margin-top:140px}
 @media(max-width:900px){.section-jump-wrap{top:70px}.section-jump-nav{padding:9px 0}.section-jump-nav a{font-size:.63rem;padding:0 10px;min-height:32px}#overview,#history,#hellhounds,#structure,#ranks,#squad-rules{scroll-margin-top:128px}}
+
+/* v32 — Operations section navigation, public/private split, and resource shortcuts */
+#overview,#priority,#watch,#daily-orders,#all-systems,#resources{scroll-margin-top:140px}
+.operations-overview-section{padding-bottom:16px}
+.operations-briefing-section{padding-top:0}
+.operations-briefing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.operations-briefing-card{border:1px solid var(--line);border-radius:var(--radius);padding:25px;background:linear-gradient(145deg,rgba(14,20,24,.94),rgba(8,12,15,.98));min-height:210px}
+.operations-briefing-card h2{margin:0 0 12px;font-size:clamp(1.35rem,2.8vw,1.9rem)}
+.operations-briefing-card p:not(.eyebrow){margin:0;color:#adbac1;line-height:1.7}
+.operations-briefing-private{border-color:rgba(34,211,238,.26);background:linear-gradient(135deg,rgba(34,211,238,.055),rgba(8,12,15,.98) 58%)}
+.operations-access-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px}
+.operations-access-grid div{border:1px solid var(--line);border-radius:10px;padding:10px 11px;background:rgba(255,255,255,.018)}
+.operations-access-grid strong{display:block;color:#edf8fa;font-size:.7rem;text-transform:uppercase;letter-spacing:.075em;margin-bottom:3px}
+.operations-access-grid span{display:block;color:var(--muted);font-size:.65rem;line-height:1.4}
+.operations-resources-section{border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(34,211,238,.022),transparent 24%)}
+.operations-resource-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.operations-resource-card{display:flex;flex-direction:column;min-height:205px;border:1px solid var(--line);border-radius:var(--radius);padding:21px;background:rgba(10,15,18,.91);text-decoration:none;transition:transform .18s ease,border-color .18s ease,background .18s ease}
+.operations-resource-card:hover,.operations-resource-card:focus-visible{transform:translateY(-2px);border-color:var(--line-accent);background:rgba(34,211,238,.045);outline:none}
+.operations-resource-card>span{color:var(--accent);font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.operations-resource-card h3{margin:8px 0 9px;font-size:1.05rem}
+.operations-resource-card p{margin:0;color:#aebbc1;font-size:.76rem;line-height:1.55}
+.operations-resource-card strong{margin-top:auto;padding-top:18px;color:#dff8fc;font-size:.68rem;text-transform:uppercase;letter-spacing:.075em}
+@media(max-width:980px){.operations-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.operations-access-grid{grid-template-columns:1fr}}
+@media(max-width:760px){#overview,#priority,#watch,#daily-orders,#all-systems,#resources{scroll-margin-top:128px}.operations-briefing-grid{grid-template-columns:1fr}.operations-briefing-card{min-height:0}}
+@media(max-width:520px){.operations-resource-grid{grid-template-columns:1fr}.operations-resource-card{min-height:0}.operations-briefing-card{padding:21px}}
