@@ -12,6 +12,20 @@
   const officerNote = section.querySelector('[data-orders-officer-note]');
   const officerNoteText = section.querySelector('[data-orders-officer-note-text]');
 
+  const manager = section.querySelector('[data-orders-manager]');
+  const editor = section.querySelector('[data-orders-editor]');
+  const editorToggle = section.querySelector('[data-orders-editor-toggle]');
+  const editTitle = section.querySelector('[data-orders-edit-title]');
+  const editBriefing = section.querySelector('[data-orders-edit-briefing]');
+  const editNote = section.querySelector('[data-orders-edit-note]');
+  const editorList = section.querySelector('[data-orders-editor-list]');
+  const addButton = section.querySelector('[data-orders-add]');
+  const clearButton = section.querySelector('[data-orders-clear]');
+  const saveButton = section.querySelector('[data-orders-save]');
+  const editorStatus = section.querySelector('[data-orders-editor-status]');
+
+  let currentPayload = null;
+
   const setView = view => {
     if (locked) locked.hidden = view !== 'locked';
     if (loading) loading.hidden = view !== 'loading';
@@ -20,13 +34,29 @@
 
   const escapeText = value => String(value == null ? '' : value);
 
+  const formatUpdated = value => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  };
+
   const renderOrders = payload => {
+    currentPayload = payload;
+
     if (title) title.textContent = payload.title || 'Squadron Daily Orders';
     if (briefing) briefing.textContent = payload.briefing || '';
 
     if (meta) {
       const bits = [];
-      if (payload.updatedAt) bits.push(`Updated ${payload.updatedAt}`);
+      if (payload.updatedAt) bits.push(`Updated ${formatUpdated(payload.updatedAt)}`);
+      if (payload.updatedBy) bits.push(`by ${payload.updatedBy}`);
       if (payload.viewer?.displayName) bits.push(`Viewing as ${payload.viewer.displayName}`);
       meta.textContent = bits.join(' · ') || 'Authenticated Mongrel member view';
     }
@@ -85,8 +115,190 @@
       if (hasNote && officerNoteText) officerNoteText.textContent = payload.officerNote;
     }
 
+    if (manager) manager.hidden = !payload.canManage;
+    if (payload.canManage) populateEditor(payload);
+
     setView('member');
   };
+
+  const createOrderEditor = order => {
+    const card = document.createElement('div');
+    card.className = 'orders-editor-item';
+
+    const row = document.createElement('div');
+    row.className = 'orders-editor-item-row';
+
+    row.append(
+      makeField('Priority', 'text', order?.priority || '', 40, 'Primary'),
+      makeField('Status', 'text', order?.status || '', 60, 'Active'),
+    );
+
+    const task = makeField('Task', 'text', order?.task || '', 220, 'Complete 30 INF for The Consortium');
+    task.classList.add('orders-editor-field-wide');
+
+    const detail = document.createElement('label');
+    detail.className = 'orders-editor-field-wide';
+    const detailLabel = document.createElement('span');
+    detailLabel.textContent = 'Details / stop conditions';
+    const detailInput = document.createElement('textarea');
+    detailInput.rows = 3;
+    detailInput.maxLength = 900;
+    detailInput.placeholder = 'Support/avoid instructions, reward choices, quantities, stop conditions, or other details.';
+    detailInput.value = order?.detail || '';
+    detailInput.dataset.orderField = 'detail';
+    detail.append(detailLabel, detailInput);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'orders-editor-remove';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => card.remove());
+
+    card.append(row, task, detail, remove);
+    return card;
+  };
+
+  const makeField = (labelText, type, value, maxLength, placeholder) => {
+    const label = document.createElement('label');
+    const span = document.createElement('span');
+    span.textContent = labelText;
+    const input = document.createElement('input');
+    input.type = type;
+    input.maxLength = maxLength;
+    input.placeholder = placeholder;
+    input.value = value;
+    input.dataset.orderField = labelText.toLowerCase();
+    label.append(span, input);
+    return label;
+  };
+
+  const populateEditor = payload => {
+    if (!editorList) return;
+    if (editTitle) editTitle.value = payload.configured ? (payload.title || '') : 'Squadron Daily Orders';
+    if (editBriefing) editBriefing.value = payload.configured ? (payload.briefing || '') : '';
+    if (editNote) editNote.value = payload.officerNote || '';
+    editorList.replaceChildren();
+    const orders = Array.isArray(payload.orders) ? payload.orders : [];
+    orders.forEach(order => editorList.appendChild(createOrderEditor(order)));
+  };
+
+  const collectEditorPayload = () => {
+    const orders = [...editorList.querySelectorAll('.orders-editor-item')]
+      .map((card, index) => {
+        const value = field => card.querySelector(`[data-order-field="${field}"]`)?.value?.trim() || '';
+        return {
+          id: `order-${index + 1}`,
+          priority: value('priority'),
+          task: value('task'),
+          detail: value('detail'),
+          status: value('status'),
+        };
+      })
+      .filter(order => order.task);
+
+    return {
+      title: editTitle?.value?.trim() || 'Squadron Daily Orders',
+      briefing: editBriefing?.value?.trim() || '',
+      officerNote: editNote?.value?.trim() || '',
+      orders,
+    };
+  };
+
+  const setEditorStatus = (message, state = '') => {
+    if (!editorStatus) return;
+    editorStatus.textContent = message;
+    editorStatus.dataset.state = state;
+  };
+
+  const saveOrders = async event => {
+    event.preventDefault();
+    if (!currentPayload?.canManage) return;
+
+    saveButton.disabled = true;
+    clearButton.disabled = true;
+    setEditorStatus('Publishing secure orders…', 'working');
+
+    try {
+      const response = await fetch('/api/operations/orders', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Mongrels-Request': 'daily-orders-editor',
+        },
+        body: JSON.stringify(collectEditorPayload()),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `Save failed (${response.status})`);
+
+      renderOrders(payload);
+      setEditorStatus('Orders published.', 'success');
+      if (editor) editor.hidden = true;
+      if (editorToggle) editorToggle.textContent = 'Edit Orders';
+    } catch (error) {
+      console.error('Could not publish Daily Orders', error);
+      const message = error.message === 'orders_storage_not_configured'
+        ? 'Cloudflare Daily Orders storage is not configured yet.'
+        : 'Could not publish orders. Please try again.';
+      setEditorStatus(message, 'error');
+    } finally {
+      saveButton.disabled = false;
+      clearButton.disabled = false;
+    }
+  };
+
+  const clearOrders = async () => {
+    if (!currentPayload?.canManage) return;
+    if (!window.confirm('Clear the currently published Daily Orders? Members will see “No Daily Orders Posted.”')) return;
+
+    saveButton.disabled = true;
+    clearButton.disabled = true;
+    setEditorStatus('Clearing published orders…', 'working');
+
+    try {
+      const response = await fetch('/api/operations/orders', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'X-Mongrels-Request': 'daily-orders-editor',
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `Clear failed (${response.status})`);
+      renderOrders(payload);
+      setEditorStatus('Published orders cleared.', 'success');
+      if (editor) editor.hidden = true;
+      if (editorToggle) editorToggle.textContent = 'Edit Orders';
+    } catch (error) {
+      console.error('Could not clear Daily Orders', error);
+      setEditorStatus('Could not clear orders. Please try again.', 'error');
+    } finally {
+      saveButton.disabled = false;
+      clearButton.disabled = false;
+    }
+  };
+
+  editorToggle?.addEventListener('click', () => {
+    if (!editor) return;
+    const opening = editor.hidden;
+    editor.hidden = !opening;
+    editorToggle.textContent = opening ? 'Close Editor' : 'Edit Orders';
+    if (opening && currentPayload) populateEditor(currentPayload);
+  });
+
+  addButton?.addEventListener('click', () => {
+    if (!editorList || editorList.children.length >= 24) return;
+    editorList.appendChild(createOrderEditor({}));
+    editorList.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  editor?.addEventListener('submit', saveOrders);
+  clearButton?.addEventListener('click', clearOrders);
 
   const load = async () => {
     setView('loading');

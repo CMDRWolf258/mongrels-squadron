@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=39">
+  <link rel="stylesheet" href="../css/global.css?v=40">
 </head>
 <body>
 <header class="site-header">
@@ -135,9 +135,51 @@
         <div class="private-orders-list" data-orders-list></div>
 
         <aside class="officer-note-card" data-orders-officer-note hidden>
-          <span>Officer Note</span>
+          <span>Leadership Note</span>
           <p data-orders-officer-note-text></p>
         </aside>
+
+        <div class="orders-manager" data-orders-manager hidden>
+          <div class="orders-manager-heading">
+            <div>
+              <p class="eyebrow">Officer Controls</p>
+              <h3>Manage Daily Orders</h3>
+              <p>Publish current tasking without editing GitHub. Changes are stored privately in Cloudflare and are immediately visible to authenticated Mongrel members.</p>
+            </div>
+            <button class="btn btn-secondary orders-manager-toggle" type="button" data-orders-editor-toggle>Edit Orders</button>
+          </div>
+
+          <form class="orders-editor" data-orders-editor hidden>
+            <div class="orders-editor-grid">
+              <label>
+                <span>Briefing title</span>
+                <input type="text" maxlength="120" data-orders-edit-title placeholder="Squadron Daily Orders">
+              </label>
+              <label class="orders-editor-wide">
+                <span>Briefing summary</span>
+                <textarea rows="3" maxlength="1200" data-orders-edit-briefing placeholder="Overall intent, priorities, and context for today's operations."></textarea>
+              </label>
+              <label class="orders-editor-wide">
+                <span>Leadership note <small>(visible to members)</small></span>
+                <textarea rows="2" maxlength="1200" data-orders-edit-note placeholder="Optional additional note from leadership."></textarea>
+              </label>
+            </div>
+
+            <div class="orders-editor-list-heading">
+              <div><strong>Tasking</strong><span>Add up to 24 operational orders.</span></div>
+              <button class="btn btn-secondary" type="button" data-orders-add>Add Order</button>
+            </div>
+            <div class="orders-editor-list" data-orders-editor-list></div>
+
+            <div class="orders-editor-actions">
+              <span class="orders-editor-status" data-orders-editor-status aria-live="polite"></span>
+              <div>
+                <button class="btn btn-secondary" type="button" data-orders-clear>Clear Published Orders</button>
+                <button class="btn" type="submit" data-orders-save>Publish Orders</button>
+              </div>
+            </div>
+          </form>
+        </div>
 
       </div>
     </div>
@@ -200,8 +242,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=39"></script>
+<script src="../js/site.js?v=40"></script>
 <script src="../js/operations.js"></script>
-<script src="../js/daily-orders.js?v=39"></script>
+<script src="../js/daily-orders.js?v=40"></script>
 </body>
 </html>

@@ -1,51 +1,176 @@
 import { json, readSession } from '../../../lib/auth.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
+const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
+const KV_KEY = 'current';
 
 export async function onRequestGet({ request, env }) {
-  const session = await readSession(request, env);
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth.response;
 
-  if (!session) {
-    return json(
-      { ok: false, error: 'authentication_required' },
-      { status: 401, headers: privateHeaders() },
-    );
-  }
-
-  if (!ALLOWED_ACCESS.has(session.access)) {
-    return json(
-      { ok: false, error: 'member_access_required' },
-      { status: 403, headers: privateHeaders() },
-    );
-  }
-
-  let orders = emptyOrders();
-
-  if (env.DAILY_ORDERS_JSON) {
-    try {
-      const parsed = JSON.parse(env.DAILY_ORDERS_JSON);
-      orders = normalizeOrders(parsed);
-    } catch (error) {
-      console.error('DAILY_ORDERS_JSON is not valid JSON', error);
-      return json(
-        { ok: false, error: 'orders_configuration_error' },
-        { status: 500, headers: privateHeaders() },
-      );
-    }
-  }
+  const orders = await readOrders(env);
 
   return json(
     {
       ok: true,
       viewer: {
-        displayName: session.displayName,
-        access: session.access,
+        displayName: auth.session.displayName,
+        access: auth.session.access,
       },
-      canManage: session.access === 'officer' || session.access === 'site_admin',
+      canManage: MANAGER_ACCESS.has(auth.session.access),
       ...orders,
     },
     { headers: privateHeaders() },
   );
+}
+
+export async function onRequestPut({ request, env }) {
+  const auth = await requireManager(request, env);
+  if (auth.response) return auth.response;
+
+  const originError = validateSameOrigin(request);
+  if (originError) return originError;
+
+  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.put !== 'function') {
+    return json(
+      { ok: false, error: 'orders_storage_not_configured' },
+      { status: 503, headers: privateHeaders() },
+    );
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json(
+      { ok: false, error: 'invalid_json' },
+      { status: 400, headers: privateHeaders() },
+    );
+  }
+
+  const orders = normalizeOrders(body, {
+    configured: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: auth.session.displayName || auth.session.username || 'Mongrel Officer',
+  });
+
+  await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
+
+  return json(
+    {
+      ok: true,
+      viewer: {
+        displayName: auth.session.displayName,
+        access: auth.session.access,
+      },
+      canManage: true,
+      ...orders,
+    },
+    { headers: privateHeaders() },
+  );
+}
+
+export async function onRequestDelete({ request, env }) {
+  const auth = await requireManager(request, env);
+  if (auth.response) return auth.response;
+
+  const originError = validateSameOrigin(request);
+  if (originError) return originError;
+
+  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.delete !== 'function') {
+    return json(
+      { ok: false, error: 'orders_storage_not_configured' },
+      { status: 503, headers: privateHeaders() },
+    );
+  }
+
+  await env.DAILY_ORDERS.delete(KV_KEY);
+
+  return json(
+    {
+      ok: true,
+      viewer: {
+        displayName: auth.session.displayName,
+        access: auth.session.access,
+      },
+      canManage: true,
+      ...emptyOrders(),
+    },
+    { headers: privateHeaders() },
+  );
+}
+
+async function requireMember(request, env) {
+  const session = await readSession(request, env);
+
+  if (!session) {
+    return {
+      response: json(
+        { ok: false, error: 'authentication_required' },
+        { status: 401, headers: privateHeaders() },
+      ),
+    };
+  }
+
+  if (!ALLOWED_ACCESS.has(session.access)) {
+    return {
+      response: json(
+        { ok: false, error: 'member_access_required' },
+        { status: 403, headers: privateHeaders() },
+      ),
+    };
+  }
+
+  return { session };
+}
+
+async function requireManager(request, env) {
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth;
+
+  if (!MANAGER_ACCESS.has(auth.session.access)) {
+    return {
+      response: json(
+        { ok: false, error: 'officer_access_required' },
+        { status: 403, headers: privateHeaders() },
+      ),
+    };
+  }
+
+  return auth;
+}
+
+function validateSameOrigin(request) {
+  const origin = request.headers.get('Origin');
+  const expected = new URL(request.url).origin;
+  const marker = request.headers.get('X-Mongrels-Request');
+
+  if (origin !== expected || marker !== 'daily-orders-editor') {
+    return json(
+      { ok: false, error: 'request_validation_failed' },
+      { status: 403, headers: privateHeaders() },
+    );
+  }
+
+  return null;
+}
+
+async function readOrders(env) {
+  if (env.DAILY_ORDERS && typeof env.DAILY_ORDERS.get === 'function') {
+    const stored = await env.DAILY_ORDERS.get(KV_KEY, { type: 'json' });
+    if (stored) return normalizeOrders(stored);
+  }
+
+  // Temporary fallback retained for anyone who used the v38 environment-variable method.
+  if (env.DAILY_ORDERS_JSON) {
+    try {
+      return normalizeOrders(JSON.parse(env.DAILY_ORDERS_JSON));
+    } catch (error) {
+      console.error('DAILY_ORDERS_JSON is not valid JSON', error);
+    }
+  }
+
+  return emptyOrders();
 }
 
 function privateHeaders() {
@@ -63,20 +188,22 @@ function emptyOrders() {
     title: 'No Daily Orders Posted',
     briefing: 'Your Mongrel member access is verified. No private operational orders have been published for this cycle yet.',
     updatedAt: null,
+    updatedBy: null,
     orders: [],
     officerNote: null,
   };
 }
 
-function normalizeOrders(value) {
+function normalizeOrders(value, overrides = {}) {
   const source = value && typeof value === 'object' ? value : {};
   const list = Array.isArray(source.orders) ? source.orders.slice(0, 24) : [];
 
   return {
-    configured: true,
+    configured: overrides.configured ?? source.configured !== false,
     title: cleanText(source.title, 'Squadron Daily Orders', 120),
     briefing: cleanText(source.briefing, '', 1200),
-    updatedAt: cleanText(source.updatedAt, '', 80) || null,
+    updatedAt: overrides.updatedAt ?? (cleanText(source.updatedAt, '', 80) || null),
+    updatedBy: overrides.updatedBy ?? (cleanText(source.updatedBy, '', 120) || null),
     orders: list.map((order, index) => normalizeOrder(order, index)),
     officerNote: cleanText(source.officerNote, '', 1200) || null,
   };
