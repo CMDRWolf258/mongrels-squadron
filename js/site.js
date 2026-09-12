@@ -23,18 +23,29 @@
     if (menuToggle) headerWrap.insertBefore(memberLink, menuToggle);
     else headerWrap.appendChild(memberLink);
 
-    fetch('/api/auth/session', {
+    const applySession = session => {
+      if (!session || !session.authenticated) return false;
+      memberLink.classList.add('is-authenticated');
+      const label = memberLink.querySelector('[data-member-access-label]');
+      if (label) label.textContent = `${session.displayName || 'Member'} · ${session.accessLabel || 'Member'}`;
+      return true;
+    };
+
+    const fetchSession = () => fetch(`/api/auth/session?_=${Date.now()}`, {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
       cache: 'no-store',
-    })
-      .then(response => response.ok ? response.json() : null)
-      .then(session => {
-        if (!session || !session.authenticated) return;
-        memberLink.classList.add('is-authenticated');
-        const label = memberLink.querySelector('[data-member-access-label]');
-        if (label) label.textContent = `${session.displayName || 'Member'} · ${session.accessLabel || 'Member'}`;
-      })
-      .catch(() => {});
+    }).then(response => response.ok ? response.json() : null);
+
+    const callbackJustReturned = new URLSearchParams(window.location.search).get('login') === 'success';
+    const delays = callbackJustReturned ? [0, 250, 700] : [0];
+
+    (async () => {
+      for (const delay of delays) {
+        if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+        const session = await fetchSession().catch(() => null);
+        if (applySession(session)) return;
+      }
+    })();
   }
 })();
