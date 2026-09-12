@@ -27,7 +27,7 @@
       <div>
         <p class="eyebrow">Background Simulation</p>
         <h1>Operations</h1>
-        <p>Track Mongrel territory, focus attention on priority systems, and give members one place to find the squadron's operational picture. Public information stays visible here while sensitive daily orders are reserved for members.</p>
+        <p>The strategic picture for Mongrel territory. Priority systems stay front and center, the full faction footprint remains searchable, and sensitive daily tasking is kept separate from the public site.</p>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
     </div>
@@ -35,11 +35,11 @@
 
   <section class="section-sm">
     <div class="container">
-      <div class="operations-status-strip">
-        <div class="operations-status-item"><span>Territory</span><strong>Public BGS Overview</strong></div>
-        <div class="operations-status-item"><span>Priority Systems</span><strong class="accent">Quick-Swap Ready</strong></div>
-        <div class="operations-status-item"><span>Daily Orders</span><strong>Members Only · Planned</strong></div>
-        <div class="operations-status-item"><span>System Data</span><strong>Ready to Connect</strong></div>
+      <div class="bgs-summary-grid" aria-label="BGS summary">
+        <article class="bgs-summary-card"><span>Systems Tracked</span><strong id="summaryTracked">—</strong><small>Faction presence</small></article>
+        <article class="bgs-summary-card"><span>Mongrel Control</span><strong id="summaryControlled">—</strong><small>Controlled systems</small></article>
+        <article class="bgs-summary-card"><span>Priority Focus</span><strong id="summaryPriority">—</strong><small>Highlighted systems</small></article>
+        <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest BGS snapshot</small></article>
       </div>
     </div>
   </section>
@@ -48,12 +48,27 @@
     <div class="container">
       <div class="section-heading">
         <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
-        <p>These cards are driven by the data layer, so leadership can change which systems are highlighted without rebuilding the page.</p>
+        <p>Leadership can promote or remove systems from this board by changing a single flag in the data file. The cards are built for the few systems that deserve attention at a glance.</p>
       </div>
       <div id="prioritySystems" class="priority-system-grid" aria-live="polite">
         <div class="data-empty-state">
           <span class="data-empty-icon">◇</span>
-          <div><strong>Priority system slots are ready.</strong><p>Add priority systems to <code>data/systems.json</code> and they will appear here automatically.</p></div>
+          <div><strong>No priority systems posted yet.</strong><p>Once we add the first BGS snapshot, selected systems will appear here automatically.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-sm">
+    <div class="container">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
+        <p>Public-facing alerts for systems that need attention. Exact tasking can remain private even when members can see that a system is worth watching.</p>
+      </div>
+      <div id="watchList" class="bgs-watch-grid" aria-live="polite">
+        <div class="data-empty-state slim-empty">
+          <span class="data-empty-icon">△</span>
+          <div><strong>No watch-list alerts.</strong><p>Conflict, expansion, retreat risk, elections, or other notable states can be surfaced here.</p></div>
         </div>
       </div>
     </div>
@@ -66,10 +81,10 @@
         <div class="private-orders-copy">
           <p class="eyebrow">Future Member Area</p>
           <h2>Squadron Daily Orders</h2>
-          <p>The public site will not expose exact influence targets, factions to support or suppress, mission priorities, or other sensitive BGS instructions. Those will live behind member authentication when we add the private side of the site.</p>
-          <div class="private-order-tags"><span>Discord authentication</span><span>Daily objectives</span><span>Strategic notes</span><span>Role-based access</span></div>
+          <p>This is where the operational checklist will eventually live: specific INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes. Those details will not be stored in public GitHub Pages data.</p>
+          <div class="private-order-tags"><span>Discord authentication</span><span>Daily objectives</span><span>Officer notes</span><span>Role-based access</span></div>
         </div>
-        <div class="private-orders-state"><span class="tag">Locked by design</span><small>Authentication planned</small></div>
+        <div class="private-orders-state"><span class="tag">Locked by design</span><small>Private backend planned</small></div>
       </div>
     </div>
   </section>
@@ -78,23 +93,25 @@
     <div class="container">
       <div class="section-heading">
         <div><p class="eyebrow">Mongrel Territory</p><h2>All Systems</h2></div>
-        <p>This will become the full searchable list of systems where the Regiment is present, including control status, influence, state, and operational priority.</p>
+        <p>The full faction footprint. Search by system, filter by control or priority, and sort the operational picture without editing the page itself.</p>
       </div>
-      <div class="systems-toolbar">
+
+      <div class="systems-toolbar bgs-toolbar">
         <label class="systems-search"><span>Search systems</span><input id="systemSearch" type="search" placeholder="Search by system name…" autocomplete="off"></label>
-        <label class="systems-filter"><span>View</span><select id="systemFilter"><option value="all">All systems</option><option value="priority">Priority only</option><option value="control">Controlled systems</option></select></label>
+        <label class="systems-filter"><span>View</span><select id="systemFilter"><option value="all">All systems</option><option value="priority">Priority only</option><option value="watch">Watch list</option><option value="control">Controlled systems</option><option value="not-control">Not controlled</option></select></label>
+        <label class="systems-filter"><span>Sort</span><select id="systemSort"><option value="name">System name</option><option value="influence-desc">Influence high → low</option><option value="influence-asc">Influence low → high</option><option value="priority">Priority first</option></select></label>
         <div class="systems-update"><span>Last updated</span><strong id="systemsUpdated">Not connected</strong></div>
       </div>
+
       <div class="systems-table-wrap">
-        <table class="systems-table">
-          <thead><tr><th>System</th><th>Control</th><th>Influence</th><th>State</th><th>Priority</th><th>Objective</th></tr></thead>
+        <table class="systems-table bgs-systems-table">
+          <thead><tr><th>System</th><th>Control</th><th>Influence</th><th>State</th><th>Priority</th><th>Public Objective</th></tr></thead>
           <tbody id="systemsTableBody"><tr class="systems-empty-row"><td colspan="6">System data has not been connected yet.</td></tr></tbody>
         </table>
       </div>
+      <p class="bgs-data-note">Public data can eventually update automatically. Private daily orders will use a separate protected data source so strategic instructions are never exposed in the public repository.</p>
     </div>
   </section>
-
-
 </main>
 
 <footer class="site-footer">
