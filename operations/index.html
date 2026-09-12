@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=38">
+  <link rel="stylesheet" href="../css/global.css?v=39">
 </head>
 <body>
 <header class="site-header">
@@ -117,13 +117,9 @@
         <div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="../member/">Member Access →</a></div>
       </div>
 
-      <div class="private-orders-panel private-orders-loading" data-orders-loading hidden>
-        <div class="private-orders-lock private-orders-pulse" aria-hidden="true">⌁</div>
-        <div class="private-orders-copy">
-          <p class="eyebrow">Secure Operations Channel</p>
-          <h2>Checking Member Access</h2>
-          <p>Verifying your secure session before requesting private squadron tasking.</p>
-        </div>
+      <div class="private-orders-loading" data-orders-loading hidden aria-live="polite">
+        <span class="private-orders-spinner" aria-hidden="true"></span>
+        <span>Checking secure member access…</span>
       </div>
 
       <div class="member-orders-panel" data-orders-member hidden>
@@ -143,10 +139,6 @@
           <p data-orders-officer-note-text></p>
         </aside>
 
-        <div class="orders-management-note" data-orders-management hidden>
-          <strong>Officer access confirmed.</strong>
-          <span>Order-management controls are the next phase; this build is secure read-only access.</span>
-        </div>
       </div>
     </div>
   </section>
@@ -208,8 +200,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=38"></script>
+<script src="../js/site.js?v=39"></script>
 <script src="../js/operations.js"></script>
-<script src="../js/daily-orders.js?v=38"></script>
+<script src="../js/daily-orders.js?v=39"></script>
 </body>
 </html>

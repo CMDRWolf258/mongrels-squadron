@@ -11,7 +11,6 @@
   const meta = section.querySelector('[data-orders-meta]');
   const officerNote = section.querySelector('[data-orders-officer-note]');
   const officerNoteText = section.querySelector('[data-orders-officer-note-text]');
-  const management = section.querySelector('[data-orders-management]');
 
   const setView = view => {
     if (locked) locked.hidden = view !== 'locked';
@@ -86,7 +85,6 @@
       if (hasNote && officerNoteText) officerNoteText.textContent = payload.officerNote;
     }
 
-    if (management) management.hidden = !payload.canManage;
     setView('member');
   };
 

@@ -1,3 +1,4 @@
+[hidden]{display:none!important}
 :root {
   --bg:#050607;--bg-soft:#0b0f12;--panel:rgba(15,21,25,.88);--panel-strong:#10171c;
   --text:#f3f7f9;--muted:#98a7b0;--accent:#22d3ee;--accent-strong:#06b6d4;
@@ -303,8 +304,7 @@ html,body{max-width:100%;overflow-x:clip}
 .section-jump-wrap{position:-webkit-sticky;position:sticky}
 
 /* v38 — authenticated Daily Orders */
-.private-orders-loading{min-height:180px}
-.private-orders-pulse{animation:ordersPulse 1.4s ease-in-out infinite}
+.private-orders-loading{display:flex;align-items:center;gap:10px;min-height:44px;padding:12px 0;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.private-orders-spinner{width:14px;height:14px;border:2px solid rgba(34,211,238,.22);border-top-color:var(--accent);border-radius:50%;animation:ordersSpin .8s linear infinite}@keyframes ordersSpin{to{transform:rotate(360deg)}}
 @keyframes ordersPulse{0%,100%{opacity:.48;box-shadow:0 0 0 rgba(34,211,238,0)}50%{opacity:1;box-shadow:0 0 24px rgba(34,211,238,.14)}}
 .member-orders-panel{border:1px solid rgba(34,211,238,.3);border-radius:var(--radius);padding:30px;background:linear-gradient(145deg,rgba(34,211,238,.07),rgba(8,12,15,.98) 40%);box-shadow:var(--shadow)}
 .member-orders-head{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;padding-bottom:22px;border-bottom:1px solid var(--line)}
