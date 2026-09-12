@@ -358,3 +358,26 @@ html,body{max-width:100%;overflow-x:clip}
 .orders-editor-status[data-state="success"]{color:#8eeeff}.orders-editor-status[data-state="error"]{color:#ffc1c1}.orders-editor-status[data-state="working"]{color:#ffd37a}
 .orders-editor button:disabled{opacity:.55;cursor:wait}
 @media(max-width:760px){.orders-manager-heading{display:grid}.orders-manager-toggle{justify-self:start}.orders-editor{padding:16px}.orders-editor-grid,.orders-editor-item-row{grid-template-columns:1fr}.orders-editor-actions{display:grid}.orders-editor-actions>div{justify-content:flex-start}.orders-editor-list-heading{align-items:flex-end}}
+
+/* v41 — Daily Orders readability fixes */
+/* Keep line breaks entered in the officer editor when rendered to members. */
+.member-orders-head p:not(.eyebrow),
+.private-order-item p,
+.officer-note-card p{
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+/* Explicit desktop styling prevents browser-native button colors from making Edit Orders unreadable. */
+.orders-manager-toggle{
+  color:var(--accent);
+  background:rgba(34,211,238,.075);
+  border-color:rgba(34,211,238,.34);
+  box-shadow:inset 0 0 0 1px rgba(34,211,238,.025);
+}
+.orders-manager-toggle:hover,
+.orders-manager-toggle:focus-visible{
+  color:#eaffff;
+  background:rgba(34,211,238,.14);
+  border-color:rgba(34,211,238,.65);
+}
