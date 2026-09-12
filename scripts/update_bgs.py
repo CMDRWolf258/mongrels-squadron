@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import json
 import os
-import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "data" / "systems.json"
@@ -39,21 +39,15 @@ def iso(dt: datetime) -> str:
     return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def fetch_json(url: str, attempts: int = 3) -> Any:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            request = urllib.request.Request(
-                url,
-                headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-            )
-            with urllib.request.urlopen(request, timeout=25) as response:
-                return json.loads(response.read().decode("utf-8"))
-        except Exception as exc:  # upstream/network errors are expected occasionally
-            last_error = exc
-            if attempt + 1 < attempts:
-                time.sleep(2 ** attempt)
-    raise RuntimeError(f"request failed after {attempts} attempts: {last_error}")
+def fetch_json(url: str) -> Any:
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+    )
+    # Keep this deliberately short. A slow upstream should never stall the
+    # whole GitHub Action for minutes; stale data is preferable to a hung job.
+    with urllib.request.urlopen(request, timeout=8) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 def iter_dicts(value: Any) -> Iterable[dict[str, Any]]:
@@ -238,21 +232,38 @@ def main() -> int:
     refreshed: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
 
-    for name in names:
-        try:
-            row = fetch_system(name)
-            row["fetchedAt"] = iso(utc_now())
-            refreshed.append(row)
-            print(f"OK  {name}: {row['influence']:.2f}%")
-        except Exception as exc:
-            print(f"ERR {name}: {exc}")
-            errors.append({"name": name, "error": str(exc)})
-            previous = old_by_name.get(name)
-            if previous:
-                stale = dict(previous)
-                stale["ok"] = False
-                stale["stale"] = True
-                refreshed.append(stale)
+    # Fetch all tracked systems in parallel so one slow API response cannot
+    # multiply the delay across the entire list. Six systems should normally
+    # finish in a few seconds and, during an outage, in roughly 8-12 seconds.
+    print(f"Refreshing {len(names)} systems from EliteBGS...", flush=True)
+    results_by_name: dict[str, dict[str, Any]] = {}
+
+    with ThreadPoolExecutor(max_workers=min(6, max(1, len(names)))) as pool:
+        futures = {}
+        for name in names:
+            print(f"START {name}", flush=True)
+            futures[pool.submit(fetch_system, name)] = name
+
+        for future in as_completed(futures):
+            name = futures[future]
+            try:
+                row = future.result()
+                row["fetchedAt"] = iso(utc_now())
+                results_by_name[name] = row
+                print(f"OK    {name}: {row['influence']:.2f}%", flush=True)
+            except Exception as exc:
+                print(f"ERR   {name}: {exc}", flush=True)
+                errors.append({"name": name, "error": str(exc)})
+                previous = old_by_name.get(name)
+                if previous:
+                    stale = dict(previous)
+                    stale["ok"] = False
+                    stale["stale"] = True
+                    results_by_name[name] = stale
+
+    # Preserve the configured display order regardless of which requests
+    # finish first.
+    refreshed = [results_by_name[name] for name in names if name in results_by_name]
 
     now = utc_now()
     output = {
