@@ -301,3 +301,31 @@ html,body{max-width:100%;overflow-x:clip}
 /* v37 — preserve sticky section shortcuts while preventing horizontal page drift */
 html,body{max-width:100%;overflow-x:clip}
 .section-jump-wrap{position:-webkit-sticky;position:sticky}
+
+/* v38 — authenticated Daily Orders */
+.private-orders-loading{min-height:180px}
+.private-orders-pulse{animation:ordersPulse 1.4s ease-in-out infinite}
+@keyframes ordersPulse{0%,100%{opacity:.48;box-shadow:0 0 0 rgba(34,211,238,0)}50%{opacity:1;box-shadow:0 0 24px rgba(34,211,238,.14)}}
+.member-orders-panel{border:1px solid rgba(34,211,238,.3);border-radius:var(--radius);padding:30px;background:linear-gradient(145deg,rgba(34,211,238,.07),rgba(8,12,15,.98) 40%);box-shadow:var(--shadow)}
+.member-orders-head{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.member-orders-head h2{margin:0 0 8px;font-size:clamp(1.6rem,3vw,2.5rem);text-transform:uppercase;letter-spacing:-.025em}
+.member-orders-head p:not(.eyebrow){margin:0;max-width:850px;color:#b8c4ca;line-height:1.65}
+.member-orders-security{flex:0 0 auto;text-align:right;display:grid;gap:5px}
+.member-orders-security span{color:var(--accent);font-size:.68rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.member-orders-security small{color:var(--muted);font-size:.68rem}
+.private-orders-list{display:grid;gap:10px;margin-top:22px}
+.private-order-item{border:1px solid var(--line);border-radius:12px;padding:17px 18px;background:rgba(255,255,255,.018)}
+.private-order-item-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.private-order-number{color:var(--accent);font-size:.64rem;font-weight:900;letter-spacing:.08em}
+.private-order-priority,.private-order-status{display:inline-flex;border:1px solid var(--line-accent);border-radius:999px;padding:4px 7px;color:#cfeff4;font-size:.58rem;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.private-order-status{margin-left:auto;border-color:var(--line);color:var(--muted)}
+.private-order-item h3{margin:0;color:#f0f8fa;font-size:1rem}
+.private-order-item p{margin:7px 0 0;color:#aebcc3;font-size:.82rem;line-height:1.58}
+.private-order-empty{display:grid;gap:4px;border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted)}
+.private-order-empty strong{color:#dbe8eb;text-transform:uppercase;font-size:.78rem;letter-spacing:.065em}
+.officer-note-card{margin-top:18px;border-left:2px solid var(--accent);padding:14px 16px;background:rgba(34,211,238,.045)}
+.officer-note-card span{display:block;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px}
+.officer-note-card p{margin:0;color:#c3cfd4;line-height:1.55;font-size:.8rem}
+.orders-management-note{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-size:.7rem;color:var(--muted)}
+.orders-management-note strong{color:#dcecef}
+@media(max-width:760px){.member-orders-panel{padding:22px}.member-orders-head{display:grid;gap:14px}.member-orders-security{text-align:left}.private-order-status{margin-left:0}.private-order-item-top{flex-wrap:wrap}}

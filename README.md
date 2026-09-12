@@ -1,15 +1,42 @@
-# Mongrels Squadron Site v36 — Safari Login + Header Fixes
+# The Regiment of Imperial Mongrels — v38
 
-This release addresses three issues reported during cross-device testing:
+## Secure Daily Orders
 
-- Adds a server-side two-step OAuth completion handoff so the secure session cookie is verified before the member page loads. This avoids relying on cached state or frontend retry timing, and is intended to make first-time Safari/iPad sign-in reliable.
-- Prevents page-wide horizontal overflow on tablet layouts and makes the header collapse sooner.
-- Keeps the Member Login / authenticated identity control readable at narrower desktop widths instead of collapsing it to an unexplained cyan dot.
+This release turns the Operations Daily Orders area into a real protected member feature.
 
-New backend endpoint: `functions/api/auth/complete.js`.
+### What changed
+- New protected endpoint: `/api/operations/orders`
+- Endpoint requires a valid first-party Mongrels session
+- Only `member`, `officer`, and `site_admin` access levels can retrieve orders
+- Public visitors receive no private order payload
+- Operations page automatically swaps between locked, loading, and authenticated briefing states
+- Officer/Site Admin viewers are identified as management-capable, with editing controls reserved for the next phase
+- Responses are explicitly `no-store` / private to avoid caching sensitive tasking
 
-Recommended: upload the full package contents so the new function, CSS, JS, and v36 cache-busting references all deploy together.
+### Private order storage
+The endpoint reads an optional Cloudflare Production secret named:
 
+`DAILY_ORDERS_JSON`
 
-## v37 — Sticky section navigation fix
-Replaced the global horizontal overflow lock from `overflow-x: hidden` to `overflow-x: clip`. The hidden overflow created a scroll container that could disable `position: sticky` for the About and Operations shortcut bars, particularly in Safari/iPadOS. `clip` prevents horizontal page drift without breaking sticky positioning. Added the WebKit sticky fallback and bumped the global CSS cache version to 37.
+If it is not configured, authenticated members will simply see “No Daily Orders Posted.” This is intentional and lets us verify access control before publishing real tasking.
+
+Example schema for later use:
+
+```json
+{
+  "title": "Squadron Daily Orders",
+  "briefing": "Current operational focus for this BGS cycle.",
+  "updatedAt": "Sep 12, 2026",
+  "orders": [
+    {
+      "priority": "Primary",
+      "task": "Example task",
+      "detail": "Example detail and stop condition.",
+      "status": "Active"
+    }
+  ],
+  "officerNote": "Optional note visible to authenticated members."
+}
+```
+
+Do not place real private orders in a public repository file. Store them in Cloudflare until the officer editing/database phase is added.

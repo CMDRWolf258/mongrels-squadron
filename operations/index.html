@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=37">
+  <link rel="stylesheet" href="../css/global.css?v=38">
 </head>
 <body>
 <header class="site-header">
@@ -104,22 +104,49 @@
     </div>
   </section>
 
-  <section id="daily-orders" class="section private-orders-section">
+  <section id="daily-orders" class="section private-orders-section" data-daily-orders>
     <div class="container">
-      <div class="private-orders-panel">
+      <div class="private-orders-panel" data-orders-locked>
         <div class="private-orders-lock" aria-hidden="true">⌁</div>
         <div class="private-orders-copy">
-          <p class="eyebrow">Members Only · Planned</p>
+          <p class="eyebrow">Members Only</p>
           <h2>Squadron Daily Orders</h2>
-          <p>This is where the operational checklist will live: specific INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes. The public site will never expose these instructions in its downloadable data files.</p>
-          <div class="private-order-tags"><span>Discord sign-in</span><span>Daily objectives</span><span>Officer notes</span><span>Role-based access</span></div>
-          <div class="operations-access-grid" aria-label="Planned Daily Orders access levels">
-            <div><strong>Member</strong><span>View current orders</span></div>
-            <div><strong>Officer</strong><span>View + manage orders</span></div>
-            <div><strong>Site Admin</strong><span>Access rules + configuration</span></div>
-          </div>
+          <p data-orders-lock-detail>Exact operational tasking is private. Sign in with an approved Mongrel Discord account to view current INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes.</p>
+          <div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private tasking</span><span>No public data file</span></div>
         </div>
-        <div class="private-orders-state"><span class="tag">Discord login foundation ready</span><small>Site Admin remains Wolf only</small><a class="private-orders-login" href="../member/">Member Access →</a></div>
+        <div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="../member/">Member Access →</a></div>
+      </div>
+
+      <div class="private-orders-panel private-orders-loading" data-orders-loading hidden>
+        <div class="private-orders-lock private-orders-pulse" aria-hidden="true">⌁</div>
+        <div class="private-orders-copy">
+          <p class="eyebrow">Secure Operations Channel</p>
+          <h2>Checking Member Access</h2>
+          <p>Verifying your secure session before requesting private squadron tasking.</p>
+        </div>
+      </div>
+
+      <div class="member-orders-panel" data-orders-member hidden>
+        <div class="member-orders-head">
+          <div>
+            <p class="eyebrow">Members Only · Secure Briefing</p>
+            <h2 data-orders-title>Squadron Daily Orders</h2>
+            <p data-orders-briefing></p>
+          </div>
+          <div class="member-orders-security"><span>Authenticated</span><small data-orders-meta>Secure member view</small></div>
+        </div>
+
+        <div class="private-orders-list" data-orders-list></div>
+
+        <aside class="officer-note-card" data-orders-officer-note hidden>
+          <span>Officer Note</span>
+          <p data-orders-officer-note-text></p>
+        </aside>
+
+        <div class="orders-management-note" data-orders-management hidden>
+          <strong>Officer access confirmed.</strong>
+          <span>Order-management controls are the next phase; this build is secure read-only access.</span>
+        </div>
       </div>
     </div>
   </section>
@@ -181,7 +208,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=36"></script>
+<script src="../js/site.js?v=38"></script>
 <script src="../js/operations.js"></script>
+<script src="../js/daily-orders.js?v=38"></script>
 </body>
 </html>
