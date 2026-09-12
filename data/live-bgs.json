@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T03:39:39Z",
+  "generatedAt": "2026-09-12T03:42:53Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
   "refreshInterval": "Every 2 hours",
@@ -8,7 +8,7 @@
   "errors": [
     {
       "name": "vault",
-      "error": "GraphQL error: Syntax Error: Query Cost limit of 5000 exceeded, found 50794.0625."
+      "error": "GraphQL error: Variable \"$after\" of type \"String\" used in position expecting type \"Cursor\"."
     }
   ],
   "systems": []
