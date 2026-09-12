@@ -104,3 +104,19 @@ a{color:inherit}img{max-width:100%;display:block}button,input,textarea,select{fo
 
 /* v13 — BGS target influence ranges */
 .inf-bar{position:relative;overflow:visible}.inf-bar>span{position:relative;z-index:2}.inf-target-band{position:absolute;top:-3px;bottom:-3px;border-radius:999px;background:rgba(117,255,165,.14);border:1px solid rgba(117,255,165,.6);box-shadow:0 0 8px rgba(117,255,165,.15);z-index:1;pointer-events:none}.target-status{margin-top:9px;font-size:.67rem;font-weight:850;letter-spacing:.04em}.target-in{color:#79e7a0}.target-high{color:#eec36f}.target-low{color:#ef8c8c}.table-target-status{display:block;margin-top:6px;font-size:.63rem;font-weight:800}.priority-influence-block .inf-bar{margin-top:10px}
+
+/* v14 — live BGS feed */
+.bgs-live-footnote{margin-top:1rem;padding:1rem 1.1rem;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.025);border-radius:14px}
+.bgs-live-footnote>div{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:.55rem}
+.live-feed-pill,.data-origin{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;font-size:.72rem;font-weight:800;letter-spacing:.055em;text-transform:uppercase;line-height:1;padding:.48rem .65rem;border:1px solid rgba(255,255,255,.13)}
+.live-feed-pill.live,.data-origin.live{color:#8eeeff;border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.09)}
+.live-feed-pill.live::before,.data-origin.live::before{content:"";width:.42rem;height:.42rem;border-radius:50%;background:#22d3ee;box-shadow:0 0 10px rgba(34,211,238,.8)}
+.live-feed-pill.partial,.data-origin.stale{color:#ffd37a;border-color:rgba(255,193,72,.38);background:rgba(255,193,72,.08)}
+.live-feed-pill.waiting,.data-origin.manual{color:#b8bdc6;background:rgba(255,255,255,.04)}
+.bgs-source-copy{font-size:.78rem;color:var(--muted, #969ca6)}
+.priority-card-tags .data-origin{font-size:.62rem;padding:.38rem .52rem}
+.systems-table small .data-origin{margin-top:.45rem;font-size:.58rem;padding:.34rem .45rem}
+.bgs-state-line{display:grid;grid-template-columns:minmax(78px,.28fr) 1fr;gap:.8rem;padding:.65rem .8rem;margin-top:.55rem;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);border-radius:10px;font-size:.78rem}
+.bgs-state-line span{color:var(--muted, #969ca6);text-transform:uppercase;letter-spacing:.08em;font-size:.66rem;font-weight:700}
+.bgs-state-line strong{font-weight:650}
+@media (max-width:720px){.bgs-state-line{grid-template-columns:1fr;gap:.2rem}.bgs-live-footnote{padding:.9rem}}

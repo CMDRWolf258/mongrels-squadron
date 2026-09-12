@@ -1,19 +1,18 @@
-# The Mongrels Squadron Site — v5 Operations
+# Mongrels Squadron Site — v14 Live BGS
 
-This build adds the first functional shell for the Operations / BGS section.
+This version introduces the first automatic public BGS feed.
 
-## Changed files
-- `operations/index.html`
-- `css/global.css`
-- `js/operations.js` (new)
-- `data/systems.json` (expanded schema, currently empty)
+## What changed
+- `data/systems.json` remains the squad's strategic configuration: target ranges, objectives, priority flags, and public notes.
+- `data/live-bgs.json` stores the latest public game-data snapshot.
+- `scripts/update_bgs.py` queries EliteBGS for the configured systems.
+- `.github/workflows/update-bgs.yml` runs the refresh every two hours and can also be run manually.
+- Operations merges live values over the strategic configuration in the browser.
+- If EliteBGS is unavailable, the previous live snapshot/manual values remain usable.
 
-The Operations page is data-ready but intentionally contains no invented live BGS values. Priority cards and the systems table will populate from `data/systems.json` when real data is added.
+## First-time GitHub setup
+Upload the entire contents of this version over the repository, preserving folders. Then open **Actions → Refresh BGS data → Run workflow** to trigger the first sync.
 
-A future private Daily Orders area is visibly reserved for authenticated members, and an external Squad Tools card reserves a place for the member-built PvP statistics project.
+The workflow needs repository write permission so it can commit `data/live-bgs.json`. If GitHub blocks the commit, go to **Settings → Actions → General → Workflow permissions**, select **Read and write permissions**, and save.
 
-## v6 additions
-- Added a dedicated PvP section to the main navigation.
-- Moved the PvP Combat Statistics launch point out of Operations.
-- Added a data-driven in-game Bounty Board using `data/bounties.json` and `js/pvp.js`.
-- Reserved a future authenticated member workflow for posting and managing bounties.
+GitHub Pages will redeploy after the generated data file is committed.

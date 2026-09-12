@@ -10,10 +10,13 @@
   const searchEl = document.getElementById('systemSearch');
   const filterEl = document.getElementById('systemFilter');
   const sortEl = document.getElementById('systemSort');
+  const liveStatusEl = document.getElementById('bgsLiveStatus');
+  const liveSourceEl = document.getElementById('bgsLiveSource');
   if (!priorityEl || !tableBody) return;
 
   let systems = [];
   let priorityNames = new Set();
+  let liveMeta = null;
 
   const safe = (value, fallback = '—') => (value === null || value === undefined || value === '' ? fallback : value);
   const influence = value => typeof value === 'number' ? `${value.toFixed(1)}%` : safe(value);
@@ -21,6 +24,31 @@
   const isPriority = system => system.priority === true || priorityNames.has(system.name);
   const isWatch = system => Boolean(system.watch || system.alert || (Array.isArray(system.alerts) && system.alerts.length));
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+  function parseDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatSnapshot(value) {
+    const date = parseDate(value);
+    if (!date) return null;
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+    }).format(date);
+  }
+
+  function ageLabel(value) {
+    const date = parseDate(value);
+    if (!date) return null;
+    const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+    if (minutes < 2) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 48) return `${hours} hr ago`;
+    return `${Math.round(hours / 24)} days ago`;
+  }
 
   function targetStatus(system) {
     const value = Number(system.influence);
@@ -53,13 +81,43 @@
     if (summaryUpdated) summaryUpdated.textContent = lastUpdated || 'Pending';
   }
 
+  function renderLiveStatus() {
+    const generated = liveMeta?.generatedAt;
+    const success = Number(liveMeta?.successfulSystems || 0);
+    const requested = Number(liveMeta?.requestedSystems || systems.length || 0);
+    const age = ageLabel(generated);
+
+    if (liveStatusEl) {
+      if (!generated) {
+        liveStatusEl.textContent = 'Awaiting first automatic sync';
+        liveStatusEl.className = 'live-feed-pill waiting';
+      } else if (success === requested && requested > 0) {
+        liveStatusEl.textContent = `Live snapshot · ${age || 'updated'}`;
+        liveStatusEl.className = 'live-feed-pill live';
+      } else if (success > 0) {
+        liveStatusEl.textContent = `Partial snapshot · ${success}/${requested} systems`;
+        liveStatusEl.className = 'live-feed-pill partial';
+      } else {
+        liveStatusEl.textContent = 'Using last known/manual values';
+        liveStatusEl.className = 'live-feed-pill waiting';
+      }
+    }
+    if (liveSourceEl) liveSourceEl.textContent = liveMeta?.source || 'EliteBGS';
+  }
+
+  function liveTag(system) {
+    if (!system.live) return '<span class="data-origin manual">Manual fallback</span>';
+    if (system.liveStale) return '<span class="data-origin stale">Last known live</span>';
+    return '<span class="data-origin live">Live BGS</span>';
+  }
+
   function renderPriority() {
     const rows = systems.filter(isPriority);
     if (!rows.length) return;
     priorityEl.innerHTML = rows.map(system => `
       <article class="priority-system-card">
         <div class="priority-card-head">
-          <div class="priority-card-tags"><span class="tag">Priority</span>${system.region ? `<span class="tag quiet-tag">${html(system.region)}</span>` : ''}</div>
+          <div class="priority-card-tags"><span class="tag">Priority</span>${system.region ? `<span class="tag quiet-tag">${html(system.region)}</span>` : ''}${liveTag(system)}</div>
           <span class="priority-updated">${html(safe(system.updated, 'Awaiting update'))}</span>
         </div>
         <h3>${html(safe(system.name, 'Unnamed system'))}</h3>
@@ -73,6 +131,8 @@
           <div><span>State</span><strong>${html(safe(system.state))}</strong></div>
           <div><span>Security</span><strong>${html(safe(system.security))}</strong></div>
         </div>
+        ${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<div class="bgs-state-line"><span>Pending</span><strong>${html(system.pendingStates.join(', '))}</strong></div>` : ''}
+        ${Array.isArray(system.recoveringStates) && system.recoveringStates.length ? `<div class="bgs-state-line"><span>Recovering</span><strong>${html(system.recoveringStates.join(', '))}</strong></div>` : ''}
         <div class="priority-objective"><span>Public Objective</span><p>${html(safe(system.objective, 'No public objective posted.'))}</p></div>
       </article>`).join('');
   }
@@ -122,26 +182,49 @@
 
     tableBody.innerHTML = rows.map(system => `
       <tr>
-        <td><strong>${html(safe(system.name))}</strong>${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}</td>
+        <td><strong>${html(safe(system.name))}</strong>${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}<small>${liveTag(system)}</small></td>
         <td>${html(safe(system.control))}</td>
         <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${targetStatus(system) ? `<small class="table-target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</small>` : ''}</td>
-        <td>${html(safe(system.state))}</td>
+        <td>${html(safe(system.state))}${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<small>Pending: ${html(system.pendingStates.join(', '))}</small>` : ''}</td>
         <td>${isPriority(system) ? '<span class="priority-badge">Priority</span>' : isWatch(system) ? '<span class="watch-badge">Watch</span>' : '<span class="muted">Standard</span>'}</td>
         <td>${html(safe(system.objective))}</td>
       </tr>`).join('');
   }
 
-  fetch('../data/systems.json', {cache:'no-store'})
-    .then(response => {
-      if (!response.ok) throw new Error('Unable to load system data');
+  function mergeLive(config, live) {
+    const liveByName = new Map((Array.isArray(live?.systems) ? live.systems : []).map(row => [row.name, row]));
+    return (Array.isArray(config.systems) ? config.systems : []).map(base => {
+      const observed = liveByName.get(base.name);
+      if (!observed || typeof observed.influence !== 'number') return {...base, live:false};
+      const merged = {...base};
+      for (const key of ['influence','controlled','control','state','security','population','activeStates','pendingStates','recoveringStates']) {
+        if (observed[key] !== null && observed[key] !== undefined && observed[key] !== '') merged[key] = observed[key];
+      }
+      merged.live = true;
+      merged.liveStale = observed.stale === true || observed.ok === false;
+      merged.sourceUpdated = observed.sourceUpdated || observed.fetchedAt || null;
+      const formatted = formatSnapshot(merged.sourceUpdated || observed.fetchedAt);
+      if (formatted) merged.updated = formatted;
+      return merged;
+    });
+  }
+
+  Promise.all([
+    fetch('../data/systems.json', {cache:'no-store'}).then(response => {
+      if (!response.ok) throw new Error('Unable to load system configuration');
       return response.json();
-    })
-    .then(data => {
-      systems = Array.isArray(data.systems) ? data.systems : [];
-      priorityNames = new Set(Array.isArray(data.prioritySystems) ? data.prioritySystems : []);
-      const lastUpdated = data.lastUpdated || null;
+    }),
+    fetch('../data/live-bgs.json', {cache:'no-store'}).then(response => response.ok ? response.json() : null).catch(() => null)
+  ])
+    .then(([config, live]) => {
+      liveMeta = live;
+      systems = mergeLive(config, live);
+      priorityNames = new Set(Array.isArray(config.prioritySystems) ? config.prioritySystems : []);
+      const liveUpdated = formatSnapshot(live?.generatedAt);
+      const lastUpdated = liveUpdated || config.lastUpdated || null;
       if (updatedEl) updatedEl.textContent = lastUpdated || 'Not connected';
       renderSummary(lastUpdated);
+      renderLiveStatus();
       renderPriority();
       renderWatch();
       renderTable();
@@ -149,6 +232,7 @@
     .catch(() => {
       if (updatedEl) updatedEl.textContent = 'Connection pending';
       if (summaryUpdated) summaryUpdated.textContent = 'Pending';
+      if (liveStatusEl) liveStatusEl.textContent = 'BGS data unavailable';
     });
 
   searchEl?.addEventListener('input', renderTable);

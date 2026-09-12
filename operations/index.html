@@ -109,7 +109,10 @@
           <tbody id="systemsTableBody"><tr class="systems-empty-row"><td colspan="6">System data has not been connected yet.</td></tr></tbody>
         </table>
       </div>
-      <p class="bgs-data-note">Public data can eventually update automatically. Private daily orders will use a separate protected data source so strategic instructions are never exposed in the public repository.</p>
+      <div class="bgs-live-footnote">
+        <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Awaiting first automatic sync</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteBGS</strong></span></div>
+        <p class="bgs-data-note">Live game data is merged with Mongrel-defined targets and objectives. If the upstream service is temporarily unavailable, the dashboard keeps its last known snapshot or falls back to the manual values in the strategic configuration. Private daily orders remain separate from the public repository.</p>
+      </div>
     </div>
   </section>
 </main>
