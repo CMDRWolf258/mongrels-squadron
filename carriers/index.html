@@ -1,1 +1,100 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><title>Carriers | The Mongrels</title><link rel="stylesheet" href="../css/global.css"></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/" aria-current="page">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main><section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Fleet Carrier Network</p><h1>Carriers</h1><p>Member fleet carriers, their owners, current locations, roles, services, and future movement notices.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section><section class="section"><div class="container"><div class="placeholder"><strong>Carrier directory</strong><p class="muted">The carrier database is ready for us to populate. Later we can investigate automatic location updates and departure notices.</p></div><div class="card-grid" style="margin-top:18px"><div class="card"><h3>Carrier Name</h3><p>Owner: CMDR<br>Location: System<br>Role: Logistics / Trade / Exploration<br>Status: Active</p></div><div class="card"><h3>Services</h3><p>Each carrier can list available services, cargo requests, docking notes, and squadron purpose.</p></div><div class="card"><h3>Movement Board</h3><p>A future schedule can show destination and departure time for squadron carrier movements.</p></div></div></div></section></main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Carriers | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/" aria-current="page">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero carrier-hero">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Squadron Logistics Network</p>
+        <h1>Carriers</h1>
+        <p>Find Mongrel fleet carriers, see where they are, what they are used for, and whether they have a movement planned.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section carrier-summary-section">
+    <div class="container">
+      <div class="carrier-status-strip">
+        <div class="status-item"><span>Listed Carriers</span><strong class="accent" data-carrier-count>0</strong></div>
+        <div class="status-item"><span>Active</span><strong data-carrier-active>0</strong></div>
+        <div class="status-item"><span>Movements Posted</span><strong data-carrier-movements>0</strong></div>
+        <div class="status-item"><span>Directory</span><strong>Squad Members</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section carrier-directory-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Carrier Directory</p><h2>Fleet Carrier Network</h2></div>
+        <p>Each listing can show ownership, current location, role, available services, docking notes, and links to external carrier pages.</p>
+      </div>
+
+      <div class="carrier-toolbar">
+        <label><span>Search</span><input type="search" placeholder="Carrier, owner, system, role…" data-carrier-search></label>
+        <label><span>Role</span><select data-carrier-role><option value="all">All roles</option></select></label>
+        <label><span>Status</span><select data-carrier-status><option value="all">All statuses</option><option value="active">Active</option><option value="moving">Moving</option><option value="maintenance">Maintenance</option><option value="offline">Offline</option></select></label>
+      </div>
+
+      <div class="carrier-grid" data-carrier-grid></div>
+      <div class="carrier-empty" data-carrier-empty>
+        <strong>No carrier listings yet.</strong>
+        <p>Add member carriers to <code>data/carriers.json</code> and they will appear here automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section carrier-movement-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Movement Board</p><h2>Upcoming Carrier Movements</h2></div>
+        <p>Use this board for squad logistics, expeditions, construction runs, mining support, or any movement members should know about.</p>
+      </div>
+      <div class="movement-grid" data-movement-grid></div>
+      <div class="movement-empty" data-movement-empty>
+        <strong>No movements posted.</strong>
+        <p>When a carrier has a destination and departure time listed, it will appear here automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-sm">
+    <div class="container">
+      <div class="carrier-info-panel">
+        <div>
+          <p class="eyebrow">Future Capability</p>
+          <h2>Live Locations Later</h2>
+          <p>For now, carrier locations can be updated manually. Later we can investigate pulling locations automatically and adding departure notices or Discord-linked movement posts.</p>
+        </div>
+        <div class="carrier-info-tags"><span>Current System</span><span>Services</span><span>Departure UTC</span><span>Destination</span><span>Inara Link</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js"></script>
+<script src="../js/carriers.js"></script>
+</body>
+</html>
