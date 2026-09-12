@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/global.css?v=32">
 </head>
 <body>
 <header class="site-header">
@@ -33,7 +33,20 @@
     </div>
   </section>
 
-  <section class="section-sm">
+  <div class="section-jump-wrap operations-jump-wrap" aria-label="Operations page sections">
+    <div class="container">
+      <nav class="section-jump-nav">
+        <a href="#overview">Overview</a>
+        <a href="#priority">Priority Systems</a>
+        <a href="#watch">Watch List</a>
+        <a href="#daily-orders">Daily Orders</a>
+        <a href="#all-systems">All Systems</a>
+        <a href="#resources">Resources</a>
+      </nav>
+    </div>
+  </div>
+
+  <section id="overview" class="section-sm operations-overview-section">
     <div class="container">
       <div class="bgs-summary-grid" aria-label="BGS summary">
         <article class="bgs-summary-card"><span>Systems Tracked</span><strong id="summaryTracked">—</strong><small>Faction presence</small></article>
@@ -44,7 +57,24 @@
     </div>
   </section>
 
-  <section class="section operations-priority-section">
+  <section class="section-sm operations-briefing-section">
+    <div class="container">
+      <div class="operations-briefing-grid">
+        <article class="operations-briefing-card">
+          <p class="eyebrow">Public Strategic Picture</p>
+          <h2>Know where the squad stands.</h2>
+          <p>Priority systems, influence targets, states, and public objectives remain visible so members can understand the larger strategic picture without exposing exact daily tasking.</p>
+        </article>
+        <article class="operations-briefing-card operations-briefing-private">
+          <p class="eyebrow">Private Operational Tasking</p>
+          <h2>Exact orders stay inside the pack.</h2>
+          <p>Specific INF targets, bounty turn-ins, support and avoid instructions, stop conditions, and officer notes will require Discord-authenticated member access.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="priority" class="section operations-priority-section">
     <div class="container">
       <div class="section-heading">
         <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
@@ -59,7 +89,7 @@
     </div>
   </section>
 
-  <section class="section-sm">
+  <section id="watch" class="section-sm">
     <div class="container">
       <div class="section-heading compact-heading">
         <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
@@ -74,22 +104,27 @@
     </div>
   </section>
 
-  <section class="section private-orders-section">
+  <section id="daily-orders" class="section private-orders-section">
     <div class="container">
       <div class="private-orders-panel">
         <div class="private-orders-lock" aria-hidden="true">⌁</div>
         <div class="private-orders-copy">
-          <p class="eyebrow">Future Member Area</p>
+          <p class="eyebrow">Members Only · Planned</p>
           <h2>Squadron Daily Orders</h2>
-          <p>This is where the operational checklist will eventually live: specific INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes. Those details will not be stored in public GitHub Pages data.</p>
-          <div class="private-order-tags"><span>Discord authentication</span><span>Daily objectives</span><span>Officer notes</span><span>Role-based access</span></div>
+          <p>This is where the operational checklist will live: specific INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes. The public site will never expose these instructions in its downloadable data files.</p>
+          <div class="private-order-tags"><span>Discord sign-in</span><span>Daily objectives</span><span>Officer notes</span><span>Role-based access</span></div>
+          <div class="operations-access-grid" aria-label="Planned Daily Orders access levels">
+            <div><strong>Member</strong><span>View current orders</span></div>
+            <div><strong>Officer</strong><span>View + manage orders</span></div>
+            <div><strong>Site Admin</strong><span>Access rules + configuration</span></div>
+          </div>
         </div>
-        <div class="private-orders-state"><span class="tag">Locked by design</span><small>Private backend planned</small></div>
+        <div class="private-orders-state"><span class="tag">Discord login coming soon</span><small>Site Admin remains Wolf only</small></div>
       </div>
     </div>
   </section>
 
-  <section class="section all-systems-section">
+  <section id="all-systems" class="section all-systems-section">
     <div class="container">
       <div class="section-heading">
         <div><p class="eyebrow">Mongrel Territory</p><h2>All Systems</h2></div>
@@ -110,8 +145,31 @@
         </table>
       </div>
       <div class="bgs-live-footnote">
-        <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Awaiting first automatic sync</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteBGS</strong></span></div>
+        <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Awaiting first automatic sync</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteHub Vault / EDDN</strong></span></div>
         <p class="bgs-data-note">Live game data is merged with Mongrel-defined targets and objectives. If the upstream service is temporarily unavailable, the dashboard keeps its last known snapshot or falls back to the manual values in the strategic configuration. Private daily orders remain separate from the public repository.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="resources" class="section operations-resources-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Operations Resources</p><h2>Tools Around the Mission</h2></div>
+        <p>Operations rarely happen on one page. These shortcuts connect the strategic picture to the squad resources members are most likely to need next.</p>
+      </div>
+      <div class="operations-resource-grid">
+        <a class="operations-resource-card" href="../trading/">
+          <span>Logistics</span><h3>Trader's Outpost</h3><p>Find squad-supporting cargo runs and member-profit opportunities.</p><strong>Open Outpost →</strong>
+        </a>
+        <a class="operations-resource-card" href="../carriers/">
+          <span>Mobility</span><h3>Carrier Network</h3><p>Use the carrier directory and movement board for squad logistics.</p><strong>View Carriers →</strong>
+        </a>
+        <a class="operations-resource-card" href="../ships/">
+          <span>Readiness</span><h3>Ship Catalogue</h3><p>Browse published Mongrel builds prepared for Open and squad operations.</p><strong>Browse Builds →</strong>
+        </a>
+        <a class="operations-resource-card" href="../about/#squad-rules">
+          <span>Rules of Engagement</span><h3>Squad Rules</h3><p>Review Open Play, BGS, combat logging, and combat-conduct standards.</p><strong>Read Rules →</strong>
+        </a>
       </div>
     </div>
   </section>
