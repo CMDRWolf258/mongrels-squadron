@@ -16,13 +16,15 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Mongrel control between 50–65% influence.",
+      "objective": "Maintain Mongrel control between 50\u201365% influence.",
       "watch": true,
       "alerts": [
         "Influence above target range"
       ],
-      "watchNote": "Influence is currently above the 50–65% operating range. Reduce gradually while maintaining control.",
-      "updated": "Sep 11, 2026"
+      "watchNote": "Influence is currently above the 50\u201365% operating range. Reduce gradually while maintaining control.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 50,
+      "targetMax": 65
     },
     {
       "name": "Miwae",
@@ -31,8 +33,10 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Mongrel control between 50–65% influence.",
-      "updated": "Sep 11, 2026"
+      "objective": "Maintain Mongrel control between 50\u201365% influence.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 50,
+      "targetMax": 65
     },
     {
       "name": "Col 285 Sector FA-W b16-6",
@@ -41,8 +45,10 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Mongrel control between 50–65% influence.",
-      "updated": "Sep 11, 2026"
+      "objective": "Maintain Mongrel control between 50\u201365% influence.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 50,
+      "targetMax": 65
     },
     {
       "name": "NGC 2546 Sector UZ-G d10-16",
@@ -51,14 +57,20 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Boom / Civil Liberty and Mongrel control between 40–55% influence.",
+      "objective": "Maintain Boom / Civil Liberty and Mongrel control between 40\u201355% influence.",
       "watch": true,
       "alerts": [
         "Influence above target range",
         "Desired states: Boom + Civil Liberty"
       ],
-      "watchNote": "Influence is above the 40–55% target. Preserve control while working toward Boom and Civil Liberty.",
-      "updated": "Sep 11, 2026"
+      "watchNote": "Influence is above the 40\u201355% target. Preserve control while working toward Boom and Civil Liberty.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 40,
+      "targetMax": 55,
+      "desiredStates": [
+        "Boom",
+        "Civil Liberty"
+      ]
     },
     {
       "name": "NGC 2546 Sector XG-T b46-1",
@@ -67,13 +79,15 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Mongrel control between 50–65% influence.",
+      "objective": "Maintain Mongrel control between 50\u201365% influence.",
       "watch": true,
       "alerts": [
         "Influence above target range"
       ],
-      "watchNote": "Influence is currently above the 50–65% operating range. Reduce gradually while maintaining control.",
-      "updated": "Sep 11, 2026"
+      "watchNote": "Influence is currently above the 50\u201365% operating range. Reduce gradually while maintaining control.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 50,
+      "targetMax": 65
     },
     {
       "name": "Col 285 Sector OC-L c8-10",
@@ -82,13 +96,15 @@
       "control": "Mongrels",
       "state": "None",
       "priority": true,
-      "objective": "Maintain Mongrel control between 50–65% influence.",
+      "objective": "Maintain Mongrel control between 50\u201365% influence.",
       "watch": true,
       "alerts": [
         "Influence above target range"
       ],
-      "watchNote": "Influence is currently above the 50–65% operating range. Reduce gradually while maintaining control.",
-      "updated": "Sep 11, 2026"
+      "watchNote": "Influence is currently above the 50\u201365% operating range. Reduce gradually while maintaining control.",
+      "updated": "Sep 11, 2026",
+      "targetMin": 50,
+      "targetMax": 65
     }
   ]
 }
