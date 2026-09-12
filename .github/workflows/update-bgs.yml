@@ -1,0 +1,42 @@
+name: Refresh BGS data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */2 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-bgs-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out site
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Refresh EliteBGS snapshot
+        run: python scripts/update_bgs.py
+
+      - name: Commit updated snapshot
+        shell: bash
+        run: |
+          if git diff --quiet -- data/live-bgs.json; then
+            echo "No BGS snapshot changes to commit."
+            exit 0
+          fi
+          git config user.name "mongrels-bgs-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/live-bgs.json
+          git commit -m "chore: refresh BGS data"
+          git push
