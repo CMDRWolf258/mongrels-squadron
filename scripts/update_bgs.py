@@ -3,8 +3,8 @@
 
 This version queries the *faction* first (using Vault's documented
 `factionByName` root query), then reads the faction's system-presence relation.
-That is a better fit for a squad dashboard than requiring a system-by-name root
-query, and it can refresh all tracked Mongrel systems in one GraphQL request.
+The presence connection is fetched in small Relay-style pages so each GraphQL
+request stays below Vault's anonymous query-cost ceiling.
 
 Strategic targets remain in data/systems.json. Only observed public game data is
 written to data/live-bgs.json. Previous good values are retained if a system is
@@ -24,7 +24,7 @@ CONFIG_PATH = ROOT / "data" / "systems.json"
 LIVE_PATH = ROOT / "data" / "live-bgs.json"
 FACTION_NAME = "Regiment of Imperial Mongrels"
 API_URL = "https://vault.elitehub.eu/graphql"
-USER_AGENT = "MongrelsSquadronSite-BGS/3.0 (+GitHub Pages)"
+USER_AGENT = "MongrelsSquadronSite-BGS/3.1 (+GitHub Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
 
 
@@ -243,15 +243,28 @@ def object_field_with_name(schema: Schema, type_name: str, needles: tuple[str, .
     return None
 
 
-def relation_args(field: dict[str, Any]) -> str:
+def relation_paging(field: dict[str, Any]) -> dict[str, bool]:
     args = {a.get("name") for a in field.get("args") or []}
-    # Relay-style connections commonly expose `first`. Ask for enough rows to
-    # cover the Mongrels' known 200+ systems without pagination for now.
-    if "first" in args:
-        return "(first: 500)"
-    if "limit" in args:
-        return "(limit: 500)"
-    return ""
+    return {
+        "first": "first" in args,
+        "after": "after" in args,
+        "limit": "limit" in args,
+        "offset": "offset" in args,
+    }
+
+
+def relation_args(field: dict[str, Any], page_size: int = 20, use_after: bool = False) -> str:
+    paging = relation_paging(field)
+    parts: list[str] = []
+    if paging["first"]:
+        parts.append(f"first: {page_size}")
+        if use_after and paging["after"]:
+            parts.append("after: $after")
+    elif paging["limit"]:
+        parts.append(f"limit: {page_size}")
+        if use_after and paging["offset"]:
+            parts.append("offset: $offset")
+    return f"({', '.join(parts)})" if parts else ""
 
 
 def build_presence_selection(schema: Schema, relation: dict[str, Any], mode: str, node_type: str) -> tuple[str, dict[str, str]]:
@@ -310,9 +323,9 @@ def build_presence_selection(schema: Schema, relation: dict[str, Any], mode: str
     node_select.append(f"{system_field} {{ {' '.join(dict.fromkeys(system_select))} }}")
 
     body = " ".join(dict.fromkeys(node_select))
-    args = relation_args(relation)
+    args = relation_args(relation, page_size=20, use_after=True)
     if mode == "connection":
-        selection = f"{relation['name']}{args} {{ edges {{ node {{ {body} }} }} }}"
+        selection = f"{relation['name']}{args} {{ edges {{ node {{ {body} }} cursor }} pageInfo {{ hasNextPage endCursor }} }}"
     elif mode == "list":
         selection = f"{relation['name']}{args} {{ {body} }}"
     else:
@@ -328,6 +341,14 @@ def extract_nodes(faction: dict[str, Any], relation: str, mode: str) -> list[dic
     if mode == "list":
         return [x for x in (value or []) if isinstance(x, dict)]
     return [value] if isinstance(value, dict) else []
+
+
+def page_info(faction: dict[str, Any], relation: str) -> dict[str, Any]:
+    value = faction.get(relation)
+    if not isinstance(value, dict):
+        return {}
+    info = value.get("pageInfo")
+    return info if isinstance(info, dict) else {}
 
 
 def fail_with_existing(existing: dict[str, Any], names: list[str], error: str) -> int:
@@ -370,15 +391,45 @@ def main() -> int:
         print(f"SCHEMA ERR: {exc}", flush=True)
         return fail_with_existing(existing, names, str(exc))
 
-    query = f"query MongrelsFaction($name: String!) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
+    paging = relation_paging(relation)
+    if meta["mode"] == "connection" and paging["first"] and paging["after"]:
+        query = f"query MongrelsFaction($name: String!, $after: String) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
+    else:
+        query = f"query MongrelsFaction($name: String!) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
 
-    print(f"Fetching all known presences for {FACTION_NAME}...", flush=True)
+    print(f"Fetching known presences for {FACTION_NAME} in low-cost pages...", flush=True)
     try:
-        data = gql(query, {"name": FACTION_NAME}, timeout=25)
-        faction = data.get(query_name)
-        if not isinstance(faction, dict):
-            raise RuntimeError(f"{FACTION_NAME} was not returned by Vault")
-        nodes = extract_nodes(faction, meta["relation"], meta["mode"])
+        nodes: list[dict[str, Any]] = []
+        after: str | None = None
+        page = 1
+        # The squad currently tracks only a handful of priority systems, but the
+        # faction has 200+ presences. Walk the whole connection in cheap pages so
+        # any tracked system can be found without exceeding the query-cost cap.
+        while True:
+            variables: dict[str, Any] = {"name": FACTION_NAME}
+            if "$after" in query:
+                variables["after"] = after
+            data = gql(query, variables, timeout=20)
+            faction = data.get(query_name)
+            if not isinstance(faction, dict):
+                raise RuntimeError(f"{FACTION_NAME} was not returned by Vault")
+            batch = extract_nodes(faction, meta["relation"], meta["mode"])
+            nodes.extend(batch)
+            print(f"PAGE  {page}: {len(batch)} rows (total {len(nodes)})", flush=True)
+
+            if meta["mode"] != "connection" or "$after" not in query:
+                break
+            info = page_info(faction, meta["relation"])
+            if not info.get("hasNextPage"):
+                break
+            next_cursor = info.get("endCursor")
+            if not next_cursor or next_cursor == after:
+                raise RuntimeError("Vault pagination reported another page but returned no usable endCursor")
+            after = str(next_cursor)
+            page += 1
+            if page > 100:
+                raise RuntimeError("Vault pagination exceeded 100 pages; stopping defensively")
+
         print(f"VAULT returned {len(nodes)} faction presence rows", flush=True)
     except Exception as exc:
         print(f"FETCH ERR: {exc}", flush=True)
