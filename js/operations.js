@@ -102,7 +102,7 @@
         liveStatusEl.className = 'live-feed-pill waiting';
       }
     }
-    if (liveSourceEl) liveSourceEl.textContent = liveMeta?.source || 'EliteBGS';
+    if (liveSourceEl) liveSourceEl.textContent = liveMeta?.source || 'EliteHub Vault / EDDN';
   }
 
   function liveTag(system) {
