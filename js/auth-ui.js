@@ -12,6 +12,7 @@
     state_error: 'The login request expired or could not be verified. Please try again.',
     server_error: 'Discord login reached the site, but the secure callback failed. Please try again.',
     no_access: 'Discord sign-in succeeded, but this account does not currently have Mongrel website access.',
+    session_error: 'Discord verified your account, but the secure session was not accepted by this browser. Please try signing in again.',
   };
 
   const cleanLoginQuery = () => {

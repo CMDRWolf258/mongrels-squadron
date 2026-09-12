@@ -261,3 +261,39 @@ html{scroll-behavior:smooth}
 @media(max-width:1150px){.member-access-link span:last-child{display:none}.member-access-link{width:34px;justify-content:center;padding:0}.member-roadmap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.member-access-link{order:2}.menu-toggle{order:3}.nav-links{order:4}.member-access-layout{grid-template-columns:1fr}.member-login-panel,.member-profile-panel{position:static}.member-access-explainer{padding:24px}}
 @media(max-width:620px){.member-role-grid,.member-roadmap-grid{grid-template-columns:1fr}.member-login-panel,.member-profile-panel,.member-access-explainer{padding:21px}}
+
+
+/* v36 — auth handoff + responsive header stabilization */
+html,body{max-width:100%;overflow-x:hidden}
+
+/* Collapse the full navigation before it can crowd the brand/login controls. */
+@media(max-width:1200px){
+  .nav-wrap{gap:12px}
+  .nav-links{position:fixed;inset:79px 16px auto 16px;display:none;flex-direction:column;align-items:stretch;background:rgba(8,11,14,.98);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:13px 12px}
+  .menu-toggle{display:inline-flex}
+}
+
+/* Keep the authentication control understandable at narrower desktop widths. */
+@media(max-width:1150px){
+  .member-access-link span:last-child{display:inline}
+  .member-access-link{width:auto;max-width:190px;justify-content:center;padding:0 11px;overflow:hidden}
+  .member-access-link span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+
+/* Tablet header: no element is allowed to force the page wider than the viewport. */
+@media(max-width:900px){
+  .nav-wrap{gap:10px;min-width:0}
+  .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+  .brand-text{min-width:0}
+  .brand-text strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand-text span{display:none}
+  .member-access-link{flex:0 1 auto;max-width:165px;min-width:0}
+  .menu-toggle{flex:0 0 auto;margin-left:0}
+}
+
+@media(max-width:620px){
+  .member-access-link{max-width:122px;font-size:.58rem;padding:0 9px}
+  .brand-text strong{font-size:.92rem}
+}

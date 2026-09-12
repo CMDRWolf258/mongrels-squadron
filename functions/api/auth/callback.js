@@ -2,7 +2,6 @@ import {
   STATE_COOKIE,
   RETURN_COOKIE,
   SESSION_COOKIE,
-  accessLabel,
   clearCookie,
   createSession,
   exchangeDiscordCode,
@@ -32,16 +31,20 @@ export async function onRequestGet({ request, env }) {
     const user = await fetchDiscordUser(token.access_token);
     const accessInfo = await resolveAccess(env, token.access_token, user);
     const session = await createSession(env, user, accessInfo);
-    const target = new URL(returnTo, url.origin);
-    target.searchParams.set('login', accessInfo.access === 'no_access' ? 'no_access' : 'success');
-    target.searchParams.set('level', accessLabel(accessInfo.access));
 
-    const headers = new Headers({ Location: target.toString() });
+    // Two-step handoff: first commit the secure session cookie, then make a
+    // same-origin request that verifies the browser is actually sending it
+    // before the member page is loaded. This is more reliable on Safari/iPad.
+    const finish = new URL('/api/auth/complete', url.origin);
+    finish.searchParams.set('return', returnTo);
+    finish.searchParams.set('result', accessInfo.access === 'no_access' ? 'no_access' : 'success');
+
+    const headers = new Headers({ Location: finish.toString() });
     headers.append('Set-Cookie', sessionCookie(session));
     headers.append('Set-Cookie', clearCookie(STATE_COOKIE));
     headers.append('Set-Cookie', clearCookie(RETURN_COOKIE));
-    headers.set('Cache-Control', 'no-store');
-    return new Response(null, { status: 302, headers });
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return new Response(null, { status: 303, headers });
   } catch (error) {
     console.error('Mongrels OAuth callback failed', error);
     return redirectWithResult(returnTo, 'server_error');
@@ -55,6 +58,6 @@ function redirectWithResult(returnTo, result) {
   headers.append('Set-Cookie', clearCookie(STATE_COOKIE));
   headers.append('Set-Cookie', clearCookie(RETURN_COOKIE));
   headers.append('Set-Cookie', clearCookie(SESSION_COOKIE));
-  headers.set('Cache-Control', 'no-store');
-  return new Response(null, { status: 302, headers });
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return new Response(null, { status: 303, headers });
 }
