@@ -1,34 +1,14 @@
 {
-  "generatedAt": "2026-09-12T03:12:28Z",
-  "source": "EliteBGS",
+  "generatedAt": "2026-09-12T03:30:11Z",
+  "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
   "refreshInterval": "Every 2 hours",
   "successfulSystems": 0,
   "requestedSystems": 6,
   "errors": [
     {
-      "name": "Col 285 Sector OC-L c8-10",
-      "error": "The read operation timed out"
-    },
-    {
-      "name": "NGC 2546 Sector UZ-G d10-16",
-      "error": "The read operation timed out"
-    },
-    {
-      "name": "Diaba",
-      "error": "The read operation timed out"
-    },
-    {
-      "name": "Col 285 Sector FA-W b16-6",
-      "error": "The read operation timed out"
-    },
-    {
-      "name": "NGC 2546 Sector XG-T b46-1",
-      "error": "The read operation timed out"
-    },
-    {
-      "name": "Miwae",
-      "error": "The read operation timed out"
+      "name": "schema",
+      "error": "GraphQL error: Syntax Error: Unexpected \"}\"."
     }
   ],
   "systems": []
