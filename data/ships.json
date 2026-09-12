@@ -1,3 +1,37 @@
 {
-  "builds": []
+  "builds": [
+    {
+      "name": "Honey Badger",
+      "ship": "Imperial Cutter",
+      "commander": "CMDR Wolf258",
+      "role": "multi-role",
+      "description": "Designed to fight almost any opposition, survive an ambush, and complete a wide variety of missions for the faction. Honey Badger is built as one of the fleet's most formidable all-around forces.",
+      "image": "../assets/images/gallery/honeybadger-cutter.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/z5RbrJv",
+      "tags": ["Multi-role", "Combat", "Missions", "Survivability"]
+    },
+    {
+      "name": "Fire Storm",
+      "ship": "Anaconda",
+      "commander": "CMDR Wolf258",
+      "role": "combat",
+      "description": "A close-range brawler based on the popular Frag-Conda concept, with most of its firepower centered on frag cannons. Fire Storm has proven itself relentless in a wide variety of combat situations.",
+      "image": "../assets/images/gallery/firestorm-anaconda.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/zSDFlZg",
+      "tags": ["Combat", "PvE", "Frag Cannons", "Close Range"]
+    },
+    {
+      "name": "Nightshade",
+      "ship": "Alliance Challenger",
+      "commander": "CMDR Wolf258",
+      "role": "combat",
+      "description": "As sturdy as Alliance Challengers come. Nightshade can dish out heavy hits while taking punishment in return, making it one of the fleet's primary medium-class ships for combat engagements.",
+      "image": "../assets/images/gallery/nightshade-challenger.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/zbA0dbb",
+      "tags": ["Combat", "PvE", "Medium", "Durable"]
+    }
+  ]
 }
