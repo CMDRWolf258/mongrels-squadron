@@ -22,10 +22,26 @@
   const isWatch = system => Boolean(system.watch || system.alert || (Array.isArray(system.alerts) && system.alerts.length));
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
-  function progressBar(value) {
+  function targetStatus(system) {
+    const value = Number(system.influence);
+    const min = Number(system.targetMin);
+    const max = Number(system.targetMax);
+    if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return null;
+    if (value < min) return {key:'low', label:`Below target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
+    if (value > max) return {key:'high', label:`Above target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
+    return {key:'in', label:`In target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
+  }
+
+  function progressBar(value, system = null) {
     if (typeof value !== 'number') return '';
     const width = Math.max(0, Math.min(100, value));
-    return `<div class="inf-bar" aria-label="Influence ${value.toFixed(1)} percent"><span style="width:${width}%"></span></div>`;
+    let target = '';
+    if (system && Number.isFinite(Number(system.targetMin)) && Number.isFinite(Number(system.targetMax))) {
+      const min = Math.max(0, Math.min(100, Number(system.targetMin)));
+      const max = Math.max(min, Math.min(100, Number(system.targetMax)));
+      target = `<i class="inf-target-band" style="left:${min}%;width:${max-min}%" aria-hidden="true"></i>`;
+    }
+    return `<div class="inf-bar" aria-label="Influence ${value.toFixed(1)} percent">${target}<span style="width:${width}%"></span></div>`;
   }
 
   function renderSummary(lastUpdated) {
@@ -49,7 +65,8 @@
         <h3>${html(safe(system.name, 'Unnamed system'))}</h3>
         <div class="priority-influence-block">
           <div><span>Mongrel Influence</span><strong>${influence(system.influence)}</strong></div>
-          ${progressBar(system.influence)}
+          ${progressBar(system.influence, system)}
+          ${targetStatus(system) ? `<div class="target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</div>` : ''}
         </div>
         <div class="priority-metrics">
           <div><span>Control</span><strong>${html(safe(system.control))}</strong></div>
@@ -107,7 +124,7 @@
       <tr>
         <td><strong>${html(safe(system.name))}</strong>${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}</td>
         <td>${html(safe(system.control))}</td>
-        <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence)}</td>
+        <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${targetStatus(system) ? `<small class="table-target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</small>` : ''}</td>
         <td>${html(safe(system.state))}</td>
         <td>${isPriority(system) ? '<span class="priority-badge">Priority</span>' : isWatch(system) ? '<span class="watch-badge">Watch</span>' : '<span class="muted">Standard</span>'}</td>
         <td>${html(safe(system.objective))}</td>
