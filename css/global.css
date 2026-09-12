@@ -193,3 +193,8 @@ a{color:inherit}img{max-width:100%;display:block}button,input,textarea,select{fo
   text-decoration: none;
 }
 .featured-ship-link:hover { text-decoration: underline; }
+
+/* v28 — engineering level + multi-loadout ship cards */
+.ship-build-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:330px}
+.ship-build-pending{display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border:1px dashed var(--line);border-radius:7px;color:var(--muted);font-size:.65rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+@media(max-width:600px){.ship-build-actions{width:100%;max-width:none;justify-content:flex-start}.ship-build-actions .ship-build-link,.ship-build-pending{width:100%;justify-content:center;text-align:center}}
