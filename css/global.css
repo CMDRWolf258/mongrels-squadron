@@ -381,3 +381,55 @@ html,body{max-width:100%;overflow-x:clip}
   background:rgba(34,211,238,.14);
   border-color:rgba(34,211,238,.65);
 }
+
+
+/* v42 — consistent interactive controls and authored text formatting */
+/* Browser-native button colors vary across desktop browsers. Give every site button
+   an explicit foreground and appearance, then let variants override it. */
+button{color:inherit}
+.btn{
+  appearance:none;
+  -webkit-appearance:none;
+  color:var(--text);
+  cursor:pointer;
+}
+.btn-secondary{
+  color:var(--accent);
+  background:rgba(34,211,238,.075);
+  border-color:rgba(34,211,238,.34);
+  box-shadow:inset 0 0 0 1px rgba(34,211,238,.025);
+}
+.btn-secondary:hover,
+.btn-secondary:focus-visible{
+  color:#eaffff;
+  background:rgba(34,211,238,.14);
+  border-color:rgba(34,211,238,.65);
+}
+.btn:not(.btn-primary):not(.btn-secondary):not(.btn-ghost){
+  color:#eaf5f7;
+  background:#10161a;
+  border-color:var(--line);
+}
+.btn:not(.btn-primary):not(.btn-secondary):not(.btn-ghost):hover,
+.btn:not(.btn-primary):not(.btn-secondary):not(.btn-ghost):focus-visible{
+  color:#ffffff;
+  border-color:var(--line-accent);
+  background:#151d22;
+}
+
+/* Preserve intentional line breaks anywhere officers author multi-line order text. */
+[data-orders-briefing],
+[data-orders-officer-note-text],
+.private-order-item p{
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+/* Keep officer-editor actions readable in every desktop/mobile browser. */
+.orders-editor button.btn{
+  opacity:1;
+}
+.orders-editor button.btn:disabled{
+  opacity:.55;
+}
