@@ -14,21 +14,43 @@
   const safe = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const label = value => String(value || '').replace(/[-_]/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
 
+  function getBuildSites(build) {
+    const sites = [];
+    if (build.buildSite) sites.push(String(build.buildSite).toLowerCase());
+    (build.buildLinks || []).forEach(link => { if (link.site) sites.push(String(link.site).toLowerCase()); });
+    return [...new Set(sites)];
+  }
+
+  function renderBuildLinks(build) {
+    const links = Array.isArray(build.buildLinks) && build.buildLinks.length
+      ? build.buildLinks
+      : (build.buildUrl ? [{label:`Open ${String(build.buildSite || 'Build').toUpperCase()}`, site:build.buildSite, url:build.buildUrl}] : []);
+
+    if (!links.length) return '';
+    const actions = links.map(link => {
+      if (!link.url || link.status === 'coming-soon') {
+        return `<span class="ship-build-pending">${safe(link.label || 'Build')} · Coming Soon</span>`;
+      }
+      return `<a class="btn btn-ghost ship-build-link" href="${safe(link.url)}" target="_blank" rel="noopener">${safe(link.label || `Open ${String(link.site || 'Build').toUpperCase()}`)}</a>`;
+    }).join('');
+    return `<div class="ship-build-actions">${actions}</div>`;
+  }
+
   function render() {
     const q = (search?.value || '').trim().toLowerCase();
     const role = roleSelect?.value || 'all';
     const platform = platformSelect?.value || 'all';
 
     const filtered = builds.filter(b => {
-      const hay = [b.name,b.ship,b.commander,b.role,b.description,(b.tags||[]).join(' ')].join(' ').toLowerCase();
-      const site = String(b.buildSite || '').toLowerCase();
-      return (!q || hay.includes(q)) && (role === 'all' || b.role === role) && (platform === 'all' || site === platform);
+      const hay = [b.name,b.ship,b.commander,b.role,b.description,b.engineering,(b.tags||[]).join(' '),(b.buildLinks||[]).map(x=>x.label).join(' ')].join(' ').toLowerCase();
+      const sites = getBuildSites(b);
+      return (!q || hay.includes(q)) && (role === 'all' || b.role === role) && (platform === 'all' || sites.includes(platform));
     });
 
     grid.innerHTML = filtered.map(b => {
       const tags = (b.tags || []).map(x => `<span>${safe(x)}</span>`).join('');
       const image = b.image ? `<div class="ship-image"><img src="${safe(b.image)}" alt="${safe(b.name || b.ship)}"></div>` : `<div class="ship-image ship-image-placeholder"><span>${safe(b.ship || 'Ship')}</span></div>`;
-      const link = b.buildUrl ? `<a class="btn btn-ghost ship-build-link" href="${safe(b.buildUrl)}" target="_blank" rel="noopener">Open ${safe(String(b.buildSite || 'Build').toUpperCase())}</a>` : '';
+      const sites = getBuildSites(b).map(x => x.toUpperCase()).join(' · ') || '—';
       return `<article class="ship-card">
         ${image}
         <div class="ship-card-body">
@@ -36,10 +58,10 @@
           <p class="ship-builder">Submitted by <strong>${safe(b.commander || 'Mongrel CMDR')}</strong></p>
           ${b.description ? `<p class="ship-description">${safe(b.description)}</p>` : ''}
           <dl class="ship-meta">
-            <div><dt>Engineering</dt><dd>${safe(b.engineering || 'Not listed')}</dd></div>
-            <div><dt>Build Site</dt><dd>${safe(String(b.buildSite || '—').toUpperCase())}</dd></div>
+            <div><dt>Engineering Level</dt><dd>${safe(b.engineering || 'Not listed')}</dd></div>
+            <div><dt>Build Site</dt><dd>${safe(sites)}</dd></div>
           </dl>
-          <div class="ship-card-foot"><div class="ship-tags">${tags}</div>${link}</div>
+          <div class="ship-card-foot"><div class="ship-tags">${tags}</div>${renderBuildLinks(b)}</div>
         </div>
       </article>`;
     }).join('');
