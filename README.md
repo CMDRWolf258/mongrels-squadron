@@ -44,3 +44,11 @@ The large playbook no longer occupies the page by default.
 No new Cloudflare variables, secrets, KV namespaces, or bindings are required.
 
 Upload the complete package and let Cloudflare Pages redeploy. Existing v64 strategy data is automatically normalized to the v65 default-band structure when read; defaults are saved to KV the next time an Officer/Site Admin saves Private Strategy.
+
+
+## v66 — Mining Field Manual + Mission Control polish
+- Added a full Mining Field Manual covering laser, core, subsurface, asteroid surface deposits, selling/logistics, and Rhino surface mining.
+- Added current Rhino guidance: 72 t cargo, Planetary Mining Locations, scanner/refinery loop, up to six active rigs in current field demonstrations, 12-chunk maximum rig output after 4.4.1.1, and uncertainty labels for still-evolving mechanics.
+- Added surface-site scouting methodology with coordinates, rig count, terrain, clusters, repeatability, and logistics.
+- Expanded the shared Elite Knowledge Base and Glossary with mining/Rhino entries and enabled Ask the Mongrels retrieval/linking for mining questions.
+- Mission Control: pagination now returns to the All Systems section header, colonization-related Expansion tags below 67% no longer create an Expansion Risk warning, and the BGS playbook is nested under one Choose Your Task disclosure.

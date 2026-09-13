@@ -1,7 +1,7 @@
 {
-  "version": "63",
+  "version": "66",
   "reviewedAt": "2026-09-13",
-  "scope": "Engineering, ship-building and Background Simulation reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
+  "scope": "Engineering, ship-building, Background Simulation, asteroid mining, and Rhino surface-mining reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
   "entries": [
     {
       "id": "weapon-corrosive-shell",
@@ -3110,6 +3110,574 @@
       ],
       "reviewedAt": "2026-09-13",
       "stability": "community-reviewed"
+    },
+    {
+      "id": "mining-methods",
+      "category": "Mining",
+      "topic": "Mining Methods",
+      "keywords": [
+        "mining",
+        "laser mining",
+        "core mining",
+        "subsurface mining",
+        "surface mining",
+        "rhino"
+      ],
+      "ruleOfThumb": "Decide which mining loop you are running before outfitting. Laser, core/subsurface, and Rhino surface mining use different search tools and extraction modules.",
+      "details": [
+        "Laser mining removes bulk fragments from ordinary asteroids.",
+        "Core mining cracks motherlode asteroids with Seismic Charges and then removes exposed deposits with an Abrasion Blaster.",
+        "Subsurface mining uses Sub-surface Displacement Missiles on prospected deposits.",
+        "Rhino surface mining extracts planetary deposits with reusable automated mining rigs."
+      ],
+      "commonMistakes": [
+        "Building one ship for every mining method and carrying unnecessary modules that reduce cargo/collection capacity."
+      ],
+      "operations": "Choose the commodity and mining method first, then optimize the ship or Rhino loop around the slowest step.",
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        },
+        {
+          "name": "Elite Dangerous — Rhino SRV Update (Frontier/Steam)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable / Rhino evolving"
+    },
+    {
+      "id": "mining-prospector",
+      "category": "Mining",
+      "topic": "Prospector Limpet",
+      "keywords": [
+        "prospector",
+        "prospector limpet",
+        "a rated prospector",
+        "yield"
+      ],
+      "ruleOfThumb": "Use an A-rated Prospector Limpet Controller for asteroid laser mining and target the attached prospector before mining the rock.",
+      "details": [
+        "A prospector reports asteroid composition, remaining material, raw-material content, and advanced deposits/core information.",
+        "Prospector rating affects the fragment yield available from laser-mined asteroids; A-rated is the standard mining choice."
+      ],
+      "commonMistakes": [
+        "Laser mining unprospected rocks.",
+        "Using a lower-rated prospector to save a small amount of power or credits on a serious mining build."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-collectors",
+      "category": "Mining",
+      "topic": "Collector Limpets",
+      "keywords": [
+        "collector",
+        "collector limpet",
+        "limpets",
+        "target fragment"
+      ],
+      "ruleOfThumb": "Launch collectors with no collectible targeted for normal mining so they remain active for their full lifetime instead of making a single collection run.",
+      "details": [
+        "Collector count should be high enough that fragments are cleared while extraction continues.",
+        "Collection travel time depends heavily on ship position; mining close to the asteroid and keeping fragments beneath/near the cargo hatch can improve throughput."
+      ],
+      "commonMistakes": [
+        "Targeting a fragment while launching a collector, causing it to expire after that delivery.",
+        "Adding mining lasers without enough collectors to clear the extra fragments."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-refinery",
+      "category": "Mining",
+      "topic": "Refinery & Bins",
+      "keywords": [
+        "refinery",
+        "refinery bin",
+        "bins",
+        "mining refinery"
+      ],
+      "ruleOfThumb": "Size the refinery for how many different commodities you intend to keep; each bin tracks a commodity until enough fragment material becomes one tonne of cargo.",
+      "details": [
+        "Collected asteroid fragments enter refinery bins before becoming normal cargo.",
+        "A focused single-commodity miner can often use a smaller refinery than a miner keeping many by-products."
+      ],
+      "commonMistakes": [
+        "Assuming refinery size increases extraction speed by itself.",
+        "Letting unwanted low-value commodities clog bins when running a highly selective operation."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-hotspot",
+      "category": "Mining",
+      "topic": "Ring Hotspots",
+      "keywords": [
+        "hotspot",
+        "dss",
+        "detailed surface scanner",
+        "ring hotspot",
+        "platinum hotspot"
+      ],
+      "ruleOfThumb": "Use the Detailed Surface Scanner on a ring to reveal hotspots, then prospect individual asteroids; the hotspot improves probability, not certainty.",
+      "details": [
+        "Hotspots identify areas with increased occurrence/concentration of a named commodity or advanced-mining target.",
+        "A hotspot marker is a search-area tool, not proof that a particular asteroid is worth mining."
+      ],
+      "commonMistakes": [
+        "Assuming every asteroid in a Platinum hotspot contains useful Platinum.",
+        "Skipping prospectors because the hotspot has already named the commodity."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-pwa",
+      "category": "Mining",
+      "topic": "Pulse Wave Analyser",
+      "keywords": [
+        "pulse wave analyser",
+        "pulse wave analyzer",
+        "pwa",
+        "glowing asteroids",
+        "core mining"
+      ],
+      "ruleOfThumb": "Use the Pulse Wave Analyser to find candidate asteroids with advanced-mining features, then use a Prospector Limpet to identify the actual deposits/core.",
+      "details": [
+        "PWA highlights asteroids that may contain surface deposits, subsurface deposits, or a core.",
+        "The glow alone does not identify the exact commodity."
+      ],
+      "commonMistakes": [
+        "Treating every bright PWA return as a motherlode of the desired commodity."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-core",
+      "category": "Mining",
+      "topic": "Core Mining",
+      "keywords": [
+        "core mining",
+        "motherlode",
+        "seismic charge",
+        "fissure",
+        "abrasion blaster"
+      ],
+      "ruleOfThumb": "Prospect the motherlode, place Seismic Charges into fissures until the charge meter reaches the optimal zone, get clear for detonation, then abrade the exposed interior deposits.",
+      "details": [
+        "Fissures have strength ratings and Seismic Charges can be armed at different strengths.",
+        "You do not need to fill every fissure; the objective is the optimal charge range rather than maximum charges.",
+        "After detonation, interior deposits are removed with the Abrasion Blaster and collected normally."
+      ],
+      "commonMistakes": [
+        "Overcharging the asteroid beyond the optimal band.",
+        "Remaining too close when the detonation timer expires."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-subsurface",
+      "category": "Mining",
+      "topic": "Subsurface Mining",
+      "keywords": [
+        "subsurface",
+        "sub-surface",
+        "ssd",
+        "subsurface displacement missile",
+        "sub-surface displacement missile"
+      ],
+      "ruleOfThumb": "Prospect the asteroid, target the subsurface deposit, hold the Sub-surface Displacement Missile trigger, and release through the moving extraction window.",
+      "details": [
+        "Successful releases extract material from the deposit in repeated attempts until the deposit is exhausted."
+      ],
+      "commonMistakes": [
+        "Trying to use the missile without prospecting/targeting the deposit first."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-surface-deposit",
+      "category": "Mining",
+      "topic": "Asteroid Surface Deposits",
+      "keywords": [
+        "surface deposit",
+        "abrasion blaster",
+        "asteroid surface deposit"
+      ],
+      "ruleOfThumb": "Use the Abrasion Blaster on targeted exposed deposits after the asteroid has been prospected; collectors can then retrieve the freed material.",
+      "details": [
+        "Surface deposits can appear on advanced-mining asteroids and inside a cracked core."
+      ],
+      "commonMistakes": [
+        "Confusing asteroid surface deposits with the new Rhino planetary surface-mining system."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "mining-rhino",
+      "category": "Rhino Surface Mining",
+      "topic": "Rhino SRV",
+      "keywords": [
+        "rhino",
+        "rhino srv",
+        "72t",
+        "72 t",
+        "surface mining vehicle",
+        "planetary mining"
+      ],
+      "ruleOfThumb": "The Rhino is the dedicated planetary surface-mining SRV. Current released-game documentation lists a 72-tonne cargo capacity and integrated scanner, refinery, and mining-rig deployment system.",
+      "quickFacts": [
+        {
+          "label": "Cargo capacity",
+          "value": "72 t"
+        },
+        {
+          "label": "Crew",
+          "value": "Up to 3 Commanders"
+        },
+        {
+          "label": "Extraction",
+          "value": "Deployable mining rigs"
+        },
+        {
+          "label": "Finding deposits",
+          "value": "Planetary Mineral Scanner"
+        }
+      ],
+      "details": [
+        "Frontier introduced the Rhino and planetary surface mining in the 2 September 2026 update.",
+        "Its equipment includes a Planetary Mining Deposit Scanner, refinery, and Mining Rig Deployment Module.",
+        "The released surface-mining loop uses a Large Planetary Vehicle Hangar on compatible ships.",
+        "Early pre/post-release reports with smaller cargo figures are outdated; use 72 t for the current guide."
+      ],
+      "commonMistakes": [
+        "Repeating early 24-tonne cargo reports after the released/balanced specification changed.",
+        "Trying to use the normal landed SRV deployment workflow."
+      ],
+      "operations": "Use the Rhino as a mobile parallel-extraction platform: scan, place several rigs, scout the next deposit while they work, collect/refine, then transfer cargo back to the ship.",
+      "sources": [
+        {
+          "name": "Elite Dangerous — Rhino SRV Update (Frontier/Steam)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320"
+        },
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / reviewed"
+    },
+    {
+      "id": "mining-planetary-location",
+      "category": "Rhino Surface Mining",
+      "topic": "Planetary Mining Locations",
+      "keywords": [
+        "planetary mining location",
+        "surface mining location",
+        "dss surface mining",
+        "planet mining signal"
+      ],
+      "ruleOfThumb": "Map an eligible landable body with the Detailed Surface Scanner to reveal Planetary Mining Locations; drive the Rhino inside the chosen location before expecting its mineral scanner to find deposits.",
+      "details": [
+        "Not every landable body contains a Planetary Mining Location.",
+        "Frontier identifies site size, deposit density, deposit capacity, commodity weighting, regeneration, temperature effects, and microresource frequency as balance factors."
+      ],
+      "commonMistakes": [
+        "Assuming the Rhino scanner should find deposits anywhere on the body.",
+        "Treating two locations on the same body as identical because they list the same commodity."
+      ],
+      "sources": [
+        {
+          "name": "Elite Dangerous — Rhino SRV Update (Frontier/Steam)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320"
+        },
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / partially verified"
+    },
+    {
+      "id": "mining-rig",
+      "category": "Rhino Surface Mining",
+      "topic": "Rhino Mining Rigs",
+      "keywords": [
+        "mining rig",
+        "rigs",
+        "six rigs",
+        "6 rigs",
+        "deploy rig",
+        "rig placement"
+      ],
+      "ruleOfThumb": "Deploy rigs inside valid mineral-deposit footprints, then keep moving and operate several in parallel. Current demonstrations support up to six active rigs.",
+      "quickFacts": [
+        {
+          "label": "Maximum active rigs",
+          "value": "6 (current field demonstrations)"
+        },
+        {
+          "label": "Management",
+          "value": "Contacts panel"
+        },
+        {
+          "label": "Placement",
+          "value": "Valid deposit footprint + adequate spacing/terrain"
+        }
+      ],
+      "details": [
+        "Assign the Mining Rig Deployment Module to a fire group before use.",
+        "After deployment, rigs become manageable contacts.",
+        "Rigs need enough physical separation and suitable terrain; a large deposit can sometimes support multiple placements.",
+        "Recover reusable rigs before abandoning the instance."
+      ],
+      "commonMistakes": [
+        "Watching one rig work instead of deploying the remaining rigs.",
+        "Leaving active rigs behind when boarding/logging out/leaving the instance."
+      ],
+      "operations": "A six-rig-capable site is operationally attractive because all rigs can work at once; evaluate rig capacity alongside commodity value and deposit density.",
+      "sources": [
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / partially verified"
+    },
+    {
+      "id": "mining-rig-output",
+      "category": "Rhino Surface Mining",
+      "topic": "Mining Rig Output & Efficiency",
+      "keywords": [
+        "rig output",
+        "12 chunks",
+        "mining rig chunks",
+        "rig efficiency",
+        "temperature",
+        "deposit density"
+      ],
+      "ruleOfThumb": "Do not treat rig output as a fixed universal number. Update 4.4.1.1 raised maximum output to 12 chunks, while deposit density, efficiency, temperature, and other balance values affect real performance.",
+      "quickFacts": [
+        {
+          "label": "Maximum output",
+          "value": "12 chunks after 4.4.1.1"
+        },
+        {
+          "label": "Known factors",
+          "value": "Density, efficiency, temperature, deposit capacity"
+        }
+      ],
+      "details": [
+        "Frontier explicitly lists base mining time, maximum mined content, commodity percentage, microresource frequency, efficiency recharge, deposit-density efficiency, temperature effects, and rig stats as balance values.",
+        "Exact formulas are not public, so site-to-site observations should be recorded rather than converted into an invented universal rate."
+      ],
+      "commonMistakes": [
+        "Assuming every rig at every deposit produces the same amount in the same time.",
+        "Treating a single field test as the definitive efficiency formula."
+      ],
+      "sources": [
+        {
+          "name": "Elite Dangerous — Rhino SRV Update (Frontier/Steam)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320"
+        },
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / evolving"
+    },
+    {
+      "id": "mining-rhino-deployment",
+      "category": "Rhino Surface Mining",
+      "topic": "Deploying & Recovering the Rhino",
+      "keywords": [
+        "deploy rhino",
+        "recover rhino",
+        "hover ship",
+        "30m",
+        "large planetary vehicle hangar",
+        "vehicle hangar"
+      ],
+      "ruleOfThumb": "Use a compatible Large Planetary Vehicle Hangar and deploy/recover the Rhino from the ship while hovering over suitable terrain; current field demonstrations place the deployment window at roughly 30 m or less.",
+      "details": [
+        "The Rhino does not follow the ordinary Scarab/Scorpion landed-hatch deployment loop.",
+        "Hangar Mk I/Mk II compatibility depends on the carrier ship; use the compatible Large Planetary Vehicle Hangar for that hull.",
+        "For recovery, call/position the ship and use the marked recovery area beneath it."
+      ],
+      "commonMistakes": [
+        "Assuming every ship that can carry a normal SRV can carry the Rhino.",
+        "Searching for a landed-ship SRV deployment prompt."
+      ],
+      "sources": [
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / partially verified"
+    },
+    {
+      "id": "mining-rhino-refinery",
+      "category": "Rhino Surface Mining",
+      "topic": "Rhino Refinery & Cargo Transfer",
+      "keywords": [
+        "rhino refinery",
+        "rhino cargo",
+        "transfer cargo",
+        "surface mining refinery"
+      ],
+      "ruleOfThumb": "Collected rig output is refined aboard the Rhino, then the resulting commodity cargo is transferred to the carrier ship as part of the normal mining cycle.",
+      "details": [
+        "Watch the Rhino's 72-tonne cargo capacity during long multi-rig runs.",
+        "Microresources are separate from tonnes of refined commodity cargo.",
+        "Secure wanted cargo and recover rigs before ending the operation."
+      ],
+      "commonMistakes": [
+        "Treating the Rhino's cargo capacity as the ship's full mining capacity rather than an intermediate buffer."
+      ],
+      "sources": [
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        },
+        {
+          "name": "Elite Dangerous — Rhino SRV Update (Frontier/Steam)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "new / reviewed"
+    },
+    {
+      "id": "mining-site-scouting",
+      "category": "Rhino Surface Mining",
+      "topic": "Surface Mining Site Scouting",
+      "keywords": [
+        "scout mining site",
+        "site scouting",
+        "coordinates",
+        "rig count",
+        "preferred site",
+        "surface mining scouting"
+      ],
+      "ruleOfThumb": "Record body/location, exact coordinates, commodity, usable rig count, terrain, nearby deposits, observed output, and logistics. Commodity alone is not enough to identify the best repeat site.",
+      "details": [
+        "Exact coordinates make a tested deposit cluster repeatable.",
+        "Rig count is a strong practical metric because more simultaneous rigs can increase throughput.",
+        "Flat/open terrain reduces placement and ship-recovery friction.",
+        "Nearby deposits can make a cluster better than a single isolated high-value deposit."
+      ],
+      "commonMistakes": [
+        "Calling a site 'best' after finding the commodity once without testing rig capacity or repeatability."
+      ],
+      "operations": "Maintain one preferred site per commodity plus secondary options so market conditions, regeneration, or patch changes do not leave the squad with one brittle route.",
+      "sources": [
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining"
+        },
+        {
+          "name": "Elite Dangerous Field Manual — Surface Mining with the Rhino",
+          "url": "https://edfieldmanual.com/wiki/Surface_Mining_with_the_Rhino"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "field doctrine"
+    },
+    {
+      "id": "mining-selling",
+      "category": "Mining",
+      "topic": "Selling Mined Commodities",
+      "keywords": [
+        "sell mining",
+        "mining price",
+        "demand",
+        "bulk tax",
+        "market demand",
+        "carrier unload"
+      ],
+      "ruleOfThumb": "Evaluate price together with demand, data age, pad size, and travel time. The highest advertised price is not always the highest-value route for your actual load.",
+      "details": [
+        "Community market tools depend on commander-reported data and can go stale.",
+        "Large loads can receive worse effective pricing when local demand is too small relative to the cargo being sold.",
+        "Fleet carriers can separate extraction from market travel by buffering squad cargo near the source."
+      ],
+      "commonMistakes": [
+        "Moving a carrier based on an old price without checking timestamp/demand.",
+        "Ignoring landing-pad restrictions at the buyer."
+      ],
+      "operations": "Before a bulk unload, verify the current market, demand, station pad size, and how many trips/transfer ships are required.",
+      "sources": [
+        {
+          "name": "INARA — Community Mining Guide",
+          "url": "https://inara.cz/elite/squadron-document/7746/2315/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable with market variability"
     }
   ]
 }

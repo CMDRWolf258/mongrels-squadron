@@ -1,7 +1,13 @@
 {
-  "version": "63",
+  "version": "66",
   "reviewedAt": "2026-09-13",
   "entries": [
+    {
+      "term": "Abrasion Blaster",
+      "expanded": "Mining hardpoint",
+      "definition": "Mining weapon used to knock targeted surface deposits free from asteroids and the exposed interior of cracked cores.",
+      "category": "Mining"
+    },
     {
       "term": "AFMU",
       "expanded": "Auto Field-Maintenance Unit",
@@ -93,6 +99,12 @@
       "category": "BGS"
     },
     {
+      "term": "Core Mining",
+      "expanded": "Deep-core asteroid mining",
+      "definition": "Mining method that identifies motherlode asteroids, places Seismic Charges in fissures, detonates the core, and abrades exposed deposits.",
+      "category": "Mining"
+    },
+    {
       "term": "CZ",
       "expanded": "Conflict Zone",
       "definition": "Combat instance associated with a war or civil war.",
@@ -103,6 +115,12 @@
       "expanded": "Power Distributor",
       "definition": "Common shorthand for the Power Distributor and its SYS/ENG/WEP capacitors.",
       "category": "Engineering"
+    },
+    {
+      "term": "DSS",
+      "expanded": "Detailed Surface Scanner",
+      "definition": "Ship module used to map bodies and rings; reveals ring hotspots and, on eligible landable bodies, Planetary Mining Locations.",
+      "category": "Mining / Exploration"
     },
     {
       "term": "EDSY",
@@ -129,6 +147,12 @@
       "category": "BGS"
     },
     {
+      "term": "Fissure",
+      "expanded": "Core asteroid fissure",
+      "definition": "Targetable crack on a motherlode asteroid used to place Seismic Charges during core mining.",
+      "category": "Mining"
+    },
+    {
       "term": "FSD",
       "expanded": "Frame Shift Drive",
       "definition": "Core module used for supercruise and hyperspace jumps.",
@@ -151,6 +175,12 @@
       "expanded": "Hyperspace jump to another star system",
       "definition": "Often contrasted with low waking back into supercruise.",
       "category": "Travel / Combat"
+    },
+    {
+      "term": "Hotspot",
+      "expanded": "Ring mining hotspot",
+      "definition": "DSS-revealed ring region with increased occurrence/concentration of a named mining commodity or target type.",
+      "category": "Mining"
     },
     {
       "term": "HRP",
@@ -207,6 +237,18 @@
       "category": "BGS"
     },
     {
+      "term": "Mining Rig",
+      "expanded": "Rhino automated extractor",
+      "definition": "Reusable automated extractor deployed by the Rhino over a valid planetary mining deposit footprint.",
+      "category": "Mining / Rhino"
+    },
+    {
+      "term": "Motherlode",
+      "expanded": "Core-bearing asteroid",
+      "definition": "Asteroid containing a crackable core and fissures for Seismic Charges.",
+      "category": "Mining"
+    },
+    {
       "term": "MRP",
       "expanded": "Module Reinforcement Package",
       "definition": "Optional internal that absorbs a share of module damage after shields fall.",
@@ -243,6 +285,18 @@
       "category": "Combat"
     },
     {
+      "term": "Planetary Mineral Scanner",
+      "expanded": "Rhino deposit scanner",
+      "definition": "Rhino system used within Planetary Mining Locations to reveal mineable deposits and placement areas.",
+      "category": "Mining / Rhino"
+    },
+    {
+      "term": "Planetary Mining Location",
+      "expanded": "Surface-mining POI",
+      "definition": "DSS-revealed location on an eligible landable body containing deposits intended for Rhino surface mining.",
+      "category": "Mining / Rhino"
+    },
+    {
       "term": "PMF",
       "expanded": "Player Minor Faction",
       "definition": "A minor faction associated with a player group; mechanically it participates in the BGS like other minor factions.",
@@ -255,10 +309,28 @@
       "category": "General"
     },
     {
+      "term": "Prospector",
+      "expanded": "Prospector Limpet",
+      "definition": "Limpet used to identify asteroid composition, advanced deposits/core, and remaining material; A-rated prospectors are standard for laser yield.",
+      "category": "Mining"
+    },
+    {
+      "term": "PWA",
+      "expanded": "Pulse Wave Analyser",
+      "definition": "Utility scanner that highlights candidate asteroids with advanced-mining features; a Prospector Limpet is still needed to identify exact contents.",
+      "category": "Mining"
+    },
+    {
       "term": "Recovery",
       "expanded": "State Phase",
       "definition": "Cooldown period after some states during which the same state may not immediately retrigger.",
       "category": "BGS"
+    },
+    {
+      "term": "Refinery Bin",
+      "expanded": "Mining refinery slot",
+      "definition": "One refinery processing bin that accumulates fragment material for a commodity until it becomes a tonne of cargo.",
+      "category": "Mining"
     },
     {
       "term": "Retreat",
@@ -271,6 +343,12 @@
       "expanded": "Reverse-flight combat tactic",
       "definition": "Maintaining distance while flying backward and keeping weapons on an approaching target; especially discussed in PvP.",
       "category": "PvP"
+    },
+    {
+      "term": "Rhino",
+      "expanded": "Vodel Rhino SRV",
+      "definition": "Heavy surface-mining SRV with mineral scanner, onboard refinery, deployable rigs, multi-crew support, and a current 72-tonne cargo capacity.",
+      "category": "Mining / Rhino"
     },
     {
       "term": "Saturation",
@@ -291,6 +369,12 @@
       "category": "Travel"
     },
     {
+      "term": "Seismic Charge Launcher",
+      "expanded": "Core-mining hardpoint",
+      "definition": "Mining weapon used to place timed charges into asteroid fissures and crack a motherlode core.",
+      "category": "Mining"
+    },
+    {
       "term": "Shield Tank",
       "expanded": "Defense strategy centered on maintaining a large/effective shield",
       "definition": "Usually supported by boosters, resistances, SCBs, or regeneration depending on build.",
@@ -309,10 +393,28 @@
       "category": "Surface"
     },
     {
+      "term": "SSD",
+      "expanded": "Subsurface Deposit / Sub-surface Displacement",
+      "definition": "Common mining shorthand for subsurface deposits or the Sub-surface Displacement Missile used to extract them.",
+      "category": "Mining"
+    },
+    {
       "term": "State Bucket",
       "expanded": "BGS State Category",
       "definition": "A practical way to group simultaneous faction pressures such as economy, security, conflict, expansion/retreat, and event states.",
       "category": "BGS"
+    },
+    {
+      "term": "Sub-surface Displacement Missile",
+      "expanded": "Mining hardpoint",
+      "definition": "Weapon used to drill/extract prospected subsurface asteroid deposits through a timing minigame.",
+      "category": "Mining"
+    },
+    {
+      "term": "Surface Deposit",
+      "expanded": "Asteroid mining deposit",
+      "definition": "Targetable deposit attached to an asteroid surface or exposed after a core detonation; normally removed with an Abrasion Blaster.",
+      "category": "Mining"
     },
     {
       "term": "SYS / ENG / WEP",

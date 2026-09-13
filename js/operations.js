@@ -495,8 +495,14 @@
     currentPage = 1;
     renderTable();
   });
-  prevPageEl?.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; renderTable(); tableBody?.closest('.systems-table-wrap')?.scrollIntoView({ behavior:'smooth', block:'start' }); } });
-  nextPageEl?.addEventListener('click', () => { currentPage += 1; renderTable(); tableBody?.closest('.systems-table-wrap')?.scrollIntoView({ behavior:'smooth', block:'start' }); });
+  const scrollAllSystemsTop = () => {
+    const anchor = document.querySelector('[data-all-systems-top]');
+    if (!anchor) return;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    anchor.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
+  prevPageEl?.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; renderTable(); scrollAllSystemsTop(); } });
+  nextPageEl?.addEventListener('click', () => { currentPage += 1; renderTable(); scrollAllSystemsTop(); });
 
   async function load() {
     setAccess('gate');

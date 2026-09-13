@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#050607">
-  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=64" sizes="32x32" type="image/png">
-  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=64" sizes="16x16" type="image/png">
-  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=64">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=66" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
   <title>Mission Control | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=65">
+  <link rel="stylesheet" href="../css/global.css?v=66">
 </head>
 <body>
 <header class="site-header">
@@ -162,22 +162,27 @@
           <div><p class="eyebrow">Members Only · Quick Reference</p><h2>BGS Operational Playbook</h2></div>
           <p>The public Field Manual explains the mechanics. This private section answers the squad-level question: <strong>“What should I actually do today?”</strong></p>
         </div>
-        <p class="member-playbook-hint">Open only the section you need. Daily workload benchmarks and strategy recipes stay collapsed by default so Mission Control remains compact.</p>
-        <div class="member-playbook-accordion">
-          <details class="member-playbook-disclosure">
-            <summary><span><strong>General Positive Daily Levers</strong><small>Mission INF, bounties, exploration data, and profitable trade benchmarks</small></span><b aria-hidden="true">+</b></summary>
-            <div class="member-playbook-disclosure-body">
-              <div class="member-playbook-note" id="memberPlaybookNote">Loading operational benchmarks…</div>
-              <div class="guide-table-wrap member-benchmark-wrap">
-                <table class="guide-table member-benchmark-table">
-                  <thead><tr><th>Positive lever</th><th>Small / quiet</th><th>Medium</th><th>Large / contested</th><th>Measure</th></tr></thead>
-                  <tbody id="memberBenchmarks"><tr><td colspan="5">Loading secure playbook…</td></tr></tbody>
-                </table>
-              </div>
+        <p class="member-playbook-hint">Keep the playbook out of the way until you need it. Open <strong>Choose Your Task</strong>, then select only the operation you are running.</p>
+        <details class="member-playbook-disclosure member-playbook-master">
+          <summary><span><strong>Choose Your Task</strong><small>Daily levers, influence movement, conflicts, expansion and retreat</small></span><b aria-hidden="true">+</b></summary>
+          <div class="member-playbook-disclosure-body member-playbook-master-body">
+            <div class="member-playbook-accordion">
+              <details class="member-playbook-disclosure">
+                <summary><span><strong>General Positive Daily Levers</strong><small>Mission INF, bounties, exploration data, and profitable trade benchmarks</small></span><b aria-hidden="true">+</b></summary>
+                <div class="member-playbook-disclosure-body">
+                  <div class="member-playbook-note" id="memberPlaybookNote">Loading operational benchmarks…</div>
+                  <div class="guide-table-wrap member-benchmark-wrap">
+                    <table class="guide-table member-benchmark-table">
+                      <thead><tr><th>Positive lever</th><th>Small / quiet</th><th>Medium</th><th>Large / contested</th><th>Measure</th></tr></thead>
+                      <tbody id="memberBenchmarks"><tr><td colspan="5">Loading secure playbook…</td></tr></tbody>
+                    </table>
+                  </div>
+                </div>
+              </details>
+              <div id="memberRecipes" class="member-recipe-accordion" aria-live="polite"></div>
             </div>
-          </details>
-          <div id="memberRecipes" class="member-recipe-accordion" aria-live="polite"></div>
-        </div>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -223,7 +228,7 @@
       </div>
     </section>
 
-    <section id="all-systems" class="section all-systems-section">
+    <section id="all-systems" class="section all-systems-section" data-all-systems-top>
       <div class="container">
         <div class="section-heading">
           <div><p class="eyebrow">Live Faction Footprint</p><h2>All Systems</h2></div>
@@ -292,9 +297,9 @@
 </main>
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=65"></script>
-<script src="../js/operations.js?v=65"></script>
-<script src="../js/daily-orders.js?v=65"></script>
-<script src="../js/mongrel-assistant.js?v=65"></script>
+<script src="../js/site.js?v=66"></script>
+<script src="../js/operations.js?v=66"></script>
+<script src="../js/daily-orders.js?v=66"></script>
+<script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
