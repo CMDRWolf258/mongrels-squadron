@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
-  <link rel="icon" href="../assets/images/branding/favicon-32x32.png" sizes="32x32" type="image/png">
-  <link rel="icon" href="../assets/images/branding/favicon-16x16.png" sizes="16x16" type="image/png">
-  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=51" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=51" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=51">
   <title>PvP | The Mongrels</title>
   <meta name="description" content="Mongrel PvP training, organized combat, and member-only in-game bounty board.">
-  <link rel="stylesheet" href="../css/global.css?v=50">
+  <link rel="stylesheet" href="../css/global.css?v=51">
 </head>
 <body>
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/" aria-current="page">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -40,7 +40,10 @@
     </div>
   </section>
 
-  <section class="section pvp-events-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Events & Challenges</p><h2>Combat Calendar</h2></div><p>Scheduled fight nights, tournaments, training sessions, and squad combat challenges can live here as the calendar grows.</p></div><div class="pvp-event-placeholder"><div><span class="tag">Coming Soon</span><h3>No combat events posted yet.</h3><p>When the squad schedules a PvP night or tournament, it can be featured here with date, UTC time, system, format, and participation notes.</p></div><div class="pvp-event-fields"><span>Date & UTC time</span><span>System / location</span><span>Format</span><span>Rules</span></div></div></div></section>
+  <section class="section pvp-events-section" id="combat-calendar"><div class="container"><div class="section-heading"><div><p class="eyebrow">Events & Challenges</p><h2>Combat Calendar</h2></div><p>PvP events are powered by the same Projects & Events board, so an event only needs to be posted once.</p></div>
+    <article class="project-access-card" data-pvp-events-signed-out><p class="eyebrow">Members Only</p><h3>Sign in to view the Combat Calendar</h3><p>Upcoming training nights, tournaments, organized fights, wing PvP, and Open Play patrols are available to authenticated Mongrels.</p><a class="btn btn-primary" href="/api/auth/login?return=%2Fpvp%2F%23combat-calendar">Sign in with Discord</a></article>
+    <div data-pvp-events-board hidden><div class="pvp-calendar-toolbar"><div><strong>Upcoming PvP Events</strong><span>Created in Projects & Events · shown here automatically</span></div><a class="btn btn-primary" href="../projects/?create=event&amp;category=PvP&amp;eventType=Training" data-pvp-event-create hidden>Create PvP Event</a></div><div class="pvp-calendar-grid" data-pvp-event-grid></div><div class="data-empty-state" data-pvp-event-empty hidden><span class="data-empty-icon">◇</span><div><strong>No PvP events scheduled.</strong><p>Officers can create a PvP event through Projects & Events and it will appear here automatically.</p></div></div></div>
+  </div></section>
 
   <section class="section pvp-stats-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Combat Records</p><h2>PvP Statistics</h2></div><p>Integration with the squadmate-maintained combat statistics site is intentionally on hold. This section remains reserved so we can connect it later without redesigning the PvP hub.</p></div></div></section>
 
@@ -64,5 +67,5 @@
 </main>
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=50"></script><script src="../js/auth-ui.js?v=50"></script><script src="../js/pvp.js?v=50"></script>
+<script src="../js/site.js?v=51"></script><script src="../js/auth-ui.js?v=51"></script><script src="../js/pvp.js?v=51"></script>
 </body></html>

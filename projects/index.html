@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png">
+  <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=51" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=51" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=51">
   <title>Projects & Events | The Mongrels</title>
   <meta name="description" content="Private Mongrel project board for squad initiatives, member help requests, and upcoming events.">
-  <link rel="stylesheet" href="../css/global.css?v=50">
+  <link rel="stylesheet" href="../css/global.css?v=51">
 </head>
 <body>
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -63,15 +63,17 @@
         <label><span>Status</span><select data-project-status><option value="planning">Planning</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="complete">Complete</option></select></label>
         <label><span>Progress</span><input type="number" min="0" max="100" step="1" value="0" data-project-progress></label>
         <label><span data-project-date-label>Deadline / Event date</span><input type="date" data-project-deadline></label>
+        <label data-project-time-wrap hidden><span>UTC Time</span><input type="time" data-project-time><small>Displayed as UTC.</small></label>
+        <label data-project-event-type-wrap hidden><span>Event Type</span><select data-project-event-type><option value="Training">Training</option><option value="Organized Fight">Organized Fight</option><option value="Tournament">Tournament</option><option value="Wing PvP">Wing PvP</option><option value="Open Play Patrol">Open Play Patrol</option><option value="Other">Other</option></select></label>
         <label data-project-official-wrap hidden><span>Project Type</span><select data-project-official><option value="false">Member Project</option><option value="true">Official Squadron Project</option></select></label>
         <label class="project-editor-wide"><span>Description</span><textarea rows="4" maxlength="1600" required data-project-description placeholder="What are you working on and why?"></textarea></label>
         <label class="project-editor-wide"><span>Help Requested</span><textarea rows="3" maxlength="1200" data-project-help placeholder="What kind of help do you need from other members?"></textarea></label>
         <label class="project-editor-wide"><span>Goal / Target</span><input type="text" maxlength="220" data-project-target placeholder="Optional quantity, milestone, or completion target"></label>
       </div>
-      <div class="project-editor-actions"><span data-project-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-project-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Project</button></div></div>
+      <div class="project-editor-actions"><span data-project-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-project-delete hidden>Delete</button><button class="btn btn-primary" type="submit" data-project-submit>Save Project</button></div></div>
     </form>
   </section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=50"></script><script src="../js/auth-ui.js?v=50"></script><script src="../js/projects.js?v=50"></script>
+<script src="../js/site.js?v=51"></script><script src="../js/auth-ui.js?v=51"></script><script src="../js/projects.js?v=51"></script>
 </body></html>

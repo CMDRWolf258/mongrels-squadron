@@ -1,29 +1,26 @@
-# Mongrels Squadron Site — v50
+# Mongrels Squadron Site v51
 
-This batch adds the secure PvP bounty board and enlarges the Mongrels browser-tab icon.
-
-## New PvP functionality
-- Member-only in-game bounty board.
-- Members can create, edit, and delete their own bounty posts.
-- Officers and Site Admin can moderate any bounty.
-- Filters: Active, Claimed, Complete, My Posts, All.
-- Fields include Target CMDR, reward, optional system/location, status, expiration, contract terms, and proof required.
-- System names include copy-to-clipboard controls.
-- Member Portal now previews active bounty contracts.
-- The external squadmate PvP statistics integration remains intentionally on hold.
+## Major additions
+- Trader's Outpost member posting system with owner-only editing for Members and Officer/Admin moderation.
+- Strategic hauling and profit routes remain visually separated.
+- Trade cards include freshness, expiration, system copy buttons, owner attribution, pad size, distance, quantity, and optional profit figures.
+- Member Portal now previews active trade opportunities.
+- PvP Combat Calendar now reads PvP events directly from Projects & Events.
+- Officers/Site Admin can launch a prefilled PvP Event form from the PvP page.
+- Events now support UTC time and PvP event type (Training, Organized Fight, Tournament, Wing PvP, Open Play Patrol, Other).
+- Member Portal bounty rewards are more prominent.
+- Favicon crop has slightly more top breathing room.
 
 ## Cloudflare setup required
 Create a KV namespace, for example:
 
-`mongrels-bounties`
+`mongrels-trades`
 
-Then in **mongrels-squadron → Settings → Bindings**, add:
+Then add it to the `mongrels-squadron` Pages project as a KV namespace binding:
 
-- Type: KV namespace
-- Variable name: `BOUNTIES`
-- Namespace: `mongrels-bounties`
+- Variable name: `TRADES`
+- Namespace: `mongrels-trades`
 
-Do not manually add KV pairs. The website writes them automatically.
+Do not manually add KV pairs; the site creates them.
 
-## Favicon
-The browser-tab icon was regenerated with a tighter crop so the Mongrels crest appears larger at favicon size. Browsers cache favicons aggressively, so an old icon may remain temporarily after deployment.
+Existing PROJECTS, BOUNTIES, CARRIERS, and DAILY_ORDERS bindings remain unchanged.

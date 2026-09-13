@@ -123,9 +123,11 @@
         ? `<div class="project-target"><span>Goal / Target</span><strong>${safe(item.target)}</strong></div>`
         : '';
 
+      const eventClock = item.kind === 'event' && item.eventTime ? ` · ${safe(item.eventTime)} UTC` : '';
       const dateCallout = item.deadline
-        ? `<div class="project-date-callout ${item.kind === 'event' ? 'event-date' : ''}"><span>${item.kind === 'event' ? 'Event Date' : 'Target Date'}</span><strong>${safe(formatDate(item.deadline))}</strong></div>`
+        ? `<div class="project-date-callout ${item.kind === 'event' ? 'event-date' : ''}"><span>${item.kind === 'event' ? 'Event Date' : 'Target Date'}</span><strong>${safe(formatDate(item.deadline))}${eventClock}</strong></div>`
         : '';
+      const eventType = item.kind === 'event' && item.eventType ? `<div class="project-event-type"><span>Event Type</span><strong>${safe(item.eventType)}</strong></div>` : '';
 
       card.innerHTML = `
         <div class="project-card-top">
@@ -138,6 +140,7 @@
         <p class="eyebrow">${safe(item.category || 'Project')}</p>
         <h3>${safe(item.title)}</h3>
         ${dateCallout}
+        ${eventType}
         ${system}
         <p class="project-description">${safe(item.description)}</p>
         ${help}
@@ -157,6 +160,10 @@
     if (dateLabel) dateLabel.textContent = isEvent ? 'Event date' : 'Target / deadline date';
     $('[data-project-progress]').closest('label').hidden = isEvent;
     $('[data-project-target]').closest('label').hidden = isEvent;
+    $('[data-project-time-wrap]').hidden = !isEvent;
+    $('[data-project-event-type-wrap]').hidden = !isEvent;
+    if (!editing) $('[data-project-form-title]').textContent = isEvent ? 'New Event' : 'New Project';
+    const submit = $('[data-project-submit]'); if (submit) submit.textContent = isEvent ? 'Save Event' : 'Save Project';
   }
 
   function openEditor(item = null) {
@@ -173,6 +180,8 @@
     $('[data-project-status]').value = item?.status || 'active';
     $('[data-project-progress]').value = item?.progress ?? 0;
     $('[data-project-deadline]').value = item?.deadline || '';
+    $('[data-project-time]').value = item?.eventTime || '';
+    $('[data-project-event-type]').value = item?.eventType || 'Training';
     $('[data-project-description]').value = item?.description || '';
     $('[data-project-help]').value = item?.helpRequested || '';
     $('[data-project-target]').value = item?.target || '';
@@ -208,6 +217,8 @@
       status: $('[data-project-status]').value,
       progress: Number($('[data-project-progress]').value) || 0,
       deadline: $('[data-project-deadline]').value,
+      eventTime: $('[data-project-time]').value,
+      eventType: $('[data-project-event-type]').value,
       official: $('[data-project-official]').value === 'true',
       description: $('[data-project-description]').value,
       helpRequested: $('[data-project-help]').value,
@@ -263,6 +274,21 @@
     signedOut.hidden = true;
     board.hidden = false;
     render();
+    const params = new URLSearchParams(location.search);
+    if (!window.__projectViewHandled && params.get('view') === 'events') {
+      window.__projectViewHandled = true;
+      filter = 'events';
+      document.querySelectorAll('[data-project-filter]').forEach(x => x.classList.toggle('active', x.dataset.projectFilter === 'events'));
+      render();
+    }
+    if (!window.__projectPrefillHandled && params.get('create') === 'event' && ['officer','site_admin'].includes(session.access)) {
+      window.__projectPrefillHandled = true;
+      openEditor();
+      $('[data-project-kind]').value = 'event';
+      $('[data-project-category]').value = params.get('category') || 'PvP';
+      $('[data-project-event-type]').value = params.get('eventType') || 'Training';
+      updateEditorLabels();
+    }
   }
 
   document.querySelectorAll('[data-project-filter]').forEach(button => button.addEventListener('click', () => {

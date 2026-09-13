@@ -92,3 +92,22 @@
     else {signedOut.hidden=false;board.hidden=true;}
   }).catch(()=>{});
 })();
+
+(() => {
+  const signedOut = document.querySelector('[data-pvp-events-signed-out]');
+  const board = document.querySelector('[data-pvp-events-board]');
+  const grid = document.querySelector('[data-pvp-event-grid]');
+  if (!signedOut || !board || !grid) return;
+  const empty = document.querySelector('[data-pvp-event-empty]');
+  const create = document.querySelector('[data-pvp-event-create]');
+  const safe = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fetchJson = async url => { const response=await fetch(`${url}${url.includes('?')?'&':'?'}_=${Date.now()}`,{credentials:'same-origin',cache:'no-store'}); return {response,payload:await response.json().catch(()=>({}))}; };
+  const formatDate = value => { if(!value)return 'Date TBD'; const d=new Date(`${value}T12:00:00`); return Number.isNaN(d.getTime())?value:d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'}); };
+  async function copySystem(system,button){try{await navigator.clipboard.writeText(system);const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1000);}catch{}}
+  function render(items){
+    const events=items.filter(i=>i.kind==='event'&&i.category==='PvP'&&i.status!=='complete').sort((a,b)=>Date.parse(`${a.deadline||'9999-12-31'}T${a.eventTime||'12:00'}:00`)-Date.parse(`${b.deadline||'9999-12-31'}T${b.eventTime||'12:00'}:00`));
+    grid.replaceChildren(); empty.hidden=events.length>0;
+    events.forEach(item=>{const card=document.createElement('article');card.className='pvp-calendar-card';const system=item.system?`<div class="pvp-calendar-system"><span>${safe(item.system)}</span><button class="copy-system-btn" type="button" data-copy-system aria-label="Copy system name">⧉</button></div>`:'';card.innerHTML=`<div class="pvp-calendar-date"><span>${safe(formatDate(item.deadline))}</span><strong>${item.eventTime?safe(item.eventTime)+' UTC':'Time TBD'}</strong></div><div class="pvp-calendar-body"><div class="pvp-calendar-badges"><span>${safe(item.eventType||'PvP Event')}</span>${item.official?'<span class="official">Official Squadron Event</span>':''}</div><h3>${safe(item.title)}</h3>${system}<p>${safe(item.description||'')}</p><div class="pvp-calendar-meta"><span>Organizer <strong>${safe(item.ownerName)}</strong></span><a href="../projects/?view=events">View in Projects & Events</a></div></div>`;card.querySelector('[data-copy-system]')?.addEventListener('click',e=>copySystem(item.system,e.currentTarget));grid.appendChild(card);});
+  }
+  Promise.all([fetchJson('/api/auth/session'),fetchJson('/api/projects')]).then(([sessionResult,projectResult])=>{if(!sessionResult.response.ok||!sessionResult.payload.authenticated||!projectResult.response.ok){signedOut.hidden=false;board.hidden=true;return;} signedOut.hidden=true;board.hidden=false;create.hidden=!projectResult.payload.canModerate;render(Array.isArray(projectResult.payload.items)?projectResult.payload.items:[]);}).catch(()=>{});
+})();

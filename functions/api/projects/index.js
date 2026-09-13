@@ -54,6 +54,7 @@ function normalizeItem(value, fixed, session, existing={}) {
     title:clean(src.title,existing.title||'Untitled Project',120), system:clean(src.system,'',120), category:clean(src.category,'Other',80),
     description:clean(src.description,'',1600), helpRequested:clean(src.helpRequested,'',1200), target:clean(src.target,'',220),
     progress:clampNumber(src.progress,0,100,0), status:normalizeStatus(src.status), deadline:clean(src.deadline,'',40),
+    eventTime:clean(src.eventTime,'',20), eventType:clean(src.eventType,'',80),
     createdAt:fixed.createdAt, updatedAt:fixed.updatedAt, updatedBy:fixed.updatedBy,
   };
 }
