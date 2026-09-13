@@ -1,13 +1,21 @@
 {
-  "version": 1,
+  "version": 2,
   "reviewedAt": "2026-09-13",
-  "scope": "Curated Elite Dangerous reference notes for the Mongrel Assistant. These are summaries, not copied articles. Use live research when a question depends on a recent patch or a topic not covered here.",
+  "scope": "Curated Elite Dangerous reference notes for the Mongrel Assistant and public Guides. These are original summaries of game mechanics and build practice, not copied articles. Prefer this library for covered stable topics; use live research when a question depends on a recent patch or a topic not covered here.",
   "entries": [
     {
       "id": "weapon-corrosive-shell",
       "category": "Weapon Engineering",
       "topic": "Corrosive Shell",
-      "keywords": ["corrosive", "corrosive shell", "multicannon", "multi-cannon", "fragment cannon", "armor hardness", "armour hardness"],
+      "keywords": [
+        "corrosive",
+        "corrosive shell",
+        "multicannon",
+        "multi-cannon",
+        "fragment cannon",
+        "armor hardness",
+        "armour hardness"
+      ],
       "ruleOfThumb": "Usually fit Corrosive Shell to only one suitable weapon on a ship. The debuff does not stack, so duplicating it wastes experimental slots and applies the ammo-capacity penalty to multiple guns.",
       "details": [
         "Corrosive Shell is available on Multi-cannons and Fragment Cannons.",
@@ -23,8 +31,14 @@
       "pve": "Excellent general-purpose hull debuff. One Corrosive weapon is normally enough for an entire PvE loadout.",
       "pvp": "Still valuable, but experimental selection depends heavily on the complete loadout and opponent. One Corrosive source is normally sufficient because the debuff does not stack.",
       "sources": [
-        {"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"},
-        {"name": "Elite Dangerous Wiki — Corrosive Shell", "url": "https://elite-dangerous.fandom.com/wiki/Corrosive_Shell"}
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        },
+        {
+          "name": "Elite Dangerous Wiki — Corrosive Shell",
+          "url": "https://elite-dangerous.fandom.com/wiki/Corrosive_Shell"
+        }
       ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
@@ -33,7 +47,15 @@
       "id": "weapon-incendiary-rounds",
       "category": "Weapon Engineering",
       "topic": "Incendiary Rounds",
-      "keywords": ["incendiary", "incendiary rounds", "multicannon", "multi-cannon", "fragment cannon", "thermal damage", "shield damage"],
+      "keywords": [
+        "incendiary",
+        "incendiary rounds",
+        "multicannon",
+        "multi-cannon",
+        "fragment cannon",
+        "thermal damage",
+        "shield damage"
+      ],
       "ruleOfThumb": "Incendiary Rounds are useful when you want projectile weapons to contribute more thermal damage against shields, but they increase weapon heat substantially and slightly reduce rate of fire.",
       "details": [
         "Available on Multi-cannons and Fragment Cannons.",
@@ -47,7 +69,12 @@
       ],
       "pve": "A practical way for kinetic-heavy builds to improve shield pressure without adding lasers, provided the ship can tolerate the heat.",
       "pvp": "Can be useful for shield pressure, but heat, distributor demand, engagement range, and the rest of the weapon package matter more than a simple one-effect rule.",
-      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     },
@@ -55,17 +82,31 @@
       "id": "weapon-auto-loader",
       "category": "Weapon Engineering",
       "topic": "Auto Loader",
-      "keywords": ["auto loader", "autoload", "reload", "multicannon", "multi-cannon", "cannon"],
+      "keywords": [
+        "auto loader",
+        "autoload",
+        "reload",
+        "multicannon",
+        "multi-cannon",
+        "cannon"
+      ],
       "ruleOfThumb": "Auto Loader is a convenience and sustained-DPS experimental: compatible weapons reload continuously while firing, reducing normal reload downtime.",
       "details": [
         "Available on Cannons and Multi-cannons.",
         "The experimental automatically reloads the weapon while it is firing.",
         "It is a strong general-purpose choice when no utility experimental is needed on that hardpoint."
       ],
-      "commonMistakes": ["Choosing Auto Loader on every gun before allocating useful utility effects such as Corrosive."],
+      "commonMistakes": [
+        "Choosing Auto Loader on every gun before allocating useful utility effects such as Corrosive."
+      ],
       "pve": "Very convenient for sustained engagements and bounty/CZ work.",
       "pvp": "Useful but often competes with experimentals that provide stronger tactical effects. Evaluate the whole hardpoint package.",
-      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     },
@@ -73,17 +114,29 @@
       "id": "weapon-oversized",
       "category": "Weapon Engineering",
       "topic": "Oversized",
-      "keywords": ["oversized", "weapon damage", "power draw", "experimental"],
+      "keywords": [
+        "oversized",
+        "weapon damage",
+        "power draw",
+        "experimental"
+      ],
       "ruleOfThumb": "Oversized is a simple raw-damage option when you do not need a more valuable utility experimental and can afford the extra power draw.",
       "details": [
         "INARA lists +3% damage and +5% power draw.",
         "It is available on many weapon families, including lasers, Multi-cannons, Plasma Accelerators, Fragment Cannons, Cannons and Rail Guns.",
         "Because the gain is modest, tactical experimentals can be more valuable on hardpoints that can use them."
       ],
-      "commonMistakes": ["Treating Oversized as automatically superior to utility effects because it directly increases damage."],
+      "commonMistakes": [
+        "Treating Oversized as automatically superior to utility effects because it directly increases damage."
+      ],
       "pve": "A straightforward filler experimental once essential utility effects are covered.",
       "pvp": "Usually evaluated against tactical experimentals; raw damage alone may not be the most valuable contribution from a hardpoint.",
-      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     },
@@ -91,17 +144,32 @@
       "id": "weapon-feedback-cascade",
       "category": "Weapon Engineering",
       "topic": "Feedback Cascade",
-      "keywords": ["feedback cascade", "feedback rail", "railgun", "rail gun", "shield cell", "scb", "shield cell bank"],
+      "keywords": [
+        "feedback cascade",
+        "feedback rail",
+        "railgun",
+        "rail gun",
+        "shield cell",
+        "scb",
+        "shield cell bank"
+      ],
       "ruleOfThumb": "Feedback Cascade is a Rail Gun utility effect for interrupting/reducing Shield Cell Bank recovery. It is most valuable when you expect opponents to bank shields.",
       "details": [
         "Available on Rail Guns.",
         "Hits delivered while the target is deploying a Shield Cell Bank disrupt the cell and reduce shield restoration.",
         "INARA lists -20% weapon damage and -40% thermal load as tradeoffs."
       ],
-      "commonMistakes": ["Adding Feedback Cascade to a PvE build where shield-cell denial is not important enough to justify the damage tradeoff."],
+      "commonMistakes": [
+        "Adding Feedback Cascade to a PvE build where shield-cell denial is not important enough to justify the damage tradeoff."
+      ],
       "pve": "Usually niche because most NPC encounters do not demand dedicated cell-bank denial.",
       "pvp": "A major tactical tool against shield-cell-heavy opponents; often worth dedicating at least one rail when SCB denial is part of the build plan.",
-      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     },
@@ -109,17 +177,31 @@
       "id": "weapon-drag-munitions",
       "category": "Weapon Engineering",
       "topic": "Drag Munitions",
-      "keywords": ["drag munitions", "drag", "fragment cannon", "seeker missile", "speed reduced", "thruster"],
+      "keywords": [
+        "drag munitions",
+        "drag",
+        "fragment cannon",
+        "seeker missile",
+        "speed reduced",
+        "thruster"
+      ],
       "ruleOfThumb": "Drag Munitions are a control effect rather than a raw-DPS choice. Use them when slowing a target improves your ability to stay on it or land the rest of your weapon package.",
       "details": [
         "Available on Fragment Cannons and Seeker Missiles.",
         "The effect reduces target speed by interfering with engine thrust behavior.",
         "Its value is tactical: it can make evasive targets easier to pressure or keep in an engagement envelope."
       ],
-      "commonMistakes": ["Judging Drag only by the damage of the weapon carrying it instead of the benefit it creates for the entire build."],
+      "commonMistakes": [
+        "Judging Drag only by the damage of the weapon carrying it instead of the benefit it creates for the entire build."
+      ],
       "pve": "Situational; many PvE targets do not require dedicated speed control.",
       "pvp": "Often much more valuable because controlling a fast opponent can improve time-on-target for the rest of the loadout.",
-      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     },
@@ -127,7 +209,19 @@
       "id": "defense-shield-generator",
       "category": "Defensive Engineering",
       "topic": "Shield Generator Engineering",
-      "keywords": ["shield generator", "bi-weave", "bi weave", "prismatic", "reinforced shield", "thermal resistant shield", "fast charge", "hi-cap", "hi cap", "lo-draw", "lo draw"],
+      "keywords": [
+        "shield generator",
+        "bi-weave",
+        "bi weave",
+        "prismatic",
+        "reinforced shield",
+        "thermal resistant shield",
+        "fast charge",
+        "hi-cap",
+        "hi cap",
+        "lo-draw",
+        "lo draw"
+      ],
       "ruleOfThumb": "Choose shield engineering around the shield's job: Reinforced emphasizes raw strength, Thermal Resistant repairs the common thermal-resistance weakness, and Fast Charge is particularly relevant to regeneration-focused shields such as Bi-Weaves.",
       "details": [
         "Reinforced increases optimal strength and all resistances but reduces broken-shield regeneration and increases distributor draw.",
@@ -143,8 +237,14 @@
       "pve": "Bi-Weaves commonly prioritize regeneration and balanced resistance for repeated fights; high raw strength can still be appropriate for burst-damage or emergency survivability roles.",
       "pvp": "Generator choice is build-specific. Raw strength, cell banks, resistance profile, feedback rails, regeneration, power and distributor load all matter.",
       "sources": [
-        {"name": "INARA — Shield Generator Reinforced", "url": "https://inara.cz/elite/blueprint/21/"},
-        {"name": "INARA — Shield Generator Thermal Resistant", "url": "https://inara.cz/elite/blueprint/22/"}
+        {
+          "name": "INARA — Shield Generator Reinforced",
+          "url": "https://inara.cz/elite/blueprint/21/"
+        },
+        {
+          "name": "INARA — Shield Generator Thermal Resistant",
+          "url": "https://inara.cz/elite/blueprint/22/"
+        }
       ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
@@ -153,7 +253,15 @@
       "id": "defense-shield-boosters",
       "category": "Defensive Engineering",
       "topic": "Shield Booster Engineering",
-      "keywords": ["shield booster", "heavy duty booster", "resistance augmented", "super capacitors", "super capacitor", "shield resistance", "shield resistances"],
+      "keywords": [
+        "shield booster",
+        "heavy duty booster",
+        "resistance augmented",
+        "super capacitors",
+        "super capacitor",
+        "shield resistance",
+        "shield resistances"
+      ],
       "ruleOfThumb": "A mixed booster package is usually stronger than blindly engineering every booster the same way. Heavy Duty raises raw shield contribution; Resistance Augmented improves all resistances. Balance the final shield profile rather than chasing one stat.",
       "details": [
         "Heavy Duty increases shield boost and module integrity at the cost of mass and power draw.",
@@ -169,9 +277,18 @@
       "pve": "Balanced resistance plus enough raw strength tends to work well for sustained combat; exact mix depends on generator type and expected damage.",
       "pvp": "Optimize against the complete build and expected damage profile. Raw MJ, resistance, cell banks and regeneration all interact, so use EDSY/Coriolis-style final statistics rather than a fixed universal ratio.",
       "sources": [
-        {"name": "INARA — Heavy Duty Shield Booster", "url": "https://inara.cz/elite/blueprint/8/"},
-        {"name": "INARA — Resistance Augmented Shield Booster", "url": "https://inara.cz/elite/blueprint/10/"},
-        {"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}
+        {
+          "name": "INARA — Heavy Duty Shield Booster",
+          "url": "https://inara.cz/elite/blueprint/8/"
+        },
+        {
+          "name": "INARA — Resistance Augmented Shield Booster",
+          "url": "https://inara.cz/elite/blueprint/10/"
+        },
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
       ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
@@ -180,7 +297,16 @@
       "id": "defense-hull-reinforcement",
       "category": "Defensive Engineering",
       "topic": "Hull Reinforcement Packages",
-      "keywords": ["hull reinforcement", "hrp", "heavy duty hull", "deep plating", "thermal resistant hull", "kinetic resistant hull", "armor", "armour"],
+      "keywords": [
+        "hull reinforcement",
+        "hrp",
+        "heavy duty hull",
+        "deep plating",
+        "thermal resistant hull",
+        "kinetic resistant hull",
+        "armor",
+        "armour"
+      ],
       "ruleOfThumb": "Heavy Duty HRPs are the general raw-integrity choice; Deep Plating increases reinforcement further but trims resistances. Resistance-specific packages can be used to repair a weak hull profile when the complete build benefits from it.",
       "details": [
         "INARA lists Grade 5 Heavy Duty HRP at +72% hull reinforcement, +15% all resistances and +40% mass.",
@@ -194,7 +320,759 @@
       ],
       "pve": "Heavy Duty plus sensible resistance balancing is a dependable baseline for hull tanks and hybrid builds.",
       "pvp": "Module protection, resistance profile, absolute hull and opponent weapon types all matter. Evaluate the entire defensive package, not HRPs in isolation.",
-      "sources": [{"name": "INARA — Hull Reinforcement Heavy Duty", "url": "https://inara.cz/elite/blueprint/25/"}],
+      "sources": [
+        {
+          "name": "INARA — Hull Reinforcement Heavy Duty",
+          "url": "https://inara.cz/elite/blueprint/25/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-thermal-vent",
+      "category": "Weapon Engineering",
+      "topic": "Thermal Vent",
+      "keywords": [
+        "thermal vent",
+        "beam laser",
+        "beam",
+        "heat management",
+        "cooling laser"
+      ],
+      "ruleOfThumb": "Thermal Vent turns a Beam Laser into an active heat-management tool: when the beam is striking a target, the ship can shed heat rapidly; when it misses, the weapon still produces heat normally.",
+      "details": [
+        "Available to Beam Lasers as an experimental effect.",
+        "It is especially useful on hot-running combat ships, Shield Cell Bank builds, and loadouts that need a way to cool while staying offensive.",
+        "Its value depends on maintaining contact; a beam that is off target does not provide the cooling benefit."
+      ],
+      "commonMistakes": [
+        "Assuming Thermal Vent cools the ship whenever the trigger is held, even while the beam is missing.",
+        "Adding more cooling than the build actually needs while giving up experimentals that would improve damage or utility elsewhere."
+      ],
+      "pve": "Very useful for sustained PvE combat and SCB-heavy ships because NPCs often allow long beam contact.",
+      "pvp": "Commonly valuable on hot PvP builds, but effectiveness depends on time-on-target and whether the beam can remain connected during maneuvering.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-emissive-munitions",
+      "category": "Weapon Engineering",
+      "topic": "Emissive Munitions",
+      "keywords": [
+        "emissive",
+        "emissive munitions",
+        "target signature",
+        "target lock",
+        "multicannon",
+        "pulse laser"
+      ],
+      "ruleOfThumb": "Use Emissive when maintaining a strong target signature matters more than raw damage. It helps the whole wing keep a target easier to detect and track.",
+      "details": [
+        "Available on selected weapon families including Multi-cannons and Pulse Lasers.",
+        "The effect increases the target's signature for a short time after a hit.",
+        "Because the utility benefits everyone shooting the target, one reliable source is usually enough."
+      ],
+      "commonMistakes": [
+        "Putting Emissive on several weapons without a reason.",
+        "Judging it only by the carrier weapon's DPS instead of the tracking benefit it provides to the full loadout or wing."
+      ],
+      "pve": "Situational but useful against colder or hard-to-track targets.",
+      "pvp": "A valuable utility effect when opponents use low-heat tactics or when reliable target tracking is important.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-scramble-spectrum",
+      "category": "Weapon Engineering",
+      "topic": "Scramble Spectrum",
+      "keywords": [
+        "scramble spectrum",
+        "scramble",
+        "pulse laser",
+        "module malfunction",
+        "malfunction"
+      ],
+      "ruleOfThumb": "Scramble Spectrum is a utility effect for causing temporary random module malfunctions after successful hits once shields are down; treat it as disruption, not primary damage.",
+      "details": [
+        "Available on Pulse Lasers.",
+        "Its payoff begins when hits can reach the target's hull and internal systems.",
+        "It pairs best with builds that can maintain frequent hits rather than relying on occasional single shots."
+      ],
+      "commonMistakes": [
+        "Expecting it to disable a specific module on demand.",
+        "Using it as if it were a substitute for deliberate module targeting."
+      ],
+      "pve": "Fun and occasionally useful against NPC hulls, but not normally required for efficient PvE clearing.",
+      "pvp": "Can add disruptive pressure after shields fall, though it is less predictable than targeted module damage.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-phasing-sequence",
+      "category": "Weapon Engineering",
+      "topic": "Phasing Sequence",
+      "keywords": [
+        "phasing sequence",
+        "phasing",
+        "shield bleed",
+        "bleed through",
+        "lasers",
+        "plasma"
+      ],
+      "ruleOfThumb": "Phasing Sequence trades some normal weapon performance for a chance to bleed a portion of damage through an active shield to the hull. It is pressure over time, not an instant shield bypass.",
+      "details": [
+        "Available on several energy weapons and Plasma Accelerators.",
+        "The effect is most relevant against very large shield pools where incidental hull damage can accumulate during a long shield phase.",
+        "It should be considered in the context of the full weapon package because the experimental has opportunity cost."
+      ],
+      "commonMistakes": [
+        "Assuming all damage bypasses shields.",
+        "Choosing it automatically on every energy weapon simply because an opponent has strong shields."
+      ],
+      "pve": "Usually niche; most PvE targets are killed faster by conventional shield-then-hull damage.",
+      "pvp": "More relevant against large engineered shield pools, especially in attritional fights, but build-specific.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-plasma-slug",
+      "category": "Weapon Engineering",
+      "topic": "Plasma Slug",
+      "keywords": [
+        "plasma slug",
+        "fuel ammo",
+        "railgun ammo",
+        "rail gun ammo",
+        "plasma accelerator ammo"
+      ],
+      "ruleOfThumb": "Plasma Slug lets compatible weapons consume ship fuel instead of normal ammunition. It is primarily an endurance tool and can enable long sessions without rearming.",
+      "details": [
+        "Available on Rail Guns and Plasma Accelerators.",
+        "Because firing consumes fuel, total endurance depends on the ship's fuel tank and whether fuel can be replenished.",
+        "The effect is popular on long-range or self-sufficient ships that value ammunition independence."
+      ],
+      "commonMistakes": [
+        "Forgetting that weapon fire now consumes jump fuel.",
+        "Using it on a ship with a small fuel reserve without watching the fuel gauge."
+      ],
+      "pve": "Excellent for exploration-capable combat ships and long PvE sessions where rearming is inconvenient.",
+      "pvp": "Can be useful for endurance, but PvP builds often prioritize tactical experimentals instead.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-super-penetrator",
+      "category": "Weapon Engineering",
+      "topic": "Super Penetrator",
+      "keywords": [
+        "super penetrator",
+        "railgun",
+        "rail gun",
+        "module damage",
+        "module sniping",
+        "penetration"
+      ],
+      "ruleOfThumb": "Super Penetrator is for deliberate internal-module damage. A well-placed rail shot can damage modules along its path, making aim and target geometry more important than raw hull DPS.",
+      "details": [
+        "Available on Rail Guns.",
+        "It rewards subsystem targeting and shot placement.",
+        "It is often paired with another rail carrying Feedback Cascade so a rail package can provide both SCB denial and module pressure."
+      ],
+      "commonMistakes": [
+        "Firing only at center mass and expecting maximum value.",
+        "Confusing module-penetration utility with a pure damage increase."
+      ],
+      "pve": "Useful for disabling drives, power plants, or other modules on tougher NPCs.",
+      "pvp": "A common tactical choice because module damage can change a fight even before hull reaches zero.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-dispersal-field",
+      "category": "Weapon Engineering",
+      "topic": "Dispersal Field",
+      "keywords": [
+        "dispersal field",
+        "gimbal disruption",
+        "turret disruption",
+        "plasma accelerator",
+        "cannon"
+      ],
+      "ruleOfThumb": "Dispersal Field is a defensive-offensive utility: successful hits temporarily degrade enemy gimbal and turret tracking, reducing the effectiveness of assisted weapons.",
+      "details": [
+        "Available on Plasma Accelerators and Cannons.",
+        "The benefit is strongest when the opponent relies on gimballed or turreted weapons.",
+        "It has little value against fixed weapons, so it is matchup-dependent."
+      ],
+      "commonMistakes": [
+        "Treating it as universal damage mitigation.",
+        "Forgetting that fixed weapons are not meaningfully countered by the tracking disruption."
+      ],
+      "pve": "Situational; many NPC ships use assisted weapons, but faster kills may still be more valuable.",
+      "pvp": "Potentially strong against gimbal-heavy opponents; much less useful against fixed-weapon pilots.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-target-lock-breaker",
+      "category": "Weapon Engineering",
+      "topic": "Target Lock Breaker",
+      "keywords": [
+        "target lock breaker",
+        "target lock",
+        "plasma accelerator",
+        "plasma",
+        "lock break"
+      ],
+      "ruleOfThumb": "Target Lock Breaker is a control effect on Plasma Accelerators that forces the struck target to reacquire its target lock. Use it to disrupt tracking, subtargeting, and weapon flow rather than for raw DPS.",
+      "details": [
+        "Available on Plasma Accelerators.",
+        "Its value is timing: a hit during an opponent's attack sequence can interrupt target-dependent weapons and subsystem targeting.",
+        "It does not prevent the opponent from immediately attempting to reacquire lock."
+      ],
+      "commonMistakes": [
+        "Expecting the target to remain unlocked for a long period.",
+        "Using it without considering whether the opponent relies heavily on target lock."
+      ],
+      "pve": "Usually unnecessary for routine PvE.",
+      "pvp": "A classic tactical PvP effect, especially useful when combined with pressure that makes reacquisition costly.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-screening-shell",
+      "category": "Weapon Engineering",
+      "topic": "Screening Shell",
+      "keywords": [
+        "screening shell",
+        "fragment cannon",
+        "frag cannon",
+        "reload",
+        "projectile defense"
+      ],
+      "ruleOfThumb": "Screening Shell is a strong Fragment Cannon experimental when reload cycle and sustained burst matter. Its sharply reduced reload time can be more valuable than a small paper-DPS bonus.",
+      "details": [
+        "Available on Fragment Cannons.",
+        "It reduces reload time and improves effectiveness against incoming munitions.",
+        "On frag-heavy builds, reduced downtime can noticeably improve sustained pressure."
+      ],
+      "commonMistakes": [
+        "Comparing only per-shot damage and ignoring reload cycle.",
+        "Assuming every frag should use the same experimental instead of reserving one hardpoint for utility such as Corrosive or Drag."
+      ],
+      "pve": "Excellent on close-range frag PvE builds that spend a lot of time cycling magazines.",
+      "pvp": "Very useful on PvP frag builds where burst windows and reload timing matter.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-thermal-conduit",
+      "category": "Weapon Engineering",
+      "topic": "Thermal Conduit",
+      "keywords": [
+        "thermal conduit",
+        "heat damage",
+        "hot ship",
+        "plasma accelerator",
+        "beam laser"
+      ],
+      "ruleOfThumb": "Thermal Conduit rewards deliberately running hot by increasing weapon damage while the ship is above its heat threshold. It belongs on builds designed around heat control, not as a free damage upgrade.",
+      "details": [
+        "Available on selected thermal weapons including Plasma Accelerators.",
+        "The experimental becomes useful only when the ship is intentionally operating hot enough to trigger it.",
+        "A Thermal Conduit build must balance extra damage against module heat damage, visibility, and pilot workload."
+      ],
+      "commonMistakes": [
+        "Installing it on a cool-running ship and never reaching the activation condition.",
+        "Overheating recklessly because the effect sounds like unlimited free damage."
+      ],
+      "pve": "Usually specialized; conventional damage effects are simpler for routine PvE.",
+      "pvp": "A powerful high-skill option on builds designed to manage heat deliberately.",
+      "sources": [
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-fsd-increased-range",
+      "category": "Core Module Engineering",
+      "topic": "Frame Shift Drive — Increased Range",
+      "keywords": [
+        "fsd",
+        "frame shift drive",
+        "increased range",
+        "jump range",
+        "mass manager",
+        "deep charge",
+        "sco drive",
+        "fsd sco"
+      ],
+      "ruleOfThumb": "For most travel, exploration, hauling, and general-purpose ships, Increased Range is the default FSD blueprint. Mass Manager is usually the general-purpose experimental on larger drives; Deep Charge can make sense on some small drives but uses more fuel per jump.",
+      "details": [
+        "Increased Range raises FSD optimal mass, directly improving jump capability, while adding mass/power draw and reducing integrity.",
+        "Mass Manager increases the drive's optimal mass further with a modest integrity tradeoff.",
+        "Deep Charge increases maximum fuel used per jump, which can improve range in some small-drive cases but increases fuel consumption.",
+        "Always evaluate the exact ship in EDSY or another build calculator because experimental choice can vary by FSD size and mass."
+      ],
+      "commonMistakes": [
+        "Assuming Deep Charge is always better because its name sounds stronger.",
+        "Ignoring fuel use and route endurance when chasing the last fraction of a light-year."
+      ],
+      "pve": "Increased Range is broadly useful on nearly every non-combat-specialized ship and many combat ships too.",
+      "pvp": "Combat ships sometimes choose range for logistics, while specialized PvP builds may accept less jump range for other priorities.",
+      "sources": [
+        {
+          "name": "INARA — FSD Increased Range Blueprint",
+          "url": "https://inara.cz/elite/blueprint/2/"
+        },
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-thrusters-dirty",
+      "category": "Core Module Engineering",
+      "topic": "Thrusters — Dirty Drives",
+      "keywords": [
+        "thrusters",
+        "dirty drives",
+        "dirty drive",
+        "drag drives",
+        "drive distributors",
+        "speed",
+        "boost speed",
+        "maneuverability"
+      ],
+      "ruleOfThumb": "Dirty Drives are the normal performance choice for combat and fast utility ships. Pair with Drag Drives in most cases; Drive Distributors can be better on some mass-limited small ships, so check the finished build.",
+      "details": [
+        "Dirty tuning increases thrust performance at the cost of heat, power draw, integrity, and optimal mass.",
+        "Drag Drives add more thrust performance and more heat.",
+        "Drive Distributors improve optimal mass instead, which can outperform Drag Drives on some ships whose fitted mass sits awkwardly against thruster limits."
+      ],
+      "commonMistakes": [
+        "Automatically fitting Drag Drives without checking ship mass and thruster class.",
+        "Ignoring the heat and power penalties on already-stressed builds."
+      ],
+      "pve": "The standard choice for combat, racing, courier work, and any ship where speed and handling matter.",
+      "pvp": "Extremely common in PvP because speed, boost behavior, and maneuverability directly affect survival and time-on-target.",
+      "sources": [
+        {
+          "name": "INARA — Dirty Thrusters Blueprint",
+          "url": "https://inara.cz/elite/blueprint/4/"
+        },
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-power-plant-armoured",
+      "category": "Core Module Engineering",
+      "topic": "Power Plant — Armoured",
+      "keywords": [
+        "power plant",
+        "armoured power plant",
+        "armored power plant",
+        "thermal spread",
+        "monstered",
+        "integrity",
+        "heat efficiency"
+      ],
+      "ruleOfThumb": "Use Armoured when the ship can meet its power budget without heavy Overcharging. It gives more power, much better plant integrity, and better heat efficiency at the cost of mass.",
+      "details": [
+        "Armoured improves power generation, integrity, and heat efficiency while increasing mass.",
+        "Thermal Spread is a common experimental when heat is the concern.",
+        "Monstered can be used when a little more output is required, but it gives up some of the thermal/survivability advantage."
+      ],
+      "commonMistakes": [
+        "Overcharging by habit even when the ship already has enough power.",
+        "Ignoring power priorities; better module priority management can sometimes avoid a hotter power plant blueprint."
+      ],
+      "pve": "An excellent default for combat and multi-role ships that can satisfy power needs with it.",
+      "pvp": "Frequently preferred in PvP because power-plant integrity and heat efficiency are valuable under pressure.",
+      "sources": [
+        {
+          "name": "INARA — Armoured Power Plant Blueprint",
+          "url": "https://inara.cz/elite/blueprint/12/"
+        },
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-power-plant-overcharged",
+      "category": "Core Module Engineering",
+      "topic": "Power Plant — Overcharged",
+      "keywords": [
+        "power plant",
+        "overcharged power plant",
+        "overcharge",
+        "power generation",
+        "monstered"
+      ],
+      "ruleOfThumb": "Overcharged is the solution when the build genuinely needs more power than Armoured can supply. Use the lowest grade that closes the power budget rather than automatically pushing to Grade 5.",
+      "details": [
+        "Overcharged raises power generation but reduces integrity and worsens heat efficiency.",
+        "The higher the grade, the larger the thermal and integrity tradeoff.",
+        "A common build-design method is to engineer every other module first, set sensible power priorities, then use only as much Overcharge as the final power budget requires."
+      ],
+      "commonMistakes": [
+        "Going straight to Grade 5 when Grade 1–3 would be sufficient.",
+        "Fixing poor power-priority management with extra Overcharge."
+      ],
+      "pve": "Useful on module-dense combat and utility ships that cannot meet demand otherwise.",
+      "pvp": "Sometimes unavoidable on high-power PvP builds, but the heat and integrity penalties are meaningful.",
+      "sources": [
+        {
+          "name": "INARA — Overcharged Power Plant Blueprint",
+          "url": "https://inara.cz/elite/blueprint/13/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-power-plant-low-emissions",
+      "category": "Core Module Engineering",
+      "topic": "Power Plant — Low Emissions",
+      "keywords": [
+        "low emissions",
+        "power plant",
+        "cold build",
+        "stealth",
+        "heat efficiency",
+        "thermal"
+      ],
+      "ruleOfThumb": "Low Emissions is for ships where running cold matters more than maximum power density. It dramatically improves heat efficiency but sacrifices output and adds mass.",
+      "details": [
+        "The blueprint reduces heat generation at the cost of power generation and mass.",
+        "It is especially attractive to exploration, smuggling, silent-running, low-signature, and heat-sensitive builds.",
+        "The lower output means the rest of the build must be designed around the available power rather than added afterward."
+      ],
+      "commonMistakes": [
+        "Trying to force Low Emissions onto a power-hungry build that then requires major compromises elsewhere.",
+        "Assuming a cold power plant alone makes a ship stealthy under all circumstances."
+      ],
+      "pve": "Excellent for exploration and specialized cool-running ships.",
+      "pvp": "Niche but important for builds that deliberately manage signature and heat.",
+      "sources": [
+        {
+          "name": "INARA — Low Emissions Power Plant Blueprint",
+          "url": "https://inara.cz/elite/blueprint/14/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-distributor-charge-enhanced",
+      "category": "Core Module Engineering",
+      "topic": "Power Distributor — Charge Enhanced",
+      "keywords": [
+        "power distributor",
+        "charge enhanced",
+        "super conduits",
+        "pips",
+        "distributor",
+        "weapon recharge",
+        "engine recharge",
+        "system recharge"
+      ],
+      "ruleOfThumb": "Charge Enhanced with Super Conduits is the general-purpose distributor choice for most engineered combat and multi-role ships because faster recharge in all three capacitors usually matters more than maximum bank size.",
+      "details": [
+        "Charge Enhanced increases recharge rates while sacrificing some total capacity.",
+        "Super Conduits further improves recharge with another capacity tradeoff.",
+        "Engine Focused or Weapon Focused can be better when a ship has a very specific capacitor bottleneck, but they trade heavily against the other banks."
+      ],
+      "commonMistakes": [
+        "Choosing a focused distributor without checking what happens to the other two capacitor banks.",
+        "Looking only at capacity and ignoring how quickly a capacitor recovers during an actual fight."
+      ],
+      "pve": "A strong default for nearly every combat ship and many miners/multi-role vessels.",
+      "pvp": "One of the most common PvP distributor setups because pip management and recharge rate are central to combat.",
+      "sources": [
+        {
+          "name": "INARA — Charge Enhanced Distributor Blueprint",
+          "url": "https://inara.cz/elite/blueprint/67/"
+        },
+        {
+          "name": "INARA — Experimental Effects",
+          "url": "https://inara.cz/elite/experimentaleffects/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-distributor-focused",
+      "category": "Core Module Engineering",
+      "topic": "Power Distributor — Focused Alternatives",
+      "keywords": [
+        "engine focused",
+        "weapon focused",
+        "system focused",
+        "power distributor",
+        "boost",
+        "weapon capacitor",
+        "sys capacitor"
+      ],
+      "ruleOfThumb": "Use a focused distributor only when the ship has a clear dominant need: Engine Focused for boost/ENG-limited ships, Weapon Focused for weapon-capacitor-heavy builds, and System Focused for unusually SYS-dependent roles.",
+      "details": [
+        "Focused distributor blueprints improve one capacitor's capacity/recharge while penalizing the others.",
+        "Engine Focused can rescue ships that need a particular boost cadence or cannot otherwise meet ENG demand.",
+        "Weapon Focused can support extreme sustained weapon draw, but often makes boosting and shield management worse."
+      ],
+      "commonMistakes": [
+        "Treating a focused blueprint as a direct upgrade over Charge Enhanced.",
+        "Solving one capacitor problem while accidentally creating two others."
+      ],
+      "pve": "Useful on specialized ships such as some miners, racers, or weapon-heavy builds.",
+      "pvp": "Specialized PvP builds use them occasionally, but most general combat ships prefer Charge Enhanced.",
+      "sources": [
+        {
+          "name": "INARA — Blueprints and Upgrades",
+          "url": "https://inara.cz/elite/blueprints/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-sensors-lightweight",
+      "category": "Core Module Engineering",
+      "topic": "Sensors — Lightweight vs Long Range",
+      "keywords": [
+        "sensors",
+        "lightweight sensors",
+        "long range sensors",
+        "wide angle sensors",
+        "scan range",
+        "mass"
+      ],
+      "ruleOfThumb": "Lightweight Sensors are the usual choice when mass matters and standard sensor range is adequate. Long Range is worth the mass when early target detection and distant scanning are operationally important.",
+      "details": [
+        "Lightweight can remove a large fraction of sensor mass, particularly valuable on large ships with heavy A-rated sensors.",
+        "The tradeoff is reduced scan angle and integrity.",
+        "Long Range increases detection capability but adds mass; it is often chosen on combat or support ships that value situational awareness."
+      ],
+      "commonMistakes": [
+        "A-rating sensors automatically without considering their very high mass on large ships.",
+        "Choosing Lightweight on a role that genuinely depends on long-range target acquisition."
+      ],
+      "pve": "Lightweight is excellent for exploration, hauling, and many PvE ships; Long Range is useful for hunters and support ships.",
+      "pvp": "Long Range can be valuable for situational awareness, while Lightweight may be used when mass/speed optimization matters more.",
+      "sources": [
+        {
+          "name": "INARA — Lightweight Sensors Blueprint",
+          "url": "https://inara.cz/elite/blueprint/161/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "core-life-support-lightweight",
+      "category": "Core Module Engineering",
+      "topic": "Life Support — Lightweight",
+      "keywords": [
+        "life support",
+        "lightweight life support",
+        "d rated life support",
+        "mass reduction"
+      ],
+      "ruleOfThumb": "D-rated Lightweight Life Support is the normal mass-saving choice when you do not need a long emergency oxygen timer. It is one of the simplest ways to remove dead weight from many builds.",
+      "details": [
+        "Lightweight engineering can reduce Life Support mass dramatically, with integrity as the main tradeoff.",
+        "Combat pilots should still consider whether the chosen rating gives enough emergency oxygen for a broken canopy and return to safety.",
+        "The practical value depends on hull size: removing a few tonnes matters more on some ships than others."
+      ],
+      "commonMistakes": [
+        "Reducing oxygen duration without considering how far the ship normally operates from a station or carrier.",
+        "Assuming every gram of mass reduction is worth compromising mission resilience."
+      ],
+      "pve": "A straightforward optimization for exploration, trade, and many PvE builds.",
+      "pvp": "Often used, but canopy survivability and emergency time matter more in prolonged or remote PvP operations.",
+      "sources": [
+        {
+          "name": "INARA — Lightweight Life Support Blueprint",
+          "url": "https://inara.cz/elite/blueprint/133/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-armour-heavy-duty",
+      "category": "Defensive Engineering",
+      "topic": "Armour — Heavy Duty + Deep Plating",
+      "keywords": [
+        "heavy duty armour",
+        "heavy duty armor",
+        "deep plating",
+        "reactive surface composite",
+        "military grade composite",
+        "lightweight alloy",
+        "hull tank"
+      ],
+      "ruleOfThumb": "Heavy Duty plus Deep Plating is the straightforward raw-hull package. It is especially attractive on Lightweight Alloy because the blueprint's percentage mass increase has effectively no base armour mass to multiply.",
+      "details": [
+        "Heavy Duty raises armour strength and resistances at the cost of additional mass.",
+        "Deep Plating adds still more raw integrity while slightly reducing resistances.",
+        "Reactive Surface Composite starts with strong kinetic/explosive resistance but poor thermal resistance, so many builds use a Thermal Resistant HRP or armour choice to patch the thermal hole rather than stacking only raw hull."
+      ],
+      "commonMistakes": [
+        "Building only for raw hull and ignoring a severe resistance hole.",
+        "Assuming the same armour package is optimal for every ship role."
+      ],
+      "pve": "Heavy Duty/Deep Plating is a durable baseline for PvE hull tanks and hybrid builds.",
+      "pvp": "Common, but experienced PvP builders balance raw hull, resistances, module protection, mass, and repair strategy rather than chasing one number.",
+      "sources": [
+        {
+          "name": "INARA — Blueprints and Upgrades",
+          "url": "https://inara.cz/elite/blueprints/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-module-reinforcement",
+      "category": "Defensive Engineering",
+      "topic": "Module Reinforcement Packages",
+      "keywords": [
+        "module reinforcement",
+        "mrp",
+        "module protection",
+        "guardian module reinforcement",
+        "internal modules"
+      ],
+      "ruleOfThumb": "Hull strength does not protect internal modules by itself. Use Module Reinforcement Packages when the ship must keep thrusters, canopy, distributor, power plant, and other internals alive after shields fail.",
+      "details": [
+        "MRPs absorb a large portion of incoming module damage until their own integrity is exhausted.",
+        "Multiple MRPs can improve total module protection and distribute damage, but they consume optional slots that could hold hull, shields, cells, cargo, or mission equipment.",
+        "AFMUs repair damaged modules but cannot replace the immediate protection an MRP provides while damage is being taken."
+      ],
+      "commonMistakes": [
+        "Stacking hull reinforcements and assuming modules will survive because hull HP is high.",
+        "Treating an AFMU and MRP as interchangeable."
+      ],
+      "pve": "Very valuable on combat ships expected to fight with shields down for meaningful periods.",
+      "pvp": "Often essential on hull tanks and hybrids because module sniping is a deliberate PvP tactic.",
+      "sources": [
+        {
+          "name": "INARA — Blueprints and Upgrades",
+          "url": "https://inara.cz/elite/blueprints/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-resistance-balance",
+      "category": "Defensive Engineering",
+      "topic": "Shield Resistance Balance",
+      "keywords": [
+        "shield resistance",
+        "thermal resistance",
+        "kinetic resistance",
+        "explosive resistance",
+        "resistance augmented",
+        "booster stacking",
+        "effective shield"
+      ],
+      "ruleOfThumb": "Do not optimize shields by raw megajoules alone. A practical shield package balances absolute strength with thermal/kinetic/explosive resistances according to the threats the ship expects to face.",
+      "details": [
+        "Shield generators and boosters change both raw capacity and resistances.",
+        "Resistance Augmented boosters are efficient early in a resistance stack; Heavy Duty/Super Capacitors add raw capacity once the resistance profile is healthy.",
+        "Thermal resistance often needs attention because many shield generators begin with a thermal weakness.",
+        "Exact best mix is ship-specific, so compare effective strength by damage type in EDSY instead of copying a fixed booster count."
+      ],
+      "commonMistakes": [
+        "Stacking only Heavy Duty boosters because the raw MJ number is larger.",
+        "Trying to force all three resistances to the same displayed percentage without considering actual weapons and shield role."
+      ],
+      "pve": "Balanced resistances usually improve practical endurance in mixed-damage PvE.",
+      "pvp": "Resistance planning is fundamental in PvP because opponents deliberately mix damage types and exploit weak profiles.",
+      "sources": [
+        {
+          "name": "INARA — Resistance Augmented Shield Booster Blueprint",
+          "url": "https://inara.cz/elite/blueprint/10/"
+        },
+        {
+          "name": "INARA — Blueprints and Upgrades",
+          "url": "https://inara.cz/elite/blueprints/"
+        }
+      ],
       "reviewedAt": "2026-09-13",
       "stability": "stable"
     }
