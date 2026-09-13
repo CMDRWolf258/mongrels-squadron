@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "reviewedAt": "2026-09-13",
   "entries": [
     {
@@ -7,6 +7,12 @@
       "expanded": "Auto Field-Maintenance Unit",
       "definition": "Repairs modules while deployed; cannot repair the Power Plant and cannot repair itself without another AFMU.",
       "category": "Engineering / Exploration"
+    },
+    {
+      "term": "Asset",
+      "expanded": "BGS Asset",
+      "definition": "A station, outpost, settlement or installation controlled by a minor faction.",
+      "category": "BGS"
     },
     {
       "term": "AX",
@@ -18,6 +24,36 @@
       "term": "BGS",
       "expanded": "Background Simulation",
       "definition": "Elite Dangerous system that tracks minor-faction influence, states, conflicts, control and other strategic conditions.",
+      "category": "BGS"
+    },
+    {
+      "term": "Boom",
+      "expanded": "Economic State",
+      "definition": "Positive economic state associated with strong economic activity and favorable trade conditions.",
+      "category": "BGS"
+    },
+    {
+      "term": "Bust",
+      "expanded": "Economic State",
+      "definition": "Negative economic state associated with poor economic conditions.",
+      "category": "BGS"
+    },
+    {
+      "term": "Civil Liberty",
+      "expanded": "Security State",
+      "definition": "Positive security state associated with lawful, stable conditions.",
+      "category": "BGS"
+    },
+    {
+      "term": "Civil Unrest",
+      "expanded": "Security State",
+      "definition": "Negative security state associated with instability and crime.",
+      "category": "BGS"
+    },
+    {
+      "term": "Civil War",
+      "expanded": "BGS Conflict",
+      "definition": "Combat conflict variant between factions in the same system, resolved through daily combat performance.",
       "category": "BGS"
     },
     {
@@ -39,6 +75,18 @@
       "category": "Ships / Engineering"
     },
     {
+      "term": "Election",
+      "expanded": "BGS Conflict",
+      "definition": "Non-combat conflict between compatible factions for control of an asset.",
+      "category": "BGS"
+    },
+    {
+      "term": "Expansion",
+      "expanded": "BGS faction state",
+      "definition": "A state through which a minor faction can spread into another eligible system.",
+      "category": "BGS"
+    },
+    {
       "term": "FSD",
       "expanded": "Frame Shift Drive",
       "definition": "Core module used for supercruise and hyperspace jumps.",
@@ -57,9 +105,21 @@
       "category": "Engineering"
     },
     {
+      "term": "High Wake",
+      "expanded": "Hyperspace jump to another star system",
+      "definition": "Often contrasted with low waking back into supercruise.",
+      "category": "Travel / Combat"
+    },
+    {
       "term": "HRP",
       "expanded": "Hull Reinforcement Package",
       "definition": "Optional internal module that increases hull integrity and can also influence resistances when engineered.",
+      "category": "Defense"
+    },
+    {
+      "term": "Hull Tank",
+      "expanded": "Defense strategy designed to continue fighting after shields fail",
+      "definition": "Relies on armour, HRPs, MRPs, module placement/protection, and often repair planning.",
       "category": "Defense"
     },
     {
@@ -69,10 +129,46 @@
       "category": "BGS"
     },
     {
+      "term": "Influence",
+      "expanded": "Minor-faction share of a system",
+      "definition": "A percentage representing relative faction standing within one system; distinct from mission INF reward pips.",
+      "category": "BGS"
+    },
+    {
+      "term": "Invasion",
+      "expanded": "Invasion Conflict",
+      "definition": "Expansion into a full system that requires defeating an eligible incumbent faction.",
+      "category": "BGS"
+    },
+    {
+      "term": "Lockdown",
+      "expanded": "Security State",
+      "definition": "Severe negative security state that can restrict station services.",
+      "category": "BGS"
+    },
+    {
+      "term": "Low Wake",
+      "expanded": "Return to supercruise within the same system",
+      "definition": "Often easier to mass-lock than a high wake.",
+      "category": "Travel / Combat"
+    },
+    {
+      "term": "MF",
+      "expanded": "Minor Faction",
+      "definition": "A local political faction that can hold influence, states and assets in one or more systems.",
+      "category": "BGS"
+    },
+    {
       "term": "MRP",
       "expanded": "Module Reinforcement Package",
       "definition": "Optional internal that absorbs a share of module damage after shields fall.",
       "category": "Defense"
+    },
+    {
+      "term": "Native Faction",
+      "expanded": "Home-system faction",
+      "definition": "A faction in its home system; it cannot normally be removed from that home by Retreat.",
+      "category": "BGS"
     },
     {
       "term": "OC",
@@ -87,10 +183,46 @@
       "category": "Combat"
     },
     {
+      "term": "Pending",
+      "expanded": "State Phase",
+      "definition": "A state has been triggered and is queued to become active after its pending period.",
+      "category": "BGS"
+    },
+    {
+      "term": "Pip Management",
+      "expanded": "Redistributing SYS/ENG/WEP power",
+      "definition": "Active management of distributor pips to change shield resistance, engine performance, and weapon recharge.",
+      "category": "Combat"
+    },
+    {
+      "term": "PMF",
+      "expanded": "Player Minor Faction",
+      "definition": "A minor faction associated with a player group; mechanically it participates in the BGS like other minor factions.",
+      "category": "BGS"
+    },
+    {
       "term": "PP",
       "expanded": "Power Plant / Powerplay",
       "definition": "Ambiguous shorthand. In ship-building discussions it often means Power Plant; in strategic discussions it may mean Powerplay.",
       "category": "General"
+    },
+    {
+      "term": "Recovery",
+      "expanded": "State Phase",
+      "definition": "Cooldown period after some states during which the same state may not immediately retrigger.",
+      "category": "BGS"
+    },
+    {
+      "term": "Retreat",
+      "expanded": "BGS faction state",
+      "definition": "A state that can remove a non-native faction from a system if retreat conditions persist.",
+      "category": "BGS"
+    },
+    {
+      "term": "Reverski",
+      "expanded": "Reverse-flight combat tactic",
+      "definition": "Maintaining distance while flying backward and keeping weapons on an approaching target; especially discussed in PvP.",
+      "category": "PvP"
     },
     {
       "term": "SCB",
@@ -103,6 +235,12 @@
       "expanded": "Supercruise Overcharge",
       "definition": "FSD capability that allows a temporary high-speed supercruise boost at substantial fuel and heat cost.",
       "category": "Travel"
+    },
+    {
+      "term": "Shield Tank",
+      "expanded": "Defense strategy centered on maintaining a large/effective shield",
+      "definition": "Usually supported by boosters, resistances, SCBs, or regeneration depending on build.",
+      "category": "Defense"
     },
     {
       "term": "SLF",
@@ -123,69 +261,21 @@
       "category": "Combat"
     },
     {
-      "term": "TTK",
-      "expanded": "Time to Kill",
-      "definition": "How long it takes a build or group to destroy a target under the conditions being discussed.",
-      "category": "Combat"
-    },
-    {
-      "term": "High Wake",
-      "expanded": "Hyperspace jump to another star system",
-      "definition": "Often contrasted with low waking back into supercruise.",
-      "category": "Travel / Combat"
-    },
-    {
-      "term": "Low Wake",
-      "expanded": "Return to supercruise within the same system",
-      "definition": "Often easier to mass-lock than a high wake.",
-      "category": "Travel / Combat"
-    },
-    {
-      "term": "Pip Management",
-      "expanded": "Redistributing SYS/ENG/WEP power",
-      "definition": "Active management of distributor pips to change shield resistance, engine performance, and weapon recharge.",
-      "category": "Combat"
-    },
-    {
-      "term": "Reverski",
-      "expanded": "Reverse-flight combat tactic",
-      "definition": "Maintaining distance while flying backward and keeping weapons on an approaching target; especially discussed in PvP.",
-      "category": "PvP"
-    },
-    {
-      "term": "Shield Tank",
-      "expanded": "Defense strategy centered on maintaining a large/effective shield",
-      "definition": "Usually supported by boosters, resistances, SCBs, or regeneration depending on build.",
-      "category": "Defense"
-    },
-    {
-      "term": "Hull Tank",
-      "expanded": "Defense strategy designed to continue fighting after shields fail",
-      "definition": "Relies on armour, HRPs, MRPs, module placement/protection, and often repair planning.",
-      "category": "Defense"
-    },
-    {
       "term": "Tick",
       "expanded": "BGS processing/update cycle",
       "definition": "The recurring simulation update in which faction influence and many state changes are processed.",
       "category": "BGS"
     },
     {
-      "term": "Expansion",
-      "expanded": "BGS faction state",
-      "definition": "A state through which a minor faction can spread into another eligible system.",
-      "category": "BGS"
+      "term": "TTK",
+      "expanded": "Time to Kill",
+      "definition": "How long it takes a build or group to destroy a target under the conditions being discussed.",
+      "category": "Combat"
     },
     {
-      "term": "Retreat",
-      "expanded": "BGS faction state",
-      "definition": "A state that can remove a non-native faction from a system if retreat conditions persist.",
-      "category": "BGS"
-    },
-    {
-      "term": "Influence",
-      "expanded": "Minor-faction share of a system",
-      "definition": "A percentage representing relative faction standing within one system; distinct from mission INF reward pips.",
+      "term": "War",
+      "expanded": "BGS Conflict",
+      "definition": "Combat conflict resolved through conflict-day performance, commonly using Conflict Zones.",
       "category": "BGS"
     }
   ]

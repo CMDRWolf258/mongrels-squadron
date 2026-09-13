@@ -37,3 +37,11 @@ Upload the complete package and allow Cloudflare Pages to redeploy.
 - Added searchable `/guides/glossary/` driven by `data/glossary.json` for common Elite terms and acronyms.
 - Added `/guides/resources/` with links to INARA, EDSY, Spansh and official Elite resources.
 - Engineering guide terms now begin deep-linking into matching reference entries.
+
+## v61 — Large BGS knowledge expansion
+- Added full `/guides/bgs/` field guide covering influence, activity levers, conflicts, ownership, Expansion, Retreat, states, and Mongrel operating discipline.
+- Added 40 BGS reference records to `data/elite-knowledge.json` (71 total knowledge entries).
+- Added BGS terms to the searchable glossary.
+- Ask the Mongrels now loads local BGS knowledge for BGS/state/influence questions instead of relying only on general model knowledge.
+- Reference UI now supports BGS-specific Operations / Watch For context cards as well as PvE/PvP engineering context.
+- Community-observed mechanics such as Expansion/Retreat thresholds are explicitly labeled for future review rather than presented as Frontier-published formulas.
