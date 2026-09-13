@@ -45,3 +45,13 @@ Upload the complete package and allow Cloudflare Pages to redeploy.
 - Ask the Mongrels now loads local BGS knowledge for BGS/state/influence questions instead of relying only on general model knowledge.
 - Reference UI now supports BGS-specific Operations / Watch For context cards as well as PvE/PvP engineering context.
 - Community-observed mechanics such as Expansion/Retreat thresholds are explicitly labeled for future review rather than presented as Frontier-published formulas.
+
+## v62 — BGS Operator Manual refinement
+- Reworked BGS conflicts around the actual best-of-seven / mathematical-clinch model.
+- Added worked conflict examples, including early endings caused by tied days.
+- Added government ethos lookup and conflict matrix (including Corporate vs Dictatorship = War).
+- Added practical War/Civil War vs Election activity guidance.
+- Added BGS activity/effect, state, expansion/retreat, asset-risk, and operator quick-reference material.
+- Expanded the shared Elite Knowledge Base with structured quick facts, tables, and examples so Ask the Mongrels can answer exact BGS questions instead of vague ranges.
+- Expanded the Reference Database renderer and BGS glossary.
+- BGS remains explicitly a living guide: community-observed/uncertain mechanics are labeled accordingly.

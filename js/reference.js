@@ -6,6 +6,18 @@
   const count = document.querySelector('#reference-count');
   let entries = [];
   const esc = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const quickFacts = e => {
+    if (!Array.isArray(e.quickFacts) || !e.quickFacts.length) return '';
+    return `<div class="reference-quickfacts">${e.quickFacts.map(x=>`<div><span>${esc(x.label)}</span><strong>${esc(x.value)}</strong></div>`).join('')}</div>`;
+  };
+  const examples = e => {
+    if (!Array.isArray(e.examples) || !e.examples.length) return '';
+    return `<h3>Worked examples</h3><div class="reference-examples">${e.examples.map(x=>`<div><strong>${esc(x.title)}</strong><p>${esc(x.body)}</p></div>`).join('')}</div>`;
+  };
+  const tables = e => {
+    if (!Array.isArray(e.tables) || !e.tables.length) return '';
+    return e.tables.map(t=>`<div class="reference-table-block"><h3>${esc(t.title||'Quick reference')}</h3><div class="guide-table-wrap"><table class="guide-table"><thead><tr>${(t.columns||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(t.rows||[]).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`).join('');
+  };
   const contexts = e => {
     const cards = [];
     if (e.pve) cards.push(['PvE', e.pve]);
@@ -25,7 +37,7 @@
     const cat = category.value;
     const shown = entries.filter(e => (cat === 'all' || e.category === cat) && (!q || [e.topic,e.category,e.ruleOfThumb,...(e.keywords||[]),...(e.details||[]),e.operations||'',e.watchFor||''].join(' ').toLowerCase().includes(q)));
     count.textContent = `${shown.length} of ${entries.length} entries`;
-    list.innerHTML = shown.map(e => `<article class="reference-entry" id="${esc(e.id)}"><div class="reference-entry-head"><div><span class="reference-category">${esc(e.category)}</span><h2>${esc(e.topic)}</h2></div><span class="reference-stability">${esc(e.stability || 'reviewed')}</span></div><p class="reference-rule">${esc(e.ruleOfThumb)}</p><details><summary>More info</summary><div class="reference-detail">${(e.details||[]).map(x=>`<p>${esc(x)}</p>`).join('')}${(e.commonMistakes||[]).length?`<h3>Common mistakes</h3><ul>${e.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${contexts(e)}${(e.sources||[]).length?`<h3>Sources & further reading</h3><div class="reference-sources">${e.sources.map(sourceLink).join('')}</div>`:''}<p class="reference-reviewed">Last reviewed: ${esc(e.reviewedAt || 'Unknown')}</p></div></details></article>`).join('') || '<p class="empty-state">No reference entries match that search.</p>';
+    list.innerHTML = shown.map(e => `<article class="reference-entry" id="${esc(e.id)}"><div class="reference-entry-head"><div><span class="reference-category">${esc(e.category)}</span><h2>${esc(e.topic)}</h2></div><span class="reference-stability">${esc(e.stability || 'reviewed')}</span></div><p class="reference-rule">${esc(e.ruleOfThumb)}</p>${quickFacts(e)}<details><summary>More info</summary><div class="reference-detail">${(e.details||[]).map(x=>`<p>${esc(x)}</p>`).join('')}${tables(e)}${examples(e)}${(e.commonMistakes||[]).length?`<h3>Common mistakes</h3><ul>${e.commonMistakes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${contexts(e)}${(e.sources||[]).length?`<h3>Sources & further reading</h3><div class="reference-sources">${e.sources.map(sourceLink).join('')}</div>`:''}<p class="reference-reviewed">Last reviewed: ${esc(e.reviewedAt || 'Unknown')}</p></div></details></article>`).join('') || '<p class="empty-state">No reference entries match that search.</p>';
   }
   fetch('../../data/elite-knowledge.json', {cache:'no-store'}).then(r=>r.json()).then(data => {
     entries = data.entries || [];

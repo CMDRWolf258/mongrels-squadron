@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 5,
   "reviewedAt": "2026-09-13",
   "scope": "Engineering, ship-building and Background Simulation reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
   "entries": [
@@ -1501,22 +1501,30 @@
       "ruleOfThumb": "Stations, outposts, installations, and settlements can be owned by factions independently of overall system control; asset ownership determines where many positive transactions land.",
       "details": [
         "Markets, mission boards, contacts, and services operate under the faction controlling that asset.",
-        "Conflicts can transfer assets between factions.",
-        "Knowing asset ownership is essential for targeted trade, data sales, and campaign planning."
+        "A won conflict can transfer one asset at risk from the loser to the winner; the specific asset staked should be identified before deliberately triggering the conflict.",
+        "If system control itself is at stake, losing the controlling asset can change the system controller.",
+        "Odyssey settlement ownership can also be influenced by ground-conflict results; treat settlement-level transfers as a separate detail when conducting a ground war."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Assuming winning any conflict automatically transfers every asset owned by the loser.",
+        "Running trade/data support at a station whose owner is not the faction you intend to help."
+      ],
       "operations": [
-        "Map the strategically important assets in a contested system before starting influence work."
+        "Before conflict: list both factions’ assets and identify the likely asset at risk. During routine work: verify the owner of any market or cartographics service you plan to use."
       ],
       "watchFor": "A system can contain many faction-owned assets; do not assume every port supports the system controller.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         },
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "Elite Dangerous Wiki — Background Simulation",
+          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1533,25 +1541,28 @@
         "influence match",
         "pending conflict"
       ],
-      "ruleOfThumb": "When two eligible factions meet at the same influence, the BGS can place them into a conflict for control of an asset.",
+      "ruleOfThumb": "Two eligible factions meeting in influence can trigger a conflict only when the BGS has something meaningful to contest (normally an asset at risk) or during an invasion-style expansion; influence equality alone is not the entire rule.",
       "details": [
-        "The conflict type depends on faction government compatibility and other eligibility rules.",
-        "During an active conflict, the opponents’ influence is effectively locked together for operational purposes.",
-        "Once a conflict is pending, normal influence pushing is no longer the primary way to win that conflict."
+        "Frontier changed conflict triggering so routine equal influence does not create endless meaningless conflicts when no asset is at risk.",
+        "The factions generally need to be above the low-influence conflict floor; community guides place this around 7–7.5%.",
+        "Government ethos determines Election versus War/Civil War once a conflict is eligible."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Forcing an influence tie without checking whether either faction owns an asset that can be staked.",
+        "Assuming every crossover automatically starts a conflict."
+      ],
       "operations": [
-        "Approach the equality point deliberately. Make sure the faction is ready to fight or contest the correct conflict before forcing a match."
+        "Before pushing factions together, identify the asset at risk, likely conflict type, current states, and whether both factions are eligible."
       ],
-      "watchFor": "Accidentally matching another faction can lock you into an unwanted conflict and disrupt an influence plan.",
+      "watchFor": "Conflict eligibility contains edge cases and legacy behavior. If the expected conflict does not appear, inspect assets, states, and faction history before assuming the BGS is broken.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
         },
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1569,21 +1580,29 @@
         "conflict day",
         "war state"
       ],
-      "ruleOfThumb": "War is a combat conflict: win conflict days through the appropriate combat activity rather than trying to out-mission the opponent’s influence percentage.",
+      "ruleOfThumb": "War is a combat-scored conflict. Win the daily contest with Conflict Zone objectives first; combat missions, combat bonds, bounty hunting, violent crimes, and other combat inputs can contribute as secondary/tie-breaker activity.",
       "details": [
-        "War commonly occurs when the factions are not eligible for an Election and are contesting an asset.",
-        "Conflict Zones and combat-focused conflict actions are the core tools.",
-        "The side that wins enough daily conflict results wins the conflict and the contested asset transfer follows the result."
+        "War uses the same best-of-seven daily conflict structure as Civil War and Election.",
+        "Frontier identifies winning Conflict Zone objectives as the clearest way to help a War/Civil War.",
+        "Most combat missions, combat bonds, bounty hunting, and violent crimes contribute to War/Civil War conflict scoring.",
+        "Non-combat trade, exploration, and ordinary economic support do not substitute for combat conflict work."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Grinding ordinary influence missions while ignoring Conflict Zones.",
+        "Holding bonds or combat mission completions past the tick when the day is still contested."
+      ],
       "operations": [
-        "Organize by daily conflict-day objective. Once the day is secure, extra effort may be better spent elsewhere unless insurance against opposition is needed."
+        "Prioritize CZ wins. In a contested war, hand in combat bonds, bounties, and combat-mission completions before the tick so secondary scoring is not left on the table."
       ],
-      "watchFor": "Do not judge a war by ordinary influence movement. The conflict-day score is what matters.",
+      "watchFor": "You cannot see the opponent’s live daily score. Treat “we won several CZs” as evidence, not proof, until the next tick posts the day result.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1599,21 +1618,27 @@
         "cz",
         "combat conflict"
       ],
-      "ruleOfThumb": "Civil War behaves operationally like War: combat performance determines the conflict outcome, not routine influence grinding.",
+      "ruleOfThumb": "Civil War is operationally identical to War: use combat conflict scoring. The “civil” label reflects the relationship/home-system context, not a different scoring model.",
       "details": [
-        "Civil War is a combat-state variant associated with faction relationship/native-government conditions.",
-        "Conflict Zones and combat actions are central to winning days.",
-        "Asset ownership can change at the end of the conflict."
+        "Civil War follows the same best-of-seven daily scoring as War.",
+        "Conflict Zone wins are the primary practical lever; combat missions, bonds, bounties, and related combat inputs can contribute.",
+        "Civil War occurs when factions sharing the same home system enter a conflict that would otherwise resolve as War."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Treating Civil War as an Election because both factions are “local.”"
+      ],
       "operations": [
-        "Use the same disciplined daily scoring approach as War and confirm the contested asset."
+        "Run it exactly like a War: secure the day with CZ wins, use combat tie-breakers, and track the daily result after each tick."
       ],
-      "watchFor": "Do not spend the operation running high-INF courier missions expecting them to decide the active Civil War.",
+      "watchFor": "Routine economic activity can still affect other system conditions, but it is not the main Civil War score.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1629,21 +1654,29 @@
         "non combat conflict",
         "government type"
       ],
-      "ruleOfThumb": "Election is the non-combat conflict type; prioritize non-combat actions that contribute to election performance rather than Conflict Zone fighting.",
+      "ruleOfThumb": "Election is the non-combat conflict. Win daily results with non-combat election missions and economic/civilian activity; combat activity is not the lever you should rely on.",
       "details": [
-        "Elections occur between factions whose government types are compatible for an election.",
-        "Like other conflicts, the opponents are effectively influence-locked while the result is decided.",
-        "Mission and civilian/economic support is generally the appropriate operational direction."
+        "Election uses the same best-of-seven daily result structure as War.",
+        "Frontier lists non-combat missions, commodity trading/smuggling, search and rescue, exploration data, and installation/megaship scenarios among valid Election-support activities.",
+        "Current community guidance treats completed non-combat election missions as the strongest practical daily lever; trade, exploration data, donations, and other economic inputs are useful tie-breaker/support activity.",
+        "Avoid turning an otherwise non-combat election mission into combat when the mission is intended to count as election work."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Turning in bounties or combat bonds and expecting them to decide an Election.",
+        "Choosing an election-labelled mission and then firing weapons/earning fines during mission variants that are intended to remain non-combat."
+      ],
       "operations": [
-        "If you intentionally want an Election instead of a War, government compatibility is part of campaign planning before the factions meet in influence."
+        "Prioritize eligible non-combat election missions, then add profitable/high-demand trade, exploration data, donations, passenger/cargo economic missions, search-and-rescue, and other civilian activity before the tick."
       ],
-      "watchFor": "Do not assume every pair of factions can elect; incompatible governments will generally resolve their contest through armed conflict instead.",
+      "watchFor": "Precise weighting is not published. In a contested election, think “do more valid election work than the opponent,” not “hit a fixed number.”",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1655,30 +1688,87 @@
       "topic": "Conflict Days & Winning a Conflict",
       "keywords": [
         "conflict day",
+        "conflict days",
         "days",
+        "how many days",
+        "best of seven",
+        "best-of-seven",
+        "4-7 days",
         "win war",
         "win election",
-        "score"
+        "score",
+        "tie",
+        "draw",
+        "early end",
+        "clinch"
       ],
-      "ruleOfThumb": "Think in days, not raw totals: a conflict is won by securing more daily results than the opponent across the conflict window.",
+      "ruleOfThumb": "War, Civil War, and Election are best-of-seven daily contests. A conflict can last at most seven scored days and ends early as soon as the trailing side no longer has enough remaining days to force at least a draw.",
       "details": [
-        "War, Civil War, and Election are resolved through daily scores.",
-        "A common practical target is to secure the required majority of days as efficiently as possible.",
-        "Continuing to work after a day is safely won may provide insurance, but can also waste effort needed elsewhere."
+        "Each tick awards a daily result to one side or may record a draw/tie. The overall conflict uses those daily results, not a cumulative visible influence bar.",
+        "A 4–0 start is an immediate clinch because only three days remain; the opponent cannot reach a draw.",
+        "Ties also matter to the early-ending math. Example: after six scored days, a 2–0 lead with four ties is already decisive. Even if the trailing side wins Day 7, the final score would be 2–1, so the conflict can end early.",
+        "If neither side becomes mathematically uncatchable earlier, the conflict can reach Day 7. The side with more daily wins takes the conflict; equal wins can produce an inconclusive result."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Treating “4–7 days” as the full explanation. The practical rule is best-of-seven with early mathematical clinching.",
+        "Assuming a large win on one day is worth multiple conflict days. Frontier removed bonus-day wins; one tick produces at most one daily result."
+      ],
       "operations": [
-        "Record each day’s result and stop treating the campaign like an uncapped bond or mission grind."
+        "Track wins, losses, ties, and days remaining after every tick. Ask: “Can the other side still force a draw?” If not, the conflict is effectively clinched."
       ],
-      "watchFor": "Exact UI timing can lag around the tick; verify the displayed conflict-day score before assuming the day has been credited.",
+      "watchFor": "The current day’s hidden activity is not visible before the tick. A displayed lead tells you previous-day results, not whether today is safe.",
       "sources": [
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
         {
           "name": "Elite Dangerous Wiki — Background Simulation",
           "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "reviewed",
+      "quickFacts": [
+        {
+          "label": "Format",
+          "value": "Best of 7 daily results"
+        },
+        {
+          "label": "Maximum",
+          "value": "7 scored days"
+        },
+        {
+          "label": "Earliest normal clinch",
+          "value": "Day 4 (4–0)"
+        },
+        {
+          "label": "Early ending",
+          "value": "When the trailing side can no longer force a draw"
+        },
+        {
+          "label": "Daily update",
+          "value": "At the BGS tick"
+        }
+      ],
+      "examples": [
+        {
+          "title": "4–0 after Day 4",
+          "body": "Conflict ends. Three days remain, so the opponent cannot tie four daily wins."
+        },
+        {
+          "title": "2–0 with four ties after Day 6",
+          "body": "Conflict is already clinched. The opponent can only make it 2–1 on the final day."
+        },
+        {
+          "title": "2–2 with two ties after Day 6",
+          "body": "Not clinched. Day 7 can produce 3–2, 2–3, or a 2–2 final if the last day ties."
+        }
+      ]
     },
     {
       "id": "bgs-expansion",
@@ -1694,28 +1784,53 @@
       ],
       "ruleOfThumb": "A faction pushed to roughly 75% influence can trigger Expansion from that system; expansion is a strategic commitment, so avoid the threshold unless you actually want growth.",
       "details": [
-        "Community research consistently places the trigger around 75% influence.",
+        "Community research consistently places the trigger around 75% influence in an eligible system.",
+        "A faction that remains above the trigger through the relevant tick can place Expansion pending; current community guidance treats a pending Expansion as committed rather than something ordinary influence work can cancel.",
         "The faction does not need to control the expansion-origin system to be eligible.",
-        "The target is chosen by BGS rules and nearby faction occupancy, not by a simple player-selected destination.",
-        "Expansion has pending/active phases and timing can vary; treat exact duration as a planning range, not a guaranteed clock."
+        "Expansion destination is selected by BGS rules involving nearby systems, faction presence, open slots, prior presence/retreat history, and invasion eligibility."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Crossing 75% before mapping nearby candidate systems.",
+        "Assuming you can simply push back below 75% after Expansion is already pending and cancel it."
+      ],
       "operations": [
-        "If expansion is unwanted, operate with a safety margin below the trigger. If it is wanted, prepare the neighborhood before crossing the threshold."
+        "If expansion is unwanted, leave a safety margin below the threshold. If wanted, map nearby systems and clean up competing candidate origins before crossing it."
       ],
       "watchFor": "Do not sit just under the threshold assuming rounding or background traffic cannot push the faction over it.",
       "sources": [
         {
-          "name": "Frontier Forums — Expansion BGS community research",
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier Forums — Expansion community research",
           "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/"
         },
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "Elite Dangerous Wiki — Background Simulation",
+          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "community-observed"
+      "stability": "community-observed",
+      "quickFacts": [
+        {
+          "label": "Observed trigger",
+          "value": "~75% influence"
+        },
+        {
+          "label": "Planning rule",
+          "value": "Prepare destination neighborhood before triggering"
+        },
+        {
+          "label": "Once pending",
+          "value": "Treat as committed"
+        },
+        {
+          "label": "Destination",
+          "value": "BGS-selected, not directly player-chosen"
+        }
+      ]
     },
     {
       "id": "bgs-expansion-targeting",
@@ -1798,28 +1913,50 @@
       ],
       "ruleOfThumb": "A non-native faction driven below roughly 2.5% influence can enter Retreat; rescue it decisively above the threshold or let the state remove it from the system.",
       "details": [
-        "Community research places the retreat trigger below about 2.5% influence.",
+        "Community research places the Retreat trigger below about 2.5% influence.",
         "Retreat applies to non-native factions; a faction cannot normally be retreated from its home system.",
-        "Active Retreat applies its own negative pressure, so rescuing a faction from very low influence can require substantial work.",
-        "Community testing has found the decisive check occurs before the final removal tick, so last-minute work can be too late."
+        "Active Retreat adds downward pressure, so “just barely above 2.5%” is not a safe rescue target.",
+        "Current community practice is to rescue decisively and early rather than rely on the final removal day."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Targeting exactly 2.5% when trying to save a faction.",
+        "Waiting until the last apparent day to start a rescue.",
+        "Trying to retreat a faction from its native/home system."
+      ],
       "operations": [
-        "If saving a retreating faction, build a safety margin above 2.5% well before the final day. If removing it, avoid accidentally supporting it."
+        "Save: push well above the threshold with margin, then verify post-tick. Remove: keep support away from the faction and watch for accidental positive inputs."
       ],
       "watchFor": "Do not aim for exactly 2.5%. Rounding, automatic retreat pressure, and competing traffic make the boundary unsafe.",
       "sources": [
         {
-          "name": "Frontier Forums — Expansion BGS community research",
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier Forums — Expansion/Retreat community research",
           "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/"
         },
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "Elite Dangerous Wiki — Background Simulation",
+          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "community-observed"
+      "stability": "community-observed",
+      "quickFacts": [
+        {
+          "label": "Observed trigger",
+          "value": "Below ~2.5%"
+        },
+        {
+          "label": "Who can retreat",
+          "value": "Non-native factions"
+        },
+        {
+          "label": "Safe rescue strategy",
+          "value": "Build margin early; do not aim at the line"
+        }
+      ]
     },
     {
       "id": "bgs-native-faction",
@@ -1904,16 +2041,25 @@
       ],
       "ruleOfThumb": "A faction can have several states at once; think of economic, security, conflict, expansion/retreat, and event states as overlapping pressures rather than one exclusive status.",
       "details": [
-        "The game can display only one state prominently in some interfaces even when several are active.",
-        "Economic and security states can coexist with conflict and event states.",
-        "Different states modify markets, services, security, and which BGS actions are most effective."
+        "The post-3.3 BGS can track multiple states at the same time.",
+        "Useful planning buckets include economic/security sliders, conflict, expansion/retreat, and special event states.",
+        "One prominent state shown by a UI is not necessarily the faction’s complete active-state set.",
+        "Different active states can change which activity is useful, ignored, or actively counterproductive."
       ],
       "commonMistakes": [],
       "operations": [
-        "Use a source that shows all active states when planning an operation. A single state label in one UI panel can hide important context."
+        "Before issuing daily orders, read the full active/pending state set and then choose actions that serve both influence and state objectives."
       ],
       "watchFor": "Do not assume “Boom” means the faction cannot simultaneously be in Expansion, Civil Liberty, or another compatible state.",
       "sources": [
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
         {
           "name": "Elite Dangerous Wiki — Background Simulation",
           "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
@@ -2283,33 +2429,128 @@
     {
       "id": "bgs-government-conflicts",
       "category": "BGS",
-      "topic": "Government Type & Conflict Type",
+      "topic": "Government Ethos & Conflict Type",
       "keywords": [
         "government",
         "government type",
+        "government ethos",
+        "ethos",
         "election compatible",
         "war election",
-        "conflict type"
+        "conflict type",
+        "corporate",
+        "dictatorship",
+        "democracy",
+        "cooperative",
+        "communist",
+        "communism",
+        "confederacy",
+        "feudal",
+        "patronage",
+        "prison colony",
+        "anarchy",
+        "theocracy"
       ],
-      "ruleOfThumb": "Government compatibility helps determine whether two factions resolve an influence tie through an Election or an armed conflict.",
+      "ruleOfThumb": "Conflict type is determined by government ethos: matching non-criminal ethos groups normally resolve through Election; different ethos groups resolve through War. Anarchy/Criminal factions go to War. If the two factions share the same home system and would otherwise fight a War, the conflict is a Civil War.",
       "details": [
-        "Elections require compatible government categories.",
-        "If the factions are not election-compatible, War or Civil War is generally the conflict path.",
-        "Government type therefore matters strategically even when two factions have identical influence."
+        "Criminal ethos: Anarchy. Criminal versus anything is War.",
+        "Autocratic ethos: Dictatorship, Feudal, Patronage, Prison Colony; some legacy/Theocracy factions can have atypical hidden ethos.",
+        "Corporate ethos: Corporate.",
+        "Social ethos: Communism/Communist, Confederacy, Cooperative, Democracy; Theocracy can vary in older/legacy factions.",
+        "Matching Autocratic vs Autocratic, Corporate vs Corporate, or Social vs Social normally produces an Election. Cross-group pairings produce War.",
+        "Civil War is not a softer Election: it uses War scoring. It occurs when factions sharing the same home system enter a conflict that would otherwise be a War."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Comparing only the visible government names and assuming “not identical” means War. Different visible governments in the same ethos group can elect.",
+        "Assuming Theocracy is always in one ethos group. Legacy/Frontier-created factions can carry hidden or atypical ethos, so verify observed behavior when planning around one."
+      ],
       "operations": [
-        "When choosing which minority faction to raise, consider what kind of conflict it will create with the intended opponent."
+        "Before deliberately equalizing two factions, look up both ethos groups and predict the resulting conflict. This avoids creating the wrong type of contest."
       ],
-      "watchFor": "Do not plan an election campaign before checking the government types of both factions.",
+      "watchFor": "Some legacy factions have hidden/multiple ethos behavior that does not cleanly match the visible government label.",
       "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Nova Force — Background Simulation Guide",
+          "url": "https://novaforce.com/guides/bgs/"
+        },
         {
           "name": "Elite Dangerous Wiki — Background Simulation",
           "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "reviewed",
+      "quickFacts": [
+        {
+          "label": "Corporate + Dictatorship",
+          "value": "War"
+        },
+        {
+          "label": "Democracy + Cooperative",
+          "value": "Election"
+        },
+        {
+          "label": "Corporate + Corporate",
+          "value": "Election"
+        },
+        {
+          "label": "Anarchy + anything",
+          "value": "War"
+        },
+        {
+          "label": "Same-home factions that would War",
+          "value": "Civil War"
+        }
+      ],
+      "tables": [
+        {
+          "title": "Government ethos groups",
+          "columns": [
+            "Ethos",
+            "Common governments"
+          ],
+          "rows": [
+            [
+              "Criminal",
+              "Anarchy"
+            ],
+            [
+              "Autocratic",
+              "Dictatorship · Feudal · Patronage · Prison Colony · some Theocracy"
+            ],
+            [
+              "Corporate",
+              "Corporate"
+            ],
+            [
+              "Social",
+              "Communism · Confederacy · Cooperative · Democracy · some Theocracy"
+            ]
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Corporate vs Dictatorship",
+          "body": "Corporate ethos versus Autocratic ethos → War."
+        },
+        {
+          "title": "Democracy vs Cooperative",
+          "body": "Both are Social ethos → Election."
+        },
+        {
+          "title": "Dictatorship vs Feudal",
+          "body": "Both are Autocratic ethos → Election."
+        },
+        {
+          "title": "Anarchy vs Corporate",
+          "body": "Criminal/Anarchy always resolves through War."
+        }
+      ]
     },
     {
       "id": "bgs-operation-calibration",
@@ -2381,6 +2622,282 @@
       ],
       "reviewedAt": "2026-09-13",
       "stability": "squad doctrine"
+    },
+    {
+      "id": "bgs-conflict-actions",
+      "category": "BGS",
+      "topic": "What Counts in War vs Election",
+      "keywords": [
+        "what counts",
+        "war actions",
+        "election actions",
+        "combat bonds",
+        "conflict zones",
+        "trade election",
+        "exploration election",
+        "bounties war",
+        "conflict scoring"
+      ],
+      "ruleOfThumb": "War/Civil War = combat scoring. Election = non-combat/economic scoring. Do not spend the day doing the wrong family of activity.",
+      "details": [
+        "War/Civil War: prioritize CZ objective wins; combat missions, combat bonds, bounty hunting, violent crimes, and other combat inputs can contribute.",
+        "Election: prioritize non-combat election missions; commodity trading/smuggling, search and rescue, exploration data, economic missions, and non-combat scenarios can contribute.",
+        "Conflict scoring uses its own equations rather than ordinary displayed influence movement."
+      ],
+      "commonMistakes": [
+        "Running trade and exploration to “help influence” during a War while neglecting combat scoring.",
+        "Running bounties and bonds during an Election and assuming the credit total wins the day."
+      ],
+      "operations": [
+        "If the operation is an active conflict, write the conflict type at the top of the daily order and list only activities that actually score that conflict."
+      ],
+      "watchFor": "Exact weights are not public. In a contested conflict, beat the opponent in the correct activity family rather than chasing a fixed credit threshold.",
+      "quickFacts": [
+        {
+          "label": "War/Civil War primary",
+          "value": "CZ objective wins"
+        },
+        {
+          "label": "War support",
+          "value": "Combat missions · bonds · bounties · combat inputs"
+        },
+        {
+          "label": "Election primary",
+          "value": "Non-combat election missions"
+        },
+        {
+          "label": "Election support",
+          "value": "Trade · exploration · S&R · economic missions/scenarios"
+        }
+      ],
+      "sources": [
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "reviewed"
+    },
+    {
+      "id": "bgs-conflict-status",
+      "category": "BGS",
+      "topic": "Reading a Conflict in Game",
+      "keywords": [
+        "conflict status",
+        "war score",
+        "election score",
+        "days won",
+        "local news",
+        "faction status",
+        "summary panel"
+      ],
+      "ruleOfThumb": "Use the in-game faction/system status and local news to read completed daily wins/ties; there is no reliable live meter showing today’s hidden score before the tick.",
+      "details": [
+        "Frontier publishes days won through faction status/local news after daily processing.",
+        "Third-party tools can lag because they depend on journal uploads and their own refresh cadence.",
+        "The displayed total is yesterday/previous-tick history; it does not tell you whether today’s work is already enough."
+      ],
+      "commonMistakes": [
+        "Stopping because a third-party site has not updated yet.",
+        "Assuming yesterday’s 2–0 lead means today can be ignored when the conflict is not mathematically clinched."
+      ],
+      "operations": [
+        "After each tick, record score, ties, and days remaining. Before the next tick, continue enough correct-type activity to account for unknown opposition."
+      ],
+      "watchFor": "If the UI disagrees across sources, trust the freshest in-game status and source timestamps first.",
+      "sources": [
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "reviewed"
+    },
+    {
+      "id": "bgs-government-ethos",
+      "category": "BGS",
+      "topic": "Government Ethos Groups",
+      "keywords": [
+        "ethos",
+        "government ethos",
+        "criminal",
+        "autocrat",
+        "autocratic",
+        "corporate ethos",
+        "social ethos",
+        "theocracy",
+        "government table"
+      ],
+      "ruleOfThumb": "For conflict planning, governments are grouped into ethos families rather than compared only by exact visible government name.",
+      "details": [
+        "Criminal: Anarchy.",
+        "Autocratic: Dictatorship, Feudal, Patronage, Prison Colony, with some Theocracy/legacy exceptions.",
+        "Corporate: Corporate.",
+        "Social: Communism/Communist, Confederacy, Cooperative, Democracy, with some Theocracy/legacy exceptions.",
+        "Same non-criminal ethos generally produces Election; cross-ethos pairings produce War."
+      ],
+      "commonMistakes": [
+        "Assuming Democracy vs Cooperative must be a War because the government names differ.",
+        "Assuming all Theocracy factions have the same hidden ethos."
+      ],
+      "operations": [
+        "Put ethos beside government type in campaign planning notes whenever the intended end state depends on War versus Election."
+      ],
+      "watchFor": "Legacy/Frontier-created factions can contain hidden or multiple ethos behavior.",
+      "tables": [
+        {
+          "title": "Ethos lookup",
+          "columns": [
+            "Ethos",
+            "Government types"
+          ],
+          "rows": [
+            [
+              "Criminal",
+              "Anarchy"
+            ],
+            [
+              "Autocratic",
+              "Dictatorship · Feudal · Patronage · Prison Colony · some Theocracy"
+            ],
+            [
+              "Corporate",
+              "Corporate"
+            ],
+            [
+              "Social",
+              "Communism · Confederacy · Cooperative · Democracy · some Theocracy"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Nova Force — Background Simulation Guide",
+          "url": "https://novaforce.com/guides/bgs/"
+        },
+        {
+          "name": "Elite Dangerous Wiki — Background Simulation",
+          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-state-duration-reference",
+      "category": "BGS",
+      "topic": "State Duration Quick Reference",
+      "keywords": [
+        "state duration",
+        "pending duration",
+        "cooldown",
+        "how long boom",
+        "how long war",
+        "how long retreat",
+        "pending active recovery"
+      ],
+      "ruleOfThumb": "Conflict duration is reliable enough for operational planning; many non-conflict state durations are community-maintained ranges and should be treated as reference, not a guaranteed countdown.",
+      "details": [
+        "War, Civil War, and Election: best-of-seven daily scoring; commonly 4–7 days depending on early clinching.",
+        "Expansion and Retreat include pending/active/cooldown phases, but community tables differ somewhat by era and game update.",
+        "Slider states such as Boom, Bust, Civil Liberty, Civil Unrest, Investment, and Lockdown can persist while the underlying pressure remains favorable to that state.",
+        "Special event states have their own durations and often less well-documented trigger/exit logic."
+      ],
+      "commonMistakes": [
+        "Using an old pre-Odyssey state-duration chart as an exact timer for every modern state."
+      ],
+      "operations": [
+        "Use exact conflict-day math for conflicts. For other states, watch pending/active/recovery flags every tick and use duration tables as planning ranges."
+      ],
+      "watchFor": "Community duration tables can disagree. Recheck after major BGS changes.",
+      "quickFacts": [
+        {
+          "label": "War / Civil War / Election",
+          "value": "4–7 days, best-of-seven"
+        },
+        {
+          "label": "Boom/Bust/Civil Liberty/Civil Unrest",
+          "value": "Can persist while slider pressure supports them"
+        },
+        {
+          "label": "Non-conflict durations",
+          "value": "Treat community tables as ranges"
+        }
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Nova Force — Background Simulation Guide",
+          "url": "https://novaforce.com/guides/bgs/"
+        },
+        {
+          "name": "Elite Dangerous Wiki — Background Simulation",
+          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-observed"
+    },
+    {
+      "id": "bgs-activity-matrix",
+      "category": "BGS",
+      "topic": "BGS Activity → Practical Effect Matrix",
+      "keywords": [
+        "activity matrix",
+        "what does trade do",
+        "what do bounties do",
+        "what does exploration do",
+        "security economy influence",
+        "bgs levers",
+        "ten levers"
+      ],
+      "ruleOfThumb": "Choose activity based on the dimension you are trying to move: influence, economy, security, or conflict score. One activity can affect several dimensions at once.",
+      "details": [
+        "Mission completion can affect influence and may also move economy/security depending on mission type.",
+        "Profitable trade generally supports influence/economy for the asset owner and can contribute to Election scoring.",
+        "Bounty vouchers support influence/security for the issuing faction and can contribute to War/Civil War scoring.",
+        "Exploration data can support influence/economy at the receiving faction-controlled asset and can contribute to Election scoring.",
+        "Violent crime is negative security/influence pressure and can contribute to War/Civil War scoring against the victim.",
+        "Black-market/smuggling activity is commonly used for negative economic pressure; during Elections, smuggling can still be an election-scoring economic action depending on which side/asset is involved."
+      ],
+      "commonMistakes": [
+        "Treating every positive action as interchangeable.",
+        "Ignoring asset ownership when turning in trade or exploration data."
+      ],
+      "operations": [
+        "Write the desired dimensions beside every daily order, e.g. “Mongrels INF up + Security up” or “Election score only.” Pick levers that serve both when possible."
+      ],
+      "watchFor": "Exact weights and some state-specific modifiers are not fully published. Use this as directional guidance and calibrate with tick results.",
+      "sources": [
+        {
+          "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
+          "url": "https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-reviewed"
     }
   ]
 }

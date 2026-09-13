@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "reviewedAt": "2026-09-13",
   "entries": [
     {
@@ -12,6 +12,12 @@
       "term": "Asset",
       "expanded": "BGS Asset",
       "definition": "A station, outpost, settlement or installation controlled by a minor faction.",
+      "category": "BGS"
+    },
+    {
+      "term": "Asset at Risk",
+      "expanded": "BGS Conflict Asset",
+      "definition": "The station, outpost, settlement, or other faction asset staked for transfer in a conflict. Winning a conflict does not automatically transfer every asset the loser owns.",
       "category": "BGS"
     },
     {
@@ -53,7 +59,25 @@
     {
       "term": "Civil War",
       "expanded": "BGS Conflict",
-      "definition": "Combat conflict variant between factions in the same system, resolved through daily combat performance.",
+      "definition": "A combat-scored best-of-seven conflict between factions sharing the same home system when the pairing would otherwise resolve as War.",
+      "category": "BGS"
+    },
+    {
+      "term": "Clinch",
+      "expanded": "Mathematically Secured Conflict",
+      "definition": "A practical BGS term for the point where the trailing faction no longer has enough remaining conflict days to force at least a draw, so the conflict can end early.",
+      "category": "BGS"
+    },
+    {
+      "term": "Conflict Day",
+      "expanded": "Daily Conflict Result",
+      "definition": "One tick-scored result in a War, Civil War, or Election. Conflicts are best-of-seven daily contests and can end early when the trailing side can no longer force a draw.",
+      "category": "BGS"
+    },
+    {
+      "term": "Conflict Score",
+      "expanded": "Daily War/Election Score",
+      "definition": "The separate BGS scoring used to decide each day of an active War, Civil War, or Election. It is not the same as ordinary faction influence.",
       "category": "BGS"
     },
     {
@@ -77,7 +101,13 @@
     {
       "term": "Election",
       "expanded": "BGS Conflict",
-      "definition": "Non-combat conflict between compatible factions for control of an asset.",
+      "definition": "A non-combat best-of-seven conflict between election-compatible government ethos groups, scored through non-combat/economic activity.",
+      "category": "BGS"
+    },
+    {
+      "term": "Ethos",
+      "expanded": "Government Ethos",
+      "definition": "A hidden/derived government grouping used by the BGS to decide whether a conflict resolves as an Election or War. Common groups are Criminal, Autocratic, Corporate, and Social.",
       "category": "BGS"
     },
     {
@@ -255,6 +285,12 @@
       "category": "Surface"
     },
     {
+      "term": "State Bucket",
+      "expanded": "BGS State Category",
+      "definition": "A practical way to group simultaneous faction pressures such as economy, security, conflict, expansion/retreat, and event states.",
+      "category": "BGS"
+    },
+    {
       "term": "SYS / ENG / WEP",
       "expanded": "System / Engine / Weapon capacitors",
       "definition": "The three Power Distributor capacitor groups controlled with pips.",
@@ -275,7 +311,7 @@
     {
       "term": "War",
       "expanded": "BGS Conflict",
-      "definition": "Combat conflict resolved through conflict-day performance, commonly using Conflict Zones.",
+      "definition": "A combat-scored best-of-seven conflict between factions of incompatible ethos groups or involving Anarchy/Criminal ethos.",
       "category": "BGS"
     }
   ]
