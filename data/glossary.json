@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-09-13",
+  "entries": [
+    {
+      "term": "AFMU",
+      "expanded": "Auto Field-Maintenance Unit",
+      "definition": "Repairs modules while deployed; cannot repair the Power Plant and cannot repair itself without another AFMU.",
+      "category": "Engineering / Exploration"
+    },
+    {
+      "term": "AX",
+      "expanded": "Anti-Xeno",
+      "definition": "Combat and operations against Thargoids.",
+      "category": "AX"
+    },
+    {
+      "term": "BGS",
+      "expanded": "Background Simulation",
+      "definition": "Elite Dangerous system that tracks minor-faction influence, states, conflicts, control and other strategic conditions.",
+      "category": "BGS"
+    },
+    {
+      "term": "CZ",
+      "expanded": "Conflict Zone",
+      "definition": "Combat instance associated with a war or civil war.",
+      "category": "Combat / BGS"
+    },
+    {
+      "term": "Distro",
+      "expanded": "Power Distributor",
+      "definition": "Common shorthand for the Power Distributor and its SYS/ENG/WEP capacitors.",
+      "category": "Engineering"
+    },
+    {
+      "term": "EDSY",
+      "expanded": "Elite Dangerous Shipyard",
+      "definition": "External ship-building and engineering planner used to model complete builds.",
+      "category": "Ships / Engineering"
+    },
+    {
+      "term": "FSD",
+      "expanded": "Frame Shift Drive",
+      "definition": "Core module used for supercruise and hyperspace jumps.",
+      "category": "Ships"
+    },
+    {
+      "term": "G5",
+      "expanded": "Grade 5",
+      "definition": "Highest normal engineering grade for a blueprint.",
+      "category": "Engineering"
+    },
+    {
+      "term": "HGE",
+      "expanded": "High Grade Emissions",
+      "definition": "Signal source commonly used to gather high-grade manufactured engineering materials.",
+      "category": "Engineering"
+    },
+    {
+      "term": "HRP",
+      "expanded": "Hull Reinforcement Package",
+      "definition": "Optional internal module that increases hull integrity and can also influence resistances when engineered.",
+      "category": "Defense"
+    },
+    {
+      "term": "INF",
+      "expanded": "Influence",
+      "definition": "In BGS mission rewards, the Influence reward level; context matters because this is not the same as faction influence percentage.",
+      "category": "BGS"
+    },
+    {
+      "term": "MRP",
+      "expanded": "Module Reinforcement Package",
+      "definition": "Optional internal that absorbs a share of module damage after shields fall.",
+      "category": "Defense"
+    },
+    {
+      "term": "OC",
+      "expanded": "Overcharged",
+      "definition": "Common shorthand for an Overcharged engineering blueprint; exact meaning depends on the module.",
+      "category": "Engineering"
+    },
+    {
+      "term": "PA",
+      "expanded": "Plasma Accelerator",
+      "definition": "High-damage fixed weapon dealing a mixed damage profile.",
+      "category": "Combat"
+    },
+    {
+      "term": "PP",
+      "expanded": "Power Plant / Powerplay",
+      "definition": "Ambiguous shorthand. In ship-building discussions it often means Power Plant; in strategic discussions it may mean Powerplay.",
+      "category": "General"
+    },
+    {
+      "term": "SCB",
+      "expanded": "Shield Cell Bank",
+      "definition": "Optional internal that restores shield strength while active and produces significant heat.",
+      "category": "Defense"
+    },
+    {
+      "term": "SCO",
+      "expanded": "Supercruise Overcharge",
+      "definition": "FSD capability that allows a temporary high-speed supercruise boost at substantial fuel and heat cost.",
+      "category": "Travel"
+    },
+    {
+      "term": "SLF",
+      "expanded": "Ship-Launched Fighter",
+      "definition": "Fighter deployed from a Fighter Hangar.",
+      "category": "Combat"
+    },
+    {
+      "term": "SRV",
+      "expanded": "Surface Recon Vehicle",
+      "definition": "Ground vehicle deployed from a Planetary Vehicle Hangar.",
+      "category": "Surface"
+    },
+    {
+      "term": "SYS / ENG / WEP",
+      "expanded": "System / Engine / Weapon capacitors",
+      "definition": "The three Power Distributor capacitor groups controlled with pips.",
+      "category": "Combat"
+    },
+    {
+      "term": "TTK",
+      "expanded": "Time to Kill",
+      "definition": "How long it takes a build or group to destroy a target under the conditions being discussed.",
+      "category": "Combat"
+    },
+    {
+      "term": "High Wake",
+      "expanded": "Hyperspace jump to another star system",
+      "definition": "Often contrasted with low waking back into supercruise.",
+      "category": "Travel / Combat"
+    },
+    {
+      "term": "Low Wake",
+      "expanded": "Return to supercruise within the same system",
+      "definition": "Often easier to mass-lock than a high wake.",
+      "category": "Travel / Combat"
+    },
+    {
+      "term": "Pip Management",
+      "expanded": "Redistributing SYS/ENG/WEP power",
+      "definition": "Active management of distributor pips to change shield resistance, engine performance, and weapon recharge.",
+      "category": "Combat"
+    },
+    {
+      "term": "Reverski",
+      "expanded": "Reverse-flight combat tactic",
+      "definition": "Maintaining distance while flying backward and keeping weapons on an approaching target; especially discussed in PvP.",
+      "category": "PvP"
+    },
+    {
+      "term": "Shield Tank",
+      "expanded": "Defense strategy centered on maintaining a large/effective shield",
+      "definition": "Usually supported by boosters, resistances, SCBs, or regeneration depending on build.",
+      "category": "Defense"
+    },
+    {
+      "term": "Hull Tank",
+      "expanded": "Defense strategy designed to continue fighting after shields fail",
+      "definition": "Relies on armour, HRPs, MRPs, module placement/protection, and often repair planning.",
+      "category": "Defense"
+    },
+    {
+      "term": "Tick",
+      "expanded": "BGS processing/update cycle",
+      "definition": "The recurring simulation update in which faction influence and many state changes are processed.",
+      "category": "BGS"
+    },
+    {
+      "term": "Expansion",
+      "expanded": "BGS faction state",
+      "definition": "A state through which a minor faction can spread into another eligible system.",
+      "category": "BGS"
+    },
+    {
+      "term": "Retreat",
+      "expanded": "BGS faction state",
+      "definition": "A state that can remove a non-native faction from a system if retreat conditions persist.",
+      "category": "BGS"
+    },
+    {
+      "term": "Influence",
+      "expanded": "Minor-faction share of a system",
+      "definition": "A percentage representing relative faction standing within one system; distinct from mission INF reward pips.",
+      "category": "BGS"
+    }
+  ]
+}

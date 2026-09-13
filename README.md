@@ -28,3 +28,12 @@ Expanded Elite engineering knowledge library + public Guides.
 No new Cloudflare variables, secrets, KV namespaces, or bindings are required.
 
 Upload the complete package and allow Cloudflare Pages to redeploy.
+
+## v60 — Field Manual architecture
+- Reframed Guides as the broader Mongrel Field Manual instead of an engineering-first hub.
+- Added guide-family roadmap for Engineering, BGS, Mining, Combat/PvP, AX, Exploration/Exobiology, Trade/Carriers, Colonization and Powerplay.
+- Moved the existing engineering content to `/guides/engineering/`.
+- Added searchable `/guides/reference/` driven by `data/elite-knowledge.json` with expandable details, PvE/PvP notes, source links and review dates.
+- Added searchable `/guides/glossary/` driven by `data/glossary.json` for common Elite terms and acronyms.
+- Added `/guides/resources/` with links to INARA, EDSY, Spansh and official Elite resources.
+- Engineering guide terms now begin deep-linking into matching reference entries.
