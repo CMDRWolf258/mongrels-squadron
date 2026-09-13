@@ -15,6 +15,8 @@
   let editingPost = null;
   let carrierDirty = false;
   let coordDirty = false;
+  const memberParam = new URLSearchParams(location.search).get('member') || '';
+  let memberFilter = null;
 
   const apiFetch = async (url, options={}) => {
     const response = await fetch(`${url}${url.includes('?')?'&':'?'}_=${Date.now()}`, {credentials:'same-origin',cache:'no-store',...options});
@@ -130,7 +132,21 @@
 
   function errorMessage(code){return ({invalid_callsign:'Use a callsign in the format ABC-123.',callsign_already_registered:'That carrier callsign is already registered.',carrier_has_active_coordination:'Complete or remove this carrier’s active coordination posts first.',not_carrier_owner:'You can only manage your own carrier.',not_post_owner:'You can only edit your own coordination posts.',carrier_not_registered:'Register the carrier before posting coordination.',carrier_storage_not_configured:'Carrier storage is not connected yet.'}[code]||code||'Unable to save changes.');}
 
-  async function loadRegistry(){const {response,payload}=await apiFetch('/api/carriers?resource=registry');if(!response.ok){$('[data-carrier-empty]').hidden=false;$('[data-carrier-empty] strong').textContent='Carrier registry unavailable.';return;}session=payload.viewer||session;carriers=Array.isArray(payload.carriers)?payload.carriers:[];hydrateRoleFilter();renderRegistry();$('[data-carrier-register]').hidden=!session;}
+
+  function renderMemberFilter() {
+    document.querySelector('[data-carrier-member-filter]')?.remove();
+    if (!memberFilter) return;
+    const section = document.querySelector('#carrier-directory .container');
+    const head = section?.querySelector('.carrier-section-head');
+    if (!section || !head) return;
+    const banner = document.createElement('div');
+    banner.className = 'member-filter-banner';
+    banner.dataset.carrierMemberFilter = '';
+    banner.innerHTML = `<div><span>Member View</span><strong>${safe(memberFilter.name)}</strong><small>Showing registered carriers owned by this CMDR.</small></div><a class="btn btn-ghost" href="../carriers/#carrier-directory">Show Everyone</a>`;
+    section.insertBefore(banner, head);
+  }
+
+  async function loadRegistry(){const memberQuery=memberParam?`&member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/carriers?resource=registry${memberQuery}`);if(!response.ok){$('[data-carrier-empty]').hidden=false;$('[data-carrier-empty] strong').textContent='Carrier registry unavailable.';return;}session=payload.viewer||session;carriers=Array.isArray(payload.carriers)?payload.carriers:[];memberFilter=payload.memberFilter||null;renderMemberFilter();hydrateRoleFilter();renderRegistry();$('[data-carrier-register]').hidden=!session;}
   async function loadCoordination(){if(!session){$('[data-coord-signed-out]').hidden=false;$('[data-coord-board]').hidden=true;return;}const {response,payload}=await apiFetch('/api/carriers?resource=coordination');if(!response.ok){$('[data-coord-signed-out]').hidden=false;$('[data-coord-board]').hidden=true;return;}posts=Array.isArray(payload.posts)?payload.posts:[];$('[data-coord-signed-out]').hidden=true;$('[data-coord-board]').hidden=false;$('[data-coord-create]').hidden=false;renderCoordination();}
 
   $('[data-carrier-search]')?.addEventListener('input',renderRegistry);$('[data-carrier-role]')?.addEventListener('change',renderRegistry);$('[data-carrier-status]')?.addEventListener('change',renderRegistry);

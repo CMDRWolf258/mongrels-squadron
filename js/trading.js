@@ -16,6 +16,8 @@
   let postedRoutes = [];
   let editing = null;
   let dirty = false;
+  const memberParam = new URLSearchParams(location.search).get('member') || '';
+  let memberFilter = null;
 
   const n = value => Number(value || 0);
   const fmt = value => n(value).toLocaleString();
@@ -54,7 +56,7 @@
     return article;
   }
 
-  function allRoutes(){ return [...postedRoutes,...staticRoutes]; }
+  function allRoutes(){ return memberParam && memberFilter ? [...postedRoutes] : [...postedRoutes,...staticRoutes]; }
   function render() {
     const routes = allRoutes();
     const squad = routes.filter(r => r.category === 'squad' && active(r));
@@ -79,8 +81,22 @@
   async function save(event){event.preventDefault();const status=$('[data-trade-form-status]');status.textContent='Saving…';const {response,payload:result}=await apiFetch('/api/trades',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-editor'},body:JSON.stringify(payload())});if(!response.ok){status.textContent=result.error||'Unable to save route.';return;}dirty=false;await loadPosted();closeEditorForce();}
   function closeEditorForce(){shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
   async function remove(){if(!editing||!confirm('Delete this trade route?'))return;const {response,payload:result}=await apiFetch(`/api/trades?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'trade-editor'}});if(!response.ok){$('[data-trade-form-status]').textContent=result.error||'Unable to delete route.';return;}dirty=false;await loadPosted();closeEditorForce();}
+
+  function renderMemberFilter() {
+    document.querySelector('[data-member-filter-banner]')?.remove();
+    if (!memberFilter) return;
+    const section = document.querySelector('.trade-member-posting');
+    const container = section?.closest('.container') || section?.parentElement;
+    if (!section || !container) return;
+    const banner = document.createElement('div');
+    banner.className = 'member-filter-banner';
+    banner.dataset.memberFilterBanner = '';
+    banner.innerHTML = `<div><span>Member View</span><strong>${safe(memberFilter.name)}</strong><small>Showing active Trader's Outpost posts from this CMDR.</small></div><a class="btn btn-ghost" href="../trading/">Show Everyone</a>`;
+    section.insertAdjacentElement('afterend', banner);
+  }
+
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
-  async function loadPosted(){try{const {response,payload}=await apiFetch('/api/trades');if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);}}catch{}render();}
+  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);}}catch{}render();}
 
   [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);

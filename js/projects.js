@@ -13,6 +13,8 @@
   let filter = 'active';
   let editing = null;
   let dirty = false;
+  const memberParam = new URLSearchParams(location.search).get('member') || '';
+  let memberFilter = null;
 
   const $ = sel => document.querySelector(sel);
   const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -78,6 +80,7 @@
 
   function filteredItems() {
     const list = items.filter(item => {
+      if (filter === 'all') return true;
       if (filter === 'mine') return item.isMine;
       if (filter === 'archive') return item.status === 'complete';
       if (filter === 'events') return item.kind === 'event' && item.status !== 'complete';
@@ -263,14 +266,32 @@
     document.body.classList.remove('project-editor-open');
   }
 
+
+  function renderMemberFilter() {
+    document.querySelector('[data-member-filter-banner]')?.remove();
+    if (!memberFilter) return;
+    const container = board.querySelector('.container');
+    const anchor = container?.querySelector('.projects-toolbar-head');
+    if (!container || !anchor) return;
+    const banner = document.createElement('div');
+    banner.className = 'member-filter-banner';
+    banner.dataset.memberFilterBanner = '';
+    banner.innerHTML = `<div><span>Member View</span><strong>${safe(memberFilter.name)}</strong><small>Showing this CMDR's Projects & Events posts.</small></div><a class="btn btn-ghost" href="../projects/">Show Everyone</a>`;
+    container.insertBefore(banner, anchor);
+  }
+
   async function load() {
-    const { response, payload } = await apiFetch('/api/projects');
+    const memberQuery = memberParam ? `?member=${encodeURIComponent(memberParam)}` : '';
+    const { response, payload } = await apiFetch(`/api/projects${memberQuery}`);
     if (!response.ok) {
       grid.innerHTML = '<div class="data-empty-state"><span class="data-empty-icon">!</span><div><strong>Project board unavailable.</strong><p>The secure project service could not be reached.</p></div></div>';
       return;
     }
     session = payload.viewer;
     items = Array.isArray(payload.items) ? payload.items : [];
+    memberFilter = payload.memberFilter || null;
+    if (memberParam && memberFilter && !window.__memberProjectFilterHandled) { filter = 'all'; window.__memberProjectFilterHandled = true; document.querySelectorAll('[data-project-filter]').forEach(x => x.classList.remove('active')); }
+    renderMemberFilter();
     signedOut.hidden = true;
     board.hidden = false;
     render();

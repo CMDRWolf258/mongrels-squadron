@@ -1,6 +1,6 @@
-# Regiment of Imperial Mongrels — v65
+# Regiment of Imperial Mongrels — v68
 
-Mission Control usability pass: paginated All Systems, automatic default influence bands, stronger Retreat warnings, and a collapsible member playbook.
+Current package includes all prior releases through v67 plus the v68 Member Experience / Roster v2 update.
 
 ## All Systems pagination
 - All Systems now shows **15 systems per page by default** instead of rendering the entire Mongrel footprint at once.
@@ -66,3 +66,21 @@ Upload the complete package and let Cloudflare Pages redeploy. Existing v64 stra
 - Added Squadron Roster access to the Member Portal and Officer Tools.
 - Ask the Mongrels can now answer member-directory/specialty questions from directory-visible profiles without receiving Discord IDs or hidden profile data.
 - Profiles reuse the existing `PROJECTS` KV binding under the separate `profiles-v1` key, so no new Cloudflare binding or namespace is required. A dedicated KV/D1 store can be introduced later if the directory becomes large or needs richer history/querying.
+
+
+## v68 — Member Experience / Roster v2
+
+- Rebuilt Profile Visibility as bound checkbox/label rows so controls stay aligned on desktop, iPad, and phones.
+- Replaced oversized activity pills with compact tags.
+- Converted Specialties and Preferred Activities from free-form text into controlled selections so roster filtering and cross-links are reliable.
+- Added structured availability status: Available to Help, Looking for Group, Busy, Away, or no status.
+- Added roster filters for specialty, activity, availability, leadership, carrier owners, and members available to help.
+- Specialties and activities are clickable and return to the roster filtered to matching CMDRs.
+- Added profile-completion guidance for members with sparse profiles.
+- Added clearer leadership badges and a responsive profile action bar.
+- Contribution links now use the profile's opaque site ID rather than exposing Discord IDs. Projects & Events, Trader's Outpost, PvP Bounties, and the Carrier Registry can open filtered to the selected CMDR.
+- Member-context filtering is resolved server-side against the private profile store; public carrier/trade endpoints only honor a profile filter for authenticated squad members.
+- Added mobile/tablet cleanup for the editor, tags, action bar, roster filters, and linked-member filter banners.
+- Moderated Gallery and Ship Build submissions remain intentionally deferred for a dedicated approval-workflow release.
+
+No new Cloudflare variables, bindings, or KV namespaces are required. Existing profiles remain compatible; specialties/activities are normalized to the controlled lists when the profile is next saved.

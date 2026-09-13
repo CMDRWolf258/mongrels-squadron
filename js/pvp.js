@@ -9,6 +9,8 @@
   let session = null;
   let items = [];
   let filter = 'active';
+  const memberParam = new URLSearchParams(location.search).get('member') || '';
+  let memberFilter = null;
   let editing = null;
   let dirty = false;
   const $ = sel => document.querySelector(sel);
@@ -78,7 +80,20 @@
   function payload(){ return {id:$('[data-bounty-id]').value||undefined,target:$('[data-bounty-target]').value,reward:$('[data-bounty-reward]').value,system:$('[data-bounty-system]').value,status:$('[data-bounty-status]').value,expires:$('[data-bounty-expires]').value,reason:$('[data-bounty-reason]').value,proof:$('[data-bounty-proof]').value}; }
   async function save(event){ event.preventDefault(); const status=$('[data-bounty-form-status]'); status.textContent='Saving…'; const {response,payload:result}=await apiFetch('/api/bounties',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'bounty-editor'},body:JSON.stringify(payload())}); if(!response.ok){status.textContent=result.error||'Unable to save bounty.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open'); }
   async function remove(){ if(!editing || !confirm('Delete this bounty? This cannot be undone.')) return; const {response,payload:result}=await apiFetch(`/api/bounties?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'bounty-editor'}}); if(!response.ok){$('[data-bounty-form-status]').textContent=result.error||'Unable to delete bounty.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open'); }
-  async function load(){ const {response,payload}=await apiFetch('/api/bounties'); if(!response.ok){grid.innerHTML='<div class="data-empty-state"><span class="data-empty-icon">!</span><div><strong>Bounty board unavailable.</strong><p>The secure bounty service could not be reached.</p></div></div>';return;} session=payload.viewer; items=Array.isArray(payload.bounties)?payload.bounties:[]; signedOut.hidden=true; board.hidden=false; render(); }
+
+  function renderMemberFilter() {
+    document.querySelector('[data-bounty-member-filter]')?.remove();
+    if (!memberFilter) return;
+    const toolbar = board.querySelector('.bounty-toolbar');
+    if (!toolbar) return;
+    const banner = document.createElement('div');
+    banner.className = 'member-filter-banner';
+    banner.dataset.bountyMemberFilter = '';
+    banner.innerHTML = `<div><span>Member View</span><strong>${safe(memberFilter.name)}</strong><small>Showing bounty posts created by this CMDR.</small></div><a class="btn btn-ghost" href="../pvp/#bounty-board">Show Everyone</a>`;
+    toolbar.insertAdjacentElement('beforebegin', banner);
+  }
+
+  async function load(){ const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:''; const {response,payload}=await apiFetch(`/api/bounties${memberQuery}`); if(!response.ok){grid.innerHTML='<div class="data-empty-state"><span class="data-empty-icon">!</span><div><strong>Bounty board unavailable.</strong><p>The secure bounty service could not be reached.</p></div></div>';return;} session=payload.viewer; items=Array.isArray(payload.bounties)?payload.bounties:[]; memberFilter=payload.memberFilter||null; if(memberParam&&memberFilter){filter='all';const select=$('[data-bounty-filter]');if(select)select.value='all';} signedOut.hidden=true; board.hidden=false; renderMemberFilter(); render(); }
 
   $('[data-bounty-filter]')?.addEventListener('change',e=>{filter=e.target.value;render();});
   $('[data-bounty-create]')?.addEventListener('click',()=>openEditor());
