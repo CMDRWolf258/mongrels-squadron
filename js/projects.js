@@ -295,6 +295,7 @@
     signedOut.hidden = true;
     board.hidden = false;
     render();
+    if (memberParam && memberFilter && !window.__memberProjectAnchorHandled) { window.__memberProjectAnchorHandled = true; requestAnimationFrame(() => document.getElementById('project-list')?.scrollIntoView({block:'start'})); }
     const params = new URLSearchParams(location.search);
     if (!window.__projectViewHandled && params.get('view') === 'events') {
       window.__projectViewHandled = true;

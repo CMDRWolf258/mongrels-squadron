@@ -1,6 +1,6 @@
-# Regiment of Imperial Mongrels — v68
+# Regiment of Imperial Mongrels — v69
 
-Current package includes all prior releases through v67 plus the v68 Member Experience / Roster v2 update.
+Current package includes all prior releases through v68 plus the v69 Visual Identity + Profile Navigation update.
 
 ## All Systems pagination
 - All Systems now shows **15 systems per page by default** instead of rendering the entire Mongrel footprint at once.
@@ -84,3 +84,14 @@ Upload the complete package and let Cloudflare Pages redeploy. Existing v64 stra
 - Moderated Gallery and Ship Build submissions remain intentionally deferred for a dedicated approval-workflow release.
 
 No new Cloudflare variables, bindings, or KV namespaces are required. Existing profiles remain compatible; specialties/activities are normalized to the controlled lists when the profile is next saved.
+
+
+## v69 — Visual Identity + Profile Navigation
+
+- Added a restrained visual-identity layer without changing the site's core dark/cyan Mongrels theme.
+- Added personal screenshot-backed hero treatments to Home, Mission Control, Mining Field Manual, and the Member Network family, with dark overlays and subtle HUD trim for readability.
+- Added Field Manual, PvP, and Squadron Roster cards to the Home page's **Everything in One Place** section.
+- Roster cards now show **Carrier: Yes/No** rather than a numeric carrier count. Detailed profiles continue to show the actual registered carrier information.
+- Profile contribution links now deep-link to the relevant filtered list: Projects, Trader's Outpost, Bounty Board, and Carrier Registry.
+- Added stable section anchors and post-load scroll handling so asynchronous member-filtered pages land on the requested content rather than the page hero.
+- No new Cloudflare bindings, variables, or KV namespaces are required.
