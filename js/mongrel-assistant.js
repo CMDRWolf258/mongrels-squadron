@@ -1,4 +1,6 @@
 (() => {
+  const HISTORY_KEY_PREFIX = 'mongrels_assistant_history_v1';
+  const HISTORY_MAX_MESSAGES = 40;
   const state = { session:null, history:[], busy:false, usage:null };
   const root = document.createElement('div');
   root.className = 'mongrel-assistant';
@@ -9,7 +11,10 @@
     <section class="mongrel-assistant-panel" id="mongrel-assistant-panel" hidden aria-label="Mongrel Assistant">
       <header class="mongrel-assistant-head">
         <div><small>MONGREL NETWORK</small><strong>Mongrel Assistant</strong><span data-assistant-access>Checking member access…</span></div>
-        <button type="button" class="mongrel-assistant-close" aria-label="Close assistant">×</button>
+        <div class="mongrel-assistant-head-actions">
+          <button type="button" class="mongrel-assistant-clear" data-assistant-clear aria-label="Clear assistant chat">Clear</button>
+          <button type="button" class="mongrel-assistant-close" aria-label="Close assistant">×</button>
+        </div>
       </header>
       <div class="mongrel-assistant-log" data-assistant-log aria-live="polite"></div>
       <div class="mongrel-assistant-links" data-assistant-links hidden></div>
@@ -25,6 +30,7 @@
   const launcher = root.querySelector('.mongrel-assistant-launcher');
   const panel = root.querySelector('.mongrel-assistant-panel');
   const close = root.querySelector('.mongrel-assistant-close');
+  const clear = root.querySelector('[data-assistant-clear]');
   const log = root.querySelector('[data-assistant-log]');
   const links = root.querySelector('[data-assistant-links]');
   const form = root.querySelector('[data-assistant-form]');
@@ -34,10 +40,32 @@
   const access = root.querySelector('[data-assistant-access]');
   const budget = root.querySelector('[data-assistant-budget]');
 
-  const open = () => { panel.hidden=false; launcher.setAttribute('aria-expanded','true'); input?.focus(); };
-  const shut = () => { panel.hidden=true; launcher.setAttribute('aria-expanded','false'); };
+  const isTouchLayout = () => matchMedia('(max-width: 900px)').matches;
+  const syncViewportHeight = () => {
+    const h = window.visualViewport?.height || window.innerHeight;
+    document.documentElement.style.setProperty('--assistant-vh', `${Math.round(h)}px`);
+  };
+  syncViewportHeight();
+  window.visualViewport?.addEventListener('resize', syncViewportHeight);
+  window.addEventListener('orientationchange', () => setTimeout(syncViewportHeight, 100));
+
+  const open = () => {
+    panel.hidden=false;
+    launcher.setAttribute('aria-expanded','true');
+    document.documentElement.classList.add('assistant-open');
+    document.body.classList.add('assistant-open');
+    syncViewportHeight();
+    setTimeout(() => input?.focus({ preventScroll:true }), 80);
+  };
+  const shut = () => {
+    panel.hidden=true;
+    launcher.setAttribute('aria-expanded','false');
+    document.documentElement.classList.remove('assistant-open');
+    document.body.classList.remove('assistant-open');
+  };
   launcher.addEventListener('click', () => panel.hidden ? open() : shut());
   close.addEventListener('click', shut);
+  document.addEventListener('keydown', event => { if(event.key === 'Escape' && !panel.hidden) shut(); });
 
   const addMessage = (role, text) => {
     const item=document.createElement('div'); item.className=`mongrel-assistant-message is-${role}`;
@@ -47,14 +75,31 @@
     return item;
   };
 
-  const showWelcome = () => {
+  const renderConversation = () => {
     log.replaceChildren();
+    if (state.history.length) {
+      state.history.forEach(item => addMessage(item.role, item.text));
+      return;
+    }
     if (state.session?.authenticated) {
       addMessage('assistant', `Ready, ${state.session.displayName || 'Mongrel'}. I can read current squad data and help you find what you need. I cannot change anything on the site.`);
     } else {
       addMessage('assistant', 'Sign in with Discord to use the Mongrel Assistant. Member authentication keeps private squad data protected and prevents anonymous API usage.');
       const a=document.createElement('a'); a.className='btn btn-primary mongrel-assistant-login'; a.href=`/api/auth/login?return=${encodeURIComponent(location.pathname+location.search+location.hash)}`; a.textContent='Sign in with Discord'; log.appendChild(a);
     }
+  };
+
+  const localHistoryKey = () => state.session?.sub ? `${HISTORY_KEY_PREFIX}:${state.session.sub}` : null;
+  const loadLocalHistory = () => {
+    try {
+      const key=localHistoryKey(); if(!key) return [];
+      const payload=JSON.parse(localStorage.getItem(key) || 'null');
+      if (!payload || !Array.isArray(payload.history) || !payload.expiresAt || Date.now() > payload.expiresAt) return [];
+      return payload.history.slice(-HISTORY_MAX_MESSAGES).filter(x => (x?.role==='user'||x?.role==='assistant') && typeof x?.text==='string');
+    } catch { return []; }
+  };
+  const saveLocalHistory = () => {
+    try { const key=localHistoryKey(); if(key) localStorage.setItem(key, JSON.stringify({ history:state.history.slice(-HISTORY_MAX_MESSAGES), expiresAt:Date.now()+48*60*60*1000 })); } catch {}
   };
 
   const money = value => `$${Number(value || 0).toFixed(Number(value || 0) < 0.01 ? 4 : 2)}`;
@@ -67,26 +112,31 @@
     if(u.exhausted){ input.disabled=true; send.disabled=true; status.textContent='Monthly AI allowance reached'; }
   };
 
-  const loadUsage = async () => {
+  const loadAssistantState = async () => {
     if(!state.session?.authenticated){renderUsage(null);return;}
     try{
       const response=await fetch(`/api/assistant?_=${Date.now()}`,{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
       const payload=await response.json().catch(()=>({}));
-      if(response.ok&&payload.ok) renderUsage(payload.usage); else renderUsage(null);
+      if(response.ok&&payload.ok){
+        renderUsage(payload.usage);
+        if(Array.isArray(payload.history) && payload.history.length){ state.history=payload.history.slice(-HISTORY_MAX_MESSAGES); saveLocalHistory(); renderConversation(); }
+      } else renderUsage(null);
     }catch{renderUsage(null);}
   };
 
   const loadSession = async () => {
+    state.history = [];
     try {
       const response=await fetch(`/api/auth/session?_=${Date.now()}`,{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
       state.session=response.ok?await response.json():null;
     } catch { state.session=null; }
     const authenticated=Boolean(state.session?.authenticated);
+    if(authenticated) state.history = loadLocalHistory();
     access.textContent=authenticated?`${state.session.displayName} · ${state.session.accessLabel}`:'Members only';
     input.disabled=!authenticated; send.disabled=!authenticated;
     status.textContent=authenticated?'Read-only · current squad data':'Discord sign-in required';
-    showWelcome();
-    await loadUsage();
+    renderConversation();
+    await loadAssistantState();
   };
 
   const renderLinks = items => {
@@ -111,6 +161,13 @@
     assistant_unavailable:'The AI service is temporarily unavailable. The rest of the site is unaffected.',
   }[code] || 'I could not complete that request. Please try again.');
 
+  clear.addEventListener('click', async () => {
+    if (!state.history.length) return;
+    if (!confirm('Clear your Mongrel Assistant conversation from this device and the saved 48-hour history?')) return;
+    state.history=[]; renderLinks([]); saveLocalHistory(); renderConversation();
+    try { await fetch('/api/assistant',{method:'DELETE',credentials:'same-origin',cache:'no-store',headers:{'Accept':'application/json','X-Mongrels-Request':'mongrel-assistant'}}); } catch {}
+  });
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const message=(input.value||'').trim();
@@ -119,13 +176,13 @@
     addMessage('user',message); input.value=''; renderLinks([]);
     const pending=addMessage('assistant','Checking current squad data…');
     try {
-      const response=await fetch('/api/assistant',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json','X-Mongrels-Request':'mongrel-assistant'},body:JSON.stringify({message,history:state.history.slice(-6)})});
+      const response=await fetch('/api/assistant',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'application/json','X-Mongrels-Request':'mongrel-assistant'},body:JSON.stringify({message,history:state.history.slice(-12)})});
       const payload=await response.json().catch(()=>({}));
       if(payload.usage) renderUsage(payload.usage);
       if(!response.ok||!payload.ok){pending.querySelector('div').textContent=errorMessage(payload.error);return;}
       pending.querySelector('div').textContent=payload.answer;
       state.history.push({role:'user',text:message},{role:'assistant',text:payload.answer});
-      state.history=state.history.slice(-8);
+      state.history=state.history.slice(-HISTORY_MAX_MESSAGES); saveLocalHistory();
       renderLinks(payload.links);
     } catch { pending.querySelector('div').textContent=errorMessage('assistant_unavailable'); }
     finally {
@@ -133,7 +190,7 @@
       const exhausted=Boolean(state.usage?.user?.exhausted);
       send.disabled=exhausted; input.disabled=exhausted;
       status.textContent=exhausted?'Monthly AI allowance reached':'Read-only · current squad data';
-      if(!exhausted) input.focus();
+      if(!exhausted && !isTouchLayout()) input.focus();
     }
   });
 

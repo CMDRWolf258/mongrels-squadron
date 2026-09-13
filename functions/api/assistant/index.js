@@ -5,6 +5,8 @@ const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MAX_MESSAGE = 1600;
 const MAX_HISTORY_ITEMS = 6;
 const MAX_HISTORY_TEXT = 600;
+const DISPLAY_HISTORY_ITEMS = 40;
+const CHAT_TTL_SECONDS = 48 * 60 * 60;
 const MAX_OUTPUT_TOKENS = 500;
 const WARNING_FRACTION = 0.80;
 const HOURLY_LIMITS = { member: 60, officer: 120, site_admin: 240 };
@@ -21,7 +23,8 @@ export async function onRequestGet({ request, env }) {
   if (storageError) return storageError;
 
   const usage = await readUsageSummary(env, auth.session);
-  return reply({ ok:true, usage });
+  const history = await readSavedHistory(env, auth.session.sub);
+  return reply({ ok:true, usage, history });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -102,8 +105,22 @@ Rules:
   const tokenUsage = normalizeTokenUsage(data?.usage, input, answer);
   const requestCost = calculateCost(tokenUsage, pricing);
   const usage = await recordUsage(env, session, tokenUsage, requestCost, model);
+  const savedHistory = mergeSavedHistory(body?.history, message, answer);
+  await saveHistory(env, session.sub, savedHistory);
 
   return reply({ ok:true, answer, links, model, usage });
+}
+
+
+export async function onRequestDelete({ request, env }) {
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth.response;
+  const originError = validateSameOrigin(request);
+  if (originError) return originError;
+  const storageError = requireUsageStorage(env);
+  if (storageError) return storageError;
+  try { await env.AI_USAGE.delete(chatKey(auth.session.sub)); } catch {}
+  return reply({ ok:true });
 }
 
 async function requireMember(request, env) {
@@ -247,6 +264,35 @@ function normalizeTokenUsage(usage, inputText, answerText) {
 function calculateCost(tokens, pricing) {
   const uncached = Math.max(0, tokens.input - tokens.cachedInput);
   return ((uncached * pricing.input) + (tokens.cachedInput * pricing.cachedInput) + (tokens.output * pricing.output)) / 1_000_000;
+}
+
+function chatKey(userId) { return `chat:v1:user:${userId}`; }
+
+async function readSavedHistory(env, userId) {
+  const raw = await readJson(env.AI_USAGE, chatKey(userId), { history:[] });
+  return normalizeDisplayHistory(raw?.history);
+}
+
+async function saveHistory(env, userId, history) {
+  try {
+    await env.AI_USAGE.put(chatKey(userId), JSON.stringify({ history:normalizeDisplayHistory(history), updatedAt:new Date().toISOString() }), { expirationTtl: CHAT_TTL_SECONDS });
+  } catch {}
+}
+
+function mergeSavedHistory(value, message, answer) {
+  const base = normalizeDisplayHistory(value);
+  const last = base[base.length - 1];
+  if (!last || last.role !== 'user' || last.text !== message) base.push({ role:'user', text:clean(message, '', 1600) });
+  base.push({ role:'assistant', text:clean(answer, '', 4000) });
+  return base.slice(-DISPLAY_HISTORY_ITEMS);
+}
+
+function normalizeDisplayHistory(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(-DISPLAY_HISTORY_ITEMS).map(item => ({
+    role: item?.role === 'assistant' ? 'assistant' : 'user',
+    text: clean(item?.text, '', item?.role === 'assistant' ? 4000 : 1600),
+  })).filter(item => item.text);
 }
 
 function normalizeHistory(value) {

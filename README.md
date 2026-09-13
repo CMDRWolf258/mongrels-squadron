@@ -82,3 +82,15 @@ For the default `gpt-5.6-luna` model, v53 uses $0.20 / 1M uncached input tokens,
 - `AI_OUTPUT_USD_PER_MILLION`
 
 Usage is calculated from the token usage returned by the OpenAI Responses API and stored monthly in Cloudflare KV. The site refuses new requests once a configured user/site ceiling has already been reached. Because KV is not transactional, simultaneous requests can theoretically overshoot a ceiling by a very small amount; for this low-volume squad use the practical exposure is tiny.
+
+## v54 — Assistant mobile + history update
+- Phone assistant now opens as a full-screen sheet instead of a floating desktop panel.
+- iPad/tablet positioning uses dynamic viewport height and safe-area padding so the close control stays visible.
+- iOS input zoom is prevented with 16px touch-layout text input sizing.
+- Background page scrolling is locked while the assistant is open on touch layouts.
+- VisualViewport handling keeps the composer usable when the on-screen keyboard opens.
+- Recent assistant conversation is restored after closing/reopening and across devices for 48 hours.
+- Conversation storage reuses the existing `AI_USAGE` KV binding; no new Cloudflare binding is required.
+- A Clear control removes both local and server-saved chat history.
+- Only a limited recent history window is sent to the model for context, so visible history does not automatically balloon token cost.
+- Officer-only Daily Orders notes are filtered out of AI context for normal Members.
