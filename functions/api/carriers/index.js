@@ -11,12 +11,20 @@ export async function onRequestGet({ request, env }) {
   const session = await readSession(request, env);
 
   if (resource === 'registry') {
-    const carriers = await readRegistry(env);
+    let carriers = await readRegistry(env);
+    const sync = await syncCarrierLocations(carriers);
+    if (sync.changed && env.CARRIERS && typeof env.CARRIERS.put === 'function') {
+      carriers = sync.carriers;
+      await writeRegistry(env, carriers);
+    } else {
+      carriers = sync.carriers;
+    }
     return reply({
       ok: true,
       authenticated: Boolean(session && ALLOWED_ACCESS.has(session.access)),
       viewer: session && ALLOWED_ACCESS.has(session.access) ? viewer(session) : null,
       canModerate: Boolean(session && MANAGER_ACCESS.has(session.access)),
+      telemetry: { source: 'EDDN / EDData', checked: sync.checked, updated: sync.updated },
       carriers: carriers.map(item => presentCarrier(item, session)),
     });
   }
@@ -167,6 +175,8 @@ function normalizeCarrier(value,fixed,session,existing={}) {
     status:normalizeCarrierStatus(src.status||existing.status), notes:clean(src.notes,existing.notes||'',1200),
     currentSystem, locationSource: currentSystem ? (existing.locationSource && !locationChanged ? existing.locationSource : 'member') : '',
     locationUpdatedAt: currentSystem ? (locationChanged || !existing.locationUpdatedAt ? fixed.updatedAt : existing.locationUpdatedAt) : '',
+    telemetrySystem: existing.telemetrySystem || '', telemetryUpdatedAt: existing.telemetryUpdatedAt || '',
+    telemetryCheckedAt: existing.telemetryCheckedAt || '', telemetrySource: existing.telemetrySource || '',
     services:normalizeList(src.services,existing.services||[]), official:manager?Boolean(src.official):Boolean(existing.official),
     createdAt:fixed.createdAt, updatedAt:fixed.updatedAt, updatedBy:fixed.updatedBy,
   };
@@ -188,9 +198,81 @@ function normalizeCoordination(value,fixed,session,existing={}) {
 function presentCarrier(item,session){
   const authenticated=Boolean(session&&ALLOWED_ACCESS.has(session.access));
   const canEdit=authenticated&&(MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub);
-  return {id:item.id,callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,services:item.services,official:item.official,updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
+  return {id:item.id,callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
 }
 function presentCoordination(item,session,carrier){return {...item,carrierName:carrier?.name||item.carrierCallsign,carrierCommander:carrier?.commanderName||'',currentSystem:carrier?.currentSystem||'',locationSource:carrier?.locationSource||'',locationUpdatedAt:carrier?.locationUpdatedAt||'',canEdit:MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub,isMine:item.ownerId===session.sub};}
+
+
+const TELEMETRY_LOOKUP_MS = 15 * 60 * 1000;
+const TELEMETRY_BATCH = 12;
+const EDDATA_BASE = 'https://api.eddata.dev/v2/search/station/name/';
+
+async function syncCarrierLocations(carriers) {
+  const now = Date.now();
+  const candidates = carriers
+    .map((carrier, index) => ({ carrier, index }))
+    .filter(({ carrier }) => !carrier.telemetryCheckedAt || now - timestamp(carrier.telemetryCheckedAt) >= TELEMETRY_LOOKUP_MS)
+    .sort((a,b) => timestamp(a.carrier.telemetryCheckedAt) - timestamp(b.carrier.telemetryCheckedAt))
+    .slice(0, TELEMETRY_BATCH);
+  if (!candidates.length) return { carriers, changed:false, checked:0, updated:0 };
+
+  const copy = carriers.map(c => ({ ...c }));
+  let changed = false, checked = 0, updated = 0;
+  await Promise.all(candidates.map(async ({ carrier, index }) => {
+    const checkedAt = new Date().toISOString();
+    const result = await lookupCarrierTelemetry(carrier.callsign);
+    copy[index].telemetryCheckedAt = checkedAt;
+    checked += 1;
+    changed = true;
+    if (!result) return;
+    copy[index].telemetrySystem = result.systemName;
+    copy[index].telemetryUpdatedAt = result.updatedAt;
+    copy[index].telemetrySource = 'eddata';
+
+    const currentStamp = timestamp(copy[index].locationUpdatedAt);
+    const telemetryStamp = timestamp(result.updatedAt);
+    // A newer manual correction wins until telemetry catches up.
+    if (!copy[index].currentSystem || telemetryStamp >= currentStamp) {
+      const moved = copy[index].currentSystem !== result.systemName;
+      copy[index].currentSystem = result.systemName;
+      copy[index].locationSource = 'eddata';
+      copy[index].locationUpdatedAt = result.updatedAt;
+      if (moved) copy[index].updatedAt = checkedAt;
+      updated += 1;
+    }
+  }));
+  return { carriers:copy, changed, checked, updated };
+}
+
+async function lookupCarrierTelemetry(callsign) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(`${EDDATA_BASE}${encodeURIComponent(callsign)}`, {
+      headers: { 'Accept':'application/json', 'User-Agent':'Mongrels-Squadron-Carrier-Registry/1.0' },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.stations) ? payload.stations : Array.isArray(payload?.results) ? payload.results : [];
+    const exact = rows.find(row => normalizeCallsign(row?.stationName || row?.name || '') === callsign);
+    if (!exact) return null;
+    const type = String(exact.stationType || exact.type || '').toLowerCase();
+    if (type && !type.includes('carrier')) return null;
+    const systemName = clean(exact.systemName || exact.system || '', '', 120);
+    if (!systemName) return null;
+    const updatedAt = validTimestamp(exact.updatedAt || exact.updated_at || exact.timestamp) || new Date().toISOString();
+    return { systemName, updatedAt };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function timestamp(value){ const n = value ? new Date(value).getTime() : 0; return Number.isFinite(n) ? n : 0; }
+function validTimestamp(value){ const n = timestamp(value); return n ? new Date(n).toISOString() : ''; }
+function freshness(value){ const age = Date.now() - timestamp(value); if(!timestamp(value)) return 'unknown'; if(age <= 6*60*60*1000) return 'fresh'; if(age <= 24*60*60*1000) return 'aging'; return 'stale'; }
 
 async function readRegistry(env){if(!env.CARRIERS||typeof env.CARRIERS.get!=='function') return []; const v=await env.CARRIERS.get(REGISTRY_KEY,{type:'json'}); return Array.isArray(v)?v:[];}
 async function writeRegistry(env,v){await env.CARRIERS.put(REGISTRY_KEY,JSON.stringify(v.slice(0,300)));}

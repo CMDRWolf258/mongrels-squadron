@@ -33,9 +33,10 @@
   function copyText(text,button){navigator.clipboard?.writeText(text).then(()=>{const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1100);}).catch(()=>{});}
 
   function locationMarkup(c){
-    if(!c.currentSystem) return '<span class="carrier-location-empty">Not reported</span>';
-    const source=c.locationSource==='member'?'Member reported':label(c.locationSource||'Reported');
-    return `<div class="carrier-location-line"><span>${safe(c.currentSystem)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(c.currentSystem)}" aria-label="Copy system name">⧉</button></div><small>${safe(source)} · ${safe(timeAgo(c.locationUpdatedAt))}</small>`;
+    if(!c.currentSystem) return `<span class="carrier-location-empty">Not reported${c.telemetryCheckedAt?` · checked ${safe(timeAgo(c.telemetryCheckedAt))}`:''}</span>`;
+    const source=c.locationSource==='member'?'Member reported':c.locationSource==='eddata'?'EDDN / EDData':label(c.locationSource||'Reported');
+    const freshness=c.locationFreshness==='fresh'?'Fresh':c.locationFreshness==='aging'?'Aging':'Stale';
+    return `<div class="carrier-location-line"><span>${safe(c.currentSystem)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(c.currentSystem)}" aria-label="Copy system name">⧉</button></div><small><span class="carrier-freshness carrier-freshness-${safe(c.locationFreshness||'unknown')}">${safe(freshness)}</span> · ${safe(source)} · ${safe(timeAgo(c.locationUpdatedAt))}</small>`;
   }
 
   function renderRegistry(){

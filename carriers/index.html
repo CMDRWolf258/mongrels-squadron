@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png">
   <title>Carriers | The Mongrels</title>
   <meta name="description" content="Mongrel fleet carrier registry and private member coordination board.">
-  <link rel="stylesheet" href="../css/global.css?v=48">
+  <link rel="stylesheet" href="../css/global.css?v=49">
 </head>
 <body>
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/" aria-current="page">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -31,7 +31,7 @@
     </div>
   </div></section>
 
-  <section class="section section-sm"><div class="container"><div class="carrier-info-panel"><div><p class="eyebrow">Automation Ready</p><h2>Manual intent. Automated position later.</h2><p>Members still enter planned destinations, departure times, cargo targets, and purpose. Current location is labeled by source and timestamp so future Frontier or EDDN-backed updates can slot in without redesigning the board.</p></div><div class="carrier-info-tags"><span>Callsign Identity</span><span>Location Source</span><span>Freshness</span><span>Departure / ETA</span><span>Cargo Remaining</span></div></div></div></section>
+  <section class="section section-sm"><div class="container"><div class="carrier-info-panel"><div><p class="eyebrow">Live Location Sync</p><h2>Automatic position. Manual intent.</h2><p>Registered callsigns are checked against EDDN-backed EDData when the carrier board loads. Newer telemetry updates the current system automatically; a newer member correction is never overwritten by older telemetry. Planned destinations, departure times, cargo targets, and purpose remain member-entered.</p></div><div class="carrier-info-tags"><span>EDDN / EDData</span><span>Callsign Match</span><span>Freshness</span><span>Manual Fallback</span><span>Departure / ETA</span></div></div></div></section>
 
   <section class="project-editor-shell" data-carrier-editor-shell hidden aria-label="Carrier registration editor"><div class="project-editor-backdrop" data-carrier-cancel></div><form class="project-editor-panel" data-carrier-form><div class="project-editor-head"><div><p class="eyebrow">Carrier Registry</p><h2 data-carrier-form-title>Register My Carrier</h2></div><button class="btn btn-secondary" type="button" data-carrier-cancel>Close</button></div><input type="hidden" data-carrier-id><div class="project-editor-grid">
     <label><span>Carrier Callsign / ID</span><input type="text" maxlength="7" pattern="[A-Za-z0-9]{3}-[A-Za-z0-9]{3}" required data-carrier-callsign placeholder="ABC-123"><small>Required for accuracy. This is the registry identity and cannot be changed after registration.</small></label>
@@ -39,7 +39,7 @@
     <label><span>CMDR / Owner Name</span><input type="text" maxlength="80" required data-carrier-commander placeholder="CMDR Wolf258"></label>
     <label><span>Primary Role</span><select data-carrier-role-edit><option>General Logistics</option><option>Colonization Support</option><option>Trade / Hauling</option><option>Mining Support</option><option>Combat Support</option><option>Exploration / Expedition</option><option>Refuel / Tritium</option><option>Squadron Flagship</option><option>Other</option></select></label>
     <label><span>Status</span><select data-carrier-status-edit><option value="active">Active</option><option value="relocating">Relocating</option><option value="supporting">Supporting Project</option><option value="maintenance">Maintenance</option><option value="unavailable">Unavailable</option></select></label>
-    <label><span>Current System</span><input type="text" maxlength="120" data-carrier-system placeholder="Optional reported location"></label>
+    <label><span>Current System</span><input type="text" maxlength="120" data-carrier-system placeholder="Optional manual location"><small>Fallback / correction only. Newer EDDN-backed telemetry can update this automatically when available.</small></label>
     <label class="project-editor-wide"><span>Services</span><input type="text" maxlength="600" data-carrier-services placeholder="Repair, Refuel, Shipyard, Outfitting (comma separated)"></label>
     <label class="project-editor-wide"><span>Notes</span><textarea rows="4" maxlength="1200" data-carrier-notes placeholder="Docking notes, availability, typical use, or anything members should know."></textarea></label>
     <label data-carrier-official-wrap hidden><span>Registry Type</span><select data-carrier-official><option value="false">Member Carrier</option><option value="true">Official Squadron Carrier</option></select></label>
@@ -62,5 +62,5 @@
   </div><div class="project-editor-actions"><span data-coord-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-coord-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Post</button></div></div></form></section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=48"></script><script src="../js/auth-ui.js?v=48"></script><script src="../js/carriers.js?v=48"></script>
+<script src="../js/site.js?v=49"></script><script src="../js/auth-ui.js?v=49"></script><script src="../js/carriers.js?v=49"></script>
 </body></html>
