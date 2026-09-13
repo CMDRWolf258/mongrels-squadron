@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607">
   <title>Member Portal | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=45">
+  <link rel="stylesheet" href="../css/global.css?v=46">
 </head>
 <body>
 <header class="site-header">
@@ -17,7 +17,7 @@
     </a>
     <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
     <nav class="nav-links" data-nav>
-      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
     </nav>
   </div>
 </header>
@@ -90,9 +90,10 @@
         </article>
 
         <article class="member-command-card">
-          <div class="member-command-card-head"><div><p class="eyebrow">Campaigns</p><h3>Projects & Events</h3></div><span class="member-command-badge">Next Phase</span></div>
-          <p>Track active squad initiatives, construction efforts, expeditions, campaigns, and scheduled events.</p>
-          <a class="btn btn-ghost" href="../projects/">View Projects</a>
+          <div class="member-command-card-head"><div><p class="eyebrow">Campaigns</p><h3>Projects & Events</h3></div><span class="member-command-badge" data-dashboard-projects-count>Projects</span></div>
+          <p data-dashboard-projects-summary>Track active squad initiatives, colonization help requests, expeditions, campaigns, and scheduled events.</p>
+          <div class="member-project-preview" data-dashboard-projects-preview></div>
+          <a class="btn btn-ghost" href="../projects/">Open Projects & Events</a>
         </article>
 
         <article class="member-command-card">
@@ -112,10 +113,10 @@
         <section class="member-resource-panel">
           <div class="member-panel-heading"><div><p class="eyebrow">Quick Access</p><h3>Member Resources</h3></div></div>
           <div class="member-resource-links">
-            <a href="../about/#rules"><strong>Rules & ROE</strong><span>Open Play, BGS conduct, combat logging, and squad standards.</span></a>
+            <a href="../about/#squad-rules"><strong>Rules & ROE</strong><span>Open Play, BGS conduct, combat logging, and squad standards.</span></a>
             <a href="../ships/"><strong>Ship Catalogue</strong><span>Published Mongrel builds, roles, engineering level, and EDSY links.</span></a>
             <a href="../trading/"><strong>Trader's Outpost</strong><span>Strategic hauling and member-profit trade opportunities.</span></a>
-            <a href="../operations/"><strong>Operations</strong><span>Priority systems, watch list, live BGS data, and strategic context.</span></a>
+            <a href="../operations/"><strong>Mission Control</strong><span>Daily Orders, priority systems, watch list, live BGS data, and strategic context.</span></a>
           </div>
         </section>
 
@@ -143,8 +144,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=45"></script>
-<script src="../js/auth-ui.js?v=45"></script>
-<script src="../js/member-dashboard.js?v=45"></script>
+<script src="../js/site.js?v=46"></script>
+<script src="../js/auth-ui.js?v=46"></script>
+<script src="../js/member-dashboard.js?v=46"></script>
 </body>
 </html>

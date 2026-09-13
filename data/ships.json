@@ -115,6 +115,21 @@
         "Heavy Combat",
         "Multi-Loadout"
       ]
+    },
+    {
+      "name": "Bottle Rocket",
+      "ship": "Combat Build",
+      "commander": "CMDR Lennyshow",
+      "role": "combat",
+      "engineering": "Fully Engineered",
+      "description": "A fully engineered combat build submitted by CMDR Lennyshow.",
+      "image": "../assets/images/gallery/bottle-rocket.webp",
+      "buildSite": "edsy",
+      "buildUrl": "https://edsy.org/s/ztEA2sg",
+      "tags": [
+        "Combat",
+        "Fully Engineered"
+      ]
     }
   ]
 }

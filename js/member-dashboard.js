@@ -7,6 +7,9 @@
   const count = document.querySelector('[data-dashboard-orders-count]');
   const summary = document.querySelector('[data-dashboard-orders-summary]');
   const preview = document.querySelector('[data-dashboard-orders-preview]');
+  const projectCount = document.querySelector('[data-dashboard-projects-count]');
+  const projectSummary = document.querySelector('[data-dashboard-projects-summary]');
+  const projectPreview = document.querySelector('[data-dashboard-projects-preview]');
 
   const fetchJson = url => fetch(`${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`, {
     credentials: 'same-origin',
@@ -47,6 +50,16 @@
     }
   };
 
+
+  const renderProjects = payload => {
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const active = items.filter(item => item.status !== 'complete');
+    if (projectCount) projectCount.textContent = active.length ? `${active.length} Active` : 'No Active Posts';
+    if (projectSummary) projectSummary.textContent = active.length ? 'Active projects, help requests, and squad events are waiting on the board.' : 'No active member projects or squad events are posted right now.';
+    if (!projectPreview) return; projectPreview.replaceChildren();
+    active.slice(0,2).forEach(item => { const row=document.createElement('div'); row.className='member-order-preview-row'; const meta=document.createElement('span'); meta.textContent=[item.kind==='event'?'Event':item.category,item.system].filter(Boolean).join(' · '); const title=document.createElement('strong'); title.textContent=item.title; row.append(meta,title); projectPreview.appendChild(row); });
+  };
+
   const renderUnavailable = () => {
     if (count) count.textContent = 'Unavailable';
     if (summary) summary.textContent = 'The secure Daily Orders service could not be reached.';
@@ -61,9 +74,9 @@
       if (officerPanel) officerPanel.hidden = !isOfficer;
       if (memberNote) memberNote.hidden = isOfficer;
 
-      const ordersResult = await fetchJson('/api/operations/orders');
-      if (ordersResult.response.ok) renderOrders(ordersResult.payload);
-      else renderUnavailable();
+      const [ordersResult, projectsResult] = await Promise.all([fetchJson('/api/operations/orders'), fetchJson('/api/projects')]);
+      if (ordersResult.response.ok) renderOrders(ordersResult.payload); else renderUnavailable();
+      if (projectsResult.response.ok) renderProjects(projectsResult.payload);
     } catch (error) {
       console.error('Could not load member dashboard', error);
       renderUnavailable();

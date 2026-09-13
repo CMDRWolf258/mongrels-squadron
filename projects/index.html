@@ -1,1 +1,67 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607"><title>Projects & Events | The Mongrels</title><link rel="stylesheet" href="../css/global.css?v=44"></head><body><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Operations</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main><section class="page-hero"><div class="container page-hero-grid"><div><p class="eyebrow">What's Next</p><h1>Projects & Events</h1><p>Track the squadron’s active initiatives, construction goals, expeditions, community events, and upcoming operations.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section><section class="section"><div class="container"><div class="card-grid"><div class="card"><span class="tag">Active Project</span><h3 style="margin-top:18px">Project Placeholder</h3><p>Goal, progress, priority, resources required, and current squadron objective.</p></div><div class="card"><span class="tag">Upcoming Event</span><h3 style="margin-top:18px">Event Placeholder</h3><p>Date, time, location, event lead, recommended ships, and participation notes.</p></div><div class="card"><span class="tag">Archive</span><h3 style="margin-top:18px">Completed Work</h3><p>Major completed projects and past events can eventually be archived here rather than disappearing.</p></div></div></div></section></main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js?v=44"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <title>Projects & Events | The Mongrels</title>
+  <meta name="description" content="Private Mongrel project board for squad initiatives, member help requests, and upcoming events.">
+  <link rel="stylesheet" href="../css/global.css?v=46">
+</head>
+<body>
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
+<main>
+  <section class="page-hero projects-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Squadron Collaboration</p><h1>Projects & Events</h1><p>Ask the pack for help, coordinate longer-running objectives, and keep upcoming squad events in one place.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section>
+
+  <section class="section projects-locked" data-projects-signed-out>
+    <div class="container"><article class="project-access-card"><p class="eyebrow">Members Only</p><h2>Project Board</h2><p>Member projects and internal squad events are available to authenticated Mongrels. Members can create and maintain their own help requests; Officers can also post official squad projects and events.</p><a class="btn btn-primary" href="/api/auth/login?return=%2Fprojects%2F">Sign in with Discord</a></article></div>
+  </section>
+
+  <section class="section projects-board" data-projects-board hidden>
+    <div class="container">
+      <div class="projects-toolbar-head">
+        <div><p class="eyebrow">Member Project Board</p><h2>What the pack is working on</h2><p>Member postings belong to their creator. Officers can moderate the board and publish official squad initiatives.</p></div>
+        <button class="btn btn-primary" type="button" data-project-create>New Project</button>
+      </div>
+      <div class="projects-summary-grid">
+        <article><span>Active Projects</span><strong data-project-count-active>0</strong></article>
+        <article><span>Upcoming Events</span><strong data-project-count-events>0</strong></article>
+        <article><span>Your Projects</span><strong data-project-count-mine>0</strong></article>
+        <article><span>Completed / Archived</span><strong data-project-count-archive>0</strong></article>
+      </div>
+      <div class="projects-filter-row" role="group" aria-label="Project filters">
+        <button class="project-filter active" type="button" data-project-filter="active">Active Projects</button>
+        <button class="project-filter" type="button" data-project-filter="events">Upcoming Events</button>
+        <button class="project-filter" type="button" data-project-filter="mine">My Posts</button>
+        <button class="project-filter" type="button" data-project-filter="archive">Archive</button>
+      </div>
+      <div class="projects-grid" data-project-grid></div>
+      <div class="data-empty-state" data-project-empty hidden><span class="data-empty-icon">◇</span><div><strong>No posts in this view yet.</strong><p>Create a project if you need help from the squad.</p></div></div>
+    </div>
+  </section>
+
+  <section class="project-editor-shell" data-project-editor-shell hidden aria-label="Project editor">
+    <div class="project-editor-backdrop" data-project-cancel></div>
+    <form class="project-editor-panel" data-project-form>
+      <div class="project-editor-head"><div><p class="eyebrow">Project Board</p><h2 data-project-form-title>New Project</h2></div><button class="btn btn-secondary" type="button" data-project-cancel>Close</button></div>
+      <input type="hidden" data-project-id>
+      <div class="project-editor-grid">
+        <label data-project-kind-wrap><span>Post type</span><select data-project-kind><option value="project">Project / Help Request</option><option value="event">Squad Event</option></select></label>
+        <label><span>Title</span><input type="text" maxlength="120" required data-project-title placeholder="Help finish my colony build"></label>
+        <label><span>System / Location</span><input type="text" maxlength="120" data-project-system placeholder="Optional system name"></label>
+        <label><span>Category</span><select data-project-category><option>Colonization</option><option>BGS</option><option>Trade / Hauling</option><option>Mining</option><option>Combat</option><option>PvP</option><option>Anti-Xeno</option><option>Exploration</option><option>Carrier Logistics</option><option>Community</option><option>Other</option></select></label>
+        <label><span>Status</span><select data-project-status><option value="planning">Planning</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="complete">Complete</option></select></label>
+        <label><span>Progress</span><input type="number" min="0" max="100" step="1" value="0" data-project-progress></label>
+        <label><span>Deadline / Event date</span><input type="date" data-project-deadline></label>
+        <label data-project-official-wrap hidden><span>Posting</span><select data-project-official><option value="false">Personal / Member Project</option><option value="true">Official Squad Posting</option></select></label>
+        <label class="project-editor-wide"><span>Description</span><textarea rows="4" maxlength="1600" required data-project-description placeholder="What are you working on and why?"></textarea></label>
+        <label class="project-editor-wide"><span>Help Requested</span><textarea rows="3" maxlength="1200" data-project-help placeholder="What kind of help do you need from other members?"></textarea></label>
+        <label class="project-editor-wide"><span>Goal / Target</span><input type="text" maxlength="220" data-project-target placeholder="Optional quantity, milestone, or completion target"></label>
+      </div>
+      <div class="project-editor-actions"><span data-project-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-project-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Project</button></div></div>
+    </form>
+  </section>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=46"></script><script src="../js/auth-ui.js?v=46"></script><script src="../js/projects.js?v=46"></script>
+</body></html>

@@ -1,16 +1,16 @@
-# Mongrels Squadron Site v45 — Member Portal Dashboard Preview
+# Mongrels Squadron Site — v46
 
-This batch turns the authenticated Member Portal into a working squad dashboard instead of an authentication/status page.
+This batch adds:
+- Navigation label **Command** with **Mission Control** as the BGS/operations page title.
+- Correct Rules & ROE deep-linking to `about/#squad-rules`.
+- CMDR Lennyshow's **Bottle Rocket** combat build (Fully Engineered) with supplied screenshot and EDSY link.
+- A secure member **Projects & Events** board.
+- Members can create/edit/delete only their own project posts.
+- Officers/Site Admin can moderate all posts and can create official squad projects or events.
+- Project system/location copy buttons, progress, target, help-request, date, category, status, and archive views.
+- Member Portal preview of active projects/events.
 
-## Included
-- Signed-in dashboard landing experience.
-- Live Daily Orders preview from the protected Orders endpoint.
-- Daily Orders task count and up to three current tasks.
-- Projects & Events, Carrier Coordination, and PvP Tools launch cards.
-- Member Resources quick links for Rules/ROE, Ships, Trader's Outpost, and Operations.
-- Officer/Site Admin-only Officer Tools panel.
-- Member access level remains compact and visible without dominating the page.
-- Signed-out Discord login and permission explanation remain available.
-- Responsive layouts for desktop, iPad/tablet, and phone.
+## Cloudflare requirement
+Create a KV namespace such as `mongrels-projects` and bind it to the Pages project with variable name exactly `PROJECTS`.
 
-No new Cloudflare variables, KV namespaces, or Discord changes are required.
+No Discord scope changes are required.
