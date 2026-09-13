@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png">
   <title>Member Portal | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=49">
+  <link rel="stylesheet" href="../css/global.css?v=50">
 </head>
 <body>
 <header class="site-header">
@@ -104,9 +104,10 @@
         </article>
 
         <article class="member-command-card">
-          <div class="member-command-card-head"><div><p class="eyebrow">Combat</p><h3>PvP Tools</h3></div><span class="member-command-badge">Combat</span></div>
-          <p>Jump to the squad's PvP hub, bounty board framework, and future integrated combat statistics.</p>
-          <a class="btn btn-ghost" href="../pvp/">Open PvP Hub</a>
+          <div class="member-command-card-head"><div><p class="eyebrow">Combat</p><h3>PvP Tools</h3></div><span class="member-command-badge" data-dashboard-bounty-count>Combat</span></div>
+          <p data-dashboard-bounty-summary>Open the private in-game bounty board, PvP training resources, and organized combat tools.</p>
+          <div class="member-project-preview" data-dashboard-bounty-preview></div>
+          <a class="btn btn-ghost" href="../pvp/#bounty-board">Open PvP Hub</a>
         </article>
       </div>
 
@@ -145,8 +146,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=49"></script>
-<script src="../js/auth-ui.js?v=49"></script>
-<script src="../js/member-dashboard.js?v=49"></script>
+<script src="../js/site.js?v=50"></script>
+<script src="../js/auth-ui.js?v=50"></script>
+<script src="../js/member-dashboard.js?v=50"></script>
 </body>
 </html>
