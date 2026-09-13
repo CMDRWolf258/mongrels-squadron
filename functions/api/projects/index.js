@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { resolveMemberProfile, publicMemberFilter } from '../../../lib/member-profile.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
@@ -7,7 +8,10 @@ const KV_KEY = 'board-v1';
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env); if (auth.response) return auth.response;
   const items = await readItems(env);
-  return reply({ok:true, viewer:viewer(auth.session), canModerate:MANAGER_ACCESS.has(auth.session.access), items:items.map(item => present(item, auth.session))});
+  const memberId = new URL(request.url).searchParams.get('member') || '';
+  const memberProfile = memberId ? await resolveMemberProfile(env, memberId) : null;
+  const selected = memberId ? (memberProfile ? items.filter(item => item.ownerId === memberProfile.ownerId) : []) : items;
+  return reply({ok:true, viewer:viewer(auth.session), canModerate:MANAGER_ACCESS.has(auth.session.access), memberFilter:publicMemberFilter(memberProfile), items:selected.map(item => present(item, auth.session))});
 }
 
 export async function onRequestPost({ request, env }) {

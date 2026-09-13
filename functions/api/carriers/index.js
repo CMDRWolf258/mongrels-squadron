@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { resolveMemberProfile, publicMemberFilter } from '../../../lib/member-profile.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
@@ -19,13 +20,18 @@ export async function onRequestGet({ request, env }) {
     } else {
       carriers = sync.carriers;
     }
+    const authenticated = Boolean(session && ALLOWED_ACCESS.has(session.access));
+    const memberId = url.searchParams.get('member') || '';
+    const memberProfile = authenticated && memberId ? await resolveMemberProfile(env, memberId) : null;
+    const selected = authenticated && memberId ? (memberProfile ? carriers.filter(item => item.ownerId === memberProfile.ownerId) : []) : carriers;
     return reply({
       ok: true,
-      authenticated: Boolean(session && ALLOWED_ACCESS.has(session.access)),
-      viewer: session && ALLOWED_ACCESS.has(session.access) ? viewer(session) : null,
+      authenticated,
+      viewer: authenticated ? viewer(session) : null,
       canModerate: Boolean(session && MANAGER_ACCESS.has(session.access)),
+      memberFilter: publicMemberFilter(memberProfile),
       telemetry: { source: 'EDDN / EDData', checked: sync.checked, updated: sync.updated },
-      carriers: carriers.map(item => presentCarrier(item, session)),
+      carriers: selected.map(item => presentCarrier(item, session)),
     });
   }
 

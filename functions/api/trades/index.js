@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { resolveMemberProfile, publicMemberFilter } from '../../../lib/member-profile.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
@@ -10,13 +11,17 @@ export async function onRequestGet({ request, env }) {
   const viewer = session && ALLOWED_ACCESS.has(session.access)
     ? { id: session.sub, displayName: session.displayName, access: session.access }
     : null;
+  const memberId = new URL(request.url).searchParams.get('member') || '';
+  const memberProfile = viewer && memberId ? await resolveMemberProfile(env, memberId) : null;
+  const selected = viewer && memberId ? (memberProfile ? items.filter(item => item.ownerId === memberProfile.ownerId) : []) : items;
   return reply({
     ok: true,
     configured: Boolean(env.TRADES && typeof env.TRADES.get === 'function'),
     viewer,
     canPost: Boolean(viewer),
     canModerate: Boolean(viewer && MANAGER_ACCESS.has(viewer.access)),
-    routes: items.map(item => present(item, session)),
+    memberFilter: publicMemberFilter(memberProfile),
+    routes: selected.map(item => present(item, session)),
   });
 }
 
