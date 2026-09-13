@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607">
   <title>Member Portal | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=47">
+  <link rel="stylesheet" href="../css/global.css?v=48">
 </head>
 <body>
 <header class="site-header">
@@ -96,9 +96,10 @@
           <a class="btn btn-ghost" href="../projects/">Open Projects & Events</a>
         </article>
 
-        <article class="member-command-card">
-          <div class="member-command-card-head"><div><p class="eyebrow">Logistics</p><h3>Carrier Coordination</h3></div><span class="member-command-badge">Fleet</span></div>
-          <p>Find squad carriers, current locations, services, and the movement board for planned jumps.</p>
+        <article class="member-command-card" data-dashboard-carriers>
+          <div class="member-command-card-head"><div><p class="eyebrow">Logistics</p><h3>Carrier Coordination</h3></div><span class="member-command-badge" data-dashboard-carriers-count>Fleet</span></div>
+          <p data-dashboard-carriers-summary>Find squad carriers, current locations, planned jumps, and active loading or support requests.</p>
+          <div class="member-project-preview" data-dashboard-carriers-preview></div>
           <a class="btn btn-ghost" href="../carriers/">Open Carrier Board</a>
         </article>
 
@@ -125,13 +126,13 @@
           <p>Your account can manage approved squad tools. Daily Orders publishing is currently online; additional management controls will appear here as they are built.</p>
           <div class="member-officer-actions">
             <a class="btn btn-primary" href="../operations/#daily-orders">Manage Daily Orders</a>
-            <a class="btn btn-ghost" href="../projects/">Projects & Events</a>
+            <a class="btn btn-ghost" href="../projects/">Projects & Events</a><a class="btn btn-ghost" href="../carriers/">Carrier Coordination</a>
           </div>
         </section>
 
         <section class="member-resource-panel" data-dashboard-member-note>
           <div class="member-panel-heading"><div><p class="eyebrow">Member Network</p><h3>More Tools Coming</h3></div></div>
-          <p>This dashboard is designed to grow with private projects, carrier coordination, PvP integration, and eventually the Mongrel AI assistant without requiring another portal redesign.</p>
+          <p>This dashboard is designed to grow with PvP integration, additional member tools, and eventually the Mongrel AI assistant without requiring another portal redesign.</p>
         </section>
       </div>
     </div>
@@ -144,8 +145,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=47"></script>
-<script src="../js/auth-ui.js?v=47"></script>
-<script src="../js/member-dashboard.js?v=47"></script>
+<script src="../js/site.js?v=48"></script>
+<script src="../js/auth-ui.js?v=48"></script>
+<script src="../js/member-dashboard.js?v=48"></script>
 </body>
 </html>

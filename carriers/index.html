@@ -1,117 +1,66 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#050607">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#050607">
   <title>Carriers | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=47">
+  <meta name="description" content="Mongrel fleet carrier registry and private member coordination board.">
+  <link rel="stylesheet" href="../css/global.css?v=48">
 </head>
 <body>
-<header class="site-header">
-  <div class="container nav-wrap">
-    <a class="brand" href="../">
-      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
-      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
-    </a>
-    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
-    <nav class="nav-links" data-nav>
-      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/" aria-current="page">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
-    </nav>
-  </div>
-</header>
-
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/" aria-current="page">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
 <main>
-  <section class="page-hero carrier-hero">
-    <div class="container page-hero-grid">
-      <div>
-        <p class="eyebrow">Squadron Logistics Network</p>
-        <h1>Carriers</h1>
-        <p>Find Mongrel fleet carriers, see where they are, what they are used for, and whether they have a movement planned.</p>
-      </div>
-      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+  <section class="page-hero carrier-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Squadron Logistics Network</p><h1>Carriers</h1><p>Find the Mongrel carrier network, register your own carrier, and coordinate moves, cargo jobs, and project support.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section>
+
+  <section class="section carrier-summary-section"><div class="container"><div class="carrier-status-strip"><div class="status-item"><span>Registered Carriers</span><strong class="accent" data-carrier-count>0</strong></div><div class="status-item"><span>Locations Reported</span><strong data-carrier-located>0</strong></div><div class="status-item"><span>Active Coordination</span><strong data-carrier-coordination>—</strong></div><div class="status-item"><span>Your Carriers</span><strong data-carrier-mine>—</strong></div></div></div></section>
+
+  <section class="section carrier-feature-section"><div class="container"><article class="carrier-feature-card"><figure class="carrier-feature-media"><img src="../assets/images/gallery/pneuma-carrier.webp" alt="Fleet carrier Pneuma near a ringed world"></figure><div class="carrier-feature-copy"><p class="eyebrow">Carrier Network</p><h2>Mobile Logistics</h2><p>Fleet carriers support hauling, expeditions, colonization, combat operations, mining, refueling, and squad gatherings. Registering by carrier callsign gives the site a reliable identity to attach live data to later.</p><a class="text-link" href="#carrier-directory">Browse the Registry <span>→</span></a></div></article></div></section>
+
+  <section class="section carrier-directory-section" id="carrier-directory"><div class="container">
+    <div class="carrier-section-head"><div><p class="eyebrow">Carrier Registry</p><h2>Fleet Carrier Directory</h2><p>The carrier name is for display; the callsign is the unique registry key used to avoid duplicates and prepare for future live-location matching.</p></div><button class="btn btn-primary" type="button" data-carrier-register hidden>Register My Carrier</button></div>
+    <aside class="carrier-id-note"><strong>Why the callsign matters</strong><p>Carrier names can be duplicated or changed. Enter the six-character carrier callsign exactly as shown in Elite (for example <code>ABC-123</code>) so the registry can identify the right carrier accurately.</p></aside>
+    <div class="carrier-toolbar"><label><span>Search</span><input type="search" placeholder="Carrier, callsign, owner, system, role…" data-carrier-search></label><label><span>Role</span><select data-carrier-role><option value="all">All roles</option></select></label><label><span>Status</span><select data-carrier-status><option value="all">All statuses</option><option value="active">Active</option><option value="relocating">Relocating</option><option value="supporting">Supporting</option><option value="maintenance">Maintenance</option><option value="unavailable">Unavailable</option></select></label></div>
+    <div class="carrier-grid" data-carrier-grid></div><div class="carrier-empty" data-carrier-empty hidden><strong>No carrier listings yet.</strong><p>Signed-in Mongrels can register their own carrier above.</p></div>
+  </div></section>
+
+  <section class="section carrier-coordination-section"><div class="container">
+    <div class="carrier-section-head"><div><p class="eyebrow">Members Only</p><h2>Carrier Coordination</h2><p>Post planned relocations, loading or unloading jobs, expedition support, tritium requests, and other carrier activity the pack should know about.</p></div><button class="btn btn-primary" type="button" data-coord-create hidden>New Coordination Post</button></div>
+    <div class="carrier-access-card" data-coord-signed-out><strong>Sign in to view carrier coordination.</strong><p>The public directory remains visible, while planned movements and logistics requests stay inside the member network.</p><a class="btn btn-primary" href="/api/auth/login?return=%2Fcarriers%2F">Sign in with Discord</a></div>
+    <div data-coord-board hidden>
+      <div class="carrier-coord-filters" role="group" aria-label="Carrier coordination filters"><button class="project-filter active" type="button" data-coord-filter="active">Active</button><button class="project-filter" type="button" data-coord-filter="moves">Moves</button><button class="project-filter" type="button" data-coord-filter="cargo">Cargo</button><button class="project-filter" type="button" data-coord-filter="urgent">Urgent</button><button class="project-filter" type="button" data-coord-filter="mine">My Posts</button><button class="project-filter" type="button" data-coord-filter="complete">Completed</button></div>
+      <div class="carrier-coord-grid" data-coord-grid></div><div class="data-empty-state" data-coord-empty hidden><span class="data-empty-icon">◇</span><div><strong>No coordination posts in this view.</strong><p>Create a post when your carrier needs the pack.</p></div></div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="section carrier-summary-section">
-    <div class="container">
-      <div class="carrier-status-strip">
-        <div class="status-item"><span>Listed Carriers</span><strong class="accent" data-carrier-count>0</strong></div>
-        <div class="status-item"><span>Active</span><strong data-carrier-active>0</strong></div>
-        <div class="status-item"><span>Movements Posted</span><strong data-carrier-movements>0</strong></div>
-        <div class="status-item"><span>Directory</span><strong>Squad Members</strong></div>
-      </div>
-    </div>
-  </section>
+  <section class="section section-sm"><div class="container"><div class="carrier-info-panel"><div><p class="eyebrow">Automation Ready</p><h2>Manual intent. Automated position later.</h2><p>Members still enter planned destinations, departure times, cargo targets, and purpose. Current location is labeled by source and timestamp so future Frontier or EDDN-backed updates can slot in without redesigning the board.</p></div><div class="carrier-info-tags"><span>Callsign Identity</span><span>Location Source</span><span>Freshness</span><span>Departure / ETA</span><span>Cargo Remaining</span></div></div></div></section>
 
-  <section class="section carrier-feature-section">
-    <div class="container">
-      <article class="carrier-feature-card">
-        <figure class="carrier-feature-media">
-          <img src="../assets/images/gallery/pneuma-carrier.webp" alt="Fleet carrier Pneuma near a ringed world">
-        </figure>
-        <div class="carrier-feature-copy">
-          <p class="eyebrow">From the Fleet</p>
-          <h2>Pneuma</h2>
-          <p class="carrier-feature-owner">CMDR Wolf258</p>
-          <p>Member carriers are more than entries in a directory. They are mobile bases, logistics platforms, expedition support, and gathering points for squad operations. Pneuma is the first carrier featured visually here as we build out the Mongrel carrier network.</p>
-          <a class="text-link" href="../gallery/">View Squadron Gallery <span>→</span></a>
-        </div>
-      </article>
-    </div>
-  </section>
+  <section class="project-editor-shell" data-carrier-editor-shell hidden aria-label="Carrier registration editor"><div class="project-editor-backdrop" data-carrier-cancel></div><form class="project-editor-panel" data-carrier-form><div class="project-editor-head"><div><p class="eyebrow">Carrier Registry</p><h2 data-carrier-form-title>Register My Carrier</h2></div><button class="btn btn-secondary" type="button" data-carrier-cancel>Close</button></div><input type="hidden" data-carrier-id><div class="project-editor-grid">
+    <label><span>Carrier Callsign / ID</span><input type="text" maxlength="7" pattern="[A-Za-z0-9]{3}-[A-Za-z0-9]{3}" required data-carrier-callsign placeholder="ABC-123"><small>Required for accuracy. This is the registry identity and cannot be changed after registration.</small></label>
+    <label><span>Carrier Name</span><input type="text" maxlength="100" required data-carrier-name placeholder="Pneuma"></label>
+    <label><span>CMDR / Owner Name</span><input type="text" maxlength="80" required data-carrier-commander placeholder="CMDR Wolf258"></label>
+    <label><span>Primary Role</span><select data-carrier-role-edit><option>General Logistics</option><option>Colonization Support</option><option>Trade / Hauling</option><option>Mining Support</option><option>Combat Support</option><option>Exploration / Expedition</option><option>Refuel / Tritium</option><option>Squadron Flagship</option><option>Other</option></select></label>
+    <label><span>Status</span><select data-carrier-status-edit><option value="active">Active</option><option value="relocating">Relocating</option><option value="supporting">Supporting Project</option><option value="maintenance">Maintenance</option><option value="unavailable">Unavailable</option></select></label>
+    <label><span>Current System</span><input type="text" maxlength="120" data-carrier-system placeholder="Optional reported location"></label>
+    <label class="project-editor-wide"><span>Services</span><input type="text" maxlength="600" data-carrier-services placeholder="Repair, Refuel, Shipyard, Outfitting (comma separated)"></label>
+    <label class="project-editor-wide"><span>Notes</span><textarea rows="4" maxlength="1200" data-carrier-notes placeholder="Docking notes, availability, typical use, or anything members should know."></textarea></label>
+    <label data-carrier-official-wrap hidden><span>Registry Type</span><select data-carrier-official><option value="false">Member Carrier</option><option value="true">Official Squadron Carrier</option></select></label>
+  </div><div class="project-editor-actions"><span data-carrier-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-carrier-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Carrier</button></div></div></form></section>
 
-  <section class="section carrier-directory-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Carrier Directory</p><h2>Fleet Carrier Network</h2></div>
-        <p>Each listing can show ownership, current location, role, available services, docking notes, and links to external carrier pages.</p>
-      </div>
-
-      <div class="carrier-toolbar">
-        <label><span>Search</span><input type="search" placeholder="Carrier, owner, system, role…" data-carrier-search></label>
-        <label><span>Role</span><select data-carrier-role><option value="all">All roles</option></select></label>
-        <label><span>Status</span><select data-carrier-status><option value="all">All statuses</option><option value="active">Active</option><option value="moving">Moving</option><option value="maintenance">Maintenance</option><option value="offline">Offline</option></select></label>
-      </div>
-
-      <div class="carrier-grid" data-carrier-grid></div>
-      <div class="carrier-empty" data-carrier-empty>
-        <strong>No carrier listings yet.</strong>
-        <p>Add member carriers to <code>data/carriers.json</code> and they will appear here automatically.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section carrier-movement-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Movement Board</p><h2>Upcoming Carrier Movements</h2></div>
-        <p>Use this board for squad logistics, expeditions, construction runs, mining support, or any movement members should know about.</p>
-      </div>
-      <div class="movement-grid" data-movement-grid></div>
-      <div class="movement-empty" data-movement-empty>
-        <strong>No movements posted.</strong>
-        <p>When a carrier has a destination and departure time listed, it will appear here automatically.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section-sm">
-    <div class="container">
-      <div class="carrier-info-panel">
-        <div>
-          <p class="eyebrow">Future Capability</p>
-          <h2>Live Locations Later</h2>
-          <p>For now, carrier locations can be updated manually. Later we can investigate pulling locations automatically and adding departure notices or Discord-linked movement posts.</p>
-        </div>
-        <div class="carrier-info-tags"><span>Current System</span><span>Services</span><span>Departure UTC</span><span>Destination</span><span>Inara Link</span></div>
-      </div>
-    </div>
-  </section>
+  <section class="project-editor-shell" data-coord-editor-shell hidden aria-label="Carrier coordination editor"><div class="project-editor-backdrop" data-coord-cancel></div><form class="project-editor-panel" data-coord-form><div class="project-editor-head"><div><p class="eyebrow">Carrier Coordination</p><h2 data-coord-form-title>New Coordination Post</h2></div><button class="btn btn-secondary" type="button" data-coord-cancel>Close</button></div><input type="hidden" data-coord-id><div class="project-editor-grid">
+    <label><span>Carrier</span><select required data-coord-carrier></select></label>
+    <label><span>Activity</span><select data-coord-activity><option value="relocation">Relocation</option><option value="loading">Loading</option><option value="unloading">Unloading</option><option value="project_support">Project Support</option><option value="expedition_support">Expedition Support</option><option value="refuel_tritium">Refuel / Tritium</option><option value="other">Other</option></select></label>
+    <label><span>Status</span><select data-coord-status><option value="planned">Planned</option><option value="loading">Loading</option><option value="ready">Ready</option><option value="in_transit">In Transit</option><option value="on_station">On Station</option><option value="complete">Complete</option></select></label>
+    <label><span>Priority</span><select data-coord-priority><option value="normal">Normal</option><option value="urgent">Urgent</option></select></label>
+    <label><span>Destination</span><input type="text" maxlength="120" data-coord-destination placeholder="Optional destination system"></label>
+    <label><span>Departure (UTC)</span><input type="datetime-local" data-coord-departure></label>
+    <label><span>ETA / Arrival (UTC)</span><input type="datetime-local" data-coord-eta></label>
+    <label><span>Commodity</span><input type="text" maxlength="100" data-coord-commodity placeholder="Optional cargo commodity"></label>
+    <label><span>Target Quantity</span><input type="number" min="0" step="1" data-coord-target placeholder="0"></label>
+    <label><span>Remaining Quantity</span><input type="number" min="0" step="1" data-coord-remaining placeholder="0"></label>
+    <label class="project-editor-wide"><span>Purpose / Request</span><textarea rows="3" maxlength="500" required data-coord-purpose placeholder="What is the carrier doing, and what help is needed?"></textarea></label>
+    <label class="project-editor-wide"><span>Notes</span><textarea rows="3" maxlength="1400" data-coord-notes placeholder="Loading instructions, market details, timing, or coordination notes."></textarea></label>
+    <label data-coord-official-wrap hidden><span>Post Type</span><select data-coord-official><option value="false">Member Coordination</option><option value="true">Official Squadron Movement</option></select></label>
+  </div><div class="project-editor-actions"><span data-coord-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-coord-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Post</button></div></div></form></section>
 </main>
-
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=47"></script>
-<script src="../js/carriers.js"></script>
-</body>
-</html>
+<script src="../js/site.js?v=48"></script><script src="../js/auth-ui.js?v=48"></script><script src="../js/carriers.js?v=48"></script>
+</body></html>

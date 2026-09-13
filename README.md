@@ -1,18 +1,33 @@
-# Mongrels Squadron Site v47 — Projects & Events Polish
+# Mongrels Squadron Site v48 — Carrier Registry & Coordination
 
-This batch refines the secure Projects & Events board and corrects Bottle Rocket's hull.
+This release adds the first secure carrier-management batch while retaining all prior site features.
 
-## Included
-- Added a short member-facing encouragement block with examples of useful posts.
-- Renamed the Officer/Admin `Posting` field to `Project Type` with clearer Member vs Official Squadron choices.
-- Added filters for Member Projects and Official Projects alongside Active, Events, My Posts, and Completed/Archived.
-- Upcoming Events now emphasize their date and sort chronologically.
-- Project cards distinguish events and official squad postings more clearly.
-- Event editor hides project-only progress/target fields and relabels the date field.
-- `My Posts` count now reflects active personal posts.
-- Member Portal preview now prioritizes official squad work, near-term events, active items, and the signed-in member's own posts rather than only newest posts.
-- Corrected CMDR Lennyshow's Bottle Rocket hull to **Mandalay**.
-- Asset cache version bumped to v47.
+## New in v48
+- Public carrier registry backed by secure Cloudflare KV storage.
+- Members can register and maintain their own fleet carriers.
+- Carrier callsign is required and used as the unique identity; duplicate callsigns are rejected.
+- Carrier names remain editable display names.
+- Manual current-location reporting includes source/freshness labels and is structured for future live automation.
+- Private member carrier coordination board for relocations, loading/unloading, project support, expedition support, tritium/refuel requests, and other logistics.
+- Status, priority, departure, ETA, destination, cargo target/remaining, purpose, and notes.
+- Regular members can create/edit/delete only their own carrier records and coordination posts.
+- Officers/Site Admin can moderate carrier records/posts and mark official squadron carriers or movements.
+- System copy controls on current/destination systems.
+- Member Portal previews active carrier coordination.
+- Responsive PC/iPad/phone layouts.
 
-## Cloudflare
-No new variables, bindings, Discord permissions, or KV namespaces are required beyond the existing `PROJECTS` binding.
+## Cloudflare setup required
+Create a KV namespace, suggested name:
+
+`mongrels-carriers`
+
+Then bind it to the `mongrels-squadron` Pages project:
+
+- Type: KV namespace
+- Variable name: `CARRIERS`
+- KV namespace: `mongrels-carriers`
+
+Do not manually create KV pairs. The site/API will manage them.
+
+## Notes
+This release intentionally keeps current carrier location member-reported. The data model records location source and timestamp so Frontier/EDDN-backed automation can be added in a later batch without redesigning the registry.
