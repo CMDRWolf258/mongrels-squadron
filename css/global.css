@@ -636,3 +636,26 @@ body{background-color:#050607;overscroll-behavior-x:none}
   .assistant-page .mongrel-assistant-links,.assistant-page .mongrel-assistant-suggestions{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
   .assistant-page .mongrel-assistant-form{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
 }
+
+/* v58 — dedicated phone composer reset + calmer iPad launcher */
+.assistant-page{
+  height:100dvh;
+  min-height:100dvh;
+  overflow:hidden;
+}
+.assistant-page-site-header{position:relative;flex:0 0 auto}
+.assistant-page-main{
+  height:calc(100dvh - 69px);
+  min-height:0;
+  overflow:hidden;
+}
+.assistant-page .mongrel-assistant,
+.assistant-page .mongrel-assistant-panel{height:100%}
+
+@media (min-width:621px) and (max-width:900px){
+  .mongrel-assistant-launcher{
+    transform:none;
+    -webkit-transform:none;
+    will-change:auto;
+  }
+}

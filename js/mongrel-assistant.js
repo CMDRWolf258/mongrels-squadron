@@ -108,8 +108,8 @@
   const suggestedPrompts = [
     "What's happening today?",
     "What are today's Daily Orders?",
-    "Any carrier moves or loading jobs?",
-    "What PvP events are coming up?",
+    "Should I put Corrosive on all of my multicannons?",
+    "How should I engineer my shield boosters?",
   ];
 
   const renderSuggestions = () => {
@@ -253,5 +253,29 @@
   });
 
   input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();form.requestSubmit();}});
+
+  // Dedicated phone page: iOS Safari can retain a transient document offset after
+  // dismissing the software keyboard. The page itself should never scroll; the
+  // conversation log owns scrolling. Re-seat the document after blur/viewport settle.
+  const resetDedicatedPhoneViewport = () => {
+    if (!dedicatedPage || !isPhoneLayout()) return;
+    const reset = () => {
+      try { window.scrollTo(0, 0); } catch {}
+      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    requestAnimationFrame(reset);
+    setTimeout(reset, 120);
+    setTimeout(reset, 320);
+  };
+  input.addEventListener('blur', resetDedicatedPhoneViewport);
+  input.addEventListener('focusout', resetDedicatedPhoneViewport);
+  if (dedicatedPage && window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (document.activeElement !== input) resetDedicatedPhoneViewport();
+    }, { passive:true });
+  }
+
   loadSession();
 })();

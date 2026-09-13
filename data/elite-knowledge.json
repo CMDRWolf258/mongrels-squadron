@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-09-13",
+  "scope": "Curated Elite Dangerous reference notes for the Mongrel Assistant. These are summaries, not copied articles. Use live research when a question depends on a recent patch or a topic not covered here.",
+  "entries": [
+    {
+      "id": "weapon-corrosive-shell",
+      "category": "Weapon Engineering",
+      "topic": "Corrosive Shell",
+      "keywords": ["corrosive", "corrosive shell", "multicannon", "multi-cannon", "fragment cannon", "armor hardness", "armour hardness"],
+      "ruleOfThumb": "Usually fit Corrosive Shell to only one suitable weapon on a ship. The debuff does not stack, so duplicating it wastes experimental slots and applies the ammo-capacity penalty to multiple guns.",
+      "details": [
+        "Corrosive Shell is available on Multi-cannons and Fragment Cannons.",
+        "It temporarily reduces the target's armour hardness and increases damage taken by the target's hull while the effect is active.",
+        "The effect does not stack when multiple Corrosive weapons hit the same target.",
+        "It reduces maximum ammunition by 20% on the weapon carrying the effect.",
+        "A common build practice is to put Corrosive on one smaller or utility-oriented kinetic weapon and use other experimentals on the remaining weapons."
+      ],
+      "commonMistakes": [
+        "Putting Corrosive on every Multi-cannon because the effect sounds like it should stack.",
+        "Ignoring the ammunition penalty when choosing which weapon should carry it."
+      ],
+      "pve": "Excellent general-purpose hull debuff. One Corrosive weapon is normally enough for an entire PvE loadout.",
+      "pvp": "Still valuable, but experimental selection depends heavily on the complete loadout and opponent. One Corrosive source is normally sufficient because the debuff does not stack.",
+      "sources": [
+        {"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"},
+        {"name": "Elite Dangerous Wiki — Corrosive Shell", "url": "https://elite-dangerous.fandom.com/wiki/Corrosive_Shell"}
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-incendiary-rounds",
+      "category": "Weapon Engineering",
+      "topic": "Incendiary Rounds",
+      "keywords": ["incendiary", "incendiary rounds", "multicannon", "multi-cannon", "fragment cannon", "thermal damage", "shield damage"],
+      "ruleOfThumb": "Incendiary Rounds are useful when you want projectile weapons to contribute more thermal damage against shields, but they increase weapon heat substantially and slightly reduce rate of fire.",
+      "details": [
+        "Available on Multi-cannons and Fragment Cannons.",
+        "Converts a large portion of weapon damage to thermal damage.",
+        "INARA lists a 5% rate-of-fire reduction and +200% thermal load for the experimental.",
+        "It is often paired with a single Corrosive weapon so the remaining projectile weapons can specialize for shield pressure."
+      ],
+      "commonMistakes": [
+        "Using several Incendiary weapons without considering heat generation.",
+        "Assuming thermal conversion is automatically best for every target or loadout."
+      ],
+      "pve": "A practical way for kinetic-heavy builds to improve shield pressure without adding lasers, provided the ship can tolerate the heat.",
+      "pvp": "Can be useful for shield pressure, but heat, distributor demand, engagement range, and the rest of the weapon package matter more than a simple one-effect rule.",
+      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-auto-loader",
+      "category": "Weapon Engineering",
+      "topic": "Auto Loader",
+      "keywords": ["auto loader", "autoload", "reload", "multicannon", "multi-cannon", "cannon"],
+      "ruleOfThumb": "Auto Loader is a convenience and sustained-DPS experimental: compatible weapons reload continuously while firing, reducing normal reload downtime.",
+      "details": [
+        "Available on Cannons and Multi-cannons.",
+        "The experimental automatically reloads the weapon while it is firing.",
+        "It is a strong general-purpose choice when no utility experimental is needed on that hardpoint."
+      ],
+      "commonMistakes": ["Choosing Auto Loader on every gun before allocating useful utility effects such as Corrosive."],
+      "pve": "Very convenient for sustained engagements and bounty/CZ work.",
+      "pvp": "Useful but often competes with experimentals that provide stronger tactical effects. Evaluate the whole hardpoint package.",
+      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-oversized",
+      "category": "Weapon Engineering",
+      "topic": "Oversized",
+      "keywords": ["oversized", "weapon damage", "power draw", "experimental"],
+      "ruleOfThumb": "Oversized is a simple raw-damage option when you do not need a more valuable utility experimental and can afford the extra power draw.",
+      "details": [
+        "INARA lists +3% damage and +5% power draw.",
+        "It is available on many weapon families, including lasers, Multi-cannons, Plasma Accelerators, Fragment Cannons, Cannons and Rail Guns.",
+        "Because the gain is modest, tactical experimentals can be more valuable on hardpoints that can use them."
+      ],
+      "commonMistakes": ["Treating Oversized as automatically superior to utility effects because it directly increases damage."],
+      "pve": "A straightforward filler experimental once essential utility effects are covered.",
+      "pvp": "Usually evaluated against tactical experimentals; raw damage alone may not be the most valuable contribution from a hardpoint.",
+      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-feedback-cascade",
+      "category": "Weapon Engineering",
+      "topic": "Feedback Cascade",
+      "keywords": ["feedback cascade", "feedback rail", "railgun", "rail gun", "shield cell", "scb", "shield cell bank"],
+      "ruleOfThumb": "Feedback Cascade is a Rail Gun utility effect for interrupting/reducing Shield Cell Bank recovery. It is most valuable when you expect opponents to bank shields.",
+      "details": [
+        "Available on Rail Guns.",
+        "Hits delivered while the target is deploying a Shield Cell Bank disrupt the cell and reduce shield restoration.",
+        "INARA lists -20% weapon damage and -40% thermal load as tradeoffs."
+      ],
+      "commonMistakes": ["Adding Feedback Cascade to a PvE build where shield-cell denial is not important enough to justify the damage tradeoff."],
+      "pve": "Usually niche because most NPC encounters do not demand dedicated cell-bank denial.",
+      "pvp": "A major tactical tool against shield-cell-heavy opponents; often worth dedicating at least one rail when SCB denial is part of the build plan.",
+      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "weapon-drag-munitions",
+      "category": "Weapon Engineering",
+      "topic": "Drag Munitions",
+      "keywords": ["drag munitions", "drag", "fragment cannon", "seeker missile", "speed reduced", "thruster"],
+      "ruleOfThumb": "Drag Munitions are a control effect rather than a raw-DPS choice. Use them when slowing a target improves your ability to stay on it or land the rest of your weapon package.",
+      "details": [
+        "Available on Fragment Cannons and Seeker Missiles.",
+        "The effect reduces target speed by interfering with engine thrust behavior.",
+        "Its value is tactical: it can make evasive targets easier to pressure or keep in an engagement envelope."
+      ],
+      "commonMistakes": ["Judging Drag only by the damage of the weapon carrying it instead of the benefit it creates for the entire build."],
+      "pve": "Situational; many PvE targets do not require dedicated speed control.",
+      "pvp": "Often much more valuable because controlling a fast opponent can improve time-on-target for the rest of the loadout.",
+      "sources": [{"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-shield-generator",
+      "category": "Defensive Engineering",
+      "topic": "Shield Generator Engineering",
+      "keywords": ["shield generator", "bi-weave", "bi weave", "prismatic", "reinforced shield", "thermal resistant shield", "fast charge", "hi-cap", "hi cap", "lo-draw", "lo draw"],
+      "ruleOfThumb": "Choose shield engineering around the shield's job: Reinforced emphasizes raw strength, Thermal Resistant repairs the common thermal-resistance weakness, and Fast Charge is particularly relevant to regeneration-focused shields such as Bi-Weaves.",
+      "details": [
+        "Reinforced increases optimal strength and all resistances but reduces broken-shield regeneration and increases distributor draw.",
+        "Thermal Resistant strongly improves thermal resistance while trading away kinetic resistance.",
+        "Fast Charge increases active and broken-shield regeneration by 15% while slightly reducing all three resistances.",
+        "Hi-Cap adds 6% optimal multiplier but increases power draw by 10% and distributor draw by 25%.",
+        "Lo-Draw reduces power and distributor draw but slightly lowers shield strength and resistances."
+      ],
+      "commonMistakes": [
+        "Choosing generator engineering in isolation without considering booster mix and final effective shield strength.",
+        "Maximizing raw MJ on a regeneration-focused build without considering recharge/reform behavior."
+      ],
+      "pve": "Bi-Weaves commonly prioritize regeneration and balanced resistance for repeated fights; high raw strength can still be appropriate for burst-damage or emergency survivability roles.",
+      "pvp": "Generator choice is build-specific. Raw strength, cell banks, resistance profile, feedback rails, regeneration, power and distributor load all matter.",
+      "sources": [
+        {"name": "INARA — Shield Generator Reinforced", "url": "https://inara.cz/elite/blueprint/21/"},
+        {"name": "INARA — Shield Generator Thermal Resistant", "url": "https://inara.cz/elite/blueprint/22/"}
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-shield-boosters",
+      "category": "Defensive Engineering",
+      "topic": "Shield Booster Engineering",
+      "keywords": ["shield booster", "heavy duty booster", "resistance augmented", "super capacitors", "super capacitor", "shield resistance", "shield resistances"],
+      "ruleOfThumb": "A mixed booster package is usually stronger than blindly engineering every booster the same way. Heavy Duty raises raw shield contribution; Resistance Augmented improves all resistances. Balance the final shield profile rather than chasing one stat.",
+      "details": [
+        "Heavy Duty increases shield boost and module integrity at the cost of mass and power draw.",
+        "Resistance Augmented increases kinetic, thermal and explosive resistance but trades integrity and power draw.",
+        "Super Capacitors add 5% optimal strength while reducing each resistance by 2%.",
+        "The value of each additional resistance booster diminishes as resistance rises, so final-build simulation is preferable to applying one blueprint uniformly."
+      ],
+      "commonMistakes": [
+        "Using all Heavy Duty boosters without checking whether thermal resistance remains a weakness.",
+        "Using all Resistance Augmented boosters and giving up too much raw shield strength.",
+        "Evaluating a booster by its individual stats instead of the ship's final shield values."
+      ],
+      "pve": "Balanced resistance plus enough raw strength tends to work well for sustained combat; exact mix depends on generator type and expected damage.",
+      "pvp": "Optimize against the complete build and expected damage profile. Raw MJ, resistance, cell banks and regeneration all interact, so use EDSY/Coriolis-style final statistics rather than a fixed universal ratio.",
+      "sources": [
+        {"name": "INARA — Heavy Duty Shield Booster", "url": "https://inara.cz/elite/blueprint/8/"},
+        {"name": "INARA — Resistance Augmented Shield Booster", "url": "https://inara.cz/elite/blueprint/10/"},
+        {"name": "INARA — Experimental Effects", "url": "https://inara.cz/elite/experimentaleffects/"}
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    },
+    {
+      "id": "defense-hull-reinforcement",
+      "category": "Defensive Engineering",
+      "topic": "Hull Reinforcement Packages",
+      "keywords": ["hull reinforcement", "hrp", "heavy duty hull", "deep plating", "thermal resistant hull", "kinetic resistant hull", "armor", "armour"],
+      "ruleOfThumb": "Heavy Duty HRPs are the general raw-integrity choice; Deep Plating increases reinforcement further but trims resistances. Resistance-specific packages can be used to repair a weak hull profile when the complete build benefits from it.",
+      "details": [
+        "INARA lists Grade 5 Heavy Duty HRP at +72% hull reinforcement, +15% all resistances and +40% mass.",
+        "Deep Plating adds 10% hull reinforcement while reducing kinetic, thermal and explosive resistance by 2% each.",
+        "Thermal/Kinetic/Blast Resistant blueprints improve one resistance while reducing the other two and adding some reinforcement.",
+        "Final effective hull against each damage type matters more than raw integrity alone."
+      ],
+      "commonMistakes": [
+        "Stacking raw hull without checking whether a major resistance hole remains.",
+        "Assuming Deep Plating is always better because it raises the hull reinforcement number."
+      ],
+      "pve": "Heavy Duty plus sensible resistance balancing is a dependable baseline for hull tanks and hybrid builds.",
+      "pvp": "Module protection, resistance profile, absolute hull and opponent weapon types all matter. Evaluate the entire defensive package, not HRPs in isolation.",
+      "sources": [{"name": "INARA — Hull Reinforcement Heavy Duty", "url": "https://inara.cz/elite/blueprint/25/"}],
+      "reviewedAt": "2026-09-13",
+      "stability": "stable"
+    }
+  ]
+}
