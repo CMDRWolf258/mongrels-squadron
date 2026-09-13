@@ -1,4 +1,4 @@
-# Regiment of Imperial Mongrels — v59
+# Regiment of Imperial Mongrels — v63
 
 Expanded Elite engineering knowledge library + public Guides.
 
@@ -55,3 +55,19 @@ Upload the complete package and allow Cloudflare Pages to redeploy.
 - Expanded the shared Elite Knowledge Base with structured quick facts, tables, and examples so Ask the Mongrels can answer exact BGS questions instead of vague ranges.
 - Expanded the Reference Database renderer and BGS glossary.
 - BGS remains explicitly a living guide: community-observed/uncertain mechanics are labeled accordingly.
+
+## v63 — BGS Strategy, Influence & Daily Targets
+- Reordered the BGS Operator Manual so Influence is the first major concept after Quick Reference.
+- Expanded influence guidance around the system-wide ~100% pool, broad pull-down vs precision transfer, low-faction leverage, and conflict-frozen influence.
+- Added a full General Strategies section: broad pull-down, winner/victim transfer, conflict lock & leapfrog, multi-lock board shaping, maintenance bands, asset-transfer setup, retreat preparation, and tick-feedback troubleshooting.
+- Added practical per-CMDR/per-system/per-tick workload benchmarks from the current Complete BGS Guide: mission INF, bounty vouchers, exploration data, and profitable trade targets by population/contest tier.
+- Clarified that trade workload should be tracked primarily by useful profit at the correct faction-owned market, not tonnage alone.
+- Added quick task menus for raising/lowering influence, avoiding Expansion, saving/forcing Retreat, Wars/Civil Wars, Elections, and leapfrog operations.
+- Added a Retreat operator timeline, faction-count caution, and late-cycle critical-check guidance.
+- Corrected the War guidance to clearly distinguish Combat Bonds from bounty vouchers. CZ wins/objectives and Combat Bonds are the dependable war tools; community documentation is mixed on whether ordinary bounties can act as a secondary tie-break input, so Mongrel orders should not rely on bounty hunting to win a War day.
+- Expanded the shared Elite Knowledge Base to 81 entries / 50 BGS entries with structured records for influence distribution, conflict-lock strategy, daily effort benchmarks, general BGS strategy, and Retreat operations.
+- Added BGS glossary terms for Conflict Lock, Leapfrog, Saturation, Beneficiary, and Victim.
+- Added a Mission Control resource shortcut to the BGS daily-target/operator playbook.
+- Expanded Ask the Mongrels BGS routing for conflict locks, leapfrogging, diminishing returns, daily targets, bounty-vs-bond questions, and trade-profit workload questions.
+
+No new Cloudflare variables, secrets, bindings, or KV namespaces are required.

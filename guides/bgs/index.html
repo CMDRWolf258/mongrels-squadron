@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#050607">
-  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/images/branding/favicon-32x32.png?v=62">
-  <link rel="apple-touch-icon" href="../../assets/images/branding/apple-touch-icon.png?v=62">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/images/branding/favicon-32x32.png?v=63">
+  <link rel="apple-touch-icon" href="../../assets/images/branding/apple-touch-icon.png?v=63">
   <title>BGS Operator Manual | The Mongrels</title>
-  <link rel="stylesheet" href="../../css/global.css?v=62">
+  <link rel="stylesheet" href="../../css/global.css?v=63">
 </head>
 <body>
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../../"><img src="../../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../../">Home</a><a href="../../about/">About</a><a href="../../operations/">Command</a><a href="../../pvp/">PvP</a><a href="../../trading/">Trader's Outpost</a><a href="../../ships/">Ships</a><a href="../../projects/">Projects</a><a href="../../carriers/">Carriers</a><a href="../" aria-current="page">Guides</a><a href="../../gallery/">Gallery</a><a href="../../recruitment/">Join Us</a></nav></div></header>
 <main>
 <section class="page-hero guides-hero"><div class="container page-hero-grid"><div><p class="eyebrow">Mongrel Field Manual</p><h1>BGS Operator Manual</h1><p>Learn the model, then use it. This guide combines BGS fundamentals with conflict math, government lookups, practical levers, thresholds, worked examples, and daily operating procedure.</p><div class="actions"><a class="btn btn-primary" href="#quick-reference">Quick Reference</a><a class="btn btn-ghost" href="../reference/#bgs-background-simulation">Reference Database</a><a class="btn btn-ghost" href="../../operations/">Mission Control</a></div></div><img class="page-mark" src="../../assets/images/branding/mongrels-logo.png" alt=""></div></section>
-<nav class="section-shortcuts guide-shortcuts" aria-label="BGS guide sections"><div class="container"><a href="#quick-reference">Quick Ref</a><a href="#starter">Starter</a><a href="#influence">Influence</a><a href="#conflicts">Conflicts</a><a href="#governments">Governments</a><a href="#expansion">Expansion</a><a href="#states">States</a><a href="#operations">Operations</a><a href="../reference/">Database</a></div></nav>
+<nav class="section-shortcuts guide-shortcuts" aria-label="BGS guide sections"><div class="container"><a href="#quick-reference">Quick Ref</a><a href="#influence">Influence</a><a href="#strategies">Strategies</a><a href="#daily-targets">Daily Targets</a><a href="#starter">Workflow</a><a href="#conflicts">Conflicts</a><a href="#governments">Governments</a><a href="#expansion">Expansion</a><a href="#states">States</a><a href="#operations">Orders</a><a href="../reference/">Database</a></div></nav>
 
 <section class="section-sm guide-intro"><div class="container guide-intro-grid"><article class="guide-callout"><span class="guide-level">New Commander</span><h2>Ask four questions first.</h2><p>Which system? Which faction? What exact result do we want? What action actually moves that result? Those four answers prevent most accidental BGS damage.</p></article><article class="guide-callout"><span class="guide-level guide-level-veteran">Operator Standard</span><h2>Every order needs a stop condition.</h2><p>“Support the faction” is not an operational plan. Good orders specify the beneficiary, the lever, an approximate workload, what to avoid, and when to stop.</p></article></div></section>
 
@@ -29,7 +29,78 @@
 <div class="guide-rule"><strong>Do not memorize thresholds without context.</strong> Conflict eligibility, assets, states, faction history, background traffic, and community-observed mechanics can all change what happens next.</div>
 </div></section>
 
-<section class="section" id="starter"><div class="container"><div class="section-heading"><div><p class="eyebrow">Starter Guide</p><h2>The BGS in Six Steps</h2></div><p>This is the basic operating loop. Everything else in the manual is a deeper version of one of these steps.</p></div><div class="guide-card-grid">
+<section class="section guide-topic-section" id="influence"><div class="container"><div class="section-heading"><div><p class="eyebrow">Start Here — Influence</p><h2>Influence Is a 100% Shared Pool</h2></div><p><a class="inline-reference" href="../reference/#bgs-influence">Influence</a> is the foundation of most BGS planning. Before deciding what activity to run, understand where the percentage has to come from and where it will go.</p></div>
+<div class="guide-rule"><strong>Core rule:</strong> all active faction influence in a system adds to roughly 100%. If one unlocked faction gains share, one or more other unlocked factions must lose share. You are not adding influence from outside the system — you are redistributing the pie.</div>
+<div class="guide-detail-grid" style="margin-top:16px">
+<article class="guide-detail-card"><h3>Raise Faction A</h3><p>Do positive work for A. Its gain is paid for by losses across the other influence-unlocked factions. The exact distribution depends on activity on every faction, population, state locks, and diminishing returns.</p></article>
+<article class="guide-detail-card"><h3>Lower Faction A</h3><p>A common mistake is to work only one rival. Supporting several other unlocked factions pulls share away from A from several directions. Direct negative actions against A can be added when the operation calls for them.</p></article>
+<article class="guide-detail-card"><h3>One Winner + One Victim</h3><p>When you want a very specific transfer, concentrate positive effort on one beneficiary and negative effort on one victim. This is often easier to interpret after the tick than scattering every action everywhere.</p></article>
+<article class="guide-detail-card"><h3>Conflict Locks Change the Pool</h3><p>Factions in War, Civil War, or Election have their influence frozen for the duration. They are effectively removed from ordinary influence redistribution until the conflict resolves, which can be used strategically.</p></article>
+</div>
+<h3 class="guide-subheading">Why “just support one other faction” can disappoint</h3>
+<div class="bgs-example-grid bgs-example-grid-wide">
+<article><strong>Example: A is the target to lower</strong><span>A 55% · B 20% · C 12% · D 8% · E 5%. If you only boost B, B rises but C/D/E can also lose some share. A may fall, but not as efficiently as when several unlocked non-A factions receive useful positive work.</span></article>
+<article><strong>Example: spread the pull</strong><span>If the objective is simply “A down,” modest support to B, C, D, and E gives the system more places to redistribute influence away from A. Low-influence factions can produce outsized movement against a high controller.</span></article>
+<article><strong>Example: precision transfer</strong><span>If the objective is “B up and A down,” choose B as the beneficiary and A as the victim. Use positives for B plus selected negatives for A, then measure the next tick before adding more.</span></article>
+<article><strong>Example: frozen factions</strong><span>If C and D are locked together in conflict, their influence does not participate normally. Work on B can leapfrog past them while A/B/E absorb the movable share.</span></article>
+</div>
+<div class="guide-rule"><strong>Mission INF is not system influence %.</strong> A mission showing INF +++++ gives a relative influence reward weight. It does not mean +5 percentage points.</div>
+<h3 class="guide-subheading">Positive levers outside conflicts</h3>
+<div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Activity</th><th>Primary use</th><th>Who receives the benefit</th><th>Operational caution</th></tr></thead><tbody>
+<tr><td><a class="inline-reference" href="../reference/#bgs-missions">Missions</a></td><td>Targeted influence support; mission type can also move economy/security.</td><td>The issuing faction, with some missions also applying negative pressure to a target faction.</td><td>Read issuer, target, destination, and reward. One mission can help one faction while hurting another.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-bounties">Bounty vouchers</a></td><td>Influence + security support.</td><td>The faction that issued the bounty when redeemed in a way that gives local BGS credit.</td><td><strong>Bounty vouchers are not Combat Bonds.</strong> Do not substitute bounty hunting for CZ work in a War order.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-profitable-trade">Profitable trade</a></td><td>Influence + economic support.</td><td>The faction that owns the market/asset.</td><td>Profit and market ownership matter. Tonnage alone is a poor BGS measure.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-exploration-data">Exploration data</a></td><td>Influence + economic support.</td><td>The faction owning the receiving asset.</td><td>Check ownership before spending stored data.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-negative-actions">Negative actions</a></td><td>Reduce a chosen victim’s influence/security/economy depending on the lever.</td><td>Pressure is applied to the target; released influence is redistributed through the system.</td><td>Crime/notoriety and unwanted state movement can create new problems. Use deliberately.</td></tr>
+</tbody></table></div>
+<details class="veteran-notes"><summary>Veteran notes — population, diminishing returns, and opposition</summary><div><p>Population changes how resistant a system feels, and repeated activity in the same bucket gives diminishing returns. Opposition and random traffic are added on top. The efficient pattern is usually a mix of relevant levers, followed by a tick and recalibration — not endlessly repeating one activity.</p></div></details>
+<div class="actions" style="margin-top:18px"><a class="btn btn-ghost" href="../reference/#bgs-influence-distribution">Influence Distribution Reference</a><a class="btn btn-ghost" href="../reference/#bgs-diminishing-returns">Diminishing Returns</a></div>
+</div></section>
+
+<section class="section guide-topic-section" id="strategies"><div class="container"><div class="section-heading"><div><p class="eyebrow">General Strategies</p><h2>Shape the Board Before You Grind</h2></div><p>The strongest BGS play is often deciding <em>which factions are allowed to move</em> before deciding how many missions to run. These are reusable strategies, not prescriptions for every system.</p></div>
+<div class="guide-card-grid">
+<article class="guide-card"><span class="guide-number">01</span><h3>Broad Pull-Down</h3><p>To reduce a high faction, support several other unlocked factions instead of pouring everything into one rival. This gives the system several destinations for the released influence.</p></article>
+<article class="guide-card"><span class="guide-number">02</span><h3>Winner + Victim</h3><p>For a controlled transfer, select one faction to rise and one to fall. Mix positives for the winner with negatives for the victim, then use the tick result to tune the next day.</p></article>
+<article class="guide-card"><span class="guide-number">03</span><h3>Conflict Lock & Leapfrog</h3><p>Bring two middling factions together and let their conflict freeze their influence. A lower faction can then be boosted past the locked pair without fighting each of them on the way up.</p></article>
+<article class="guide-card"><span class="guide-number">04</span><h3>Lock More of the Board</h3><p>Multiple independent conflicts can reduce the number of factions participating in normal influence movement. This can make a retreat push, takeover, or precision adjustment much easier to control.</p></article>
+<article class="guide-card"><span class="guide-number">05</span><h3>Maintenance Band</h3><p>Do not always chase maximum influence. Hold a controller inside a planned band so you preserve control while avoiding unwanted Expansion or needless crossovers.</p></article>
+<article class="guide-card"><span class="guide-number">06</span><h3>Pre-Stage Asset Transfers</h3><p>Before forcing equality, identify government ethos, asset at risk, post-conflict order, and where you want both factions afterward. Winning the wrong conflict can create another week of cleanup.</p></article>
+<article class="guide-card"><span class="guide-number">07</span><h3>Retreat Preparation</h3><p>When removing a non-native faction, first make the system easier to control: lock middling factions where practical, choose which faction(s) will absorb share, then drive the target below the threshold.</p></article>
+<article class="guide-card"><span class="guide-number">08</span><h3>Use the Tick as Feedback</h3><p>If the result is smaller, larger, or opposite to expectation, do not simply double yesterday’s workload. Check traffic, states, ownership, conflict locks, and activity attribution first.</p></article>
+</div>
+<div class="guide-rule"><strong>Conflict lock strategy is powerful but temporary.</strong> A locked faction can become movable again as soon as its conflict ends, so plan the leapfrog or retreat window around the remaining conflict days.</div>
+<div class="actions"><a class="btn btn-ghost" href="../reference/#bgs-conflict-lock-strategy">Conflict Lock Strategy</a><a class="btn btn-ghost" href="../reference/#bgs-general-strategy">Strategy Reference</a></div>
+</div></section>
+
+<section class="section guide-topic-section" id="daily-targets"><div class="container"><div class="section-heading"><div><p class="eyebrow">Daily Task Benchmarks</p><h2>How Much Is Enough?</h2></div><p>There is no universal cap. These community-tested targets are useful <strong>starting workloads per CMDR, per system, per tick</strong> that usually produce worthwhile movement without spending the entire day deep into diminishing returns.</p></div>
+<div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Positive lever</th><th>Small &lt;1M / quiet</th><th>Medium 1–25M</th><th>Large &gt;25M / contested</th></tr></thead><tbody>
+<tr><td>Mission influence rewards</td><td><strong>~15 INF</strong></td><td><strong>~25 INF</strong></td><td><strong>~50 INF</strong></td></tr>
+<tr><td>Bounty vouchers</td><td><strong>~10M Cr</strong></td><td><strong>~20M Cr</strong></td><td><strong>~30M Cr</strong></td></tr>
+<tr><td>Exploration data</td><td><strong>~5M Cr</strong></td><td><strong>~10M Cr</strong></td><td><strong>~15M Cr</strong></td></tr>
+<tr><td>Profitable trade</td><td><strong>~10M Cr profit</strong></td><td><strong>~20M Cr profit</strong></td><td><strong>~30M Cr profit</strong></td></tr>
+</tbody></table></div>
+<div class="guide-rule"><strong>These are benchmarks, not hard caps or guaranteed percentages.</strong> They come from long-running community BGS testing. Very large populations, active opposition, state modifiers, or unusually important systems can justify more work or more CMDRs.</div>
+<div class="guide-detail-grid" style="margin-top:16px">
+<article class="guide-detail-card"><h3>Do I need every line?</h3><p>No. Think of the table as a menu. Mixing two to four relevant buckets is normally more efficient than taking one bucket far past its useful return. Choose activities that also move the economy/security state you want.</p></article>
+<article class="guide-detail-card"><h3>How much trade?</h3><p>Track <strong>profit</strong>, not cargo tonnage. Profitable transactions within useful market demand are the practical measure. A 1,000-ton haul with poor or exhausted demand is not equivalent to a smaller high-profit route.</p></article>
+<article class="guide-detail-card"><h3>When should I stop?</h3><p>Stop when the planned benchmark is reached, the next action has poor return, or the strategic threshold is close enough that more work risks an overshoot. Let the tick tell you whether tomorrow needs more or less.</p></article>
+<article class="guide-detail-card"><h3>When should I exceed it?</h3><p>When opposition is confirmed, the population is huge, a deadline/threshold matters, or a conflict must be won. In those cases adding CMDRs and mixing levers is usually better than one CMDR endlessly repeating a saturated activity.</p></article>
+</div>
+<h3 class="guide-subheading">Quick task menus</h3>
+<div class="bgs-example-grid bgs-example-grid-wide">
+<article><strong>Raise a faction</strong><span>Pick 2–4: high-INF missions, profitable trade to its market, exploration data to its asset, bounty vouchers issued by it. Add direct negatives against a chosen victim only if the operation calls for them.</span></article>
+<article><strong>Lower a faction</strong><span>Work for the other unlocked factions — often several of them if the only objective is “target down.” For a precision transfer, use one beneficiary plus targeted negative pressure against the victim.</span></article>
+<article><strong>Avoid Expansion</strong><span>Stop positive work for the high faction before the ~75% boundary; support selected other unlocked factions to create a safety margin. Do not aim to sit exactly on the threshold.</span></article>
+<article><strong>Save from Retreat</strong><span>Build the retreating faction decisively above ~2.5% using several positive levers. Do not settle for a rounding-edge rescue. The critical influence check occurs late in the active Retreat cycle.</span></article>
+<article><strong>Force Retreat</strong><span>Confirm the faction is non-native and the system can start Retreat. Push the target below ~2.5%, avoid all accidental support, support the other unlocked factions, and use direct negatives if needed. Keep pressure through the critical late-cycle tick.</span></article>
+<article><strong>Win a War / Civil War</strong><span>Win CZ objectives and redeem Combat Bonds; use combat missions as appropriate. <strong>Bounty vouchers are not Combat Bonds</strong> and should not be the squad’s primary war-winning task.</span></article>
+<article><strong>Win an Election</strong><span>Prioritize valid non-combat election missions, then add trade, exploration data, and other election-valid economic work. Combat is not the lever.</span></article>
+<article><strong>Move a low faction quickly</strong><span>Low-influence factions often move efficiently. Lock unrelated middling factions in conflicts where strategically appropriate, then concentrate mixed positive work on the faction you want to leapfrog.</span></article>
+</div>
+<div class="actions"><a class="btn btn-ghost" href="../reference/#bgs-daily-effort-benchmarks">Daily Effort Reference</a><a class="btn btn-ghost" href="../reference/#bgs-retreat-operation">Retreat Playbook</a></div>
+</div></section>
+
+<section class="section" id="starter"><div class="container"><div class="section-heading"><div><p class="eyebrow">Starter Guide</p><h2>Turn the Strategy into a Daily Workflow</h2></div><p>Once you understand influence and choose a strategy, use this loop to turn it into repeatable daily orders.</p></div><div class="guide-card-grid">
 <article class="guide-card"><span class="guide-number">01</span><h3>Read the System</h3><p>Check every faction, not just your own.</p><ul><li>Influence and controller.</li><li>Asset ownership.</li><li>Active + pending states.</li><li>Conflicts and faction count.</li></ul></article>
 <article class="guide-card"><span class="guide-number">02</span><h3>Define the Result</h3><p>“Help our faction” is too vague.</p><ul><li>Raise or lower influence?</li><li>Trigger or avoid conflict?</li><li>Push economy/security?</li><li>Take or protect an asset?</li></ul></article>
 <article class="guide-card"><span class="guide-number">03</span><h3>Choose the Lever</h3><p>Pick the activity that moves the intended dimension.</p><ul><li>Missions / INF.</li><li>Trade / exploration.</li><li>Bounties / security.</li><li>Conflict-specific actions.</li></ul></article>
@@ -37,19 +108,6 @@
 <article class="guide-card"><span class="guide-number">05</span><h3>Let the Tick Resolve</h3><p>Record what was done, then compare the post-tick result. Data sites may lag until a CMDR visits and uploads fresh journals.</p></article>
 <article class="guide-card"><span class="guide-number">06</span><h3>Recalibrate</h3><p>Use the result to tune tomorrow’s orders. BGS is a control problem, not a fixed “X missions = Y%” recipe.</p></article>
 </div></div></section>
-
-<section class="section guide-topic-section" id="influence"><div class="container"><div class="section-heading"><div><p class="eyebrow">Influence & Levers</p><h2>Move the Right Dimension</h2></div><p><a class="inline-reference" href="../reference/#bgs-influence">Influence</a>, economy, security, and conflict score are related but distinct. One activity can touch several at once.</p></div>
-<div class="guide-rule"><strong>Mission INF is not system influence %.</strong> A mission showing INF +++++ gives a relative influence reward weight. It does not mean +5 percentage points.</div>
-<div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Activity</th><th>Influence / state use</th><th>Conflict use</th><th>Operational caution</th></tr></thead><tbody>
-<tr><td><a class="inline-reference" href="../reference/#bgs-missions">Missions</a></td><td>Targeted support; mission type can also move economy/security.</td><td>Combat missions can help War/Civil War; non-combat/economic missions can help Elections.</td><td>Read issuer, target, destination, and reward. One mission can help one faction while hurting another.</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-bounties">Bounties</a></td><td>Positive faction + security pressure for the issuing faction.</td><td>Can contribute to War/Civil War scoring.</td><td>Mixed vouchers and jurisdiction can muddy precise targeting.</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-profitable-trade">Profitable trade</a></td><td>Positive economic/influence pressure for the market owner.</td><td>Can contribute to Election scoring.</td><td>The asset owner matters more than “being in the right system.”</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-exploration-data">Exploration data</a></td><td>Positive support through the receiving faction-owned asset.</td><td>Can contribute to Election scoring.</td><td>Check ownership before spending valuable data.</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-black-market">Smuggling / black market</a></td><td>Often used for negative economic pressure against the market owner.</td><td>Economic/smuggling activity can contribute during Elections.</td><td>Government ethos and station services determine availability; effects can be strategically messy.</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-negative-actions">Violent crime</a></td><td>Negative influence/security pressure against the victim.</td><td>Can contribute to War/Civil War scoring.</td><td>Notoriety, legal consequences, and unwanted security states may outweigh the benefit.</td></tr>
-</tbody></table></div>
-<details class="veteran-notes"><summary>Veteran notes — population, saturation, and opposition</summary><div><p>Population changes how resistant a system feels, and repeated activity is subject to practical diminishing returns. Opposing CMDRs and random traffic are added on top. Treat published workloads as starting points, not formulas. For an important system, log a known batch of work, observe the tick, and build your own local calibration.</p></div></details>
-</div></section>
 
 <section class="section guide-topic-section" id="conflicts"><div class="container"><div class="section-heading"><div><p class="eyebrow">Conflicts</p><h2>Best of Seven — Not “Grind Until the Bar Moves”</h2></div><p>War, Civil War, and Election use separate daily conflict scoring. Ordinary displayed influence is not the scoreboard you are trying to win.</p></div>
 <div class="bgs-conflict-banner"><div><span>Format</span><strong>Best of 7 daily results</strong></div><div><span>Maximum</span><strong>7 days</strong></div><div><span>Early ending</span><strong>When the loser cannot force a draw</strong></div><div><span>Score update</span><strong>At the BGS tick</strong></div></div>
@@ -64,10 +122,11 @@
 
 <h3 class="guide-subheading">What actually counts</h3>
 <div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Conflict</th><th>Primary practical lever</th><th>Useful supporting inputs</th><th>Do not rely on</th></tr></thead><tbody>
-<tr><td><a class="inline-reference" href="../reference/#bgs-war">War</a></td><td>Win Conflict Zone objectives.</td><td>Combat missions, combat bonds, bounty hunting, violent/combat actions.</td><td>Trade, exploration, ordinary economic grinding as a substitute for combat.</td></tr>
-<tr><td><a class="inline-reference" href="../reference/#bgs-civil-war">Civil War</a></td><td>Same scoring family as War: win CZ objectives.</td><td>Combat missions, bonds, bounties, other combat inputs.</td><td>Assuming “Civil” means non-combat.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-war">War</a></td><td>Win Conflict Zone objectives; redeem Combat Bonds.</td><td>Combat missions and other war-valid combat objectives.</td><td><strong>Bounty vouchers are not Combat Bonds.</strong> Some community research reports bounties as a secondary/tiebreak input, but they are not reliable enough to use as the primary Mongrel war lever. Do not replace CZ work with bounty hunting.</td></tr>
+<tr><td><a class="inline-reference" href="../reference/#bgs-civil-war">Civil War</a></td><td>Same scoring family as War: win CZ objectives; redeem Combat Bonds.</td><td>Combat missions and other war-valid combat objectives.</td><td>Assuming “Civil” means non-combat, or confusing ordinary bounty vouchers with war Combat Bonds.</td></tr>
 <tr><td><a class="inline-reference" href="../reference/#bgs-election">Election</a></td><td>Complete valid non-combat election missions.</td><td>Trade/smuggling, exploration data, search & rescue, economic missions, non-combat scenarios.</td><td>CZs, bonds, and bounty grinding as the main election lever.</td></tr>
 </tbody></table></div>
+<div class="guide-rule"><strong>War voucher distinction:</strong> <em>Combat Bonds</em> come from fighting for a side in Conflict Zones. <em>Bounty Vouchers</em> come from killing wanted ships. They are different transaction types. For squad war orders, treat CZ wins/objectives and Combat Bonds as the dependable war tools; bounty hunting remains primarily an influence/security lever outside that role.</div>
 <div class="guide-detail-grid" style="margin-top:16px">
 <article class="guide-detail-card"><h3>Before the Conflict</h3><p>Identify both governments/ethos groups, the asset at risk, whether system control is at stake, and whether you actually want this opponent.</p></article>
 <article class="guide-detail-card"><h3>During the Conflict</h3><p>Track the completed daily score after each tick. You cannot see the opponent’s live work, so current-day “safety” is always an estimate.</p></article>
@@ -118,6 +177,15 @@
 <tr><td><a class="inline-reference" href="../reference/#bgs-native-faction">Native faction</a></td><td>Cannot normally Retreat from its home system.</td><td>Use another strategic method if the faction is native.</td><td>Trying to remove a native faction with Retreat.</td></tr>
 <tr><td><a class="inline-reference" href="../reference/#bgs-faction-cap">Faction cap</a></td><td>Seven factions in a normal system.</td><td>Full systems change expansion targeting and invasion possibilities.</td><td>Planning an expansion as though every nearby system has an open slot.</td></tr>
 </tbody></table></div>
+<h3 class="guide-subheading">Retreat operator timeline</h3>
+<div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Phase</th><th>What matters</th><th>Practical order</th></tr></thead><tbody>
+<tr><td>Trigger</td><td>Non-native faction drops below ~2.5%; Retreat must also be eligible to start.</td><td>Verify faction count and native status before committing the operation.</td></tr>
+<tr><td>Pending / early active</td><td>Keep the target controlled and prevent random positive support.</td><td>Support the other unlocked factions; prepare stronger negative actions if the target starts recovering.</td></tr>
+<tr><td>Late active / critical check</td><td>Community research places the decisive influence check at the start of the final active processing day.</td><td>If forcing Retreat, make sure the target is comfortably below 2.5% <em>before</em> that check. If saving it, be comfortably above 2.5%.</td></tr>
+<tr><td>Resolution</td><td>If the removal condition is met, the faction leaves and its influence is redistributed; assets pass according to BGS rules.</td><td>Immediately review the new influence order because the redistribution can create new crossovers or thresholds.</td></tr>
+</tbody></table></div>
+<div class="guide-rule"><strong>Faction-count rule:</strong> current community observation is that a new Retreat will not start when only three factions are present. Multiple factions already in Retreat can resolve together and produce fewer than three afterward, so timing matters.</div>
+
 <details class="veteran-notes"><summary>Veteran notes — expansion targeting</summary><div><p>Expansion targeting is a neighborhood problem, not a destination selector. Distance, open slots, faction counts, existing/previous faction presence, active states, and invasion eligibility can all matter. Because Frontier has not published a complete targeting formula, the Reference Database marks the detailed targeting model as community-observed.</p></div></details>
 </div></section>
 
@@ -148,17 +216,17 @@
 </div>
 <h3 class="guide-subheading">Example daily orders</h3>
 <div class="bgs-example-grid bgs-example-grid-wide">
-<article><strong>Influence + Security</strong><span>“Turn in ~20M Mongrel bounties; complete ~20–30 mission INF for Mongrels; avoid crime against Mongrels; stop after target workload.”</span></article>
-<article><strong>War Day</strong><span>“Win CZs for Faction A; hand in bonds/combat missions before tick; do not spend the session on trade/exploration expecting it to win the war day.”</span></article>
+<article><strong>Influence + Security</strong><span>“Complete ~25 mission INF and/or ~20M in bounty vouchers for the beneficiary; add profitable trade/data if available; stop at the planned workload and reassess after tick.”</span></article>
+<article><strong>War Day</strong><span>“Win CZs for Faction A and redeem Combat Bonds; complete relevant combat missions; do not substitute ordinary bounty hunting, trade, or exploration for the war lever.”</span></article>
 <article><strong>Election Day</strong><span>“Prioritize non-combat election missions for Faction A; add trade/exploration/economic support; avoid combat as the primary lever.”</span></article>
 <article><strong>Avoid Expansion</strong><span>“Support selected minority faction; no Mongrel positive work after the planned amount; maintain a safety buffer below ~75%.”</span></article>
 </div>
 <div class="guide-rule"><strong>Mongrel doctrine:</strong> check Daily Orders before doing BGS in a priority system. Leadership may intentionally be lowering, holding, or withholding support from the squad faction.</div>
-<div class="actions"><a class="btn btn-primary" href="../../operations/#daily-orders">Daily Orders</a><a class="btn btn-ghost" href="../reference/#bgs-operation-calibration">Calibration Reference</a><a class="btn btn-ghost" href="../reference/#bgs-activity-matrix">Activity → Effect Matrix</a></div>
+<div class="actions"><a class="btn btn-primary" href="../../operations/#daily-orders">Daily Orders</a><a class="btn btn-ghost" href="#daily-targets">Daily Target Benchmarks</a><a class="btn btn-ghost" href="../reference/#bgs-operation-calibration">Calibration Reference</a><a class="btn btn-ghost" href="../reference/#bgs-activity-matrix">Activity → Effect Matrix</a></div>
 </div></section>
 
 <section class="section"><div class="container"><div class="guide-source-note"><strong>Living manual</strong><p>BGS is partly documented by Frontier and partly reverse-engineered by long-running community testing. This manual treats Frontier-published conflict behavior as firm, labels community-observed thresholds and targeting rules, and avoids presenting uncertain trigger formulas as fact. We expect to refine this guide as the squad encounters edge cases and as Frontier changes the simulation.</p><div class="reference-sources"><a href="https://store.steampowered.com/news/posts/?appids=359320&enddate=1556793125" target="_blank" rel="noopener">Frontier BGS conflict update ↗</a><a href="https://sinc.science/bgsguide.pdf" target="_blank" rel="noopener">Complete BGS Guide 2025 ↗</a><a href="https://novaforce.com/guides/bgs/" target="_blank" rel="noopener">Nova Force BGS Guide ↗</a></div></div></div></section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../../js/site.js?v=62"></script><script src="../../js/mongrel-assistant.js?v=62"></script>
+<script src="../../js/site.js?v=63"></script><script src="../../js/mongrel-assistant.js?v=63"></script>
 </body></html>

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": "63",
   "reviewedAt": "2026-09-13",
   "entries": [
     {
@@ -25,6 +25,12 @@
       "expanded": "Anti-Xeno",
       "definition": "Combat and operations against Thargoids.",
       "category": "AX"
+    },
+    {
+      "term": "Beneficiary",
+      "expanded": "BGS Operational Term",
+      "definition": "The faction deliberately selected to gain influence in a precision-transfer operation. Often paired with one selected victim faction.",
+      "category": "BGS"
     },
     {
       "term": "BGS",
@@ -72,6 +78,12 @@
       "term": "Conflict Day",
       "expanded": "Daily Conflict Result",
       "definition": "One tick-scored result in a War, Civil War, or Election. Conflicts are best-of-seven daily contests and can end early when the trailing side can no longer force a draw.",
+      "category": "BGS"
+    },
+    {
+      "term": "Conflict Lock",
+      "expanded": "Influence Lock During War / Civil War / Election",
+      "definition": "While a faction is in an active conflict, its ordinary system influence is frozen. BGS operators can use this intentionally to reduce the number of movable factions or let another faction leapfrog past the locked pair.",
       "category": "BGS"
     },
     {
@@ -171,6 +183,12 @@
       "category": "BGS"
     },
     {
+      "term": "Leapfrog",
+      "expanded": "BGS Influence Strategy",
+      "definition": "Raising a faction past one or more factions whose influence is frozen in conflict, avoiding separate crossover conflicts with those locked factions during the window.",
+      "category": "BGS"
+    },
+    {
       "term": "Lockdown",
       "expanded": "Security State",
       "definition": "Severe negative security state that can restrict station services.",
@@ -255,6 +273,12 @@
       "category": "PvP"
     },
     {
+      "term": "Saturation",
+      "expanded": "Diminishing Returns",
+      "definition": "The practical reduction in BGS return from repeatedly filling the same activity bucket during one tick. Mixing valid levers is generally more efficient than endlessly repeating one activity.",
+      "category": "BGS"
+    },
+    {
       "term": "SCB",
       "expanded": "Shield Cell Bank",
       "definition": "Optional internal that restores shield strength while active and produces significant heat.",
@@ -307,6 +331,12 @@
       "expanded": "Time to Kill",
       "definition": "How long it takes a build or group to destroy a target under the conditions being discussed.",
       "category": "Combat"
+    },
+    {
+      "term": "Victim",
+      "expanded": "BGS Operational Term",
+      "definition": "The faction deliberately selected to lose influence in a precision-transfer operation. This is operational shorthand, not an in-game status.",
+      "category": "BGS"
     },
     {
       "term": "War",

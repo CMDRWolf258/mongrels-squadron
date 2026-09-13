@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": "63",
   "reviewedAt": "2026-09-13",
   "scope": "Engineering, ship-building and Background Simulation reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
   "entries": [
@@ -1122,29 +1122,57 @@
         "mission influence",
         "faction influence"
       ],
-      "ruleOfThumb": "Influence is a faction’s share of political strength in one specific system; all faction shares compete within the same roughly 100% pool.",
+      "ruleOfThumb": "Influence is a system-specific 100% shared pool. Raising one unlocked faction takes share from other unlocked factions; lowering a target is often fastest by giving that share several places to go.",
       "details": [
-        "Influence is system-specific. A faction can be dominant in one system and weak in another.",
-        "Raising one faction necessarily takes share from one or more others because the pool is finite.",
-        "Mission reward “INF +” indicators are not percentage points; they are relative influence reward weights."
+        "All active faction influence in a system totals roughly 100%, so influence movement is redistribution rather than creation.",
+        "If only one rival is supported, that rival rises but the remaining factions can also lose a little share. If the only objective is to lower Faction A, supporting several other unlocked factions can be more effective than feeding just one.",
+        "For a precise transfer, select one beneficiary and one victim: combine positive work for the beneficiary with selected negative work against the victim.",
+        "Factions locked in War, Civil War, or Election have their ordinary influence frozen for the conflict duration. The remaining unlocked factions then compete over a smaller movable pool.",
+        "Mission reward “INF +” indicators are relative reward weights, not percentage points."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Treating influence as independent bars instead of one shared 100% pool.",
+        "Trying to lower a high faction by supporting only one other faction and forgetting that the rest of the system also participates in redistribution.",
+        "Confusing mission INF pips with system influence percentage points."
+      ],
       "operations": [
-        "Track the daily percentage after the tick and compare it with the work performed, rather than treating mission pips as a direct conversion to percent."
+        "First decide whether the objective is broad (“A down”) or precise (“B up, A down”). For broad reduction, spread useful positive work among other unlocked factions. For precision, choose one beneficiary and one victim, then calibrate after the tick."
       ],
       "watchFor": "A faction-wide name is not enough context. Always pair influence with the system in which it is being measured.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "Elite BGS Science — Influence model",
+          "url": "https://sinc.science/guides/newp/"
         },
         {
-          "name": "INARA — Community BGS guide",
-          "url": "https://inara.cz/elite/logbook/18492/"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Elite Dangerous Wiki — Influence",
+          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed",
+      "quickFacts": [
+        {
+          "label": "System pool",
+          "value": "~100% total influence"
+        },
+        {
+          "label": "Raise one faction",
+          "value": "Others must give up share"
+        },
+        {
+          "label": "Conflict lock",
+          "value": "Combatants’ ordinary INF is frozen"
+        },
+        {
+          "label": "Mission INF",
+          "value": "Reward weight, not percentage points"
+        }
+      ]
     },
     {
       "id": "bgs-tick",
@@ -1220,25 +1248,30 @@
         "daily cap",
         "transactions"
       ],
-      "ruleOfThumb": "Spread large BGS efforts across effective activity types and commanders instead of assuming the 100th identical transaction is as valuable as the first.",
+      "ruleOfThumb": "Routine influence work has steep diminishing returns. Mix relevant buckets and use per-CMDR daily benchmarks instead of grinding one activity indefinitely.",
       "details": [
-        "BGS activity is subject to practical diminishing returns and daily saturation effects.",
-        "The exact implementation is not exposed as a simple public formula.",
-        "Mixing missions, bounties, profitable trade, and other valid support can be more efficient than endlessly repeating one activity."
+        "Post-4.0 community testing models routine BGS as smooth diminishing returns rather than a simple hard cap.",
+        "The first contribution to a bucket is more efficient than the later contribution; mixing missions, bounties, profitable trade, and exploration can therefore outperform spamming one activity for the same play time.",
+        "Population and opposition change the practical workload. Large or contested systems can justify more effort or more commanders.",
+        "War and Election are the important exception: the objective is to beat the opponent’s valid conflict output, so do not stop merely because a normal influence benchmark has been reached."
       ],
       "commonMistakes": [],
       "operations": [
-        "When a system stops responding efficiently, diversify the work or stop at the planned daily target and evaluate after the tick."
+        "Use the Daily Effort Benchmarks as a starting point, mix two to four appropriate levers when possible, then stop and read the tick unless the system is actively contested or a threshold/deadline requires more."
       ],
       "watchFor": "Do not confuse credit value with unlimited influence value; very large turn-ins can be inefficient after useful saturation is reached.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "E:D Black Box — BGS guide",
+          "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/bgs.html"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-missions",
@@ -1288,29 +1321,37 @@
         "security",
         "redeem"
       ],
-      "ruleOfThumb": "Bounty hunting is a strong way to support the faction that issued the vouchers when redeemed through the appropriate authority, but verify which faction actually receives the BGS benefit.",
+      "ruleOfThumb": "Bounty vouchers are a strong positive influence/security lever for the issuing faction, but they are not Combat Bonds and should not be treated as a substitute for Conflict Zone work in a War.",
       "details": [
-        "Bounty vouchers are one of the standard positive BGS activities.",
-        "Voucher jurisdiction and station ownership can complicate attribution, especially when multiple factions issue claims.",
-        "Bounties are particularly useful when the operation also wants higher security pressure."
+        "Bounty vouchers come from killing wanted ships; Combat Bonds come from fighting for a side in a Conflict Zone. They are different transaction types.",
+        "Outside conflict scoring, bounty vouchers are one of the standard positive BGS levers and are especially useful when the operation also wants positive security pressure.",
+        "Community documentation is mixed on whether ordinary bounty vouchers can serve as a secondary War tie-break input. Current operator guidance should therefore rely on CZ wins/objectives, Combat Bonds, and relevant combat missions for War/Civil War rather than assign bounty hunting as the primary war task."
       ],
-      "commonMistakes": [],
+      "commonMistakes": [
+        "Calling bounty vouchers “combat bonds.”",
+        "Sending pilots bounty hunting when the actual objective is to win a War day.",
+        "Assuming voucher credit value converts linearly to influence."
+      ],
       "operations": [
-        "Use measured voucher batches rather than assuming credits convert linearly to influence. For organized operations, log voucher value and commander count."
+        "For normal influence/security work, use measured bounty-voucher targets. For War/Civil War, issue CZ/Combat Bond orders first; treat any possible bounty tie-break contribution as secondary and uncertain."
       ],
-      "watchFor": "Do not blindly redeem mixed vouchers when precise faction targeting matters. Confirm the issuing faction and the desired recipient effect.",
+      "watchFor": "Precise attribution matters: confirm the faction that issued the voucher and the system in which you want the BGS effect.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         },
         {
-          "name": "INARA — Community BGS guide",
-          "url": "https://inara.cz/elite/logbook/18492/"
+          "name": "EDBGS activity tracker documentation",
+          "url": "https://git.aror.org/florian/EDBGS/src/commit/1c0c864e622f7ac829eff9c81fc4452f14fcf226/EliteBGS"
+        },
+        {
+          "name": "Frontier Forums — current BGS war discussion",
+          "url": "https://forums.frontier.co.uk/threads/imperial-campaign-targets-archon-delaine-in-beta-3-tucani-combat.638440/post-10647208"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-profitable-trade",
@@ -1325,21 +1366,22 @@
         "hauling",
         "profit"
       ],
-      "ruleOfThumb": "Selling commodities for a profit at a market supports the faction that controls that market/asset; trade is therefore political as well as economic.",
+      "ruleOfThumb": "For BGS planning, measure profitable trade by useful profit at the correct faction-owned market — not simply cargo tonnage.",
       "details": [
-        "Market ownership matters more than the station name alone.",
-        "Profitable trade can be a useful positive influence lever while also moving economic-state pressure.",
-        "Trade effects are subject to diminishing returns, so repeated tiny or huge transactions should not be assumed to scale linearly."
+        "Market ownership determines which faction receives the positive BGS effect.",
+        "Community BGS guidance uses trade profit as a practical workload benchmark because tonnage alone ignores margin, supply/demand, and market conditions.",
+        "Trade must remain meaningfully profitable and within useful market supply/demand conditions; repeatedly dumping cargo into exhausted demand is not equivalent to good positive trade.",
+        "Trade also pushes economic-state pressure, so it can serve two objectives at once."
       ],
       "commonMistakes": [],
       "operations": [
-        "Before hauling, verify the controlling faction of the destination market. This matters especially in systems where assets are split among several factions."
+        "Verify destination asset ownership, track approximate profit, and stop around the planned daily benchmark unless the tick/contest requires more."
       ],
       "watchFor": "Do not sell to a convenient market simply because it is in the correct system; the wrong asset owner can receive the benefit.",
       "sources": [
         {
-          "name": "Elite Dangerous Wiki — Influence",
-          "url": "https://elite-dangerous.fandom.com/wiki/Influence"
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
         },
         {
           "name": "INARA — Community BGS guide",
@@ -1347,7 +1389,7 @@
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-exploration-data",
@@ -1580,19 +1622,20 @@
         "conflict day",
         "war state"
       ],
-      "ruleOfThumb": "War is a combat-scored conflict. Win the daily contest with Conflict Zone objectives first; combat missions, combat bonds, bounty hunting, violent crimes, and other combat inputs can contribute as secondary/tie-breaker activity.",
+      "ruleOfThumb": "War is a combat-scored conflict. Win Conflict Zones and redeem Combat Bonds; do not substitute ordinary bounty hunting, trade, or exploration for the war lever.",
       "details": [
-        "War uses the same best-of-seven daily conflict structure as Civil War and Election.",
-        "Frontier identifies winning Conflict Zone objectives as the clearest way to help a War/Civil War.",
-        "Most combat missions, combat bonds, bounty hunting, and violent crimes contribute to War/Civil War conflict scoring.",
-        "Non-combat trade, exploration, and ordinary economic support do not substitute for combat conflict work."
+        "War uses the same best-of-seven daily structure as Civil War and Election.",
+        "Conflict Zone wins/objectives are the clearest and strongest practical lever. Combat Bonds and relevant combat missions support the war effort.",
+        "Bounty vouchers are not Combat Bonds. Some community sources report bounty vouchers as a secondary tie-break input, while current operator testing emphasizes CZ wins and Combat Bonds; treat bounties as uncertain/secondary rather than a war plan.",
+        "Non-combat trade and exploration do not substitute for combat conflict work."
       ],
       "commonMistakes": [
         "Grinding ordinary influence missions while ignoring Conflict Zones.",
-        "Holding bonds or combat mission completions past the tick when the day is still contested."
+        "Confusing bounty vouchers with Combat Bonds.",
+        "Spending a War day on trade/exploration and expecting those activities to win the day."
       ],
       "operations": [
-        "Prioritize CZ wins. In a contested war, hand in combat bonds, bounties, and combat-mission completions before the tick so secondary scoring is not left on the table."
+        "Prioritize CZ wins, Combat Bonds, and relevant combat missions. If the war is contested, keep increasing valid combat output until the day resolves; conflict competition is not governed by normal diminishing-return planning in the same way as routine influence work."
       ],
       "watchFor": "You cannot see the opponent’s live daily score. Treat “we won several CZs” as evidence, not proof, until the next tick posts the day result.",
       "sources": [
@@ -1603,10 +1646,14 @@
         {
           "name": "The Complete BGS Guide 2025 v3.0",
           "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier Forums — BGS war/CZ discussion",
+          "url": "https://forums.frontier.co.uk/threads/imperial-campaign-targets-archon-delaine-in-beta-3-tucani-combat.638440/post-10647208"
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-civil-war",
@@ -1618,17 +1665,18 @@
         "cz",
         "combat conflict"
       ],
-      "ruleOfThumb": "Civil War is operationally identical to War: use combat conflict scoring. The “civil” label reflects the relationship/home-system context, not a different scoring model.",
+      "ruleOfThumb": "Civil War is operationally the same combat contest as War: win CZ objectives and redeem Combat Bonds. “Civil” describes the factions’ relationship, not a different scoring method.",
       "details": [
         "Civil War follows the same best-of-seven daily scoring as War.",
-        "Conflict Zone wins are the primary practical lever; combat missions, bonds, bounties, and related combat inputs can contribute.",
-        "Civil War occurs when factions sharing the same home system enter a conflict that would otherwise resolve as War."
+        "Conflict Zone wins are the primary practical lever; Combat Bonds and relevant combat missions support the effort.",
+        "Do not confuse ordinary bounty vouchers with Combat Bonds or use bounty hunting as the squad’s primary Civil War task.",
+        "Civil War occurs when factions sharing the same home system enter a pairing that would otherwise resolve as War."
       ],
       "commonMistakes": [
         "Treating Civil War as an Election because both factions are “local.”"
       ],
       "operations": [
-        "Run it exactly like a War: secure the day with CZ wins, use combat tie-breakers, and track the daily result after each tick."
+        "Run it like a War: prioritize CZ wins, Combat Bonds, and war-valid combat missions; track the daily result after each tick."
       ],
       "watchFor": "Routine economic activity can still affect other system conditions, but it is not the main Civil War score.",
       "sources": [
@@ -1642,7 +1690,7 @@
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-election",
@@ -1913,18 +1961,19 @@
       ],
       "ruleOfThumb": "A non-native faction driven below roughly 2.5% influence can enter Retreat; rescue it decisively above the threshold or let the state remove it from the system.",
       "details": [
-        "Community research places the Retreat trigger below about 2.5% influence.",
-        "Retreat applies to non-native factions; a faction cannot normally be retreated from its home system.",
-        "Active Retreat adds downward pressure, so “just barely above 2.5%” is not a safe rescue target.",
-        "Current community practice is to rescue decisively and early rather than rely on the final removal day."
+        "Community research places the Retreat trigger below about 2.5% influence for non-native factions.",
+        "A new Retreat generally will not start when only three factions are present in the system; multiple already-active Retreats can resolve together, so timing can matter.",
+        "Community timing research describes one pending day followed by six active processing days. The critical influence value is the value entering the final active check: be comfortably below 2.5% to remove, or comfortably above to save.",
+        "Locking unrelated middling factions in conflicts can make Retreat easier by freezing their influence and reducing the amount of free influence that must be managed."
       ],
       "commonMistakes": [
-        "Targeting exactly 2.5% when trying to save a faction.",
-        "Waiting until the last apparent day to start a rescue.",
-        "Trying to retreat a faction from its native/home system."
+        "Targeting exactly 2.5% when trying to save or remove a faction.",
+        "Ignoring the system faction-count rule before planning Retreat.",
+        "Waiting until the final apparent day without knowing when Retreat became pending.",
+        "Accidentally completing positive work for the retreat target."
       ],
       "operations": [
-        "Save: push well above the threshold with margin, then verify post-tick. Remove: keep support away from the faction and watch for accidental positive inputs."
+        "Remove: confirm non-native + Retreat eligibility, push below ~2.5%, support the other unlocked factions, avoid all positive work for the target, and reinforce the push before the critical late-cycle check. Save: stack several positive levers and build a decisive buffer above ~2.5% before that same check."
       ],
       "watchFor": "Do not aim for exactly 2.5%. Rounding, automatic retreat pressure, and competing traffic make the boundary unsafe.",
       "sources": [
@@ -1933,12 +1982,12 @@
           "url": "https://sinc.science/bgsguide.pdf"
         },
         {
-          "name": "Frontier Forums — Expansion/Retreat community research",
-          "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/"
+          "name": "Frontier Forums — retreat timing research",
+          "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/page-13"
         },
         {
-          "name": "Elite Dangerous Wiki — Background Simulation",
-          "url": "https://elite-dangerous.fandom.com/wiki/Background_Simulation"
+          "name": "Frontier Forums — colonisation retreat/faction-count discussion",
+          "url": "https://forums.frontier.co.uk/threads/ive-built-an-outpost.635795/"
         }
       ],
       "reviewedAt": "2026-09-13",
@@ -1953,8 +2002,16 @@
           "value": "Non-native factions"
         },
         {
-          "label": "Safe rescue strategy",
-          "value": "Build margin early; do not aim at the line"
+          "label": "Start restriction",
+          "value": "Generally requires 4+ factions present"
+        },
+        {
+          "label": "Timing",
+          "value": "1 pending + ~6 active processing days"
+        },
+        {
+          "label": "Critical strategy",
+          "value": "Be safely on the correct side before the final check"
         }
       ]
     },
@@ -2638,36 +2695,37 @@
         "bounties war",
         "conflict scoring"
       ],
-      "ruleOfThumb": "War/Civil War = combat scoring. Election = non-combat/economic scoring. Do not spend the day doing the wrong family of activity.",
+      "ruleOfThumb": "War/Civil War = Conflict Zone combat scoring. Election = non-combat/economic scoring. Match the activity family to the conflict.",
       "details": [
-        "War/Civil War: prioritize CZ objective wins; combat missions, combat bonds, bounty hunting, violent crimes, and other combat inputs can contribute.",
-        "Election: prioritize non-combat election missions; commodity trading/smuggling, search and rescue, exploration data, economic missions, and non-combat scenarios can contribute.",
-        "Conflict scoring uses its own equations rather than ordinary displayed influence movement."
+        "War/Civil War: prioritize CZ objective wins, Combat Bonds, and relevant combat missions. Ordinary bounty vouchers are a separate voucher type and are not reliable enough to replace CZ work in operational orders.",
+        "Election: prioritize valid non-combat election missions, with trade, exploration data, search and rescue, economic missions, and non-combat scenarios as supporting levers.",
+        "Conflict score is separate from ordinary displayed influence, which is frozen for the two combatants while the conflict is active."
       ],
       "commonMistakes": [
-        "Running trade and exploration to “help influence” during a War while neglecting combat scoring.",
-        "Running bounties and bonds during an Election and assuming the credit total wins the day."
+        "Confusing bounty vouchers with Combat Bonds.",
+        "Running trade/exploration during a War and expecting it to win the conflict day.",
+        "Running combat during an Election and expecting it to score."
       ],
       "operations": [
-        "If the operation is an active conflict, write the conflict type at the top of the daily order and list only activities that actually score that conflict."
+        "Write the conflict type at the top of the daily order. War: CZs/Bonds/combat missions. Election: non-combat missions/trade/data/economic work."
       ],
       "watchFor": "Exact weights are not public. In a contested conflict, beat the opponent in the correct activity family rather than chasing a fixed credit threshold.",
       "quickFacts": [
         {
           "label": "War/Civil War primary",
-          "value": "CZ objective wins"
+          "value": "CZ wins / objectives"
         },
         {
-          "label": "War support",
-          "value": "Combat missions · bonds · bounties · combat inputs"
+          "label": "War voucher",
+          "value": "Combat Bonds — not bounty vouchers"
         },
         {
           "label": "Election primary",
-          "value": "Non-combat election missions"
+          "value": "Valid non-combat election missions"
         },
         {
           "label": "Election support",
-          "value": "Trade · exploration · S&R · economic missions/scenarios"
+          "value": "Trade · exploration · S&R · economic work"
         }
       ],
       "sources": [
@@ -2681,7 +2739,7 @@
         }
       ],
       "reviewedAt": "2026-09-13",
-      "stability": "reviewed"
+      "stability": "community-reviewed"
     },
     {
       "id": "bgs-conflict-status",
@@ -2873,19 +2931,21 @@
       "details": [
         "Mission completion can affect influence and may also move economy/security depending on mission type.",
         "Profitable trade generally supports influence/economy for the asset owner and can contribute to Election scoring.",
-        "Bounty vouchers support influence/security for the issuing faction and can contribute to War/Civil War scoring.",
+        "Bounty vouchers support normal influence/security for the faction that issued the bounty when redeemed for local BGS credit. They are not Combat Bonds and should not be used as a substitute for Conflict Zone work in War/Civil War.",
+        "Combat Bonds are earned while fighting for a side in Conflict Zones. For War/Civil War, prioritize CZ objective wins, Combat Bonds, and relevant combat missions.",
         "Exploration data can support influence/economy at the receiving faction-controlled asset and can contribute to Election scoring.",
-        "Violent crime is negative security/influence pressure and can contribute to War/Civil War scoring against the victim.",
-        "Black-market/smuggling activity is commonly used for negative economic pressure; during Elections, smuggling can still be an election-scoring economic action depending on which side/asset is involved."
+        "Violent crime, murder, negative missions, smuggling, and other hostile levers can reduce a target faction outside a locked conflict; do not assume random kills or ordinary negative influence work will win a War day.",
+        "Black-market/smuggling activity is commonly used for negative economic pressure; during Elections, economic actions can matter depending on the faction/asset and objective."
       ],
       "commonMistakes": [
         "Treating every positive action as interchangeable.",
-        "Ignoring asset ownership when turning in trade or exploration data."
+        "Ignoring asset ownership when turning in trade or exploration data.",
+        "Confusing Bounty Vouchers with Combat Bonds during War/Civil War."
       ],
       "operations": [
         "Write the desired dimensions beside every daily order, e.g. “Mongrels INF up + Security up” or “Election score only.” Pick levers that serve both when possible."
       ],
-      "watchFor": "Exact weights and some state-specific modifiers are not fully published. Use this as directional guidance and calibrate with tick results.",
+      "watchFor": "Exact weights and some state-specific modifiers are not fully published. Community research disagrees on whether ordinary bounties can contribute as a secondary War tie-break input, so Mongrel operational guidance does not rely on bounty hunting to win War/Civil War days. Use CZ wins/objectives and Combat Bonds as the dependable war tools.",
       "sources": [
         {
           "name": "Frontier BGS conflict update (01/03/2019, Steam mirror)",
@@ -2898,6 +2958,264 @@
       ],
       "reviewedAt": "2026-09-13",
       "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-influence-distribution",
+      "category": "BGS",
+      "topic": "Influence Distribution — Where the Percentage Comes From",
+      "keywords": [
+        "influence distribution",
+        "100 percent",
+        "100%",
+        "shared pool",
+        "lower faction",
+        "raise other factions",
+        "redistribute",
+        "winner victim",
+        "zero sum"
+      ],
+      "ruleOfThumb": "Influence is redistributed inside one system-wide pool. To lower a faction, either support several other unlocked factions or deliberately transfer share to one chosen beneficiary while applying negatives to the target.",
+      "details": [
+        "If Faction A is high and the only goal is “A down,” spreading positive effort across several other unlocked factions gives the released share multiple destinations.",
+        "If only Faction B is supported, B can rise while C/D/E also give up share; this can make A fall less than expected.",
+        "If the goal is precise (“B up, A down”), combine positives for B with selected negatives for A and keep other activity quiet enough to make the tick interpretable.",
+        "Low-influence factions can have outsized leverage against a high-influence controller."
+      ],
+      "commonMistakes": [
+        "Thinking positive work for one rival automatically takes all of its gain from the intended target.",
+        "Ignoring locked factions when estimating where influence can move."
+      ],
+      "operations": [
+        "Before assigning work, label the operation Broad Pull-Down or Precision Transfer. Broad: support several non-target unlocked factions. Precision: one beneficiary + one victim."
+      ],
+      "quickFacts": [
+        {
+          "label": "Total pool",
+          "value": "~100%"
+        },
+        {
+          "label": "Broad target-down",
+          "value": "Support several other unlocked factions"
+        },
+        {
+          "label": "Precision transfer",
+          "value": "One beneficiary + one victim"
+        },
+        {
+          "label": "Low factions",
+          "value": "Often efficient places to pull share"
+        }
+      ],
+      "sources": [
+        {
+          "name": "Elite BGS Science — influence analogy/model",
+          "url": "https://sinc.science/guides/newp/"
+        },
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-conflict-lock-strategy",
+      "category": "BGS",
+      "topic": "Conflict Lock & Leapfrog Strategy",
+      "keywords": [
+        "conflict lock",
+        "influence lock",
+        "leapfrog",
+        "leap frog",
+        "freeze influence",
+        "locked factions",
+        "jump over faction",
+        "strategic conflict"
+      ],
+      "ruleOfThumb": "A faction in an active conflict has its ordinary influence frozen. You can deliberately lock unrelated factions together, then boost another faction past their frozen positions without triggering a conflict with each one.",
+      "details": [
+        "When two factions are locked in War/Civil War/Election, their ordinary influence percentages remain frozen until the conflict resolves.",
+        "The other unlocked factions continue to redistribute the remaining movable influence.",
+        "This can be used to leapfrog a lower faction past several middling factions, simplify a Retreat operation, or reduce the number of factions leadership must actively manage.",
+        "The window is temporary: once a lock ends, those factions re-enter normal influence movement."
+      ],
+      "commonMistakes": [
+        "Starting conflicts without checking how many days remain in the strategic window.",
+        "Accidentally winning/ending a lock early when the real objective was to keep influence frozen.",
+        "Forgetting that assets are at risk if the conflict is allowed to resolve decisively."
+      ],
+      "operations": [
+        "Map the influence ladder, pair the factions you want frozen, then boost the intended mover during the lock. Track conflict days so the leapfrog is complete before the board unlocks."
+      ],
+      "examples": [
+        {
+          "title": "Leapfrog",
+          "body": "B and C are tied near 20% and enter conflict. Faction D is at 12%. Boost D while B/C remain frozen; D can pass 20% without fighting each of them during the lock."
+        },
+        {
+          "title": "Retreat simplification",
+          "body": "Lock two pairs of middling factions, leaving the controller, your beneficiary, and retreat target as the main movable shares. The operation now has fewer variables."
+        }
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0 — takeover/retreat strategy",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Elite BGS Science — conflict influence model",
+          "url": "https://sinc.science/guides/newp/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-daily-effort-benchmarks",
+      "category": "BGS",
+      "topic": "Daily Effort Benchmarks — How Much Work?",
+      "keywords": [
+        "how much",
+        "daily target",
+        "daily targets",
+        "trade profit",
+        "mission inf target",
+        "bounty target",
+        "exploration target",
+        "diminishing returns",
+        "10 million",
+        "20 million",
+        "30 million",
+        "15 inf",
+        "25 inf",
+        "50 inf"
+      ],
+      "ruleOfThumb": "Use community benchmarks as per-CMDR, per-system, per-tick starting targets — not hard caps. Mix several relevant levers, then let the tick tell you whether to scale up or down.",
+      "details": [
+        "The 2025 Complete BGS Guide recommends approximate workloads that balance useful influence movement against player burnout and diminishing returns.",
+        "Small/quiet systems: ~10M Cr bounty vouchers, ~5M Cr exploration data, ~10M Cr trade profit, or ~15 mission INF.",
+        "Medium 1M–25M population: ~20M bounties, ~10M exploration, ~20M trade profit, or ~25 mission INF.",
+        "Large >25M or contested systems: ~30M bounties, ~15M exploration, ~30M trade profit, or ~50 mission INF.",
+        "These are not guaranteed percentages and do not mean every CMDR must complete every line. Mixing two to four valid buckets is usually more efficient than grinding one far past saturation.",
+        "War/Election are exceptions: keep doing valid conflict work until you beat the opponent; normal influence benchmarks do not secure a contested conflict day."
+      ],
+      "operations": [
+        "Pick the population/contest tier, choose two to four available levers, set the day’s target and stop condition, then compare the post-tick result. For trade, track profit rather than tonnage."
+      ],
+      "quickFacts": [
+        {
+          "label": "Small <1M",
+          "value": "10M bounties · 5M data · 10M trade profit · 15 INF"
+        },
+        {
+          "label": "Medium 1–25M",
+          "value": "20M bounties · 10M data · 20M trade profit · 25 INF"
+        },
+        {
+          "label": "Large >25M / contested",
+          "value": "30M bounties · 15M data · 30M trade profit · 50 INF"
+        },
+        {
+          "label": "Status",
+          "value": "Community rule-of-thumb, not a cap"
+        }
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0 — diminishing returns table",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "E:D Black Box — BGS diminishing returns summary",
+          "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/bgs.html"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-benchmark"
+    },
+    {
+      "id": "bgs-general-strategy",
+      "category": "BGS",
+      "topic": "General BGS Strategies",
+      "keywords": [
+        "bgs strategy",
+        "general strategy",
+        "strategy",
+        "raise faction",
+        "lower faction",
+        "maintenance band",
+        "leapfrog",
+        "retreat strategy",
+        "takeover"
+      ],
+      "ruleOfThumb": "Do not default to “support our faction.” Choose a board-shaping strategy that matches the actual result: broad pull-down, precision transfer, conflict lock/leapfrog, maintenance band, asset-transfer setup, or retreat.",
+      "details": [
+        "Broad pull-down: support several unlocked factions to reduce a high target efficiently.",
+        "Precision transfer: choose one beneficiary and one victim for a cleaner, easier-to-read tick.",
+        "Conflict lock/leapfrog: freeze middling factions in conflict so another faction can pass them.",
+        "Maintenance band: hold a controller safely above rivals but below unwanted Expansion.",
+        "Asset-transfer setup: move two asset-owning factions into equality only after checking ethos and asset at risk.",
+        "Retreat setup: simplify the board first, then push the non-native target under ~2.5% and keep it there through the critical check."
+      ],
+      "operations": [
+        "Name the strategy in the daily order before listing tasks. This tells CMDRs why an apparently strange instruction — such as supporting a rival faction — may actually serve the squad’s objective."
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Elite BGS Science",
+          "url": "https://sinc.science/guides/newp/"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-retreat-operation",
+      "category": "BGS",
+      "topic": "Retreat Playbook — Force or Save",
+      "keywords": [
+        "force retreat",
+        "ensure retreat",
+        "save retreat",
+        "retreat playbook",
+        "retreat operation",
+        "important day",
+        "active day 5",
+        "active day 6"
+      ],
+      "ruleOfThumb": "Retreat is won or lost by the influence value entering the late-cycle resolution check. Prepare the board early, then make sure the target is safely on the correct side of ~2.5% before the decisive tick.",
+      "details": [
+        "Before starting: confirm the faction is non-native and that the system has enough factions for a new Retreat to trigger.",
+        "To force: lower the target below ~2.5%, avoid all positive work for it, support the other unlocked factions, and add direct negative levers if necessary. Conflict-locking unrelated factions can simplify the operation.",
+        "To save: stack positive levers — missions, profitable trade if the faction owns a market, exploration if it owns an applicable asset, and bounty vouchers — and build a safety margin above ~2.5%.",
+        "Community timing research commonly describes one pending day and six active processing days. The safest doctrine is to work hard before the final active check instead of trying to rescue/kill the faction after it."
+      ],
+      "commonMistakes": [
+        "Assuming a faction at 2.6% is safe.",
+        "Starting a Retreat plan in a three-faction system.",
+        "Accidentally handing in missions/trade/data/bounties for the target while trying to remove it.",
+        "Waiting for the last visible day rather than counting from the pending day."
+      ],
+      "operations": [
+        "If forcing: log pending day, maintain under-threshold pressure, then make the pre-final tick decisive. If saving: stockpile valid positive work and deliver before the critical check with enough margin to survive opposition/rounding."
+      ],
+      "sources": [
+        {
+          "name": "The Complete BGS Guide 2025 v3.0 — Retreat",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier Forums — retreat timing research",
+          "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/page-13"
+        }
+      ],
+      "reviewedAt": "2026-09-13",
+      "stability": "community-observed"
     }
   ]
 }
