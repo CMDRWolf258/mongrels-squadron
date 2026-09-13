@@ -1,8 +1,16 @@
 (() => {
+  const gate = document.querySelector('[data-mc-gate]');
+  const privateView = document.querySelector('[data-mission-control-private]');
+  const gateStatus = document.querySelector('[data-mc-gate-status]');
+  const loginLink = document.querySelector('[data-mc-login]');
+  const viewerEl = document.querySelector('[data-mc-viewer]');
+
   const priorityEl = document.getElementById('prioritySystems');
   const watchEl = document.getElementById('watchList');
   const tableBody = document.getElementById('systemsTableBody');
   const updatedEl = document.getElementById('systemsUpdated');
+  const summaryPresence = document.getElementById('summaryPresence');
+  const summaryControlled = document.getElementById('summaryControlled');
   const summaryPriority = document.getElementById('summaryPriority');
   const summaryAttention = document.getElementById('summaryAttention');
   const summaryActiveOrders = document.getElementById('summaryActiveOrders');
@@ -10,27 +18,44 @@
   const searchEl = document.getElementById('systemSearch');
   const filterEl = document.getElementById('systemFilter');
   const sortEl = document.getElementById('systemSort');
+  const shownEl = document.getElementById('systemsShown');
+  const countDetailEl = document.getElementById('systemsCountDetail');
   const liveStatusEl = document.getElementById('bgsLiveStatus');
   const liveSourceEl = document.getElementById('bgsLiveSource');
-  if (!priorityEl || !tableBody) return;
+  const playbookNote = document.getElementById('memberPlaybookNote');
+  const benchmarksEl = document.getElementById('memberBenchmarks');
+  const recipesEl = document.getElementById('memberRecipes');
+  const strategyManager = document.querySelector('[data-strategy-manager]');
+  const strategyToggle = document.querySelector('[data-strategy-toggle]');
+  const strategyEditor = document.querySelector('[data-strategy-editor]');
+  const strategyList = document.querySelector('[data-strategy-list]');
+  const strategyAdd = document.querySelector('[data-strategy-add]');
+  const strategySave = document.querySelector('[data-strategy-save]');
+  const strategyStatus = document.querySelector('[data-strategy-status]');
+  const systemNamesList = document.getElementById('missionControlSystemNames');
 
   let systems = [];
-  let priorityNames = new Set();
-  let liveMeta = null;
+  let meta = null;
+  let playbook = null;
+  let strategy = null;
+  let canManage = false;
+  let strategyBaseline = '';
 
   const safe = (value, fallback = '—') => (value === null || value === undefined || value === '' ? fallback : value);
-  const influence = value => typeof value === 'number' ? `${value.toFixed(1)}%` : safe(value);
-  const controlled = system => system.controlled === true || /mongrel|controlled/i.test(String(system.control || ''));
-  const isPriority = system => system.priority === true || priorityNames.has(system.name);
-  const isWatch = system => Boolean(system.watch || system.alert || (Array.isArray(system.alerts) && system.alerts.length));
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const influence = value => typeof value === 'number' ? `${value.toFixed(1)}%` : safe(value);
+  const controlled = system => system.controlled === true || /regiment of imperial mongrels|mongrels/i.test(String(system.control || ''));
+  const activePresence = system => system.present === true && !system.formerPresence;
 
-  const systemNameMarkup = (name, heading = false) => {
-    const value = safe(name, 'Unnamed system');
-    const tag = heading ? 'h3' : 'strong';
-    const wrapper = heading ? 'div' : 'span';
-    return `<${wrapper} class="operation-system-name"><${tag}>${html(value)}</${tag}><button class="system-copy-button operation-system-copy" type="button" data-copy-system="${html(value)}" aria-label="Copy system name ${html(value)}" title="Copy system name">⧉</button></${wrapper}>`;
-  };
+  if (loginLink) {
+    const returnPath = `/operations/${window.location.hash || ''}`;
+    loginLink.href = `/api/auth/login?return=${encodeURIComponent(returnPath)}`;
+  }
+
+  function setAccess(view) {
+    if (gate) gate.hidden = view === 'member';
+    if (privateView) privateView.hidden = view !== 'member';
+  }
 
   function parseDate(value) {
     if (!value) return null;
@@ -38,23 +63,43 @@
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  function formatSnapshot(value) {
+  function formatSnapshot(value, compact = false) {
     const date = parseDate(value);
     if (!date) return null;
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
-    }).format(date);
+    return new Intl.DateTimeFormat(undefined, compact
+      ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+      : { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+    ).format(date);
+  }
+
+  function ageHours(value) {
+    const date = parseDate(value);
+    if (!date) return null;
+    return Math.max(0, (Date.now() - date.getTime()) / 3600000);
   }
 
   function ageLabel(value) {
-    const date = parseDate(value);
-    if (!date) return null;
-    const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
-    if (minutes < 2) return 'just now';
-    if (minutes < 60) return `${minutes} min ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 48) return `${hours} hr ago`;
+    const hours = ageHours(value);
+    if (hours === null) return 'Unknown age';
+    if (hours < (2 / 60)) return 'just now';
+    if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} min ago`;
+    if (hours < 48) return `${Math.round(hours)} hr ago`;
     return `${Math.round(hours / 24)} days ago`;
+  }
+
+  function freshness(system) {
+    if (system.formerPresence || system.present === false) return { key: 'former', label: 'Former presence', detail: system.retiredAt ? `Removed ${ageLabel(system.retiredAt)}` : 'No longer in active presence feed', rank: 4 };
+    if (system.sourceUpdated) {
+      const hours = ageHours(system.sourceUpdated);
+      if (hours === null) return { key: 'unknown', label: 'Unknown', detail: 'Source timestamp unreadable', rank: 3 };
+      if (hours <= 6 && !system.stale) return { key: 'fresh', label: 'Fresh', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 0 };
+      if (hours <= 24 && !system.stale) return { key: 'aging', label: 'Aging', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 1 };
+      return { key: 'stale', label: 'Stale', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 2 };
+    }
+    if (system.stale === true) return { key: 'stale', label: 'Last known', detail: 'Upstream source age unavailable', rank: 3 };
+    const syncStamp = system.fetchedAt || system.lastSeen;
+    if (syncStamp) return { key: 'sync', label: 'Synced', detail: `Fetched ${ageLabel(syncStamp)} · source age unknown`, rank: 1 };
+    return { key: 'unknown', label: 'Unknown', detail: 'No source timestamp', rank: 3 };
   }
 
   function targetStatus(system) {
@@ -62,9 +107,9 @@
     const min = Number(system.targetMin);
     const max = Number(system.targetMax);
     if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return null;
-    if (value < min) return {key:'low', label:`Below target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
-    if (value > max) return {key:'high', label:`Above target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
-    return {key:'in', label:`In target · ${min.toFixed(0)}–${max.toFixed(0)}%`};
+    if (value < min) return { key:'low', label:`Below target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
+    if (value > max) return { key:'high', label:`Above target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
+    return { key:'in', label:`In target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
   }
 
   function progressBar(value, system = null) {
@@ -79,162 +124,294 @@
     return `<div class="inf-bar" aria-label="Influence ${value.toFixed(1)} percent">${target}<span style="width:${width}%"></span></div>`;
   }
 
-  function renderSummary(lastUpdated) {
-    const priorityCount = systems.filter(isPriority).length;
-    const attentionCount = systems.filter(system => {
-      const target = targetStatus(system);
-      return isWatch(system) || (target && target.key !== 'in');
-    }).length;
-    if (summaryPriority) summaryPriority.textContent = priorityCount.toLocaleString();
-    if (summaryAttention) summaryAttention.textContent = attentionCount.toLocaleString();
+  function systemNameMarkup(name, heading = false) {
+    const value = safe(name, 'Unnamed system');
+    const tag = heading ? 'h3' : 'strong';
+    const wrapper = heading ? 'div' : 'span';
+    return `<${wrapper} class="operation-system-name"><${tag}>${html(value)}</${tag}><button class="system-copy-button operation-system-copy" type="button" data-copy-system="${html(value)}" aria-label="Copy system name ${html(value)}" title="Copy system name">⧉</button></${wrapper}>`;
+  }
+
+  function operationalTags(system) {
+    const tags = [];
+    if (system.priority) tags.push('<span class="priority-badge">Priority</span>');
+    if (system.watch) tags.push('<span class="watch-badge">Watch</span>');
+    if (system.conflict) tags.push('<span class="mc-risk-badge conflict">Conflict</span>');
+    if (system.expansionRisk) tags.push('<span class="mc-risk-badge expansion">Expansion</span>');
+    if (system.retreatRisk) tags.push('<span class="mc-risk-badge retreat">Retreat</span>');
+    const target = targetStatus(system);
+    if (target?.key === 'low') tags.push('<span class="mc-risk-badge low">Below target</span>');
+    if (target?.key === 'high') tags.push('<span class="mc-risk-badge high">Above target</span>');
+    if (!tags.length) tags.push('<span class="muted">Standard</span>');
+    return tags.join(' ');
+  }
+
+  function renderSummary() {
+    const active = systems.filter(activePresence);
+    const controlledCount = active.filter(controlled).length;
+    const priorityCount = active.filter(system => system.priority).length;
+    const attentionCount = active.filter(system => system.attention).length;
+    if (summaryPresence) summaryPresence.textContent = (meta?.presenceCount ?? active.length).toLocaleString();
+    if (summaryControlled) summaryControlled.textContent = (meta?.controlledCount ?? controlledCount).toLocaleString();
+    if (summaryPriority) summaryPriority.textContent = (meta?.priorityCount ?? priorityCount).toLocaleString();
+    if (summaryAttention) summaryAttention.textContent = (meta?.attentionCount ?? attentionCount).toLocaleString();
     if (summaryActiveOrders && !summaryActiveOrders.dataset.resolved) summaryActiveOrders.textContent = '—';
-    if (summaryUpdated) summaryUpdated.textContent = lastUpdated || 'Pending';
+    if (summaryUpdated) summaryUpdated.textContent = formatSnapshot(meta?.generatedAt, true) || 'Pending';
   }
 
   function renderLiveStatus() {
-    const generated = liveMeta?.generatedAt;
-    const success = Number(liveMeta?.successfulSystems || 0);
-    const requested = Number(liveMeta?.requestedSystems || systems.length || 0);
-    const age = ageLabel(generated);
-
-    if (liveStatusEl) {
-      if (!generated) {
-        liveStatusEl.textContent = 'Awaiting first automatic sync';
-        liveStatusEl.className = 'live-feed-pill waiting';
-      } else if (success === requested && requested > 0) {
-        liveStatusEl.textContent = `Live snapshot · ${age || 'updated'}`;
-        liveStatusEl.className = 'live-feed-pill live';
-      } else if (success > 0) {
-        liveStatusEl.textContent = `Partial snapshot · ${success}/${requested} systems`;
-        liveStatusEl.className = 'live-feed-pill partial';
-      } else {
-        liveStatusEl.textContent = 'Using last known/manual values';
-        liveStatusEl.className = 'live-feed-pill waiting';
-      }
+    if (updatedEl) updatedEl.textContent = formatSnapshot(meta?.generatedAt, true) || 'Awaiting sync';
+    if (liveSourceEl) liveSourceEl.textContent = meta?.source || 'EliteHub Vault / EDDN';
+    if (!liveStatusEl) return;
+    if (!meta?.generatedAt) {
+      liveStatusEl.textContent = 'Awaiting first automatic sync';
+      liveStatusEl.className = 'live-feed-pill waiting';
+      return;
     }
-    if (liveSourceEl) liveSourceEl.textContent = liveMeta?.source || 'EliteHub Vault / EDDN';
-  }
-
-  function liveTag(system) {
-    if (!system.live) return '<span class="data-origin manual">Manual fallback</span>';
-    if (system.liveStale) return '<span class="data-origin stale">Last known live</span>';
-    return '<span class="data-origin live">Live BGS</span>';
+    const errors = Array.isArray(meta?.syncErrors) ? meta.syncErrors.length : 0;
+    liveStatusEl.textContent = errors ? `Snapshot with ${errors} warning${errors === 1 ? '' : 's'} · ${ageLabel(meta.generatedAt)}` : `Snapshot synced · ${ageLabel(meta.generatedAt)}`;
+    liveStatusEl.className = errors ? 'live-feed-pill partial' : 'live-feed-pill live';
   }
 
   function renderPriority() {
-    const rows = systems.filter(isPriority);
-    if (!rows.length) return;
-    priorityEl.innerHTML = rows.map(system => `
-      <article class="priority-system-card">
-        <div class="priority-card-head">
-          <div class="priority-card-tags"><span class="tag">Priority</span>${system.region ? `<span class="tag quiet-tag">${html(system.region)}</span>` : ''}${liveTag(system)}</div>
-          <span class="priority-updated">${html(safe(system.updated, 'Awaiting update'))}</span>
-        </div>
+    if (!priorityEl) return;
+    const rows = systems.filter(system => activePresence(system) && system.priority);
+    if (!rows.length) {
+      priorityEl.innerHTML = '<div class="data-empty-state"><span class="data-empty-icon">◇</span><div><strong>No priority systems configured.</strong><p>Live All Systems data can still be used while leadership strategy is updated.</p></div></div>';
+      return;
+    }
+    priorityEl.innerHTML = rows.map(system => {
+      const fresh = freshness(system);
+      const target = targetStatus(system);
+      return `<article class="priority-system-card">
+        <div class="priority-card-head"><div class="priority-card-tags"><span class="tag">Priority</span>${system.watch ? '<span class="tag quiet-tag">Watch</span>' : ''}<span class="data-origin ${fresh.key}">${html(fresh.label)}</span></div><span class="priority-updated">${html(fresh.detail)}</span></div>
         ${systemNameMarkup(system.name, true)}
-        <div class="priority-influence-block">
-          <div><span>Mongrel Influence</span><strong>${influence(system.influence)}</strong></div>
-          ${progressBar(system.influence, system)}
-          ${targetStatus(system) ? `<div class="target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</div>` : ''}
-        </div>
-        <div class="priority-metrics">
-          <div><span>Control</span><strong>${html(safe(system.control))}</strong></div>
-          <div><span>State</span><strong>${html(safe(system.state))}</strong></div>
-          <div><span>Security</span><strong>${html(safe(system.security))}</strong></div>
-        </div>
+        <div class="priority-influence-block"><div><span>Mongrel Influence</span><strong>${influence(system.influence)}</strong></div>${progressBar(system.influence, system)}${target ? `<div class="target-status target-${target.key}">${html(target.label)}</div>` : ''}</div>
+        <div class="priority-metrics"><div><span>Control</span><strong>${html(safe(system.control, controlled(system) ? 'Mongrels' : 'Unknown'))}</strong></div><div><span>State</span><strong>${html(safe(system.state))}</strong></div><div><span>Security</span><strong>${html(safe(system.security))}</strong></div></div>
         ${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<div class="bgs-state-line"><span>Pending</span><strong>${html(system.pendingStates.join(', '))}</strong></div>` : ''}
-        ${Array.isArray(system.recoveringStates) && system.recoveringStates.length ? `<div class="bgs-state-line"><span>Recovering</span><strong>${html(system.recoveringStates.join(', '))}</strong></div>` : ''}
-        <div class="priority-objective"><span>Public Objective</span><p>${html(safe(system.objective, 'No public objective posted.'))}</p></div>
-      </article>`).join('');
+        ${Array.isArray(system.desiredStates) && system.desiredStates.length ? `<div class="bgs-state-line"><span>Desired</span><strong>${html(system.desiredStates.join(' + '))}</strong></div>` : ''}
+        <div class="priority-objective"><span>Private Objective</span><p>${html(safe(system.objective, 'No leadership objective posted.'))}</p></div>
+      </article>`;
+    }).join('');
   }
 
   function renderWatch() {
     if (!watchEl) return;
-    const rows = systems.filter(isWatch);
-    if (!rows.length) return;
-    watchEl.innerHTML = rows.map(system => {
-      const alerts = Array.isArray(system.alerts) ? system.alerts : [system.alert || system.watch].filter(Boolean);
-      return `<article class="bgs-watch-card">
-        <div><span class="bgs-watch-label">Watch</span>${systemNameMarkup(system.name, true)}</div>
-        <div class="bgs-watch-alerts">${alerts.map(a => `<span>${html(a)}</span>`).join('')}</div>
-        <p>${html(safe(system.watchNote || system.objective, 'Operational attention recommended.'))}</p>
-      </article>`;
-    }).join('');
+    const rows = systems.filter(system => activePresence(system) && system.attention);
+    if (!rows.length) {
+      watchEl.innerHTML = '<div class="data-empty-state slim-empty"><span class="data-empty-icon">△</span><div><strong>No active watch-list alerts.</strong><p>Nothing is currently outside configured bands or flagged by the automatic risk checks.</p></div></div>';
+      return;
+    }
+    watchEl.innerHTML = rows
+      .sort((a,b) => Number(Boolean(b.priority)) - Number(Boolean(a.priority)) || Number(b.influence || 0) - Number(a.influence || 0))
+      .slice(0, 30)
+      .map(system => {
+        const alerts = Array.isArray(system.alerts) && system.alerts.length ? system.alerts : ['Operational attention recommended'];
+        return `<article class="bgs-watch-card"><div><span class="bgs-watch-label">${system.priority ? 'Priority Watch' : 'Watch'}</span>${systemNameMarkup(system.name, true)}</div><div class="bgs-watch-alerts">${alerts.map(alert => `<span>${html(alert)}</span>`).join('')}</div><p>${html(safe(system.watchNote || system.objective, 'Review this system before committing BGS work.'))}</p></article>`;
+      }).join('');
+  }
+
+  function renderPlaybook() {
+    if (!playbook) return;
+    if (playbookNote) playbookNote.textContent = playbook.note || '';
+    if (benchmarksEl) {
+      const rows = Array.isArray(playbook.benchmarks) ? playbook.benchmarks : [];
+      benchmarksEl.innerHTML = rows.length ? rows.map(row => `<tr><td><strong>${html(row.activity)}</strong></td><td>${html(row.small)}</td><td>${html(row.medium)}</td><td>${html(row.large)}</td><td>${html(row.measure)}</td></tr>`).join('') : '<tr><td colspan="5">No benchmarks posted.</td></tr>';
+    }
+    if (recipesEl) {
+      const recipes = Array.isArray(playbook.recipes) ? playbook.recipes : [];
+      recipesEl.innerHTML = recipes.map(recipe => `<article class="member-recipe-card"><h3>${html(recipe.title)}</h3><ul>${(recipe.steps || []).map(step => `<li>${html(step)}</li>`).join('')}</ul></article>`).join('');
+    }
+  }
+
+  function makeStrategyRow(row = {}) {
+    const article = document.createElement('article');
+    article.className = 'strategy-editor-row';
+    article.innerHTML = `
+      <div class="strategy-row-grid">
+        <label class="strategy-field strategy-field-system"><span>System</span><input type="text" list="missionControlSystemNames" maxlength="120" data-strategy-field="name" placeholder="System name"></label>
+        <label class="strategy-field"><span>Target min %</span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMin"></label>
+        <label class="strategy-field"><span>Target max %</span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMax"></label>
+        <label class="strategy-check"><input type="checkbox" data-strategy-field="priority"><span>Priority</span></label>
+        <label class="strategy-check"><input type="checkbox" data-strategy-field="watch"><span>Watch</span></label>
+        <label class="strategy-field strategy-field-wide"><span>Desired states <small>comma separated</small></span><input type="text" maxlength="220" data-strategy-field="desiredStates" placeholder="Boom, Civil Liberty"></label>
+        <label class="strategy-field strategy-field-wide"><span>Objective</span><textarea rows="2" maxlength="700" data-strategy-field="objective" placeholder="Private leadership objective"></textarea></label>
+        <label class="strategy-field strategy-field-wide"><span>Watch note</span><textarea rows="2" maxlength="700" data-strategy-field="watchNote" placeholder="Why this system needs attention"></textarea></label>
+      </div>
+      <button class="strategy-row-remove" type="button">Remove</button>`;
+    const set = (field, value) => {
+      const input = article.querySelector(`[data-strategy-field="${field}"]`);
+      if (!input) return;
+      if (input.type === 'checkbox') input.checked = Boolean(value);
+      else if (Array.isArray(value)) input.value = value.join(', ');
+      else if (value !== null && value !== undefined) input.value = value;
+    };
+    ['name','targetMin','targetMax','priority','watch','desiredStates','objective','watchNote'].forEach(field => set(field, row[field]));
+    article.querySelector('.strategy-row-remove')?.addEventListener('click', () => article.remove());
+    return article;
+  }
+
+  function populateStrategyEditor() {
+    if (!strategyList) return;
+    strategyList.replaceChildren();
+    const rows = Array.isArray(strategy?.systems) ? strategy.systems : [];
+    rows.forEach(row => strategyList.appendChild(makeStrategyRow(row)));
+    strategyBaseline = JSON.stringify(collectStrategy());
+  }
+
+  function collectStrategy() {
+    if (!strategyList) return { systems: [] };
+    const rows = [...strategyList.querySelectorAll('.strategy-editor-row')].map(article => {
+      const get = field => article.querySelector(`[data-strategy-field="${field}"]`);
+      const numberOrNull = value => {
+        if (value === '' || value === null || value === undefined) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      };
+      const desiredStates = String(get('desiredStates')?.value || '').split(',').map(x => x.trim()).filter(Boolean);
+      return {
+        name: String(get('name')?.value || '').trim(),
+        targetMin: numberOrNull(get('targetMin')?.value),
+        targetMax: numberOrNull(get('targetMax')?.value),
+        priority: Boolean(get('priority')?.checked),
+        watch: Boolean(get('watch')?.checked),
+        desiredStates,
+        objective: String(get('objective')?.value || '').trim(),
+        watchNote: String(get('watchNote')?.value || '').trim(),
+      };
+    }).filter(row => row.name);
+    return { version: 1, systems: rows, prioritySystems: rows.filter(row => row.priority).map(row => row.name) };
+  }
+
+  function setupStrategyManager() {
+    if (!strategyManager) return;
+    strategyManager.hidden = !canManage;
+    if (!canManage) return;
+    if (systemNamesList) {
+      systemNamesList.replaceChildren();
+      systems.filter(activePresence).forEach(system => {
+        const option = document.createElement('option');
+        option.value = system.name;
+        systemNamesList.appendChild(option);
+      });
+    }
+    populateStrategyEditor();
+  }
+
+  strategyToggle?.addEventListener('click', () => {
+    if (!canManage || !strategyEditor) return;
+    const opening = strategyEditor.hidden;
+    strategyEditor.hidden = !opening;
+    strategyToggle.textContent = opening ? 'Close Editor' : 'Edit Strategy';
+    if (opening) populateStrategyEditor();
+  });
+
+  strategyAdd?.addEventListener('click', () => {
+    if (!canManage || !strategyList) return;
+    strategyList.appendChild(makeStrategyRow({ priority: true }));
+    strategyList.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  strategyEditor?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!canManage) return;
+    const payload = collectStrategy();
+    if (strategySave) strategySave.disabled = true;
+    if (strategyStatus) { strategyStatus.textContent = 'Saving private strategy…'; strategyStatus.dataset.state = 'working'; }
+    try {
+      const response = await fetch('/api/operations/systems', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Mongrels-Request': 'mission-control-strategy',
+        },
+        body: JSON.stringify(payload),
+      });
+      const next = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(next.error || `Save failed (${response.status})`);
+      systems = Array.isArray(next.systems) ? next.systems : systems;
+      meta = next.meta || meta;
+      playbook = next.playbook || playbook;
+      strategy = next.strategy || payload;
+      strategyBaseline = JSON.stringify(collectStrategy());
+      if (strategyStatus) { strategyStatus.textContent = 'Private strategy saved.'; strategyStatus.dataset.state = 'success'; }
+      renderSummary(); renderLiveStatus(); renderPriority(); renderWatch(); renderTable();
+      populateStrategyEditor();
+    } catch (error) {
+      console.error('Could not save private strategy', error);
+      if (strategyStatus) { strategyStatus.textContent = 'Could not save strategy. Please try again.'; strategyStatus.dataset.state = 'error'; }
+    } finally {
+      if (strategySave) strategySave.disabled = false;
+    }
+  });
+
+  function matchesFilter(system, mode) {
+    if (mode === 'former') return !activePresence(system);
+    if (!activePresence(system)) return false;
+    if (mode === 'all') return true;
+    if (mode === 'priority') return Boolean(system.priority);
+    if (mode === 'watch') return Boolean(system.attention);
+    if (mode === 'control') return controlled(system);
+    if (mode === 'not-control') return !controlled(system);
+    if (mode === 'below-target') return Boolean(system.belowTarget);
+    if (mode === 'above-target') return Boolean(system.aboveTarget);
+    if (mode === 'conflict') return Boolean(system.conflict);
+    if (mode === 'expansion-risk') return Boolean(system.expansionRisk);
+    if (mode === 'retreat-risk') return Boolean(system.retreatRisk);
+    if (mode === 'stale') return ['aging','stale','unknown'].includes(freshness(system).key);
+    return true;
   }
 
   function sortedSystems(list) {
     const mode = sortEl?.value || 'name';
     return [...list].sort((a,b) => {
-      if (mode === 'influence-desc') return (Number(b.influence) || -Infinity) - (Number(a.influence) || -Infinity);
-      if (mode === 'influence-asc') return (Number(a.influence) || Infinity) - (Number(b.influence) || Infinity);
-      if (mode === 'priority') return Number(isPriority(b)) - Number(isPriority(a)) || String(a.name || '').localeCompare(String(b.name || ''));
+      if (mode === 'influence-desc') return (Number(b.influence) || -Infinity) - (Number(a.influence) || -Infinity) || String(a.name || '').localeCompare(String(b.name || ''));
+      if (mode === 'influence-asc') return (Number(a.influence) || Infinity) - (Number(b.influence) || Infinity) || String(a.name || '').localeCompare(String(b.name || ''));
+      if (mode === 'attention') return Number(Boolean(b.attention)) - Number(Boolean(a.attention)) || Number(Boolean(b.priority)) - Number(Boolean(a.priority)) || String(a.name || '').localeCompare(String(b.name || ''));
+      if (mode === 'freshness') return freshness(a).rank - freshness(b).rank || String(a.name || '').localeCompare(String(b.name || ''));
       return String(a.name || '').localeCompare(String(b.name || ''));
     });
   }
 
   function renderTable() {
+    if (!tableBody) return;
     const query = (searchEl?.value || '').trim().toLowerCase();
     const mode = filterEl?.value || 'all';
     const filtered = systems.filter(system => {
-      const matchesSearch = !query || [system.name, system.state, system.control, system.objective, system.region].some(v => String(v || '').toLowerCase().includes(query));
-      const matchesMode = mode === 'all' ||
-        (mode === 'priority' && isPriority(system)) ||
-        (mode === 'watch' && isWatch(system)) ||
-        (mode === 'control' && controlled(system)) ||
-        (mode === 'not-control' && !controlled(system));
-      return matchesSearch && matchesMode;
+      const matchesSearch = !query || [system.name, system.state, system.control, system.objective, system.watchNote, ...(system.alerts || [])].some(value => String(value || '').toLowerCase().includes(query));
+      return matchesSearch && matchesFilter(system, mode);
     });
     const rows = sortedSystems(filtered);
+    if (shownEl) shownEl.textContent = rows.length.toLocaleString();
+    if (countDetailEl) countDetailEl.textContent = mode === 'all' ? `of ${(meta?.presenceCount ?? systems.filter(activePresence).length).toLocaleString()} active systems` : `systems in this view`;
 
     if (!rows.length) {
-      tableBody.innerHTML = `<tr class="systems-empty-row"><td colspan="6">${systems.length ? 'No systems match this view.' : 'System data has not been connected yet.'}</td></tr>`;
+      tableBody.innerHTML = `<tr class="systems-empty-row"><td colspan="6">${systems.length ? 'No systems match this view.' : 'The first full faction-presence sync has not completed yet.'}</td></tr>`;
       return;
     }
 
-    tableBody.innerHTML = rows.map(system => `
-      <tr>
-        <td>${systemNameMarkup(system.name)}${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}<small>${liveTag(system)}</small></td>
-        <td>${html(safe(system.control))}</td>
-        <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${targetStatus(system) ? `<small class="table-target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</small>` : ''}</td>
+    tableBody.innerHTML = rows.map(system => {
+      const fresh = freshness(system);
+      const target = targetStatus(system);
+      return `<tr class="${activePresence(system) ? '' : 'former-presence-row'}">
+        <td>${systemNameMarkup(system.name)}${system.objective ? `<small>${html(system.objective)}</small>` : ''}</td>
+        <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${target ? `<small class="table-target-status target-${target.key}">${html(target.label)}</small>` : ''}</td>
+        <td>${html(safe(system.control, controlled(system) ? 'Mongrels' : 'Unknown'))}${controlled(system) ? '<small class="mc-control-note">Mongrel control</small>' : ''}</td>
         <td>${html(safe(system.state))}${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<small>Pending: ${html(system.pendingStates.join(', '))}</small>` : ''}</td>
-        <td>${isPriority(system) ? '<span class="priority-badge">Priority</span>' : isWatch(system) ? '<span class="watch-badge">Watch</span>' : '<span class="muted">Standard</span>'}</td>
-        <td>${html(safe(system.objective))}</td>
-      </tr>`).join('');
+        <td><div class="mc-op-tags">${operationalTags(system)}</div></td>
+        <td><span class="data-origin ${fresh.key}">${html(fresh.label)}</span><small>${html(fresh.detail)}</small></td>
+      </tr>`;
+    }).join('');
   }
 
-  function mergeLive(config, live) {
-    const liveByName = new Map((Array.isArray(live?.systems) ? live.systems : []).map(row => [row.name, row]));
-    return (Array.isArray(config.systems) ? config.systems : []).map(base => {
-      const observed = liveByName.get(base.name);
-      if (!observed || typeof observed.influence !== 'number') return {...base, live:false};
-      const merged = {...base};
-      for (const key of ['influence','controlled','control','state','security','population','activeStates','pendingStates','recoveringStates']) {
-        if (observed[key] !== null && observed[key] !== undefined && observed[key] !== '') merged[key] = observed[key];
-      }
-      merged.live = true;
-      merged.liveStale = observed.stale === true || observed.ok === false;
-      merged.sourceUpdated = observed.sourceUpdated || observed.fetchedAt || null;
-      const formatted = formatSnapshot(merged.sourceUpdated || observed.fetchedAt);
-      if (formatted) merged.updated = formatted;
-      return merged;
-    });
-  }
-
-  window.addEventListener('mongrels:orders-loaded', event => {
-    if (!summaryActiveOrders) return;
-    const detail = event.detail || {};
-    summaryActiveOrders.dataset.resolved = 'true';
-    summaryActiveOrders.textContent = detail.authenticated ? String(detail.activeCount ?? 0) : '—';
-  });
-
-  const copySystemName = async button => {
+  async function copySystemName(button) {
     const value = button?.dataset?.copySystem || '';
     if (!value) return;
     let copied = false;
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        copied = true;
-      }
+      if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(value); copied = true; }
     } catch {}
     if (!copied) {
       const fallback = document.createElement('textarea');
@@ -249,46 +426,63 @@
     }
     const original = button.textContent;
     button.textContent = copied ? '✓' : '!';
-    button.title = copied ? 'Copied' : 'Copy failed';
-    window.setTimeout(() => {
-      button.textContent = original;
-      button.title = 'Copy system name';
-    }, 1300);
-  };
+    window.setTimeout(() => { button.textContent = original; }, 1200);
+  }
 
   document.addEventListener('click', event => {
     const button = event.target.closest('.operation-system-copy');
     if (button) copySystemName(button);
   });
 
-  Promise.all([
-    fetch('../data/systems.json', {cache:'no-store'}).then(response => {
-      if (!response.ok) throw new Error('Unable to load system configuration');
-      return response.json();
-    }),
-    fetch('../data/live-bgs.json', {cache:'no-store'}).then(response => response.ok ? response.json() : null).catch(() => null)
-  ])
-    .then(([config, live]) => {
-      liveMeta = live;
-      systems = mergeLive(config, live);
-      priorityNames = new Set(Array.isArray(config.prioritySystems) ? config.prioritySystems : []);
-      const liveUpdated = formatSnapshot(live?.generatedAt);
-      const lastUpdated = liveUpdated || config.lastUpdated || null;
-      if (updatedEl) updatedEl.textContent = lastUpdated || 'Not connected';
-      renderSummary(lastUpdated);
-      renderLiveStatus();
-      renderPriority();
-      renderWatch();
-      renderTable();
-    })
-    .catch(() => {
-      if (updatedEl) updatedEl.textContent = 'Connection pending';
-      if (summaryUpdated) summaryUpdated.textContent = 'Pending';
-      if (summaryAttention) summaryAttention.textContent = '—';
-      if (liveStatusEl) liveStatusEl.textContent = 'BGS data unavailable';
-    });
+  window.addEventListener('mongrels:orders-loaded', event => {
+    if (!summaryActiveOrders) return;
+    const detail = event.detail || {};
+    summaryActiveOrders.dataset.resolved = 'true';
+    summaryActiveOrders.textContent = detail.authenticated ? String(detail.activeCount ?? 0) : '—';
+  });
 
   searchEl?.addEventListener('input', renderTable);
   filterEl?.addEventListener('change', renderTable);
   sortEl?.addEventListener('change', renderTable);
+
+  async function load() {
+    setAccess('gate');
+    try {
+      const response = await fetch(`/api/operations/systems?_=${Date.now()}`, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        if (gateStatus) gateStatus.textContent = response.status === 401 ? 'Member sign-in required' : 'This Discord account does not have Mission Control access';
+        setAccess('gate');
+        return;
+      }
+      if (!response.ok) throw new Error(`Mission Control request failed (${response.status})`);
+
+      const payload = await response.json();
+      systems = Array.isArray(payload.systems) ? payload.systems : [];
+      meta = payload.meta || {};
+      playbook = payload.playbook || null;
+      strategy = payload.strategy || null;
+      canManage = Boolean(payload.canManage);
+      if (viewerEl) viewerEl.textContent = `${payload.viewer?.displayName || 'Mongrel Member'} · ${String(payload.viewer?.access || 'member').replace('_', ' ')}`;
+      setAccess('member');
+      renderSummary();
+      renderLiveStatus();
+      renderPlaybook();
+      renderPriority();
+      renderWatch();
+      renderTable();
+      setupStrategyManager();
+      window.dispatchEvent(new CustomEvent('mongrels:mission-control-loaded', { detail: { systems: systems.length, meta } }));
+    } catch (error) {
+      console.error('Could not load Mission Control', error);
+      if (gateStatus) gateStatus.textContent = 'Secure Mission Control service unavailable. Please try again.';
+      setAccess('gate');
+    }
+  }
+
+  load();
 })();

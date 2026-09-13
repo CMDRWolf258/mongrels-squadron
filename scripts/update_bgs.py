@@ -6,9 +6,11 @@ This version queries the *faction* first (using Vault's documented
 The presence connection is fetched in small Relay-style pages so each GraphQL
 request stays below Vault's anonymous query-cost ceiling.
 
-Strategic targets remain in data/systems.json. Only observed public game data is
-written to data/live-bgs.json. Previous good values are retained if a system is
-missing or Vault is temporarily unavailable.
+The entire Mongrel faction-presence connection is written to data/live-bgs.json so
+Mission Control can discover new systems automatically. Strategic targets are stored
+separately behind authenticated Cloudflare Functions. Previous good values are retained
+if Vault is temporarily unavailable, and systems that disappear from the presence
+connection are kept as former-presence history instead of vanishing silently.
 """
 from __future__ import annotations
 
@@ -20,11 +22,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = ROOT / "data" / "systems.json"
 LIVE_PATH = ROOT / "data" / "live-bgs.json"
 FACTION_NAME = "Regiment of Imperial Mongrels"
 API_URL = "https://vault.elitehub.eu/graphql"
-USER_AGENT = "MongrelsSquadronSite-BGS/3.2 (+GitHub Pages)"
+USER_AGENT = "MongrelsSquadronSite-BGS/4.0 (+Cloudflare Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
 
 
@@ -351,15 +352,17 @@ def page_info(faction: dict[str, Any], relation: str) -> dict[str, Any]:
     return info if isinstance(info, dict) else {}
 
 
-def fail_with_existing(existing: dict[str, Any], names: list[str], error: str) -> int:
-    output = dict(existing) if isinstance(existing, dict) else {"systems": []}
+def fail_with_existing(existing: dict[str, Any], error: str) -> int:
+    systems = existing.get("systems", []) if isinstance(existing, dict) else []
+    output = dict(existing) if isinstance(existing, dict) else {"systems": systems}
     output.update({
         "generatedAt": iso(utc_now()),
         "source": "EliteHub Vault / EDDN",
         "faction": FACTION_NAME,
         "refreshInterval": "Every 2 hours",
+        "syncOk": False,
         "successfulSystems": 0,
-        "requestedSystems": len(names),
+        "requestedSystems": len([row for row in systems if isinstance(row, dict) and row.get("present") is not False]),
         "errors": [{"name": "vault", "error": error}],
     })
     LIVE_PATH.write_text(json.dumps(output, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -367,15 +370,9 @@ def fail_with_existing(existing: dict[str, Any], names: list[str], error: str) -
 
 
 def main() -> int:
-    config = load_json(CONFIG_PATH, {})
     existing = load_json(LIVE_PATH, {"systems": []})
-    old_by_name = {
-        row.get("name"): row
-        for row in existing.get("systems", [])
-        if isinstance(row, dict) and row.get("name")
-    }
-    names = [row.get("name") for row in config.get("systems", []) if isinstance(row, dict) and row.get("name")]
-    tracked = {norm(n): n for n in names}
+    old_rows = [row for row in existing.get("systems", []) if isinstance(row, dict) and row.get("name")]
+    old_by_norm = {norm(row.get("name")): row for row in old_rows}
 
     print("Discovering EliteHub Vault faction-presence schema...", flush=True)
     try:
@@ -389,7 +386,7 @@ def main() -> int:
         print(f"SCHEMA system field: {meta['system']}", flush=True)
     except Exception as exc:
         print(f"SCHEMA ERR: {exc}", flush=True)
-        return fail_with_existing(existing, names, str(exc))
+        return fail_with_existing(existing, str(exc))
 
     paging = relation_paging(relation)
     if meta["mode"] == "connection" and paging["first"] and paging["after"]:
@@ -397,14 +394,11 @@ def main() -> int:
     else:
         query = f"query MongrelsFaction($name: String!) {{ {query_name}(name: $name) {{ id name {selection} }} }}"
 
-    print(f"Fetching known presences for {FACTION_NAME} in low-cost pages...", flush=True)
+    print(f"Fetching all known presences for {FACTION_NAME} in low-cost pages...", flush=True)
     try:
         nodes: list[dict[str, Any]] = []
         after: str | None = None
         page = 1
-        # The squad currently tracks only a handful of priority systems, but the
-        # faction has 200+ presences. Walk the whole connection in cheap pages so
-        # any tracked system can be found without exceeding the query-cost cap.
         while True:
             variables: dict[str, Any] = {"name": FACTION_NAME}
             if "$after" in query:
@@ -433,20 +427,26 @@ def main() -> int:
         print(f"VAULT returned {len(nodes)} faction presence rows", flush=True)
     except Exception as exc:
         print(f"FETCH ERR: {exc}", flush=True)
-        return fail_with_existing(existing, names, str(exc))
+        return fail_with_existing(existing, str(exc))
 
+    now = utc_now()
+    now_iso = iso(now)
     found: dict[str, dict[str, Any]] = {}
+    seen_presence_names: set[str] = set()
+    parse_errors: list[dict[str, str]] = []
+
     for node in nodes:
         system = node.get(meta["system"])
         if not isinstance(system, dict):
             continue
-        system_name = system.get("name")
-        canonical = tracked.get(norm(system_name))
-        if not canonical:
+        system_name = str(system.get("name") or "").strip()
+        if not system_name:
             continue
+        seen_presence_names.add(norm(system_name))
 
         influence = number(node.get(meta["influence"]))
         if influence is None:
+            parse_errors.append({"name": system_name, "error": "presence row had no usable influence value"})
             continue
 
         controller = None
@@ -464,8 +464,9 @@ def main() -> int:
             if isinstance(value, str):
                 source_updated = max(source_updated or value, value)
 
-        found[canonical] = {
-            "name": canonical,
+        previous = old_by_norm.get(norm(system_name), {})
+        found[norm(system_name)] = {
+            "name": system_name,
             "influence": influence,
             "controlled": norm(controller) == norm(FACTION_NAME) if controller else None,
             "control": controller,
@@ -477,41 +478,75 @@ def main() -> int:
             "population": system.get(meta.get("population")) if meta.get("population") else None,
             "sourceUpdated": source_updated,
             "source": "EliteHub Vault / EDDN",
-            "fetchedAt": iso(utc_now()),
+            "fetchedAt": now_iso,
+            "firstSeen": previous.get("firstSeen") or previous.get("fetchedAt") or now_iso,
+            "lastSeen": now_iso,
+            "present": True,
+            "formerPresence": False,
             "stale": False,
             "ok": True,
         }
 
-    errors: list[dict[str, str]] = []
-    refreshed: list[dict[str, Any]] = []
-    for name in names:
-        if name in found:
-            row = found[name]
-            refreshed.append(row)
-            print(f"OK    {name}: {row['influence']:.2f}%", flush=True)
-        else:
-            msg = "tracked system was not present in Vault's faction presence response"
-            print(f"MISS  {name}: {msg}", flush=True)
-            errors.append({"name": name, "error": msg})
-            previous = old_by_name.get(name)
-            if previous:
-                stale = dict(previous)
-                stale["ok"] = False
-                stale["stale"] = True
-                refreshed.append(stale)
+    # Defensive completeness check. A temporary upstream truncation should not make
+    # hundreds of systems look like sudden retreats.
+    old_active_count = len([row for row in old_rows if row.get("present") is not False and not row.get("formerPresence")])
+    if old_active_count >= 20 and len(found) < max(10, int(old_active_count * 0.5)):
+        msg = f"Vault returned only {len(found)} usable presences; previous snapshot had {old_active_count}. Preserving last known snapshot."
+        print(f"INCOMPLETE: {msg}", flush=True)
+        return fail_with_existing(existing, msg)
+
+    refreshed = list(found.values())
+
+    # Keep former presences as history instead of silently deleting them. This lets
+    # Mission Control show that the faction used to be present while making it clear
+    # that the row is no longer part of the active footprint.
+    for key, previous in old_by_norm.items():
+        if key in found:
+            continue
+        if key in seen_presence_names:
+            retained = dict(previous)
+            retained.update({
+                "present": True,
+                "formerPresence": False,
+                "ok": False,
+                "stale": True,
+                "fetchedAt": now_iso,
+            })
+            refreshed.append(retained)
+            print(f"STALE {retained.get('name')}: presence seen but current influence could not be parsed", flush=True)
+            continue
+        former = dict(previous)
+        former.update({
+            "present": False,
+            "formerPresence": True,
+            "ok": False,
+            "stale": True,
+            "retiredAt": previous.get("retiredAt") or now_iso,
+            "fetchedAt": now_iso,
+        })
+        refreshed.append(former)
+        print(f"FORMER {former.get('name')}: no longer returned in faction presence", flush=True)
+
+    refreshed.sort(key=lambda row: str(row.get("name") or "").casefold())
+    active_count = sum(1 for row in refreshed if row.get("present") is not False and not row.get("formerPresence"))
+    former_count = len(refreshed) - active_count
 
     output = {
-        "generatedAt": iso(utc_now()),
+        "generatedAt": now_iso,
         "source": "EliteHub Vault / EDDN",
         "faction": FACTION_NAME,
         "refreshInterval": "Every 2 hours",
-        "successfulSystems": sum(1 for row in refreshed if row.get("ok") is True),
-        "requestedSystems": len(names),
+        "syncOk": True,
+        "successfulSystems": active_count,
+        "requestedSystems": active_count,
+        "activePresenceSystems": active_count,
+        "formerPresenceSystems": former_count,
         "vaultPresenceRows": len(nodes),
-        "errors": errors,
+        "errors": parse_errors[:25],
         "systems": refreshed,
     }
     LIVE_PATH.write_text(json.dumps(output, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"WROTE {active_count} active systems + {former_count} former presences", flush=True)
     return 0
 
 

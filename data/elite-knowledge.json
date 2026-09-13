@@ -3072,69 +3072,6 @@
       "stability": "community-reviewed"
     },
     {
-      "id": "bgs-daily-effort-benchmarks",
-      "category": "BGS",
-      "topic": "Daily Effort Benchmarks — How Much Work?",
-      "keywords": [
-        "how much",
-        "daily target",
-        "daily targets",
-        "trade profit",
-        "mission inf target",
-        "bounty target",
-        "exploration target",
-        "diminishing returns",
-        "10 million",
-        "20 million",
-        "30 million",
-        "15 inf",
-        "25 inf",
-        "50 inf"
-      ],
-      "ruleOfThumb": "Use community benchmarks as per-CMDR, per-system, per-tick starting targets — not hard caps. Mix several relevant levers, then let the tick tell you whether to scale up or down.",
-      "details": [
-        "The 2025 Complete BGS Guide recommends approximate workloads that balance useful influence movement against player burnout and diminishing returns.",
-        "Small/quiet systems: ~10M Cr bounty vouchers, ~5M Cr exploration data, ~10M Cr trade profit, or ~15 mission INF.",
-        "Medium 1M–25M population: ~20M bounties, ~10M exploration, ~20M trade profit, or ~25 mission INF.",
-        "Large >25M or contested systems: ~30M bounties, ~15M exploration, ~30M trade profit, or ~50 mission INF.",
-        "These are not guaranteed percentages and do not mean every CMDR must complete every line. Mixing two to four valid buckets is usually more efficient than grinding one far past saturation.",
-        "War/Election are exceptions: keep doing valid conflict work until you beat the opponent; normal influence benchmarks do not secure a contested conflict day."
-      ],
-      "operations": [
-        "Pick the population/contest tier, choose two to four available levers, set the day’s target and stop condition, then compare the post-tick result. For trade, track profit rather than tonnage."
-      ],
-      "quickFacts": [
-        {
-          "label": "Small <1M",
-          "value": "10M bounties · 5M data · 10M trade profit · 15 INF"
-        },
-        {
-          "label": "Medium 1–25M",
-          "value": "20M bounties · 10M data · 20M trade profit · 25 INF"
-        },
-        {
-          "label": "Large >25M / contested",
-          "value": "30M bounties · 15M data · 30M trade profit · 50 INF"
-        },
-        {
-          "label": "Status",
-          "value": "Community rule-of-thumb, not a cap"
-        }
-      ],
-      "sources": [
-        {
-          "name": "The Complete BGS Guide 2025 v3.0 — diminishing returns table",
-          "url": "https://sinc.science/bgsguide.pdf"
-        },
-        {
-          "name": "E:D Black Box — BGS diminishing returns summary",
-          "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/bgs.html"
-        }
-      ],
-      "reviewedAt": "2026-09-13",
-      "stability": "community-benchmark"
-    },
-    {
       "id": "bgs-general-strategy",
       "category": "BGS",
       "topic": "General BGS Strategies",
@@ -3173,49 +3110,6 @@
       ],
       "reviewedAt": "2026-09-13",
       "stability": "community-reviewed"
-    },
-    {
-      "id": "bgs-retreat-operation",
-      "category": "BGS",
-      "topic": "Retreat Playbook — Force or Save",
-      "keywords": [
-        "force retreat",
-        "ensure retreat",
-        "save retreat",
-        "retreat playbook",
-        "retreat operation",
-        "important day",
-        "active day 5",
-        "active day 6"
-      ],
-      "ruleOfThumb": "Retreat is won or lost by the influence value entering the late-cycle resolution check. Prepare the board early, then make sure the target is safely on the correct side of ~2.5% before the decisive tick.",
-      "details": [
-        "Before starting: confirm the faction is non-native and that the system has enough factions for a new Retreat to trigger.",
-        "To force: lower the target below ~2.5%, avoid all positive work for it, support the other unlocked factions, and add direct negative levers if necessary. Conflict-locking unrelated factions can simplify the operation.",
-        "To save: stack positive levers — missions, profitable trade if the faction owns a market, exploration if it owns an applicable asset, and bounty vouchers — and build a safety margin above ~2.5%.",
-        "Community timing research commonly describes one pending day and six active processing days. The safest doctrine is to work hard before the final active check instead of trying to rescue/kill the faction after it."
-      ],
-      "commonMistakes": [
-        "Assuming a faction at 2.6% is safe.",
-        "Starting a Retreat plan in a three-faction system.",
-        "Accidentally handing in missions/trade/data/bounties for the target while trying to remove it.",
-        "Waiting for the last visible day rather than counting from the pending day."
-      ],
-      "operations": [
-        "If forcing: log pending day, maintain under-threshold pressure, then make the pre-final tick decisive. If saving: stockpile valid positive work and deliver before the critical check with enough margin to survive opposition/rounding."
-      ],
-      "sources": [
-        {
-          "name": "The Complete BGS Guide 2025 v3.0 — Retreat",
-          "url": "https://sinc.science/bgsguide.pdf"
-        },
-        {
-          "name": "Frontier Forums — retreat timing research",
-          "url": "https://forums.frontier.co.uk/threads/expansions-bgs-guide-best-current-thinking.424895/page-13"
-        }
-      ],
-      "reviewedAt": "2026-09-13",
-      "stability": "community-observed"
     }
   ]
 }

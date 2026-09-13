@@ -426,7 +426,7 @@
       announceOrders(null);
       setView('locked');
       const detail = locked?.querySelector('[data-orders-lock-detail]');
-      if (detail) detail.textContent = 'The private orders service could not be reached. Public operations data remains available.';
+      if (detail) detail.textContent = 'The private orders service could not be reached. Mission Control remains restricted; please try again shortly.';
     }
   };
 

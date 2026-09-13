@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=64" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=64" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=64">
   <title>Mission Control | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=63">
+  <link rel="stylesheet" href="../css/global.css?v=64">
 </head>
 <body>
 <header class="site-header">
@@ -25,212 +28,249 @@
   <section class="page-hero operations-hero">
     <div class="container page-hero-grid">
       <div>
-        <p class="eyebrow">Background Simulation</p>
+        <p class="eyebrow">Squadron Command</p>
         <h1>Mission Control</h1>
-        <p>The strategic picture for Mongrel territory. Priority systems stay front and center, the full faction footprint remains searchable, and sensitive daily tasking is kept separate from the public site.</p>
+        <p>Private operational coordination for the Regiment of Imperial Mongrels. Current priorities, faction-management targets, daily tasking, and the full Mongrel BGS footprint are available to authenticated squadron members.</p>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
     </div>
   </section>
 
-  <div class="section-jump-wrap operations-jump-wrap" aria-label="Mission Control page sections">
+  <section class="section mc-access-gate" data-mc-gate>
     <div class="container">
-      <nav class="section-jump-nav">
-        <a href="#overview">Overview</a>
-        <a href="#daily-orders">Daily Orders</a>
-        <a href="#priority">Priority Systems</a>
-        <a href="#watch">Watch List</a>
-        <a href="#all-systems">All Systems</a>
-        <a href="#resources">Resources</a>
-      </nav>
-    </div>
-  </div>
-
-  <section id="overview" class="section-sm operations-overview-section">
-    <div class="container">
-      <div class="bgs-summary-grid" aria-label="BGS summary">
-        <article class="bgs-summary-card"><span>Priority Systems</span><strong id="summaryPriority">—</strong><small>Current strategic focus</small></article>
-        <article class="bgs-summary-card"><span>Systems Needing Attention</span><strong id="summaryAttention">—</strong><small>Outside target or on watch</small></article>
-        <article class="bgs-summary-card"><span>Active Orders</span><strong id="summaryActiveOrders">—</strong><small>Members-only tasking</small></article>
-        <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest BGS snapshot</small></article>
+      <div class="mission-control-gate-card">
+        <div class="mission-control-gate-mark" aria-hidden="true">⌁</div>
+        <div>
+          <p class="eyebrow">Members Only</p>
+          <h2>Operational Picture Restricted</h2>
+          <p>Mission Control reveals where the squad is working and how leadership wants those systems managed. Sign in with an approved Mongrels Discord account to view the dashboard.</p>
+          <div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private priorities</span><span>Secure tasking</span></div>
+        </div>
+        <div class="mission-control-gate-action">
+          <span class="tag">Protected</span>
+          <a class="btn btn-primary" data-mc-login href="/api/auth/login?return=%2Foperations%2F">Sign In with Discord →</a>
+          <small data-mc-gate-status>Checking secure session…</small>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="daily-orders" class="section private-orders-section" data-daily-orders>
-    <div class="container">
-      <div class="private-orders-panel" data-orders-locked>
-        <div class="private-orders-lock" aria-hidden="true">⌁</div>
-        <div class="private-orders-copy">
-          <p class="eyebrow">Members Only</p>
-          <h2>Squadron Daily Orders</h2>
-          <p data-orders-lock-detail>Exact operational tasking is private. Sign in with an approved Mongrel Discord account to view current INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes.</p>
-          <div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private tasking</span><span>No public data file</span></div>
-        </div>
-        <div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="/api/auth/login?return=%2Foperations%2F%23daily-orders">Sign In to View →</a></div>
+  <div data-mission-control-private hidden>
+    <div class="section-jump-wrap operations-jump-wrap" aria-label="Mission Control page sections">
+      <div class="container">
+        <nav class="section-jump-nav">
+          <a href="#overview">Overview</a>
+          <a href="#daily-orders">Daily Orders</a>
+          <a href="#playbook">Member Playbook</a>
+          <a href="#priority">Priority Systems</a>
+          <a href="#watch">Watch List</a>
+          <a href="#all-systems">All Systems</a>
+          <a href="#resources">Resources</a>
+        </nav>
       </div>
+    </div>
 
-      <div class="private-orders-loading" data-orders-loading hidden aria-live="polite">
-        <span class="private-orders-spinner" aria-hidden="true"></span>
-        <span>Checking secure member access…</span>
-      </div>
-
-      <div class="member-orders-panel" data-orders-member hidden>
-        <div class="member-orders-head">
-          <div>
-            <p class="eyebrow">Members Only · Secure Briefing</p>
-            <h2 data-orders-title>Squadron Daily Orders</h2>
-            <p data-orders-briefing></p>
-          </div>
-          <div class="member-orders-security"><span>Authenticated</span><small data-orders-meta>Secure member view</small></div>
+    <section id="overview" class="section-sm operations-overview-section">
+      <div class="container">
+        <div class="member-ops-banner"><span>Authenticated Mission Control</span><strong data-mc-viewer>Squadron Member</strong><small>Current BGS focus and strategy are not published to the public site.</small></div>
+        <div class="bgs-summary-grid" aria-label="BGS summary">
+          <article class="bgs-summary-card"><span>Mongrel Presence</span><strong id="summaryPresence">—</strong><small>Active systems discovered automatically</small></article>
+          <article class="bgs-summary-card"><span>Controlled</span><strong id="summaryControlled">—</strong><small>Systems controlled by Mongrels</small></article>
+          <article class="bgs-summary-card"><span>Priority</span><strong id="summaryPriority">—</strong><small>Current strategic focus</small></article>
+          <article class="bgs-summary-card"><span>Needs Attention</span><strong id="summaryAttention">—</strong><small>Targets, states, risks, or stale data</small></article>
+          <article class="bgs-summary-card"><span>Active Orders</span><strong id="summaryActiveOrders">—</strong><small>Current secure tasking</small></article>
+          <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest Vault/EDDN snapshot</small></article>
         </div>
+      </div>
+    </section>
 
-        <div class="private-orders-list" data-orders-list></div>
+    <section class="section private-orders-section" data-daily-orders="" id="daily-orders">
+<div class="container">
+<div class="private-orders-panel" data-orders-locked="">
+<div aria-hidden="true" class="private-orders-lock">⌁</div>
+<div class="private-orders-copy">
+<p class="eyebrow">Members Only</p>
+<h2>Squadron Daily Orders</h2>
+<p data-orders-lock-detail="">Exact operational tasking is private. Sign in with an approved Mongrel Discord account to view current INF targets, bounty turn-ins, mission reward choices, support/avoid instructions, stop conditions, and officer notes.</p>
+<div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private tasking</span><span>No public data file</span></div>
+</div>
+<div class="private-orders-state"><span class="tag">Protected</span><small>Member · Officer · Site Admin</small><a class="private-orders-login" href="/api/auth/login?return=%2Foperations%2F%23daily-orders">Sign In to View →</a></div>
+</div>
+<div aria-live="polite" class="private-orders-loading" data-orders-loading="" hidden="">
+<span aria-hidden="true" class="private-orders-spinner"></span>
+<span>Checking secure member access…</span>
+</div>
+<div class="member-orders-panel" data-orders-member="" hidden="">
+<div class="member-orders-head">
+<div>
+<p class="eyebrow">Members Only · Secure Briefing</p>
+<h2 data-orders-title="">Squadron Daily Orders</h2>
+<p data-orders-briefing=""></p>
+</div>
+<div class="member-orders-security"><span>Authenticated</span><small data-orders-meta="">Secure member view</small></div>
+</div>
+<div class="private-orders-list" data-orders-list=""></div>
+<aside class="officer-note-card" data-orders-officer-note="" hidden="">
+<span>Leadership Note</span>
+<p data-orders-officer-note-text=""></p>
+</aside>
+<div class="orders-manager" data-orders-manager="" hidden="">
+<div class="orders-manager-heading">
+<div>
+<p class="eyebrow">Officer Controls</p>
+<h3>Manage Daily Orders</h3>
+<p>Publish current tasking without editing GitHub. Changes are stored privately in Cloudflare and are immediately visible to authenticated Mongrel members.</p>
+</div>
+<button class="btn btn-secondary orders-manager-toggle" data-orders-editor-toggle="" type="button">Edit Orders</button>
+</div>
+<form class="orders-editor" data-orders-editor="" hidden="">
+<div class="orders-editor-grid">
+<label>
+<span>Briefing title</span>
+<input data-orders-edit-title="" maxlength="120" placeholder="Squadron Daily Orders" type="text"/>
+</label>
+<label class="orders-editor-wide">
+<span>Briefing overview</span>
+<textarea data-orders-edit-briefing="" maxlength="1200" placeholder="Overall intent, priorities, and context for today's operations." rows="3"></textarea>
+</label>
+<label class="orders-editor-wide">
+<span>Leadership note <small>(visible to members)</small></span>
+<textarea data-orders-edit-note="" maxlength="1200" placeholder="Optional additional note from leadership." rows="2"></textarea>
+</label>
+</div>
+<div class="orders-editor-list-heading">
+<div><strong>Operational Tasks</strong><span>Add up to 24 system-specific or squad-wide tasks.</span></div>
+<button class="btn btn-secondary" data-orders-add="" type="button">Add Task</button>
+</div>
+<div class="orders-editor-list" data-orders-editor-list=""></div>
+<div class="orders-editor-actions">
+<span aria-live="polite" class="orders-editor-status" data-orders-editor-status=""></span>
+<div>
+<button class="btn btn-secondary" data-orders-clear="" type="button">Clear Published Orders</button>
+<button class="btn btn-primary" data-orders-save="" type="submit">Publish Orders</button>
+</div>
+</div>
+</form>
+</div>
+</div>
+</div>
+</section>
 
-        <aside class="officer-note-card" data-orders-officer-note hidden>
-          <span>Leadership Note</span>
-          <p data-orders-officer-note-text></p>
-        </aside>
+    <section id="playbook" class="section member-playbook-section">
+      <div class="container">
+        <div class="section-heading">
+          <div><p class="eyebrow">Members Only · Quick Reference</p><h2>BGS Operational Playbook</h2></div>
+          <p>The public Field Manual explains the mechanics. This private section answers the squad-level question: <strong>“What should I actually do today?”</strong></p>
+        </div>
+        <div class="member-playbook-note" id="memberPlaybookNote">Loading operational benchmarks…</div>
+        <div class="guide-table-wrap member-benchmark-wrap">
+          <table class="guide-table member-benchmark-table">
+            <thead><tr><th>Positive lever</th><th>Small / quiet</th><th>Medium</th><th>Large / contested</th><th>Measure</th></tr></thead>
+            <tbody id="memberBenchmarks"><tr><td colspan="5">Loading secure playbook…</td></tr></tbody>
+          </table>
+        </div>
+        <div id="memberRecipes" class="member-recipe-grid" aria-live="polite"></div>
+      </div>
+    </section>
 
-        <div class="orders-manager" data-orders-manager hidden>
-          <div class="orders-manager-heading">
-            <div>
-              <p class="eyebrow">Officer Controls</p>
-              <h3>Manage Daily Orders</h3>
-              <p>Publish current tasking without editing GitHub. Changes are stored privately in Cloudflare and are immediately visible to authenticated Mongrel members.</p>
-            </div>
-            <button class="btn btn-secondary orders-manager-toggle" type="button" data-orders-editor-toggle>Edit Orders</button>
+    <section id="priority" class="section operations-priority-section">
+      <div class="container">
+        <div class="section-heading">
+          <div><p class="eyebrow">Private Strategy</p><h2>Priority Systems</h2></div>
+          <p>Leadership-defined target bands and objectives are merged with the latest live faction-presence data. These strategy fields are no longer stored in a public JSON file.</p>
+        </div>
+        <div id="prioritySystems" class="priority-system-grid" aria-live="polite"><div class="data-empty-state"><span class="data-empty-icon">◇</span><div><strong>Loading priority systems…</strong></div></div></div>
+        <div class="strategy-manager" data-strategy-manager hidden>
+          <div class="strategy-manager-head">
+            <div><p class="eyebrow">Officer Controls</p><h3>Manage Private Strategy</h3><p>Priority flags, target bands, desired states, objectives, and watch notes are stored in secure KV rather than the public repository.</p></div>
+            <button class="btn btn-secondary" type="button" data-strategy-toggle>Edit Strategy</button>
           </div>
-
-          <form class="orders-editor" data-orders-editor hidden>
-            <div class="orders-editor-grid">
-              <label>
-                <span>Briefing title</span>
-                <input type="text" maxlength="120" data-orders-edit-title placeholder="Squadron Daily Orders">
-              </label>
-              <label class="orders-editor-wide">
-                <span>Briefing overview</span>
-                <textarea rows="3" maxlength="1200" data-orders-edit-briefing placeholder="Overall intent, priorities, and context for today's operations."></textarea>
-              </label>
-              <label class="orders-editor-wide">
-                <span>Leadership note <small>(visible to members)</small></span>
-                <textarea rows="2" maxlength="1200" data-orders-edit-note placeholder="Optional additional note from leadership."></textarea>
-              </label>
-            </div>
-
-            <div class="orders-editor-list-heading">
-              <div><strong>Operational Tasks</strong><span>Add up to 24 system-specific or squad-wide tasks.</span></div>
-              <button class="btn btn-secondary" type="button" data-orders-add>Add Task</button>
-            </div>
-            <div class="orders-editor-list" data-orders-editor-list></div>
-
-            <div class="orders-editor-actions">
-              <span class="orders-editor-status" data-orders-editor-status aria-live="polite"></span>
-              <div>
-                <button class="btn btn-secondary" type="button" data-orders-clear>Clear Published Orders</button>
-                <button class="btn btn-primary" type="submit" data-orders-save>Publish Orders</button>
-              </div>
-            </div>
+          <form class="strategy-editor" data-strategy-editor hidden>
+            <div class="strategy-editor-toolbar"><span>Add only systems that need leadership metadata. Every live Mongrel presence still appears automatically in All Systems.</span><button class="btn btn-secondary" type="button" data-strategy-add>Add System</button></div>
+            <datalist id="missionControlSystemNames"></datalist>
+            <div class="strategy-editor-list" data-strategy-list></div>
+            <div class="orders-editor-actions"><span class="orders-editor-status" data-strategy-status aria-live="polite"></span><div><button class="btn btn-primary" type="submit" data-strategy-save>Save Private Strategy</button></div></div>
           </form>
         </div>
-
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="priority" class="section operations-priority-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
-        <p>Leadership can promote or remove systems from this board by changing a single flag in the data file. The cards are built for the few systems that deserve attention at a glance.</p>
+    <section id="watch" class="section-sm">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
+          <p>Target-band exceptions, conflicts, expansion/retreat risk, and leadership watch flags surface here for authenticated members.</p>
+        </div>
+        <div id="watchList" class="bgs-watch-grid" aria-live="polite"><div class="data-empty-state slim-empty"><span class="data-empty-icon">△</span><div><strong>Loading watch list…</strong></div></div></div>
       </div>
-      <div id="prioritySystems" class="priority-system-grid" aria-live="polite">
-        <div class="data-empty-state">
-          <span class="data-empty-icon">◇</span>
-          <div><strong>No priority systems posted yet.</strong><p>Once we add the first BGS snapshot, selected systems will appear here automatically.</p></div>
+    </section>
+
+    <section id="all-systems" class="section all-systems-section">
+      <div class="container">
+        <div class="section-heading">
+          <div><p class="eyebrow">Live Faction Footprint</p><h2>All Systems</h2></div>
+          <p>Every system currently returned for the Regiment of Imperial Mongrels is discovered automatically. Search and filter the complete footprint without manually maintaining a system list.</p>
+        </div>
+
+        <div class="systems-toolbar bgs-toolbar mc-systems-toolbar">
+          <label class="systems-search"><span>Search systems</span><input id="systemSearch" type="search" placeholder="Search by system name…" autocomplete="off"></label>
+          <label class="systems-filter"><span>View</span><select id="systemFilter">
+            <option value="all">Active presence</option>
+            <option value="priority">Priority only</option>
+            <option value="watch">Watch / attention</option>
+            <option value="control">Controlled systems</option>
+            <option value="not-control">Not controlled</option>
+            <option value="below-target">Below target</option>
+            <option value="above-target">Above target</option>
+            <option value="conflict">Conflict</option>
+            <option value="expansion-risk">Expansion watch</option>
+            <option value="retreat-risk">Retreat watch</option>
+            <option value="stale">Stale / aging</option>
+            <option value="former">Former presence</option>
+          </select></label>
+          <label class="systems-filter"><span>Sort</span><select id="systemSort">
+            <option value="name">System name</option>
+            <option value="influence-desc">Influence high → low</option>
+            <option value="influence-asc">Influence low → high</option>
+            <option value="attention">Attention first</option>
+            <option value="freshness">Freshness</option>
+          </select></label>
+          <div class="systems-update"><span>Snapshot</span><strong id="systemsUpdated">Loading…</strong></div>
+        </div>
+
+        <div class="systems-count-line"><strong id="systemsShown">—</strong><span id="systemsCountDetail">systems shown</span></div>
+        <div class="systems-table-wrap">
+          <table class="systems-table bgs-systems-table mc-systems-table">
+            <thead><tr><th>System</th><th>Mongrel INF</th><th>Control</th><th>State</th><th>Ops Status</th><th>Freshness</th></tr></thead>
+            <tbody id="systemsTableBody"><tr class="systems-empty-row"><td colspan="6">Loading live faction footprint…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="bgs-live-footnote">
+          <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Loading secure snapshot</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteHub Vault / EDDN</strong></span></div>
+          <p class="bgs-data-note">EDDN-backed data is not guaranteed to be real-time. Freshness depends on commander visits and journal uploads. Mission Control shows source age where available and retains former presences so a retreat does not silently erase history.</p>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="watch" class="section-sm">
-    <div class="container">
-      <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
-        <p>Public-facing alerts for systems that need attention. Exact tasking can remain private even when members can see that a system is worth watching.</p>
-      </div>
-      <div id="watchList" class="bgs-watch-grid" aria-live="polite">
-        <div class="data-empty-state slim-empty">
-          <span class="data-empty-icon">△</span>
-          <div><strong>No watch-list alerts.</strong><p>Conflict, expansion, retreat risk, elections, or other notable states can be surfaced here.</p></div>
+    <section id="resources" class="section operations-resources-section">
+      <div class="container">
+        <div class="section-heading"><div><p class="eyebrow">Mission Control Resources</p><h2>Tools Around the Mission</h2></div><p>Move from the operational picture to the squad tools needed to execute it.</p></div>
+        <div class="operations-resource-grid">
+          <a class="operations-resource-card" href="../guides/bgs/"><span>Public Knowledge</span><h3>BGS Field Manual</h3><p>Mechanics, conflict rules, influence, states, government compatibility, and general strategy.</p><strong>Open Field Manual →</strong></a>
+          <a class="operations-resource-card" href="../trading/"><span>Logistics</span><h3>Trader's Outpost</h3><p>Find squad-supporting cargo runs and member-profit opportunities.</p><strong>Open Outpost →</strong></a>
+          <a class="operations-resource-card" href="../carriers/"><span>Mobility</span><h3>Carrier Network</h3><p>Use the carrier directory and movement board for squad logistics.</p><strong>View Carriers →</strong></a>
+          <a class="operations-resource-card" href="../ships/"><span>Readiness</span><h3>Ship Catalogue</h3><p>Browse published Mongrel builds prepared for Open and squad operations.</p><strong>Browse Builds →</strong></a>
+          <a class="operations-resource-card" href="../about/#squad-rules"><span>Rules of Engagement</span><h3>Squad Rules</h3><p>Review Open Play, BGS, combat logging, and combat-conduct standards.</p><strong>Read Rules →</strong></a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section id="all-systems" class="section all-systems-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Mongrel Territory</p><h2>All Systems</h2></div>
-        <p>The full faction footprint. Search by system, filter by control or priority, and sort the operational picture without editing the page itself.</p>
-      </div>
-
-      <div class="systems-toolbar bgs-toolbar">
-        <label class="systems-search"><span>Search systems</span><input id="systemSearch" type="search" placeholder="Search by system name…" autocomplete="off"></label>
-        <label class="systems-filter"><span>View</span><select id="systemFilter"><option value="all">All systems</option><option value="priority">Priority only</option><option value="watch">Watch list</option><option value="control">Controlled systems</option><option value="not-control">Not controlled</option></select></label>
-        <label class="systems-filter"><span>Sort</span><select id="systemSort"><option value="name">System name</option><option value="influence-desc">Influence high → low</option><option value="influence-asc">Influence low → high</option><option value="priority">Priority first</option></select></label>
-        <div class="systems-update"><span>Last updated</span><strong id="systemsUpdated">Not connected</strong></div>
-      </div>
-
-      <div class="systems-table-wrap">
-        <table class="systems-table bgs-systems-table">
-          <thead><tr><th>System</th><th>Control</th><th>Influence</th><th>State</th><th>Priority</th><th>Public Objective</th></tr></thead>
-          <tbody id="systemsTableBody"><tr class="systems-empty-row"><td colspan="6">System data has not been connected yet.</td></tr></tbody>
-        </table>
-      </div>
-      <div class="bgs-live-footnote">
-        <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Awaiting first automatic sync</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteHub Vault / EDDN</strong></span></div>
-        <p class="bgs-data-note">Live game data is merged with Mongrel-defined targets and objectives. If the upstream service is temporarily unavailable, the dashboard keeps its last known snapshot or falls back to the manual values in the strategic configuration. Private daily orders remain separate from the public repository.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="resources" class="section operations-resources-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Mission Control Resources</p><h2>Tools Around the Mission</h2></div>
-        <p>Mission control rarely happens on one page. These shortcuts connect the strategic picture to the squad resources members are most likely to need next.</p>
-      </div>
-      <div class="operations-resource-grid">
-        <a class="operations-resource-card" href="../trading/">
-          <span>Logistics</span><h3>Trader's Outpost</h3><p>Find squad-supporting cargo runs and member-profit opportunities.</p><strong>Open Outpost →</strong>
-        </a>
-        <a class="operations-resource-card" href="../carriers/">
-          <span>Mobility</span><h3>Carrier Network</h3><p>Use the carrier directory and movement board for squad logistics.</p><strong>View Carriers →</strong>
-        </a>
-        <a class="operations-resource-card" href="../ships/">
-          <span>Readiness</span><h3>Ship Catalogue</h3><p>Browse published Mongrel builds prepared for Open and squad operations.</p><strong>Browse Builds →</strong>
-        </a>
-        <a class="operations-resource-card" href="../guides/bgs/#daily-targets">
-          <span>BGS Quick Reference</span><h3>Operator Playbook</h3><p>Influence strategy, diminishing-return benchmarks, conflict rules, and practical daily workload targets.</p><strong>Open BGS Playbook →</strong>
-        </a>
-        <a class="operations-resource-card" href="../about/#squad-rules">
-          <span>Rules of Engagement</span><h3>Squad Rules</h3><p>Review Open Play, BGS, combat logging, and combat-conduct standards.</p><strong>Read Rules →</strong>
-        </a>
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </main>
 
-<footer class="site-footer">
-  <div class="container footer-grid">
-    <div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div>
-    <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
-  </div>
-</footer>
-<script src="../js/site.js?v=63"></script>
-<script src="../js/operations.js?v=58"></script>
-<script src="../js/daily-orders.js?v=58"></script>
-<script src="../js/mongrel-assistant.js?v=63"></script>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=64"></script>
+<script src="../js/operations.js?v=64"></script>
+<script src="../js/daily-orders.js?v=64"></script>
+<script src="../js/mongrel-assistant.js?v=64"></script>
 </body>
 </html>

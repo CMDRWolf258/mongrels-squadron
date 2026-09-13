@@ -1,73 +1,47 @@
-# Regiment of Imperial Mongrels — v63
+# Regiment of Imperial Mongrels — v64
 
-Expanded Elite engineering knowledge library + public Guides.
+Mission Control privacy + automatic full faction footprint + private BGS playbook.
 
-## Elite Knowledge Library
-- Expanded `data/elite-knowledge.json` from the v58 pilot to 31 curated entries.
-- Added broader weapon experimentals, including Thermal Vent, Emissive Munitions, Scramble Spectrum, Phasing Sequence, Plasma Slug, Super Penetrator, Dispersal Field, Target Lock Breaker, Screening Shell, and Thermal Conduit.
-- Added core-module engineering guidance for FSD/SCO drives, Dirty Drives, Power Plant choices, Power Distributor choices, Sensors, and Life Support.
-- Added deeper defensive notes for armour, shield resistance planning, and Module Reinforcement Packages.
-- Expanded Assistant keyword routing so these subjects retrieve only the most relevant local knowledge entries.
-- Assistant now links covered engineering questions to the public Guides when useful.
+## Mission Control is now member-only
+- `/operations/` is now a public login doorway only until the viewer has an authenticated Mongrels member session.
+- Priority Systems, Watch List, All Systems, summary counts, Daily Orders, BGS targets, and operational resources are hidden from signed-out visitors.
+- The protection is not only CSS: Mission Control data is returned through `/api/operations/systems`, which requires Member / Officer / Site Admin access.
+- Ask the Mongrels no longer loads Mission Control strategy/system context for unauthenticated/public context.
 
-## Public Guides
-- Added `/guides/` as a public Field Manual / Engineering Library.
-- Added Guides to the primary site navigation.
-- Guide layout supports two levels of detail: fast starter rules plus expandable veteran notes.
-- Initial guides cover Engineering Fundamentals, general combat engineering, travel/utility engineering, weapon experimentals, defensive engineering, and core modules.
-- The Ships Engineering Desk now links directly into the guide library.
-- Guides and Ask the Mongrels intentionally share the same underlying recommendations so the site does not maintain two conflicting bodies of advice.
+## Private strategy storage
+- Strategic targets, priority flags, desired states, watch notes, and objectives are no longer shipped in public `data/systems.json`.
+- v64 uses the already-configured `DAILY_ORDERS` KV namespace with a separate key: `bgs-strategy-v1`.
+- On the first authenticated Mission Control load, the v63 strategy seed is written into that private KV key automatically. Officers/Site Admin can then maintain strategy through the new in-page **Manage Private Strategy** editor, so future focus changes never need to be committed to public JSON.
+- `data/systems.json` remains only as a harmless compatibility marker and contains no system names or targets.
+- No new Cloudflare KV namespace or binding is required.
 
-## Reference policy
-- Entries are original Mongrel summaries, not copied articles.
-- Primary reference links currently point to INARA's blueprint and experimental-effect databases.
-- Knowledge is marked reviewed 2026-09-13 and should be refreshed when Frontier changes engineering or module behavior.
-- No live web-search tool is enabled in this release; ordinary covered engineering questions continue to use the inexpensive local knowledge path.
+## Automatic All Systems population
+- `scripts/update_bgs.py` now writes every Mongrel faction-presence row returned by EliteHub Vault / EDDN instead of filtering down to the manually configured priority systems.
+- New faction presences therefore appear automatically after a BGS refresh.
+- Systems that disappear from the faction-presence feed are retained as `Former Presence` records instead of silently vanishing.
+- A defensive completeness check prevents a badly truncated upstream result from marking hundreds of systems as former presences.
+- All Systems now supports search plus filters for Priority, Watch/Attention, Controlled, Not Controlled, Below/Above Target, Conflict, Expansion Watch, Retreat Watch, Stale/Aging, and Former Presence.
+- Freshness labels distinguish Fresh, Aging, Stale, Unknown, and Former Presence data.
+
+## Private Member BGS Playbook
+- Quantified daily workload benchmarks were removed from the public BGS Field Manual and public Elite Knowledge JSON.
+- Authenticated Mission Control now contains the private workload table for mission INF, bounty vouchers, exploration data, and profitable trade.
+- Added member quick-reference recipes for raising/lowering influence, avoiding Expansion, saving/forcing Retreat, War/Civil War, and Elections.
+- The public BGS guide still teaches mechanics and general strategy, but points members to Mission Control for squad operational tasking.
+- Ask the Mongrels can use the private operational playbook only for authenticated member conversations.
+
+## BGS refresh after deployment
+The package contains the previous placeholder snapshot. After uploading v64, run the existing GitHub Action **Refresh BGS data** once (or wait for the two-hour schedule). The first successful v64 run should populate the complete Mongrel faction footprint instead of only the previously tracked six systems.
 
 ## Setup
 No new Cloudflare variables, secrets, KV namespaces, or bindings are required.
 
-Upload the complete package and allow Cloudflare Pages to redeploy.
+Upload the complete package, allow Cloudflare Pages to redeploy, then:
+1. Run **Refresh BGS data** in GitHub Actions once.
+2. Open Mission Control while signed in; this seeds the private strategy key into the existing `DAILY_ORDERS` KV namespace.
+3. Confirm All Systems count, Priority Systems, Watch List, and the Member BGS Playbook.
+4. As Site Admin, open **Manage Private Strategy** and confirm the six migrated priority systems are present; future priority/target edits can be saved there without touching GitHub.
+5. Open Mission Control in a signed-out/private browser window and confirm that only the member login gate is visible.
 
-## v60 — Field Manual architecture
-- Reframed Guides as the broader Mongrel Field Manual instead of an engineering-first hub.
-- Added guide-family roadmap for Engineering, BGS, Mining, Combat/PvP, AX, Exploration/Exobiology, Trade/Carriers, Colonization and Powerplay.
-- Moved the existing engineering content to `/guides/engineering/`.
-- Added searchable `/guides/reference/` driven by `data/elite-knowledge.json` with expandable details, PvE/PvP notes, source links and review dates.
-- Added searchable `/guides/glossary/` driven by `data/glossary.json` for common Elite terms and acronyms.
-- Added `/guides/resources/` with links to INARA, EDSY, Spansh and official Elite resources.
-- Engineering guide terms now begin deep-linking into matching reference entries.
-
-## v61 — Large BGS knowledge expansion
-- Added full `/guides/bgs/` field guide covering influence, activity levers, conflicts, ownership, Expansion, Retreat, states, and Mongrel operating discipline.
-- Added 40 BGS reference records to `data/elite-knowledge.json` (71 total knowledge entries).
-- Added BGS terms to the searchable glossary.
-- Ask the Mongrels now loads local BGS knowledge for BGS/state/influence questions instead of relying only on general model knowledge.
-- Reference UI now supports BGS-specific Operations / Watch For context cards as well as PvE/PvP engineering context.
-- Community-observed mechanics such as Expansion/Retreat thresholds are explicitly labeled for future review rather than presented as Frontier-published formulas.
-
-## v62 — BGS Operator Manual refinement
-- Reworked BGS conflicts around the actual best-of-seven / mathematical-clinch model.
-- Added worked conflict examples, including early endings caused by tied days.
-- Added government ethos lookup and conflict matrix (including Corporate vs Dictatorship = War).
-- Added practical War/Civil War vs Election activity guidance.
-- Added BGS activity/effect, state, expansion/retreat, asset-risk, and operator quick-reference material.
-- Expanded the shared Elite Knowledge Base with structured quick facts, tables, and examples so Ask the Mongrels can answer exact BGS questions instead of vague ranges.
-- Expanded the Reference Database renderer and BGS glossary.
-- BGS remains explicitly a living guide: community-observed/uncertain mechanics are labeled accordingly.
-
-## v63 — BGS Strategy, Influence & Daily Targets
-- Reordered the BGS Operator Manual so Influence is the first major concept after Quick Reference.
-- Expanded influence guidance around the system-wide ~100% pool, broad pull-down vs precision transfer, low-faction leverage, and conflict-frozen influence.
-- Added a full General Strategies section: broad pull-down, winner/victim transfer, conflict lock & leapfrog, multi-lock board shaping, maintenance bands, asset-transfer setup, retreat preparation, and tick-feedback troubleshooting.
-- Added practical per-CMDR/per-system/per-tick workload benchmarks from the current Complete BGS Guide: mission INF, bounty vouchers, exploration data, and profitable trade targets by population/contest tier.
-- Clarified that trade workload should be tracked primarily by useful profit at the correct faction-owned market, not tonnage alone.
-- Added quick task menus for raising/lowering influence, avoiding Expansion, saving/forcing Retreat, Wars/Civil Wars, Elections, and leapfrog operations.
-- Added a Retreat operator timeline, faction-count caution, and late-cycle critical-check guidance.
-- Corrected the War guidance to clearly distinguish Combat Bonds from bounty vouchers. CZ wins/objectives and Combat Bonds are the dependable war tools; community documentation is mixed on whether ordinary bounties can act as a secondary tie-break input, so Mongrel orders should not rely on bounty hunting to win a War day.
-- Expanded the shared Elite Knowledge Base to 81 entries / 50 BGS entries with structured records for influence distribution, conflict-lock strategy, daily effort benchmarks, general BGS strategy, and Retreat operations.
-- Added BGS glossary terms for Conflict Lock, Leapfrog, Saturation, Beneficiary, and Victim.
-- Added a Mission Control resource shortcut to the BGS daily-target/operator playbook.
-- Expanded Ask the Mongrels BGS routing for conflict locks, leapfrogging, diminishing returns, daily targets, bounty-vs-bond questions, and trade-profit workload questions.
-
-No new Cloudflare variables, secrets, bindings, or KV namespaces are required.
+### Historical privacy note
+Prior releases intentionally published Priority/Watch data, so old Git commits and previously deployed copies may still contain those historical values. v64 stops publishing new strategy changes. If the GitHub repository itself is public and you eventually want historical values removed as well, that is a separate repository-history/privacy cleanup rather than a site-code change.
