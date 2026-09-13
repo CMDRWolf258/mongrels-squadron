@@ -18,6 +18,7 @@
       </header>
       <div class="mongrel-assistant-log" data-assistant-log aria-live="polite"></div>
       <div class="mongrel-assistant-links" data-assistant-links hidden></div>
+      <div class="mongrel-assistant-suggestions" data-assistant-suggestions hidden></div>
       <form class="mongrel-assistant-form" data-assistant-form>
         <label for="mongrel-assistant-input">Ask about the squad, today's orders, projects, carriers, trades, PvP, ships, or rules.</label>
         <textarea id="mongrel-assistant-input" rows="2" maxlength="1600" placeholder="What should I be working on today?" data-assistant-input></textarea>
@@ -33,6 +34,7 @@
   const clear = root.querySelector('[data-assistant-clear]');
   const log = root.querySelector('[data-assistant-log]');
   const links = root.querySelector('[data-assistant-links]');
+  const suggestions = root.querySelector('[data-assistant-suggestions]');
   const form = root.querySelector('[data-assistant-form]');
   const input = root.querySelector('[data-assistant-input]');
   const send = root.querySelector('[data-assistant-send]');
@@ -41,22 +43,31 @@
   const budget = root.querySelector('[data-assistant-budget]');
 
   const isTouchLayout = () => matchMedia('(max-width: 900px)').matches;
+  const isPhoneLayout = () => matchMedia('(max-width: 620px)').matches;
   let lockedScrollY = 0;
+  let viewportTimers = [];
 
-  const syncKeyboardInset = () => {
+  const clearViewportTimers = () => {
+    viewportTimers.forEach(clearTimeout);
+    viewportTimers = [];
+  };
+
+  // Keep the assistant's TOP edge stable. When the iOS keyboard appears, only
+  // the shell height changes; CSS grid gives the lost space to the message log
+  // rather than shifting the whole panel upward.
+  const syncTouchViewport = () => {
     if (panel.hidden || !isTouchLayout()) {
-      document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
+      document.documentElement.style.removeProperty('--assistant-touch-vh');
       return;
     }
     const vv = window.visualViewport;
-    if (!vv) {
-      document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
-      return;
-    }
-    const layoutHeight = window.innerHeight;
-    const obscuredBottom = Math.max(0, layoutHeight - (vv.height + Math.max(0, vv.offsetTop)));
-    const keyboardInset = obscuredBottom > 80 ? obscuredBottom : 0;
-    document.documentElement.style.setProperty('--assistant-keyboard-inset', `${Math.round(keyboardInset)}px`);
+    const height = Math.max(320, Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight));
+    document.documentElement.style.setProperty('--assistant-touch-vh', `${height}px`);
+  };
+
+  const settleTouchViewport = () => {
+    clearViewportTimers();
+    [0, 60, 180, 360].forEach(delay => viewportTimers.push(setTimeout(syncTouchViewport, delay)));
   };
 
   const lockBackground = () => {
@@ -68,23 +79,27 @@
   };
 
   const unlockBackground = () => {
+    clearViewportTimers();
     document.documentElement.classList.remove('assistant-open');
     document.body.classList.remove('assistant-open');
     const restoreY = lockedScrollY;
     document.body.style.top = '';
-    document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
-    if (isTouchLayout()) window.scrollTo(0, restoreY);
+    document.documentElement.style.removeProperty('--assistant-touch-vh');
+    if (isTouchLayout()) requestAnimationFrame(() => window.scrollTo(0, restoreY));
   };
 
-  window.visualViewport?.addEventListener('resize', syncKeyboardInset);
-  window.visualViewport?.addEventListener('scroll', syncKeyboardInset);
-  window.addEventListener('orientationchange', () => setTimeout(syncKeyboardInset, 120));
+  // Safari occasionally leaves visualViewport measurements stale for a moment
+  // after the keyboard is dismissed. Resize + delayed blur/focusout resyncs are
+  // intentionally redundant so the panel always returns to a tappable state.
+  window.visualViewport?.addEventListener('resize', syncTouchViewport, { passive:true });
+  window.addEventListener('orientationchange', settleTouchViewport, { passive:true });
+  window.addEventListener('resize', () => { if (!panel.hidden && isTouchLayout()) settleTouchViewport(); }, { passive:true });
 
   const open = () => {
     panel.hidden=false;
     launcher.setAttribute('aria-expanded','true');
     lockBackground();
-    syncKeyboardInset();
+    settleTouchViewport();
     if (!isTouchLayout()) setTimeout(() => input?.focus({ preventScroll:true }), 80);
   };
   const shut = () => {
@@ -105,17 +120,44 @@
     return item;
   };
 
+  const suggestedPrompts = [
+    "What's happening today?",
+    "What are today's Daily Orders?",
+    "Any carrier moves or loading jobs?",
+    "What PvP events are coming up?",
+  ];
+
+  const renderSuggestions = () => {
+    suggestions.replaceChildren();
+    const show = Boolean(state.session?.authenticated && state.history.length === 0 && !state.busy);
+    suggestions.hidden = !show;
+    if (!show) return;
+    suggestedPrompts.forEach(text => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = text;
+      button.addEventListener('click', () => {
+        input.value = text;
+        form.requestSubmit();
+      });
+      suggestions.appendChild(button);
+    });
+  };
+
   const renderConversation = () => {
     log.replaceChildren();
     if (state.history.length) {
       state.history.forEach(item => addMessage(item.role, item.text));
+      renderSuggestions();
       return;
     }
     if (state.session?.authenticated) {
-      addMessage('assistant', `Ready, ${state.session.displayName || 'Mongrel'}. I can read current squad data and help you find what you need. I cannot change anything on the site.`);
+      addMessage('assistant', `Ready, ${state.session.displayName || 'Mongrel'}. I can read current squad data, summarize what is happening today, and help you find the right page. I cannot change anything on the site.`);
+      renderSuggestions();
     } else {
       addMessage('assistant', 'Sign in with Discord to use the Mongrel Assistant. Member authentication keeps private squad data protected and prevents anonymous API usage.');
       const a=document.createElement('a'); a.className='btn btn-primary mongrel-assistant-login'; a.href=`/api/auth/login?return=${encodeURIComponent(location.pathname+location.search+location.hash)}`; a.textContent='Sign in with Discord'; log.appendChild(a);
+      renderSuggestions();
     }
   };
 
@@ -202,7 +244,7 @@
     event.preventDefault();
     const message=(input.value||'').trim();
     if(!message||state.busy||!state.session?.authenticated||state.usage?.user?.exhausted)return;
-    state.busy=true; send.disabled=true; input.disabled=true; status.textContent='Thinking…';
+    state.busy=true; send.disabled=true; input.disabled=true; status.textContent='Thinking…'; renderSuggestions();
     addMessage('user',message); input.value=''; renderLinks([]);
     const pending=addMessage('assistant','Checking current squad data…');
     try {
@@ -221,11 +263,13 @@
       send.disabled=exhausted; input.disabled=exhausted;
       status.textContent=exhausted?'Monthly AI allowance reached':'Read-only · current squad data';
       if(!exhausted && !isTouchLayout()) input.focus();
+      renderSuggestions();
     }
   });
 
   input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();form.requestSubmit();}});
-  input.addEventListener('focus', () => setTimeout(syncKeyboardInset, 120));
-  input.addEventListener('blur', () => setTimeout(syncKeyboardInset, 120));
+  input.addEventListener('focus', () => { if (isTouchLayout()) settleTouchViewport(); });
+  input.addEventListener('blur', () => { if (isTouchLayout()) settleTouchViewport(); });
+  input.addEventListener('focusout', () => { if (isTouchLayout()) settleTouchViewport(); });
   loadSession();
 })();

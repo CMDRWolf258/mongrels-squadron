@@ -1,13 +1,31 @@
-# v55 — Assistant Keyboard / Viewport Fix
+# Mongrels Squadron Site v56 — Assistant Stability + Smart Briefings
 
-This release refines the Mongrel Assistant on iPhone and iPad.
+This batch keeps the Mongrel Assistant read-only while improving mobile stability and day-to-day usefulness.
 
-- Keeps the assistant shell anchored instead of resizing/repositioning the whole panel when the keyboard opens.
-- Uses a keyboard inset inside the assistant so only the conversation area gives up space.
-- Pins the header/close controls and composer within the assistant.
-- Hard-locks the background page while the assistant is open on touch layouts, preserving and restoring the original scroll position.
-- Prevents touch/overscroll from leaking from the assistant conversation into the page behind it.
-- Keeps 16px mobile text input sizing to prevent iOS focus zoom.
-- Retains the 48-hour cross-device history and role-aware assistant behavior from v54.
+## Assistant reliability
+- Fixes the iPhone/iOS keyboard-dismiss lockup seen after tapping the keyboard Done/checkmark.
+- Removes `touch-action:none` from the page-wide scroll lock so the assistant itself remains tappable after keyboard transitions.
+- Keeps the assistant's top edge anchored; keyboard changes reduce the internal message area instead of shifting the entire panel upward.
+- Re-syncs the visual viewport after focus, blur, resize, orientation changes, and keyboard dismissal to recover from stale Safari viewport measurements.
+- Keeps background page scrolling locked while the assistant is open and restores the original page position on close.
 
-No new Cloudflare variables or bindings are required.
+## Assistant capability/UX improvements
+- Adds suggested prompts when opening an empty chat:
+  - What's happening today?
+  - What are today's Daily Orders?
+  - Any carrier moves or loading jobs?
+  - What PvP events are coming up?
+- Broad daily-briefing questions now pull compact context across orders, projects/events, carriers, trades, and PvP notices.
+- Stronger role/privacy filtering removes hidden ownership/user IDs from dynamic records before they reach the model.
+- Explicit freshness guidance tells the assistant to call out stale/aging carrier or market data instead of presenting it as live.
+- Navigation questions are answered more directly and continue to receive relevant site shortcut buttons.
+- Answers are concise by default to keep the assistant fast and inexpensive.
+
+## Existing behavior retained
+- 48-hour cross-device conversation history.
+- Clear Chat.
+- Member/Officer/Site Admin monthly AI budgets and the $30 site ceiling.
+- Read-only behavior; the assistant cannot create or edit site records.
+- Officer-only Daily Orders notes remain hidden from ordinary Members.
+
+No new Cloudflare variables, KV namespaces, bindings, or OpenAI permissions are required for v56.
