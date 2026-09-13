@@ -1,38 +1,298 @@
 (() => {
-  const board=document.querySelector('[data-projects-board]'); if(!board) return;
-  const signedOut=document.querySelector('[data-projects-signed-out]'); const grid=document.querySelector('[data-project-grid]'); const empty=document.querySelector('[data-project-empty]');
-  const shell=document.querySelector('[data-project-editor-shell]'); const form=document.querySelector('[data-project-form]');
-  let session=null, items=[], filter='active', editing=null, dirty=false;
-  const $=sel=>document.querySelector(sel); const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const apiFetch=async(url,options={})=>{const r=await fetch(`${url}${options.method?'':(url.includes('?')?'&':'?')+'_='+Date.now()}`,{credentials:'same-origin',cache:'no-store',...options}); const p=await r.json().catch(()=>({})); return {r,p};};
-  const statusLabel=s=>({planning:'Planning',active:'Active',paused:'Paused',complete:'Complete'}[s]||s);
-  const formatDate=value=>{if(!value)return ''; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});};
-  const copyText=async(text,button)=>{try{await navigator.clipboard.writeText(text); const old=button.textContent; button.textContent='Copied'; setTimeout(()=>button.textContent=old,1100);}catch{}};
+  const board = document.querySelector('[data-projects-board]');
+  if (!board) return;
 
-  function filteredItems(){const now=new Date(); return items.filter(i=>{if(filter==='mine')return i.isMine; if(filter==='archive')return i.status==='complete'; if(filter==='events')return i.kind==='event'&&i.status!=='complete'; return i.kind==='project'&&i.status!=='complete';}).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));}
-  function render(){
-    const active=items.filter(i=>i.kind==='project'&&i.status!=='complete').length; const events=items.filter(i=>i.kind==='event'&&i.status!=='complete').length; const mine=items.filter(i=>i.isMine).length; const archive=items.filter(i=>i.status==='complete').length;
-    $('[data-project-count-active]').textContent=active; $('[data-project-count-events]').textContent=events; $('[data-project-count-mine]').textContent=mine; $('[data-project-count-archive]').textContent=archive;
-    const list=filteredItems(); grid.replaceChildren(); empty.hidden=list.length>0;
-    list.forEach(item=>{const card=document.createElement('article'); card.className='project-card';
-      const system=item.system?`<div class="project-system"><span>${safe(item.system)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(item.system)}" aria-label="Copy system name">⧉</button></div>`:'';
-      const progress=item.kind==='project'?`<div class="project-progress"><div><span>Progress</span><strong>${Number(item.progress)||0}%</strong></div><div class="project-progress-track"><span style="width:${Math.max(0,Math.min(100,Number(item.progress)||0))}%"></span></div></div>`:'';
-      const help=item.helpRequested?`<div class="project-help"><span>Help Requested</span><p>${safe(item.helpRequested)}</p></div>`:'';
-      const target=item.target?`<div class="project-target"><span>Goal / Target</span><strong>${safe(item.target)}</strong></div>`:'';
-      card.innerHTML=`<div class="project-card-top"><div class="project-badges"><span class="project-type ${item.official?'official':''}">${item.official?'Squad ': 'Member '}${item.kind==='event'?'Event':'Project'}</span><span class="project-status">${safe(statusLabel(item.status))}</span></div>${item.canEdit?'<button class="btn btn-secondary project-edit-btn" type="button">Edit</button>':''}</div><p class="eyebrow">${safe(item.category||'Project')}</p><h3>${safe(item.title)}</h3>${system}<p class="project-description">${safe(item.description)}</p>${help}${target}${progress}<div class="project-card-meta"><span>Posted by <strong>${safe(item.ownerName)}</strong></span>${item.deadline?`<span>${item.kind==='event'?'Event':'Target'} date <strong>${safe(formatDate(item.deadline))}</strong></span>`:''}</div>`;
-      card.querySelector('[data-copy-system]')?.addEventListener('click',e=>copyText(item.system,e.currentTarget));
-      card.querySelector('.project-edit-btn')?.addEventListener('click',()=>openEditor(item)); grid.appendChild(card);
+  const signedOut = document.querySelector('[data-projects-signed-out]');
+  const grid = document.querySelector('[data-project-grid]');
+  const empty = document.querySelector('[data-project-empty]');
+  const shell = document.querySelector('[data-project-editor-shell]');
+  const form = document.querySelector('[data-project-form]');
+
+  let session = null;
+  let items = [];
+  let filter = 'active';
+  let editing = null;
+  let dirty = false;
+
+  const $ = sel => document.querySelector(sel);
+  const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  const apiFetch = async (url, options = {}) => {
+    const requestUrl = options.method ? url : `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
+    const response = await fetch(requestUrl, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      ...options,
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { response, payload };
+  };
+
+  const statusLabel = status => ({
+    planning: 'Planning', active: 'Active', paused: 'Paused', complete: 'Complete'
+  }[status] || status);
+
+  const formatDate = value => {
+    if (!value) return '';
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime())
+      ? value
+      : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const copyText = async (text, button) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      const old = button.textContent;
+      button.textContent = 'Copied';
+      setTimeout(() => { button.textContent = old; }, 1100);
+    } catch {}
+  };
+
+  const timestamp = value => {
+    const t = Date.parse(value || '');
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  const eventDate = item => {
+    const t = Date.parse(item.deadline ? `${item.deadline}T12:00:00` : '');
+    return Number.isFinite(t) ? t : Number.MAX_SAFE_INTEGER;
+  };
+
+  function sortProjects(list) {
+    return list.sort((a, b) => {
+      if (filter === 'events') return eventDate(a) - eventDate(b) || timestamp(b.updatedAt) - timestamp(a.updatedAt);
+      if (filter === 'official') return timestamp(b.updatedAt) - timestamp(a.updatedAt);
+      if (filter === 'mine') return (a.status === 'complete') - (b.status === 'complete') || timestamp(b.updatedAt) - timestamp(a.updatedAt);
+      if (filter === 'archive') return timestamp(b.updatedAt) - timestamp(a.updatedAt);
+      if (a.official !== b.official) return a.official ? -1 : 1;
+      if (a.status !== b.status) {
+        const rank = { active: 0, planning: 1, paused: 2, complete: 3 };
+        return (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+      }
+      return timestamp(b.updatedAt) - timestamp(a.updatedAt);
     });
   }
-  function openEditor(item=null){editing=item; dirty=false; shell.hidden=false; document.body.classList.add('project-editor-open'); $('[data-project-form-title]').textContent=item?'Edit Project':'New Project'; $('[data-project-id]').value=item?.id||''; $('[data-project-kind]').value=item?.kind||'project'; $('[data-project-title]').value=item?.title||''; $('[data-project-system]').value=item?.system||''; $('[data-project-category]').value=item?.category||'Colonization'; $('[data-project-status]').value=item?.status||'active'; $('[data-project-progress]').value=item?.progress??0; $('[data-project-deadline]').value=item?.deadline||''; $('[data-project-description]').value=item?.description||''; $('[data-project-help]').value=item?.helpRequested||''; $('[data-project-target]').value=item?.target||''; $('[data-project-official]').value=item?.official?'true':'false'; $('[data-project-delete]').hidden=!item; $('[data-project-form-status]').textContent=''; updateManagerFields();}
-  function closeEditor(){if(dirty&&!confirm('Discard unsaved project changes?'))return; shell.hidden=true; document.body.classList.remove('project-editor-open'); editing=null;dirty=false;}
-  function updateManagerFields(){const manager=session&&['officer','site_admin'].includes(session.access); $('[data-project-kind-wrap]').hidden=!manager; $('[data-project-official-wrap]').hidden=!manager; if(!manager)$('[data-project-kind]').value='project';}
-  function payload(){return {id:$('[data-project-id]').value||undefined,kind:$('[data-project-kind]').value,title:$('[data-project-title]').value,system:$('[data-project-system]').value,category:$('[data-project-category]').value,status:$('[data-project-status]').value,progress:Number($('[data-project-progress]').value)||0,deadline:$('[data-project-deadline]').value,official:$('[data-project-official]').value==='true',description:$('[data-project-description]').value,helpRequested:$('[data-project-help]').value,target:$('[data-project-target]').value};}
-  async function save(e){e.preventDefault(); const target=$('[data-project-form-status]'); target.textContent='Saving…'; const body=payload(); const method=editing?'PUT':'POST'; const {r,p}=await apiFetch('/api/projects',{method,headers:{'Content-Type':'application/json','X-Mongrels-Request':'projects-editor'},body:JSON.stringify(body)}); if(!r.ok){target.textContent=p.error||'Unable to save project.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open');}
-  async function remove(){if(!editing||!confirm('Delete this project? This cannot be undone.'))return; const {r,p}=await apiFetch(`/api/projects?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'projects-editor'}}); if(!r.ok){$('[data-project-form-status]').textContent=p.error||'Unable to delete project.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open');}
-  async function load(){const {r,p}=await apiFetch('/api/projects'); if(!r.ok){grid.innerHTML='<div class="data-empty-state"><span class="data-empty-icon">!</span><div><strong>Project board unavailable.</strong><p>The secure project service could not be reached.</p></div></div>';return;} session=p.viewer; items=Array.isArray(p.items)?p.items:[]; signedOut.hidden=true; board.hidden=false; render();}
-  document.querySelectorAll('[data-project-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-project-filter]').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.projectFilter;render();}));
-  $('[data-project-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-project-cancel]').forEach(x=>x.addEventListener('click',closeEditor)); form?.addEventListener('submit',save); form?.addEventListener('input',()=>dirty=true); $('[data-project-delete]')?.addEventListener('click',remove);
-  window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
-  apiFetch('/api/auth/session').then(({r,p})=>{if(r.ok&&p.authenticated&&['member','officer','site_admin'].includes(p.access)){session=p;load();}else{signedOut.hidden=false;board.hidden=true;}}).catch(()=>{});
+
+  function filteredItems() {
+    const list = items.filter(item => {
+      if (filter === 'mine') return item.isMine;
+      if (filter === 'archive') return item.status === 'complete';
+      if (filter === 'events') return item.kind === 'event' && item.status !== 'complete';
+      if (filter === 'member') return item.kind === 'project' && !item.official && item.status !== 'complete';
+      if (filter === 'official') return item.kind === 'project' && item.official && item.status !== 'complete';
+      return item.kind === 'project' && item.status !== 'complete';
+    });
+    return sortProjects(list);
+  }
+
+  function render() {
+    const active = items.filter(i => i.kind === 'project' && i.status !== 'complete').length;
+    const events = items.filter(i => i.kind === 'event' && i.status !== 'complete').length;
+    const mine = items.filter(i => i.isMine && i.status !== 'complete').length;
+    const archive = items.filter(i => i.status === 'complete').length;
+
+    $('[data-project-count-active]').textContent = active;
+    $('[data-project-count-events]').textContent = events;
+    $('[data-project-count-mine]').textContent = mine;
+    $('[data-project-count-archive]').textContent = archive;
+
+    const list = filteredItems();
+    grid.replaceChildren();
+    empty.hidden = list.length > 0;
+
+    list.forEach(item => {
+      const card = document.createElement('article');
+      card.className = `project-card${item.kind === 'event' ? ' project-card-event' : ''}${item.official ? ' project-card-official' : ''}`;
+
+      const system = item.system
+        ? `<div class="project-system"><span>${safe(item.system)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(item.system)}" aria-label="Copy system name">⧉</button></div>`
+        : '';
+
+      const progress = item.kind === 'project'
+        ? `<div class="project-progress"><div><span>Progress</span><strong>${Number(item.progress) || 0}%</strong></div><div class="project-progress-track"><span style="width:${Math.max(0, Math.min(100, Number(item.progress) || 0))}%"></span></div></div>`
+        : '';
+
+      const help = item.helpRequested
+        ? `<div class="project-help"><span>Help Requested</span><p>${safe(item.helpRequested)}</p></div>`
+        : '';
+
+      const target = item.target
+        ? `<div class="project-target"><span>Goal / Target</span><strong>${safe(item.target)}</strong></div>`
+        : '';
+
+      const dateCallout = item.deadline
+        ? `<div class="project-date-callout ${item.kind === 'event' ? 'event-date' : ''}"><span>${item.kind === 'event' ? 'Event Date' : 'Target Date'}</span><strong>${safe(formatDate(item.deadline))}</strong></div>`
+        : '';
+
+      card.innerHTML = `
+        <div class="project-card-top">
+          <div class="project-badges">
+            <span class="project-type ${item.official ? 'official' : ''}">${item.official ? 'Squad ' : 'Member '}${item.kind === 'event' ? 'Event' : 'Project'}</span>
+            <span class="project-status">${safe(statusLabel(item.status))}</span>
+          </div>
+          ${item.canEdit ? '<button class="btn btn-secondary project-edit-btn" type="button">Edit</button>' : ''}
+        </div>
+        <p class="eyebrow">${safe(item.category || 'Project')}</p>
+        <h3>${safe(item.title)}</h3>
+        ${dateCallout}
+        ${system}
+        <p class="project-description">${safe(item.description)}</p>
+        ${help}
+        ${target}
+        ${progress}
+        <div class="project-card-meta"><span>Posted by <strong>${safe(item.ownerName)}</strong></span></div>`;
+
+      card.querySelector('[data-copy-system]')?.addEventListener('click', e => copyText(item.system, e.currentTarget));
+      card.querySelector('.project-edit-btn')?.addEventListener('click', () => openEditor(item));
+      grid.appendChild(card);
+    });
+  }
+
+  function updateEditorLabels() {
+    const isEvent = $('[data-project-kind]').value === 'event';
+    const dateLabel = $('[data-project-date-label]');
+    if (dateLabel) dateLabel.textContent = isEvent ? 'Event date' : 'Target / deadline date';
+    $('[data-project-progress]').closest('label').hidden = isEvent;
+    $('[data-project-target]').closest('label').hidden = isEvent;
+  }
+
+  function openEditor(item = null) {
+    editing = item;
+    dirty = false;
+    shell.hidden = false;
+    document.body.classList.add('project-editor-open');
+    $('[data-project-form-title]').textContent = item ? 'Edit Project' : 'New Project';
+    $('[data-project-id]').value = item?.id || '';
+    $('[data-project-kind]').value = item?.kind || 'project';
+    $('[data-project-title]').value = item?.title || '';
+    $('[data-project-system]').value = item?.system || '';
+    $('[data-project-category]').value = item?.category || 'Colonization';
+    $('[data-project-status]').value = item?.status || 'active';
+    $('[data-project-progress]').value = item?.progress ?? 0;
+    $('[data-project-deadline]').value = item?.deadline || '';
+    $('[data-project-description]').value = item?.description || '';
+    $('[data-project-help]').value = item?.helpRequested || '';
+    $('[data-project-target]').value = item?.target || '';
+    $('[data-project-official]').value = item?.official ? 'true' : 'false';
+    $('[data-project-delete]').hidden = !item;
+    $('[data-project-form-status]').textContent = '';
+    updateManagerFields();
+    updateEditorLabels();
+  }
+
+  function closeEditor() {
+    if (dirty && !confirm('Discard unsaved project changes?')) return;
+    shell.hidden = true;
+    document.body.classList.remove('project-editor-open');
+    editing = null;
+    dirty = false;
+  }
+
+  function updateManagerFields() {
+    const manager = session && ['officer', 'site_admin'].includes(session.access);
+    $('[data-project-kind-wrap]').hidden = !manager;
+    $('[data-project-official-wrap]').hidden = !manager;
+    if (!manager) $('[data-project-kind]').value = 'project';
+  }
+
+  function payload() {
+    return {
+      id: $('[data-project-id]').value || undefined,
+      kind: $('[data-project-kind]').value,
+      title: $('[data-project-title]').value,
+      system: $('[data-project-system]').value,
+      category: $('[data-project-category]').value,
+      status: $('[data-project-status]').value,
+      progress: Number($('[data-project-progress]').value) || 0,
+      deadline: $('[data-project-deadline]').value,
+      official: $('[data-project-official]').value === 'true',
+      description: $('[data-project-description]').value,
+      helpRequested: $('[data-project-help]').value,
+      target: $('[data-project-target]').value,
+    };
+  }
+
+  async function save(event) {
+    event.preventDefault();
+    const target = $('[data-project-form-status]');
+    target.textContent = 'Saving…';
+    const body = payload();
+    const method = editing ? 'PUT' : 'POST';
+    const { response, payload: result } = await apiFetch('/api/projects', {
+      method,
+      headers: { 'Content-Type': 'application/json', 'X-Mongrels-Request': 'projects-editor' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      target.textContent = result.error || 'Unable to save project.';
+      return;
+    }
+    dirty = false;
+    await load();
+    shell.hidden = true;
+    document.body.classList.remove('project-editor-open');
+  }
+
+  async function remove() {
+    if (!editing || !confirm('Delete this project? This cannot be undone.')) return;
+    const { response, payload: result } = await apiFetch(`/api/projects?id=${encodeURIComponent(editing.id)}`, {
+      method: 'DELETE',
+      headers: { 'X-Mongrels-Request': 'projects-editor' },
+    });
+    if (!response.ok) {
+      $('[data-project-form-status]').textContent = result.error || 'Unable to delete project.';
+      return;
+    }
+    dirty = false;
+    await load();
+    shell.hidden = true;
+    document.body.classList.remove('project-editor-open');
+  }
+
+  async function load() {
+    const { response, payload } = await apiFetch('/api/projects');
+    if (!response.ok) {
+      grid.innerHTML = '<div class="data-empty-state"><span class="data-empty-icon">!</span><div><strong>Project board unavailable.</strong><p>The secure project service could not be reached.</p></div></div>';
+      return;
+    }
+    session = payload.viewer;
+    items = Array.isArray(payload.items) ? payload.items : [];
+    signedOut.hidden = true;
+    board.hidden = false;
+    render();
+  }
+
+  document.querySelectorAll('[data-project-filter]').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('[data-project-filter]').forEach(x => x.classList.remove('active'));
+    button.classList.add('active');
+    filter = button.dataset.projectFilter;
+    render();
+  }));
+
+  document.querySelectorAll('[data-project-create]').forEach(button => button.addEventListener('click', () => openEditor()));
+  document.querySelectorAll('[data-project-cancel]').forEach(button => button.addEventListener('click', closeEditor));
+  form?.addEventListener('submit', save);
+  form?.addEventListener('input', () => { dirty = true; });
+  $('[data-project-kind]')?.addEventListener('change', () => { dirty = true; updateEditorLabels(); });
+  $('[data-project-delete]')?.addEventListener('click', remove);
+
+  window.addEventListener('beforeunload', event => {
+    if (dirty) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
+
+  apiFetch('/api/auth/session').then(({ response, payload }) => {
+    if (response.ok && payload.authenticated && ['member', 'officer', 'site_admin'].includes(payload.access)) {
+      session = payload;
+      load();
+    } else {
+      signedOut.hidden = false;
+      board.hidden = true;
+    }
+  }).catch(() => {});
 })();

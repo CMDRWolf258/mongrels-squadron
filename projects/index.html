@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607">
   <title>Projects & Events | The Mongrels</title>
   <meta name="description" content="Private Mongrel project board for squad initiatives, member help requests, and upcoming events.">
-  <link rel="stylesheet" href="../css/global.css?v=46">
+  <link rel="stylesheet" href="../css/global.css?v=47">
 </head>
 <body>
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -23,6 +23,14 @@
         <div><p class="eyebrow">Member Project Board</p><h2>What the pack is working on</h2><p>Member postings belong to their creator. Officers can moderate the board and publish official squad initiatives.</p></div>
         <button class="btn btn-primary" type="button" data-project-create>New Project</button>
       </div>
+      <aside class="projects-invite-card" aria-label="Ideas for member projects">
+        <div>
+          <p class="eyebrow">Need a hand?</p>
+          <h3>Post it here.</h3>
+          <p>Ask the pack for colonization hauling, carrier loading, mining support, escorts, expeditions, engineering help, or help organizing a squad activity. If other Mongrels can help, it belongs here.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" data-project-create>Start a Post</button>
+      </aside>
       <div class="projects-summary-grid">
         <article><span>Active Projects</span><strong data-project-count-active>0</strong></article>
         <article><span>Upcoming Events</span><strong data-project-count-events>0</strong></article>
@@ -32,8 +40,10 @@
       <div class="projects-filter-row" role="group" aria-label="Project filters">
         <button class="project-filter active" type="button" data-project-filter="active">Active Projects</button>
         <button class="project-filter" type="button" data-project-filter="events">Upcoming Events</button>
+        <button class="project-filter" type="button" data-project-filter="member">Member Projects</button>
+        <button class="project-filter" type="button" data-project-filter="official">Official Projects</button>
         <button class="project-filter" type="button" data-project-filter="mine">My Posts</button>
-        <button class="project-filter" type="button" data-project-filter="archive">Archive</button>
+        <button class="project-filter" type="button" data-project-filter="archive">Completed / Archived</button>
       </div>
       <div class="projects-grid" data-project-grid></div>
       <div class="data-empty-state" data-project-empty hidden><span class="data-empty-icon">◇</span><div><strong>No posts in this view yet.</strong><p>Create a project if you need help from the squad.</p></div></div>
@@ -52,8 +62,8 @@
         <label><span>Category</span><select data-project-category><option>Colonization</option><option>BGS</option><option>Trade / Hauling</option><option>Mining</option><option>Combat</option><option>PvP</option><option>Anti-Xeno</option><option>Exploration</option><option>Carrier Logistics</option><option>Community</option><option>Other</option></select></label>
         <label><span>Status</span><select data-project-status><option value="planning">Planning</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="complete">Complete</option></select></label>
         <label><span>Progress</span><input type="number" min="0" max="100" step="1" value="0" data-project-progress></label>
-        <label><span>Deadline / Event date</span><input type="date" data-project-deadline></label>
-        <label data-project-official-wrap hidden><span>Posting</span><select data-project-official><option value="false">Personal / Member Project</option><option value="true">Official Squad Posting</option></select></label>
+        <label><span data-project-date-label>Deadline / Event date</span><input type="date" data-project-deadline></label>
+        <label data-project-official-wrap hidden><span>Project Type</span><select data-project-official><option value="false">Member Project</option><option value="true">Official Squadron Project</option></select></label>
         <label class="project-editor-wide"><span>Description</span><textarea rows="4" maxlength="1600" required data-project-description placeholder="What are you working on and why?"></textarea></label>
         <label class="project-editor-wide"><span>Help Requested</span><textarea rows="3" maxlength="1200" data-project-help placeholder="What kind of help do you need from other members?"></textarea></label>
         <label class="project-editor-wide"><span>Goal / Target</span><input type="text" maxlength="220" data-project-target placeholder="Optional quantity, milestone, or completion target"></label>
@@ -63,5 +73,5 @@
   </section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=46"></script><script src="../js/auth-ui.js?v=46"></script><script src="../js/projects.js?v=46"></script>
+<script src="../js/site.js?v=47"></script><script src="../js/auth-ui.js?v=47"></script><script src="../js/projects.js?v=47"></script>
 </body></html>
