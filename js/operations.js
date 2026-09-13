@@ -3,9 +3,9 @@
   const watchEl = document.getElementById('watchList');
   const tableBody = document.getElementById('systemsTableBody');
   const updatedEl = document.getElementById('systemsUpdated');
-  const summaryTracked = document.getElementById('summaryTracked');
-  const summaryControlled = document.getElementById('summaryControlled');
   const summaryPriority = document.getElementById('summaryPriority');
+  const summaryAttention = document.getElementById('summaryAttention');
+  const summaryActiveOrders = document.getElementById('summaryActiveOrders');
   const summaryUpdated = document.getElementById('summaryUpdated');
   const searchEl = document.getElementById('systemSearch');
   const filterEl = document.getElementById('systemFilter');
@@ -24,6 +24,13 @@
   const isPriority = system => system.priority === true || priorityNames.has(system.name);
   const isWatch = system => Boolean(system.watch || system.alert || (Array.isArray(system.alerts) && system.alerts.length));
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+  const systemNameMarkup = (name, heading = false) => {
+    const value = safe(name, 'Unnamed system');
+    const tag = heading ? 'h3' : 'strong';
+    const wrapper = heading ? 'div' : 'span';
+    return `<${wrapper} class="operation-system-name"><${tag}>${html(value)}</${tag}><button class="system-copy-button operation-system-copy" type="button" data-copy-system="${html(value)}" aria-label="Copy system name ${html(value)}" title="Copy system name">⧉</button></${wrapper}>`;
+  };
 
   function parseDate(value) {
     if (!value) return null;
@@ -74,10 +81,13 @@
 
   function renderSummary(lastUpdated) {
     const priorityCount = systems.filter(isPriority).length;
-    const controlledCount = systems.filter(controlled).length;
-    if (summaryTracked) summaryTracked.textContent = systems.length ? systems.length.toLocaleString() : '0';
-    if (summaryControlled) summaryControlled.textContent = controlledCount.toLocaleString();
+    const attentionCount = systems.filter(system => {
+      const target = targetStatus(system);
+      return isWatch(system) || (target && target.key !== 'in');
+    }).length;
     if (summaryPriority) summaryPriority.textContent = priorityCount.toLocaleString();
+    if (summaryAttention) summaryAttention.textContent = attentionCount.toLocaleString();
+    if (summaryActiveOrders && !summaryActiveOrders.dataset.resolved) summaryActiveOrders.textContent = '—';
     if (summaryUpdated) summaryUpdated.textContent = lastUpdated || 'Pending';
   }
 
@@ -120,7 +130,7 @@
           <div class="priority-card-tags"><span class="tag">Priority</span>${system.region ? `<span class="tag quiet-tag">${html(system.region)}</span>` : ''}${liveTag(system)}</div>
           <span class="priority-updated">${html(safe(system.updated, 'Awaiting update'))}</span>
         </div>
-        <h3>${html(safe(system.name, 'Unnamed system'))}</h3>
+        ${systemNameMarkup(system.name, true)}
         <div class="priority-influence-block">
           <div><span>Mongrel Influence</span><strong>${influence(system.influence)}</strong></div>
           ${progressBar(system.influence, system)}
@@ -144,7 +154,7 @@
     watchEl.innerHTML = rows.map(system => {
       const alerts = Array.isArray(system.alerts) ? system.alerts : [system.alert || system.watch].filter(Boolean);
       return `<article class="bgs-watch-card">
-        <div><span class="bgs-watch-label">Watch</span><h3>${html(safe(system.name))}</h3></div>
+        <div><span class="bgs-watch-label">Watch</span>${systemNameMarkup(system.name, true)}</div>
         <div class="bgs-watch-alerts">${alerts.map(a => `<span>${html(a)}</span>`).join('')}</div>
         <p>${html(safe(system.watchNote || system.objective, 'Operational attention recommended.'))}</p>
       </article>`;
@@ -182,7 +192,7 @@
 
     tableBody.innerHTML = rows.map(system => `
       <tr>
-        <td><strong>${html(safe(system.name))}</strong>${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}<small>${liveTag(system)}</small></td>
+        <td>${systemNameMarkup(system.name)}${system.region || system.note ? `<small>${html([system.region, system.note].filter(Boolean).join(' · '))}</small>` : ''}<small>${liveTag(system)}</small></td>
         <td>${html(safe(system.control))}</td>
         <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${targetStatus(system) ? `<small class="table-target-status target-${targetStatus(system).key}">${html(targetStatus(system).label)}</small>` : ''}</td>
         <td>${html(safe(system.state))}${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<small>Pending: ${html(system.pendingStates.join(', '))}</small>` : ''}</td>
@@ -209,6 +219,48 @@
     });
   }
 
+  window.addEventListener('mongrels:orders-loaded', event => {
+    if (!summaryActiveOrders) return;
+    const detail = event.detail || {};
+    summaryActiveOrders.dataset.resolved = 'true';
+    summaryActiveOrders.textContent = detail.authenticated ? String(detail.activeCount ?? 0) : '—';
+  });
+
+  const copySystemName = async button => {
+    const value = button?.dataset?.copySystem || '';
+    if (!value) return;
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        copied = true;
+      }
+    } catch {}
+    if (!copied) {
+      const fallback = document.createElement('textarea');
+      fallback.value = value;
+      fallback.setAttribute('readonly', '');
+      fallback.style.position = 'fixed';
+      fallback.style.opacity = '0';
+      document.body.appendChild(fallback);
+      fallback.select();
+      copied = document.execCommand('copy');
+      fallback.remove();
+    }
+    const original = button.textContent;
+    button.textContent = copied ? '✓' : '!';
+    button.title = copied ? 'Copied' : 'Copy failed';
+    window.setTimeout(() => {
+      button.textContent = original;
+      button.title = 'Copy system name';
+    }, 1300);
+  };
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest('.operation-system-copy');
+    if (button) copySystemName(button);
+  });
+
   Promise.all([
     fetch('../data/systems.json', {cache:'no-store'}).then(response => {
       if (!response.ok) throw new Error('Unable to load system configuration');
@@ -232,6 +284,7 @@
     .catch(() => {
       if (updatedEl) updatedEl.textContent = 'Connection pending';
       if (summaryUpdated) summaryUpdated.textContent = 'Pending';
+      if (summaryAttention) summaryAttention.textContent = '—';
       if (liveStatusEl) liveStatusEl.textContent = 'BGS data unavailable';
     });
 

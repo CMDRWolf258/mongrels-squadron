@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
   <title>Operations | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=43">
+  <link rel="stylesheet" href="../css/global.css?v=44">
 </head>
 <body>
 <header class="site-header">
@@ -37,9 +37,9 @@
     <div class="container">
       <nav class="section-jump-nav">
         <a href="#overview">Overview</a>
+        <a href="#daily-orders">Daily Orders</a>
         <a href="#priority">Priority Systems</a>
         <a href="#watch">Watch List</a>
-        <a href="#daily-orders">Daily Orders</a>
         <a href="#all-systems">All Systems</a>
         <a href="#resources">Resources</a>
       </nav>
@@ -49,57 +49,10 @@
   <section id="overview" class="section-sm operations-overview-section">
     <div class="container">
       <div class="bgs-summary-grid" aria-label="BGS summary">
-        <article class="bgs-summary-card"><span>Systems Tracked</span><strong id="summaryTracked">—</strong><small>Faction presence</small></article>
-        <article class="bgs-summary-card"><span>Mongrel Control</span><strong id="summaryControlled">—</strong><small>Controlled systems</small></article>
-        <article class="bgs-summary-card"><span>Priority Focus</span><strong id="summaryPriority">—</strong><small>Highlighted systems</small></article>
+        <article class="bgs-summary-card"><span>Priority Systems</span><strong id="summaryPriority">—</strong><small>Current strategic focus</small></article>
+        <article class="bgs-summary-card"><span>Systems Needing Attention</span><strong id="summaryAttention">—</strong><small>Outside target or on watch</small></article>
+        <article class="bgs-summary-card"><span>Active Orders</span><strong id="summaryActiveOrders">—</strong><small>Members-only tasking</small></article>
         <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest BGS snapshot</small></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-sm operations-briefing-section">
-    <div class="container">
-      <div class="operations-briefing-grid">
-        <article class="operations-briefing-card">
-          <p class="eyebrow">Public Strategic Picture</p>
-          <h2>Know where the squad stands.</h2>
-          <p>Priority systems, influence targets, states, and public objectives remain visible so members can understand the larger strategic picture without exposing exact daily tasking.</p>
-        </article>
-        <article class="operations-briefing-card operations-briefing-private">
-          <p class="eyebrow">Private Operational Tasking</p>
-          <h2>Exact orders stay inside the pack.</h2>
-          <p>Specific INF targets, bounty turn-ins, support and avoid instructions, stop conditions, and officer notes will require Discord-authenticated member access.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section id="priority" class="section operations-priority-section">
-    <div class="container">
-      <div class="section-heading">
-        <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
-        <p>Leadership can promote or remove systems from this board by changing a single flag in the data file. The cards are built for the few systems that deserve attention at a glance.</p>
-      </div>
-      <div id="prioritySystems" class="priority-system-grid" aria-live="polite">
-        <div class="data-empty-state">
-          <span class="data-empty-icon">◇</span>
-          <div><strong>No priority systems posted yet.</strong><p>Once we add the first BGS snapshot, selected systems will appear here automatically.</p></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="watch" class="section-sm">
-    <div class="container">
-      <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
-        <p>Public-facing alerts for systems that need attention. Exact tasking can remain private even when members can see that a system is worth watching.</p>
-      </div>
-      <div id="watchList" class="bgs-watch-grid" aria-live="polite">
-        <div class="data-empty-state slim-empty">
-          <span class="data-empty-icon">△</span>
-          <div><strong>No watch-list alerts.</strong><p>Conflict, expansion, retreat risk, elections, or other notable states can be surfaced here.</p></div>
-        </div>
       </div>
     </div>
   </section>
@@ -185,6 +138,36 @@
     </div>
   </section>
 
+  <section id="priority" class="section operations-priority-section">
+    <div class="container">
+      <div class="section-heading">
+        <div><p class="eyebrow">Priority Systems</p><h2>Current Focus</h2></div>
+        <p>Leadership can promote or remove systems from this board by changing a single flag in the data file. The cards are built for the few systems that deserve attention at a glance.</p>
+      </div>
+      <div id="prioritySystems" class="priority-system-grid" aria-live="polite">
+        <div class="data-empty-state">
+          <span class="data-empty-icon">◇</span>
+          <div><strong>No priority systems posted yet.</strong><p>Once we add the first BGS snapshot, selected systems will appear here automatically.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="watch" class="section-sm">
+    <div class="container">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">Operational Awareness</p><h2>Watch List</h2></div>
+        <p>Public-facing alerts for systems that need attention. Exact tasking can remain private even when members can see that a system is worth watching.</p>
+      </div>
+      <div id="watchList" class="bgs-watch-grid" aria-live="polite">
+        <div class="data-empty-state slim-empty">
+          <span class="data-empty-icon">△</span>
+          <div><strong>No watch-list alerts.</strong><p>Conflict, expansion, retreat risk, elections, or other notable states can be surfaced here.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="all-systems" class="section all-systems-section">
     <div class="container">
       <div class="section-heading">
@@ -242,8 +225,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=43"></script>
-<script src="../js/operations.js"></script>
-<script src="../js/daily-orders.js?v=43"></script>
+<script src="../js/site.js?v=44"></script>
+<script src="../js/operations.js?v=44"></script>
+<script src="../js/daily-orders.js?v=44"></script>
 </body>
 </html>

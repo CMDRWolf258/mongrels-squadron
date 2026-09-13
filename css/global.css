@@ -472,3 +472,27 @@ button{color:inherit}
   .menu-toggle{display:inline-flex}
 }
 @media (max-width:520px){.nav-links{top:69px}}
+
+/* v44 — Operations-first usability batch */
+/* Keep section-anchor arrivals tucked beneath the sticky main + shortcut headers. */
+#overview,#daily-orders,#priority,#watch,#all-systems,#resources{scroll-margin-top:142px}
+
+/* Reusable system-name copy affordance across Operations cards and tables. */
+.operation-system-name{display:inline-flex;align-items:center;gap:7px;max-width:100%;vertical-align:middle}
+.operation-system-name h3,.operation-system-name strong{min-width:0;margin:0;overflow-wrap:anywhere}
+.priority-system-card>.operation-system-name{display:flex;width:max-content;max-width:100%;margin:18px 0 20px}
+.priority-system-card>.operation-system-name h3{font-size:clamp(1.35rem,2.4vw,2rem);letter-spacing:-.02em}
+.bgs-watch-card .operation-system-name{display:flex;width:max-content;max-width:100%;margin:5px 0 12px}
+.bgs-watch-card .operation-system-name h3{font-size:1.12rem}
+.systems-table .operation-system-name{align-items:center}
+.systems-table .operation-system-name strong{display:inline;color:var(--text)}
+.operation-system-copy{width:22px;height:22px;border-radius:6px;font-size:.72rem}
+
+/* Daily Orders now follows the status row as the primary member action. */
+.operations-overview-section{padding-bottom:6px}
+.private-orders-section{padding-top:18px;padding-bottom:42px}
+.operations-priority-section{border-top:1px solid rgba(255,255,255,.045)}
+
+@media(max-width:900px){
+  #overview,#daily-orders,#priority,#watch,#all-systems,#resources{scroll-margin-top:128px}
+}

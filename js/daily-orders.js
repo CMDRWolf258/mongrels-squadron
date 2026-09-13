@@ -25,11 +25,27 @@
   const editorStatus = section.querySelector('[data-orders-editor-status]');
 
   let currentPayload = null;
+  let editorBaseline = '';
+  let editorDirty = false;
 
   const setView = view => {
     if (locked) locked.hidden = view !== 'locked';
     if (loading) loading.hidden = view !== 'loading';
     if (memberPanel) memberPanel.hidden = view !== 'member';
+  };
+
+  const activeOrderCount = orders => (Array.isArray(orders) ? orders : []).filter(order => {
+    const status = String(order?.status || '').trim().toLowerCase();
+    return !['complete', 'completed', 'closed', 'cancelled', 'canceled', 'inactive'].includes(status);
+  }).length;
+
+  const announceOrders = payload => {
+    window.dispatchEvent(new CustomEvent('mongrels:orders-loaded', {
+      detail: {
+        authenticated: Boolean(payload),
+        activeCount: payload ? activeOrderCount(payload.orders) : null,
+      },
+    }));
   };
 
   const escapeText = value => String(value == null ? '' : value);
@@ -71,6 +87,7 @@
 
   const renderOrders = payload => {
     currentPayload = payload;
+    announceOrders(payload);
 
     if (title) title.textContent = payload.title || 'Squadron Daily Orders';
     if (briefing) briefing.textContent = payload.briefing || '';
@@ -210,7 +227,10 @@
     remove.type = 'button';
     remove.className = 'orders-editor-remove';
     remove.textContent = 'Remove';
-    remove.addEventListener('click', () => card.remove());
+    remove.addEventListener('click', () => {
+      card.remove();
+      refreshDirtyState();
+    });
 
     card.append(system, row, task, detail, remove);
     return card;
@@ -238,6 +258,8 @@
     editorList.replaceChildren();
     const orders = Array.isArray(payload.orders) ? payload.orders : [];
     orders.forEach(order => editorList.appendChild(createOrderEditor(order)));
+    editorBaseline = JSON.stringify(collectEditorPayload());
+    editorDirty = false;
   };
 
   const collectEditorPayload = () => {
@@ -261,6 +283,16 @@
       officerNote: editNote?.value?.trim() || '',
       orders,
     };
+  };
+
+  const refreshDirtyState = () => {
+    if (!editor || editor.hidden || !editorBaseline) return;
+    editorDirty = JSON.stringify(collectEditorPayload()) !== editorBaseline;
+  };
+
+  const discardUnsavedChanges = () => {
+    if (!editorDirty) return true;
+    return window.confirm('Discard unpublished Daily Orders changes?');
   };
 
   const setEditorStatus = (message, state = '') => {
@@ -294,6 +326,7 @@
       if (!response.ok) throw new Error(payload.error || `Save failed (${response.status})`);
 
       renderOrders(payload);
+      editorDirty = false;
       setEditorStatus('Orders published.', 'success');
       if (editor) editor.hidden = true;
       if (editorToggle) editorToggle.textContent = 'Edit Orders';
@@ -330,6 +363,7 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || `Clear failed (${response.status})`);
       renderOrders(payload);
+      editorDirty = false;
       setEditorStatus('Published orders cleared.', 'success');
       if (editor) editor.hidden = true;
       if (editorToggle) editorToggle.textContent = 'Edit Orders';
@@ -345,19 +379,29 @@
   editorToggle?.addEventListener('click', () => {
     if (!editor) return;
     const opening = editor.hidden;
+    if (!opening && !discardUnsavedChanges()) return;
     editor.hidden = !opening;
     editorToggle.textContent = opening ? 'Close Editor' : 'Edit Orders';
     if (opening && currentPayload) populateEditor(currentPayload);
+    if (!opening) editorDirty = false;
   });
 
   addButton?.addEventListener('click', () => {
     if (!editorList || editorList.children.length >= 24) return;
     editorList.appendChild(createOrderEditor({}));
+    refreshDirtyState();
     editorList.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 
   editor?.addEventListener('submit', saveOrders);
+  editor?.addEventListener('input', refreshDirtyState);
+  editor?.addEventListener('change', refreshDirtyState);
   clearButton?.addEventListener('click', clearOrders);
+  window.addEventListener('beforeunload', event => {
+    if (!editorDirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 
   const load = async () => {
     setView('loading');
@@ -370,6 +414,7 @@
       });
 
       if (response.status === 401 || response.status === 403) {
+        announceOrders(null);
         setView('locked');
         return;
       }
@@ -378,6 +423,7 @@
       renderOrders(await response.json());
     } catch (error) {
       console.error('Could not load private Daily Orders', error);
+      announceOrders(null);
       setView('locked');
       const detail = locked?.querySelector('[data-orders-lock-detail]');
       if (detail) detail.textContent = 'The private orders service could not be reached. Public operations data remains available.';
