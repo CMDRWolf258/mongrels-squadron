@@ -41,27 +41,57 @@
   const budget = root.querySelector('[data-assistant-budget]');
 
   const isTouchLayout = () => matchMedia('(max-width: 900px)').matches;
-  const syncViewportHeight = () => {
-    const h = window.visualViewport?.height || window.innerHeight;
-    document.documentElement.style.setProperty('--assistant-vh', `${Math.round(h)}px`);
+  let lockedScrollY = 0;
+
+  const syncKeyboardInset = () => {
+    if (panel.hidden || !isTouchLayout()) {
+      document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) {
+      document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
+      return;
+    }
+    const layoutHeight = window.innerHeight;
+    const obscuredBottom = Math.max(0, layoutHeight - (vv.height + Math.max(0, vv.offsetTop)));
+    const keyboardInset = obscuredBottom > 80 ? obscuredBottom : 0;
+    document.documentElement.style.setProperty('--assistant-keyboard-inset', `${Math.round(keyboardInset)}px`);
   };
-  syncViewportHeight();
-  window.visualViewport?.addEventListener('resize', syncViewportHeight);
-  window.addEventListener('orientationchange', () => setTimeout(syncViewportHeight, 100));
+
+  const lockBackground = () => {
+    if (!isTouchLayout()) return;
+    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add('assistant-open');
+    document.body.classList.add('assistant-open');
+    document.body.style.top = `-${lockedScrollY}px`;
+  };
+
+  const unlockBackground = () => {
+    document.documentElement.classList.remove('assistant-open');
+    document.body.classList.remove('assistant-open');
+    const restoreY = lockedScrollY;
+    document.body.style.top = '';
+    document.documentElement.style.setProperty('--assistant-keyboard-inset', '0px');
+    if (isTouchLayout()) window.scrollTo(0, restoreY);
+  };
+
+  window.visualViewport?.addEventListener('resize', syncKeyboardInset);
+  window.visualViewport?.addEventListener('scroll', syncKeyboardInset);
+  window.addEventListener('orientationchange', () => setTimeout(syncKeyboardInset, 120));
 
   const open = () => {
     panel.hidden=false;
     launcher.setAttribute('aria-expanded','true');
-    document.documentElement.classList.add('assistant-open');
-    document.body.classList.add('assistant-open');
-    syncViewportHeight();
-    setTimeout(() => input?.focus({ preventScroll:true }), 80);
+    lockBackground();
+    syncKeyboardInset();
+    if (!isTouchLayout()) setTimeout(() => input?.focus({ preventScroll:true }), 80);
   };
   const shut = () => {
+    input?.blur();
     panel.hidden=true;
     launcher.setAttribute('aria-expanded','false');
-    document.documentElement.classList.remove('assistant-open');
-    document.body.classList.remove('assistant-open');
+    unlockBackground();
   };
   launcher.addEventListener('click', () => panel.hidden ? open() : shut());
   close.addEventListener('click', shut);
@@ -195,5 +225,7 @@
   });
 
   input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();form.requestSubmit();}});
+  input.addEventListener('focus', () => setTimeout(syncKeyboardInset, 120));
+  input.addEventListener('blur', () => setTimeout(syncKeyboardInset, 120));
   loadSession();
 })();
