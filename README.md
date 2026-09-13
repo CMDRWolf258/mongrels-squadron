@@ -52,3 +52,17 @@ Upload the complete package and let Cloudflare Pages redeploy. Existing v64 stra
 - Added surface-site scouting methodology with coordinates, rig count, terrain, clusters, repeatability, and logistics.
 - Expanded the shared Elite Knowledge Base and Glossary with mining/Rhino entries and enabled Ask the Mongrels retrieval/linking for mining questions.
 - Mission Control: pagination now returns to the All Systems section header, colonization-related Expansion tags below 67% no longer create an Expansion Risk warning, and the BGS playbook is nested under one Choose Your Task disclosure.
+
+
+## v67 — Member Profiles & Squadron Roster
+
+- Added private Discord-authenticated `/members/` squadron roster.
+- Added `/profile/` member detail pages with self-service profile editing.
+- Members can publish CMDR name, tagline, bio, home system, specialties, preferred activities, availability/contact note, carrier info, and up to six showcased ships.
+- Privacy controls allow members to hide their directory entry, Discord display name, bio, carrier data, or ship showcase.
+- Squadron rank and leadership-role fields are Officer/Site Admin managed on the backend; members cannot self-promote by editing request payloads.
+- Officers/Site Admin can edit member profiles for moderation and rank/leadership maintenance.
+- Profile pages automatically show contribution counts from existing Projects, Trader's Outpost, PvP bounties, and registered carriers where available. Registered carrier cards are derived from the existing carrier registry.
+- Added Squadron Roster access to the Member Portal and Officer Tools.
+- Ask the Mongrels can now answer member-directory/specialty questions from directory-visible profiles without receiving Discord IDs or hidden profile data.
+- Profiles reuse the existing `PROJECTS` KV binding under the separate `profiles-v1` key, so no new Cloudflare binding or namespace is required. A dedicated KV/D1 store can be introduced later if the directory becomes large or needs richer history/querying.

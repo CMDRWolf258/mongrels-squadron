@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Member Portal | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=63">
+  <link rel="stylesheet" href="../css/global.css?v=67">
 </head>
 <body>
 <header class="site-header">
@@ -111,6 +111,12 @@
         </article>
 
         <article class="member-command-card">
+          <div class="member-command-card-head"><div><p class="eyebrow">People</p><h3>Squadron Roster</h3></div><span class="member-command-badge">Members</span></div>
+          <p>Find Mongrels by specialty, preferred activity, carrier ownership, or squad role. Create and maintain your own member profile.</p>
+          <a class="btn btn-ghost" href="../members/">Open Squadron Roster</a>
+        </article>
+
+        <article class="member-command-card">
           <div class="member-command-card-head"><div><p class="eyebrow">Combat</p><h3>PvP Tools</h3></div><span class="member-command-badge" data-dashboard-bounty-count>Combat</span></div>
           <p data-dashboard-bounty-summary>Open the private in-game bounty board, PvP training resources, and organized combat tools.</p>
           <div class="member-project-preview" data-dashboard-bounty-preview></div>
@@ -126,6 +132,7 @@
             <a href="../ships/"><strong>Ship Catalogue</strong><span>Published Mongrel builds, roles, engineering level, and EDSY links.</span></a>
             <a href="../trading/"><strong>Trader's Outpost</strong><span>Strategic hauling and member-profit trade opportunities.</span></a>
             <a href="../operations/"><strong>Mission Control</strong><span>Daily Orders, priority systems, watch list, live BGS data, and strategic context.</span></a>
+            <a href="../members/"><strong>Squadron Roster</strong><span>Member profiles, specialties, activity preferences, carriers, and ship showcases.</span></a>
           </div>
         </section>
 
@@ -134,7 +141,7 @@
           <p>Your account can manage approved squad tools. Daily Orders publishing is currently online; additional management controls will appear here as they are built.</p>
           <div class="member-officer-actions">
             <a class="btn btn-primary" href="../operations/#daily-orders">Manage Daily Orders</a>
-            <a class="btn btn-ghost" href="../projects/">Projects & Events</a><a class="btn btn-ghost" href="../carriers/">Carrier Coordination</a>
+            <a class="btn btn-ghost" href="../projects/">Projects & Events</a><a class="btn btn-ghost" href="../carriers/">Carrier Coordination</a><a class="btn btn-ghost" href="../members/">Member Roster</a>
           </div>
         </section>
 
@@ -153,9 +160,9 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=63"></script>
-<script src="../js/auth-ui.js?v=58"></script>
-<script src="../js/member-dashboard.js?v=58"></script>
-<script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=67"></script>
+<script src="../js/auth-ui.js?v=67"></script>
+<script src="../js/member-dashboard.js?v=67"></script>
+<script src="../js/mongrel-assistant.js?v=67"></script>
 </body>
 </html>
