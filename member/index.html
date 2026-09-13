@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#050607">
-  <title>Member Access | The Mongrels</title>
-  <meta name="description" content="Discord-authenticated member portal for the Regiment of Imperial Mongrels.">
-  <link rel="stylesheet" href="../css/global.css?v=44">
+  <title>Member Portal | The Mongrels</title>
+  <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
+  <link rel="stylesheet" href="../css/global.css?v=45">
 </head>
 <body>
 <header class="site-header">
@@ -26,20 +26,20 @@
   <section class="page-hero member-hero">
     <div class="container page-hero-grid">
       <div>
-        <p class="eyebrow">Secure Squadron Access</p>
+        <p class="eyebrow">Squadron Command Network</p>
         <h1>Member Portal</h1>
-        <p>Discord will verify who you are. The Mongrels website will independently decide what you are allowed to see and manage.</p>
+        <p>Your private starting point for current tasking, squad projects, coordination tools, and member resources.</p>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
     </div>
   </section>
 
-  <section class="section member-access-section">
+  <section class="section member-access-section" data-auth-signed-out>
     <div class="container member-access-layout">
-      <article class="member-login-panel" data-auth-signed-out>
-        <p class="eyebrow">Secure Access Online</p>
+      <article class="member-login-panel">
+        <p class="eyebrow">Secure Squadron Access</p>
         <h2>Sign in with Discord</h2>
-        <p>The member portal now uses the Cloudflare-hosted authentication backend. Discord verifies your identity, then the site assigns the appropriate Mongrel access level.</p>
+        <p>Discord verifies your identity. The Mongrels website then assigns your approved Member, Officer, or Site Admin access.</p>
         <div class="member-auth-status">
           <span class="member-auth-indicator" aria-hidden="true"></span>
           <div><strong data-auth-status>Checking authentication…</strong><span data-auth-detail>Looking for the secure member-access backend.</span></div>
@@ -48,21 +48,13 @@
         <p class="member-login-note">Discord tokens and website secrets remain on the Cloudflare backend and are never stored in public JavaScript.</p>
       </article>
 
-      <article class="member-profile-panel" data-auth-profile hidden>
-        <p class="eyebrow">Authenticated</p>
-        <h2 data-member-name>Mongrel Member</h2>
-        <p>Access level: <strong data-member-level>Member</strong></p>
-        <p data-member-session-detail>Secure session active.</p>
-        <a class="btn btn-ghost" href="/api/auth/logout?return=%2Fmember%2F">Sign out</a>
-      </article>
-
       <div class="member-access-explainer">
         <p class="eyebrow">Website Permissions</p>
         <h2>Discord proves identity. The website controls authority.</h2>
-        <p>This separation is intentional. A Discord role can establish membership or officer status, but it does not grant ownership of the website.</p>
+        <p>A Discord role can establish membership or officer status, but it does not grant ownership of the website.</p>
         <div class="member-role-grid">
-          <article><span>01</span><h3>Public</h3><p>Recruitment, history, rules, public ship builds, public BGS status, gallery, and other open squad resources.</p></article>
-          <article><span>02</span><h3>Member</h3><p>Private Daily Orders, internal projects, member resources, and future squad-only tools.</p></article>
+          <article><span>01</span><h3>Public</h3><p>Recruitment, history, rules, public builds, BGS status, gallery, and open squad resources.</p></article>
+          <article><span>02</span><h3>Member</h3><p>Daily Orders, internal projects, coordination resources, and member-only tools.</p></article>
           <article><span>03</span><h3>Officer</h3><p>Member access plus approved management tools such as publishing operational tasking.</p></article>
           <article class="member-role-admin"><span>04</span><h3>Site Admin</h3><p>Website access rules, security configuration, and administrative controls. This level remains Wolf only.</p></article>
         </div>
@@ -70,17 +62,76 @@
     </div>
   </section>
 
-  <section class="section-sm member-roadmap-section">
+  <section class="section member-dashboard-section" data-auth-profile hidden>
     <div class="container">
-      <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Authentication Milestone</p><h2>Secure identity and access are now connected</h2></div>
-        <p>The next phase is to move actual member-only information behind protected endpoints and verify Member/Officer role mapping with additional accounts.</p>
+      <div class="member-dashboard-head">
+        <div>
+          <p class="eyebrow">Authenticated Squadron Access</p>
+          <h2>Welcome back, <span data-member-name>Mongrel</span></h2>
+          <p>Start with today's tasking, then move into whichever squad activity you need.</p>
+        </div>
+        <div class="member-dashboard-identity">
+          <span>Access</span>
+          <strong data-member-level>Member</strong>
+          <small data-member-session-detail>Secure session active.</small>
+          <a href="/api/auth/logout?return=%2Fmember%2F">Sign out</a>
+        </div>
       </div>
-      <div class="member-roadmap-grid">
-        <article><strong>Discord OAuth</strong><p>Online now. Members authenticate directly with Discord instead of creating another password.</p></article>
-        <article><strong>Server Membership</strong><p>Online now. The backend checks the signed-in Commander against the Mongrels Discord server.</p></article>
-        <article><strong>Role Mapping</strong><p>Configured. Selected Discord roles map to Member or Officer access; Site Admin is pinned separately to Wolf's Discord user ID.</p></article>
-        <article><strong>Protected Data</strong><p>Next. Daily Orders and other private information will move behind authenticated API endpoints rather than public JSON files.</p></article>
+
+      <div class="member-command-grid">
+        <article class="member-command-card member-command-primary" data-dashboard-orders>
+          <div class="member-command-card-head">
+            <div><p class="eyebrow">Today</p><h3>Daily Orders</h3></div>
+            <span class="member-command-badge" data-dashboard-orders-count>Checking…</span>
+          </div>
+          <p data-dashboard-orders-summary>Loading current squadron tasking.</p>
+          <div class="member-order-preview" data-dashboard-orders-preview></div>
+          <a class="btn btn-primary" href="../operations/#daily-orders">Open Daily Orders</a>
+        </article>
+
+        <article class="member-command-card">
+          <div class="member-command-card-head"><div><p class="eyebrow">Campaigns</p><h3>Projects & Events</h3></div><span class="member-command-badge">Next Phase</span></div>
+          <p>Track active squad initiatives, construction efforts, expeditions, campaigns, and scheduled events.</p>
+          <a class="btn btn-ghost" href="../projects/">View Projects</a>
+        </article>
+
+        <article class="member-command-card">
+          <div class="member-command-card-head"><div><p class="eyebrow">Logistics</p><h3>Carrier Coordination</h3></div><span class="member-command-badge">Fleet</span></div>
+          <p>Find squad carriers, current locations, services, and the movement board for planned jumps.</p>
+          <a class="btn btn-ghost" href="../carriers/">Open Carrier Board</a>
+        </article>
+
+        <article class="member-command-card">
+          <div class="member-command-card-head"><div><p class="eyebrow">Combat</p><h3>PvP Tools</h3></div><span class="member-command-badge">Combat</span></div>
+          <p>Jump to the squad's PvP hub, bounty board framework, and future integrated combat statistics.</p>
+          <a class="btn btn-ghost" href="../pvp/">Open PvP Hub</a>
+        </article>
+      </div>
+
+      <div class="member-dashboard-columns">
+        <section class="member-resource-panel">
+          <div class="member-panel-heading"><div><p class="eyebrow">Quick Access</p><h3>Member Resources</h3></div></div>
+          <div class="member-resource-links">
+            <a href="../about/#rules"><strong>Rules & ROE</strong><span>Open Play, BGS conduct, combat logging, and squad standards.</span></a>
+            <a href="../ships/"><strong>Ship Catalogue</strong><span>Published Mongrel builds, roles, engineering level, and EDSY links.</span></a>
+            <a href="../trading/"><strong>Trader's Outpost</strong><span>Strategic hauling and member-profit trade opportunities.</span></a>
+            <a href="../operations/"><strong>Operations</strong><span>Priority systems, watch list, live BGS data, and strategic context.</span></a>
+          </div>
+        </section>
+
+        <section class="member-resource-panel member-officer-panel" data-dashboard-officer hidden>
+          <div class="member-panel-heading"><div><p class="eyebrow">Leadership</p><h3>Officer Tools</h3></div><span>Officer+</span></div>
+          <p>Your account can manage approved squad tools. Daily Orders publishing is currently online; additional management controls will appear here as they are built.</p>
+          <div class="member-officer-actions">
+            <a class="btn btn-primary" href="../operations/#daily-orders">Manage Daily Orders</a>
+            <a class="btn btn-ghost" href="../projects/">Projects & Events</a>
+          </div>
+        </section>
+
+        <section class="member-resource-panel" data-dashboard-member-note>
+          <div class="member-panel-heading"><div><p class="eyebrow">Member Network</p><h3>More Tools Coming</h3></div></div>
+          <p>This dashboard is designed to grow with private projects, carrier coordination, PvP integration, and eventually the Mongrel AI assistant without requiring another portal redesign.</p>
+        </section>
       </div>
     </div>
   </section>
@@ -92,7 +143,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=44"></script>
-<script src="../js/auth-ui.js?v=44"></script>
+<script src="../js/site.js?v=45"></script>
+<script src="../js/auth-ui.js?v=45"></script>
+<script src="../js/member-dashboard.js?v=45"></script>
 </body>
 </html>
