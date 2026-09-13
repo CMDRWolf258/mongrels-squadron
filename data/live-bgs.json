@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T08:28:04Z",
+  "generatedAt": "2026-09-13T10:30:06Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
   "refreshInterval": "Every 2 hours",
@@ -21,7 +21,7 @@
       "population": "3966498",
       "sourceUpdated": "2026-09-13T08:26:38.743000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     },
@@ -38,7 +38,7 @@
       "population": "8167501",
       "sourceUpdated": "2026-09-04T03:06:52.886000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     },
@@ -55,7 +55,7 @@
       "population": "512251601",
       "sourceUpdated": "2026-09-12T01:50:41.942000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     },
@@ -72,7 +72,7 @@
       "population": "3259113212",
       "sourceUpdated": "2026-09-12T02:36:15.198000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     },
@@ -89,7 +89,7 @@
       "population": "31434488",
       "sourceUpdated": "2026-08-12T13:18:29.813000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     },
@@ -103,10 +103,10 @@
       "pendingStates": [],
       "recoveringStates": [],
       "security": "Low",
-      "population": "107397170",
+      "population": "107407054",
       "sourceUpdated": "2026-09-07T21:58:37.367000",
       "source": "EliteHub Vault / EDDN",
-      "fetchedAt": "2026-09-13T08:28:04Z",
+      "fetchedAt": "2026-09-13T10:30:06Z",
       "stale": false,
       "ok": true
     }
