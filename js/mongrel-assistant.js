@@ -2,8 +2,9 @@
   const HISTORY_KEY_PREFIX = 'mongrels_assistant_history_v1';
   const HISTORY_MAX_MESSAGES = 40;
   const state = { session:null, history:[], busy:false, usage:null };
+  const dedicatedPage = document.body?.dataset?.assistantPage === 'true' || location.pathname.replace(/\/+$/, '') === '/assistant';
   const root = document.createElement('div');
-  root.className = 'mongrel-assistant';
+  root.className = `mongrel-assistant${dedicatedPage ? ' is-dedicated' : ''}`;
   root.innerHTML = `
     <button class="mongrel-assistant-launcher" type="button" aria-expanded="false" aria-controls="mongrel-assistant-panel">
       <span class="mongrel-assistant-launcher-mark" aria-hidden="true">◆</span><span>Ask the Mongrels</span>
@@ -26,7 +27,7 @@
         <div class="mongrel-assistant-form-row"><small data-assistant-status>Read-only assistant</small><button class="btn btn-primary" type="submit" data-assistant-send>Send</button></div>
       </form>
     </section>`;
-  document.body.appendChild(root);
+  (dedicatedPage ? (document.querySelector('.assistant-page-main') || document.body) : document.body).appendChild(root);
 
   const launcher = root.querySelector('.mongrel-assistant-launcher');
   const panel = root.querySelector('.mongrel-assistant-panel');
@@ -45,33 +46,9 @@
   const isTouchLayout = () => matchMedia('(max-width: 900px)').matches;
   const isPhoneLayout = () => matchMedia('(max-width: 620px)').matches;
   let lockedScrollY = 0;
-  let viewportTimers = [];
-
-  const clearViewportTimers = () => {
-    viewportTimers.forEach(clearTimeout);
-    viewportTimers = [];
-  };
-
-  // Keep the assistant's TOP edge stable. When the iOS keyboard appears, only
-  // the shell height changes; CSS grid gives the lost space to the message log
-  // rather than shifting the whole panel upward.
-  const syncTouchViewport = () => {
-    if (panel.hidden || !isTouchLayout()) {
-      document.documentElement.style.removeProperty('--assistant-touch-vh');
-      return;
-    }
-    const vv = window.visualViewport;
-    const height = Math.max(320, Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight));
-    document.documentElement.style.setProperty('--assistant-touch-vh', `${height}px`);
-  };
-
-  const settleTouchViewport = () => {
-    clearViewportTimers();
-    [0, 60, 180, 360].forEach(delay => viewportTimers.push(setTimeout(syncTouchViewport, delay)));
-  };
 
   const lockBackground = () => {
-    if (!isTouchLayout()) return;
+    if (dedicatedPage || !isTouchLayout()) return;
     lockedScrollY = window.scrollY || window.pageYOffset || 0;
     document.documentElement.classList.add('assistant-open');
     document.body.classList.add('assistant-open');
@@ -79,38 +56,46 @@
   };
 
   const unlockBackground = () => {
-    clearViewportTimers();
+    if (dedicatedPage) return;
     document.documentElement.classList.remove('assistant-open');
     document.body.classList.remove('assistant-open');
     const restoreY = lockedScrollY;
     document.body.style.top = '';
-    document.documentElement.style.removeProperty('--assistant-touch-vh');
     if (isTouchLayout()) requestAnimationFrame(() => window.scrollTo(0, restoreY));
   };
 
-  // Safari occasionally leaves visualViewport measurements stale for a moment
-  // after the keyboard is dismissed. Resize + delayed blur/focusout resyncs are
-  // intentionally redundant so the panel always returns to a tappable state.
-  window.visualViewport?.addEventListener('resize', syncTouchViewport, { passive:true });
-  window.addEventListener('orientationchange', settleTouchViewport, { passive:true });
-  window.addEventListener('resize', () => { if (!panel.hidden && isTouchLayout()) settleTouchViewport(); }, { passive:true });
-
   const open = () => {
-    panel.hidden=false;
+    if (!dedicatedPage && isPhoneLayout()) {
+      location.href = '/assistant/';
+      return;
+    }
+    panel.hidden = false;
     launcher.setAttribute('aria-expanded','true');
     lockBackground();
-    settleTouchViewport();
-    if (!isTouchLayout()) setTimeout(() => input?.focus({ preventScroll:true }), 80);
+    if (!isTouchLayout() && !dedicatedPage) setTimeout(() => input?.focus({ preventScroll:true }), 80);
   };
+
   const shut = () => {
     input?.blur();
-    panel.hidden=true;
+    if (dedicatedPage) {
+      if (history.length > 1) history.back();
+      else location.href = '/';
+      return;
+    }
+    panel.hidden = true;
     launcher.setAttribute('aria-expanded','false');
     unlockBackground();
   };
+
   launcher.addEventListener('click', () => panel.hidden ? open() : shut());
   close.addEventListener('click', shut);
   document.addEventListener('keydown', event => { if(event.key === 'Escape' && !panel.hidden) shut(); });
+
+  if (dedicatedPage) {
+    launcher.hidden = true;
+    panel.hidden = false;
+    launcher.setAttribute('aria-expanded','true');
+  }
 
   const addMessage = (role, text) => {
     const item=document.createElement('div'); item.className=`mongrel-assistant-message is-${role}`;
@@ -268,8 +253,5 @@
   });
 
   input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();form.requestSubmit();}});
-  input.addEventListener('focus', () => { if (isTouchLayout()) settleTouchViewport(); });
-  input.addEventListener('blur', () => { if (isTouchLayout()) settleTouchViewport(); });
-  input.addEventListener('focusout', () => { if (isTouchLayout()) settleTouchViewport(); });
   loadSession();
 })();
