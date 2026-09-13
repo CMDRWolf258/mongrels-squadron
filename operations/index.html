@@ -8,7 +8,7 @@
   <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=64" sizes="16x16" type="image/png">
   <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=64">
   <title>Mission Control | The Mongrels</title>
-  <link rel="stylesheet" href="../css/global.css?v=64">
+  <link rel="stylesheet" href="../css/global.css?v=65">
 </head>
 <body>
 <header class="site-header">
@@ -162,14 +162,22 @@
           <div><p class="eyebrow">Members Only · Quick Reference</p><h2>BGS Operational Playbook</h2></div>
           <p>The public Field Manual explains the mechanics. This private section answers the squad-level question: <strong>“What should I actually do today?”</strong></p>
         </div>
-        <div class="member-playbook-note" id="memberPlaybookNote">Loading operational benchmarks…</div>
-        <div class="guide-table-wrap member-benchmark-wrap">
-          <table class="guide-table member-benchmark-table">
-            <thead><tr><th>Positive lever</th><th>Small / quiet</th><th>Medium</th><th>Large / contested</th><th>Measure</th></tr></thead>
-            <tbody id="memberBenchmarks"><tr><td colspan="5">Loading secure playbook…</td></tr></tbody>
-          </table>
+        <p class="member-playbook-hint">Open only the section you need. Daily workload benchmarks and strategy recipes stay collapsed by default so Mission Control remains compact.</p>
+        <div class="member-playbook-accordion">
+          <details class="member-playbook-disclosure">
+            <summary><span><strong>General Positive Daily Levers</strong><small>Mission INF, bounties, exploration data, and profitable trade benchmarks</small></span><b aria-hidden="true">+</b></summary>
+            <div class="member-playbook-disclosure-body">
+              <div class="member-playbook-note" id="memberPlaybookNote">Loading operational benchmarks…</div>
+              <div class="guide-table-wrap member-benchmark-wrap">
+                <table class="guide-table member-benchmark-table">
+                  <thead><tr><th>Positive lever</th><th>Small / quiet</th><th>Medium</th><th>Large / contested</th><th>Measure</th></tr></thead>
+                  <tbody id="memberBenchmarks"><tr><td colspan="5">Loading secure playbook…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+          <div id="memberRecipes" class="member-recipe-accordion" aria-live="polite"></div>
         </div>
-        <div id="memberRecipes" class="member-recipe-grid" aria-live="polite"></div>
       </div>
     </section>
 
@@ -186,7 +194,17 @@
             <button class="btn btn-secondary" type="button" data-strategy-toggle>Edit Strategy</button>
           </div>
           <form class="strategy-editor" data-strategy-editor hidden>
-            <div class="strategy-editor-toolbar"><span>Add only systems that need leadership metadata. Every live Mongrel presence still appears automatically in All Systems.</span><button class="btn btn-secondary" type="button" data-strategy-add>Add System</button></div>
+            <section class="strategy-defaults-panel" aria-labelledby="strategyDefaultsTitle">
+              <div class="strategy-defaults-copy"><p class="eyebrow">Automatic Operating Bands</p><h4 id="strategyDefaultsTitle">Default Influence Ranges</h4><p>These ranges apply automatically when a system has no manual target band. A system-specific target below overrides the corresponding default.</p></div>
+              <div class="strategy-defaults-grid">
+                <label class="strategy-field"><span>Controlled min %</span><input type="number" min="0" max="100" step="0.1" data-strategy-default="controlledMin" value="40"></label>
+                <label class="strategy-field"><span>Controlled max %</span><input type="number" min="0" max="100" step="0.1" data-strategy-default="controlledMax" value="65"></label>
+                <label class="strategy-field"><span>Non-controlled min %</span><input type="number" min="0" max="100" step="0.1" data-strategy-default="nonControlledMin" value="15"></label>
+                <label class="strategy-field"><span>Non-controlled max %</span><input type="number" min="0" max="100" step="0.1" data-strategy-default="nonControlledMax" value="65"></label>
+                <label class="strategy-field"><span>Retreat warning below %</span><input type="number" min="0" max="100" step="0.1" data-strategy-default="retreatWarning" value="5"></label>
+              </div>
+            </section>
+            <div class="strategy-editor-toolbar"><span>Add only systems that need leadership metadata. Leave target fields blank to use the automatic controlled/non-controlled ranges above.</span><button class="btn btn-secondary" type="button" data-strategy-add>Add System</button></div>
             <datalist id="missionControlSystemNames"></datalist>
             <div class="strategy-editor-list" data-strategy-list></div>
             <div class="orders-editor-actions"><span class="orders-editor-status" data-strategy-status aria-live="polite"></span><div><button class="btn btn-primary" type="submit" data-strategy-save>Save Private Strategy</button></div></div>
@@ -238,7 +256,13 @@
           <div class="systems-update"><span>Snapshot</span><strong id="systemsUpdated">Loading…</strong></div>
         </div>
 
-        <div class="systems-count-line"><strong id="systemsShown">—</strong><span id="systemsCountDetail">systems shown</span></div>
+        <div class="systems-list-meta">
+          <div class="systems-count-line"><strong id="systemsShown">—</strong><span id="systemsCountDetail">systems shown</span></div>
+          <div class="systems-list-controls">
+            <label class="systems-page-size"><span>Rows per page</span><select id="systemsPageSize"><option value="15" selected>15</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+            <div class="systems-pagination" aria-label="All Systems pagination"><button class="btn btn-secondary btn-compact" id="systemsPrev" type="button">← Previous</button><span id="systemsPageStatus">Page 1 of 1</span><button class="btn btn-secondary btn-compact" id="systemsNext" type="button">Next →</button></div>
+          </div>
+        </div>
         <div class="systems-table-wrap">
           <table class="systems-table bgs-systems-table mc-systems-table">
             <thead><tr><th>System</th><th>Mongrel INF</th><th>Control</th><th>State</th><th>Ops Status</th><th>Freshness</th></tr></thead>
@@ -268,9 +292,9 @@
 </main>
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=64"></script>
-<script src="../js/operations.js?v=64"></script>
-<script src="../js/daily-orders.js?v=64"></script>
-<script src="../js/mongrel-assistant.js?v=64"></script>
+<script src="../js/site.js?v=65"></script>
+<script src="../js/operations.js?v=65"></script>
+<script src="../js/daily-orders.js?v=65"></script>
+<script src="../js/mongrel-assistant.js?v=65"></script>
 </body>
 </html>

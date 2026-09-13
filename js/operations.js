@@ -20,6 +20,10 @@
   const sortEl = document.getElementById('systemSort');
   const shownEl = document.getElementById('systemsShown');
   const countDetailEl = document.getElementById('systemsCountDetail');
+  const pageSizeEl = document.getElementById('systemsPageSize');
+  const prevPageEl = document.getElementById('systemsPrev');
+  const nextPageEl = document.getElementById('systemsNext');
+  const pageStatusEl = document.getElementById('systemsPageStatus');
   const liveStatusEl = document.getElementById('bgsLiveStatus');
   const liveSourceEl = document.getElementById('bgsLiveSource');
   const playbookNote = document.getElementById('memberPlaybookNote');
@@ -40,6 +44,8 @@
   let strategy = null;
   let canManage = false;
   let strategyBaseline = '';
+  let currentPage = 1;
+  let pageSize = 15;
 
   const safe = (value, fallback = '—') => (value === null || value === undefined || value === '' ? fallback : value);
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -102,23 +108,32 @@
     return { key: 'unknown', label: 'Unknown', detail: 'No source timestamp', rank: 3 };
   }
 
+  function finiteNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+
   function targetStatus(system) {
-    const value = Number(system.influence);
-    const min = Number(system.targetMin);
-    const max = Number(system.targetMax);
-    if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return null;
-    if (value < min) return { key:'low', label:`Below target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
-    if (value > max) return { key:'high', label:`Above target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
-    return { key:'in', label:`In target · ${min.toFixed(0)}–${max.toFixed(0)}%` };
+    const value = finiteNumber(system.influence);
+    const min = finiteNumber(system.targetMin);
+    const max = finiteNumber(system.targetMax);
+    if (value === null || min === null || max === null) return null;
+    const source = system.targetSource === 'manual' ? 'manual target' : 'default target';
+    if (value < min) return { key:'low', label:`Below ${source} · ${min.toFixed(0)}–${max.toFixed(0)}%` };
+    if (value > max) return { key:'high', label:`Above ${source} · ${min.toFixed(0)}–${max.toFixed(0)}%` };
+    return { key:'in', label:`In ${source} · ${min.toFixed(0)}–${max.toFixed(0)}%` };
   }
 
   function progressBar(value, system = null) {
     if (typeof value !== 'number') return '';
     const width = Math.max(0, Math.min(100, value));
     let target = '';
-    if (system && Number.isFinite(Number(system.targetMin)) && Number.isFinite(Number(system.targetMax))) {
-      const min = Math.max(0, Math.min(100, Number(system.targetMin)));
-      const max = Math.max(min, Math.min(100, Number(system.targetMax)));
+    const rawMin = system ? finiteNumber(system.targetMin) : null;
+    const rawMax = system ? finiteNumber(system.targetMax) : null;
+    if (rawMin !== null && rawMax !== null) {
+      const min = Math.max(0, Math.min(100, rawMin));
+      const max = Math.max(min, Math.min(100, rawMax));
       target = `<i class="inf-target-band" style="left:${min}%;width:${max-min}%" aria-hidden="true"></i>`;
     }
     return `<div class="inf-bar" aria-label="Influence ${value.toFixed(1)} percent">${target}<span style="width:${width}%"></span></div>`;
@@ -137,7 +152,7 @@
     if (system.watch) tags.push('<span class="watch-badge">Watch</span>');
     if (system.conflict) tags.push('<span class="mc-risk-badge conflict">Conflict</span>');
     if (system.expansionRisk) tags.push('<span class="mc-risk-badge expansion">Expansion</span>');
-    if (system.retreatRisk) tags.push('<span class="mc-risk-badge retreat">Retreat</span>');
+    if (system.retreatRisk) tags.push('<span class="mc-risk-badge retreat">Retreat warning</span>');
     const target = targetStatus(system);
     if (target?.key === 'low') tags.push('<span class="mc-risk-badge low">Below target</span>');
     if (target?.key === 'high') tags.push('<span class="mc-risk-badge high">Above target</span>');
@@ -219,7 +234,7 @@
     }
     if (recipesEl) {
       const recipes = Array.isArray(playbook.recipes) ? playbook.recipes : [];
-      recipesEl.innerHTML = recipes.map(recipe => `<article class="member-recipe-card"><h3>${html(recipe.title)}</h3><ul>${(recipe.steps || []).map(step => `<li>${html(step)}</li>`).join('')}</ul></article>`).join('');
+      recipesEl.innerHTML = recipes.map(recipe => `<details class="member-playbook-disclosure member-recipe-disclosure"><summary><span><strong>${html(recipe.title)}</strong><small>Open operational steps</small></span><b aria-hidden="true">+</b></summary><div class="member-playbook-disclosure-body"><ul>${(recipe.steps || []).map(step => `<li>${html(step)}</li>`).join('')}</ul></div></details>`).join('');
     }
   }
 
@@ -229,8 +244,8 @@
     article.innerHTML = `
       <div class="strategy-row-grid">
         <label class="strategy-field strategy-field-system"><span>System</span><input type="text" list="missionControlSystemNames" maxlength="120" data-strategy-field="name" placeholder="System name"></label>
-        <label class="strategy-field"><span>Target min %</span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMin"></label>
-        <label class="strategy-field"><span>Target max %</span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMax"></label>
+        <label class="strategy-field"><span>Target min % <small>(blank = default)</small></span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMin" placeholder="Default"></label>
+        <label class="strategy-field"><span>Target max % <small>(blank = default)</small></span><input type="number" min="0" max="100" step="0.1" data-strategy-field="targetMax" placeholder="Default"></label>
         <label class="strategy-check"><input type="checkbox" data-strategy-field="priority"><span>Priority</span></label>
         <label class="strategy-check"><input type="checkbox" data-strategy-field="watch"><span>Watch</span></label>
         <label class="strategy-field strategy-field-wide"><span>Desired states <small>comma separated</small></span><input type="text" maxlength="220" data-strategy-field="desiredStates" placeholder="Boom, Civil Liberty"></label>
@@ -252,6 +267,11 @@
 
   function populateStrategyEditor() {
     if (!strategyList) return;
+    const defaults = strategy?.defaults || { controlledMin:40, controlledMax:65, nonControlledMin:15, nonControlledMax:65, retreatWarning:5 };
+    document.querySelectorAll('[data-strategy-default]').forEach(input => {
+      const key = input.dataset.strategyDefault;
+      if (Object.prototype.hasOwnProperty.call(defaults, key)) input.value = defaults[key];
+    });
     strategyList.replaceChildren();
     const rows = Array.isArray(strategy?.systems) ? strategy.systems : [];
     rows.forEach(row => strategyList.appendChild(makeStrategyRow(row)));
@@ -260,6 +280,18 @@
 
   function collectStrategy() {
     if (!strategyList) return { systems: [] };
+    const defaultValue = (key, fallback) => {
+      const input = document.querySelector(`[data-strategy-default="${key}"]`);
+      const value = finiteNumber(input?.value);
+      return value === null ? fallback : value;
+    };
+    const defaults = {
+      controlledMin: defaultValue('controlledMin', 40),
+      controlledMax: defaultValue('controlledMax', 65),
+      nonControlledMin: defaultValue('nonControlledMin', 15),
+      nonControlledMax: defaultValue('nonControlledMax', 65),
+      retreatWarning: defaultValue('retreatWarning', 5),
+    };
     const rows = [...strategyList.querySelectorAll('.strategy-editor-row')].map(article => {
       const get = field => article.querySelector(`[data-strategy-field="${field}"]`);
       const numberOrNull = value => {
@@ -279,7 +311,7 @@
         watchNote: String(get('watchNote')?.value || '').trim(),
       };
     }).filter(row => row.name);
-    return { version: 1, systems: rows, prioritySystems: rows.filter(row => row.priority).map(row => row.name) };
+    return { version: 2, defaults, systems: rows, prioritySystems: rows.filter(row => row.priority).map(row => row.name) };
   }
 
   function setupStrategyManager() {
@@ -384,19 +416,32 @@
       return matchesSearch && matchesFilter(system, mode);
     });
     const rows = sortedSystems(filtered);
-    if (shownEl) shownEl.textContent = rows.length.toLocaleString();
-    if (countDetailEl) countDetailEl.textContent = mode === 'all' ? `of ${(meta?.presenceCount ?? systems.filter(activePresence).length).toLocaleString()} active systems` : `systems in this view`;
+    const totalRows = rows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+    currentPage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (currentPage - 1) * pageSize;
+    const pageRows = rows.slice(startIndex, startIndex + pageSize);
+
+    if (shownEl) shownEl.textContent = pageRows.length.toLocaleString();
+    if (countDetailEl) {
+      const base = mode === 'all' ? `${totalRows.toLocaleString()} active systems match` : `${totalRows.toLocaleString()} systems match this view`;
+      countDetailEl.textContent = totalRows ? `shown · ${base}` : base;
+    }
+    if (pageStatusEl) pageStatusEl.textContent = `Page ${currentPage} of ${totalPages}${totalRows ? ` · ${startIndex + 1}–${Math.min(startIndex + pageSize, totalRows)} of ${totalRows}` : ''}`;
+    if (prevPageEl) prevPageEl.disabled = currentPage <= 1;
+    if (nextPageEl) nextPageEl.disabled = currentPage >= totalPages;
 
     if (!rows.length) {
       tableBody.innerHTML = `<tr class="systems-empty-row"><td colspan="6">${systems.length ? 'No systems match this view.' : 'The first full faction-presence sync has not completed yet.'}</td></tr>`;
       return;
     }
 
-    tableBody.innerHTML = rows.map(system => {
+    tableBody.innerHTML = pageRows.map(system => {
       const fresh = freshness(system);
       const target = targetStatus(system);
-      return `<tr class="${activePresence(system) ? '' : 'former-presence-row'}">
-        <td>${systemNameMarkup(system.name)}${system.objective ? `<small>${html(system.objective)}</small>` : ''}</td>
+      const rowClasses = [activePresence(system) ? '' : 'former-presence-row', system.retreatRisk ? 'retreat-warning-row' : ''].filter(Boolean).join(' ');
+      return `<tr class="${rowClasses}">
+        <td>${systemNameMarkup(system.name)}${system.retreatRisk ? `<span class="retreat-inline-warning">RETREAT WARNING &lt; ${html(system.retreatWarningThreshold ?? 5)}%</span>` : ''}${system.objective ? `<small>${html(system.objective)}</small>` : ''}</td>
         <td><strong>${influence(system.influence)}</strong>${progressBar(system.influence, system)}${target ? `<small class="table-target-status target-${target.key}">${html(target.label)}</small>` : ''}</td>
         <td>${html(safe(system.control, controlled(system) ? 'Mongrels' : 'Unknown'))}${controlled(system) ? '<small class="mc-control-note">Mongrel control</small>' : ''}</td>
         <td>${html(safe(system.state))}${Array.isArray(system.pendingStates) && system.pendingStates.length ? `<small>Pending: ${html(system.pendingStates.join(', '))}</small>` : ''}</td>
@@ -441,9 +486,17 @@
     summaryActiveOrders.textContent = detail.authenticated ? String(detail.activeCount ?? 0) : '—';
   });
 
-  searchEl?.addEventListener('input', renderTable);
-  filterEl?.addEventListener('change', renderTable);
-  sortEl?.addEventListener('change', renderTable);
+  const resetTablePage = () => { currentPage = 1; renderTable(); };
+  searchEl?.addEventListener('input', resetTablePage);
+  filterEl?.addEventListener('change', resetTablePage);
+  sortEl?.addEventListener('change', resetTablePage);
+  pageSizeEl?.addEventListener('change', () => {
+    pageSize = Math.max(1, Number(pageSizeEl.value) || 15);
+    currentPage = 1;
+    renderTable();
+  });
+  prevPageEl?.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; renderTable(); tableBody?.closest('.systems-table-wrap')?.scrollIntoView({ behavior:'smooth', block:'start' }); } });
+  nextPageEl?.addEventListener('click', () => { currentPage += 1; renderTable(); tableBody?.closest('.systems-table-wrap')?.scrollIntoView({ behavior:'smooth', block:'start' }); });
 
   async function load() {
     setAccess('gate');

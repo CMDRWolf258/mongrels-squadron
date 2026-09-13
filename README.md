@@ -1,47 +1,46 @@
-# Regiment of Imperial Mongrels — v64
+# Regiment of Imperial Mongrels — v65
 
-Mission Control privacy + automatic full faction footprint + private BGS playbook.
+Mission Control usability pass: paginated All Systems, automatic default influence bands, stronger Retreat warnings, and a collapsible member playbook.
 
-## Mission Control is now member-only
-- `/operations/` is now a public login doorway only until the viewer has an authenticated Mongrels member session.
-- Priority Systems, Watch List, All Systems, summary counts, Daily Orders, BGS targets, and operational resources are hidden from signed-out visitors.
-- The protection is not only CSS: Mission Control data is returned through `/api/operations/systems`, which requires Member / Officer / Site Admin access.
-- Ask the Mongrels no longer loads Mission Control strategy/system context for unauthenticated/public context.
+## All Systems pagination
+- All Systems now shows **15 systems per page by default** instead of rendering the entire Mongrel footprint at once.
+- Members can switch the page size to 15, 25, 50, or 100 rows.
+- Search, filters, and sorting operate on the complete matching result set; pagination is applied afterward.
+- Previous/Next controls show the current page plus the visible row range and total matching systems.
+- Changing search/filter/sort/page size returns the list to page 1.
 
-## Private strategy storage
-- Strategic targets, priority flags, desired states, watch notes, and objectives are no longer shipped in public `data/systems.json`.
-- v64 uses the already-configured `DAILY_ORDERS` KV namespace with a separate key: `bgs-strategy-v1`.
-- On the first authenticated Mission Control load, the v63 strategy seed is written into that private KV key automatically. Officers/Site Admin can then maintain strategy through the new in-page **Manage Private Strategy** editor, so future focus changes never need to be committed to public JSON.
-- `data/systems.json` remains only as a harmless compatibility marker and contains no system names or targets.
-- No new Cloudflare KV namespace or binding is required.
+## Automatic operating bands
+Officer / Site Admin strategy controls now include persistent default target ranges:
+- **Mongrel-controlled systems:** 40–65% influence
+- **Non-controlled Mongrel presences:** 15–65% influence
+- **Retreat warning:** below 5% influence
 
-## Automatic All Systems population
-- `scripts/update_bgs.py` now writes every Mongrel faction-presence row returned by EliteHub Vault / EDDN instead of filtering down to the manually configured priority systems.
-- New faction presences therefore appear automatically after a BGS refresh.
-- Systems that disappear from the faction-presence feed are retained as `Former Presence` records instead of silently vanishing.
-- A defensive completeness check prevents a badly truncated upstream result from marking hundreds of systems as former presences.
-- All Systems now supports search plus filters for Priority, Watch/Attention, Controlled, Not Controlled, Below/Above Target, Conflict, Expansion Watch, Retreat Watch, Stale/Aging, and Former Presence.
-- Freshness labels distinguish Fresh, Aging, Stale, Unknown, and Former Presence data.
+These values live in the existing private BGS strategy record in `DAILY_ORDERS` KV and can be changed later from Mission Control without a GitHub edit. No new binding is required.
 
-## Private Member BGS Playbook
-- Quantified daily workload benchmarks were removed from the public BGS Field Manual and public Elite Knowledge JSON.
-- Authenticated Mission Control now contains the private workload table for mission INF, bounty vouchers, exploration data, and profitable trade.
-- Added member quick-reference recipes for raising/lowering influence, avoiding Expansion, saving/forcing Retreat, War/Civil War, and Elections.
-- The public BGS guide still teaches mechanics and general strategy, but points members to Mission Control for squad operational tasking.
-- Ask the Mongrels can use the private operational playbook only for authenticated member conversations.
+A system-specific target remains an override. Leaving the target fields blank means that system inherits the appropriate controlled/non-controlled default band. Existing manual bands (such as 10-16's 40–55% target) remain intact.
 
-## BGS refresh after deployment
-The package contains the previous placeholder snapshot. After uploading v64, run the existing GitHub Action **Refresh BGS data** once (or wait for the two-hour schedule). The first successful v64 run should populate the complete Mongrel faction footprint instead of only the previously tracked six systems.
+This also fixes the prior UI behavior where blank/null target values could be interpreted by the browser as `0`, producing misleading `0–0%` target messages.
+
+## Retreat warning
+- Active Mongrel presences below the configured Retreat-warning threshold receive a stronger red `RETREAT WARNING` treatment in All Systems.
+- They automatically enter the Watch / Attention view.
+- The threshold is editable in Officer Controls and defaults to **below 5%**.
+- An actual active/pending Retreat state also triggers the same operational warning path.
+
+## Collapsible Member BGS Playbook
+The large playbook no longer occupies the page by default.
+- **General Positive Daily Levers** is one collapsed section containing the workload benchmark table.
+- Each strategy recipe (Raise a faction, Lower a faction, Avoid Expansion, Save Retreat, Force Retreat, War/Civil War, Election) is its own collapsed section.
+- Members can open only the reference they need while working.
+
+## Existing v64 privacy/live-data behavior remains
+- Mission Control remains fully Member-only.
+- Officer strategy remains server-side/private.
+- All Systems remains auto-populated by the EDDN/Vault-backed refresh.
+- New presences appear automatically; former presences are retained.
+- Ask the Mongrels continues to receive member-only Mission Control context only after authentication.
 
 ## Setup
 No new Cloudflare variables, secrets, KV namespaces, or bindings are required.
 
-Upload the complete package, allow Cloudflare Pages to redeploy, then:
-1. Run **Refresh BGS data** in GitHub Actions once.
-2. Open Mission Control while signed in; this seeds the private strategy key into the existing `DAILY_ORDERS` KV namespace.
-3. Confirm All Systems count, Priority Systems, Watch List, and the Member BGS Playbook.
-4. As Site Admin, open **Manage Private Strategy** and confirm the six migrated priority systems are present; future priority/target edits can be saved there without touching GitHub.
-5. Open Mission Control in a signed-out/private browser window and confirm that only the member login gate is visible.
-
-### Historical privacy note
-Prior releases intentionally published Priority/Watch data, so old Git commits and previously deployed copies may still contain those historical values. v64 stops publishing new strategy changes. If the GitHub repository itself is public and you eventually want historical values removed as well, that is a separate repository-history/privacy cleanup rather than a site-code change.
+Upload the complete package and let Cloudflare Pages redeploy. Existing v64 strategy data is automatically normalized to the v65 default-band structure when read; defaults are saved to KV the next time an Officer/Site Admin saves Private Strategy.
