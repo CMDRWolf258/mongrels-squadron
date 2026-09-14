@@ -1,0 +1,348 @@
+{
+  "version": "72",
+  "reviewedAt": "2026-09-14",
+  "scope": "Trading and Fleet Carrier reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "trade-route-evaluation",
+      "category": "Trading",
+      "topic": "Evaluating a Trade Route",
+      "keywords": ["trade route", "profit per hour", "profit per trip", "trading", "hauling", "route distance"],
+      "ruleOfThumb": "Judge a trade route by real turnaround time, not only profit per tonne. Pad size, supercruise distance, supply, demand, jump count and loading time can make a lower-margin route earn more per hour.",
+      "details": [
+        "Profit per tonne is only one part of route quality.",
+        "A station thousands of light-seconds from arrival can add more time than several extra hyperspace jumps.",
+        "Limited supply can prevent a large freighter from filling its hold repeatedly, while low demand can reduce the value of large sell loads.",
+        "Round-trip routes can outperform one-way hauling when the return commodity meaningfully contributes to total profit."
+      ],
+      "commonMistakes": [
+        "Sorting by profit per tonne and ignoring station distance.",
+        "Choosing a route whose supply cannot repeatedly fill the ship.",
+        "Ignoring landing-pad size when planning around a large ship."
+      ],
+      "operations": "For squad hauling, publish expected profit per tonne, approximate trip time, pad requirement, current supply/demand and data age so members can decide whether the route fits their ship.",
+      "sources": [
+        {"name": "INARA — Trade Routes", "url": "https://inara.cz/elite/market-traderoutes/"},
+        {"name": "Elite Dangerous Wiki — Market Economy", "url": "https://elite-dangerous.fandom.com/wiki/Market_Economy"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable with market variability"
+    },
+    {
+      "id": "trade-market-data-freshness",
+      "category": "Trading",
+      "topic": "Market Data Freshness",
+      "keywords": ["market age", "data freshness", "inara update", "stale market", "price age", "eddn"],
+      "ruleOfThumb": "Treat third-party market data as a recent report, not a reservation. Check the update age, supply and demand before committing a long trip or carrier move.",
+      "details": [
+        "Tools such as INARA rely on commander-reported journal/market data, so the displayed market can change after the last upload.",
+        "Busy high-profit routes can be depleted quickly by other commanders.",
+        "The older the update, the less confidence you should place in exact price, supply and demand values.",
+        "For a large operation, verify the market in game shortly before moving a carrier or dispatching multiple haulers."
+      ],
+      "commonMistakes": [
+        "Moving a Fleet Carrier hundreds of light-years for a price that was last updated many hours ago.",
+        "Checking only price while ignoring whether supply or demand has already collapsed."
+      ],
+      "sources": [
+        {"name": "INARA — Trade Routes", "url": "https://inara.cz/elite/market-traderoutes/"},
+        {"name": "Ardent EDDN API — Market Data", "url": "https://github.com/iaincollins/ardent-api"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "trade-supply-demand",
+      "category": "Trading",
+      "topic": "Supply, Demand & Economy Types",
+      "keywords": ["supply", "demand", "economy type", "industrial", "high tech", "agriculture", "refinery", "extraction"],
+      "ruleOfThumb": "Economy types predict what a market tends to produce and consume, but current supply/demand and faction/system states determine whether a route is actually good today.",
+      "details": [
+        "Extraction, Refinery, Industrial, High Tech, Agriculture, Military, Tourism and other economies have characteristic commodity flows.",
+        "Many stations combine more than one economy, so simple one-economy assumptions can miss useful trades.",
+        "Population, states and player activity can change supply, demand and price behavior over time.",
+        "Use economy type to find candidate routes; use live market data to choose the route you actually fly."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Supply and Demand", "url": "https://elite-dangerous.fandom.com/wiki/Commodities/Supply_and_Demand"},
+        {"name": "Elite Dangerous Wiki — Market Economy", "url": "https://elite-dangerous.fandom.com/wiki/Market_Economy"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "trade-bulk-sales-tax",
+      "category": "Trading",
+      "topic": "Bulk Sales Price Penalty",
+      "keywords": ["bulk tax", "bulk sales tax", "cutter tax", "25 percent demand", "low demand", "mined commodity price"],
+      "ruleOfThumb": "For mined commodities, avoid arriving with a load larger than roughly 25% of the station's current demand if preserving the advertised top price matters. Low demand can sharply reduce the price offered to a large cargo hold.",
+      "details": [
+        "INARA currently warns miners when cargo can exceed roughly one quarter of local demand.",
+        "The price penalty is evaluated from the cargo you arrive with relative to the market's demand; the exact effective price can therefore differ from a third-party quote.",
+        "A practical planning rule is to seek demand at least about four times the load when chasing the listed high price.",
+        "Because market behavior has been adjusted in past updates, treat 25% as an operational rule of thumb rather than a promise that every commodity follows an identical formula forever."
+      ],
+      "quickFacts": [
+        {"label": "Practical mined-goods rule", "value": "Cargo ≤ ~25% of demand"},
+        {"label": "Equivalent planning rule", "value": "Demand ≥ ~4x cargo"}
+      ],
+      "commonMistakes": [
+        "Seeing a high sell price but ignoring the demand column.",
+        "Assuming the price shown by a third-party tool is guaranteed for a Cutter-sized load."
+      ],
+      "sources": [
+        {"name": "INARA — Commodity Markets", "url": "https://inara.cz/elite/commodity/"},
+        {"name": "EliteMiners — Bulk Sales Research", "url": "https://www.reddit.com/r/EliteMiners/comments/hq8voj/bulk_sales_tax_some_research/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-observed"
+    },
+    {
+      "id": "trade-pad-size",
+      "category": "Trading",
+      "topic": "Landing Pad Size & Cargo Ship Choice",
+      "keywords": ["pad size", "large pad", "medium pad", "trade ship", "type 8", "cutter", "python"],
+      "ruleOfThumb": "A route is only useful if your ship can dock. Large-pad freighters maximize volume; medium-pad haulers trade capacity for access to outposts and other restricted markets.",
+      "details": [
+        "Third-party trade searches normally let you set a minimum landing-pad size.",
+        "Large ships cannot use medium-only outposts, so a route with spectacular margin may be inaccessible to the ship carrying the most cargo.",
+        "For squad operations, a mix of large and medium haulers can be useful when the source or destination has restricted pads."
+      ],
+      "commonMistakes": [
+        "Planning a route around a large freighter and discovering the destination is medium-pad only.",
+        "Comparing ships only by cargo tonnes without considering where they can dock."
+      ],
+      "sources": [
+        {"name": "INARA — Trade Routes", "url": "https://inara.cz/elite/market-traderoutes/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "trade-station-distance",
+      "category": "Trading",
+      "topic": "Station Distance & Real Trip Time",
+      "keywords": ["station distance", "light seconds", "supercruise time", "trade time", "profit per hour"],
+      "ruleOfThumb": "Light-seconds matter. A short-jump route with a distant station can be slower than a longer hyperspace route whose stations sit close to their arrival stars.",
+      "details": [
+        "Supercruise time is often the hidden cost in trade-route comparisons.",
+        "Large station distances also increase interdiction exposure and make repeated squad hauling more tiring.",
+        "When two routes have similar margins, the route with shorter station approaches often wins on profit per hour."
+      ],
+      "sources": [
+        {"name": "INARA — Trade Routes", "url": "https://inara.cz/elite/market-traderoutes/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "trade-round-trip",
+      "category": "Trading",
+      "topic": "Round-Trip Trading",
+      "keywords": ["round trip", "return cargo", "loop trade", "trade loop", "two way trade"],
+      "ruleOfThumb": "When possible, make the return leg earn money too. A slightly weaker outbound commodity can produce a stronger total loop if the destination sells something profitable back to the origin.",
+      "details": [
+        "Trade-route tools can compare one-way and round-trip opportunities.",
+        "The useful metric is total loop profit divided by total loop time, not whichever single leg has the biggest margin.",
+        "Return cargo also reduces the amount of time a large hauler spends moving empty."
+      ],
+      "sources": [
+        {"name": "INARA — Trade Routes", "url": "https://inara.cz/elite/market-traderoutes/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-basics",
+      "category": "Fleet Carriers",
+      "topic": "Fleet Carrier Core Specifications",
+      "keywords": ["fleet carrier", "carrier cost", "25,000", "25000 cargo", "500 ly", "drake class"],
+      "ruleOfThumb": "A Fleet Carrier is a mobile squad logistics base: 5 billion credits to purchase, up to 500 ly per jump, and 25,000 tonnes of total carrier capacity before service allocations consume part of it.",
+      "details": [
+        "Fleet Carriers are persistent capital ships rather than normally piloted vessels.",
+        "The standard purchase price is 5,000,000,000 credits.",
+        "The carrier's total capacity is 25,000 tonnes; installed optional services and stored commodities share that capacity budget.",
+        "Carriers can provide configurable services, markets and docking access, making them useful for mining, trade, exploration, colonization, combat and squad logistics."
+      ],
+      "quickFacts": [
+        {"label": "Purchase price", "value": "5,000,000,000 Cr"},
+        {"label": "Maximum jump", "value": "500 ly"},
+        {"label": "Total capacity", "value": "25,000 t"}
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Drake-Class Carrier", "url": "https://elite-dangerous.fandom.com/wiki/Drake-Class_Carrier"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-jump-cycle",
+      "category": "Fleet Carriers",
+      "topic": "Fleet Carrier Jump Cycle",
+      "keywords": ["carrier jump", "500 ly", "15 minute carrier jump", "5 minute cooldown", "jump timer", "carrier cooldown"],
+      "ruleOfThumb": "A normal Fleet Carrier jump has up to 500 ly range, a roughly 15-minute preparation period, then about a 5-minute cooldown after arrival. Plan logistics around the timer instead of treating the carrier like a normal ship.",
+      "details": [
+        "The owner plots carrier jumps through the Galaxy or System Map.",
+        "A scheduled jump begins a preparation countdown that gives docked commanders time to board or disembark before lockdown.",
+        "After the jump completes, the carrier enters a short cooldown before another jump can be scheduled/completed.",
+        "Permit-locked destinations can restrict carrier access, so a normal ship's route does not always imply the carrier can follow it."
+      ],
+      "quickFacts": [
+        {"label": "Maximum range", "value": "500 ly"},
+        {"label": "Preparation", "value": "~15 min"},
+        {"label": "Post-jump cooldown", "value": "~5 min"}
+      ],
+      "commonMistakes": [
+        "Announcing a departure time without accounting for carrier preparation/lockdown.",
+        "Assuming a carrier can enter every system a normal ship can reach."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Fleet Carriers Update", "url": "https://elite-dangerous.fandom.com/wiki/Fleet_Carriers_Update"},
+        {"name": "Elite Dangerous Wiki — Drake-Class Carrier", "url": "https://elite-dangerous.fandom.com/wiki/Drake-Class_Carrier"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-tritium",
+      "category": "Fleet Carriers",
+      "topic": "Tritium & Carrier Fuel Planning",
+      "keywords": ["tritium", "carrier fuel", "tritium depot", "1000 tritium", "carrier range", "fuel carrier"],
+      "ruleOfThumb": "Never plan a long carrier deployment from jump range alone. Tritium use depends on distance and carrier mass, and the active fuel depot holds 1,000 tonnes, so expedition logistics need a fuel reserve and resupply plan.",
+      "details": [
+        "Fleet Carrier jumps consume Tritium.",
+        "Fuel consumption rises with jump distance and carrier mass, so a heavily loaded carrier burns more than an empty one over the same route.",
+        "The carrier's Tritium Depot holds 1,000 tonnes; additional Tritium can be stored as normal cargo and transferred into the depot when needed.",
+        "A carrier can strand itself operationally if it reaches a remote region without enough Tritium to leave, so deep-space routes should include a return reserve."
+      ],
+      "quickFacts": [
+        {"label": "Tritium depot", "value": "1,000 t"},
+        {"label": "Consumption depends on", "value": "Distance + carrier mass"}
+      ],
+      "commonMistakes": [
+        "Planning only enough Tritium to reach the destination and forgetting the return trip.",
+        "Leaving reserve Tritium in carrier cargo without ensuring someone can transfer it into the active depot when needed."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Drake-Class Carrier", "url": "https://elite-dangerous.fandom.com/wiki/Drake-Class_Carrier"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-capacity-services",
+      "category": "Fleet Carriers",
+      "topic": "Carrier Capacity vs Installed Services",
+      "keywords": ["carrier capacity", "carrier services", "service capacity", "25000 tonnes", "carrier cargo space"],
+      "ruleOfThumb": "Carrier services are not free in capacity. Every optional service reduces the 25,000-tonne pool available for commodities, so a logistics carrier should install only the services that support its mission.",
+      "details": [
+        "The carrier's total capacity is shared between stored cargo and the capacity allocated to optional services and stock packages.",
+        "A trade/mining carrier may value maximum free commodity space, while an expedition carrier may deliberately sacrifice cargo capacity for repair, refuel, cartographics, Vista Genomics or other support services.",
+        "Suspending a service reduces operating cost but does not necessarily recover the physical capacity allocated to installing it; remove services deliberately if capacity is the objective."
+      ],
+      "commonMistakes": [
+        "Installing every service because the carrier can support them and then discovering the useful cargo space is much smaller.",
+        "Designing an expedition carrier and a bulk-haul carrier as if they have the same service priorities."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Fleet Carriers Update", "url": "https://elite-dangerous.fandom.com/wiki/Fleet_Carriers_Update"},
+        {"name": "INARA — Fleet Carrier Details", "url": "https://inara.cz/elite/fleetcarriers/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-upkeep",
+      "category": "Fleet Carriers",
+      "topic": "Fleet Carrier Upkeep",
+      "keywords": ["carrier upkeep", "weekly upkeep", "carrier balance", "service upkeep", "decommission"],
+      "ruleOfThumb": "Keep a healthy carrier balance rather than budgeting to the exact weekly bill. The base carrier has ongoing upkeep, optional services add more, and an operational reserve prevents an absence from becoming a maintenance problem.",
+      "details": [
+        "The carrier's core weekly upkeep begins at 5,000,000 credits before optional service costs.",
+        "Installed active services add their own weekly upkeep; suspending services can reduce operating expense.",
+        "Upkeep is paid from the carrier's own balance, so owners should transfer enough credits to cover extended periods away from the game.",
+        "INARA can display estimated weekly upkeep and how long the current reserve will cover it when carrier data is available."
+      ],
+      "quickFacts": [
+        {"label": "Core weekly upkeep", "value": "5,000,000 Cr"},
+        {"label": "Optional services", "value": "Add weekly upkeep"}
+      ],
+      "commonMistakes": [
+        "Leaving the carrier with only one or two weeks of reserve before a long break.",
+        "Keeping expensive services active when they are not needed for the carrier's current role."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Drake-Class Carrier", "url": "https://elite-dangerous.fandom.com/wiki/Drake-Class_Carrier"},
+        {"name": "INARA — Fleet Carriers", "url": "https://inara.cz/elite/fleetcarriers/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-commodity-market",
+      "category": "Fleet Carriers",
+      "topic": "Fleet Carrier Commodity Market",
+      "keywords": ["carrier market", "buy order", "sell order", "carrier commodity", "market reserve", "loading carrier", "unloading carrier"],
+      "ruleOfThumb": "Use carrier buy/sell orders as a logistics contract. Set the price and quantity deliberately, ensure the carrier has the required credits or stock, and announce whether the operation is loading or unloading.",
+      "details": [
+        "Carrier owners can configure commodity buy and sell orders rather than relying on an NPC economy.",
+        "A buy order needs enough carrier funds reserved to pay commanders who sell into it.",
+        "A sell order needs the commodity physically present in carrier storage.",
+        "Squad operations work best when the owner publishes commodity, price, remaining quantity, carrier callsign/location and the target destination or purpose."
+      ],
+      "commonMistakes": [
+        "Creating a buy order without enough market reserve to cover the requested quantity.",
+        "Advertising an unload without checking that the carrier still has stock.",
+        "Posting only the carrier name and omitting its permanent callsign, which makes similarly named carriers harder to distinguish."
+      ],
+      "operations": "For Mongrel coordination posts, include callsign, system/body, commodity, buy/sell price, quantity remaining, pad/access restrictions if relevant, and whether members should load or unload.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Fleet Carriers Update", "url": "https://elite-dangerous.fandom.com/wiki/Fleet_Carriers_Update"},
+        {"name": "INARA — Fleet Carrier Details", "url": "https://inara.cz/elite/fleetcarriers/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-docking-access",
+      "category": "Fleet Carriers",
+      "topic": "Docking Access & Squadron Operations",
+      "keywords": ["carrier docking access", "squadron and friends", "allow notorious", "carrier permissions", "carrier access"],
+      "ruleOfThumb": "Check carrier docking permissions before relying on it as a squad rendezvous. Access settings and notorious-pilot restrictions can turn a perfectly positioned carrier into an unusable destination for part of the wing.",
+      "details": [
+        "Fleet Carrier owners can control who may dock, including broad public access or narrower friend/squadron access.",
+        "The owner can also choose whether notorious commanders are allowed to dock.",
+        "For public loading/unloading operations, access should be checked before the announcement goes out."
+      ],
+      "commonMistakes": [
+        "Posting a carrier operation to the squad while the carrier is still restricted to a smaller access group.",
+        "Changing docking permissions during an operation without updating the announcement."
+      ],
+      "sources": [
+        {"name": "INARA — Fleet Carrier Details", "url": "https://inara.cz/elite/fleetcarriers/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "carrier-expedition-logistics",
+      "category": "Fleet Carriers",
+      "topic": "Carrier Expedition Logistics",
+      "keywords": ["carrier expedition", "deep space carrier", "exploration carrier", "tritium reserve", "repair carrier", "vista genomics carrier"],
+      "ruleOfThumb": "An expedition carrier is a moving support base, not just a 500-ly jumper. Plan Tritium, repair/refuel capability, data turn-in services, rendezvous timing and a return reserve before departure.",
+      "details": [
+        "Exploration-focused carriers often trade some cargo capacity and upkeep for services that reduce the need to return to inhabited space.",
+        "Universal Cartographics and Vista Genomics can make the carrier a practical data turn-in point when those services are installed and active.",
+        "Repair, refuel and rearm services can keep expedition ships operational after heat, neutron, landing or synthesis mistakes.",
+        "Publish a jump schedule with enough notice for members to dock, and identify whether the carrier will wait at waypoints or continue on a fixed cadence."
+      ],
+      "operations": "Before departure, record starting Tritium, estimated route requirement, emergency reserve, active services and who is responsible for refueling the depot from stored cargo.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Drake-Class Carrier", "url": "https://elite-dangerous.fandom.com/wiki/Drake-Class_Carrier"},
+        {"name": "INARA — Fleet Carriers", "url": "https://inara.cz/elite/fleetcarriers/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
