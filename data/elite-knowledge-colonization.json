@@ -1,0 +1,286 @@
+{
+  "version": "72",
+  "reviewedAt": "2026-09-14",
+  "scope": "System Colonisation reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "colonization-claim-range",
+      "category": "System Colonisation",
+      "topic": "Claim Range & Daisy-Chaining",
+      "keywords": ["colonization range", "colonisation range", "15 ly", "daisy chain", "claim system", "colonize system"],
+      "ruleOfThumb": "A new colony claim must be within 15 ly of an eligible inhabited source system. Repeating that process from newly completed colonies is how commanders build long colonisation chains into remote space.",
+      "details": [
+        "Claims are made through a System Colonisation Contact in an inhabited system.",
+        "The target must be unpopulated and eligible for colonisation.",
+        "The current working claim range is 15 ly from the source system.",
+        "After the primary port is completed and the new system becomes inhabited, its Colonisation Contact can be used as the next link in a chain."
+      ],
+      "quickFacts": [
+        {"label": "Maximum claim range", "value": "15 ly"},
+        {"label": "Common strategy", "value": "Daisy-chain completed colonies"}
+      ],
+      "commonMistakes": [
+        "Planning a route by straight-line distance without checking that every intermediate hop is within 15 ly.",
+        "Assuming an unpopulated system is automatically eligible to claim."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-source-faction",
+      "category": "System Colonisation",
+      "topic": "Source Faction & Founding Faction",
+      "keywords": ["founding faction", "source faction", "colonization contact faction", "native faction", "initial faction"],
+      "ruleOfThumb": "Choose the source station carefully: the minor faction associated with the Colonisation Contact becomes the founding/native faction of the new colony. That choice has long-term BGS consequences.",
+      "details": [
+        "The claim is purchased through a Colonisation Contact in an inhabited source system.",
+        "The relevant source minor faction is carried into the new system and becomes its initial dominant/native faction.",
+        "Because native factions cannot normally be removed from their home system by Retreat, the founding-faction choice is effectively permanent in ways ordinary asset ownership is not.",
+        "If faction identity matters to the project, verify the controlling/contact faction before confirming the claim."
+      ],
+      "commonMistakes": [
+        "Buying the claim from the nearest convenient port without checking which faction will found the colony.",
+        "Treating the founding faction as something that can later be swapped out as casually as a station owner."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-claim-timers",
+      "category": "System Colonisation",
+      "topic": "Claim, Beacon & Primary-Port Timers",
+      "keywords": ["colonization timer", "24 hours beacon", "4 weeks primary port", "claim deadline", "colonisation beacon"],
+      "ruleOfThumb": "A claim starts two critical deadlines: deploy the Colonisation Beacon within 24 hours, then complete the primary port within about four weeks. Missing the primary-port deadline can void the claim and delivered commodities.",
+      "details": [
+        "After a claim is registered, the Colonisation Beacon must be deployed in the target system within 24 hours.",
+        "The primary port must then be completed within roughly four weeks.",
+        "Once the primary port is complete, the system becomes inhabited and the open-ended build-out phase begins.",
+        "The primary-port deadline is therefore the one phase of colonisation where logistics failure can erase a major investment."
+      ],
+      "quickFacts": [
+        {"label": "Beacon deployment", "value": "Within 24 hours"},
+        {"label": "Primary port", "value": "Complete within ~4 weeks"}
+      ],
+      "commonMistakes": [
+        "Claiming a large primary port without confirming the squad can finish the haul before the deadline.",
+        "Assuming post-primary construction has the same project-level deadline as the initial claim."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-primary-port-location",
+      "category": "System Colonisation",
+      "topic": "Primary Port Location Is Preselected",
+      "keywords": ["primary port location", "architect mode flag", "fixed primary port", "system map flag", "primary station location"],
+      "ruleOfThumb": "Scout the target system before claiming it because the game's primary-port location is preselected. Architect Mode shows the flagged slot, and you cannot simply move the primary port to a more convenient body afterward.",
+      "details": [
+        "The System Map's Architect Mode shows orbital and surface build slots before the claim is committed.",
+        "The primary-port slot is marked with a flag rather than the normal add/build icon.",
+        "Travel time, body type, rings, atmosphere, settlement access and desired economy can all make one preselected location much better than another.",
+        "A poor primary-port location can still be worked around later with additional stations, but the primary itself is a permanent anchor."
+      ],
+      "commonMistakes": [
+        "Claiming a visually attractive system before checking where the game will force the primary port.",
+        "Assuming the primary station can later be demolished and rebuilt elsewhere."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-architect-mode",
+      "category": "System Colonisation",
+      "topic": "Architect Mode & Build Slots",
+      "keywords": ["architect mode", "build slots", "orbital slots", "surface slots", "facility slots", "system architect"],
+      "ruleOfThumb": "Use Architect Mode before designing the colony. Build slots are finite, so the number and location of orbital/surface slots can determine whether the system can ever support the capital layout you want.",
+      "details": [
+        "Architect Mode shows available orbital construction locations and surface capacity by body.",
+        "Systems with more bodies and larger suitable planets generally offer more places to build.",
+        "Finite slots make build order strategic: using a scarce orbital location on a low-value facility can block a later station plan.",
+        "Slot availability should be evaluated together with body economy modifiers and travel time."
+      ],
+      "operations": "Before a major claim, record the primary-port flag, total orbital slots, useful surface bodies, ring access and any body-specific economy advantages.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-construction-tiers",
+      "category": "System Colonisation",
+      "topic": "Construction Tiers & Points",
+      "keywords": ["construction points", "tier 1", "tier 2", "tier 3", "t1 t2 t3", "colonization points"],
+      "ruleOfThumb": "After the primary port, colonisation uses a tiered construction-point ladder: basic Tier-1 builds create Tier-2 points, Tier-2 builds spend those points and create Tier-3 points, and Tier-3 builds spend Tier-3 points on the largest showpiece stations.",
+      "details": [
+        "Tier-1 facilities are the entry layer and generally generate the construction currency needed for Tier-2 projects.",
+        "Tier-2 projects consume Tier-2 points and can generate Tier-3 points.",
+        "Tier-3 projects include major starports and large planetary ports and do not feed another higher tier.",
+        "The primary port is special because it is exempt from the normal post-primary construction-point climb, which makes a large primary port strategically valuable in systems with limited build slots.",
+        "Large-port point costs escalate as more high-tier ports are added, so build order can materially change the total supporting construction needed."
+      ],
+      "commonMistakes": [
+        "Planning a late Orbis/Ocellus/Dodec without checking whether the system has enough point-generating sites left.",
+        "Building expensive high-tier stations in an inefficient order and then discovering later stations require much more supporting construction."
+      ],
+      "sources": [
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "colonization-economy-shaping",
+      "category": "System Colonisation",
+      "topic": "Shaping Colony Economies",
+      "keywords": ["colony economy", "economy influence", "high tech", "refinery", "tourism", "agriculture", "military", "extraction", "industrial"],
+      "ruleOfThumb": "Facilities shape the system's economic identity. Design one or two strong complementary economies on purpose instead of adding structures randomly and hoping the final markets become useful.",
+      "details": [
+        "Facilities contribute influence toward specialisations such as Extraction, Industrial, High-Tech, Agriculture, Military, Tourism, Refinery, Terraforming and Service.",
+        "A fresh generic colony begins with a Colony-style economy until stronger specialisation develops.",
+        "Current community testing after the 2025 economy rework indicates the top two economies coexist much more cleanly than early colonisation guides suggested.",
+        "Market supply/demand, mission generation and the system's practical role are strongly affected by the economy mix."
+      ],
+      "operations": "Choose the system's intended jobs first — mining/refinery hub, high-tech trade center, tourism capital, military base, etc. — then select facilities that reinforce those jobs.",
+      "watchFor": "Economy weighting has already been rebalanced since colonisation launched. Recheck exact percentages and market interactions after major updates rather than treating old spreadsheets as permanent law.",
+      "sources": [
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / evolving"
+    },
+    {
+      "id": "colonization-body-economy",
+      "category": "System Colonisation",
+      "topic": "Body Type & Colony-Port Economy Lean",
+      "keywords": ["body economy", "rocky refinery", "earth like economy", "gas giant high tech", "ring extraction", "colony port body bonus"],
+      "ruleOfThumb": "For Colony-type ports, the body itself can push the economy in useful directions. Treat body selection as part of economic design rather than cosmetic placement.",
+      "details": [
+        "Current community mapping associates High Metal Content/Metal-Rich bodies with Extraction and Rocky bodies with Refinery.",
+        "Rocky-Ice bodies lean Industrial + Refinery, while Icy bodies lean Industrial.",
+        "Gas Giants lean High-Tech + Industrial.",
+        "Earth-like Worlds can contribute Agriculture, High-Tech, Military and Tourism; Water Worlds lean Agriculture + Tourism; Ammonia Worlds lean High-Tech + Tourism.",
+        "Rings and other body features can add additional economic modifiers, especially toward Extraction.",
+        "Specialised port types can override or ignore the generic Colony-port body lean, so check the actual facility type before relying on the body bonus."
+      ],
+      "tables": [
+        {
+          "title": "Common Colony-port body leans",
+          "columns": ["Body", "Typical economy lean"],
+          "rows": [
+            ["High Metal Content / Metal-Rich", "Extraction"],
+            ["Rocky", "Refinery"],
+            ["Rocky-Ice", "Industrial + Refinery"],
+            ["Icy", "Industrial"],
+            ["Gas Giant", "High-Tech + Industrial"],
+            ["Earth-like World", "Agriculture + High-Tech + Military + Tourism"],
+            ["Water World", "Agriculture + Tourism"],
+            ["Ammonia World", "High-Tech + Tourism"]
+          ]
+        }
+      ],
+      "sources": [
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "colonization-concurrent-sites",
+      "category": "System Colonisation",
+      "topic": "Concurrent Construction & Site Exclusivity",
+      "keywords": ["five construction sites", "5 construction sites", "site exclusivity", "30 minutes squadron", "construction lockout", "200 m spacing"],
+      "ruleOfThumb": "Post-primary construction can run in parallel. Current field documentation supports up to five active facilities under construction, with an initial architect-only window followed by squadron access before the site opens to everyone.",
+      "details": [
+        "Current community documentation reports up to five facilities under construction at once.",
+        "A newly placed site is protected for the architect for roughly the first 30 minutes, then for the architect's squadron for the rest of roughly 24 hours before broader contribution opens.",
+        "Surface construction also requires adequate separation between sites; current field guidance uses about 200 m minimum spacing.",
+        "Parallel builds can greatly shorten a squad project when hauling capacity is available, but they also multiply the number of commodity lists being managed."
+      ],
+      "operations": "For a squad build day, assign one coordinator to track each active site's remaining commodities so haulers do not over-deliver one list while another stalls.",
+      "watchFor": "Concurrency limits and exclusivity behavior have changed during colonisation's first year. Confirm in-game after major patches.",
+      "sources": [
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-observed / review often"
+    },
+    {
+      "id": "colonization-claim-exclusivity",
+      "category": "System Colonisation",
+      "topic": "New-Colony Claim Exclusivity Window",
+      "keywords": ["claim sniping", "30 minute architect claim", "23.5 hours squad claim", "new colony exclusivity", "claim lockout"],
+      "ruleOfThumb": "When a primary port completes, the architect gets a short exclusive chance to claim the next link, followed by a longer squadron-only window before outsiders can claim from the new colony.",
+      "details": [
+        "Current released behavior gives the System Architect approximately 30 minutes of exclusive claim rights from the newly completed colony.",
+        "After that, squadron members receive the remainder of a roughly 24-hour protected period.",
+        "After the total protected period expires, other commanders can claim eligible systems from that source.",
+        "This mechanic is specifically useful for protecting deliberate colonisation chains from claim sniping."
+      ],
+      "quickFacts": [
+        {"label": "Architect only", "value": "~30 minutes"},
+        {"label": "Squadron protection", "value": "Remainder of ~24 hours"}
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-logistics",
+      "category": "System Colonisation",
+      "topic": "Colonisation Hauling Logistics",
+      "keywords": ["colonization hauling", "construction commodities", "fleet carrier colonization", "primary port hauling", "construction materials"],
+      "ruleOfThumb": "Colonisation is mostly a logistics problem. Shorten the source-to-site loop, use the largest practical haulers, and use Fleet Carriers as buffers when they actually reduce trip time or consolidate supply.",
+      "details": [
+        "Large starports can require tens or hundreds of thousands of tonnes of construction commodities, making route efficiency more important than individual commodity price.",
+        "The best supply station is not always the cheapest one; high stock and short travel time can save more hours than a lower unit price.",
+        "A Fleet Carrier can preload several commodities and move them close to the construction site, turning long sourcing legs into short shuttle runs.",
+        "Squad hauling scales extremely well when commodity assignments are coordinated so multiple pilots are not all chasing the same remaining material."
+      ],
+      "operations": "Track remaining tonnes by commodity, identify the current bottleneck, and keep haulers pointed at what the site actually still needs rather than what is easiest to buy.",
+      "sources": [
+        {"name": "E:D Black Box — System Colonisation", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/system-colonization.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "colonization-bgs-after-completion",
+      "category": "System Colonisation",
+      "topic": "BGS Begins After the Colony Goes Live",
+      "keywords": ["colonization bgs", "colony influence", "minor factions colony", "post colonization bgs", "colony population"],
+      "ruleOfThumb": "Once the primary port is complete, the colony becomes an inhabited BGS system. From that point onward, influence, states, conflicts, faction arrivals and asset ownership become normal strategic concerns alongside continued construction.",
+      "details": [
+        "The founding faction begins as the new system's native faction and initial dominant presence.",
+        "Further factions can arrive through normal BGS expansion mechanics over time.",
+        "New construction can add population and change system statistics while the normal BGS simultaneously changes influence and states.",
+        "Because colony population can grow substantially as sites are built, the system's responsiveness to BGS work can change during development rather than remaining fixed forever."
+      ],
+      "operations": "Treat colony development and BGS as linked but distinct workstreams: construction determines infrastructure/economy/population, while BGS activity determines faction influence, states and political control.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "Mongrels Reference — Background Simulation", "url": "/guides/reference/#bgs-background-simulation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    }
+  ]
+}
