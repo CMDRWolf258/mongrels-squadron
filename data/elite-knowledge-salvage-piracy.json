@@ -1,0 +1,290 @@
+{
+  "version": "80",
+  "reviewedAt": "2026-09-14",
+  "scope": "Salvage, piracy, smuggling, stolen and illegal cargo, Black Markets, cargo collection, Hatch Breakers, Search & Rescue, recovery missions, megaship salvage, and rescue logistics used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "salvage-ownership-legality-overview",
+      "category": "Salvage & Cargo Legality",
+      "topic": "Ownership and Legality Are Separate",
+      "keywords": ["salvage legality", "cargo ownership", "stolen vs illegal", "stolen cargo", "illegal cargo", "legal salvage"],
+      "ruleOfThumb": "Check both ownership and local legality before collecting or selling cargo. A canister can be stolen, illegal in the current jurisdiction, both, or neither.",
+      "details": [
+        "Stolen status describes ownership: the cargo belongs to someone else or was obtained without ownership being relinquished.",
+        "Illegal status depends on the current jurisdiction's prohibited-goods rules and can apply even to cargo you legally own.",
+        "A jurisdiction with weak or no crime enforcement does not erase a stolen flag from the cargo itself.",
+        "Where you should take an item depends on its status: normal Commodity Market, Black Market, Search & Rescue contact, or mission turn-in."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Stolen Goods", "url": "https://elite-dangerous.fandom.com/wiki/Stolen_Goods"},
+        {"name": "Elite Dangerous Wiki — Illegal Goods", "url": "https://elite-dangerous.fandom.com/wiki/Illegal_Goods"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "salvage-jettison-vs-abandon",
+      "category": "Salvage & Cargo Legality",
+      "topic": "Jettison Cargo vs Jettison Cargo (Abandon)",
+      "keywords": ["jettison cargo", "abandon cargo", "jettison abandon", "cargo stolen", "give cargo", "drop cargo"],
+      "ruleOfThumb": "If you intentionally want another commander to own dropped cargo, use Jettison Cargo (Abandon). Normal jettison keeps ownership attached and the receiver normally gets stolen cargo.",
+      "details": [
+        "Normal jettison ejects the canister but does not relinquish ownership.",
+        "Jettison Cargo (Abandon) relinquishes ownership, allowing another commander to scoop it without receiving the stolen tag from you.",
+        "This distinction matters for cooperative cargo transfers and consensual player piracy.",
+        "Mission cargo has separate mission consequences; abandoning or failing the mission can convert remaining mission cargo to stolen cargo and create penalties."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Jettison Cargo", "url": "https://elite-dangerous.fandom.com/wiki/Jettison_Cargo"},
+        {"name": "Elite Dangerous Wiki — Stolen Goods", "url": "https://elite-dangerous.fandom.com/wiki/Stolen_Goods"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "salvage-collector-limpet-modes",
+      "category": "Salvage Tools",
+      "topic": "Collector Limpet Targeted vs Autonomous Collection",
+      "keywords": ["collector limpet", "collector mode", "target collector", "autonomous collector", "ignored contacts", "accidental stolen cargo"],
+      "ruleOfThumb": "Fire a collector with nothing targeted for area collection. If you target a specific object first, that limpet performs a fast single-item run and expires afterward.",
+      "details": [
+        "Untargeted collectors gather eligible nearby objects repeatedly for their normal lifetime.",
+        "A collector launched while an object is targeted collects that one object and then expires.",
+        "Collectors do not judge whether a canister is legal, stolen or wanted by you; careless autonomous collection can create cargo problems.",
+        "Use the Contacts panel and Ignore List to stop collectors from picking up unwanted cargo."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Collector Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Collector_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "piracy-manifest-scanner",
+      "category": "Piracy",
+      "topic": "Manifest Scanner",
+      "keywords": ["manifest scanner", "cargo scanner", "scan cargo", "piracy cargo scan", "target manifest"],
+      "ruleOfThumb": "Scan before committing to piracy. A Manifest Scanner tells you whether the target actually carries cargo worth taking and can reveal passenger manifests where applicable.",
+      "details": [
+        "The scanner is a utility module and must be used within its operating range while maintaining the scan.",
+        "Pirates use the result to decide whether to demand cargo, attack the cargo hatch, or disengage.",
+        "Scanning a ship's manifest is information gathering; the legal risk comes from subsequent criminal actions, local scan rules and cargo theft."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Manifest Scanner", "url": "https://elite-dangerous.fandom.com/wiki/Manifest_Scanner"},
+        {"name": "Elite Dangerous Wiki — Pirate", "url": "https://elite-dangerous.fandom.com/wiki/Pirate"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "piracy-hatch-breaker",
+      "category": "Piracy",
+      "topic": "Hatch Breaker Limpets",
+      "keywords": ["hatch breaker", "hatch breaker limpet", "break cargo hatch", "piracy limpet", "cargo hatch hack"],
+      "ruleOfThumb": "Hatch Breakers are the nonlethal cargo-extraction tool: bring the target's shields down, launch the limpet at the cargo hatch, then collect the forced ejections.",
+      "details": [
+        "Hatch Breaker limpets work against an unshielded target and attempt to hack the cargo hatch.",
+        "Successful hacks force cargo canisters out without requiring destruction of the target ship.",
+        "The ejected goods can still be stolen cargo depending on ownership; a Hatch Breaker does not make them legally yours.",
+        "Collectors pair naturally with Hatch Breakers for rapid recovery of the ejected cargo."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Hatch Breaker Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Hatch_Breaker_Limpet_Controller"},
+        {"name": "Elite Dangerous Wiki — Pirate", "url": "https://elite-dangerous.fandom.com/wiki/Pirate"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "piracy-practical-workflow",
+      "category": "Piracy",
+      "topic": "Ship Piracy Workflow",
+      "keywords": ["piracy", "pirate", "piracy workflow", "steal cargo", "player piracy", "npc piracy"],
+      "ruleOfThumb": "A practical piracy chain is interdict or meet the target, scan the manifest, demand cargo or disable the target, use Hatch Breakers if needed, collect the goods, then use an appropriate Black Market for stolen cargo.",
+      "details": [
+        "A Manifest Scanner prevents wasting time on empty or low-value targets.",
+        "Disabling drives or the cargo hatch can control an NPC target, but destruction is not required for successful piracy.",
+        "Against cooperative players, cargo abandoned by the victim can avoid stolen ownership; normal jettison does not.",
+        "Local security, jurisdiction and the target's legal status affect the criminal consequences of interdiction, assault and theft."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Pirate", "url": "https://elite-dangerous.fandom.com/wiki/Pirate"},
+        {"name": "Elite Dangerous Wiki — Hatch Breaker Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Hatch_Breaker_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "black-market-basics",
+      "category": "Smuggling & Black Markets",
+      "topic": "Black Markets",
+      "keywords": ["black market", "sell stolen goods", "sell illegal goods", "stolen commodity", "illegal commodity"],
+      "ruleOfThumb": "Use a station's Black Market for cargo the normal Commodity Market will not legally accept. Not every station has one, so check services before travelling there.",
+      "details": [
+        "Black Markets are station Contacts services, separate from the normal Commodity Market.",
+        "They can purchase stolen and/or locally illegal commodities when that market accepts the commodity.",
+        "Cargo legality can change by jurisdiction, so a commodity illegal at one port may be legal elsewhere.",
+        "Reaching the Black Market still requires docking without an enforcement scan completing if your cargo is illegal there."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Black Market", "url": "https://elite-dangerous.fandom.com/wiki/Black_Market"},
+        {"name": "Elite Dangerous Wiki — Illegal Goods", "url": "https://elite-dangerous.fandom.com/wiki/Illegal_Goods"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "smuggling-scan-avoidance",
+      "category": "Smuggling & Black Markets",
+      "topic": "Smuggling and Scan Avoidance",
+      "keywords": ["smuggling", "smuggler", "avoid scan", "station scan", "silent running smuggling", "heat sink smuggling", "cold ship"],
+      "ruleOfThumb": "Smuggling is about preventing a completed authority scan: minimize exposure time, keep the ship cool when useful, use heatsinks if needed, and dock quickly rather than relying on Silent Running as invisibility.",
+      "details": [
+        "A low thermal signature can make detection and scan acquisition harder, but it does not make the ship literally invisible.",
+        "Silent Running closes heat vents and disables shields while heat continues to build internally.",
+        "Heatsinks can rapidly lower ship temperature and are usually safer than remaining in Silent Running for a long time.",
+        "Fast approach, immediate docking clearance and a clean line through the mail slot reduce the time security has to finish a scan."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Smuggler", "url": "https://elite-dangerous.fandom.com/wiki/Smuggler"},
+        {"name": "Elite Dangerous Wiki — Silent Running", "url": "https://elite-dangerous.fandom.com/wiki/Silent_Running"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "search-rescue-agent",
+      "category": "Search & Rescue",
+      "topic": "Search & Rescue Contacts",
+      "keywords": ["search and rescue", "search & rescue", "rescue agent", "occupied escape pod", "damaged escape pod", "black box", "personal effects", "wreckage components", "hostages"],
+      "ruleOfThumb": "Take recognized rescue and wreckage items to a station's Search & Rescue contact rather than assuming they belong on the Commodity Market or Black Market.",
+      "details": [
+        "Search & Rescue contacts accept categories including Occupied Escape Pods, Damaged Escape Pods, Black Boxes, Personal Effects, Wreckage Components and Hostages.",
+        "These items are commonly found at wreckage and emission signal sources, including some Non-Human Signal Sources.",
+        "Mission-specific rescue cargo should be returned to the mission's designated contact or destination instead of being treated as generic salvage.",
+        "General Search & Rescue payouts are usually secondary to the recovery activity itself; mission rewards can be substantially different."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Search and Rescue Agent", "url": "https://elite-dangerous.fandom.com/wiki/Search_and_Rescue_Agent"},
+        {"name": "Elite Dangerous Wiki — Search and Rescue", "url": "https://elite-dangerous.fandom.com/wiki/Search_and_Rescue"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "salvage-signal-sources",
+      "category": "Search & Rescue",
+      "topic": "Salvage Signal Sources and Threat",
+      "keywords": ["salvage signal", "degraded emissions", "salvageable wreckage", "wreckage signal", "escape pod signal", "signal source salvage"],
+      "ruleOfThumb": "Treat every salvage signal as an unknown scene until you resolve it. Wreckage may contain cargo, rescue items, materials or hostile contacts, and higher-threat signals demand a combat-ready escape plan.",
+      "details": [
+        "Degraded Emissions and Salvageable Wreckage signals can contain loose cargo, escape pods and other recoverable objects.",
+        "Some signals spawn hostiles after arrival or after collection begins.",
+        "Non-Human Signal Sources can contain rescue/salvage objects but may also expose the ship to Thargoid threats and corrosive cargo.",
+        "Check the Contacts panel before releasing autonomous collectors so you know what the ship is about to scoop."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Salvageable Wreckage", "url": "https://elite-dangerous.fandom.com/wiki/Salvageable_Wreckage"},
+        {"name": "Elite Dangerous Wiki — Search and Rescue", "url": "https://elite-dangerous.fandom.com/wiki/Search_and_Rescue"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "recovery-missions-legal-illegal",
+      "category": "Salvage Missions",
+      "topic": "Recovery Missions: Legal vs Illegal Salvage",
+      "keywords": ["recovery mission", "salvage mission", "illegal recovery", "mission salvage", "recover cargo mission", "mission item"],
+      "ruleOfThumb": "Read recovery-mission legality before accepting it. Some recovery jobs are ordinary salvage; others explicitly require theft or illegal recovery and can create fines, bounties or hostile security responses.",
+      "details": [
+        "Recovery missions can direct you to signal sources, wrecks, settlements or other mission-specific locations.",
+        "Mission cargo is tracked separately from ordinary cargo and must normally be returned to the mission's specified destination.",
+        "Threat-rated mission locations can spawn defenders or ambushes, so a cargo-only ship may not be appropriate.",
+        "If the required cargo remains aboard a ship you destroy or otherwise becomes unrecoverable, the mission can become impossible or fail."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Mission Board/Types", "url": "https://elite-dangerous.fandom.com/wiki/Mission_Board/Types"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "megaship-salvage-hacking",
+      "category": "Salvage Tools",
+      "topic": "Megaship and Installation Cargo Salvage",
+      "keywords": ["megaship salvage", "megaship cargo", "installation salvage", "recon limpet", "data link scanner", "cargo bay hack", "megaship piracy"],
+      "ruleOfThumb": "Megaship salvage is a scan-and-subtarget workflow: Data Link Scan the installation, identify interaction points, use Recon or Hatch Breaker limpets where appropriate, and expect theft to trigger security or stolen-cargo consequences.",
+      "details": [
+        "Data Link scanning exposes interactive subsystems and docking points on supported megaships and installations.",
+        "Recon Limpets hack compatible data points; Hatch Breakers are used on compatible cargo points.",
+        "Cargo released by unauthorized hacking is normally theft, so plan for local authority response and Black Market disposal.",
+        "Operations Multi Limpet Controllers combine Collector, Hatch Breaker and Recon functions in one controller, making them convenient for mixed salvage work."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Recon Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Recon_Limpet_Controller"},
+        {"name": "Elite Dangerous Wiki — Operations Multi Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Operations_Multi_Limpet_Controller"},
+        {"name": "Elite Dangerous Wiki — Salvager", "url": "https://elite-dangerous.fandom.com/wiki/Salvager"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "salvage-rescue-loadout",
+      "category": "Search & Rescue",
+      "topic": "Practical Salvage and Rescue Loadout",
+      "keywords": ["salvage loadout", "rescue loadout", "search rescue ship", "collector cargo rack", "rescue limpets", "salvage ship build"],
+      "ruleOfThumb": "The minimum useful salvage ship needs cargo space and a Collector Controller; add mission-specific tools such as Manifest/Hatch Breaker/Recon, plus fuel-transfer or repair capability when the job includes assisting ships rather than collecting wreckage.",
+      "details": [
+        "Cargo racks determine how much physical salvage and how many limpets you can carry.",
+        "A Collector Controller is the main efficiency tool for wreckage recovery.",
+        "A Manifest Scanner plus Hatch Breaker supports piracy; Recon supports compatible megaship/installation interactions.",
+        "Fuel Transfer and Repair Limpets are rescue tools for live ships and are separate from Search & Rescue cargo turn-ins."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Careers", "url": "https://elite-dangerous.fandom.com/wiki/Careers"},
+        {"name": "Elite Dangerous Wiki — Collector Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Collector_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "practice"
+    },
+    {
+      "id": "corrosive-xeno-salvage",
+      "category": "Search & Rescue",
+      "topic": "Corrosive and Xeno Salvage",
+      "keywords": ["corrosive salvage", "thargoid salvage", "corrosion resistant cargo rack", "caustic cargo", "thargoid sensor", "thargoid probe"],
+      "ruleOfThumb": "If the salvage is corrosive, use a Corrosion Resistant Cargo Rack or plan for ongoing module damage. Ordinary cargo racks do not protect the ship from corrosive commodities.",
+      "details": [
+        "Some Thargoid and xeno commodities damage ships when carried in ordinary cargo racks.",
+        "Corrosion Resistant Cargo Racks isolate corrosive cargo from the ship and are the correct storage for repeated xeno-salvage work.",
+        "This is separate from caustic hull contamination caused by Thargoid attacks; cargo corrosion and external caustic contamination use different countermeasures.",
+        "Non-Human Signal Sources can mix valuable or mission-relevant salvage with active Thargoid danger, so do not treat them as routine wreckage sites."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Corrosion Resistant Cargo Rack", "url": "https://elite-dangerous.fandom.com/wiki/Corrosion_Resistant_Cargo_Rack"},
+        {"name": "Elite Dangerous Wiki — Search and Rescue", "url": "https://elite-dangerous.fandom.com/wiki/Search_and_Rescue"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "salvage-disposition-workflow",
+      "category": "Salvage & Cargo Legality",
+      "topic": "What To Do With Recovered Cargo",
+      "keywords": ["where to sell salvage", "what to do with salvage", "sell salvage", "turn in escape pod", "sell stolen cargo", "salvage destination"],
+      "ruleOfThumb": "Before leaving the scene, classify each recovered item: mission item -> mission destination; Search & Rescue item -> S&R contact; clean commodity -> normal market; stolen/illegal commodity -> suitable Black Market or another jurisdiction where appropriate.",
+      "details": [
+        "Do not assume every object found in space is ordinary trade cargo.",
+        "Mission-linked items should be handled according to the mission because selling or discarding them elsewhere can make completion impossible.",
+        "Escape pods, Black Boxes and similar rescue items belong at Search & Rescue contacts unless tied to a specific mission.",
+        "Stolen and locally illegal commodities need a legal plan before you dock; verify that the destination actually offers a Black Market if one is required."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Search and Rescue Agent", "url": "https://elite-dangerous.fandom.com/wiki/Search_and_Rescue_Agent"},
+        {"name": "Elite Dangerous Wiki — Black Market", "url": "https://elite-dangerous.fandom.com/wiki/Black_Market"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
