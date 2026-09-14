@@ -775,3 +775,92 @@ a.profile-chip:hover{border-color:rgba(34,211,238,.72);background:rgba(34,211,23
 .card-grid .card-link:nth-child(3n+1)::after{content:"";position:absolute;right:14px;bottom:14px;width:20px;height:20px;border-right:1px solid rgba(34,211,238,.13);border-bottom:1px solid rgba(34,211,238,.13)}
 @media(max-width:860px){.home-flare::before{background-position:62% center;opacity:.34}.operations-flare::before,.mining-flare::before,.member-flare::before{opacity:.28}.hero-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.96),rgba(3,6,8,.73)),linear-gradient(0deg,rgba(5,6,7,.96),rgba(5,6,7,.2) 54%,rgba(5,6,7,.58))}.hero-flare>.container::before,.hero-flare>.container::after{display:none}}
 @media(max-width:600px){.home-flare::before{background-position:67% center;opacity:.29}.mining-flare::before{background-position:64% center}.member-flare::before{background-position:64% center}}
+
+/* v70 — visual identity carried through full pages */
+/* Additional page-specific hero imagery */
+.pvp-flare::before{background-image:url('../assets/images/flare/pvp-combat.webp');background-position:center 48%;opacity:.50}
+.pvp-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.97) 0%,rgba(3,6,8,.82) 46%,rgba(3,6,8,.30) 78%,rgba(3,6,8,.68) 100%),linear-gradient(0deg,rgba(5,6,7,.96),rgba(5,6,7,.20) 58%,rgba(5,6,7,.48)),repeating-linear-gradient(135deg,transparent 0 46px,rgba(34,211,238,.024) 47px,transparent 48px)}
+.ships-flare::before{background-image:url('../assets/images/flare/ships-katana.webp');background-position:center 49%;opacity:.46}
+.ships-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.97) 0%,rgba(3,6,8,.84) 48%,rgba(3,6,8,.34) 77%,rgba(3,6,8,.67) 100%),linear-gradient(0deg,rgba(5,6,7,.96),rgba(5,6,7,.17) 58%,rgba(5,6,7,.50)),repeating-linear-gradient(90deg,transparent 0 79px,rgba(34,211,238,.022) 80px)}
+.carriers-flare::before{background-image:url('../assets/images/flare/carriers-pneuma.webp');background-position:center 52%;opacity:.48}
+.carriers-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.97) 0%,rgba(3,6,8,.83) 46%,rgba(3,6,8,.30) 78%,rgba(3,6,8,.65) 100%),linear-gradient(0deg,rgba(5,6,7,.96),rgba(5,6,7,.18) 58%,rgba(5,6,7,.48))}
+.trading-flare::before{background-image:url('../assets/images/flare/trading-station.webp');background-position:center 50%;opacity:.43}
+.trading-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.97) 0%,rgba(3,6,8,.84) 48%,rgba(3,6,8,.37) 78%,rgba(3,6,8,.70) 100%),linear-gradient(0deg,rgba(5,6,7,.96),rgba(5,6,7,.18) 58%,rgba(5,6,7,.50))}
+.projects-flare::before{background-image:url('../assets/images/flare/projects-colony.webp');background-position:center 56%;opacity:.40}
+.projects-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.97) 0%,rgba(3,6,8,.84) 48%,rgba(3,6,8,.38) 78%,rgba(3,6,8,.72) 100%),linear-gradient(0deg,rgba(5,6,7,.97),rgba(5,6,7,.20) 58%,rgba(5,6,7,.52))}
+.guides-flare::before{background-image:url('../assets/images/flare/guides-starship.webp');background-position:center 52%;opacity:.34}
+.guides-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.98) 0%,rgba(3,6,8,.87) 50%,rgba(3,6,8,.43) 80%,rgba(3,6,8,.74) 100%),linear-gradient(0deg,rgba(5,6,7,.97),rgba(5,6,7,.21) 58%,rgba(5,6,7,.54)),repeating-linear-gradient(90deg,transparent 0 59px,rgba(34,211,238,.019) 60px)}
+.about-flare::before{background-image:url('../assets/images/flare/about-outpost.webp');background-position:center 52%;opacity:.32}
+.about-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.98) 0%,rgba(3,6,8,.87) 50%,rgba(3,6,8,.46) 80%,rgba(3,6,8,.74) 100%),linear-gradient(0deg,rgba(5,6,7,.97),rgba(5,6,7,.22) 58%,rgba(5,6,7,.54))}
+.recruitment-flare::before{background-image:url('../assets/images/flare/recruitment-surface.webp');background-position:center 52%;opacity:.36}
+.recruitment-flare::after{background:linear-gradient(90deg,rgba(3,6,8,.98) 0%,rgba(3,6,8,.86) 49%,rgba(3,6,8,.40) 79%,rgba(3,6,8,.72) 100%),linear-gradient(0deg,rgba(5,6,7,.97),rgba(5,6,7,.20) 58%,rgba(5,6,7,.52))}
+.pvp-flare .page-mark,.ships-flare .page-mark,.carriers-flare .page-mark,.trading-flare .page-mark,.projects-flare .page-mark,.guides-flare .page-mark,.about-flare .page-mark,.recruitment-flare .page-mark{opacity:.30;filter:grayscale(1) drop-shadow(0 12px 28px rgba(0,0,0,.72))}
+
+/* Section rhythm: retain clean reading surfaces while adding a quiet HUD cadence. */
+.visual-page main .section,.visual-page main .section-sm{position:relative;isolation:isolate}
+.visual-page main .section>.container,.visual-page main .section-sm>.container{position:relative;z-index:1}
+.visual-page main .section::before,.visual-page main .section-sm::before{content:"";position:absolute;z-index:0;top:0;left:50%;width:min(var(--max-width),calc(100% - 32px));height:1px;transform:translateX(-50%);pointer-events:none;background:linear-gradient(90deg,transparent 0%,rgba(34,211,238,.08) 12%,rgba(255,255,255,.075) 46%,rgba(34,211,238,.16) 50%,rgba(255,255,255,.075) 54%,rgba(34,211,238,.08) 88%,transparent 100%);opacity:.55}
+.visual-page .section-heading{position:relative;padding-left:18px}
+.visual-page .section-heading::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:1px;background:linear-gradient(180deg,var(--accent),rgba(34,211,238,.12));box-shadow:0 0 14px rgba(34,211,238,.12)}
+.visual-page .section-heading::after{content:"";position:absolute;left:0;bottom:-13px;width:clamp(72px,10vw,128px);height:1px;background:linear-gradient(90deg,rgba(34,211,238,.62),transparent)}
+.visual-page .section-heading .eyebrow{margin-bottom:9px}
+
+/* Reusable micro-trim on dense content cards. */
+.visual-page :is(.pvp-activity-card,.trade-card,.carrier-card,.movement-card,.ship-card,.project-card,.roster-card,.guide-card,.guide-detail-card,.guide-hub-card,.resource-card){position:relative;overflow:hidden}
+.visual-page :is(.pvp-activity-card,.trade-card,.carrier-card,.movement-card,.ship-card,.project-card,.roster-card,.guide-card,.guide-detail-card,.guide-hub-card,.resource-card)::after{content:"";position:absolute;right:11px;bottom:11px;width:17px;height:17px;border-right:1px solid rgba(34,211,238,.18);border-bottom:1px solid rgba(34,211,238,.18);pointer-events:none;opacity:.75}
+
+/* Mission Control — radar / tactical geometry */
+.page-command .operations-priority-section::after,.page-command .all-systems-section::after{content:"";position:absolute;z-index:0;right:clamp(-120px,-4vw,-30px);top:34px;width:clamp(240px,30vw,390px);aspect-ratio:1;pointer-events:none;opacity:.22;background:radial-gradient(circle at center,transparent 0 26%,rgba(34,211,238,.22) 26.5% 27%,transparent 27.5% 43%,rgba(34,211,238,.16) 43.5% 44%,transparent 44.5% 60%,rgba(34,211,238,.09) 60.5% 61%,transparent 61.5%),linear-gradient(90deg,transparent 49.7%,rgba(34,211,238,.16) 49.8% 50.2%,transparent 50.3%),linear-gradient(0deg,transparent 49.7%,rgba(34,211,238,.16) 49.8% 50.2%,transparent 50.3%);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+.page-command .operations-overview-section{background-image:linear-gradient(90deg,rgba(34,211,238,.012),transparent 24%,transparent 76%,rgba(34,211,238,.012))}
+
+/* Mining — contour / scanner lines */
+.page-mining #rhino::after,.page-mining #scouting::after,.page-mining #quick-reference::after{content:"";position:absolute;z-index:0;right:-8%;top:24px;width:clamp(270px,34vw,470px);height:250px;pointer-events:none;opacity:.24;background:repeating-radial-gradient(ellipse at 100% 50%,transparent 0 23px,rgba(34,211,238,.16) 24px,transparent 25px 43px),linear-gradient(12deg,transparent 0 49.7%,rgba(34,211,238,.10) 49.8% 50.2%,transparent 50.3%)}
+.page-mining #rigs,.page-mining #selling{background-image:linear-gradient(90deg,rgba(34,211,238,.014),transparent 28%,transparent 72%,rgba(34,211,238,.014))}
+
+/* PvP — reticle / target box */
+.page-pvp .bounty-board-section::after,.page-pvp .pvp-events-section::after{content:"";position:absolute;z-index:0;right:clamp(-70px,-3vw,-20px);top:36px;width:clamp(230px,29vw,360px);aspect-ratio:1;pointer-events:none;opacity:.20;background:radial-gradient(circle at center,transparent 0 31%,rgba(34,211,238,.18) 31.5% 32%,transparent 32.5% 48%,rgba(34,211,238,.10) 48.5% 49%,transparent 49.5%),linear-gradient(90deg,transparent 49.5%,rgba(34,211,238,.14) 49.7% 50.3%,transparent 50.5%),linear-gradient(0deg,transparent 49.5%,rgba(34,211,238,.14) 49.7% 50.3%,transparent 50.5%)}
+.page-pvp .bounty-board-section{background-image:linear-gradient(135deg,rgba(34,211,238,.015),transparent 35%)}
+
+/* Ships — blueprint grid / measurement marks */
+.page-ships .featured-hangar-section::after,.page-ships .ship-catalogue-section::after,.page-ships .ship-engineering-section::after{content:"";position:absolute;z-index:0;right:-30px;top:30px;width:clamp(260px,32vw,430px);height:210px;pointer-events:none;opacity:.17;background:repeating-linear-gradient(0deg,rgba(34,211,238,.18) 0 1px,transparent 1px 28px),repeating-linear-gradient(90deg,rgba(34,211,238,.13) 0 1px,transparent 1px 28px),linear-gradient(135deg,transparent 49.6%,rgba(34,211,238,.16) 49.8% 50.2%,transparent 50.4%);mask-image:linear-gradient(90deg,transparent,#000 20%,#000)}
+
+/* Carriers — orbital / jump geometry */
+.page-carriers .carrier-feature-section::after,.page-carriers .carrier-directory-section::after,.page-carriers .carrier-coordination-section::after{content:"";position:absolute;z-index:0;right:-7%;top:20px;width:clamp(280px,34vw,470px);height:240px;pointer-events:none;opacity:.20;background:radial-gradient(ellipse at 70% 50%,transparent 0 30%,rgba(34,211,238,.18) 30.5% 31%,transparent 31.5% 47%,rgba(34,211,238,.12) 47.5% 48%,transparent 48.5%),linear-gradient(18deg,transparent 49.7%,rgba(34,211,238,.12) 49.8% 50.2%,transparent 50.3%)}
+
+/* Trader's Outpost — route map / nodes */
+.page-trading .trading-priority-section::after,.page-trading .trading-profit-section::after{content:"";position:absolute;z-index:0;right:-3%;top:38px;width:clamp(280px,35vw,470px);height:210px;pointer-events:none;opacity:.23;background:radial-gradient(circle at 16% 72%,rgba(34,211,238,.55) 0 2px,transparent 3px),radial-gradient(circle at 50% 38%,rgba(34,211,238,.38) 0 2px,transparent 3px),radial-gradient(circle at 82% 66%,rgba(34,211,238,.48) 0 2px,transparent 3px),linear-gradient(17deg,transparent 0 39%,rgba(34,211,238,.14) 39.3% 39.7%,transparent 40%),linear-gradient(-13deg,transparent 0 61%,rgba(34,211,238,.10) 61.3% 61.7%,transparent 62%)}
+
+/* Projects — linked work nodes */
+.page-projects .projects-board::after{content:"";position:absolute;z-index:0;right:-4%;top:36px;width:clamp(270px,34vw,450px);height:230px;pointer-events:none;opacity:.20;background:radial-gradient(circle at 17% 30%,rgba(34,211,238,.55) 0 2px,transparent 3px),radial-gradient(circle at 48% 67%,rgba(34,211,238,.38) 0 2px,transparent 3px),radial-gradient(circle at 82% 28%,rgba(34,211,238,.48) 0 2px,transparent 3px),linear-gradient(31deg,transparent 0 47.5%,rgba(34,211,238,.13) 47.8% 48.1%,transparent 48.4%),linear-gradient(-24deg,transparent 0 52%,rgba(34,211,238,.10) 52.2% 52.5%,transparent 52.8%)}
+
+/* Field Manual — technical index / drafting marks */
+.page-guides #guide-families::after,.page-guides main>.section:last-of-type::after{content:"";position:absolute;z-index:0;right:0;top:34px;width:clamp(260px,32vw,420px);height:150px;pointer-events:none;opacity:.16;background:repeating-linear-gradient(90deg,rgba(34,211,238,.18) 0 1px,transparent 1px 18px),linear-gradient(0deg,transparent 0 76%,rgba(34,211,238,.15) 76.4% 77%,transparent 77.4%)}
+.page-guides .guide-topic-section:nth-of-type(even){background-image:linear-gradient(90deg,rgba(34,211,238,.012),transparent 28%,transparent 72%,rgba(34,211,238,.012))}
+
+/* Member network — quiet connection map */
+.page-members main>.section::after{content:"";position:absolute;z-index:0;right:-4%;top:40px;width:clamp(260px,33vw,420px);height:220px;pointer-events:none;opacity:.16;background:radial-gradient(circle at 18% 28%,rgba(34,211,238,.44) 0 2px,transparent 3px),radial-gradient(circle at 52% 72%,rgba(34,211,238,.34) 0 2px,transparent 3px),radial-gradient(circle at 84% 34%,rgba(34,211,238,.42) 0 2px,transparent 3px),linear-gradient(28deg,transparent 0 48%,rgba(34,211,238,.10) 48.2% 48.5%,transparent 48.8%),linear-gradient(-24deg,transparent 0 55%,rgba(34,211,238,.08) 55.2% 55.5%,transparent 55.8%)}
+
+/* Home / About / Recruitment / Gallery — lighter continuity details */
+.page-home .pack-section::after{content:"";position:absolute;z-index:0;right:-4%;top:34px;width:clamp(250px,30vw,390px);height:180px;pointer-events:none;opacity:.13;background:repeating-linear-gradient(135deg,rgba(34,211,238,.12) 0 1px,transparent 1px 34px)}
+.page-about .history-section::after,.page-about .squad-structure-section::after{content:"";position:absolute;z-index:0;right:-5%;top:28px;width:clamp(240px,30vw,380px);height:210px;pointer-events:none;opacity:.14;background:radial-gradient(circle at 62% 50%,transparent 0 36%,rgba(34,211,238,.15) 36.5% 37%,transparent 37.5%),repeating-linear-gradient(90deg,transparent 0 39px,rgba(34,211,238,.07) 40px)}
+.page-recruitment .recruitment-community-section::after,.page-recruitment .recruitment-expect-section::after{content:"";position:absolute;z-index:0;right:-4%;top:28px;width:clamp(260px,31vw,400px);height:190px;pointer-events:none;opacity:.14;background:linear-gradient(20deg,transparent 49.6%,rgba(34,211,238,.14) 49.8% 50.2%,transparent 50.4%),repeating-linear-gradient(90deg,transparent 0 52px,rgba(34,211,238,.07) 53px)}
+.page-gallery .gallery-section::after{content:"";position:absolute;z-index:0;right:0;top:36px;width:clamp(250px,30vw,390px);height:180px;pointer-events:none;opacity:.14;background:linear-gradient(90deg,rgba(34,211,238,.14) 1px,transparent 1px),linear-gradient(0deg,rgba(34,211,238,.11) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(90deg,transparent,#000)}
+
+/* Small refinements from phone/tablet review. */
+@media(max-width:900px){
+  .pvp-flare::before,.ships-flare::before,.carriers-flare::before,.trading-flare::before,.projects-flare::before,.guides-flare::before,.about-flare::before,.recruitment-flare::before{opacity:.26}
+  .visual-page main .section::after,.visual-page main .section-sm::after{opacity:.11}
+}
+@media(max-width:720px){
+  .visual-page .section-heading{padding-left:13px}
+  .visual-page main .section::before,.visual-page main .section-sm::before{width:calc(100% - 22px);opacity:.35}
+  .visual-page main .section::after,.visual-page main .section-sm::after{display:none}
+}
+@media(max-width:620px){
+  .page-home .hero-logo{width:min(68vw,320px)}
+  .page-home .hero-logo-wrap{margin-top:4px}
+  .member-flare::before{opacity:.34!important}
+  body:not(.assistant-page) .mongrel-assistant-launcher{width:44px;min-height:44px}
+  body:not(.assistant-page) .mongrel-assistant-launcher-mark{font-size:.9rem}
+  .pvp-flare::before,.ships-flare::before,.carriers-flare::before,.trading-flare::before,.projects-flare::before,.guides-flare::before,.about-flare::before,.recruitment-flare::before{opacity:.22}
+}
