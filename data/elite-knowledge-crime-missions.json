@@ -1,0 +1,279 @@
+{
+  "version": "76",
+  "reviewedAt": "2026-09-14",
+  "scope": "Crime and punishment, fines, bounties, notoriety, Interstellar Factors, detention, mission rewards, Team/Wing mission sharing, massacre stacking, illegal missions, and mission-selection workflow used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "crime-legal-status-overview",
+      "category": "Crime & Legal Status",
+      "topic": "Fines, Bounties, Wanted Status & Notoriety",
+      "keywords": ["crime and punishment", "legal status", "fine", "bounty", "wanted", "notoriety", "anonymous access"],
+      "ruleOfThumb": "Treat fines, bounties and notoriety as separate layers. Fines are minor legal debts, bounties create Wanted status in the relevant jurisdiction, and notoriety is a CMDR-wide murder penalty that can block legal cleanup.",
+      "details": [
+        "A fine by itself is not the same as a bounty and does not normally make the ship Wanted.",
+        "A bounty makes the offending ship Wanted in jurisdictions where that bounty is valid.",
+        "Notoriety is separate from the ship's bounty and is attached to the commander.",
+        "Outstanding legal issues can restrict station services through Anonymous Access at ports tied to the issuing faction or jurisdiction."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — current crime/legal-system discussion", "url": "https://forums.frontier.co.uk/threads/the-mysterious-elite-legal-system.637237/"},
+        {"name": "Elite Dangerous Wiki — Crime & Punishment", "url": "https://elite-dangerous.fandom.com/wiki/Crime_%26_Punishment"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "crime-fines",
+      "category": "Crime & Legal Status",
+      "topic": "Fines",
+      "keywords": ["fine", "pay fine", "minor crime", "reckless weapon discharge", "trespass fine", "anonymous access fine"],
+      "ruleOfThumb": "Pay ordinary fines through an appropriate Authority Contact when possible. If the fine will not appear locally, use an Interstellar Factor in a system where the issuing faction is not present.",
+      "details": [
+        "Fines are lower-level legal penalties and generally do not create Wanted status on their own.",
+        "A fine can still trigger Anonymous Access or restricted services at affected ports until resolved.",
+        "If a fine refuses to appear at a contact, a menu relog can sometimes refresh stale legal-state data.",
+        "Interstellar Factors can clear remote fines when their normal eligibility conditions are met."
+      ],
+      "sources": [
+        {"name": "INARA community — current Interstellar Factors/fine behavior", "url": "https://inara.cz/elite/board-thread/1/481170/?page=1007"},
+        {"name": "Frontier Forums — Interstellar Factor discussion", "url": "https://forums.frontier.co.uk/threads/interstelar-factor.635954/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "crime-bounties-wanted",
+      "category": "Crime & Legal Status",
+      "topic": "Bounties & Wanted Status",
+      "keywords": ["bounty on me", "wanted status", "pay bounty", "ship bounty", "clean bounty", "criminal ship"],
+      "ruleOfThumb": "A bounty is tied to the offending ship's legal record, so use that ship when clearing it. If notoriety is zero, either use a qualifying Interstellar Factor or hand yourself in to the issuing authority.",
+      "details": [
+        "Ship bounties persist until paid, claimed or otherwise resolved.",
+        "Because legal records are ship-specific, changing ships can make the problem appear to vanish even though the offending ship still carries the bounty.",
+        "Interstellar Factors are usually the convenient option when the bounty-issuing faction is not present at the Factor's location.",
+        "Turning yourself in clears eligible bounties but relocates you to a detention facility."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — bounty cleanup and ship-specific legal state", "url": "https://forums.frontier.co.uk/threads/from-bounty-hunter-to-bounty-hunted-and-cant-pay-my-fine.636318/"},
+        {"name": "Frontier Forums — current legal-system discussion", "url": "https://forums.frontier.co.uk/threads/the-mysterious-elite-legal-system.637237/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "crime-notoriety",
+      "category": "Crime & Legal Status",
+      "topic": "Notoriety Decay & Restrictions",
+      "keywords": ["notoriety", "reduce notoriety", "notoriety decay", "notoriety 1", "notoriety 10", "can't pay bounty", "cant pay bounty"],
+      "ruleOfThumb": "If notoriety is above zero, stop committing murders and remain logged into the game while it decays. The established decay rate is one point per two hours of active game time.",
+      "details": [
+        "Notoriety rises from serious criminal kills and can reach 10.",
+        "Decay requires active logged-in game time; logging out pauses it.",
+        "Interstellar Factors will not clear relevant bounties while notoriety remains above zero.",
+        "Notoriety is commander-wide rather than tied to a single ship."
+      ],
+      "quickFacts": [
+        {"label": "Maximum notoriety", "value": "10"},
+        {"label": "Decay", "value": "1 point per 2 hours active game time"}
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Notoriety", "url": "https://elite-dangerous.fandom.com/wiki/Notoriety"},
+        {"name": "INARA community — Interstellar Factors and notoriety", "url": "https://inara.cz/elite/board-thread/2/474188/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "crime-interstellar-factors",
+      "category": "Crime & Legal Status",
+      "topic": "Interstellar Factors",
+      "keywords": ["interstellar factors", "interstellar factor", "legal facilities", "pay bounty remotely", "pay fine remotely", "25 percent fee", "25% fee"],
+      "ruleOfThumb": "Use an Interstellar Factor for remote legal cleanup only after notoriety reaches zero, and preferably choose a system where the issuing faction is not present.",
+      "details": [
+        "Interstellar Factors provide centralized access to remote fines/bounties and redemption services.",
+        "The issuing faction's presence can prevent a fine or bounty from appearing at that Factor; use a different system if needed.",
+        "Interstellar Factors add a 25% service fee to legal payments and deduct 25% from eligible voucher redemptions.",
+        "If a valid transaction does not appear, a menu relog can sometimes refresh the legal state."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — current Interstellar Factor guidance", "url": "https://forums.frontier.co.uk/threads/interstelar-factor.635954/"},
+        {"name": "INARA community — Interstellar Factor 25% fee", "url": "https://inara.cz/elite/board-thread/2/481551/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "crime-detention-turn-yourself-in",
+      "category": "Crime & Legal Status",
+      "topic": "Turn Yourself In & Detention Centres",
+      "keywords": ["turn myself in", "hand myself in", "detention centre", "detention center", "prison ship", "pay bounty authority contact"],
+      "ruleOfThumb": "Turning yourself in is the direct-authority route for clearing an eligible bounty, but expect to be transported to a detention facility rather than remaining at the original station.",
+      "details": [
+        "At zero notoriety, the Authority/Security Contact can offer a turn-yourself-in option for qualifying bounties.",
+        "This resolves the bounty and moves the commander to a detention facility.",
+        "Use Interstellar Factors instead when you want to avoid the detention transfer and meet their eligibility rules.",
+        "Detention facilities provide core ship services so you can recover and depart after processing."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Notoriety / bounty cleanup", "url": "https://elite-dangerous.fandom.com/wiki/Notoriety"},
+        {"name": "INARA — example current Detention Centre", "url": "https://inara.cz/elite/station/66676/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "missions-board-access-reputation",
+      "category": "Missions",
+      "topic": "Mission Board Access, Reputation & Better Offers",
+      "keywords": ["mission board", "mission reputation", "allied faction missions", "better missions", "mission payout", "mission giver reputation"],
+      "ruleOfThumb": "Build reputation with the mission-giving minor faction if you want better access and stronger payouts. Allied factions generally offer the best mission selection.",
+      "details": [
+        "Mission availability and payout are influenced by your reputation with the issuing minor faction.",
+        "Relevant Pilots Federation career rank can also affect mission generation and reward quality.",
+        "If you are farming a mission type, becoming Allied with several local factions improves the board substantially.",
+        "Do not confuse minor-faction reputation with the faction's system influence percentage; they are separate values."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — developer explanation of reputation/influence reward scaling", "url": "https://forums.frontier.co.uk/threads/how-does-the-levels-of-rewards-scale.557024/"},
+        {"name": "INARA community — mission progression example", "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/64215/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "missions-reward-choices",
+      "category": "Missions",
+      "topic": "Credits, Reputation, Influence & Material Reward Choices",
+      "keywords": ["mission reward", "credits reward", "rep reward", "reputation reward", "influence reward", "inf reward", "material reward", "reward choice"],
+      "ruleOfThumb": "Choose rewards for the objective: REP to build standing or superpower progression, INF for BGS work, materials for engineering bottlenecks, and credits when none of those matter more.",
+      "details": [
+        "REP rewards increase your reputation with the mission-giving faction and can support aligned superpower rank progression where applicable.",
+        "INF rewards increase the mission's BGS influence effect for the issuing faction; the plus signs indicate relative reward strength.",
+        "Engineering-material rewards can be extremely valuable after the 2024 rebalance, with some missions offering much larger quantities than older guides show.",
+        "Credit-maximizing is not always the best choice when working squad BGS or building Engineer-material reserves."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — developer explanation of REP/INF plus ratings", "url": "https://forums.frontier.co.uk/threads/how-does-the-levels-of-rewards-scale.557024/"},
+        {"name": "Frontier — Type-8 Update / mission-material rebalance", "url": "https://www.elitedangerous.com/news/type-8-update-now-available"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "missions-team-wing-sharing",
+      "category": "Missions",
+      "topic": "Team / Wing Mission Sharing",
+      "keywords": ["wing mission", "team mission", "share mission", "shared mission", "mission sharing", "claim wing reward", "claim team reward"],
+      "ruleOfThumb": "For Team/Wing missions, share the mission and have squadmates accept it before turn-in. After completion, non-owner participants collect their reward from the issuing location within the claim window.",
+      "details": [
+        "Only missions explicitly designed for Team/Wing sharing should be treated as shareable mission contracts.",
+        "Coordinate before turn-in so every intended participant has accepted the shared mission.",
+        "Participants who did not own the mission receive a completion message directing them where to collect the reward.",
+        "Community and journal behavior document a 30-day window for invited participants to collect completed shared-mission rewards."
+      ],
+      "sources": [
+        {"name": "INARA community — Team/Wing sharing workflow", "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/61628/"},
+        {"name": "INARA — shared mission reward collection behavior", "url": "https://inara.cz/elite/board-thread/1/374612/?page=678"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "missions-massacre-stacking",
+      "category": "Missions",
+      "topic": "Pirate Massacre Mission Stacking",
+      "keywords": ["massacre mission", "massacre stacking", "stack massacre", "pirate massacre", "same target faction", "different mission givers"],
+      "ruleOfThumb": "Pirate massacre kills stack when missions targeting the same enemy faction come from different issuing factions. Multiple missions from the same issuing faction generally serialize rather than sharing each kill.",
+      "details": [
+        "The useful setup is several source factions all offering pirate massacres against the same target faction.",
+        "A qualifying kill can advance one mission from each different issuing faction at the same time.",
+        "Taking many same-faction massacre contracts does not multiply progress in the same way.",
+        "Colonization can change which nearby systems generate missions, so use a current mission-source tool rather than relying on old farming locations."
+      ],
+      "sources": [
+        {"name": "INARA — Flat Galaxy Society massacre guide", "url": "https://inara.cz/elite/logbook/67662/"},
+        {"name": "Frontier Forums — massacre stacking mechanics", "url": "https://forums.frontier.co.uk/threads/question-about-stacking-massacre-missions.563434/"},
+        {"name": "INARA — 2025 massacre-source search update", "url": "https://inara.cz/elite/board-thread/1/484175/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "missions-assassination-target-legality",
+      "category": "Missions",
+      "topic": "Assassinations, Mission Targets & Legal Consequences",
+      "keywords": ["assassination mission", "mission target", "illegal assassination", "kill mission", "clean target", "wanted target"],
+      "ruleOfThumb": "A mission objective does not automatically make every target legal to kill. Check whether the individual is Wanted in the current jurisdiction and whether the mission itself is marked illegal.",
+      "details": [
+        "Legal pirate targets can usually be killed without creating a criminal record once their Wanted status is confirmed.",
+        "Illegal assassination and covert missions can deliberately require crimes and may generate fines, bounties or notoriety depending on what you do.",
+        "On-foot and ship missions can contain legal and illegal variants with similar-looking objectives.",
+        "When doing squad BGS work, account for both the mission reward and any criminal actions performed during completion."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — current legal-system mission discussion", "url": "https://forums.frontier.co.uk/threads/the-mysterious-elite-legal-system.637237/"},
+        {"name": "Frontier Forums — Crime & mission-target discussion", "url": "https://forums.frontier.co.uk/threads/100-re-work-of-combat-missions-needed.614743/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "missions-failure-abandonment",
+      "category": "Missions",
+      "topic": "Mission Failure, Expiry & Abandonment",
+      "keywords": ["abandon mission", "mission failed", "mission expired", "mission failure penalty", "failed mission", "mission cargo fine"],
+      "ruleOfThumb": "Read the failure consequences before accepting. Mission failure or abandonment can reduce reputation, create BGS consequences, and impose financial penalties—especially when mission cargo or special items were issued to you.",
+      "details": [
+        "Penalty size and type vary by mission template, so do not assume every abandoned mission is harmless.",
+        "Failing missions for a faction damages reputation with that faction and can be relevant to BGS operations.",
+        "Cargo-delivery and source missions can impose fines or losses when issued mission cargo is not returned or delivered as required.",
+        "Mission timers continue to matter even when the objective itself has already consumed significant travel or combat time."
+      ],
+      "sources": [
+        {"name": "INARA community — BGS effects of mission failure", "url": "https://inara.cz/elite/logbook/82996/"},
+        {"name": "Frontier Forums — mission-board discussion", "url": "https://forums.frontier.co.uk/threads/how-to-tell-what-affect-my-missions-have-in-a-system.635064/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "missions-illegal-cargo-smuggling",
+      "category": "Missions",
+      "topic": "Illegal / Stolen Cargo and Mission Scans",
+      "keywords": ["illegal cargo", "stolen cargo", "smuggling mission", "black market", "cargo scan", "illegal goods", "mission cargo"],
+      "ruleOfThumb": "Illegal or stolen cargo becomes a legal-risk problem when scanned in a jurisdiction that prohibits it. Plan the route and destination before accepting smuggling or theft-related work.",
+      "details": [
+        "Illegal cargo and stolen cargo are not identical labels, but both can create fines or other legal consequences when detected in the wrong jurisdiction.",
+        "Black Markets are used to sell many illegal or stolen commodities where accepted.",
+        "Silent running, heat management and avoiding scans are operational tools, but they do not erase the legal status of the cargo.",
+        "Mission-specific cargo may be unique to the contract and should not be treated like ordinary market stock."
+      ],
+      "sources": [
+        {"name": "INARA community — black markets / illegal trade discussion", "url": "https://inara.cz/elite/logbook/82996/"},
+        {"name": "INARA community — fine from illegal cargo example", "url": "https://inara.cz/elite/board-thread/1/481170/?page=1007"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "missions-objective-selection",
+      "category": "Missions",
+      "topic": "Choosing Missions for Credits, Materials, Rank or BGS",
+      "keywords": ["which mission should i take", "best mission reward", "mission objective", "missions for rank", "missions for bgs", "missions for materials", "missions for credits"],
+      "ruleOfThumb": "Pick missions by objective, not by headline credit value. Credits, engineering materials, reputation, superpower rank and BGS influence often point to different optimal choices.",
+      "details": [
+        "For engineering progression, prioritize hard-to-source material rewards even when the credit payout is lower.",
+        "For reputation or naval-rank work, favor strong REP rewards from aligned factions.",
+        "For squad BGS, take missions for the intended faction and select the highest useful INF reward while respecting operational orders and stop conditions.",
+        "For raw credits, Team/Wing cargo and massacre missions can scale well when coordinated, but they should not override BGS instructions in squad-controlled systems."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — developer REP/INF reward explanation", "url": "https://forums.frontier.co.uk/threads/how-does-the-levels-of-rewards-scale.557024/"},
+        {"name": "Frontier — Engineering mission-reward rebalance", "url": "https://www.elitedangerous.com/news/type-8-update-now-available"},
+        {"name": "INARA community — shared massacre reward workflow", "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/61628/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    }
+  ]
+}
