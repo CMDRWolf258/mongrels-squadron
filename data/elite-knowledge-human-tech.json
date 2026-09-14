@@ -1,0 +1,290 @@
+{
+  "version": "77",
+  "reviewedAt": "2026-09-14",
+  "scope": "Human Technology Brokers, permanent unlocks, material-priced one-copy purchases, pre-engineered human modules, Sirius/Azimuth special equipment, and current AX support modules used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "human-tech-broker-overview",
+      "category": "Human Technology Brokers",
+      "topic": "Human Tech Brokers: Unlocks vs One-Copy Purchases",
+      "keywords": ["human tech broker", "technology broker", "tech broker", "human technology broker", "permanent unlock", "one copy purchase", "material purchase"],
+      "ruleOfThumb": "Before spending materials, identify whether the item is a permanent unlock or a one-copy purchase. Permanent unlocks become credit-purchasable afterward; pre-engineered purchases consume the listed resources for every copy.",
+      "details": [
+        "Human Technology Brokers mix multiple acquisition models in the same interface.",
+        "Traditional unlocks permanently add an item to the eligible Outfitting catalogue after the one-time resource payment.",
+        "Pre-engineered and special-purchase items instead place one module into local storage; another copy requires another full resource payment.",
+        "Bring every required commodity/material at once; broker requirements are not paid in installments."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Technology Broker", "url": "https://elite-dangerous.fandom.com/wiki/Technology_Broker"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "human-tech-permanent-unlocks",
+      "category": "Human Technology Brokers",
+      "topic": "Permanent Human Tech Broker Unlocks",
+      "keywords": ["permanent human unlock", "human broker unlock", "corrosion resistant cargo rack", "enzyme missile rack", "meta alloy hull reinforcement", "flechette launcher", "shock cannon"],
+      "ruleOfThumb": "The classic Human broker items are true unlocks: pay the resource cost once, then buy copies for credits from qualifying Outfitting services.",
+      "details": [
+        "Permanent Human unlock families include the Class 4 Corrosion Resistant Cargo Rack, Enzyme Missile Rack, Meta Alloy Hull Reinforcement, Remote Release Flechette Launcher variants and Shock Cannon variants.",
+        "Weapon mount/class variants can require their own unlock rather than one payment covering the whole weapon family.",
+        "These legacy broker items differ from V1/pre-engineered modules, which generally charge materials per copy."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Technology Broker", "url": "https://elite-dangerous.fandom.com/wiki/Technology_Broker"},
+        {"name": "Elite Dangerous Wiki — Shock Cannon", "url": "https://elite-dangerous.fandom.com/wiki/Shock_Cannon"},
+        {"name": "Elite Dangerous Wiki — Remote Release Flechette Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Remote_Release_Flechette_Launcher"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "human-tech-per-copy-purchases",
+      "category": "Human Technology Brokers",
+      "topic": "Material-Priced One-Copy Broker Purchases",
+      "keywords": ["per copy tech broker", "buy another v1", "pre engineered module", "pre-engineered module", "one module local storage", "repeat materials"],
+      "ruleOfThumb": "For pre-engineered broker purchases, materials are the price of the module. Paying once gives one copy in local storage, not a permanent credit unlock.",
+      "details": [
+        "Examples include Engineered DSS V1, Engineered FSD V1, Engineered FSD (SCO) V1, Engineered Seeker Missile Rack V1 and Modified Mining Laser.",
+        "Sirius and Azimuth special equipment also commonly uses the one-copy purchase model.",
+        "If a build needs two or four copies, multiply the full material recipe accordingly before traveling to the broker."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Technology Broker", "url": "https://elite-dangerous.fandom.com/wiki/Technology_Broker"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "engineered-fsd-v1",
+      "category": "Pre-Engineered Modules",
+      "topic": "Engineered FSD V1 (Class 5A)",
+      "keywords": ["engineered fsd v1", "v1 fsd", "pre engineered fsd", "pre-engineered fsd", "class 5 fsd v1", "5a v1 fsd"],
+      "ruleOfThumb": "The legacy 5A Engineered FSD V1 is a per-copy broker purchase with both Increased Range and Faster Boot Sequence. Do not overwrite its primary engineering if you want to keep the double-mod advantage.",
+      "details": [
+        "Each purchase costs 18 Datamined Wake Exceptions, 26 Tellurium, 26 Electrochemical Arrays and 28 Chemical Processors.",
+        "One payment places one 5A drive into local storage; more copies require more materials.",
+        "The paired primary modifications make it outperform a normally engineered 5A FSD for jump range.",
+        "An Experimental Effect can be added/replaced without removing the unique double primary modification; applying a different primary blueprint destroys the special combination."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Frame Shift Drive / Pre-Engineered FSD V1", "url": "https://elite-dangerous.fandom.com/wiki/Frame_Shift_Drive"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "engineered-fsd-sco-v1",
+      "category": "Pre-Engineered Modules",
+      "topic": "Engineered FSD (SCO) V1: Classes 2A-7A",
+      "keywords": ["engineered fsd sco", "sco v1", "pre engineered sco", "pre-engineered sco", "pesco", "titan drive component", "v1 sco drive"],
+      "ruleOfThumb": "The V1 SCO drives are the modern long-range option across Classes 2A-7A. Each copy costs materials plus one Titan Drive Component.",
+      "details": [
+        "V1 SCO drives combine Increased Range and Faster Boot Sequence and retain Supercruise Overcharge capability.",
+        "Each class has a separate material recipe and every purchase requires one Titan Drive Component.",
+        "The purchased drive appears in local storage and another copy requires another full payment.",
+        "Experimental Effects can be applied normally; preserve the paired primary modifications."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Frame Shift Drive (SCO)", "url": "https://elite-dangerous.fandom.com/wiki/Frame_Shift_Drive_(SCO)"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "engineered-dss-v1",
+      "category": "Pre-Engineered Modules",
+      "topic": "Engineered Detailed Surface Scanner V1",
+      "keywords": ["engineered dss", "dss v1", "pre engineered detailed surface scanner", "pre-engineered detailed surface scanner", "40 probe radius", "probe radius"],
+      "ruleOfThumb": "For exploration, the Engineered DSS V1 is the broker version to buy: its +40% probe radius is stronger than ordinary single-blueprint DSS engineering.",
+      "details": [
+        "The V1 DSS uses a special doubled Expanded Probe Scanning Radius effect for +40% probe radius.",
+        "A normally engineered DSS reaches +30% with the regular G5 blueprint.",
+        "Each V1 scanner is a separate material purchase and is placed in local storage.",
+        "Its recipe is 24 Niobium, 28 Mechanical Components, 22 Germanium and 26 Mechanical Scrap."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Detailed Surface Scanner", "url": "https://elite-dangerous.fandom.com/wiki/Detailed_Surface_Scanner"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "engineered-seeker-v1",
+      "category": "Pre-Engineered Weapons",
+      "topic": "Engineered Seeker Missile Rack V1",
+      "keywords": ["engineered seeker missile rack", "seeker v1", "pre engineered seeker", "pre-engineered seeker", "thermal cascade missile", "triple engineered seeker"],
+      "ruleOfThumb": "The Engineered Seeker V1 is a per-copy special weapon with Lightweight, High Capacity and Thermal Cascade already installed; plan around that package because it cannot be further engineered normally.",
+      "details": [
+        "The special Class 2 fixed launcher carries multiple pre-applied effects that cannot be recreated as a normal engineering stack.",
+        "Each purchase requires 10 Osmium, 24 Conductive Ceramics, 26 Hybrid Capacitors, 28 Phosphorus and 16 Proto Radiolic Alloys.",
+        "One payment grants one launcher in local storage."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Seeker Missile Rack", "url": "https://elite-dangerous.fandom.com/wiki/Seeker_Missile_Rack"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "modified-mining-laser",
+      "category": "Pre-Engineered Weapons",
+      "topic": "Modified Mining Laser",
+      "keywords": ["modified mining laser", "pre engineered mining laser", "long range mining laser", "2.5 km mining laser", "mining laser tech broker"],
+      "ruleOfThumb": "The Modified Mining Laser is a per-copy Class 1 special laser valued for 2.5 km range and reduced power/distributor load, not raw mining DPS.",
+      "details": [
+        "Its maximum range is 2,500 m, far beyond the normal small Mining Laser.",
+        "It has lower power/distributor draw and heat but slightly lower damage/mining output per laser.",
+        "The special modifications cannot be re-applied by Engineers after removal.",
+        "Each copy costs 16 Osmium, 20 Arsenic, 24 Rhenium and 28 Phosphorus."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Mining Laser / Modified Mining Laser", "url": "https://elite-dangerous.fandom.com/wiki/Mining_Laser"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "sirius-heatsink-launcher",
+      "category": "Sirius Special Equipment",
+      "topic": "Sirius Heat Sink Launcher",
+      "keywords": ["sirius heat sink", "sirius heatsink", "pre engineered heat sink", "pre-engineered heatsink", "extra heatsinks", "sirius megaship"],
+      "ruleOfThumb": "The Sirius Heat Sink Launcher is a per-copy pre-engineered launcher with enhanced ammo capacity. Budget materials for every launcher you want.",
+      "details": [
+        "Each purchase places one Sirius launcher into local storage rather than permanently unlocking unlimited credit copies.",
+        "The current broker recipe is 8 Mechanical Scrap, 6 Niobium, 6 Vanadium and 5 Mechanical Components.",
+        "The special pre-engineered effect cannot be recreated by normal Engineers after removal.",
+        "This is especially useful on heat-intensive AX, stealth and emergency-support builds."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Heatsink Launcher / Sirius Heatsink Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Heatsink_Launcher"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "sirius-ax-missile-racks",
+      "category": "Sirius Special Equipment",
+      "topic": "Sirius AX Missile Racks",
+      "keywords": ["sirius ax missile rack", "sirius missile rack", "pre engineered ax missile", "high capacity rapid fire ax missile"],
+      "ruleOfThumb": "Sirius AX Missile Racks are per-copy material purchases, not a one-time family unlock. They come pre-engineered with High Capacity and Rapid Fire.",
+      "details": [
+        "Fixed Medium and Fixed Large variants use separate recipes.",
+        "Every copy consumes its full Sirius broker material cost.",
+        "The Large recipe also includes Technetium in addition to manufactured/raw engineering materials.",
+        "Do not confuse these with ordinary Enhanced AX Missile Racks sold for credits."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — AX Missile Rack", "url": "https://elite-dangerous.fandom.com/wiki/AX_Missile_Rack"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "azimuth-enhanced-ax-multicannons",
+      "category": "Azimuth Special Equipment",
+      "topic": "Azimuth Enhanced AX Multi-cannons",
+      "keywords": ["azimuth enhanced ax multicannon", "azimuth ax multi cannon", "azimuth axmc", "pre engineered ax multicannon", "gimballed enhanced ax multicannon"],
+      "ruleOfThumb": "Azimuth Enhanced AX Multi-cannons are special gimballed Medium/Large per-copy broker purchases. They are not the same as ordinary Enhanced AX Multi-cannons sold for credits.",
+      "details": [
+        "The Azimuth variants are bought one copy at a time with engineering/Thargoid materials.",
+        "Medium and Large versions have different recipes; the Large recipe additionally uses Ship Systems Data.",
+        "Ordinary Enhanced AX Multi-cannons exist as standard outfitting modules and should not be confused with the Azimuth material-purchase versions."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Technology Broker", "url": "https://elite-dangerous.fandom.com/wiki/Technology_Broker"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA — Outfitting", "url": "https://inara.cz/elite/outfitting/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "corrosion-resistant-cargo-rack",
+      "category": "Human Technology Brokers",
+      "topic": "Corrosion Resistant Cargo Rack",
+      "keywords": ["corrosion resistant cargo rack", "anti corrosion cargo rack", "corrosive cargo", "titan drive component cargo", "thargoid cargo damage"],
+      "ruleOfThumb": "Use a Corrosion Resistant Cargo Rack for corrosive Thargoid cargo such as Titan Drive Components. The broker Class 4 rack is a permanent Human Tech Broker unlock.",
+      "details": [
+        "The Class 4 rack can be permanently unlocked at a Human Technology Broker, then purchased for credits at eligible Outfitting services.",
+        "Corrosive Thargoid objects can damage a ship if carried in ordinary cargo racks.",
+        "Class 1 corrosion-resistant racks are also sold through specific Engineer locations; larger historical CG variants are not generally unlockable."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Corrosion Resistant Cargo Rack", "url": "https://elite-dangerous.fandom.com/wiki/Corrosion_Resistant_Cargo_Rack"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "human-broker-special-weapons",
+      "category": "Human Technology Brokers",
+      "topic": "Shock Cannon, Flechette & Enzyme Missile Unlocks",
+      "keywords": ["shock cannon", "flechette launcher", "remote release flechette", "enzyme missile rack", "experimental human weapon", "tech broker weapon"],
+      "ruleOfThumb": "Shock Cannons, Remote Release Flechette Launchers and the Enzyme Missile Rack are legacy Human broker unlocks. Unlock the exact mount/class you need rather than farming every variant blindly.",
+      "details": [
+        "Shock Cannon variants are permanently unlocked individually and then purchased for credits at Human Tech Broker Outfitting.",
+        "Remote Release Flechette fixed/turreted variants are separate permanent unlocks.",
+        "The Enzyme Missile Rack is another permanent Human broker weapon unlock.",
+        "These experimental weapons are generally niche; build planning should come before material farming."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Shock Cannon", "url": "https://elite-dangerous.fandom.com/wiki/Shock_Cannon"},
+        {"name": "Elite Dangerous Wiki — Remote Release Flechette Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Remote_Release_Flechette_Launcher"},
+        {"name": "Elite Dangerous Wiki — Technology Broker", "url": "https://elite-dangerous.fandom.com/wiki/Technology_Broker"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "caustic-sink-and-pulse-neutraliser-current",
+      "category": "AX Special Equipment",
+      "topic": "Caustic Sink Launcher & Thargoid Pulse Neutraliser: Current Access",
+      "keywords": ["caustic sink launcher", "thargoid pulse neutraliser", "thargoid pulse neutralizer", "titan pulse neutraliser", "rescue megaship", "rescue ship modules"],
+      "ruleOfThumb": "Do not follow old material-unlock guides for these two modules. Frontier removed their Tech Broker material requirements on 29 February 2024 so pilots could outfit for Titan combat more easily.",
+      "details": [
+        "Frontier officially removed the broker requirements for the Thargoid Pulse Neutraliser and Caustic Sink Launcher in February 2024.",
+        "They remain associated with Rescue Ship / Rescue Megaship outfitting rather than ordinary Human broker progression.",
+        "The Caustic Sink absorbs caustic contamination and can be restocked at stations or via synthesis.",
+        "Older guides showing tissue samples, unclassified relics or other unlock recipes describe the pre-February-2024 system."
+      ],
+      "sources": [
+        {"name": "Frontier — Titan Combat Rewards & Changes (29 Feb 2024)", "url": "https://www.elitedangerous.com/news/titan-combat-rewards-changes"},
+        {"name": "Elite Dangerous Wiki — Caustic Sink Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Caustic_Sink_Launcher"},
+        {"name": "Elite Dangerous Wiki — Thargoid Pulse Neutraliser", "url": "https://elite-dangerous.fandom.com/wiki/Thargoid_Pulse_Neutraliser"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "experimental-weapon-stabiliser",
+      "category": "AX Special Equipment",
+      "topic": "Experimental Weapon Stabiliser",
+      "keywords": ["experimental weapon stabiliser", "experimental weapon stabilizer", "ax weapon limit", "five ax weapons", "six ax weapons", "class 3 stabiliser", "class 5 stabiliser"],
+      "ruleOfThumb": "The Experimental Weapon Stabiliser increases the number of experimental/AX weapons a ship can equip: Class 3 raises the limit to five and Class 5 raises it to six.",
+      "details": [
+        "This is a normal special outfitting module rather than a material-priced Human Tech Broker unlock.",
+        "The Class 3 version permits five experimental weapons total; the Class 5 version permits six.",
+        "Use the stabiliser only when the extra AX hardpoints justify sacrificing an optional internal slot."
+      ],
+      "sources": [
+        {"name": "Frontier Galnet — Experimental Weapons Stabiliser Becomes Available", "url": "https://www.elitedangerous.com/news/galnet/experimental-weapons-stabiliser-becomes-available"},
+        {"name": "INARA — Outfitting", "url": "https://inara.cz/elite/outfitting/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
