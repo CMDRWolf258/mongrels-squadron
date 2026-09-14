@@ -1,0 +1,630 @@
+{
+  "version": "73",
+  "reviewedAt": "2026-09-14",
+  "scope": "Odyssey on-foot suits, weapons, personal-equipment upgrades, engineering modifications, settlement materials, and practical equipment progression used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "odyssey-suit-roles",
+      "category": "Odyssey Equipment",
+      "topic": "Artemis, Maverick & Dominator Suit Roles",
+      "keywords": [
+        "odyssey suit",
+        "artemis suit",
+        "maverick suit",
+        "dominator suit",
+        "flight suit",
+        "arc cutter",
+        "genetic sampler",
+        "second primary weapon"
+      ],
+      "ruleOfThumb": "Pick the suit for the job: Maverick for settlement utility and salvage, Dominator for sustained combat, Artemis for exobiology. The Flight Suit is the baseline suit rather than a specialist platform.",
+      "details": [
+        "The Maverick is the settlement-utility suit and carries the Arc Cutter; it is the natural choice for looting, salvage, theft/heist work and general settlement operations.",
+        "The Dominator is the combat-focused suit and can carry a second primary weapon in addition to its sidearm.",
+        "The Artemis carries the Genetic Sampler and is the specialist exobiology suit.",
+        "All three specialist suits can be upgraded through Grades 2-5 and can receive Engineer modifications."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Maverick Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/2/"
+        },
+        {
+          "name": "INARA — Dominator Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/3/"
+        },
+        {
+          "name": "INARA — Artemis Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/4/"
+        },
+        {
+          "name": "INARA community — Odyssey equipment overview",
+          "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/61635/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-upgrade-grades-slots",
+      "category": "Odyssey Engineering",
+      "topic": "Suit & Weapon Grades / Modification Slots",
+      "keywords": [
+        "odyssey grade",
+        "grade 2 suit",
+        "grade 3 suit",
+        "grade 4 suit",
+        "grade 5 suit",
+        "mod slots",
+        "modification slots",
+        "weapon grade",
+        "suit grade"
+      ],
+      "ruleOfThumb": "Personal equipment runs G1-G5. Each step adds one Engineer-modification slot: G2=1, G3=2, G4=3, G5=4.",
+      "details": [
+        "The same 1/2/3/4 modification-slot progression applies to suits and handheld weapons from G2 through G5.",
+        "Suit grade upgrades also improve core defensive performance such as shield strength/regeneration and resistances.",
+        "Weapon grade upgrades improve the weapon's core performance while unlocking additional modification slots.",
+        "Upgrade the underlying grade first when possible so you know exactly how many permanent modification slots the finished item will have."
+      ],
+      "tables": [
+        {
+          "title": "Personal-equipment modification slots",
+          "columns": [
+            "Grade",
+            "Engineer modification slots"
+          ],
+          "rows": [
+            [
+              "G1",
+              "0"
+            ],
+            [
+              "G2",
+              "1"
+            ],
+            [
+              "G3",
+              "2"
+            ],
+            [
+              "G4",
+              "3"
+            ],
+            [
+              "G5",
+              "4"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "name": "INARA — Maverick Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/2/"
+        },
+        {
+          "name": "INARA — TK Zenith upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/11/"
+        },
+        {
+          "name": "INARA — Manticore Tormentor upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/15/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-upgrade-vs-modification",
+      "category": "Odyssey Engineering",
+      "topic": "Upgrades at Pioneer Supplies vs Engineer Modifications",
+      "keywords": [
+        "pioneer supplies upgrade",
+        "suit upgrade",
+        "weapon upgrade",
+        "odyssey engineer",
+        "personal equipment engineer",
+        "modify suit",
+        "modify weapon"
+      ],
+      "ruleOfThumb": "Grade upgrades and Engineer modifications are separate systems: increase the item's grade at Pioneer Supplies, then use personal-equipment Engineers for permanent modifications.",
+      "details": [
+        "G2-G5 suit and weapon grade upgrades consume credits plus Odyssey materials.",
+        "Personal-equipment Engineer modifications use separate recipes and require access to an Engineer that offers the desired modification.",
+        "Engineer unlock and referral requirements vary by Engineer; check the current Engineer database before planning an unlock chain.",
+        "Unlike ship engineering, personal equipment does not use the ship Remote Workshop/pinned-blueprint workflow."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Personal equipment Engineers",
+          "url": "https://inara.cz/elite/engineers/"
+        },
+        {
+          "name": "INARA community — Odyssey upgrade/Engineer distinction",
+          "url": "https://inara.cz/elite/board-thread/11602/473660/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-permanent-modifications",
+      "category": "Odyssey Engineering",
+      "topic": "Personal-Equipment Modifications Are Permanent",
+      "keywords": [
+        "remove odyssey mod",
+        "replace odyssey mod",
+        "permanent modification",
+        "cannot remove mod",
+        "wrong suit mod",
+        "wrong weapon mod"
+      ],
+      "ruleOfThumb": "Plan Odyssey modifications before installing them. Suit and handheld-weapon modifications are effectively permanent on that item and cannot simply be swapped like ship experimental effects.",
+      "details": [
+        "Do not spend a scarce modification slot on an effect you do not intend to keep.",
+        "Pre-modified equipment can be a bargain only when the installed effect fits the final build.",
+        "Owning multiple copies of the same suit or weapon is normal when you want different specialized modification sets."
+      ],
+      "commonMistakes": [
+        "Installing a convenient early mod and assuming it can be replaced later.",
+        "Buying pre-engineered gear solely because it is G3 even though the existing mod is unwanted."
+      ],
+      "sources": [
+        {
+          "name": "INARA community — Suit modification guide",
+          "url": "https://inara.cz/elite/cmdr-logbook-entry/350242/72975/"
+        },
+        {
+          "name": "INARA community — Odyssey equipment discussion",
+          "url": "https://inara.cz/elite/board-thread/2/473519/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "odyssey-pioneer-preupgraded-gear",
+      "category": "Odyssey Equipment",
+      "topic": "Pre-Upgraded / Pre-Modified Pioneer Supplies Gear",
+      "keywords": [
+        "pre upgraded suit",
+        "pre-upgraded suit",
+        "pre engineered suit",
+        "pre-engineered suit",
+        "grade 3 pioneer supplies",
+        "g3 suit",
+        "g3 weapon",
+        "premium equipment"
+      ],
+      "ruleOfThumb": "Check Pioneer Supplies before starting a long upgrade grind. Stations can occasionally sell G2/G3 suits or weapons, sometimes with an existing modification, for credits.",
+      "details": [
+        "A useful G3 purchase can skip the G1→G2 and G2→G3 material costs entirely.",
+        "Because personal-equipment modifications are permanent, avoid pre-modified items carrying an effect that conflicts with the planned build.",
+        "Availability varies by station and individual stock, so treat pre-upgraded gear as an opportunistic shortcut rather than a guaranteed shopping list."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Personal equipment outfitting",
+          "url": "https://inara.cz/elite/outfitting/"
+        },
+        {
+          "name": "INARA community — Pioneer Supplies premium gear",
+          "url": "https://inara.cz/elite/board-thread/2/473519/"
+        },
+        {
+          "name": "INARA recent logbook — G2/G3 Pioneer finds",
+          "url": "https://inara.cz/elite/logbook/97726/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "odyssey-upgrade-material-pattern",
+      "category": "Odyssey Materials",
+      "topic": "Suit / Weapon Upgrade Material Pattern",
+      "keywords": [
+        "suit schematic",
+        "weapon schematic",
+        "manufacturing instructions",
+        "upgrade materials",
+        "g5 suit materials",
+        "g5 weapon materials",
+        "how many schematics"
+      ],
+      "ruleOfThumb": "From G1 to G5, each equipment line uses 1/2/4/5 schematics and Manufacturing Instructions across the four upgrade steps, plus increasing quantities of type-specific materials.",
+      "details": [
+        "Suit upgrades use Suit Schematics; weapon upgrades use Weapon Schematics.",
+        "Manufacturing Instructions are used throughout G2-G5 personal-equipment upgrades.",
+        "Across G2/G3/G4/G5, the schematic and Manufacturing Instruction counts are 1/2/4/5 per step, or 12 total when starting at G1.",
+        "The two type-specific material quantities scale 2/5/9/12 per step, or 28 of each across a complete G1→G5 path."
+      ],
+      "quickFacts": [
+        {
+          "label": "Schematics G1→G5",
+          "value": "12 total"
+        },
+        {
+          "label": "Manufacturing Instructions G1→G5",
+          "value": "12 total"
+        },
+        {
+          "label": "Each type-specific material pair",
+          "value": "28 of each"
+        }
+      ],
+      "sources": [
+        {
+          "name": "INARA — Manufacturing Instructions",
+          "url": "https://inara.cz/elite/componentitem/10337"
+        },
+        {
+          "name": "INARA — Maverick Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/2/"
+        },
+        {
+          "name": "INARA — TK Aphelion upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/9/"
+        },
+        {
+          "name": "INARA — Karma AR-50 upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/6/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-material-categories",
+      "category": "Odyssey Materials",
+      "topic": "Assets, Goods & Data",
+      "keywords": [
+        "odyssey materials",
+        "on foot materials",
+        "assets goods data",
+        "goods data",
+        "odyssey assets",
+        "settlement materials",
+        "backpack materials"
+      ],
+      "ruleOfThumb": "Odyssey engineering materials are a separate on-foot economy commonly grouped as Assets, Goods and Data. Their sources and trading rules are different from ship Raw/Manufactured/Encoded materials.",
+      "details": [
+        "Settlement lockers, containers and rooms supply many Assets and Goods.",
+        "Dataports are a major source of Data, and building type strongly affects what can appear.",
+        "Mission rewards are an important source for difficult personal-equipment materials.",
+        "Do not confuse Odyssey material handling with ship Material Traders; the two systems are separate."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Components / Goods and Data",
+          "url": "https://inara.cz/elite/components/"
+        },
+        {
+          "name": "INARA — Manufacturing Instructions locations",
+          "url": "https://inara.cz/elite/componentitem/10337"
+        },
+        {
+          "name": "INARA — Operational Manual locations",
+          "url": "https://inara.cz/elite/componentitem/10288/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-bartender-trading",
+      "category": "Odyssey Materials",
+      "topic": "Bartenders, Asset Trading & Fleet-Carrier Material Markets",
+      "keywords": [
+        "bartender",
+        "odyssey bartender",
+        "trade assets",
+        "fleet carrier bartender",
+        "buy odyssey materials",
+        "sell odyssey materials",
+        "goods data trading"
+      ],
+      "ruleOfThumb": "Regular station bartenders can exchange Odyssey Assets within their matching subcategories; Goods and Data are not handled like ship Material-Trader exchanges. Fleet-carrier bartenders can also host player buy/sell listings for Odyssey materials.",
+      "details": [
+        "Asset exchanges stay within their relevant on-foot subcategory rather than converting freely across every Odyssey item.",
+        "Goods and Data often need to be sourced directly from settlements, missions or player-listed fleet-carrier stock.",
+        "Fleet-carrier bartender listings can be useful for hard-to-find unlock or modification items, but availability and prices are player-controlled and can change quickly.",
+        "Use a live current database when looking for a specific carrier listing."
+      ],
+      "sources": [
+        {
+          "name": "INARA community — Odyssey bartender/material-trading distinction",
+          "url": "https://inara.cz/elite/board-thread/2/480001/"
+        },
+        {
+          "name": "INARA — Example Fleet Carrier bartender market",
+          "url": "https://inara.cz/elite/station-trader/543529/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "odyssey-settlement-material-sourcing",
+      "category": "Odyssey Materials",
+      "topic": "Settlement Material Sourcing by Building Type",
+      "keywords": [
+        "where to find odyssey materials",
+        "settlement loot",
+        "dataport",
+        "cmd building",
+        "hab building",
+        "res building",
+        "ind building",
+        "med room",
+        "weapon test data",
+        "operational manual",
+        "biometric data"
+      ],
+      "ruleOfThumb": "Target the room/building type that can actually spawn the material. Randomly clearing every settlement is much slower than using a current component database to choose likely dataports and lockers.",
+      "details": [
+        "Manufacturing Instructions can appear across several settlement building types and as mission rewards.",
+        "Operational Manuals are associated with MED, RES, IND and CMD locations, crashed satellites and mission rewards.",
+        "Biometric Data is associated with MED/CMD locations and mission rewards.",
+        "Weapon Test Data is associated with CMD locations and mission rewards.",
+        "Settlement loot remains probabilistic, so source lists improve your odds but do not guarantee an item on a specific visit."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Manufacturing Instructions",
+          "url": "https://inara.cz/elite/componentitem/10337"
+        },
+        {
+          "name": "INARA — Operational Manual",
+          "url": "https://inara.cz/elite/componentitem/10288/"
+        },
+        {
+          "name": "INARA — Biometric Data",
+          "url": "https://inara.cz/elite/componentitem/10400/"
+        },
+        {
+          "name": "INARA — Weapon Test Data",
+          "url": "https://inara.cz/elite/componentitem/10353/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "odyssey-ground-damage-types",
+      "category": "On-Foot Combat",
+      "topic": "Handheld Weapon Damage Types",
+      "keywords": [
+        "odyssey damage types",
+        "thermal weapon",
+        "kinetic weapon",
+        "plasma weapon",
+        "explosive weapon",
+        "shields armour",
+        "shields armor",
+        "takada",
+        "karma",
+        "manticore",
+        "l-6"
+      ],
+      "ruleOfThumb": "Thermal is strongest against shields, kinetic is strongest against unshielded armour, plasma is effective against both but has slower projectiles, and explosive weapons trade ammo/handling for splash damage.",
+      "details": [
+        "Takada laser weapons are the thermal family and are well suited to stripping shields.",
+        "Karma firearms are kinetic and excel once the target's shield is down.",
+        "Manticore plasma weapons provide strong all-round shield/armour damage but demand better projectile leading.",
+        "The Karma L-6 is the explosive launcher and is useful for area damage, especially in ground combat zones.",
+        "A Dominator can carry two primaries, making thermal+kinetic or other complementary combinations easy to field."
+      ],
+      "sources": [
+        {
+          "name": "INARA community — Handheld weapon guide",
+          "url": "https://inara.cz/elite/logbook/73002/"
+        },
+        {
+          "name": "INARA — Karma L-6 upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/5/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-audio-masking-noise-suppressor",
+      "category": "On-Foot Stealth",
+      "topic": "Audio Masking vs Noise Suppressor",
+      "keywords": [
+        "audio masking",
+        "noise suppressor",
+        "silencer",
+        "silent weapon",
+        "pressurised",
+        "pressurized",
+        "unpressurised",
+        "unpressurized",
+        "stealth weapon"
+      ],
+      "ruleOfThumb": "Noise Suppressor is for pressurised environments; Audio Masking is for unpressurised environments. A dedicated stealth weapon may use both if you want quiet operation in either setting.",
+      "details": [
+        "INARA describes Noise Suppressor as reducing weapon sound when fired in pressurised environments.",
+        "INARA describes Audio Masking as reducing simulated weapon sound when fired in unpressurised environments.",
+        "Do not treat one modification as a universal silencer for every settlement environment.",
+        "Because modification slots are permanent and limited, fitting both is a deliberate stealth-specialist choice."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Karma P-15 modifications",
+          "url": "https://inara.cz/elite/equipment-blueprint/8/"
+        },
+        {
+          "name": "INARA — Yarden Bond / Audio Masking",
+          "url": "https://inara.cz/elite/engineer/33/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "odyssey-maverick-mod-pattern",
+      "category": "Odyssey Equipment",
+      "topic": "Maverick Modification Priorities",
+      "keywords": [
+        "best maverick mods",
+        "maverick engineering",
+        "maverick build",
+        "extra backpack",
+        "quieter footsteps",
+        "settlement suit",
+        "covert suit"
+      ],
+      "ruleOfThumb": "For settlement work, Extra Backpack Capacity is one of the strongest Maverick quality-of-life choices. Night Vision and Quieter Footsteps are common stealth/utility picks; battery, sprint, jump and tracking are playstyle choices.",
+      "details": [
+        "Extra Backpack Capacity doubles the suit's backpack item/component/data capacity.",
+        "Quieter Footsteps supports faster stealth movement without relying as heavily on crouching.",
+        "Night Vision is broadly useful for dark settlements and planetary surfaces.",
+        "Improved Battery Capacity, Increased Sprint Duration, Improved Jump Assist and Enhanced Tracking are all legitimate fourth-slot or alternate-role options.",
+        "Treat these as common practical patterns rather than a single mandatory meta build."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Domino Green / Extra Backpack Capacity",
+          "url": "https://inara.cz/elite/engineer/27/"
+        },
+        {
+          "name": "INARA community — Maverick stealth discussion",
+          "url": "https://inara.cz/elite/board-thread/11602/473664/"
+        },
+        {
+          "name": "INARA community — Example modern settlement loadouts",
+          "url": "https://inara.cz/elite/board-thread/11602/477720/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "odyssey-dominator-mod-pattern",
+      "category": "Odyssey Equipment",
+      "topic": "Dominator Modification Priorities",
+      "keywords": [
+        "best dominator mods",
+        "dominator engineering",
+        "dominator build",
+        "ground cz suit",
+        "combat movement speed",
+        "extra ammo",
+        "faster shield regen"
+      ],
+      "ruleOfThumb": "For sustained ground combat, common Dominator priorities are Extra Ammo Capacity, Faster Shield Regen, Combat Movement Speed and Improved Battery Capacity. Adjust for your weapon set and engagement style.",
+      "details": [
+        "The Dominator's second primary slot makes it the natural Frontline Solutions / ground-CZ combat platform.",
+        "Extra Ammo Capacity reduces resupply trips during long fights.",
+        "Faster Shield Regen reduces downtime after taking cover.",
+        "Combat Movement Speed improves mobility while aiming, and Improved Battery Capacity extends time between energy resupplies.",
+        "Damage Resistance is a valid alternative when raw survivability matters more than one of the utility slots."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Dominator Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/3/"
+        },
+        {
+          "name": "INARA — Personal equipment Engineers",
+          "url": "https://inara.cz/elite/engineers/"
+        },
+        {
+          "name": "INARA community — Ground combat loadout example",
+          "url": "https://inara.cz/elite/logbook/80083/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "odyssey-artemis-mod-pattern",
+      "category": "Odyssey Equipment",
+      "topic": "Artemis Modification Priorities",
+      "keywords": [
+        "best artemis mods",
+        "artemis engineering",
+        "artemis build",
+        "exobiology suit mods",
+        "night vision artemis",
+        "jump assist artemis",
+        "battery artemis"
+      ],
+      "ruleOfThumb": "Artemis engineering should favor exploration quality of life: Improved Battery Capacity, Increased Sprint Duration, Improved Jump Assist and Night Vision are a strong general-purpose combination.",
+      "details": [
+        "The Artemis is primarily an exploration/exobiology suit rather than a combat platform.",
+        "Battery capacity helps on long walks and repeated tool use away from the ship/SRV.",
+        "Sprint and jump improvements reduce travel friction across rough terrain.",
+        "Night Vision helps with biological searches and safe movement in darkness.",
+        "Reduced Tool Battery Consumption is an alternative when sampler/tool drain matters more than one of the mobility slots."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Artemis Suit upgrades",
+          "url": "https://inara.cz/elite/equipment-blueprint/4/"
+        },
+        {
+          "name": "INARA community — Example exobiology loadout",
+          "url": "https://inara.cz/elite/board-thread/11602/477720/"
+        },
+        {
+          "name": "INARA community — Suit modification guide",
+          "url": "https://inara.cz/elite/cmdr-logbook-entry/350242/72975/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "odyssey-personal-engineers",
+      "category": "Odyssey Engineering",
+      "topic": "Personal-Equipment Engineer Network",
+      "keywords": [
+        "odyssey engineers",
+        "personal equipment engineers",
+        "domino green",
+        "jude navarro",
+        "hero ferrari",
+        "kit fowler",
+        "yarden bond",
+        "terra velasquez",
+        "oden geiger",
+        "wellington beck",
+        "uma laszlo",
+        "yi shen",
+        "colonia engineers"
+      ],
+      "ruleOfThumb": "Personal-equipment Engineers have their own unlock/referral network and modification specialties. Check the current Engineer list before farming an unlock item because requirements differ by Engineer.",
+      "details": [
+        "Domino Green is a commonly accessible Bubble entry-point Engineer and offers utility modifications such as Extra Backpack Capacity, Enhanced Tracking and Reduced Tool Battery Consumption.",
+        "Jude Navarro focuses more heavily on combat-oriented suit/weapon effects such as Extra Ammo Capacity, Damage Resistance, Magazine Size and Reload Speed.",
+        "Other Bubble Engineers unlock additional stealth, handling, mobility and weapon effects through referral chains.",
+        "Colonia also has personal-equipment Engineers, including broader end-chain access through Yi Shen.",
+        "Some Engineer unlocks require selling specific Goods/Data to bartenders or completing specific mission types, so verify the exact current requirement before grinding."
+      ],
+      "sources": [
+        {
+          "name": "INARA — Personal equipment Engineers",
+          "url": "https://inara.cz/elite/engineers/"
+        },
+        {
+          "name": "INARA — Domino Green",
+          "url": "https://inara.cz/elite/engineer/27/"
+        },
+        {
+          "name": "INARA — Jude Navarro",
+          "url": "https://inara.cz/elite/engineer/26"
+        },
+        {
+          "name": "INARA — Yi Shen",
+          "url": "https://inara.cz/elite/engineer/36/"
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    }
+  ]
+}
