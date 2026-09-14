@@ -95,3 +95,24 @@ No new Cloudflare variables, bindings, or KV namespaces are required. Existing p
 - Profile contribution links now deep-link to the relevant filtered list: Projects, Trader's Outpost, Bounty Board, and Carrier Registry.
 - Added stable section anchors and post-load scroll handling so asynchronous member-filtered pages land on the requested content rather than the page hero.
 - No new Cloudflare bindings, variables, or KV namespaces are required.
+
+## v70 — Full-page Visual Identity Pass
+
+- Expanded the restrained visual system beyond page heroes so section-to-section scrolling no longer falls back to the same flat card rhythm.
+- Added subtle HUD section rails, cyan divider marks, and low-opacity card-corner trim across the major site families.
+- Added page-specific in-content motifs:
+  - Mission Control: radar / tactical geometry
+  - Mining: contour and scanner lines
+  - PvP: reticle / target geometry
+  - Ships: blueprint grid and measurement marks
+  - Carriers: orbital / jump arcs
+  - Trader's Outpost: route-map nodes and vectors
+  - Projects: linked coordination nodes
+  - Field Manual: drafting/index marks
+  - Member Network: connection-map details
+  - Home, About, Recruitment, and Gallery: lighter continuity trim
+- Added new personal screenshot-backed hero treatments to PvP, Ships, Trader's Outpost, Projects, Field Manual, About, and Recruitment. Carriers uses the existing Pneuma imagery.
+- Preserved the existing black/charcoal/cyan theme and kept all decorative layers behind readable content.
+- Reduced/deactivated most in-content motifs on phones while retaining section rails and page identity.
+- Tightened the Home crest on phones, increased Member Network hero visibility slightly on mobile, and reduced the phone Assistant launcher footprint.
+- No new Cloudflare variables, bindings, secrets, or KV namespaces are required.
