@@ -1,0 +1,259 @@
+{
+  "version": "74",
+  "reviewedAt": "2026-09-14",
+  "scope": "Guardian technology, blueprint fragments, Guardian Technology Broker unlocks, Guardian-site farming, Guardian modules and weapons, Guardian SLFs, modified Guardian weapons, and Anti-Guardian Zone Resistance used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "guardian-tech-overview",
+      "category": "Guardian Technology",
+      "topic": "Guardian Technology: What to Unlock First",
+      "keywords": ["guardian tech", "guardian technology", "guardian unlocks", "tech broker", "guardian technology broker", "what guardian module", "what should i unlock"],
+      "ruleOfThumb": "For most CMDRs, unlock the Guardian FSD Booster first. After that, prioritize Guardian Module Reinforcement / Shield Reinforcement for specific builds and Guardian weapons if AX combat is part of the plan.",
+      "details": [
+        "Guardian technology is obtained by collecting blueprint fragments and Guardian materials, then using Guardian Technology Brokers or special broker routes.",
+        "The FSD Booster has broad value outside combat because it adds flat jump range in an optional internal slot.",
+        "Guardian weapons matter primarily for Anti-Xeno combat, while Guardian reinforcement modules are build-dependent.",
+        "Do not farm every Guardian blueprint blindly; decide which modules or weapons the build actually needs first."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA — Guardian FSD Booster / Guardian modules outfitting", "url": "https://inara.cz/elite/outfitting/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "guardian-blueprint-fragment-types",
+      "category": "Guardian Technology",
+      "topic": "Module, Weapon & Vessel Blueprint Fragments",
+      "keywords": ["guardian blueprint", "module blueprint fragment", "weapon blueprint fragment", "vessel blueprint fragment", "guardian vessel blueprint", "guardian weapon blueprint", "guardian module blueprint"],
+      "ruleOfThumb": "Guardian blueprint fragments are not interchangeable: Module fragments unlock Guardian modules, Weapon fragments unlock Guardian weapons, and Vessel fragments unlock Guardian ship-launched fighters.",
+      "details": [
+        "Guardian Module Blueprint Fragments are used by six Guardian module unlocks including the FSD Booster, hull/module/shield reinforcements, power plant and power distributor.",
+        "Guardian Weapon Blueprint Fragments are used for Gauss Cannon, Plasma Charger and Shard Cannon variants, including modified broker purchases.",
+        "Guardian Vessel Blueprint Fragments are used for the three Guardian ship-launched fighters.",
+        "All three fragment families are obtained from Ancient/Guardian ruins or structures, but different structure types and activation routes produce different blueprint categories."
+      ],
+      "sources": [
+        {"name": "INARA — Guardian Module Blueprint Fragment", "url": "https://inara.cz/elite/component/176/"},
+        {"name": "INARA — Guardian Weapon Blueprint Fragment", "url": "https://inara.cz/elite/component/170/"},
+        {"name": "INARA — Guardian Vessel Blueprint Fragment", "url": "https://inara.cz/elite/component/177/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-site-blueprint-loop",
+      "category": "Guardian Farming",
+      "topic": "Guardian Structure Blueprint Loop",
+      "keywords": ["guardian site", "guardian structure", "ancient data terminal", "guardian pylons", "power pylons", "ancient relic", "guardian blueprint farm", "guardian blueprint loop"],
+      "ruleOfThumb": "At a Guardian structure, use the Scarab SRV: wake and charge the six pylons, provide the required relic/key to the Ancient Data Terminal, then scan the activated terminal with the Data Link Scanner for the blueprint fragment.",
+      "details": [
+        "Small module/weapon Guardian structures commonly use six Power Pylons and one Ancient Data Terminal.",
+        "Ancient Relics are obtained by shooting the glowing crystal from relic towers and are used to activate normal module/weapon terminals after the pylons are charged.",
+        "Scan Ancient Obelisks for Pattern Alpha/Beta/Gamma/Delta/Epsilon data while at the site.",
+        "Shoot destructible panels for Guardian Power Cells, Power Conduits and Technology Components; Guardian Sentinels can drop Wreckage Components and Sentinel Weapon Parts.",
+        "Use SRV synthesis for ammunition, fuel and repairs during repeated farming runs."
+      ],
+      "sources": [
+        {"name": "INARA recent Guardian-structure guide — Part 2", "url": "https://inara.cz/elite/logbook/97677/"},
+        {"name": "INARA recent Guardian-structure guide — Part 3", "url": "https://inara.cz/elite/logbook/97679/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "guardian-materials-obelisk-data",
+      "category": "Guardian Farming",
+      "topic": "Guardian Materials & Obelisk Data",
+      "keywords": ["guardian materials", "guardian power cell", "guardian power conduit", "guardian technology component", "guardian wreckage components", "sentinel weapon parts", "pattern alpha", "pattern beta", "pattern gamma", "pattern delta", "pattern epsilon"],
+      "ruleOfThumb": "Farm the whole Guardian site while you are there: destructible panels supply physical Guardian components, obelisks supply Pattern data, and Sentinels supply wreckage/weapon parts.",
+      "details": [
+        "Guardian Technology Components are especially common requirements across Guardian weapon and module broker recipes.",
+        "Pattern Obelisk Data is Encoded Guardian material and different unlocks require different pattern grades.",
+        "Guardian Sentinel Weapon Parts and Wreckage Components come from site combat and are needed by several Guardian unlocks.",
+        "A targeted material shopping list prevents repeated long-distance trips back to Guardian space."
+      ],
+      "sources": [
+        {"name": "INARA — Guardian Technology Component", "url": "https://inara.cz/elite/component/173/"},
+        {"name": "INARA — Components database", "url": "https://inara.cz/elite/components/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-standard-broker-unlocks",
+      "category": "Technology Brokers",
+      "topic": "Standard Guardian Technology Broker Unlocks",
+      "keywords": ["guardian tech broker", "guardian technology broker", "unlock once", "guardian broker unlock", "standard guardian weapon", "guardian module unlock"],
+      "ruleOfThumb": "Treat normal Guardian modules and standard Guardian weapons as broker unlocks: pay the listed blueprint/material requirement for the unlock, then obtain the unlocked module through outfitting where available.",
+      "details": [
+        "Guardian Technology Brokers list the required blueprint fragment plus Guardian and human materials for each unlock.",
+        "One module-family unlock can expose multiple sizes of that module, such as the Guardian FSD Booster family.",
+        "Standard Guardian weapon variants are separate unlock entries by size/mount type; check the broker list before deciding how many Weapon Blueprint Fragments to farm.",
+        "Modified Guardian weapons are a different acquisition path and should not be assumed to behave like these reusable standard unlocks."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA recent Guardian-module unlock guide", "url": "https://inara.cz/elite/logbook/97168/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "guardian-fsd-booster",
+      "category": "Guardian Modules",
+      "topic": "Guardian FSD Booster",
+      "keywords": ["guardian fsd booster", "fsd booster", "10.5 ly", "jump range booster", "guardian jump range"],
+      "ruleOfThumb": "The Guardian FSD Booster is usually the highest-value first Guardian unlock. The 5H version adds 10.5 ly of flat jump range but consumes a Class 5 optional internal slot.",
+      "details": [
+        "The FSD Booster is an optional internal module; it does not replace the ship's Frame Shift Drive.",
+        "Its bonus stacks with normal FSD engineering and other jump-range optimization.",
+        "The largest common 5H booster adds 10.5 ly; smaller classes trade slot size for a smaller flat bonus.",
+        "Because the benefit is flat rather than percentage-based, it is useful on explorers, cargo ships and combat ships that can spare the optional slot."
+      ],
+      "sources": [
+        {"name": "INARA — Guardian FSD Booster / outfitting", "url": "https://inara.cz/elite/outfitting/"},
+        {"name": "INARA — Guardian FSD Booster Technology Broker recipe", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-module-family",
+      "category": "Guardian Modules",
+      "topic": "Guardian Module Unlock Family",
+      "keywords": ["guardian module reinforcement", "guardian shield reinforcement", "guardian hull reinforcement", "guardian hybrid power distributor", "guardian power plant", "guardian modules"],
+      "ruleOfThumb": "The six core Guardian module unlock families are FSD Booster, Hull Reinforcement, Module Reinforcement, Shield Reinforcement, Hybrid Power Distributor and Power Plant.",
+      "details": [
+        "Guardian Module Reinforcement is a common AX consideration when strong module protection is needed.",
+        "Guardian Shield Reinforcement adds raw shield strength through an optional internal module and can be useful on shield-focused builds.",
+        "Guardian Hybrid Power Plant and Power Distributor provide ready-made Guardian hybrid performance but compete with fully engineered human modules on specialized builds.",
+        "Guardian Hull Reinforcement is build-specific; compare thermal/power behavior and resistances against engineered human HRPs before committing slots."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers: Guardian modules", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA — Outfitting: Guardian modules", "url": "https://inara.cz/elite/outfitting/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-weapons-overview",
+      "category": "Guardian Weapons",
+      "topic": "Gauss Cannon, Shard Cannon & Plasma Charger",
+      "keywords": ["guardian gauss", "gauss cannon", "guardian shard cannon", "shard cannon", "guardian plasma charger", "plasma charger", "guardian weapons"],
+      "ruleOfThumb": "Guardian Gauss is the precision AX staple; Shards favor close-range burst; Plasma Chargers favor charged projectile play. Match the weapon to the AX role and your heat/range-control skill.",
+      "details": [
+        "Standard Guardian weapons are primarily AX tools and use Guardian Weapon Blueprint Fragments for broker unlocks.",
+        "Gauss Cannons reward precision and are widely used for Interceptor heart work.",
+        "Shard Cannons deliver strong close-range burst but demand tighter range control.",
+        "Plasma Chargers use charge mechanics and offer a different projectile profile from Gauss or Shards.",
+        "Weapon heat, convergence, ammunition and the specific Interceptor/build matter more than a single universal ranking."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers: Guardian weapons", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA — Guardian weapon outfitting", "url": "https://inara.cz/elite/outfitting/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-modified-weapons",
+      "category": "Guardian Weapons",
+      "topic": "Modified Guardian Weapons: Per-Copy Broker Purchases",
+      "keywords": ["modified guardian", "modified shard", "mod shard", "modified gauss", "modified plasma charger", "azimuth guardian weapons", "mbooni guardian weapons"],
+      "ruleOfThumb": "Modified Guardian Gauss, Shard and Plasma variants are not the same as standard reusable Guardian weapon unlocks: each copy requires its listed broker materials, including another Guardian Weapon Blueprint Fragment.",
+      "details": [
+        "INARA lists separate Modified Guardian Gauss, Shard and Plasma Charger broker recipes.",
+        "Current community guidance confirms that these are acquired one module at a time: materials in, one modified weapon out.",
+        "Modified Shards and Plasma Chargers can be very strong in the right AX build, but their handling/heat differs from standard versions.",
+        "Broker location/access requirements for special Azimuth equipment can be faction/permit dependent, so verify the current location before traveling."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers: Modified Guardian weapons", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA community — modified Guardian weapons acquisition", "url": "https://inara.cz/elite/board-thread/2/?page=3214"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "guardian-anti-zone-resistance",
+      "category": "Guardian Engineering",
+      "topic": "Anti-Guardian Zone Resistance",
+      "keywords": ["anti-guardian zone resistance", "anti guardian zone", "guardian decay", "guardian modules melting", "ram tah guardian", "hardened surface fragments", "caustic crystal"],
+      "ruleOfThumb": "Ram Tah can apply Grade 1 Anti-Guardian Zone Resistance to supported Guardian equipment, giving +100% resistance to Thargoid anti-Guardian fields.",
+      "details": [
+        "The modification is specifically designed to stop supported Guardian equipment from being disabled/damaged by Anti-Guardian fields.",
+        "INARA currently lists the Grade 1 recipe as 2 Hardened Surface Fragments and 1 Caustic Crystal per roll.",
+        "Ram Tah at Phoenix Base in Meene provides Anti-Guardian Zone Resistance engineering for Guardian weapon families and supported Guardian modules.",
+        "This modification matters when operating in environments where Thargoid Anti-Guardian fields are present; it is not necessary for ordinary space merely because a module is Guardian technology."
+      ],
+      "sources": [
+        {"name": "INARA — Ram Tah", "url": "https://inara.cz/elite/engineer/18/"},
+        {"name": "INARA — Guardian Plasma Charger Anti-Guardian Zone Resistance", "url": "https://inara.cz/elite/blueprint/183/"},
+        {"name": "INARA — Guardian FSD Booster Anti-Guardian Zone Resistance", "url": "https://inara.cz/elite/blueprint/186/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "guardian-slf",
+      "category": "Guardian Fighters",
+      "topic": "Guardian Ship-Launched Fighters",
+      "keywords": ["guardian fighter", "guardian slf", "trident", "javelin", "lance", "xg7", "xg8", "xg9", "vessel blueprint"],
+      "ruleOfThumb": "Guardian SLFs use Vessel Blueprint Fragments rather than Module or Weapon fragments. The three broker unlocks are the XG7 Trident, XG8 Javelin and XG9 Lance.",
+      "details": [
+        "Each of the three Guardian fighter unlocks uses one Guardian Vessel Blueprint Fragment plus Guardian materials/data.",
+        "Vessel blueprint acquisition uses the Guardian vessel-site chain rather than the normal module/weapon terminal loop.",
+        "Guardian fighters still require a compatible Fighter Hangar and a pilot/crew workflow like other SLFs.",
+        "Unlock these only if the build or squad activity actually uses SLFs; they are not a prerequisite for Guardian modules or weapons."
+      ],
+      "sources": [
+        {"name": "INARA — Guardian Vessel Blueprint Fragment", "url": "https://inara.cz/elite/component/177/"},
+        {"name": "INARA — Technology Brokers: Guardian fighters", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "guardian-trip-prep",
+      "category": "Guardian Farming",
+      "topic": "Guardian-Site Trip Preparation",
+      "keywords": ["guardian trip", "guardian farming build", "guardian site prep", "point defence guardian", "srv guardian", "scarab guardian site"],
+      "ruleOfThumb": "Take a Scarab SRV, synthesis materials for SRV repair/rearm/refuel, and enough ship endurance to make repeated surface runs. A top-mounted Point Defence can help against Sentinel missiles near the ship.",
+      "details": [
+        "The Guardian structure loop is designed around the SRV; on-foot traversal is unnecessary for normal blueprint farming.",
+        "Repeated runs can consume SRV ammunition and fuel, so bring the raw materials required for synthesis.",
+        "Collect blueprint fragments and supporting Guardian materials in the same trip whenever possible.",
+        "Before leaving the Bubble, make a Tech Broker shopping list so you know exactly how many Blueprint Fragments and Pattern-data types you need."
+      ],
+      "sources": [
+        {"name": "INARA recent Guardian-structure guide — Part 3", "url": "https://inara.cz/elite/logbook/97679/"},
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "guardian-unlock-workflow",
+      "category": "Technology Brokers",
+      "topic": "Practical Guardian Unlock Workflow",
+      "keywords": ["guardian unlock workflow", "guardian shopping list", "how to unlock guardian", "guardian farm plan", "guardian tech plan"],
+      "ruleOfThumb": "Choose the exact unlocks first, total their Blueprint Fragment/material requirements, farm the appropriate Guardian structure type, fill any human-material gaps, then visit the correct broker.",
+      "details": [
+        "Module, Weapon and Vessel Blueprint Fragments come from different Guardian paths; farming the wrong fragment type wastes the trip.",
+        "Use the broker recipe itself as the shopping list rather than an old static guide because special weapon variants and requirements can change.",
+        "Farm extra Guardian Technology Components, Power Cells/Conduits, Obelisk Data and Sentinel drops while already on-site.",
+        "For AX builds, decide whether you need standard weapons, modified per-copy weapons, or Anti-Guardian Zone Resistance before calculating the final material requirement."
+      ],
+      "sources": [
+        {"name": "INARA — Technology Brokers", "url": "https://inara.cz/elite/techbroker/"},
+        {"name": "INARA — Guardian Module Blueprint Fragment", "url": "https://inara.cz/elite/component/176/"},
+        {"name": "INARA — Guardian Weapon Blueprint Fragment", "url": "https://inara.cz/elite/component/170/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    }
+  ]
+}
