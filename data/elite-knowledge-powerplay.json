@@ -1,0 +1,296 @@
+{
+  "version": "72",
+  "reviewedAt": "2026-09-14",
+  "scope": "Powerplay 2.0 reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "powerplay-overview",
+      "category": "Powerplay 2.0",
+      "topic": "Powerplay 2.0 Overview",
+      "keywords": ["powerplay", "powerplay 2.0", "pp2", "powers", "merits", "control points"],
+      "ruleOfThumb": "Powerplay 2.0 is a weekly territorial conflict between the major Powers. Pledged commanders earn personal merits while their eligible activity also contributes to system-level acquisition, reinforcement or undermining.",
+      "details": [
+        "Powerplay 2.0 replaced the original Preparation/Expansion/Control model with a system-focused territorial model in the Ascendancy era.",
+        "Personal merits govern commander progression and rewards; system control progress is tracked separately through control-point effects.",
+        "The same activity can be useful in one system type and irrelevant in another, so the system's current Powerplay classification matters before you start work.",
+        "Territorial results resolve on the weekly cycle rather than continuously changing ownership minute by minute."
+      ],
+      "commonMistakes": [
+        "Assuming earning merits anywhere automatically helps the system you care about.",
+        "Confusing personal merit totals with the system's control-point progress."
+      ],
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"},
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / evolving"
+    },
+    {
+      "id": "powerplay-system-types",
+      "category": "Powerplay 2.0",
+      "topic": "Powerplay System Types",
+      "keywords": ["stronghold", "fortified", "exploited", "acquisition", "reinforcement", "undermining", "contested", "unoccupied"],
+      "ruleOfThumb": "Think in three operational buckets: Acquisition systems are being claimed, Reinforcement systems already belong to your Power, and Undermining systems belong to an enemy Power. Controlled systems themselves progress through Exploited, Fortified and Stronghold tiers.",
+      "details": [
+        "Unoccupied/Expansion/Contested systems are part of the acquisition side of Powerplay.",
+        "Exploited, Fortified and Stronghold systems are controlled by a Power and can be reinforced by that Power's pledged commanders.",
+        "Enemy-controlled systems become undermining targets when your Power can meaningfully attack their control.",
+        "The Galaxy Map Powerplay view is the safest place to confirm what a particular system currently counts as before doing work."
+      ],
+      "tables": [
+        {
+          "title": "Operational system buckets",
+          "columns": ["Bucket", "Purpose"],
+          "rows": [
+            ["Acquisition", "Gain an unoccupied/contested system"],
+            ["Reinforcement", "Strengthen a system your Power already controls"],
+            ["Undermining", "Weaken an enemy Power's controlled system"]
+          ]
+        }
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"},
+        {"name": "Just About Elite Dangerous — Powerplay 2.0 Guide", "url": "https://justabout.com/elite-dangerous/37813/an-elite-dangerous-powerplay-20-guide-and-review-created-by-veteran-players"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable framework"
+    },
+    {
+      "id": "powerplay-support-ranges",
+      "category": "Powerplay 2.0",
+      "topic": "Fortified & Stronghold Support Ranges",
+      "keywords": ["20 ly", "30 ly", "fortified range", "stronghold range", "support bubble", "acquisition range"],
+      "ruleOfThumb": "Fortified and Stronghold systems are the anchors that project territorial reach. A Fortified system supports/acquires within 20 ly; a Stronghold extends that reach to 30 ly.",
+      "details": [
+        "Fortified systems project a 20-light-year support/acquisition radius.",
+        "Strongholds project a 30-light-year support/acquisition radius.",
+        "Nearby Exploited systems can depend on these anchors for territorial support.",
+        "Losing or downgrading a key anchor can therefore expose several dependent systems at once, which makes map geometry strategically important."
+      ],
+      "quickFacts": [
+        {"label": "Fortified support", "value": "20 ly"},
+        {"label": "Stronghold support", "value": "30 ly"}
+      ],
+      "commonMistakes": [
+        "Treating every controlled system as equally valuable regardless of what it supports.",
+        "Planning acquisitions from an Exploited system that does not itself project the required acquisition range."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"},
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "powerplay-acquisition",
+      "category": "Powerplay 2.0",
+      "topic": "Acquisition Systems",
+      "keywords": ["acquisition system", "acquire system", "contested acquisition", "powerplay expansion", "unoccupied system"],
+      "ruleOfThumb": "Acquisition is how a Power gains new territory. Work only in systems that the Galaxy Map identifies as valid acquisition targets and follow your Power's current objectives, because nearby Powers may be competing for the same system.",
+      "details": [
+        "Acquisition targets are unoccupied systems within valid reach of your Power's Fortified or Stronghold territory.",
+        "When multiple Powers actively compete for the same target, the system becomes contested.",
+        "Acquisition progress can carry across cycles when the system has not yet been resolved, depending on current Powerplay rules and thresholds.",
+        "Exact control-point thresholds have been rebalanced during Powerplay 2.0, so use the live in-game progress bar rather than memorizing an old launch-era number."
+      ],
+      "watchFor": "A system can be geographically close to your territory and still not be a valid acquisition target if it is outside the actual Fortified/Stronghold support network.",
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"},
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / thresholds evolve"
+    },
+    {
+      "id": "powerplay-reinforcement",
+      "category": "Powerplay 2.0",
+      "topic": "Reinforcement",
+      "keywords": ["reinforcement", "reinforce system", "fortify", "stronghold progress", "control points"],
+      "ruleOfThumb": "Reinforcement strengthens systems your Power already owns. Use it to protect vulnerable holdings, promote Exploited systems toward Fortified, and build Fortified systems toward Stronghold.",
+      "details": [
+        "Reinforcement activity adds positive pressure to a controlled system during the weekly cycle.",
+        "Enemy undermining and system decay can offset reinforcement, so the gross amount you contribute is not the same as the final weekly net movement.",
+        "Fortifying strategically important anchors can be more valuable than adding excess progress to already-secure systems.",
+        "Powerplay communities often publish priority reinforcement targets because spreading effort evenly is rarely optimal."
+      ],
+      "commonMistakes": [
+        "Reinforcing whichever nearby system is convenient instead of checking whether the Power actually needs help there.",
+        "Assuming a large personal merit gain guarantees an equally large system-control change."
+      ],
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"},
+        {"name": "EDPowerPlay — Guide", "url": "https://edpowerplay.com/guide"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / evolving"
+    },
+    {
+      "id": "powerplay-undermining",
+      "category": "Powerplay 2.0",
+      "topic": "Undermining",
+      "keywords": ["undermining", "undermine system", "enemy power", "weaken power", "demote system"],
+      "ruleOfThumb": "Undermining applies negative control pressure to enemy territory. The highest-value targets are often not isolated systems but anchor systems whose downgrade could expose several dependent holdings.",
+      "details": [
+        "Undermining reduces an enemy Power's effective control progress during the weekly cycle.",
+        "Enough net negative pressure can demote a Stronghold to Fortified, a Fortified system to Exploited, or ultimately remove control depending on the system's starting position and support network.",
+        "Because Fortified and Stronghold systems support nearby territory, damaging the right anchor can have cascading strategic consequences.",
+        "Enemy systems may apply distance or strength modifiers to merit/control efficiency, so the best target is not always the closest one."
+      ],
+      "operations": "Before undermining, identify what the target anchors. A difficult Stronghold may be worth more than several easy peripheral systems if its loss breaks a larger support network.",
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"},
+        {"name": "EDPowerPlay — Guide", "url": "https://edpowerplay.com/guide"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / evolving"
+    },
+    {
+      "id": "powerplay-merits-vs-control",
+      "category": "Powerplay 2.0",
+      "topic": "Merits vs System Control Points",
+      "keywords": ["merits", "control points", "merit conversion", "powerplay rank", "system progress"],
+      "ruleOfThumb": "Personal merits and system control are related but not identical. Merits advance your commander progression; control-point contribution determines how much the system actually moves for the Power.",
+      "details": [
+        "Many Powerplay activities award merits to the commander and also generate system-level progress.",
+        "Conversion rates and bonuses have been rebalanced repeatedly since Powerplay 2.0 launched, so a merit number should not be treated as a permanent one-to-one control formula.",
+        "Exploration/exobiology and other activity families can use different conversion behavior from standard activities.",
+        "When the strategic objective is a system rather than personal rank, watch the system's live Powerplay progress instead of only your merit counter."
+      ],
+      "commonMistakes": [
+        "Reporting 'I earned 20,000 merits' as if that necessarily means the system gained 20,000 control points.",
+        "Optimizing only for personal merit/hour when the Power's target needs a different activity or system type."
+      ],
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"},
+        {"name": "Frontier Forums — Merits vs System Influence", "url": "https://forums.frontier.co.uk/threads/earning-merits-vs-power-play-system-influence.630956/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "review often"
+    },
+    {
+      "id": "powerplay-activity-eligibility",
+      "category": "Powerplay 2.0",
+      "topic": "Activity Eligibility by System Type",
+      "keywords": ["powerplay activities", "trade merits", "bounty merits", "exploration merits", "mining merits", "system type activity"],
+      "ruleOfThumb": "Do not assume every merit-producing activity works in every Powerplay system. Reinforcement, acquisition and undermining each have their own valid activity/location rules.",
+      "details": [
+        "Combat, trade, mining, exploration, exobiology, Powerplay commodity hauling, on-foot operations and salvage can all matter in Powerplay, but their valid origin/destination rules differ.",
+        "Bounty hunting is commonly valid for reinforcement and acquisition, while direct enemy-Power ship hunting is a major undermining/combat lever.",
+        "Exploration and exobiology data are primarily reinforcement tools when sold to the correct services in controlled systems.",
+        "Trade in acquisition systems can require goods to originate from an allied Fortified or Stronghold system within the appropriate support range.",
+        "Mined-commodity rules are especially location-sensitive; verify the current in-game Powerplay instructions before committing a large cargo."
+      ],
+      "watchFor": "Powerplay activity rules have been tuned several times. Use community guides for strategy, but use the current Galaxy Map/Power contact text to confirm whether a specific action qualifies today.",
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "review often"
+    },
+    {
+      "id": "powerplay-ethos",
+      "category": "Powerplay 2.0",
+      "topic": "Power Ethos",
+      "keywords": ["power ethos", "combat ethos", "finance ethos", "social ethos", "covert ethos", "powerplay bonus activity"],
+      "ruleOfThumb": "Each Power has preferred ethos categories for reinforcement, acquisition and undermining. Matching the target system and activity to your Power's favored method improves strategic efficiency.",
+      "details": [
+        "Powerplay 2.0 groups many activities under broad ethos families such as Combat, Finance, Social and Covert.",
+        "A Power can have different preferred ethos for reinforcement, acquisition and undermining rather than one universal specialty.",
+        "The preferred activity family is not the only thing a commander can do, but it can affect which actions are most efficient for that Power in that context.",
+        "Because activity weighting has been rebalanced, use the current in-game Power screen and your Power community's objectives for the final call on what to run."
+      ],
+      "sources": [
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed / evolving"
+    },
+    {
+      "id": "powerplay-weekly-cycle",
+      "category": "Powerplay 2.0",
+      "topic": "Weekly Powerplay Cycle",
+      "keywords": ["powerplay cycle", "weekly tick", "thursday powerplay", "cycle reset", "weekly resolution"],
+      "ruleOfThumb": "Powerplay territory resolves on a weekly cycle. Reinforcement, undermining and acquisition work accumulate during the week, then territorial changes and tier movement are applied at the cycle transition.",
+      "details": [
+        "Weekly resolution is separate from the normal daily BGS tick.",
+        "Acquisition outcomes, tier promotions/demotions and net reinforcement/undermining changes are evaluated at the Powerplay cycle transition.",
+        "Because the system can change materially at the weekly boundary, objectives that were correct one day can become obsolete immediately after the new cycle begins.",
+        "Check current Power/community orders after the cycle before resuming last week's target list."
+      ],
+      "commonMistakes": [
+        "Treating Powerplay as if system ownership changes at the daily BGS tick.",
+        "Continuing an old acquisition or reinforcement target after the weekly cycle has already resolved it."
+      ],
+      "sources": [
+        {"name": "EDPowerPlay — Guide", "url": "https://edpowerplay.com/guide"},
+        {"name": "INARA — Powerplay 2.0 Guide", "url": "https://inara.cz/elite/logbook/84502/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable framework"
+    },
+    {
+      "id": "powerplay-stronghold-carriers",
+      "category": "Powerplay 2.0",
+      "topic": "Strongholds & Stronghold Carriers",
+      "keywords": ["stronghold carrier", "stronghold", "powerplay carrier", "powerplay modules", "stronghold system"],
+      "ruleOfThumb": "Strongholds are the top controlled-system tier and major territorial anchors. They can host Stronghold Carriers and project the widest support radius, making them strategic infrastructure rather than merely high-progress systems.",
+      "details": [
+        "Strongholds project a 30 ly territorial/support radius.",
+        "Stronghold Carriers can appear in Stronghold systems and provide Power-specific services/markets for pledged commanders.",
+        "A well-positioned Stronghold can support many nearby Exploited systems and open a larger acquisition neighborhood.",
+        "For that reason, Stronghold defense and enemy-Stronghold undermining often have disproportionate strategic value."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"},
+        {"name": "Just About Elite Dangerous — Powerplay 2.0 Guide", "url": "https://justabout.com/elite-dangerous/37813/an-elite-dangerous-powerplay-20-guide-and-review-created-by-veteran-players"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "powerplay-colonization-interaction",
+      "category": "Powerplay 2.0",
+      "topic": "Colonisation & Powerplay Interaction",
+      "keywords": ["colonization powerplay", "colonisation powerplay", "player colony powerplay", "acquire colony", "power territory colony"],
+      "ruleOfThumb": "A player-built colony and Powerplay control are separate layers. Completing a colony makes the system inhabited, but it does not automatically assign the system to the architect's preferred Power; the system can later become a Powerplay acquisition target if territorial rules allow it.",
+      "details": [
+        "Colonisation determines the system's founding minor faction, infrastructure and population.",
+        "Powerplay control is handled separately through pledged-Power territorial mechanics.",
+        "A newly inhabited colony can become strategically valuable if it lies within acquisition range of a Fortified or Stronghold system.",
+        "This means colonisation can reshape the Powerplay map by creating new inhabited stepping stones even when the colony project itself was not started as a Powerplay operation."
+      ],
+      "operations": "If a colony is intended to support a particular Power, map its distance to that Power's current Fortified and Stronghold anchors before assuming it will become acquireable.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — System Colonisation", "url": "https://elite-dangerous.fandom.com/wiki/System_Colonisation"},
+        {"name": "Frontier Forums — Colonised System Powerplay Example", "url": "https://forums.frontier.co.uk/threads/cycle-21-kaines-reach-a-swords-of-makhai-update.635860/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-observed"
+    },
+    {
+      "id": "powerplay-bgs-separation",
+      "category": "Powerplay 2.0",
+      "topic": "Powerplay vs BGS",
+      "keywords": ["powerplay vs bgs", "bgs powerplay", "minor faction power", "influence versus merits", "control points influence"],
+      "ruleOfThumb": "Powerplay and the BGS overlap geographically but track different things. Minor-faction influence/states are BGS; Power control, merits and control points are Powerplay. One can change without the other moving in the same direction.",
+      "details": [
+        "BGS determines minor-faction influence, system control, states, conflicts and asset ownership.",
+        "Powerplay determines which galactic Power controls or contests a system and how that territory connects to nearby holdings.",
+        "Some player activities can affect both layers at once, but the scoring rules are separate.",
+        "A system's controlling minor faction does not automatically tell you which Power controls it in Powerplay."
+      ],
+      "commonMistakes": [
+        "Calling Powerplay control points 'influence' and mixing them with BGS influence percentages.",
+        "Assuming helping the local controlling minor faction necessarily reinforces the Powerplay controller."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Powerplay", "url": "https://elite-dangerous.fandom.com/wiki/Powerplay"},
+        {"name": "Mongrels Reference — Background Simulation", "url": "/guides/reference/#bgs-background-simulation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
