@@ -1,0 +1,300 @@
+{
+  "version": "72",
+  "reviewedAt": "2026-09-14",
+  "scope": "Conventional ship combat and PvP reference knowledge used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "combat-pip-management",
+      "category": "Combat Fundamentals",
+      "topic": "Power Distributor Pip Management",
+      "keywords": ["pips", "pip management", "sys eng wep", "power distributor", "combat pips", "4 pips"],
+      "ruleOfThumb": "Treat pips as an active combat control, not a fixed setting. Move power toward SYS when taking shield damage, ENG when maneuvering or escaping, and WEP when sustained weapon draw becomes the limiting factor.",
+      "details": [
+        "A ship has six pips to distribute across SYS, ENG and WEP, with a maximum of four pips in any one capacitor.",
+        "SYS pips increase effective shield durability while shields are active and replenish the SYS capacitor used by shield regeneration and some utilities.",
+        "ENG pips improve available engine performance and recharge the capacitor used for boosting.",
+        "WEP pips recharge the weapon capacitor; keeping the capacitor healthy also helps control heat on distributor-hungry weapons.",
+        "Good combat flying constantly reallocates pips as the tactical situation changes rather than leaving them at 2-2-2."
+      ],
+      "commonMistakes": [
+        "Leaving pips at 2-2-2 for an entire fight.",
+        "Keeping four pips in WEP while the capacitor is already full and the ship is taking heavy shield damage.",
+        "Trying to boost with an empty ENG capacitor."
+      ],
+      "pve": "Dynamic pips make even routine PvE safer and faster, especially in Conflict Zones and high-threat bounty fights.",
+      "pvp": "Pip timing is one of the defining PvP fundamentals because incoming damage, boost timing and weapon windows change from second to second.",
+      "sources": [
+        {"name": "NEWP — PvE Combat Guide", "url": "https://newp.io/pve"},
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-sys-pips",
+      "category": "Combat Fundamentals",
+      "topic": "SYS Pips & Shield Durability",
+      "keywords": ["sys pips", "shield pips", "4 sys", "shield strength", "shield resistance", "2.5x shields"],
+      "ruleOfThumb": "When a shielded ship is about to take serious fire, move toward 4 SYS. Four SYS pips reduce incoming shield damage enough to make the shield roughly 2.5 times as durable as it is at zero SYS pips.",
+      "details": [
+        "Shield-pip protection is applied as damage resistance while the shield is active.",
+        "At four SYS pips the commonly documented resistance bonus is about 60%, meaning the shield takes about 40% of the incoming damage it would take at zero SYS pips.",
+        "This protection stacks multiplicatively with the shield's normal resistance profile.",
+        "SYS pips do not create shield megajoules permanently; the benefit changes as pips are moved."
+      ],
+      "quickFacts": [
+        {"label": "4 SYS", "value": "~60% shield damage reduction"},
+        {"label": "Effective durability", "value": "~2.5x vs 0 SYS pips"}
+      ],
+      "commonMistakes": [
+        "Comparing two shield builds without considering how they will actually be pip-managed in combat.",
+        "Waiting until after a large plasma or rail volley lands before moving pips into SYS."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Shield Generator", "url": "https://elite-dangerous.fandom.com/wiki/Shield_Generator"},
+        {"name": "NEWP — PvE Combat Guide", "url": "https://newp.io/pve"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-eng-pips",
+      "category": "Combat Fundamentals",
+      "topic": "ENG Pips, Boosting & Range Control",
+      "keywords": ["eng pips", "engine pips", "boost", "boost recharge", "range control", "maneuverability"],
+      "ruleOfThumb": "Use ENG pips whenever positioning is the problem: closing, extending, turning, dodging or maintaining boost cadence. A weapon solution is useless if you cannot put the ship in the right place.",
+      "details": [
+        "ENG pips recharge the engine capacitor that pays for boosts.",
+        "More ENG pips improve normal thruster performance and help a ship maintain the speed and maneuvering needed for range control.",
+        "Combat pilots often move heavily into ENG during turns, disengagements or chase phases, then redistribute once a firing window is established."
+      ],
+      "commonMistakes": [
+        "Keeping four SYS or four WEP while repeatedly failing to turn onto the target.",
+        "Burning the ENG capacitor empty and losing the ability to boost at the moment an escape or reversal is needed."
+      ],
+      "sources": [
+        {"name": "NEWP — PvE Combat Guide", "url": "https://newp.io/pve"},
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-wep-pips",
+      "category": "Combat Fundamentals",
+      "topic": "WEP Pips, Capacitor & Heat",
+      "keywords": ["wep pips", "weapon pips", "weapon capacitor", "weapon heat", "distributor draw"],
+      "ruleOfThumb": "Use WEP pips to keep the weapon capacitor healthy during sustained firing. Do not confuse WEP pips with a direct damage multiplier; their practical value is capacitor recharge and improved heat behavior for distributor-hungry weapons.",
+      "details": [
+        "Energy-intensive weapons such as lasers, rail guns and plasma accelerators can drain WEP quickly.",
+        "A depleted WEP capacitor can interrupt sustained fire and causes many weapons to run hotter than they do with a healthy capacitor.",
+        "If the capacitor is already full and you are not firing, those pips can usually do more useful work in SYS or ENG until the next attack window."
+      ],
+      "commonMistakes": [
+        "Assuming four WEP pips directly increase the listed damage per shot.",
+        "Leaving four pips in WEP between firing windows while neglecting shields or positioning."
+      ],
+      "sources": [
+        {"name": "NEWP — PvE Combat Guide", "url": "https://newp.io/pve"},
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-weapon-mounts",
+      "category": "Combat Fundamentals",
+      "topic": "Fixed vs Gimballed vs Turreted Weapons",
+      "keywords": ["fixed weapons", "gimballed", "gimbaled", "turreted", "weapon mounts", "chaff"],
+      "ruleOfThumb": "Choose the mount style around how reliably you can land hits. Fixed weapons reward aim and are immune to chaff tracking disruption; gimbals trade some raw performance for easier tracking; turrets maximize firing arc at a larger damage tradeoff.",
+      "details": [
+        "Fixed weapons require manual aim and are the common choice for weapons where accuracy and PvP resistance to countermeasures matter most.",
+        "Gimballed weapons track a selected target inside their tracking cone and are widely used in PvE because they increase practical time-on-target.",
+        "Turreted weapons can cover much wider arcs but generally sacrifice more weapon performance for that automation.",
+        "Chaff disrupts the automatic tracking of gimballed and turreted weapons but does not stop a pilot from firing them manually toward the target."
+      ],
+      "pve": "Gimbals are often the easiest path to strong practical DPS while learning a ship.",
+      "pvp": "Fixed weapons are common because human opponents use chaff, low-signature tactics and aggressive maneuvering that can reduce assisted tracking reliability.",
+      "sources": [
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"},
+        {"name": "Elite Dangerous Wiki — Chaff Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Chaff_Launcher"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-chaff",
+      "category": "Combat Defensive Tools",
+      "topic": "Chaff Launcher",
+      "keywords": ["chaff", "chaff launcher", "gimbals", "turrets", "tracking disruption"],
+      "ruleOfThumb": "Use chaff to spoil the tracking of gimballed and turreted weapons. It is strongest when the opponent relies heavily on assisted tracking and much less valuable against fixed weapons.",
+      "details": [
+        "Chaff is a utility-mount countermeasure with limited ammunition.",
+        "When deployed, it disrupts automatic target tracking by gimballed and turreted weapons for a short period.",
+        "It does not make the ship invulnerable; a skilled opponent can continue firing fixed weapons or manually aim assisted weapons."
+      ],
+      "commonMistakes": [
+        "Firing chaff against a fixed-weapon opponent and expecting meaningful protection.",
+        "Burning through all chaff charges early in a long fight without regard to the opponent's firing windows."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Chaff Launcher", "url": "https://elite-dangerous.fandom.com/wiki/Chaff_Launcher"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-silent-running",
+      "category": "Combat Defensive Tools",
+      "topic": "Silent Running & Low Signature",
+      "keywords": ["silent running", "low signature", "cold ship", "heat signature", "stealth", "target lock"],
+      "ruleOfThumb": "Silent Running is a heat-management and signature tactic, not a cloak. It drops shields and closes the ship's radiators, reducing signature while heat builds internally.",
+      "details": [
+        "Engaging Silent Running takes shields offline and prevents normal heat rejection through the radiators.",
+        "A lower thermal signature makes target lock more difficult at range, especially for weapons and systems that depend on a resolved target.",
+        "Heat continues accumulating from active modules and weapons, so heatsinks and disciplined module use are common parts of a silent-running plan.",
+        "Very close opponents can still resolve a low-signature ship, and untargeted/fixed manual fire remains possible."
+      ],
+      "commonMistakes": [
+        "Treating Silent Running as complete invisibility.",
+        "Activating it on a shield-dependent build without understanding that shields go offline.",
+        "Ignoring heat buildup while the radiators are closed."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Silent Running", "url": "https://elite-dangerous.fandom.com/wiki/Silent_Running"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-shield-cell-bank",
+      "category": "Combat Defensive Tools",
+      "topic": "Shield Cell Banks (SCBs)",
+      "keywords": ["shield cell bank", "scb", "banking", "shield cell", "feedback cascade", "heatsink"],
+      "ruleOfThumb": "Use an SCB before the shield collapses, protect the spin-up window, and plan for the heat. Feedback Cascade rail hits during spin-up can sharply reduce the cell's reinforcement.",
+      "details": [
+        "An SCB restores an active shield; it cannot restore a shield that has already collapsed.",
+        "The cell has a spin-up period before reinforcement begins. If the shield falls during that period, the charge can be lost without delivering its intended shield recovery.",
+        "SCBs generate substantial heat, so heatsinks, Thermal Vent beams or appropriate engineering are common support tools.",
+        "Feedback Cascade is specifically designed to interfere with SCB reinforcement during the vulnerable activation window."
+      ],
+      "commonMistakes": [
+        "Banking after the shield has already failed.",
+        "Waiting until the shield is so low that it collapses during spin-up.",
+        "Using repeated cells without a heat-management plan."
+      ],
+      "pvp": "In PvP, watch for rail-equipped opponents and vary timing/position so the bank is harder to cancel.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Shield Cell Bank", "url": "https://elite-dangerous.fandom.com/wiki/Shield_Cell_Bank"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "combat-high-wake-escape",
+      "category": "PvP Fundamentals",
+      "topic": "High-Wake Escape Procedure",
+      "keywords": ["high wake", "escape pvp", "interdiction escape", "target next system", "submit interdiction", "wake out"],
+      "ruleOfThumb": "If survival is the objective, prepare a hyperspace destination before trouble starts. After an interdiction you cannot win, create distance, manage pips for survival and boost, then high-wake to another system as soon as the FSD is ready.",
+      "details": [
+        "A practical Open-Play habit is to keep Target Next System in Route bound so an escape destination can be selected quickly.",
+        "Submitting to an interdiction you expect to lose can avoid the longer failed-interdiction FSD recovery and lets you begin the escape sequence sooner.",
+        "Use SYS for shield durability when taking fire and ENG for boost cadence/positioning; the exact balance depends on whether the ship survives by tanking or evasion.",
+        "Once safely in the destination system, consider another jump if pursuit through the wake remains a concern."
+      ],
+      "commonMistakes": [
+        "Opening the Galaxy Map for the first time only after the attack begins.",
+        "Fighting an interdiction minigame to failure when the plan was always to escape.",
+        "Continuing to trade shots when the real objective is survival."
+      ],
+      "sources": [
+        {"name": "INARA — New Pirate Initiative PvP Guide", "url": "https://inara.cz/elite/squadron-document/7234/3201/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "combat-flight-assist-off",
+      "category": "PvP Fundamentals",
+      "topic": "Flight Assist Off in Combat",
+      "keywords": ["fa off", "flight assist off", "reverski", "vector", "turning", "lateral thrust"],
+      "ruleOfThumb": "FA-Off is a vector-control tool, not a requirement for every pilot. Use it when you need the ship's facing direction to separate from its current travel vector or when you want stronger control over reversals and lateral movement.",
+      "details": [
+        "With Flight Assist Off, the ship stops automatically cancelling translational drift, so velocity must be managed manually.",
+        "Combat pilots often use partial or full FA-Off to keep weapons pointed at a target while preserving lateral or reverse motion.",
+        "The technique increases workload and can make range control worse until muscle memory develops, so deliberate practice is more useful than switching it on permanently without training."
+      ],
+      "commonMistakes": [
+        "Assuming FA-Off automatically makes a pilot more maneuverable without learning vector control.",
+        "Practicing only in live high-stakes fights instead of controlled drills or duels."
+      ],
+      "sources": [
+        {"name": "INARA — New Pirate Initiative PvP Tactics", "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/61925/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "combat-range-control",
+      "category": "PvP Fundamentals",
+      "topic": "Range Control & Engagement Geometry",
+      "keywords": ["range control", "engagement range", "jousting", "orbit", "time on target", "boost turn"],
+      "ruleOfThumb": "Range control is the fight. Try to keep the opponent inside the envelope where your weapons, convergence and ship handling are strongest while denying the range their build wants.",
+      "details": [
+        "Projectile speed, falloff, convergence and weapon type determine the range where a loadout is easiest to use effectively.",
+        "Fast ships can choose when to close or extend more often; slower tanks must use positioning, boost timing and defensive strength to survive unfavorable geometry.",
+        "A pure back-and-forth joust can waste a ship's advantages. Lateral thrust, pre-turning and controlled boosts can create longer firing windows."
+      ],
+      "pve": "Range control makes fixed weapons and subsystem targeting much easier against NPCs.",
+      "pvp": "Human opponents actively fight for their preferred range, so range control and boost timing become central skills rather than optional polish.",
+      "sources": [
+        {"name": "INARA — New Pirate Initiative PvP Tactics", "url": "https://inara.cz/elite/cmdr-logbook-entry/269312/61925/"},
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "combat-subsystem-targeting",
+      "category": "Combat Fundamentals",
+      "topic": "Subsystem Targeting",
+      "keywords": ["subsystem targeting", "module targeting", "power plant", "thrusters", "fsd", "module sniping"],
+      "ruleOfThumb": "Once hull is exposed, target the module that best serves the objective. Thrusters or FSD can stop an escape; Power Plant pressure can shorten a kill; weapons or distributor damage can reduce return fire.",
+      "details": [
+        "Subsystem targeting lets weapons concentrate damage on a selected internal or external module rather than only reducing hull.",
+        "Module choice should match the objective: disable, capture, prevent escape, reduce incoming damage or destroy the ship.",
+        "Weapon penetration and firing angle affect how reliably internal modules can be damaged, so a selected subsystem is not a guarantee that every hit reaches it.",
+        "Rail Guns and other high-penetration weapons are especially useful when deliberate module damage is part of the plan."
+      ],
+      "commonMistakes": [
+        "Targeting a module by habit without asking whether disabling it actually helps the current fight.",
+        "Ignoring firing geometry and expecting center-mass shots to damage any selected internal module equally well."
+      ],
+      "sources": [
+        {"name": "E:D Black Box — Combat", "url": "https://edblackbox.com/guides/systems/activity-guides/combat.html"},
+        {"name": "Mongrels Reference — Super Penetrator", "url": "/guides/reference/#weapon-super-penetrator"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "pvp-practice-progression",
+      "category": "PvP Fundamentals",
+      "topic": "PvP Training Progression",
+      "keywords": ["pvp training", "practice duel", "learn pvp", "combat training", "duel", "sparring"],
+      "ruleOfThumb": "Learn PvP in layers: first survive and escape, then practice controlled duels, then refine pips, range control, fixed-weapon aim and matchup knowledge. Losing practice fights is useful if you review why.",
+      "details": [
+        "Open-Play survival skills are valuable even for members who do not intend to become dedicated PvP pilots.",
+        "Controlled duels remove some of the chaos of organic encounters and make it easier to isolate one skill at a time.",
+        "Practice against stronger pilots is most useful when they can explain what created their firing windows or forced your mistakes.",
+        "Always keep rebuy risk and agreed duel conditions clear before training begins."
+      ],
+      "operations": "For squad training, pair newer pilots with experienced members and define the drill: escape, fixed aim, pip management, reversals, shield banking or full duel. Do not try to train every skill at once.",
+      "sources": [
+        {"name": "INARA — New Pirate Initiative PvP Guide", "url": "https://inara.cz/elite/squadron-document/7234/3201/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-reviewed"
+    }
+  ]
+}
