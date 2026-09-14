@@ -1,0 +1,275 @@
+{
+  "version": "75",
+  "reviewedAt": "2026-09-14",
+  "scope": "Field support, synthesis, repair, rearm, limpets, SRV sustainment, life support, fuel rescue, and expedition logistics used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "field-support-overview",
+      "category": "Field Support",
+      "topic": "Staying Operational Away From a Station",
+      "keywords": ["field support", "expedition support", "repair rearm", "stay operational", "deep space logistics", "away from station"],
+      "ruleOfThumb": "Treat field support as layers: synthesis replaces consumables, AFMUs repair modules, Repair Limpets repair hull/canopy damage, Reboot/Repair can revive badly damaged modules, and Fuel Transfer Limpets support another ship.",
+      "details": [
+        "No single module repairs everything, so know the boundary between hull, modules, canopy, fuel and consumables.",
+        "Carry the materials for the synthesis recipes your mission actually depends on before leaving station support.",
+        "For long expeditions, redundancy matters more than raw repair capacity: two AFMUs can repair each other, and a Repair Limpet Controller needs cargo space for limpets.",
+        "SRVs can synthesize their own fuel, ammunition and hull repair materials in the field."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"},
+        {"name": "Elite Dangerous Wiki — Repair Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Repair_Limpet_Controller"},
+        {"name": "Elite Dangerous Wiki — Auto Field-Maintenance Unit", "url": "https://elite-dangerous.fandom.com/wiki/Auto_Field-Maintenance_Unit"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "synthesis-basics",
+      "category": "Synthesis",
+      "topic": "Synthesis: What It Can Refill",
+      "keywords": ["synthesis", "synthesize", "inventory synthesis", "restock in space", "field crafting"],
+      "ruleOfThumb": "Synthesis converts stored materials into field consumables. Current recipes include AFMU refills, ammunition, heatsinks, life support, limpets, FSD injections, caustic sinks and SRV support.",
+      "details": [
+        "Synthesis is performed from the Inventory panel and consumes engineering/Guardian/Thargoid materials depending on the recipe.",
+        "Many ammunition recipes have Basic, Standard and Premium versions; higher tiers can add temporary performance bonuses in addition to the refill.",
+        "Some recipes refill one specific weapon or module rather than every copy installed on the ship.",
+        "Plan around exact current recipes instead of assuming one generic material set works for all consumables."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "limpet-synthesis",
+      "category": "Synthesis",
+      "topic": "Synthesizing Limpets",
+      "keywords": ["synthesize limpets", "limpet synthesis", "make limpets", "out of limpets", "limpet restock"],
+      "ruleOfThumb": "If you run out of limpets, Basic Limpet synthesis can restock up to 4 limpets using 10 Iron and 10 Nickel.",
+      "details": [
+        "Synthesized limpets still occupy cargo space, so synthesis requires free cargo capacity.",
+        "This is especially useful for repair, rescue, salvage and emergency mining operations when no station is nearby.",
+        "Do not leave port with zero cargo capacity if the mission depends on limpets; synthesis cannot create storage space."
+      ],
+      "quickFacts": [
+        {"label": "Yield", "value": "Up to 4 limpets"},
+        {"label": "Cost", "value": "10 Iron + 10 Nickel"},
+        {"label": "Needs cargo space", "value": "Yes"}
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis: Limpets", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "afmu-field-repair",
+      "category": "Repair",
+      "topic": "AFMU Module Repair & Limitations",
+      "keywords": ["afmu", "auto field maintenance unit", "repair modules", "repair fsd", "repair thrusters", "repair canopy"],
+      "ruleOfThumb": "Use an AFMU for internal-module repair, not hull repair. It cannot repair the Power Plant or itself; a second AFMU lets the two units repair each other.",
+      "details": [
+        "The target module is taken offline while being repaired and must be re-enabled afterward.",
+        "An AFMU can repair a damaged canopy before it is fully breached, but cannot restore a completely shattered canopy.",
+        "Do not repair Thrusters or the FSD while in supercruise; taking those modules offline will force an emergency drop.",
+        "AFMU ammunition can itself be replenished with Synthesis."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Auto Field-Maintenance Unit", "url": "https://elite-dangerous.fandom.com/wiki/Auto_Field-Maintenance_Unit"},
+        {"name": "INARA — Synthesis: AFM Refill", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "repair-limpets",
+      "category": "Repair",
+      "topic": "Repair Limpets: Hull & Canopy",
+      "keywords": ["repair limpet", "repair hull", "repair canopy", "hull repair in space", "self repair limpet"],
+      "ruleOfThumb": "Repair Limpets restore hull integrity and can repair a damaged canopy before complete failure; they do not repair internal modules.",
+      "details": [
+        "Deploying a Repair Limpet with no active target makes it attempt to repair your own ship.",
+        "Only one Repair Limpet can actively repair a given ship at a time.",
+        "Larger hulls benefit from higher-class controllers because repair capacity scales with controller class.",
+        "External damage during the repair process interrupts the limpet, so move to safety before beginning repairs."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Repair Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Repair_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "reboot-repair",
+      "category": "Repair",
+      "topic": "Reboot / Repair Emergency Recovery",
+      "keywords": ["reboot repair", "reboot and repair", "broken module", "module at zero", "revive thrusters", "revive fsd"],
+      "ruleOfThumb": "Reboot/Repair is the last-resort way to revive severely damaged or disabled modules when no AFMU solution is available. It cannibalizes health from healthier modules and only works in normal space.",
+      "details": [
+        "The ship shuts down its modules during the reboot cycle, including Thrusters, Shields and Life Support.",
+        "The process transfers health inefficiently: healthy modules lose more integrity than the damaged module receives.",
+        "It does not repair hull or canopy damage.",
+        "Use it to restore enough function to escape, jump or reach proper repairs rather than as routine maintenance."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Reboot and Repair", "url": "https://elite-dangerous.fandom.com/wiki/Reboot_and_Repair"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "life-support-synthesis",
+      "category": "Survival",
+      "topic": "Life Support Synthesis After Canopy Failure",
+      "keywords": ["life support synthesis", "oxygen refill", "canopy breach", "canopy broken", "emergency oxygen", "running out of oxygen"],
+      "ruleOfThumb": "A breached canopy turns Life Support into a hard timer. Basic Life Support synthesis can refill the oxygen supply using 2 Iron and 1 Nickel.",
+      "details": [
+        "Synthesis can buy repeated additional oxygen time if enough materials are available.",
+        "A completely failed canopy cannot be restored by an AFMU or Repair Limpet; the goal becomes reaching a repair-capable dock safely.",
+        "Keep the required low-grade materials in reserve on long-distance or high-risk expeditions rather than trading them all away."
+      ],
+      "quickFacts": [
+        {"label": "Basic recipe", "value": "2 Iron + 1 Nickel"},
+        {"label": "Purpose", "value": "Refills Life Support supply"}
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis: Life Support", "url": "https://inara.cz/elite/synthesis/"},
+        {"name": "Elite Dangerous Wiki — Ship Canopy", "url": "https://elite-dangerous.fandom.com/wiki/Ship_Canopy"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "heatsink-synthesis",
+      "category": "Synthesis",
+      "topic": "Heat Sink Synthesis",
+      "keywords": ["heat sink synthesis", "synthesize heatsink", "out of heatsinks", "heat sink refill"],
+      "ruleOfThumb": "Heat Sink Launcher ammunition can be synthesized in the field. Keep the recipe materials aboard when heat management is mission-critical.",
+      "details": [
+        "INARA currently lists Basic, Standard and Premium Heat Sink synthesis recipes.",
+        "Higher-tier recipes add temporary heat-dissipation bonuses in addition to the refill.",
+        "This matters for AX, neutron travel, emergency scooping and heat-intensive combat builds where running dry can become a survival problem."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis: Heat Sink", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "ammo-synthesis",
+      "category": "Synthesis",
+      "topic": "Weapon Ammunition Synthesis",
+      "keywords": ["ammo synthesis", "ammunition synthesis", "rearm in space", "synthesize ammo", "premium ammo", "premium synthesis", "railgun ammo", "multicannon ammo", "guardian ammo"],
+      "ruleOfThumb": "Most ammunition synthesis is weapon-specific. Basic restores ammunition; Standard/Premium recipes for many weapons also grant temporary damage bonuses, so check the exact recipe before spending high-grade materials.",
+      "details": [
+        "Separate recipes exist for weapon families such as small calibre, large calibre, rails/high-velocity, plasma, Guardian weapons and AX ammunition.",
+        "The synthesis applies to a specific weapon/module rather than automatically refilling every hardpoint.",
+        "Do not burn rare Premium materials for routine PvE unless the performance increase is actually needed.",
+        "For expedition planning, Basic rearm materials are usually more important than carrying enough materials for repeated Premium synthesis."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-reference"
+    },
+    {
+      "id": "fuel-transfer-rescue",
+      "category": "Rescue",
+      "topic": "Fuel Transfer Limpets",
+      "keywords": ["fuel transfer limpet", "transfer fuel", "fuel rescue", "out of fuel", "rescue ship", "fuel rat"],
+      "ruleOfThumb": "Fuel Transfer Limpets move fuel from the rescuer's own main tank to another targeted ship in 1-ton increments. The rescuer needs both spare fuel and limpets.",
+      "details": [
+        "The limpet consumes fuel from the firing ship, so do not strand the rescue ship while helping someone else.",
+        "Fuel Transfer Limpets are for ship-to-ship rescue; they do not refill SRV fuel.",
+        "Carry enough cargo space for limpets and verify the rescue ship can still reach a scoopable star or station after the transfer."
+      ],
+      "quickFacts": [
+        {"label": "Transfer amount", "value": "1 ton per limpet"},
+        {"label": "Fuel source", "value": "Rescuer's main tank"}
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Fuel Transfer Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Fuel_Transfer_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "decontamination-limpets",
+      "category": "Rescue",
+      "topic": "Decontamination Limpets",
+      "keywords": ["decontamination limpet", "decon limpet", "remove caustic", "caustic damage", "thargoid caustic limpet"],
+      "ruleOfThumb": "Decontamination Limpets remove Thargoid caustic contamination and also provide a small amount of hull repair.",
+      "details": [
+        "Use them when caustic damage must be removed without relying on intentional overheating or Caustic Sink capacity.",
+        "They consume standard limpets and require a compatible Decontamination or Xeno/Universal controller.",
+        "Their repair component is secondary; use a Repair Limpet Controller when hull restoration is the primary job."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Decontamination Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Decontamination_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multi-limpet-controllers",
+      "category": "Limpets",
+      "topic": "Multi-Limpet Controllers: Flexibility vs Efficiency",
+      "keywords": ["multi limpet controller", "multi-limpet", "operations limpet", "rescue limpet", "universal limpet", "mining multi limpet", "xeno limpet"],
+      "ruleOfThumb": "Multi-Limpet Controllers trade specialization for flexibility. Use them when one slot needs to cover several jobs; use dedicated controllers when range, mass, slot size or peak performance matters more.",
+      "details": [
+        "Operations combines Collector, Hatch Breaker and Recon functions.",
+        "Mining combines Collector and Prospector functions.",
+        "Rescue combines Fuel Transfer, Hatch Breaker and Repair functions.",
+        "Xeno combines Decontamination, Repair and Research functions, while Universal can perform all eight standard limpet roles but requires a large Class 7 slot."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Limpet_Controller"},
+        {"name": "Elite Dangerous Wiki — Universal Multi Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Universal_Multi_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "srv-field-support",
+      "category": "Surface Operations",
+      "topic": "SRV Refuel, Repair & Rearm Synthesis",
+      "keywords": ["srv synthesis", "srv repair", "srv refuel", "srv rearm", "scarab repair", "scarab fuel", "srv ammo", "guardian site srv"],
+      "ruleOfThumb": "An SRV can sustain itself in the field with synthesis: separate recipes exist for ammunition, fuel and hull repair.",
+      "details": [
+        "Basic SRV Ammo Restock uses Sulphur and Phosphorus.",
+        "Basic SRV Refuel uses Sulphur and Phosphorus.",
+        "Basic SRV Repair uses Iron and Nickel.",
+        "This is especially important at Guardian sites and remote surface operations where repeated Sentinel fights, driving damage and fuel use can otherwise end the trip early."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis: SRV Ammo/Refuel/Repair", "url": "https://inara.cz/elite/synthesis/"},
+        {"name": "INARA — Guardian site field guide", "url": "https://inara.cz/elite/cmdr-logbook-entry/513657/97679/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "expedition-support-loadout",
+      "category": "Field Support",
+      "topic": "Practical Expedition Support Loadout",
+      "keywords": ["expedition loadout", "deep space support", "exploration repair loadout", "what support modules", "long range expedition prep"],
+      "ruleOfThumb": "For a self-sufficient expedition, prioritize a Fuel Scoop, AFMU, SRV, DSS and the synthesis materials you actually expect to use; add a second AFMU and Repair Limpet capability when mission risk and available slots justify them.",
+      "details": [
+        "A second AFMU provides mutual repair capability, but takes another optional slot.",
+        "Repair Limpets require both a controller and cargo space, so they are most worthwhile on larger or higher-risk expedition ships.",
+        "Carry enough low-grade Iron, Nickel, Sulphur and Phosphorus for limpets, oxygen and SRV sustainment before departing populated space.",
+        "For combat-heavy, AX or neutron-route missions, add the specific ammunition/heatsink/AFMU synthesis materials those activities consume."
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"},
+        {"name": "Elite Dangerous Wiki — Auto Field-Maintenance Unit", "url": "https://elite-dangerous.fandom.com/wiki/Auto_Field-Maintenance_Unit"},
+        {"name": "Elite Dangerous Wiki — Repair Limpet Controller", "url": "https://elite-dangerous.fandom.com/wiki/Repair_Limpet_Controller"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
