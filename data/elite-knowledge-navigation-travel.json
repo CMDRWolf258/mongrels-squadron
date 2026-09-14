@@ -1,0 +1,325 @@
+{
+  "version": "79",
+  "reviewedAt": "2026-09-14",
+  "scope": "Navigation and travel, route plotting, fuel-star planning, supercruise, gravity wells, Supercruise Overcharge, orbital cruise and glide, neutron/white-dwarf supercharging, FSD injections, and long-range travel workflow used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "navigation-route-planning-overview",
+      "category": "Navigation & Travel",
+      "topic": "Galaxy-Map Route Planning",
+      "keywords": ["route planning", "galaxy map route", "plot route", "fastest route", "economical route", "jet cone boost", "route settings"],
+      "ruleOfThumb": "Use Fastest Routes for normal travel, Economical Routes when fuel conservation or system coverage matters, and enable jet-cone boosts only when the ship is equipped and the pilot intends to use neutron/white-dwarf supercharging.",
+      "details": [
+        "Fastest Routes favors longer jumps and fewer systems; Economical Routes favors shorter, more fuel-efficient jumps.",
+        "The route plotter uses the ship's current jump capability, so cargo mass, module mass and fuel load can affect whether a leg is reachable.",
+        "Star-class filters can be used to keep routes on scoopable stars when the corresponding route-filter option is enabled.",
+        "Jet-cone routing requires a fuel scoop because the FSD is supercharged by flying through a neutron-star or white-dwarf jet cone while scooping."
+      ],
+      "sources": [
+        {"name": "INARA — Travel/Exploration Guide", "url": "https://inara.cz/elite/squadron-document/7746/2927/"},
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-fuel-stars",
+      "category": "Fuel & Route Planning",
+      "topic": "Scoopable Stars / KGBFOAM",
+      "keywords": ["kgbfoam", "scoopable stars", "fuel stars", "star classes", "fuel scoop stars", "o b a f g k m"],
+      "ruleOfThumb": "The normal scoopable stellar classes are O, B, A, F, G, K and M — commonly remembered as KGBFOAM.",
+      "details": [
+        "A fuel scoop works while flying close enough to a scoopable star in supercruise.",
+        "Brown dwarfs, neutron stars, white dwarfs and many other stellar types are not normal refuelling stars even though some can be used for FSD supercharging.",
+        "For long-range travel, route filtering to scoopable stars greatly reduces the chance of stranding yourself between refuelling opportunities.",
+        "Do not wait until the tank is nearly empty before checking the next scoopable stop in sparse regions."
+      ],
+      "sources": [
+        {"name": "INARA — New Pilots Initiative Getting Started Guide", "url": "https://inara.cz/elite/squadron-document/5068/2683/"},
+        {"name": "INARA — Travel/Exploration Guide", "url": "https://inara.cz/elite/squadron-document/7746/2927/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-jump-range-mass",
+      "category": "Fuel & Route Planning",
+      "topic": "Jump Range, Cargo Mass & Fuel Mass",
+      "keywords": ["jump range mass", "cargo affects jump range", "fuel affects jump range", "laden jump range", "unladen jump range", "maximum jump"],
+      "ruleOfThumb": "Jump range is mass-sensitive. Cargo, fuel and fitted modules all count, so a route that works empty may fail when the ship is heavily laden.",
+      "details": [
+        "Cargo mass directly reduces hyperspace range.",
+        "Fuel carried in the main tank also contributes mass; in extreme sparse-space situations, carrying less fuel can marginally increase maximum single-jump reach.",
+        "Check the ship's laden/current jump range rather than relying only on an empty-build number from a ship builder.",
+        "A route can become unavailable after loading cargo even when the destination itself did not change."
+      ],
+      "sources": [
+        {"name": "INARA — Travel/Exploration Guide", "url": "https://inara.cz/elite/squadron-document/7746/2927/"},
+        {"name": "Elite Dangerous — ship outfitting pages", "url": "https://www.elitedangerous.com/equipment/starships"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-supercruise-gravity",
+      "category": "Supercruise",
+      "topic": "Gravity Wells Control Supercruise Speed",
+      "keywords": ["gravity well", "supercruise slow", "supercruise speed", "planet gravity supercruise", "why am i slow in supercruise"],
+      "ruleOfThumb": "If full throttle feels inexplicably slow in supercruise, look at nearby gravity wells. Stars, planets and moons limit supercruise acceleration even when the throttle is at 100%.",
+      "details": [
+        "Supercruise speed is constrained by the gravity of nearby massive bodies.",
+        "Climbing away from a planet, moon or star lets the ship accelerate much more quickly.",
+        "A direct line through multiple gravity wells can be slower than a slightly wider route above or below the orbital plane.",
+        "The slowdown is not necessarily a ship fault or an FSD problem."
+      ],
+      "sources": [
+        {"name": "INARA — New Pilots Initiative Getting Started Guide", "url": "https://inara.cz/elite/squadron-document/5068/2683/"},
+        {"name": "INARA — Supercruise gravity-well discussion", "url": "https://inara.cz/elite/board-thread/2/483706/?page=3349"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-six-second-rule",
+      "category": "Supercruise",
+      "topic": "The 6-7 Second Supercruise Approach Rule",
+      "keywords": ["six second rule", "6 second rule", "7 second rule", "overshoot station", "loop of shame", "supercruise approach"],
+      "ruleOfThumb": "For a simple reliable approach, stay at full throttle until the ETA reaches about 6-7 seconds, then reduce to roughly 75% throttle / the blue zone and hold it until safe dropout.",
+      "details": [
+        "Seven seconds is the safer training point; six seconds is the common practiced target.",
+        "Reducing throttle too late causes the classic overshoot or 'loop of shame'.",
+        "The ship must be both close enough and slow enough for a safe destination dropout; the HUD indicators show when both conditions are satisfied.",
+        "Advanced gravity-braking and Supercruise Assist tricks can be faster, but the 6-7 second method is the dependable baseline."
+      ],
+      "sources": [
+        {"name": "INARA — New Pilots Initiative Getting Started Guide", "url": "https://inara.cz/elite/squadron-document/5068/2683/"},
+        {"name": "INARA — Supercruise approach discussion", "url": "https://inara.cz/elite/board-thread/2/318504/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-supercruise-assist",
+      "category": "Supercruise",
+      "topic": "Supercruise Assist: Convenience vs Manual Travel",
+      "keywords": ["supercruise assist", "sca", "manual throttle supercruise assist", "supercruise assist trick", "automatic throttle"],
+      "ruleOfThumb": "Supercruise Assist is primarily a convenience tool. Manual throttle control lets a CMDR travel at full speed for most of the leg and hand control back to SCA near the destination.",
+      "details": [
+        "With manual throttle control enabled, SCA can maintain guidance while the pilot chooses the throttle setting.",
+        "A common workflow is full throttle during the cruise, then 75% near the 6-7 second mark.",
+        "SCA is not required for safe arrivals; it mainly reduces workload and can automatically manage the final dropout when correctly engaged.",
+        "Aggressive SCA shortcuts are advanced techniques and should not be the assistant's default recommendation for new pilots."
+      ],
+      "sources": [
+        {"name": "INARA — Accelerating the Supercruise Assistant", "url": "https://inara.cz/elite/cmdr-logbook-entry/282160/54294/"},
+        {"name": "INARA — Supercruise discussion", "url": "https://inara.cz/elite/board-thread/2/483706/?page=3349"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-sco",
+      "category": "Supercruise Overcharge",
+      "topic": "Supercruise Overcharge (SCO)",
+      "keywords": ["supercruise overcharge", "sco", "sco fsd", "overcharge fsd", "supercruise boost", "sco heat", "sco fuel"],
+      "ruleOfThumb": "Use SCO as a short-duration in-system sprint, not as a normal cruise setting. It trades extreme acceleration for much higher fuel use, heat and ship-control workload.",
+      "details": [
+        "SCO-capable Frame Shift Drives add an overcharge mode while already in supercruise.",
+        "Early SCO use caused major heat and structural stress; ships advertised as SCO-optimised handle the mode more comfortably than older hulls.",
+        "SCO is excellent for escaping deep gravity wells or cutting long in-system legs, but continuous use can burn fuel extremely quickly.",
+        "Keep an eye on heat, fuel and directional control and disengage SCO before the situation becomes unrecoverable."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous GalNet — SCO ship stress", "url": "https://community.elitedangerous.com/galnet/03-MAY-3310"},
+        {"name": "Elite Dangerous — Type-8 Update", "url": "https://www.elitedangerous.com/news/type-8-update-now-available"},
+        {"name": "Elite Dangerous GalNet — Mandalay SCO optimisation", "url": "https://community.elitedangerous.com/galnet/31-OCT-3310"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "navigation-orbital-cruise-glide",
+      "category": "Planetary Approach",
+      "topic": "Orbital Cruise & Glide",
+      "keywords": ["orbital cruise", "planet glide", "glide approach", "planetary approach", "too steep glide", "orbital cruise altitude"],
+      "ruleOfThumb": "Approach landable planets shallow enough to preserve Orbital Cruise, then let the game transition into Glide rather than diving vertically at the target.",
+      "details": [
+        "Orbital Cruise is the high-speed planetary-approach regime between ordinary supercruise and normal flight.",
+        "For fastest lateral travel in Orbital Cruise, keep the pitch near the blue-zone horizon rather than pointing steeply downward.",
+        "Around 25 km is the normal lower boundary for Orbital Cruise on descent; a valid speed and angle transition the ship into Glide.",
+        "A bad approach angle can force an early dropout and leave a long normal-space flight to the surface target."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Orbital Cruise", "url": "https://elite-dangerous.fandom.com/wiki/Orbital_Cruise"},
+        {"name": "Elite Dangerous — Update 13 notes", "url": "https://www.elitedangerous.com/de-DE/neues/elite-dangerous-update-13-notes"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-standard-jet-cone-boosts",
+      "category": "Neutron Travel",
+      "topic": "Standard White Dwarf & Neutron FSD Supercharging",
+      "keywords": ["neutron boost", "neutron supercharge", "white dwarf boost", "white dwarf supercharge", "jet cone boost", "fsd supercharged"],
+      "ruleOfThumb": "With a normal compatible FSD and fuel scoop, a White Dwarf adds 50% range for one jump and a Neutron Star adds 300% range — making a neutron jump about 4x the ship's normal range.",
+      "details": [
+        "The boost applies to the next hyperspace jump only.",
+        "A fuel scoop is required to collect the jet-cone particles that supercharge the FSD.",
+        "White dwarfs are generally poor travel boosters because their 50% benefit is small relative to the danger from their large exclusion zones.",
+        "Neutron stars are the basis of long-distance neutron-highway travel because their +300% boost is much more useful."
+      ],
+      "sources": [
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"},
+        {"name": "Frontier Forums — neutron route discussion", "url": "https://forums.frontier.co.uk/threads/a-question-about-neutron-and-fsd-boosts.444307/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-neutron-technique",
+      "category": "Neutron Travel",
+      "topic": "Safe Neutron-Star Cone Entry",
+      "keywords": ["how to neutron boost", "neutron cone entry", "neutron technique", "jet cone technique", "neutron highway safe"],
+      "ruleOfThumb": "Enter a neutron jet from the side/shallow angle while travelling outward with the cone, never by diving toward the star. Stay in supercruise until the FSD reports that it is supercharged.",
+      "details": [
+        "Aim for the outer portion of a jet cone and move in the same general direction as the particles, away from the neutron star.",
+        "The ship will buffet and yaw while inside the cone; that turbulence is expected.",
+        "Dropping to normal space inside a jet cone is extremely dangerous and can be fatal.",
+        "White-dwarf cones are much less forgiving because the exclusion zone occupies more of the usable cone."
+      ],
+      "sources": [
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"},
+        {"name": "INARA — recent neutron travel logbook", "url": "https://inara.cz/elite/cmdr-logbook-entry/335126/97406/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "navigation-neutron-fsd-damage",
+      "category": "Neutron Travel",
+      "topic": "Neutron Boosting Damages the FSD",
+      "keywords": ["neutron fsd damage", "fsd health neutron", "repair fsd neutron", "afmu neutron highway", "fsd malfunction neutron"],
+      "ruleOfThumb": "Repeated jet-cone supercharging damages the Frame Shift Drive. Carry an AFMU on serious neutron-highway trips and repair the FSD before low integrity starts causing malfunctions.",
+      "details": [
+        "Neutron and white-dwarf supercharging applies wear to the FSD over repeated uses.",
+        "An AFMU can repair the FSD in the field, but the FSD must be taken offline during the repair.",
+        "For long neutron trips, periodically check FSD integrity instead of waiting for a malfunction warning.",
+        "This is why a fuel scoop plus AFMU is standard equipment on dedicated neutron-highway exploration builds."
+      ],
+      "sources": [
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"},
+        {"name": "INARA — 2026 neutron-highway discussion", "url": "https://inara.cz/elite/board-thread/2/490563/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-caspian-mkii-supercharge",
+      "category": "Neutron Travel",
+      "topic": "Caspian Explorer Mk II Supercharge Optimised FSD",
+      "keywords": ["caspian explorer", "mk ii supercharge optimised", "mk 2 supercharge optimized", "caspian neutron boost", "caspian white dwarf boost"],
+      "ruleOfThumb": "Do not apply the standard 1.5x/4x jet-cone numbers to the Caspian Explorer's Mk II Supercharge Optimised FSD. It is a special-case drive with substantially stronger white-dwarf and neutron supercharge bonuses.",
+      "details": [
+        "Current community documentation reports the Caspian-only Mk II Supercharge Optimised FSD at +200% from white dwarfs and +500% from neutron stars.",
+        "That corresponds to roughly 3x and 6x the unboosted jump range for the next jump, respectively.",
+        "The drive is specific to the Caspian Explorer and should not be treated as the current behaviour of ordinary SCO FSDs.",
+        "Because this is newer equipment, verify current live data when exact build planning depends on its final statistics."
+      ],
+      "sources": [
+        {"name": "INARA — March 2026 Caspian Mk II FSD discussion", "url": "https://inara.cz/elite/board-thread/2/490600/"},
+        {"name": "INARA — 2026 Caspian neutron-trip discussion", "url": "https://inara.cz/elite/board-thread/2/490563/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-special-case"
+    },
+    {
+      "id": "navigation-fsd-injection",
+      "category": "Jump Range",
+      "topic": "FSD Injection Synthesis",
+      "keywords": ["fsd injection", "jumponium", "basic fsd injection", "standard fsd injection", "premium fsd injection", "synthesis jump range"],
+      "ruleOfThumb": "FSD injections are one-jump synthesis boosts: Basic +25%, Standard +50%, Premium +100%. Save them for sparse-space route gaps and recovery rather than routine Bubble travel.",
+      "details": [
+        "Basic FSD Injection uses Carbon, Vanadium and Germanium.",
+        "Standard adds higher-grade raw materials and gives +50% range.",
+        "Premium doubles the ship's normal jump range for one jump and requires rare raw materials including Yttrium and Polonium.",
+        "The boost is consumed by the next hyperspace jump, so confirm the destination before using scarce materials."
+      ],
+      "quickFacts": [
+        {"label": "Basic", "value": "+25% jump range"},
+        {"label": "Standard", "value": "+50% jump range"},
+        {"label": "Premium", "value": "+100% jump range"}
+      ],
+      "sources": [
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"},
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-neutron-highway",
+      "category": "Long-Range Travel",
+      "topic": "Neutron Highway & External Route Plotters",
+      "keywords": ["neutron highway", "spansh neutron", "neutron plotter", "fast trip colonia", "long range route plotter"],
+      "ruleOfThumb": "For very long trips, a neutron-highway route can beat ordinary fastest-route plotting by chaining neutron stars. Use a current external plotter such as Spansh when the in-game route is not aggressive enough.",
+      "details": [
+        "Neutron-highway travel trades repeated FSD wear and more active flying for dramatically fewer jumps.",
+        "External neutron plotters can build routes around known neutron stars and refuelling needs.",
+        "Carry an AFMU, a fuel scoop and enough raw materials for emergency FSD injections before committing to remote neutron travel.",
+        "The route is only useful if the pilot is comfortable with safe cone entry; ordinary fastest routing is slower but lower workload."
+      ],
+      "sources": [
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"},
+        {"name": "INARA — current 2026 neutron-trip logbook", "url": "https://inara.cz/elite/logbook/97737/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "navigation-route-failure-troubleshooting",
+      "category": "Navigation & Travel",
+      "topic": "Why the Galaxy Map Says Route Unavailable",
+      "keywords": ["route unavailable", "plot route failed", "cannot plot route", "no route", "route plotting problem", "permit route", "jump range too short"],
+      "ruleOfThumb": "When a route will not plot, check four things first: current laden jump range, fuel, star-density gaps, and permit-locked/restricted systems. Then try a nearer intermediate waypoint.",
+      "details": [
+        "Cargo or module changes can reduce the ship below a required jump distance.",
+        "Near the galactic rim or other sparse regions, the next reachable star may simply be beyond current range.",
+        "Permit-locked systems can block direct routing through otherwise dense areas.",
+        "A shorter intermediate plot often reveals whether the problem is range, routing, restrictions or a temporary route-plotter issue."
+      ],
+      "sources": [
+        {"name": "INARA — Travel/Exploration Guide", "url": "https://inara.cz/elite/squadron-document/7746/2927/"},
+        {"name": "INARA — August 2026 route-plotter discussion", "url": "https://inara.cz/elite/board-thread/1/491448/?page=1123"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "navigation-long-range-prep",
+      "category": "Long-Range Travel",
+      "topic": "Long-Range Travel Preparation",
+      "keywords": ["long range travel prep", "exploration travel loadout", "travel loadout", "before colonia", "before sagittarius a", "deep space route"],
+      "ruleOfThumb": "Before a long trip, plan for fuel, FSD wear and route recovery: fit a scoop, know the scoopable-star filter, carry an AFMU for neutron use, and stock raw materials for at least emergency FSD injections.",
+      "details": [
+        "A large fuel scoop reduces stationary refuelling time and makes long-distance travel much less tedious.",
+        "An AFMU becomes much more valuable if the route uses neutron boosts.",
+        "Raw materials for FSD Injection can turn an otherwise impossible sparse-space jump into a recoverable situation.",
+        "Verify that the destination is not permit-locked and that the ship can actually reach the local star density before leaving the last easy support point."
+      ],
+      "commonMistakes": [
+        "Starting a neutron-highway trip without an AFMU.",
+        "Filtering out scoopable stars without noticing.",
+        "Planning from an unladen build and then loading cargo.",
+        "Using a premium FSD injection before confirming the selected jump.",
+        "Treating a White Dwarf like a low-risk neutron star."
+      ],
+      "sources": [
+        {"name": "NEWP — Exploration Guide", "url": "https://newp.io/exploration"},
+        {"name": "INARA — Travel/Exploration Guide", "url": "https://inara.cz/elite/squadron-document/7746/2927/"},
+        {"name": "INARA — Synthesis", "url": "https://inara.cz/elite/synthesis/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    }
+  ]
+}
