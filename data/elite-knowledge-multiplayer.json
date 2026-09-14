@@ -1,0 +1,280 @@
+{
+  "version": "81",
+  "reviewedAt": "2026-09-14",
+  "scope": "Elite Dangerous multiplayer, Teams/Wings, Team Beacon and Nav-Lock, instancing, shared rewards and Team Missions, telepresence and physical multicrew, multicrew roles, Ship-Launched Fighters, on-foot teamwork, squad coordination, and the 2026 Operations system used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "multiplayer-teams-overview",
+      "category": "Teams & Wings",
+      "topic": "Teams (formerly Wings)",
+      "keywords": ["team", "teams", "wing", "wings", "wing up", "team up", "four commanders", "4 commanders"],
+      "ruleOfThumb": "A normal Elite team supports up to four Commanders. 'Wing' is the older name and is still common community shorthand; Odyssey calls the group a Team.",
+      "details": [
+        "Teams let separate ships coordinate travel, combat, missions and rewards while remaining independent vessels.",
+        "A Team is not the same thing as Multicrew: Team members usually fly their own ships, while Multicrew places multiple Commanders aboard one ship or vehicle.",
+        "The four-Commander Team limit is important for squad planning; larger groups must coordinate across multiple Teams."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-team-beacon-navlock",
+      "category": "Teams & Wings",
+      "topic": "Team Beacon and Teammate Nav-Lock",
+      "keywords": ["team beacon", "wing beacon", "nav lock", "nav-lock", "teammate nav lock", "drop on teammate", "follow teammate"],
+      "ruleOfThumb": "Use the Team Beacon as the dependable rendezvous signal and treat Nav-Lock as a convenience rather than something the operation should depend on.",
+      "details": [
+        "A Team Beacon makes a teammate's normal-space location visible to teammates in supercruise so they can target it and drop into that location.",
+        "Nav-Lock is intended to help a follower track a teammate's supercruise and hyperspace transitions when requirements are met.",
+        "Nav-Lock has a long history of inconsistent behavior, so experienced groups often use the beacon, direct target selection and voice comms as the reliable fallback."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "multiplayer-instancing-troubleshooting",
+      "category": "Teams & Wings",
+      "topic": "Instancing and Getting the Team Together",
+      "keywords": ["instancing", "same instance", "different instance", "cannot see teammate", "can't see teammate", "team instance", "wing instance"],
+      "ruleOfThumb": "Being in the same Team helps matchmaking but does not guarantee everyone is already in the same local instance. Use a common anchor, Team Beacon and synchronized re-entry before assuming the activity is broken.",
+      "details": [
+        "First verify everyone is in the same game mode and has actually joined the Team.",
+        "Have one Commander act as the anchor with Team Beacon on; teammates can return to supercruise and drop on that beacon.",
+        "If needed, leave and re-enter the local instance, reform the Team, or have the separated Commander relog before rebuilding the group.",
+        "For large squad events, establish the anchor before combat starts so late arrivals have a clear target."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "multiplayer-shared-rewards",
+      "category": "Teams & Wings",
+      "topic": "Team Bounties, Trade Dividends and Exploration Sharing",
+      "keywords": ["shared bounty", "team bounty", "wing bounty", "trade dividend", "wing trade dividend", "team trade dividend", "shared exploration data"],
+      "ruleOfThumb": "Do not assume every multiplayer activity splits one reward pot. Elite uses activity-specific sharing rules: combat rewards can be duplicated for qualifying teammates, trade escorts can receive a dividend, and exploration sharing depends on team/system participation.",
+      "details": [
+        "Current Team rules award qualifying teammates their own bounty reward when they participate in the same kill rather than dividing one bounty among the group.",
+        "A teammate escort can receive a trade dividend equal to 5% of the trader's commodity profit while the trader keeps the normal sale profit.",
+        "Exploration discoveries can be shared with teammates under the Team exploration rules when the relevant commanders are together in the system.",
+        "Mission rewards follow mission-sharing rules instead of these generic Team reward rules."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-team-missions",
+      "category": "Team Missions",
+      "topic": "Sharing Team/Wing Missions",
+      "keywords": ["team mission", "wing mission", "share mission", "shared mission", "mission depot", "four team missions", "4 team missions"],
+      "ruleOfThumb": "The mission owner shares the mission from Transactions and teammates must accept it. Each Commander can share one Team Mission at a time, allowing up to four simultaneously shared Team Missions in a four-person Team.",
+      "details": [
+        "The Commander who accepted the Team Mission is the owner and controls the share.",
+        "For cargo Team Missions, the Mission Depot lets the group collect and deliver the required cargo over multiple runs.",
+        "Eligible teammates receive their own completion reward rather than splitting the owner's reward.",
+        "Do not assume ordinary missions, on-foot shared missions and Team Missions have identical completion/turn-in behavior; read the specific mission state before reorganizing the Team."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Team Missions", "url": "https://elite-dangerous.fandom.com/wiki/Team_Missions"},
+        {"name": "Elite Dangerous Wiki — Mission Depot", "url": "https://elite-dangerous.fandom.com/wiki/Mission_Depot"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-telepresence-multicrew",
+      "category": "Multicrew",
+      "topic": "Telepresence Multicrew",
+      "keywords": ["multicrew", "multi crew", "telepresence", "telepresence multicrew", "join crew", "remote crew"],
+      "ruleOfThumb": "Telepresence Multicrew is remote drop-in crew: the guest is projected directly into another Commander's ship rather than physically travelling to it.",
+      "details": [
+        "Telepresence is useful when Commanders are far apart because the guest does not need to fly to the host first.",
+        "The host remains the Helm/ship owner and the guest takes an available crew role.",
+        "Because the guest is remote rather than physically aboard, telepresence is not the right mode when the plan requires physically disembarking together for Odyssey surface activity.",
+        "Telepresence and ordinary Team play are separate multiplayer modes with different limitations."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Multicrew"},
+        {"name": "Frontier Forums — Telepresence vs physical boarding discussion", "url": "https://forums.frontier.co.uk/threads/letting-people-that-join-game-via-multicrew-telepresence-disembark-on-planets.635155/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-physical-multicrew",
+      "category": "Multicrew",
+      "topic": "Physical Multicrew in Odyssey",
+      "keywords": ["physical multicrew", "physical crew", "board teammate ship", "board friend's ship", "odyssey multicrew", "ride in teammate ship"],
+      "ruleOfThumb": "Use physical multicrew when the group needs to travel together in one ship and later disembark together. The guest physically boards the host ship rather than joining by telepresence.",
+      "details": [
+        "Physical multicrew requires the Commanders to meet and board the same compatible ship in Odyssey.",
+        "Because the Commanders are physically present, the group can travel and later continue the session on foot instead of being limited to a remote bridge projection.",
+        "Physical multicrew and telepresence have historically had different role and interaction quirks, so the assistant should not promise that every telepresence function behaves identically when physically crewed."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Careers / Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Careers"},
+        {"name": "Frontier Forums — Telepresence vs physical boarding discussion", "url": "https://forums.frontier.co.uk/threads/letting-people-that-join-game-via-multicrew-telepresence-disembark-on-planets.635155/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-confirmed"
+    },
+    {
+      "id": "multiplayer-multicrew-roles",
+      "category": "Multicrew",
+      "topic": "Helm, Gunner and Fighter Con Roles",
+      "keywords": ["helm", "gunner", "fighter con", "multicrew roles", "crew role", "turret gunner"],
+      "ruleOfThumb": "The ship owner is always Helm. Gunner operates supported turreted weapons/utilities, while Fighter Con pilots a Ship-Launched Fighter when the ship has an appropriate fighter hangar.",
+      "details": [
+        "Helm retains primary ship control, navigation and normal piloting responsibilities.",
+        "Gunner is built around turreted weapon control and compatible scanner/utility access rather than taking over the ship itself.",
+        "Fighter Con launches into an SLF while the mothership remains under Helm control.",
+        "Crew can change available roles during a session, but the host remains Helm."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Multicrew"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-slf-coop",
+      "category": "Multicrew",
+      "topic": "Ship-Launched Fighters in Cooperative Play",
+      "keywords": ["ship launched fighter", "ship-launched fighter", "slf", "slf crew", "multicrew fighter", "two fighters", "fighter hangar"],
+      "ruleOfThumb": "A compatible multicrew ship can support player-controlled SLFs, and multicrew can allow up to two active player-controlled fighters when the fighter bay and crew arrangement support it.",
+      "details": [
+        "SLFs operate locally around the mothership and cannot independently enter supercruise or hyperspace.",
+        "Fighter Con is the dedicated multicrew role for a human SLF pilot.",
+        "The Mongrels permit SLFs generally but strongly discourage them in PvP because synchronization and lag can degrade the fight for other players.",
+        "For organized PvP, follow the squad event rules even if the game mechanically allows the fighter."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Multicrew"},
+        {"name": "Elite Dangerous Wiki — Ship-Launched Fighters", "url": "https://elite-dangerous.fandom.com/wiki/Ship-Launched_Fighters"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-srv-onfoot-team",
+      "category": "Surface Teamwork",
+      "topic": "SRV and On-Foot Team Play",
+      "keywords": ["on foot team", "on-foot team", "srv team", "scorpion multicrew", "share on foot mission", "ground team", "odyssey team"],
+      "ruleOfThumb": "For Odyssey surface work, form a Team first and use physical travel when you want to stay together through ship, SRV and on-foot phases. Shared on-foot missions still require each teammate to accept the share.",
+      "details": [
+        "The Scorpion is the standard two-seat SRV and can support a driver plus another crew position.",
+        "On-foot missions can be shared to Team members, who individually accept or decline the invitation.",
+        "A teammate can assist with combat or objectives even when the mission ownership/reward path remains tied to the mission host.",
+        "Use voice comms and assign roles before entering hostile settlements; the game does not automatically coordinate targets or legal consequences for the group."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Multicrew"},
+        {"name": "Elite Dangerous Wiki — On Foot", "url": "https://elite-dangerous.fandom.com/wiki/On_Foot"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "multiplayer-open-play-squad-operations",
+      "category": "Squad Coordination",
+      "topic": "Mongrels Open-Play Multiplayer Standard",
+      "keywords": ["mongrels multiplayer", "squad multiplayer", "open play team", "bgs open play", "squad operation", "mongrel operation"],
+      "ruleOfThumb": "For Mongrel squad activity, Open Play is the standard. BGS actions intended to affect a faction or system must be performed in Open, and Solo/PG must not be used to avoid opposition.",
+      "details": [
+        "Form Teams, establish voice comms and choose an anchor before beginning an organized squad action.",
+        "Open Play is part of the squad's teamwork and accountability standard, not merely a matchmaking preference.",
+        "If technical issues force a mode change, that exception does not convert Solo/PG into an acceptable way to perform contested BGS work."
+      ],
+      "sources": [
+        {"name": "Regiment of Imperial Mongrels — Squad Rules", "url": "/about/#squad-rules"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "squad-policy"
+    },
+    {
+      "id": "multiplayer-operations-2026",
+      "category": "Operations",
+      "topic": "Operations: 2026 Squad-Focused Scenarios",
+      "keywords": ["elite operations", "operations update", "operation runner", "operations matchmaking", "operations squad", "mercenary mode", "powerplay mode"],
+      "ruleOfThumb": "Operations are a separate structured co-op activity introduced in 2026, not a replacement name for ordinary Teams or Team Missions. They support up to four Commanders in multi-stage squad scenarios.",
+      "details": [
+        "Operations can be started by a lone Commander or a formed squad, with optional matchmaking available to fill open positions.",
+        "The Operation Runner transports participating Commanders to the scenario and serves as the deployment hub.",
+        "The system launched with six Operations, with additional scenarios planned after launch.",
+        "Mercenary Mode is the default no-Powerplay-consequence mode; Powerplay Mode lets eligible squads perform Operations with Powerplay strategic effects."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous — Operations Update announcement", "url": "https://store.steampowered.com/news/posts/?appids=359320"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-feature"
+    },
+    {
+      "id": "multiplayer-operations-rewards",
+      "category": "Operations",
+      "topic": "Operations Rewards and Merc Coin",
+      "keywords": ["merc coin", "merc coins", "operations rewards", "operations credits", "operations materials", "merc engineering", "merc modules"],
+      "ruleOfThumb": "Operations reward each Commander directly. Current reward types include Credits, Materials and Merc Coin, with Merits also available where applicable in Powerplay Mode.",
+      "details": [
+        "Merc Coin is earned through Operations and is spent on the Operations reward ecosystem, including special module/engineering offerings.",
+        "Powerplay Mode can award Merits in addition to the normal Operation rewards when the Commander is eligible.",
+        "Frontier has already adjusted and fixed Operations reward behavior since launch, so exact payout/meta-farming questions should be live-verified before giving precise numbers."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous — Operations Update announcement", "url": "https://store.steampowered.com/news/posts/?appids=359320"},
+        {"name": "Elite Dangerous — Operations Update follow-up fixes", "url": "https://store.steampowered.com/oldnews/?appgroupname=Elite+Dangerous&appids=359320&feed=steam_community_announcements"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "dynamic-current"
+    },
+    {
+      "id": "multiplayer-large-group-coordination",
+      "category": "Squad Coordination",
+      "topic": "Coordinating More Than Four Commanders",
+      "keywords": ["more than four commanders", "more than 4 commanders", "large group", "multiple teams", "mass jump", "squad fleet", "two wings", "two teams"],
+      "ruleOfThumb": "More than four Commanders requires multiple normal Teams. Use one shared rendezvous/anchor and coordinate the separate Team leaders rather than constantly reshuffling everyone mid-operation.",
+      "details": [
+        "Pick one Commander or one Team as the location anchor and keep a beacon available for arrivals where practical.",
+        "Assign Team leaders and keep the groups stable so mission ownership, nav-lock targets and voice coordination remain understandable.",
+        "A large group can occupy the same activity area, but separate Teams still retain their own Team-level mission and navigation relationships.",
+        "For combat, agree target calls, regroup points and retreat/high-wake directions before contact."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "community-practice"
+    },
+    {
+      "id": "multiplayer-practical-workflow",
+      "category": "Squad Coordination",
+      "topic": "Practical Multiplayer Workflow",
+      "keywords": ["multiplayer workflow", "play with friends", "squad workflow", "team workflow", "group up", "coordinate team"],
+      "ruleOfThumb": "For ordinary squad play: choose the activity and mode first, form the Team, establish voice/text comms, select an anchor, turn on the Team Beacon, share missions deliberately, then move together. Use Multicrew only when multiple Commanders actually need to operate one vessel; use Operations for the dedicated 2026 scenario system.",
+      "details": [
+        "Choose Team play when Commanders need their own ships and independent loadouts.",
+        "Choose telepresence Multicrew for instant remote crew access to one vessel; choose physical multicrew when the group needs to travel and disembark together.",
+        "Choose Operations when the objective is one of Frontier's structured multi-stage squad scenarios rather than ordinary galaxy activity.",
+        "When an instance breaks, regroup before continuing instead of letting half the squad progress objectives in a separate instance."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Teams", "url": "https://elite-dangerous.fandom.com/wiki/Teams"},
+        {"name": "Elite Dangerous Wiki — Multicrew", "url": "https://elite-dangerous.fandom.com/wiki/Multicrew"},
+        {"name": "Elite Dangerous — Operations Update announcement", "url": "https://store.steampowered.com/news/posts/?appids=359320"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-practice"
+    }
+  ]
+}
