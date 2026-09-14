@@ -8,6 +8,8 @@
     '../../data/elite-knowledge.json',
     '../../data/elite-knowledge-exploration.json',
     '../../data/elite-knowledge-ax.json',
+    '../../data/elite-knowledge-combat.json',
+    '../../data/elite-knowledge-carriers-trade.json',
   ];
   let entries = [];
   const esc = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
