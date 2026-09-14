@@ -1,0 +1,323 @@
+{
+  "version": "78",
+  "reviewedAt": "2026-09-14",
+  "scope": "Reputation, Federation and Empire naval rank, Alliance standing, Pilots' Federation career ranks, system permits, rank-locked ships, and permit-gated engineer progression used by the Mongrels Field Manual and Ask the Mongrels.",
+  "entries": [
+    {
+      "id": "rank-rep-influence-separation",
+      "category": "Ranks & Reputation",
+      "topic": "Rank, Reputation, Influence & Permits Are Different Systems",
+      "keywords": ["rank vs reputation", "rank vs rep", "reputation vs influence", "navy rank", "superpower reputation", "minor faction reputation", "permit progression"],
+      "ruleOfThumb": "Do not treat rank, reputation, influence and permits as one progress bar. Reputation is your standing with a faction, influence is that faction's BGS share in a system, naval rank is permanent personal progression, and permits are access rights earned through specific requirements.",
+      "details": [
+        "Minor-faction reputation affects how that faction treats you and what missions it offers; it does not directly equal the faction's system influence.",
+        "Federation and Empire naval ranks are separate from superpower reputation and are permanent once earned.",
+        "Pilots' Federation career ranks are a separate progression family based on activities such as combat, trade, exploration, mercenary work, exobiology and CQC.",
+        "System permits can come from naval rank, career rank, or reputation/invitation requirements depending on the system."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Reputation", "url": "https://elite-dangerous.fandom.com/wiki/Reputation"},
+        {"name": "Elite Dangerous Wiki — Ranks", "url": "https://elite-dangerous.fandom.com/wiki/Ranks"},
+        {"name": "Elite Dangerous Wiki — Permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "minor-faction-reputation-levels",
+      "category": "Ranks & Reputation",
+      "topic": "Minor-Faction Reputation Levels",
+      "keywords": ["allied reputation", "friendly reputation", "cordial reputation", "minor faction rep", "minor faction reputation", "hostile faction"],
+      "ruleOfThumb": "Minor-faction reputation runs Hostile → Unfriendly → Neutral → Cordial → Friendly → Allied. Higher reputation generally unlocks better mission access and rewards from that faction.",
+      "details": [
+        "Common positive thresholds are Cordial at 15%, Friendly at 35%, and Allied at 75%.",
+        "Completing missions, profitable activity at faction-controlled assets, bounty/combat-bond hand-ins and exploration-data sales can increase reputation when credited to that faction.",
+        "Failing missions, committing crimes against the faction or fighting against it can lower reputation.",
+        "Minor-faction reputation does not use the same decay rule as major-superpower reputation."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Reputation", "url": "https://elite-dangerous.fandom.com/wiki/Reputation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "superpower-reputation",
+      "category": "Ranks & Reputation",
+      "topic": "Federation, Empire & Alliance Reputation",
+      "keywords": ["federation reputation", "empire reputation", "alliance reputation", "superpower rep", "major faction reputation", "superpower reputation decay"],
+      "ruleOfThumb": "Superpower reputation is standing, not naval rank. It helps relationships with aligned factions and some engineer requirements, but it does not replace Federal or Imperial Navy promotion progression.",
+      "details": [
+        "Superpower reputation and naval rank are explicitly separate values.",
+        "Major-superpower reputation above the Allied floor can decay downward over time toward the normal Allied threshold; naval rank does not decay.",
+        "Alliance reputation matters for some requirements even though the Alliance has no naval rank ladder.",
+        "When the goal is Navy progression, choose high-REP mission rewards from minor factions aligned with the desired superpower."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Reputation", "url": "https://elite-dangerous.fandom.com/wiki/Reputation"},
+        {"name": "E:D Black Box — Superpower Rank, updated 2026", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/superpower-rank.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "federal-navy-progression",
+      "category": "Naval Rank",
+      "topic": "Federal Navy Auxiliary Progression",
+      "keywords": ["federal rank", "federation rank", "federal navy rank", "federal navy auxiliary", "federal promotion", "federal navy mission", "rear admiral", "federal corvette"],
+      "ruleOfThumb": "Run missions for Federation-aligned minor factions and favor REP rewards. When the naval-rank bar reaches 100%, complete a Federal Navy promotion mission to advance one rank.",
+      "details": [
+        "The Federal Navy Auxiliary has 14 earned ranks from Recruit through Admiral.",
+        "Naval rank is permanent once earned.",
+        "Promotion missions are distinct Navy-labelled missions; ordinary Federation-aligned missions build the progression toward them.",
+        "Current community reports continue to confirm that additional aligned mission progress can bank beyond a displayed 100% rank bar while you wait for the promotion mission."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Federation ranks", "url": "https://elite-dangerous.fandom.com/wiki/Federation/Ranks"},
+        {"name": "E:D Black Box — Superpower Rank, updated 2026", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/superpower-rank.html"},
+        {"name": "Reddit — 2026 Federal Navy promotion discussion", "url": "https://www.reddit.com/r/EliteDangerous/comments/1ryuqbm/federation_rank_up_missions/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "federal-rank-unlocks",
+      "category": "Naval Rank",
+      "topic": "Federal Rank Ship & Permit Unlocks",
+      "keywords": ["federal dropship rank", "federal assault ship rank", "federal gunship rank", "corvette rank", "sol permit", "vega permit", "ross 128 permit", "federal unlocks"],
+      "ruleOfThumb": "The major Federal milestones are Midshipman for the Dropship, Petty Officer for Sol, Chief Petty Officer for the Assault Ship, Ensign for the Gunship, and Rear Admiral for the Corvette.",
+      "tables": [
+        {
+          "title": "Key Federal Navy unlocks",
+          "columns": ["Rank", "Notable unlocks"],
+          "rows": [
+            ["Midshipman", "Federal Dropship; The Sarge invitation"],
+            ["Petty Officer", "Sol permit"],
+            ["Chief Petty Officer", "Federal Assault Ship; Vega and Beta Hydri permits"],
+            ["Warrant Officer", "PLX 695 permit"],
+            ["Ensign", "Federal Gunship; Ross 128 permit"],
+            ["Lieutenant", "Exbeur permit"],
+            ["Post Commander", "Hors permit"],
+            ["Rear Admiral", "Federal Corvette"]
+          ]
+        }
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Federation ranks", "url": "https://elite-dangerous.fandom.com/wiki/Federation/Ranks"},
+        {"name": "Elite Dangerous Wiki — Federation permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits/Federation"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "imperial-navy-progression",
+      "category": "Naval Rank",
+      "topic": "Imperial Navy Auxiliary Progression",
+      "keywords": ["imperial rank", "empire rank", "imperial navy rank", "imperial navy auxiliary", "imperial promotion", "imperial navy mission", "duke rank", "imperial cutter"],
+      "ruleOfThumb": "Run missions for Empire-aligned minor factions and favor REP rewards. At 100% naval progress, complete an Imperial Navy promotion mission to move up one rank.",
+      "details": [
+        "The Imperial Navy Auxiliary has 14 earned ranks from Outsider through King.",
+        "Imperial rank is permanent and is independent of your current Empire reputation percentage.",
+        "You do not need to pledge to an Imperial Powerplay figure to earn Imperial Navy rank.",
+        "The most commonly targeted milestone is Duke for the Imperial Cutter."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Empire ranks", "url": "https://elite-dangerous.fandom.com/wiki/Empire/Ranks"},
+        {"name": "E:D Black Box — Superpower Rank, updated 2026", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/superpower-rank.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "imperial-rank-unlocks",
+      "category": "Naval Rank",
+      "topic": "Imperial Rank Ship & Permit Unlocks",
+      "keywords": ["imperial courier rank", "imperial clipper rank", "imperial cutter rank", "achenar permit", "summerland permit", "facece permit", "imperial unlocks"],
+      "ruleOfThumb": "The major Imperial milestones are Master for the Courier, Squire for Achenar, Baron for the Clipper and Summerland, Earl for Facece, and Duke for the Cutter.",
+      "tables": [
+        {
+          "title": "Key Imperial Navy unlocks",
+          "columns": ["Rank", "Notable unlocks"],
+          "rows": [
+            ["Outsider", "Hera Tani invitation"],
+            ["Master", "Imperial Courier"],
+            ["Squire", "Achenar permit"],
+            ["Baron", "Imperial Clipper; Summerland permit"],
+            ["Earl", "Facece permit"],
+            ["Duke", "Imperial Cutter"]
+          ]
+        }
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Empire ranks", "url": "https://elite-dangerous.fandom.com/wiki/Empire/Ranks"},
+        {"name": "Elite Dangerous Wiki — Empire permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits/Empire"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "alliance-no-naval-rank",
+      "category": "Naval Rank",
+      "topic": "Alliance Has Reputation, Not a Navy Rank Ladder",
+      "keywords": ["alliance rank", "alliance navy rank", "alliance reputation", "alliance ships rank", "alioth rank"],
+      "ruleOfThumb": "There is no Alliance naval rank to grind. Alliance ships are not rank-locked; build Alliance and minor-faction reputation only when a permit, engineer or mission relationship requires it.",
+      "details": [
+        "The Alliance Defence Force has no auxiliary rank system equivalent to the Federal or Imperial Navy Auxiliary.",
+        "Alliance Chieftain, Challenger, Crusader and other Alliance-associated ships do not require an Alliance rank.",
+        "Alioth is permit-locked, but its permit comes through the Alioth Independents minor faction rather than an Alliance navy rank.",
+        "Bill Turner is a major reason to care about Alliance/Alioth reputation because his base is in permit-locked Alioth."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Alliance", "url": "https://elite-dangerous.fandom.com/wiki/Alliance"},
+        {"name": "INARA — Bill Turner", "url": "https://inara.cz/elite/engineer/19/"},
+        {"name": "E:D Black Box — Superpower Rank, updated 2026", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/superpower-rank.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "pilots-federation-career-ranks",
+      "category": "Career Rank",
+      "topic": "Pilots' Federation Career Ranks & Elite V",
+      "keywords": ["pilots federation rank", "combat rank", "trade rank", "exploration rank", "mercenary rank", "exobiology rank", "cqc rank", "elite v", "elite 5"],
+      "ruleOfThumb": "Elite tracks six independent careers: Combat, Trade, Exploration, Mercenary, Exobiology and CQC. Each reaches Elite and can continue through Elite I, II, III, IV and V.",
+      "details": [
+        "The six career tracks use different named ranks below Elite, but all share the Elite → Elite I → Elite II → Elite III → Elite IV → Elite V prestige progression.",
+        "Career ranks progress from doing the corresponding activity; they are independent of Federation/Empire Navy rank.",
+        "Engineer access can depend on specific career ranks—for example Lori Jameson requires Combat rank Dangerous or higher.",
+        "CQC has its own career track, but the Founders World permit is granted by Elite in Combat, Trade, Exploration, Mercenary or Exobiology rather than CQC."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Ranks", "url": "https://elite-dangerous.fandom.com/wiki/Ranks"},
+        {"name": "Elite Dangerous Wiki — Pilots Federation", "url": "https://elite-dangerous.fandom.com/wiki/Pilots_Federation"},
+        {"name": "E:D Black Box — Pilots Federation ranks", "url": "https://edblackbox.com/guides/systems/new-pilot-and-interface/pilots-federation.html"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "shinrarta-dezhra-permit",
+      "category": "System Permits",
+      "topic": "Shinrarta Dezhra / Founders World Permit",
+      "keywords": ["shinrarta", "shinrarta dezhra", "founders world permit", "jameson memorial", "elite permit", "founders world"],
+      "ruleOfThumb": "Reach Elite in Combat, Trade, Exploration, Mercenary or Exobiology to earn access to Shinrarta Dezhra and Jameson Memorial.",
+      "details": [
+        "Shinrarta Dezhra is the Pilots Federation headquarters system and is permit-locked.",
+        "Jameson Memorial stocks all normal ships and modules in one place and applies a 10% discount.",
+        "Lori Jameson is located in Shinrarta Dezhra, so her Engineer path also requires Founders World access in addition to her own meeting/unlock requirements.",
+        "CQC progression has its own rewards but is not listed among the career Elite paths granting the Founders World permit."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Shinrarta Dezhra", "url": "https://elite-dangerous.fandom.com/wiki/Shinrarta_Dezhra"},
+        {"name": "Elite Dangerous Wiki — Independent permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits/Independent"},
+        {"name": "INARA — Lori Jameson", "url": "https://inara.cz/elite/engineer/20/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "permit-acquisition-methods",
+      "category": "System Permits",
+      "topic": "How System Permits Are Earned",
+      "keywords": ["system permit", "permit locked system", "how to get permit", "permit acquisition", "permit mission", "invitation mission"],
+      "ruleOfThumb": "Check the specific permit source before grinding. Permits can be tied to Navy rank, Pilots' Federation rank, or reputation with a permit-holder faction followed by a permit/invitation mission.",
+      "details": [
+        "Federal and Imperial career milestones automatically unlock several rank-gated systems such as Sol and Achenar.",
+        "Shinrarta Dezhra is tied to qualifying Pilots' Federation Elite rank.",
+        "Faction-distributed permits commonly require high reputation with the permit-holder and then a permit-acquisition/invitation mission from that faction in a system where it is present.",
+        "Not every permit-locked system is necessarily obtainable through ordinary gameplay, so verify the current source before grinding reputation."
+      ],
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "stable"
+    },
+    {
+      "id": "alioth-permit-bill-turner",
+      "category": "System Permits",
+      "topic": "Alioth Permit & Bill Turner",
+      "keywords": ["alioth permit", "alioth independents", "bill turner", "turner metallics", "allied alioth independents"],
+      "ruleOfThumb": "For Bill Turner, become Friendly with the Alliance and Allied with the Alioth Independents, obtain the Alioth permit, then complete Turner's own unlock requirement.",
+      "details": [
+        "Alioth is permit-locked and does not use an Alliance Navy rank because no such rank exists.",
+        "INARA currently lists Friendly with the Alliance plus Allied with the Alioth Independents as Turner's meeting path for Alioth access.",
+        "Bill Turner then separately requires 50 units of Bromellite for his Engineer unlock.",
+        "Treat the system permit and the Engineer unlock as two distinct gates."
+      ],
+      "sources": [
+        {"name": "INARA — Bill Turner", "url": "https://inara.cz/elite/engineer/19/"},
+        {"name": "INARA — Alioth system", "url": "https://inara.cz/elite/starsystem/?search=Alioth"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "sirius-permit-marco-qwent",
+      "category": "System Permits",
+      "topic": "Sirius Permit & Marco Qwent",
+      "keywords": ["sirius permit", "sirius corporation invitation", "marco qwent", "qwent research base", "sirius corporation rep"],
+      "ruleOfThumb": "Marco Qwent sits behind two gates: access to permit-locked Sirius through Sirius Corporation and then Qwent's own Engineer unlock requirements.",
+      "details": [
+        "Sirius is currently permit-locked and controlled by Sirius Corporation.",
+        "INARA lists Qwent's meeting requirement as gaining an invitation from Sirius Corporation.",
+        "After access, Qwent separately requires 25 Modular Terminals to unlock.",
+        "Do not confuse the Sirius system permit/invitation with Qwent's material unlock payment."
+      ],
+      "sources": [
+        {"name": "INARA — Marco Qwent", "url": "https://inara.cz/elite/engineer/7"},
+        {"name": "INARA — Sirius system", "url": "https://inara.cz/elite/starsystem/11810/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "permit-gated-engineers",
+      "category": "Engineer Progression",
+      "topic": "Engineers Behind Rank or Permit Gates",
+      "keywords": ["permit gated engineer", "rank gated engineer", "lori jameson", "tiana fortune", "bill turner", "marco qwent", "engineer permit"],
+      "ruleOfThumb": "When an Engineer seems unlocked but unreachable, check the system permit separately. Several Engineers have both personal meeting requirements and a permit-locked home system.",
+      "tables": [
+        {
+          "title": "Common permit/rank-gated Engineers",
+          "columns": ["Engineer", "Location gate", "Additional meeting requirement"],
+          "rows": [
+            ["Marco Qwent", "Sirius permit / Sirius Corporation invitation", "Discovered from Elvira Martuuk; then 25 Modular Terminals to unlock"],
+            ["Bill Turner", "Alioth permit", "Friendly Alliance + Allied Alioth Independents; then 50 Bromellite"],
+            ["Lori Jameson", "Shinrarta Dezhra permit", "Combat rank Dangerous or higher; then 25 Kongga Ale"],
+            ["Tiana Fortune", "Achenar permit (Imperial Squire)", "Friendly with the Empire; then 50 Decoded Emission Data"]
+          ]
+        }
+      ],
+      "sources": [
+        {"name": "INARA — Engineers", "url": "https://inara.cz/elite/engineers/"},
+        {"name": "INARA — Bill Turner", "url": "https://inara.cz/elite/engineer/19/"},
+        {"name": "INARA — Lori Jameson", "url": "https://inara.cz/elite/engineer/20/"},
+        {"name": "INARA — Tiana Fortune", "url": "https://inara.cz/elite/engineer/16/"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    },
+    {
+      "id": "rank-reputation-workflow",
+      "category": "Ranks & Reputation",
+      "topic": "Practical Rank / Permit Progression Workflow",
+      "keywords": ["rank grind", "rep grind", "permit grind", "federal grind", "imperial grind", "rank progression strategy", "reputation strategy"],
+      "ruleOfThumb": "Decide the exact unlock first, then grind only the progression system that gates it: REP rewards for Federal/Imperial Navy progression, minor-faction rep for faction permits, or the relevant career activity for Pilots' Federation ranks.",
+      "details": [
+        "For a Corvette, stop at Federal Rear Admiral; higher Federal ranks add no ship unlock.",
+        "For a Cutter, stop at Imperial Duke unless a higher title is desired for its own sake.",
+        "For Sol or Achenar, target the required Navy rank rather than grinding unrelated local influence.",
+        "For Alioth or Sirius, work the named permit-holder faction rather than a generic superpower grind.",
+        "For Shinrarta Dezhra, pursue one qualifying career track to Elite rather than Navy rank."
+      ],
+      "sources": [
+        {"name": "E:D Black Box — Superpower Rank, updated 2026", "url": "https://edblackbox.com/guides/systems/galaxy-and-power-systems/superpower-rank.html"},
+        {"name": "Elite Dangerous Wiki — Permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits"},
+        {"name": "Elite Dangerous Wiki — Independent permits", "url": "https://elite-dangerous.fandom.com/wiki/Permits/Independent"}
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "current-system"
+    }
+  ]
+}
