@@ -66,7 +66,7 @@ function carrierWriteBlock(carrier, session, env, deleting) {
   const isAdminOwned = Boolean(env.ADMIN_USER_ID && carrier.ownerId === env.ADMIN_USER_ID);
 
   // The Site Admin's own carrier is owner-only. Officers cannot alter it.
-  if (isAdminOwned && !isOwner) return forbidden('protected_admin_carrier');
+  if (isAdminOwned && !isOwner) return forbidden('not_carrier_owner');
 
   // Owners may manage their own carrier. Site Admin may manage any carrier.
   if (isOwner || isSiteAdmin) return null;
