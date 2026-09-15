@@ -31,7 +31,7 @@
       <div>
         <p class="eyebrow">Site Admin • Discord Integration</p>
         <h1>Recruitment Onboarding</h1>
-        <p>Publish and test the Mongrels-owned Applicant / Guest selector without removing the current MEE6 fallback.</p>
+        <p>Manage the Mongrels-owned Applicant / Guest selector and verify recruitment notifications.</p>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
     </div>
@@ -54,16 +54,24 @@
           <p><strong>Welcome channel</strong><br><code data-welcome-channel></code></p>
           <p><strong>Applicant role</strong><br><code data-applicant-role></code></p>
           <p><strong>Guest role</strong><br><code data-guest-role></code></p>
+          <p><strong>Recruitment review channel</strong><br><code data-recruitment-channel></code></p>
         </div>
       </article>
 
       <article class="member-login-panel">
-        <p class="eyebrow">Publish Test</p>
-        <h2>Post the replacement selector</h2>
-        <p>This posts two new bot-owned messages in <strong>#welcome</strong>: the Applicant / Guest selector and a Ready to Apply card with a real Discord link button.</p>
-        <p><strong>It does not delete the MEE6 messages.</strong> Keep those until the new buttons have been tested.</p>
+        <p class="eyebrow">Onboarding</p>
+        <h2>Publish the replacement selector</h2>
+        <p>This posts two bot-owned messages in <strong>#welcome</strong>: the Applicant / Guest selector and a Ready to Apply card with a Discord link button.</p>
         <button class="btn btn-primary" type="button" data-publish-onboarding disabled>Publish Replacement Selector</button>
         <p class="member-login-note" data-publish-result>Waiting for configuration check.</p>
+      </article>
+
+      <article class="member-login-panel">
+        <p class="eyebrow">Officer Notifications</p>
+        <h2>Test The High Council alert</h2>
+        <p>This sends a harmless test notification to the configured recruitment review channel. It does not create an application or alter any applicant data.</p>
+        <button class="btn btn-primary" type="button" data-test-recruitment-alert disabled>Send Test Officer Alert</button>
+        <p class="member-login-note" data-alert-result>Waiting for configuration check.</p>
       </article>
     </div>
   </section>
@@ -76,6 +84,6 @@
   </div>
 </footer>
 <script src="../js/site.js?v=68"></script>
-<script src="../js/discord-onboarding.js?v=1"></script>
+<script src="../js/discord-onboarding.js?v=2"></script>
 </body>
 </html>
