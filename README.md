@@ -1,5 +1,7 @@
 # Regiment of Imperial Mongrels — v69
 
+> **Long-term project handoff:** Before making architectural or implementation changes, read [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) and inspect the current repository state. The repository remains the source of truth.
+
 Current package includes all prior releases through v68 plus the v69 Visual Identity + Profile Navigation update.
 
 ## All Systems pagination
