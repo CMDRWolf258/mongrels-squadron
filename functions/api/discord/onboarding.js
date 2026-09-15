@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { onboardingConfig, publishOnboardingBundle } from '../../../lib/discord-onboarding.js';
+import { recruitmentConfig, sendRecruitmentTestAlert } from '../../../lib/discord-recruitment.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await readSession(request, env);
@@ -7,6 +8,7 @@ export async function onRequestGet({ request, env }) {
   if (session.access !== 'site_admin') return reply({ ok: false, error: 'site_admin_required' }, 403);
 
   const config = onboardingConfig(env);
+  const recruitment = recruitmentConfig(env);
   return reply({
     ok: true,
     botTokenConfigured: Boolean(env.DISCORD_BOT_TOKEN),
@@ -14,6 +16,7 @@ export async function onRequestGet({ request, env }) {
     welcomeChannelId: config.welcomeChannelId,
     applicantRoleId: config.applicantRoleId,
     guestRoleId: config.guestRoleId,
+    recruitmentChannelId: recruitment.recruitmentChannelId,
     interactionEndpoint: `${new URL(request.url).origin}/api/discord/interactions`,
   });
 }
@@ -38,15 +41,25 @@ export async function onRequestPost({ request, env }) {
   } catch {
     return reply({ ok: false, error: 'invalid_json' }, 400);
   }
-  if (body?.action !== 'publish') return reply({ ok: false, error: 'unsupported_action' }, 400);
 
   try {
-    const result = await publishOnboardingBundle(env, expectedOrigin);
-    return reply({ ok: true, ...result });
+    if (body?.action === 'publish') {
+      const result = await publishOnboardingBundle(env, expectedOrigin);
+      return reply({ ok: true, ...result });
+    }
+    if (body?.action === 'test_recruitment_alert') {
+      const result = await sendRecruitmentTestAlert(
+        env,
+        expectedOrigin,
+        session.displayName || session.username || 'Site Admin',
+      );
+      return reply({ ok: true, ...result });
+    }
+    return reply({ ok: false, error: 'unsupported_action' }, 400);
   } catch (error) {
     return reply({
       ok: false,
-      error: 'discord_publish_failed',
+      error: body?.action === 'test_recruitment_alert' ? 'recruitment_alert_test_failed' : 'discord_publish_failed',
       detail: String(error?.message || error).slice(0, 700),
     }, 502);
   }
