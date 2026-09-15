@@ -1,0 +1,1 @@
+Binary gallery uploads are staged via Git blobs, not this file.
