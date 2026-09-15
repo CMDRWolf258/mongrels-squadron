@@ -160,6 +160,35 @@
     direct?.focus?.();
   }
 
+  function enableMemberPreview() {
+    if (memberState.querySelector('[data-preview-application]')) return;
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    actions.style.marginTop = '18px';
+    const preview = document.createElement('button');
+    preview.type = 'button';
+    preview.className = 'btn btn-ghost';
+    preview.dataset.previewApplication = 'true';
+    preview.textContent = 'Preview Application Questions';
+    actions.appendChild(preview);
+    memberState.appendChild(actions);
+    preview.addEventListener('click', () => {
+      populate({});
+      setVisible('form');
+      saveButton.hidden = true;
+      submitButton.type = 'button';
+      submitButton.textContent = 'Back to Member Status';
+      showSaveStatus('Preview only — your member account cannot save or submit an application.');
+      submitButton.onclick = () => {
+        submitButton.onclick = null;
+        submitButton.type = 'submit';
+        submitButton.textContent = 'Submit Application';
+        saveButton.hidden = false;
+        setVisible('member');
+      };
+    });
+  }
+
   saveButton?.addEventListener('click', () => save('save'));
   form.addEventListener('submit', event => { event.preventDefault(); save('submit'); });
 
@@ -180,7 +209,7 @@
       const response = await fetch('/api/applications', { credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Application lookup failed (${response.status})`);
-      if (data.alreadyMember) { setVisible('member'); return; }
+      if (data.alreadyMember) { setVisible('member'); enableMemberPreview(); return; }
       if (data.mine && data.mine.status !== 'draft') { renderStatus(data.mine); return; }
       populate(data.mine?.answers || {});
       showSaveStatus(data.mine ? `Draft last saved ${dateLabel(data.mine.updatedAt)}.` : 'Draft not yet saved.', data.mine ? 'success' : '');
