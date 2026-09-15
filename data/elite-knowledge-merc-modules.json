@@ -1,0 +1,86 @@
+{
+  "version": "82",
+  "reviewedAt": "2026-09-14",
+  "scope": "Squad-maintained MERC module purchase and Grade 5 upgrade cost planning reference for Elite Dangerous Operations, used by the Mongrels Field Manual Reference Database.",
+  "entries": [
+    {
+      "id": "operations-merc-modules-costs",
+      "category": "Operations",
+      "topic": "MERC Modules & Grade 5 Costs",
+      "keywords": ["merc modules", "merc module costs", "merc coin", "merc coins", "operations modules", "grade 5 merc", "merc engineering", "merc grind"],
+      "ruleOfThumb": "Plan the Merc Coin grind in two parts: save enough to buy the module, then budget the additional Merc Coin needed to take its available MERC engineering path to Grade 5.",
+      "details": [
+        "This is the Regiment of Imperial Mongrels squad-maintained planning reference created by CMDR Wolf258 from the Operations MERC offerings.",
+        "Purchase cost and Grade 5 upgrade cost are shown separately so a Commander can set a complete savings goal before starting the grind.",
+        "Power Distributor purchase prices vary by module class. Its Grade 5 blueprint totals are listed separately for Balanced and Support Focused, matching the squad chart.",
+        "Frontier has continued adding MERC offerings after this chart was created. Add new modules to this reference as they are documented rather than treating this snapshot as a permanent complete catalogue."
+      ],
+      "quickFacts": [
+        {"label": "Currency", "value": "Merc Coin (MC)"},
+        {"label": "Purpose", "value": "Purchase + full Grade 5 savings targets"},
+        {"label": "Maintainer", "value": "Regiment of Imperial Mongrels / CMDR Wolf258"}
+      ],
+      "tables": [
+        {
+          "title": "MERC Hardpoints",
+          "columns": ["Module", "Purchase cost", "Cost to Grade 5"],
+          "rows": [
+            ["1D MERC Abrasion Blaster [Fixed]", "400 MC", "165 MC"],
+            ["2B MERC Enzyme Missile Rack [Fixed]", "850 MC", "370 MC"],
+            ["3C MERC Fragment Cannon [Gimballed]", "950 MC", "415 MC"],
+            ["1E MERC Fragment Cannon [Gimballed]", "800 MC", "415 MC"],
+            ["1D MERC Mining Laser [Fixed]", "450 MC", "190 MC"],
+            ["2E MERC Multi-Cannon [Fixed]", "850 MC", "370 MC"],
+            ["2B MERC Rail Gun [Fixed]", "950 MC", "415 MC"],
+            ["3B MERC Drag Seeker Missile Rack [Fixed]", "900 MC", "330 MC"],
+            ["2B MERC Drag Seeker Missile Rack [Fixed]", "800 MC", "330 MC"],
+            ["2B MERC Lightweight Thermal Seeker Missile Rack [Fixed]", "800 MC", "330 MC"],
+            ["2B MERC Lockdown Seeker Missile Rack [Fixed]", "800 MC", "390 MC"]
+          ]
+        },
+        {
+          "title": "MERC Power Distributors — Purchase Cost",
+          "columns": ["Module", "Purchase cost"],
+          "rows": [
+            ["6A MERC Power Distributor", "550 MC"],
+            ["5A MERC Power Distributor", "500 MC"],
+            ["4A MERC Power Distributor", "450 MC"],
+            ["4D MERC Power Distributor", "400 MC"],
+            ["3A MERC Power Distributor", "350 MC"],
+            ["3D MERC Power Distributor", "300 MC"]
+          ]
+        },
+        {
+          "title": "Power Distributor — Cost to Grade 5",
+          "columns": ["MERC engineering path", "Cost to Grade 5"],
+          "rows": [
+            ["Balanced", "225 MC"],
+            ["Support Focused", "140 MC"]
+          ]
+        },
+        {
+          "title": "MERC Optional Internals",
+          "columns": ["Module", "Purchase cost", "Cost to Grade 5"],
+          "rows": [
+            ["6E MERC Cargo Rack", "550 MC", "250 MC"],
+            ["5E MERC Cargo Rack", "550 MC", "250 MC"],
+            ["1I MERC Detailed Surface Scanner", "350 MC", "165 MC"],
+            ["5D MERC Module Reinforcement Package", "450 MC", "190 MC"]
+          ]
+        },
+        {
+          "title": "MERC Engineering Blueprints for Standard Modules",
+          "columns": ["Standard module", "MERC engineering blueprint", "Cost to Grade 5"],
+          "rows": [
+            ["Beam Laser", "Plasma Conversion", "350 MC"],
+            ["Burst Laser", "Plasma Conversion", "350 MC"],
+            ["Pulse Laser", "Plasma Conversion", "350 MC"],
+            ["Fuel Scoop", "Scoop Rate Enhanced", "350 MC"]
+          ]
+        }
+      ],
+      "reviewedAt": "2026-09-14",
+      "stability": "squad-maintained-current-snapshot"
+    }
+  ]
+}
