@@ -32,9 +32,8 @@ const GAP_SIGNALS = [
   'general model knowledge',
 ];
 
-// Strong identifiers are specific enough to classify the exchange as Elite-related
-// on their own. The list intentionally mirrors topics already routed into the local
-// Mongrel knowledge base rather than trying to classify arbitrary gaming questions.
+// Strong identifiers are specific enough to classify an exchange as Elite-related
+// on their own. This mirrors topics already routed into the Mongrel knowledge base.
 const STRONG_ELITE_TERMS = [
   'elite dangerous', 'elite: dangerous', 'cmdr', 'commander', 'mongrel', 'mongrels',
   'inara', 'edsy', 'coriolis', 'frontier developments', 'background simulation', 'bgs',
@@ -61,8 +60,8 @@ const STRONG_ELITE_TERMS = [
   'daily orders', 'mission control', 'trader\'s outpost', 'ask the mongrels',
 ];
 
-// These words can be ordinary English, so require at least two distinct matches
-// unless a strong Elite identifier appears in the question or answer.
+// These can be ordinary English, so require at least two distinct matches unless
+// a strong Elite identifier appears in the question or recent conversation.
 const CONTEXT_ELITE_TERMS = [
   'ship', 'ships', 'module', 'modules', 'hardpoint', 'hardpoints', 'loadout', 'outfitting',
   'engineering', 'engineered', 'shield', 'shields', 'thruster', 'thrusters', 'power distributor',
@@ -70,7 +69,7 @@ const CONTEXT_ELITE_TERMS = [
   'plasma accelerator', 'fragment cannon', 'shield booster', 'shield cell', 'heat sink',
   'faction', 'factions', 'influence', 'tick', 'boom', 'civil liberty', 'expansion', 'retreat',
   'war', 'civil war', 'election', 'bounty', 'bounties', 'combat bond', 'permit', 'rank',
-  'carrier', 'carriers', 'tritium', 'jump range', 'light year', 'ly', 'station', 'starport',
+  'carrier', 'carriers', 'tritium', 'jump range', 'light year', 'station', 'starport',
   'system', 'galaxy map', 'route plotting', 'neutron', 'fuel scoop', 'exploration', 'explorer',
   'mining', 'miner', 'hotspot', 'commodity', 'trade route', 'cargo rack', 'limpet', 'limpets',
   'planetary', 'surface', 'settlement', 'on-foot', 'on foot', 'suit', 'conflict', 'mission',
@@ -82,9 +81,17 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return context.next();
 
   let question = '';
+  let conversationContext = '';
   try {
     const body = await request.clone().json();
     question = typeof body?.message === 'string' ? body.message.trim().slice(0,1600) : '';
+    if (Array.isArray(body?.history)) {
+      conversationContext = body.history
+        .slice(-6)
+        .map(item => typeof item?.text === 'string' ? item.text.trim().slice(0,600) : '')
+        .filter(Boolean)
+        .join(' ');
+    }
   } catch {}
 
   const session = await readSession(request, env).catch(() => null);
@@ -94,7 +101,7 @@ export async function onRequest(context) {
   try {
     const payload = await response.clone().json();
     const answer = typeof payload?.answer === 'string' ? payload.answer.trim() : '';
-    if (answer && signalsKnowledgeGap(answer) && isEliteRelated(question, answer)) {
+    if (answer && signalsKnowledgeGap(answer) && isEliteRelated(question, conversationContext)) {
       await logAssistantKnowledgeGap(env, {
         question,
         answer,
@@ -114,8 +121,8 @@ function signalsKnowledgeGap(answer) {
   return GAP_SIGNALS.some(signal => text.includes(signal));
 }
 
-function isEliteRelated(question, answer) {
-  const text = ` ${String(question || '').toLowerCase()} ${String(answer || '').toLowerCase()} `;
+function isEliteRelated(question, conversationContext) {
+  const text = ` ${String(question || '').toLowerCase()} ${String(conversationContext || '').toLowerCase()} `;
   if (STRONG_ELITE_TERMS.some(term => text.includes(term))) return true;
 
   let matches = 0;
