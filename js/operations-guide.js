@@ -53,22 +53,24 @@
       const entry = (data.entries || []).find(e => e.id === 'operations-merc-modules-costs');
       if (!entry) throw new Error('MERC entry unavailable');
       const targets = buildTargets(entry);
+      select.innerHTML = '';
       targets.forEach((target, index) => {
         const total = target.purchase + target.grade5;
         const option = document.createElement('option');
         option.value = String(index);
-        option.textContent = `${target.name}${target.path && target.path !== 'Blueprint only' ? ` — ${target.path}` : ''} (${total} MC total)`;
+        option.textContent = `${target.name}${target.path ? ` — ${target.path}` : ''} (${total} MC total)`;
         select.appendChild(option);
       });
       tableBody.innerHTML = targets.map(target => {
         const total = target.purchase + target.grade5;
-        const path = target.path && target.path !== 'Blueprint only' ? target.path : '—';
+        const path = target.path || '—';
         return `<tr><td>${esc(target.name)}</td><td>${esc(path)}</td><td>${target.purchase ? `${target.purchase} MC` : '—'}</td><td>${target.grade5} MC</td><td>${total} MC</td><td>${range(total,150,100)}</td></tr>`;
       }).join('');
       select.addEventListener('change', () => renderTarget(targets[Number(select.value)] || targets[0]));
       if (targets.length) renderTarget(targets[0]);
     })
     .catch(() => {
+      select.innerHTML = '<option>MERC data unavailable</option>';
       output.innerHTML = '<p class="empty-state">MERC planning data could not be loaded. Use the Reference Database for the current squad-maintained values.</p>';
       tableBody.innerHTML = '<tr><td colspan="6">MERC planning data unavailable.</td></tr>';
     });
