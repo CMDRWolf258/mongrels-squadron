@@ -73,7 +73,7 @@
   },
   {
     "src": "titan-assault.webp",
-    "title": "AX Hellhounds \u2014 Titan Assault",
+    "title": "AX Hellhounds — Titan Assault",
     "caption": "Anti-Xeno combat during the war against the Thargoid Titans.",
     "tags": [
       "AX",
@@ -82,7 +82,7 @@
   },
   {
     "src": "interceptor-fight.webp",
-    "title": "AX Hellhounds \u2014 Interceptor Fight",
+    "title": "AX Hellhounds — Interceptor Fight",
     "caption": "Engaging a Thargoid Interceptor at close range.",
     "tags": [
       "AX",
@@ -213,6 +213,149 @@
     "tags": [
       "Community",
       "Mining"
+    ]
+  },
+  {
+    "src": "exobiology-mandalay-meetup.webp",
+    "title": "Exobiology Meetup on the Mandalay",
+    "caption": "Mongrel commanders meeting up during an exobiology stop, with a Mandalay serving as the gathering point.",
+    "tags": [
+      "Community",
+      "Exobiology",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "milky-way-expedition-exobiology.webp",
+    "title": "Milky Way Expedition Exobiology",
+    "caption": "Exobiology fieldwork during the Mongrel Milky Way Expedition.",
+    "tags": [
+      "Community",
+      "Exobiology",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "colonia-nebula.webp",
+    "title": "Nebula on the Road to Colonia",
+    "caption": "Passing through a nebula during the long run toward Colonia.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "earthlike-discovery-01.webp",
+    "title": "Earth-like World Discovery",
+    "caption": "A newly discovered Earth-like world encountered during deep-space exploration.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "earthlike-discovery-02.webp",
+    "title": "Earth-like World Discovery II",
+    "caption": "Another view while surveying a newly discovered Earth-like world.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "pneuma-tritium-mining.webp",
+    "title": "Tritium for Pneuma",
+    "caption": "Mining Tritium during the expedition to keep Pneuma supplied for the journey.",
+    "tags": [
+      "Mining",
+      "Carriers",
+      "Exploration"
+    ]
+  },
+  {
+    "src": "supercruise-formation.webp",
+    "title": "Supercruise Formation Flying",
+    "caption": "Mongrel ships holding formation together in supercruise.",
+    "tags": [
+      "Community",
+      "Exploration",
+      "Ships"
+    ]
+  },
+  {
+    "src": "pneuma-neutron-return.webp",
+    "title": "Neutron Return to Pneuma",
+    "caption": "Heading back toward Pneuma with a neutron star lighting the route.",
+    "tags": [
+      "Exploration",
+      "Carriers",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "out-in-the-black.webp",
+    "title": "Out in the Black",
+    "caption": "A quiet moment far from occupied space.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "black-hole-portrait.webp",
+    "title": "Black Hole Portrait",
+    "caption": "Taking a moment to pose with one of the galaxy's less forgiving landmarks.",
+    "tags": [
+      "Exploration",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "escape-velocity.webp",
+    "title": "Escape Velocity",
+    "caption": "Climbing away from the surface and heading back into the black.",
+    "tags": [
+      "Exploration",
+      "Ships",
+      "Scenic"
+    ]
+  },
+  {
+    "src": "under-deployment.webp",
+    "title": "Under Deployment",
+    "caption": "Sometimes the frontier really does put up a sign first.",
+    "tags": [
+      "Colonization",
+      "Operations"
+    ]
+  },
+  {
+    "src": "maikoh-colony-hauler.webp",
+    "title": "Maikoh — Colony Hauler",
+    "caption": "The cargo Cutter Maikoh hauling construction supplies for frontier colonies.",
+    "tags": [
+      "Colonization",
+      "Operations",
+      "Ships"
+    ]
+  },
+  {
+    "src": "ax-tempest-titan.webp",
+    "title": "AX Tempest — Titan Assault",
+    "caption": "AX Tempest pressing the attack against a Thargoid Titan.",
+    "tags": [
+      "AX",
+      "Combat",
+      "Ships"
+    ]
+  },
+  {
+    "src": "imperial-cutter-shine.webp",
+    "title": "Imperial Shine",
+    "caption": "Sometimes the assignment is simply: polish the Cutter.",
+    "tags": [
+      "Ships",
+      "Scenic"
     ]
   }
 ]
