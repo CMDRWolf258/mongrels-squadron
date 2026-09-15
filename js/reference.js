@@ -6,6 +6,17 @@
   const count = document.querySelector('#reference-count');
   const DATA_SOURCES = [
     '../../data/elite-knowledge.json',
+    '../../data/elite-knowledge-engineering-materials.json',
+    '../../data/elite-knowledge-guardian-tech.json',
+    '../../data/elite-knowledge-human-tech.json',
+    '../../data/elite-knowledge-ranks-permits.json',
+    '../../data/elite-knowledge-navigation-travel.json',
+    '../../data/elite-knowledge-salvage-piracy.json',
+    '../../data/elite-knowledge-multiplayer.json',
+    '../../data/elite-knowledge-merc-modules.json',
+    '../../data/elite-knowledge-field-support.json',
+    '../../data/elite-knowledge-crime-missions.json',
+    '../../data/elite-knowledge-odyssey.json',
     '../../data/elite-knowledge-exploration.json',
     '../../data/elite-knowledge-ax.json',
     '../../data/elite-knowledge-combat.json',
