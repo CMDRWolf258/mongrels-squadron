@@ -10,6 +10,9 @@
   <title>Discord Onboarding | The Mongrels</title>
   <meta name="description" content="Site-admin controls for Mongrels Discord recruitment onboarding.">
   <link rel="stylesheet" href="../css/global.css?v=70">
+  <style>
+    .discord-onboarding-stack{display:grid;gap:24px;align-content:start;min-width:0}
+  </style>
 </head>
 <body class="visual-page page-members">
 <header class="site-header">
@@ -58,21 +61,23 @@
         </div>
       </article>
 
-      <article class="member-login-panel">
-        <p class="eyebrow">Onboarding</p>
-        <h2>Publish the replacement selector</h2>
-        <p>This posts two bot-owned messages in <strong>#welcome</strong>: the Applicant / Guest selector and a Ready to Apply card with a Discord link button.</p>
-        <button class="btn btn-primary" type="button" data-publish-onboarding disabled>Publish Replacement Selector</button>
-        <p class="member-login-note" data-publish-result>Waiting for configuration check.</p>
-      </article>
+      <div class="discord-onboarding-stack">
+        <article class="member-login-panel">
+          <p class="eyebrow">Onboarding</p>
+          <h2>Publish the replacement selector</h2>
+          <p>This posts two bot-owned messages in <strong>#welcome</strong>: the Applicant / Guest selector and a Ready to Apply card with a Discord link button.</p>
+          <button class="btn btn-primary" type="button" data-publish-onboarding disabled>Publish Replacement Selector</button>
+          <p class="member-login-note" data-publish-result>Waiting for configuration check.</p>
+        </article>
 
-      <article class="member-login-panel">
-        <p class="eyebrow">Officer Notifications</p>
-        <h2>Test The High Council alert</h2>
-        <p>This sends a harmless test notification to the configured recruitment review channel. It does not create an application or alter any applicant data.</p>
-        <button class="btn btn-primary" type="button" data-test-recruitment-alert disabled>Send Test Officer Alert</button>
-        <p class="member-login-note" data-alert-result>Waiting for configuration check.</p>
-      </article>
+        <article class="member-login-panel">
+          <p class="eyebrow">Officer Notifications</p>
+          <h2>Test The High Council alert</h2>
+          <p>This sends a harmless test notification to the configured recruitment review channel. It does not create an application or alter any applicant data.</p>
+          <button class="btn btn-primary" type="button" data-test-recruitment-alert disabled>Send Test Officer Alert</button>
+          <p class="member-login-note" data-alert-result>Waiting for configuration check.</p>
+        </article>
+      </div>
     </div>
   </section>
 </main>
