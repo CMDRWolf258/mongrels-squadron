@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
+  <title>Discord Onboarding | The Mongrels</title>
+  <meta name="description" content="Site-admin controls for Mongrels Discord recruitment onboarding.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+</head>
+<body class="visual-page page-members">
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../member/">Member Portal</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero member-hero hero-flare member-flare">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Site Admin • Discord Integration</p>
+        <h1>Recruitment Onboarding</h1>
+        <p>Publish and test the Mongrels-owned Applicant / Guest selector without removing the current MEE6 fallback.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container member-access-layout">
+      <article class="member-login-panel">
+        <p class="eyebrow">Integration Status</p>
+        <h2>Discord recruitment controls</h2>
+        <div class="member-auth-status">
+          <span class="member-auth-indicator" aria-hidden="true"></span>
+          <div>
+            <strong data-onboarding-status>Checking configuration…</strong>
+            <span data-onboarding-detail>Verifying your site-admin session and Discord backend.</span>
+          </div>
+        </div>
+        <div data-onboarding-config hidden>
+          <p><strong>Interaction endpoint</strong><br><code data-interaction-endpoint></code></p>
+          <p><strong>Welcome channel</strong><br><code data-welcome-channel></code></p>
+          <p><strong>Applicant role</strong><br><code data-applicant-role></code></p>
+          <p><strong>Guest role</strong><br><code data-guest-role></code></p>
+        </div>
+      </article>
+
+      <article class="member-login-panel">
+        <p class="eyebrow">Publish Test</p>
+        <h2>Post the replacement selector</h2>
+        <p>This posts two new bot-owned messages in <strong>#welcome</strong>: the Applicant / Guest selector and a Ready to Apply card with a real Discord link button.</p>
+        <p><strong>It does not delete the MEE6 messages.</strong> Keep those until the new buttons have been tested.</p>
+        <button class="btn btn-primary" type="button" data-publish-onboarding disabled>Publish Replacement Selector</button>
+        <p class="member-login-note" data-publish-result>Waiting for configuration check.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div>
+    <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
+  </div>
+</footer>
+<script src="../js/site.js?v=68"></script>
+<script src="../js/discord-onboarding.js?v=1"></script>
+</body>
+</html>
