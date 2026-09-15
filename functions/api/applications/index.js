@@ -33,7 +33,7 @@ export async function onRequestGet({ request, env }) {
     canReview: true,
     alreadyMember: MEMBER_ACCESS.has(auth.session.access),
     mine: mine ? presentApplicant(itemForApplicant(mine)) : null,
-    applications: items.map(presentReviewer).sort(applicationSort),
+    applications: items.filter(item => item.status !== 'draft').map(presentReviewer).sort(applicationSort),
   });
 }
 
@@ -95,6 +95,7 @@ export async function onRequestPut({ request, env }) {
   const index = items.findIndex(item => item.id === id);
   if (index < 0) return reply({ ok: false, error: 'application_not_found' }, 404);
   const existing = items[index];
+  if (existing.status === 'draft') return reply({ ok: false, error: 'application_not_submitted' }, 409);
   const requested = clean(body.value?.status, existing.status, 30);
   const status = STATUSES.includes(requested) && requested !== 'draft' ? requested : existing.status;
   const now = new Date().toISOString();
@@ -157,7 +158,7 @@ function itemForApplicant(item) {
 function presentApplicant(item) { return item; }
 function presentReviewer(item) { return item; }
 function applicationSort(a, b) {
-  const rank = { submitted: 0, under_review: 1, draft: 2, accepted: 3, declined: 4 };
+  const rank = { submitted: 0, under_review: 1, accepted: 2, declined: 3 };
   return (rank[a.status] ?? 9) - (rank[b.status] ?? 9) || String(b.submittedAt || b.updatedAt || '').localeCompare(String(a.submittedAt || a.updatedAt || ''));
 }
 async function readApplications(env) {
@@ -198,5 +199,5 @@ function allowedList(value, choices, fallback) {
 }
 function booleanValue(value, fallback) { return typeof value === 'boolean' ? value : fallback; }
 function clean(value, fallback, max) { if (typeof value !== 'string') return fallback; const out = value.trim(); return out ? out.slice(0, max) : ''; }
-function headers() { return { 'Cache-Control': 'private, no-store, no-cache, must-revalidate', Pragma: 'no-cache', Vary: 'Cookie', 'X-Content-Type-Options': 'nosniff' }; }
+function headers() { return { 'Cache-Control': 'private, no-store, no-cache, must-revalidate', Pragma: 'no-cache', Vary: 'Cookie', 'X-Content-Type-Options':'nosniff' }; }
 function reply(data, status = 200) { return json(data, { status, headers: headers() }); }
