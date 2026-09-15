@@ -13,6 +13,7 @@
     '../../data/elite-knowledge-navigation-travel.json',
     '../../data/elite-knowledge-salvage-piracy.json',
     '../../data/elite-knowledge-multiplayer.json',
+    '../../data/elite-knowledge-hangar-compatibility.json',
     '../../data/elite-knowledge-merc-modules.json',
     '../../data/elite-knowledge-field-support.json',
     '../../data/elite-knowledge-crime-missions.json',
