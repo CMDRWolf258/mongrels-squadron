@@ -47,6 +47,13 @@
   const isPhoneLayout = () => matchMedia('(max-width: 620px)').matches;
   let lockedScrollY = 0;
 
+  const scrollConversationToBottom = () => {
+    const settle = () => { log.scrollTop = log.scrollHeight; };
+    settle();
+    requestAnimationFrame(settle);
+    setTimeout(settle, 80);
+  };
+
   const lockBackground = () => {
     if (dedicatedPage || !isTouchLayout()) return;
     lockedScrollY = window.scrollY || window.pageYOffset || 0;
@@ -72,6 +79,7 @@
     panel.hidden = false;
     launcher.setAttribute('aria-expanded','true');
     lockBackground();
+    scrollConversationToBottom();
     if (!isTouchLayout() && !dedicatedPage) setTimeout(() => input?.focus({ preventScroll:true }), 80);
   };
 
@@ -101,7 +109,7 @@
     const item=document.createElement('div'); item.className=`mongrel-assistant-message is-${role}`;
     const who=document.createElement('span'); who.textContent=role==='assistant'?'Mongrel Assistant':'You';
     const body=document.createElement('div'); body.textContent=text;
-    item.append(who,body); log.appendChild(item); log.scrollTop=log.scrollHeight;
+    item.append(who,body); log.appendChild(item); scrollConversationToBottom();
     return item;
   };
 
@@ -241,6 +249,7 @@
       state.history.push({role:'user',text:message},{role:'assistant',text:payload.answer});
       state.history=state.history.slice(-HISTORY_MAX_MESSAGES); saveLocalHistory();
       renderLinks(payload.links);
+      scrollConversationToBottom();
     } catch { pending.querySelector('div').textContent=errorMessage('assistant_unavailable'); }
     finally {
       state.busy=false;
