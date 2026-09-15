@@ -1,8 +1,12 @@
 (() => {
   const form = document.querySelector('[data-carrier-form]');
   const shell = document.querySelector('[data-carrier-editor-shell]');
+  const registryGrid = document.querySelector('[data-carrier-grid]');
   if (!form || !shell) return;
 
+  // The existing carrier API stores the role field as a single string capped at
+  // 80 characters. Keep that storage contract for backwards compatibility and
+  // present multiple selections as a comma-separated string.
   const MAX_ROLE_LENGTH = 80;
   const originalSelect = form.querySelector('[data-carrier-role-edit]');
   if (!originalSelect) return;
@@ -26,14 +30,14 @@
     <summary data-carrier-role-summary>General Logistics</summary>
     <div class="carrier-role-menu">
       <div class="carrier-role-options">
-        ${standardRoles.map(role => `<label><input type="checkbox" value="${escapeHtml(role)}" data-carrier-role-option> <span>${escapeHtml(role)}</span></label>`).join('')}
-        <label><input type="checkbox" value="Other" data-carrier-role-option data-carrier-role-other> <span>Other</span></label>
+        ${standardRoles.map(role => `<div class="carrier-role-option" data-carrier-role-row><input type="checkbox" value="${escapeHtml(role)}" data-carrier-role-option aria-label="${escapeHtml(role)}"><span>${escapeHtml(role)}</span></div>`).join('')}
+        <div class="carrier-role-option" data-carrier-role-row><input type="checkbox" value="Other" data-carrier-role-option data-carrier-role-other aria-label="Other"><span>Other</span></div>
       </div>
-      <label class="carrier-role-other-field" data-carrier-role-other-wrap hidden>
+      <div class="carrier-role-other-field" data-carrier-role-other-wrap hidden>
         <span>Custom Primary Role</span>
         <input type="text" maxlength="60" data-carrier-role-other-text placeholder="Enter your role">
-      </label>
-      <small data-carrier-role-help>Select one or more roles. They will display as a comma-separated list.</small>
+      </div>
+      <small data-carrier-role-help>Select one or more roles. Saved roles display as a comma-separated list.</small>
     </div>`;
 
   originalSelect.replaceWith(roleValue);
@@ -76,7 +80,7 @@
     const tooLong = joined.length > MAX_ROLE_LENGTH;
     help.textContent = tooLong
       ? `Role list is ${joined.length} characters; keep it at ${MAX_ROLE_LENGTH} or fewer.`
-      : 'Select one or more roles. They will display as a comma-separated list.';
+      : `Select one or more roles. Maximum ${MAX_ROLE_LENGTH} characters total.`;
     help.classList.toggle('carrier-role-error', tooLong);
     if (announce) roleValue.dispatchEvent(new Event('input', { bubbles: true }));
   }
@@ -91,6 +95,14 @@
   }
 
   optionBoxes.forEach(box => box.addEventListener('change', () => updateRoleValue({ announce: true })));
+  rolePicker.querySelectorAll('[data-carrier-role-row]').forEach(row => {
+    row.addEventListener('click', event => {
+      if (event.target.matches('input')) return;
+      const box = row.querySelector('input');
+      box.checked = !box.checked;
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
   otherText.addEventListener('input', () => updateRoleValue({ announce: true }));
 
   document.addEventListener('click', event => {
@@ -113,9 +125,7 @@
     deleteButton.classList.add('carrier-delete-danger');
     dangerGroup.appendChild(deleteButton);
     headClose.remove();
-    headClose.textContent = 'Discard Changes';
     primaryGroup.append(headClose, saveButton);
-
     oldButtonGroup?.remove();
     actions.replaceChildren(dangerGroup, status, primaryGroup);
   }
@@ -133,6 +143,17 @@
 
   new MutationObserver(refreshEditorControls).observe(shell, { attributes: true, attributeFilter: ['hidden'] });
 
+  // Rename the registry card label when the original carrier renderer refreshes.
+  function pluralizeCardRoleLabels() {
+    registryGrid?.querySelectorAll('.carrier-meta dt').forEach(dt => {
+      if (dt.textContent.trim() === 'Primary Role') dt.textContent = 'Primary Roles';
+    });
+  }
+  if (registryGrid) {
+    new MutationObserver(pluralizeCardRoleLabels).observe(registryGrid, { childList: true, subtree: true });
+    pluralizeCardRoleLabels();
+  }
+
   // Validate before the original carrier submit handler runs.
   form.addEventListener('submit', event => {
     updateRoleValue();
@@ -148,7 +169,6 @@
             : 'Enter a custom primary role for Other.';
       }
       rolePicker.open = true;
-      return;
     }
   }, true);
 
@@ -161,10 +181,11 @@
     .carrier-role-picker[open]>summary{border-color:var(--line-accent)}
     .carrier-role-menu{position:absolute;z-index:20;top:calc(100% + 6px);left:0;right:0;padding:12px;border:1px solid var(--line-accent);border-radius:10px;background:#080d10;box-shadow:0 18px 42px rgba(0,0,0,.5)}
     .carrier-role-options{display:grid;gap:5px;max-height:260px;overflow:auto}
-    .carrier-role-options label{display:flex;grid-template-columns:none;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer}
-    .carrier-role-options label:hover{background:var(--accent-soft)}
-    .carrier-role-options input{width:auto!important;margin:0;accent-color:var(--accent)}
-    .carrier-role-other-field{margin-top:9px;padding-top:10px;border-top:1px solid var(--line)}
+    .carrier-role-option{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer}
+    .carrier-role-option:hover{background:var(--accent-soft)}
+    .carrier-role-option input{width:auto!important;margin:0;accent-color:var(--accent)}
+    .carrier-role-other-field{display:grid;gap:6px;margin-top:9px;padding-top:10px;border-top:1px solid var(--line)}
+    .carrier-role-other-field>span{font-size:.67rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
     .carrier-role-menu small{display:block;margin-top:9px;color:var(--muted);line-height:1.4}
     .carrier-role-menu small.carrier-role-error{color:var(--danger)}
     .carrier-editor-danger{margin-right:auto}
