@@ -60,6 +60,15 @@ const STRONG_ELITE_TERMS = [
   'daily orders', 'mission control', 'trader\'s outpost', 'ask the mongrels',
 ];
 
+// Only distinctive Elite words get fuzzy matching. Generic terms stay strict so
+// ordinary off-topic questions do not leak into the knowledge-gap queue.
+const FUZZY_ELITE_TERMS = [
+  'anaconda', 'coriolis', 'exobiology', 'guardian', 'inara', 'keelback', 'mandalay',
+  'mongrels', 'multicannon', 'odyssey', 'powerplay', 'rhino', 'scarab', 'scorpion',
+  'shinrarta', 'sidewinder', 'supercruise', 'thargoid', 'tritium', 'vulture',
+  'colonization', 'colonisation',
+];
+
 // These can be ordinary English, so require at least two distinct matches unless
 // a strong Elite identifier appears in the question or recent conversation.
 const CONTEXT_ELITE_TERMS = [
@@ -124,6 +133,7 @@ function signalsKnowledgeGap(answer) {
 function isEliteRelated(question, conversationContext) {
   const text = ` ${String(question || '').toLowerCase()} ${String(conversationContext || '').toLowerCase()} `;
   if (STRONG_ELITE_TERMS.some(term => text.includes(term))) return true;
+  if (hasFuzzyEliteTerm(text)) return true;
 
   let matches = 0;
   const seen = new Set();
@@ -135,4 +145,47 @@ function isEliteRelated(question, conversationContext) {
     }
   }
   return false;
+}
+
+function hasFuzzyEliteTerm(text) {
+  const words = String(text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+  for (const word of words) {
+    if (word.length < 4) continue;
+    for (const term of FUZZY_ELITE_TERMS) {
+      const maxDistance = term.length >= 9 ? 2 : 1;
+      if (Math.abs(word.length - term.length) > maxDistance) continue;
+      if (damerauLevenshteinWithin(word, term, maxDistance)) return true;
+    }
+  }
+  return false;
+}
+
+// Bounded Damerau-Levenshtein catches the common typo cases we care about:
+// one wrong/missing/extra character or an adjacent transposition such as Rihno.
+function damerauLevenshteinWithin(a, b, maxDistance) {
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > maxDistance) return false;
+
+  const rows = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i += 1) rows[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) rows[0][j] = j;
+
+  for (let i = 1; i <= a.length; i += 1) {
+    let rowBest = Infinity;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let value = Math.min(
+        rows[i - 1][j] + 1,
+        rows[i][j - 1] + 1,
+        rows[i - 1][j - 1] + cost,
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        value = Math.min(value, rows[i - 2][j - 2] + 1);
+      }
+      rows[i][j] = value;
+      rowBest = Math.min(rowBest, value);
+    }
+    if (rowBest > maxDistance) return false;
+  }
+  return rows[a.length][b.length] <= maxDistance;
 }
