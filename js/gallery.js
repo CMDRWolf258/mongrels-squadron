@@ -9,13 +9,15 @@
   if (!grid || !filters) return;
 
   const base = '../assets/images/gallery/';
+  const imageVersion = 'hq-20260915-1';
+  const imageUrl = src => `${base}${src}?v=${imageVersion}`;
   let items = [];
   let active = 'All';
 
   function card(item) {
     const tags = item.tags.map(tag => `<span>${tag}</span>`).join('');
     return `<button class="gallery-card" type="button" data-gallery-open="${item.src}" aria-label="Open ${item.title}">
-      <span class="gallery-image-wrap"><img src="${base}${item.src}" alt="${item.title}" loading="lazy"></span>
+      <span class="gallery-image-wrap"><img src="${imageUrl(item.src)}" alt="${item.title}" loading="lazy"></span>
       <span class="gallery-card-copy"><strong>${item.title}</strong><span class="gallery-tags">${tags}</span></span>
     </button>`;
   }
@@ -29,7 +31,7 @@
 
   function openLightbox(item) {
     if (!lightbox || !item) return;
-    lightboxImage.src = `${base}${item.src}`;
+    lightboxImage.src = imageUrl(item.src);
     lightboxImage.alt = item.title;
     lightboxTitle.textContent = item.title;
     lightboxCaption.textContent = item.caption || '';
