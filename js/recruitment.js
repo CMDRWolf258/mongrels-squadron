@@ -30,8 +30,8 @@
         joined.className = 'joined-state';
         joined.innerHTML = 'Mongrel Member<small>Joined</small>';
         primary.replaceWith(joined);
-        if (secondary) secondary.hidden = true;
-        if (status) status.textContent = 'You are already part of the Regiment. Recruitment remains visible so you can guide prospective Commanders.';
+        setLink(secondary, 'Preview Application Questions', '/apply/');
+        if (status) status.textContent = 'You are already part of the Regiment. Recruitment remains visible so you can guide prospective Commanders through the application.';
         return;
       }
 
