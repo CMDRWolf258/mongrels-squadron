@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Join the Mongrels | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/application.css?v=1">
 </head>
 <body class="visual-page page-recruitment">
 <header class="site-header">
@@ -174,13 +175,14 @@
       <div class="join-panel">
         <div>
           <p class="eyebrow">How to Join</p>
-          <h2>Ready to run with the pack?</h2>
-          <p>Our recruitment process is currently Discord-first. Join the squad community, introduce yourself, and talk with a Mongrel about what you are looking for in Elite Dangerous.</p>
-          <p class="muted">A dedicated website application form can be added later once member accounts and private tools are introduced.</p>
+          <h2>Two entrances. One application process.</h2>
+          <p>If you found us here on the website, join our Discord community first. If you are already in the Discord, sign in with that same account and complete your application here on the site.</p>
+          <p class="muted">Discord is our community front door and communication hub. The website handles the structured application, saved drafts, and application status.</p>
         </div>
-        <div class="join-panel-actions">
-          <a class="btn btn-primary" href="https://discord.com/invite/EWWKJrfAFJ" target="_blank" rel="noopener noreferrer">Join Our Discord</a>
-          <a class="btn btn-ghost" href="../about/">Read Our History</a>
+        <div class="join-panel-actions recruitment-state-wrap" data-recruitment-actions>
+          <a class="btn btn-primary" data-recruitment-primary href="https://discord.com/invite/EWWKJrfAFJ" target="_blank" rel="noopener noreferrer">Join Our Discord</a>
+          <a class="btn btn-ghost" data-recruitment-secondary href="/api/auth/login?return=%2Fapply%2F">Already in Discord? Apply</a>
+          <small data-recruitment-status>Checking recruitment status…</small>
         </div>
       </div>
     </div>
@@ -193,7 +195,8 @@
     <div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div>
   </div>
 </footer>
-<script src="../js/site.js?v=63"></script>
-<script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=68"></script>
+<script src="../js/recruitment.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=68"></script>
 </body>
 </html>
