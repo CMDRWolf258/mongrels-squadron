@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
+  <title>Apply to the Mongrels | The Mongrels</title>
+  <meta name="description" content="Discord-authenticated application to join the Regiment of Imperial Mongrels.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/application.css?v=1">
+</head>
+<body class="visual-page page-recruitment">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/" aria-current="page">Join Us</a></nav></div></header>
+<main>
+  <section class="page-hero recruitment-hero hero-flare recruitment-flare"><div class="container page-hero-grid"><div><p class="eyebrow">Recruitment</p><h1>Apply to the Mongrels</h1><p>Tell us a little about how you play and what you are looking for. This is a squad application, not a job interview—short answers are completely fine.</p><div class="actions"><a class="btn btn-ghost" href="../recruitment/">Back to Recruitment</a><a class="btn btn-ghost" href="../about/#squad-rules">Read Squad Rules</a></div></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section>
+  <section class="section"><div class="container application-shell">
+    <div class="application-gate-card" data-application-gate>
+      <p class="eyebrow">Discord Identity Required</p>
+      <h2>Connect your Discord account</h2>
+      <p>Applications are tied to your Discord identity so leadership knows who submitted them. Join the Mongrels Discord first, then sign in here.</p>
+      <div class="actions"><a class="btn btn-primary" href="/api/auth/login?return=%2Fapply%2F">Sign In with Discord</a><a class="btn btn-ghost" href="https://discord.com/invite/EWWKJrfAFJ" target="_blank" rel="noopener noreferrer">Join Our Discord</a></div>
+      <small data-application-gate-status>Checking your session…</small>
+    </div>
+
+    <div class="application-status-card" data-application-member hidden>
+      <div class="application-status-head"><div><p class="eyebrow">Recruitment Status</p><h2>Mongrel Member</h2><p>You are already part of the Regiment. This page remains visible so you can help prospective Commanders understand the application process.</p></div><div class="joined-state">Mongrel Member<small>Joined</small></div></div>
+    </div>
+
+    <div class="application-status-card" data-application-status hidden></div>
+
+    <form class="application-form-card" data-application-form hidden>
+      <div class="application-progress" aria-label="Application sections"><span>About You</span><span>Activities</span><span>Expectations</span><span>Review</span></div>
+      <div><p class="eyebrow">Application</p><h2>Tell us about your Commander</h2><p class="application-section-intro">There is no time limit. Save a draft whenever you want and come back later.</p></div>
+
+      <section class="application-form-section">
+        <h2>About Your Commander</h2>
+        <p class="application-section-intro">Basic information that helps us understand who you are and when you are usually around.</p>
+        <div class="application-grid">
+          <label class="application-field"><span>CMDR Name <b class="application-required">*</b></span><input type="text" maxlength="80" placeholder="CMDR Wolf258" data-field="commanderName"></label>
+          <label class="application-field"><span>Elite Experience <b class="application-required">*</b></span><select data-field="experience"><option value="">Choose one…</option><option>New Commander / Less than 6 months</option><option>6 months–2 years</option><option>2–5 years</option><option>5+ years</option><option>Returning player</option></select></label>
+          <label class="application-field"><span>Time Zone <b class="application-required">*</b></span><input type="text" maxlength="80" placeholder="Example: Central / UTC-5" data-field="timezone"><small>Broad is fine. We do not need your exact schedule.</small></label>
+          <fieldset class="application-field"><legend>Usually Active <b class="application-required">*</b></legend><div class="application-choice-grid" data-check-group="activeTimes"><label class="application-choice"><input type="checkbox" value="Morning">Morning</label><label class="application-choice"><input type="checkbox" value="Afternoon">Afternoon</label><label class="application-choice"><input type="checkbox" value="Evening">Evening</label><label class="application-choice"><input type="checkbox" value="Late night">Late night</label><label class="application-choice"><input type="checkbox" value="Varies">Varies</label></div></fieldset>
+          <label class="application-field"><span>How did you find us? <b class="application-required">*</b></span><select data-field="discoverySource"><option value="">Choose one…</option><option>Current Mongrel member</option><option>INARA</option><option>Social media</option><option>Discord / community server</option><option>In-game encounter</option><option>Friend / word of mouth</option><option>Other</option></select></label>
+          <label class="application-field" data-discovery-detail hidden><span>Referral / Source Details</span><input type="text" maxlength="160" placeholder="Who referred you, or where did you find us?" data-field="discoveryDetail"><small>Optional.</small></label>
+          <label class="application-field application-field-wide"><span>What made you interested in the Mongrels? <b class="application-required">*</b></span><textarea rows="3" maxlength="800" data-field="interestReason" placeholder="A sentence or two is plenty."></textarea><small>Short answers are welcome.</small></label>
+        </div>
+      </section>
+
+      <section class="application-form-section">
+        <h2>How You Play</h2>
+        <p class="application-section-intro">There is no preferred specialty. We want to know what you enjoy and what you might want to try next.</p>
+        <div class="application-grid">
+          <fieldset class="application-field application-field-wide"><legend>What do you currently enjoy? <b class="application-required">*</b></legend><div class="application-choice-grid" data-check-group="currentActivities"><label class="application-choice"><input type="checkbox" value="PvE Combat">PvE Combat</label><label class="application-choice"><input type="checkbox" value="PvP">PvP</label><label class="application-choice"><input type="checkbox" value="Anti-Xeno">Anti-Xeno</label><label class="application-choice"><input type="checkbox" value="BGS">BGS</label><label class="application-choice"><input type="checkbox" value="Trade / Hauling">Trade / Hauling</label><label class="application-choice"><input type="checkbox" value="Mining">Mining</label><label class="application-choice"><input type="checkbox" value="Exploration">Exploration</label><label class="application-choice"><input type="checkbox" value="Exobiology">Exobiology</label><label class="application-choice"><input type="checkbox" value="Colonization">Colonization</label><label class="application-choice"><input type="checkbox" value="Powerplay">Powerplay</label><label class="application-choice"><input type="checkbox" value="Operations">Operations</label><label class="application-choice"><input type="checkbox" value="Engineering / Shipbuilding">Engineering / Shipbuilding</label><label class="application-choice"><input type="checkbox" value="Other">Other</label></div></fieldset>
+          <fieldset class="application-field application-field-wide"><legend>What would you like to learn or do more of?</legend><div class="application-choice-grid" data-check-group="learnActivities"><label class="application-choice"><input type="checkbox" value="PvE Combat">PvE Combat</label><label class="application-choice"><input type="checkbox" value="PvP">PvP</label><label class="application-choice"><input type="checkbox" value="Anti-Xeno">Anti-Xeno</label><label class="application-choice"><input type="checkbox" value="BGS">BGS</label><label class="application-choice"><input type="checkbox" value="Trade / Hauling">Trade / Hauling</label><label class="application-choice"><input type="checkbox" value="Mining">Mining</label><label class="application-choice"><input type="checkbox" value="Exploration">Exploration</label><label class="application-choice"><input type="checkbox" value="Exobiology">Exobiology</label><label class="application-choice"><input type="checkbox" value="Colonization">Colonization</label><label class="application-choice"><input type="checkbox" value="Powerplay">Powerplay</label><label class="application-choice"><input type="checkbox" value="Operations">Operations</label><label class="application-choice"><input type="checkbox" value="Engineering / Shipbuilding">Engineering / Shipbuilding</label><label class="application-choice"><input type="checkbox" value="Other">Other</label></div></fieldset>
+          <fieldset class="application-field"><legend>PvP Experience <b class="application-required">*</b></legend><div class="application-radio-row" data-radio-group="pvpExperience"><label class="application-choice"><input type="radio" name="pvpExperience" value="None">None</label><label class="application-choice"><input type="radio" name="pvpExperience" value="Beginner">Beginner</label><label class="application-choice"><input type="radio" name="pvpExperience" value="Comfortable">Comfortable</label><label class="application-choice"><input type="radio" name="pvpExperience" value="Experienced">Experienced</label></div><small>PvP experience is not required.</small></fieldset>
+          <fieldset class="application-field"><legend>Discord Voice <b class="application-required">*</b></legend><div class="application-radio-row" data-radio-group="voiceComfort"><label class="application-choice"><input type="radio" name="voiceComfort" value="Yes">Yes</label><label class="application-choice"><input type="radio" name="voiceComfort" value="Usually">Usually</label><label class="application-choice"><input type="radio" name="voiceComfort" value="No">No</label></div><small>This is informational; it is not a writing test or an automatic rejection.</small></fieldset>
+        </div>
+      </section>
+
+      <section class="application-form-section">
+        <h2>Squad Fit & Expectations</h2>
+        <p class="application-section-intro">We would rather be clear about how the squad operates before you join.</p>
+        <div class="application-grid">
+          <fieldset class="application-field application-field-wide"><legend>Are you willing to play in Open Play when participating in Mongrel squad activities? <b class="application-required">*</b></legend><div class="application-radio-row" data-radio-group="openPlay"><label class="application-choice"><input type="radio" name="openPlay" value="Yes">Yes</label><label class="application-choice"><input type="radio" name="openPlay" value="No">No</label></div><small>Open Play is our normal operating environment. Solo or Private Group may be used in limited circumstances, but not to avoid player opposition.</small></fieldset>
+          <label class="application-choice application-field-wide"><input type="checkbox" data-field="bgsOpenAcknowledged"><span>I understand that all BGS activity performed for the Mongrels must be done in Open Play. <b class="application-required">*</b></span></label>
+          <label class="application-field application-field-wide"><span>What are you looking for from a squadron? <b class="application-required">*</b></span><textarea rows="3" maxlength="1000" data-field="squadGoals" placeholder="People to play with, help learning AX, organized BGS... or simply ‘not sure yet.’"></textarea><small>A short answer is fine. “I don’t know yet” is an acceptable answer.</small></label>
+          <label class="application-field application-field-wide"><span>Anything else you’d like us to know?</span><textarea rows="3" maxlength="1500" data-field="additionalInfo" placeholder="Optional."></textarea></label>
+        </div>
+        <div class="application-expectations"><strong>Squad Expectations</strong><ul><li>Open Play is the squad standard.</li><li>Mongrel BGS work is performed in Open.</li><li>Teamwork and respectful conduct are expected.</li><li>Combat logging is prohibited.</li></ul></div>
+        <label class="application-choice" style="margin-top:12px"><input type="checkbox" data-field="rulesAcknowledged"><span>I have reviewed these expectations and agree to follow them. <b class="application-required">*</b></span></label>
+      </section>
+
+      <div class="application-actions"><span class="application-save-status" data-application-save-status>Draft not yet saved.</span><button class="btn btn-ghost" type="button" data-save-draft>Save Draft</button><button class="btn btn-primary" type="submit" data-submit-application>Submit Application</button></div>
+    </form>
+  </div></section>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=68"></script>
+<script src="../js/application.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=68"></script>
+</body></html>
