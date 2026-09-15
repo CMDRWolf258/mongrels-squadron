@@ -22,7 +22,7 @@
   const statusCopy = status => ({
     submitted: 'Your application has been sent to Mongrel leadership for review. You do not need to submit another application.',
     under_review: 'Mongrel leadership is currently reviewing your application.',
-    accepted: 'Your application has been accepted. A Mongrel officer will complete any remaining Discord role changes.',
+    accepted: 'Your application has been accepted and your Discord Mongrel Member role has been granted. Activate Member Access below once to refresh your website permissions.',
     declined: 'This application is closed. If leadership asked you to follow up, please contact them through Discord.',
   }[status] || 'Your application has been saved.');
 
@@ -100,9 +100,12 @@
   function renderStatus(application) {
     const a = application?.answers || {};
     const status = application?.status || 'submitted';
-    statusCard.innerHTML = `<div class="application-status-head"><div><p class="eyebrow">Application Status</p><h2>${esc(a.commanderName || 'Mongrel Application')}</h2><p>${esc(statusCopy(status))}</p></div><span class="application-status-badge ${esc(status)}">${esc(statusLabel(status))}</span></div>
+    const acceptedActions = status === 'accepted'
+      ? '<div class="actions" style="margin-top:18px"><a class="btn btn-primary" href="/api/auth/login?return=%2Fmember%2F">Activate Member Access</a><a class="btn btn-ghost" href="../member/">Member Portal</a></div>'
+      : '';
+    statusCard.innerHTML = `<div class="application-status-head"><div><p class="eyebrow">Application Status</p><h2>${esc(a.commanderName || 'Mongrel Application')}</h2><p>${esc(statusCopy(status))}</p>${acceptedActions}</div><span class="application-status-badge ${esc(status)}">${esc(statusLabel(status))}</span></div>
       <div class="application-answer-grid">
-        ${answer('Discord', application.ownerName || '')}${answer('Submitted', dateLabel(application.submittedAt || application.updatedAt))}
+        ${answer('Discord', application.ownerName || '')}${answer('Submitted', dateLabel(application.submittedAt || application.updatedAt))}${status === 'accepted' ? answer('Accepted', dateLabel(application.acceptedAt || application.updatedAt)) : ''}
         ${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}
         ${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
         ${answer('Current Activities', a.currentActivities, true)}${answer('Want to Learn / Do More', a.learnActivities, true)}
