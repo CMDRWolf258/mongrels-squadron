@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { sendRecruitmentSubmissionAlert } from '../../../lib/discord-recruitment.js';
+import { provisionAcceptedApplicant, sendRecruitmentSubmissionAlert } from '../../../lib/discord-recruitment.js';
 
 const STORAGE_KEY = 'applications-v1';
 const REVIEW_ACCESS = new Set(['officer', 'site_admin']);
@@ -73,6 +73,10 @@ export async function onRequestPost({ request, env }) {
     submittedAt: action === 'submit' ? now : (existing?.submittedAt || null),
     reviewedAt: existing?.reviewedAt || null,
     reviewedBy: existing?.reviewedBy || '',
+    acceptedAt: existing?.acceptedAt || null,
+    acceptedBy: existing?.acceptedBy || '',
+    discordProvisionedAt: existing?.discordProvisionedAt || null,
+    acceptanceDmStatus: existing?.acceptanceDmStatus || '',
   };
 
   if (existingIndex >= 0) items[existingIndex] = item;
@@ -110,17 +114,47 @@ export async function onRequestPut({ request, env }) {
   if (existing.status === 'draft') return reply({ ok: false, error: 'application_not_submitted' }, 409);
   const requested = clean(body.value?.status, existing.status, 30);
   const status = STATUSES.includes(requested) && requested !== 'draft' ? requested : existing.status;
+  const newlyAccepted = status === 'accepted' && existing.status !== 'accepted';
+  const reviewerName = session.displayName || session.username || 'Mongrel Officer';
   const now = new Date().toISOString();
+  let provisioning = null;
+
+  // Discord Member role assignment is part of approval, not a follow-up manual step.
+  // The application is only marked Accepted after Member role provisioning succeeds.
+  if (newlyAccepted) {
+    try {
+      provisioning = await provisionAcceptedApplicant(env, existing, new URL(request.url).origin);
+    } catch (error) {
+      return reply({
+        ok: false,
+        error: 'member_role_assignment_failed',
+        detail: String(error?.message || error).slice(0, 700),
+      }, 502);
+    }
+  }
+
   items[index] = {
     ...existing,
     status,
     officerNotes: clean(body.value?.officerNotes, existing.officerNotes || '', 4000),
     updatedAt: now,
     reviewedAt: status === 'submitted' ? existing.reviewedAt : now,
-    reviewedBy: status === 'submitted' ? existing.reviewedBy : (session.displayName || session.username || 'Mongrel Officer'),
+    reviewedBy: status === 'submitted' ? existing.reviewedBy : reviewerName,
+    acceptedAt: newlyAccepted ? now : (existing.acceptedAt || null),
+    acceptedBy: newlyAccepted ? reviewerName : (existing.acceptedBy || ''),
+    discordProvisionedAt: newlyAccepted ? now : (existing.discordProvisionedAt || null),
+    acceptanceDmStatus: newlyAccepted ? (provisioning?.dmStatus || '') : (existing.acceptanceDmStatus || ''),
   };
   await writeApplications(env, items);
-  return reply({ ok: true, application: presentReviewer(items[index]) });
+  return reply({
+    ok: true,
+    application: presentReviewer(items[index]),
+    provisioning: newlyAccepted ? {
+      memberRoleGranted: true,
+      dmStatus: provisioning?.dmStatus || 'unknown',
+      cleanupWarnings: Array.isArray(provisioning?.cleanupWarnings) ? provisioning.cleanupWarnings.length : 0,
+    } : null,
+  });
 }
 
 function normalizeAnswers(value, fallback = {}) {
@@ -164,7 +198,7 @@ function submissionErrors(a) {
 }
 
 function itemForApplicant(item) {
-  const { officerNotes, reviewedBy, ...safe } = item;
+  const { officerNotes, reviewedBy, acceptedBy, discordProvisionedAt, acceptanceDmStatus, ...safe } = item;
   return safe;
 }
 function presentApplicant(item) { return item; }
