@@ -6,8 +6,11 @@
   const welcome = document.querySelector('[data-welcome-channel]');
   const applicant = document.querySelector('[data-applicant-role]');
   const guest = document.querySelector('[data-guest-role]');
+  const recruitment = document.querySelector('[data-recruitment-channel]');
   const publish = document.querySelector('[data-publish-onboarding]');
   const result = document.querySelector('[data-publish-result]');
+  const testAlert = document.querySelector('[data-test-recruitment-alert]');
+  const alertResult = document.querySelector('[data-alert-result]');
 
   if (!status || !publish) return;
 
@@ -21,12 +24,14 @@
         status.textContent = 'Discord sign-in required';
         detail.innerHTML = 'Sign in through the <a href="/member/">Member Portal</a>, then return here.';
         result.textContent = 'Publishing is disabled until you are signed in.';
+        if (alertResult) alertResult.textContent = 'Testing is disabled until you are signed in.';
         return;
       }
       if (response.status === 403) {
         status.textContent = 'Site Admin access required';
         detail.textContent = 'This control is restricted to the website Site Admin.';
         result.textContent = 'Publishing is disabled for this account.';
+        if (alertResult) alertResult.textContent = 'Testing is disabled for this account.';
         return;
       }
       if (!response.ok || !data.ok) throw new Error(data.error || `Configuration check failed (${response.status})`);
@@ -36,28 +41,34 @@
       welcome.textContent = data.welcomeChannelId || 'Not configured';
       applicant.textContent = data.applicantRoleId || 'Not configured';
       guest.textContent = data.guestRoleId || 'Not configured';
+      if (recruitment) recruitment.textContent = data.recruitmentChannelId || 'Not configured';
 
       if (!data.botTokenConfigured) {
         status.textContent = 'Waiting for Discord bot token';
         detail.textContent = 'The code is deployed, but DISCORD_BOT_TOKEN still needs to be added as a Cloudflare secret.';
         result.textContent = 'Add the bot token in Cloudflare before publishing.';
+        if (alertResult) alertResult.textContent = 'Add the bot token in Cloudflare before testing alerts.';
         return;
       }
       if (!data.guildConfigured) {
         status.textContent = 'Guild ID is not configured';
         detail.textContent = 'The existing GUILD_ID environment value is missing.';
         result.textContent = 'Publishing is disabled until the server ID is configured.';
+        if (alertResult) alertResult.textContent = 'Testing is disabled until the server ID is configured.';
         return;
       }
 
       status.textContent = 'Backend ready';
-      detail.textContent = 'Bot token, server configuration, and onboarding IDs are available.';
-      result.textContent = 'Ready to publish a test replacement selector.';
+      detail.textContent = 'Bot token, server configuration, onboarding IDs, and recruitment channel are available.';
+      result.textContent = 'Onboarding selector controls are ready.';
+      if (alertResult) alertResult.textContent = 'Ready to send a harmless test alert to The High Council.';
       publish.disabled = false;
+      if (testAlert) testAlert.disabled = false;
     } catch (error) {
       status.textContent = 'Configuration check failed';
       detail.textContent = String(error?.message || error);
       result.textContent = 'Publishing is disabled until the backend responds.';
+      if (alertResult) alertResult.textContent = 'Alert testing is disabled until the backend responds.';
     }
   }
 
@@ -65,25 +76,47 @@
     publish.disabled = true;
     result.textContent = 'Publishing the replacement selector to #welcome…';
     try {
-      const response = await fetch('/api/discord/onboarding', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Mongrels-Request': 'discord-onboarding-admin',
-        },
-        body: JSON.stringify({ action: 'publish' }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.ok) {
-        const message = data.detail ? `${data.error}: ${data.detail}` : (data.error || `Publish failed (${response.status})`);
-        throw new Error(message);
-      }
-      result.textContent = 'Published. Test both new Discord buttons before removing the MEE6 fallback messages.';
+      const data = await postAction('publish');
+      if (!data.ok) throw new Error(data.message);
+      result.textContent = 'Published. Test both Discord buttons before removing any fallback messages.';
     } catch (error) {
       result.textContent = `Publish failed: ${String(error?.message || error)}`;
     } finally {
       publish.disabled = false;
     }
   });
+
+  if (testAlert) {
+    testAlert.addEventListener('click', async () => {
+      testAlert.disabled = true;
+      alertResult.textContent = 'Sending a test recruitment alert to The High Council…';
+      try {
+        const data = await postAction('test_recruitment_alert');
+        if (!data.ok) throw new Error(data.message);
+        alertResult.textContent = 'Test alert sent successfully. Check The High Council channel in Discord.';
+      } catch (error) {
+        alertResult.textContent = `Test failed: ${String(error?.message || error)}`;
+      } finally {
+        testAlert.disabled = false;
+      }
+    });
+  }
+
+  async function postAction(action) {
+    const response = await fetch('/api/discord/onboarding', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Mongrels-Request': 'discord-onboarding-admin',
+      },
+      body: JSON.stringify({ action }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) {
+      const message = data.detail ? `${data.error}: ${data.detail}` : (data.error || `Request failed (${response.status})`);
+      return { ok: false, message };
+    }
+    return { ok: true, data };
+  }
 })();
