@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { sendRecruitmentSubmissionAlert } from '../../../lib/discord-recruitment.js';
 
 const STORAGE_KEY = 'applications-v1';
 const REVIEW_ACCESS = new Set(['officer', 'site_admin']);
@@ -77,6 +78,17 @@ export async function onRequestPost({ request, env }) {
   if (existingIndex >= 0) items[existingIndex] = item;
   else items.push(item);
   await writeApplications(env, items);
+
+  // Application submission is authoritative even if Discord is temporarily unavailable.
+  // The alert helper keeps its own per-application idempotency record to prevent duplicates.
+  if (action === 'submit') {
+    try {
+      await sendRecruitmentSubmissionAlert(env, item, new URL(request.url).origin);
+    } catch {
+      // Do not make an otherwise valid application fail because an officer notification failed.
+    }
+  }
+
   return reply({ ok: true, application: presentApplicant(itemForApplicant(item)) }, existing ? 200 : 201);
 }
 
