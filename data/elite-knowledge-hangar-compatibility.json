@@ -1,0 +1,146 @@
+{
+  "version": "1",
+  "reviewedAt": "2026-09-15",
+  "scope": "Current Elite Dangerous carrier-ship compatibility for the Rhino SRV and Ship-Launched Fighters, including compatible hulls, Fighter Hangar class ranges, and practical Type-11 notes used by Ask the Mongrels and the Reference Database.",
+  "entries": [
+    {
+      "id": "hangar-rhino-ship-compatibility",
+      "category": "Rhino Surface Mining",
+      "topic": "Which Ships Can Carry the Rhino?",
+      "keywords": [
+        "rhino compatible ships",
+        "rhino ship compatibility",
+        "which ships carry rhino",
+        "can my ship carry rhino",
+        "can type 11 carry rhino",
+        "type 11 rhino",
+        "type-11 rhino",
+        "large planetary vehicle hangar",
+        "rhino hangar",
+        "rhino bay"
+      ],
+      "ruleOfThumb": "The Rhino uses a Large Planetary Vehicle Hangar and is currently supported by 13 medium/large hulls. The Type-11 Prospector is compatible, so a Type-11 can carry and deploy a Rhino.",
+      "quickFacts": [
+        {"label": "Rhino carrier ships", "value": "13 current hulls"},
+        {"label": "Required module family", "value": "Large Planetary Vehicle Hangar"},
+        {"label": "Type-11 Prospector", "value": "Yes — compatible"},
+        {"label": "Same hull set as SLF Fighter Hangar", "value": "Yes"}
+      ],
+      "details": [
+        "Do not confuse the Rhino hangar with the ordinary Planetary Vehicle Hangar used by Scarab and Scorpion SRVs.",
+        "Do not confuse it with the Fighter Hangar/Vessel Hangar used by Ship-Launched Fighters and ship-launched vessels. The Rhino uses its own Large Planetary Vehicle Hangar module family.",
+        "The published compatible-hull set matches the current Fighter Hangar-compatible hull set, which is a useful shortcut when checking whether a ship can serve as a Rhino carrier.",
+        "The compatible internal-class range varies by ship; use the table below when planning a build."
+      ],
+      "tables": [
+        {
+          "title": "Rhino-Compatible Carrier Ships",
+          "columns": ["Ship", "Compatible class range", "Pad"],
+          "rows": [
+            ["Alliance Crusader", "5–6", "Medium"],
+            ["Anaconda", "5–7", "Large"],
+            ["Beluga Liner", "5–6", "Large"],
+            ["Caspian Explorer", "5–7", "Large"],
+            ["Federal Corvette", "5–7", "Large"],
+            ["Federal Gunship", "5–6", "Medium"],
+            ["Imperial Cutter", "5–7", "Large"],
+            ["Keelback", "5", "Medium"],
+            ["Krait Mk II", "5–6", "Medium"],
+            ["Panther Clipper Mk II", "5–7", "Large"],
+            ["Type-9 Heavy", "5–7", "Large"],
+            ["Type-10 Defender", "5–7", "Large"],
+            ["Type-11 Prospector", "5–6", "Medium"]
+          ]
+        }
+      ],
+      "commonMistakes": [
+        "Assuming every ship that can carry a Scarab or Scorpion can also carry the Rhino.",
+        "Looking for the Rhino under a normal Planetary Vehicle Hangar instead of the Large Planetary Vehicle Hangar.",
+        "Assuming the Type-11 cannot carry a Rhino because it already has a dedicated Fighter Hangar compartment. The Rhino uses a separate compatible internal."
+      ],
+      "operations": "For Rhino mining, choose one of the compatible hulls, fit a Large Planetary Vehicle Hangar within the supported class range, carry enough ship cargo space to receive refined ore from the Rhino, and fit a DSS for locating Planetary Mining Locations.",
+      "sources": [
+        {"name": "Frontier Developments — Elite Dangerous August Dev Log 2026", "url": "https://www.elitedangerous.com/news/elite-dangerous-august-dev-log-2026"},
+        {"name": "Elite Dangerous Field Manual — Surface Recon Vehicles", "url": "https://edfieldmanual.com/wiki/Surface_Recon_Vehicles"},
+        {"name": "INARA — Rhino compatible ships reference", "url": "https://inara.cz/elite/logbook/97950/"}
+      ],
+      "reviewedAt": "2026-09-15",
+      "stability": "new / reviewed"
+    },
+    {
+      "id": "hangar-slf-ship-compatibility",
+      "category": "Ship-Launched Fighters",
+      "topic": "Which Ships Can Carry an SLF?",
+      "keywords": [
+        "slf",
+        "ship launched fighter",
+        "ship-launched fighter",
+        "fighter hangar",
+        "fighter bay",
+        "which ships can carry slf",
+        "which ships have fighter bay",
+        "which ships can fit fighter hangar",
+        "can type 11 use slf",
+        "type 11 slf",
+        "type-11 slf"
+      ],
+      "ruleOfThumb": "Only specific hulls can equip a Fighter Hangar. The current list contains 13 ships, including the Type-11 Prospector, which has a dedicated Class 5 Fighter Hangar compartment.",
+      "quickFacts": [
+        {"label": "SLF-capable ships", "value": "13 current hulls"},
+        {"label": "Fighter Hangar classes", "value": "5, 6, 7"},
+        {"label": "Type-11 Prospector", "value": "Yes — dedicated Class 5 Fighter Hangar slot"},
+        {"label": "Smallest/cheapest traditional carrier", "value": "Keelback"}
+      ],
+      "details": [
+        "A Fighter Hangar carries Ship-Launched Fighters and manufactures replacements after fighters are destroyed; the fighter craft itself is purchased separately.",
+        "Class 5 Fighter Hangars have one fighter bay and six fighter replacements. Class 6 hangars have two bays with eight fighters per bay. Class 7 hangars have two bays with fifteen fighters per bay.",
+        "Two simultaneously active player-controlled SLFs require an appropriate two-bay Class 6 or Class 7 hangar and a compatible multicrew arrangement.",
+        "An SLF cannot enter supercruise or hyperspace independently; it operates locally around its mothership.",
+        "The Type-11 Prospector is unusual because one of its reserved Class 5 internal compartments is specifically dedicated to a Fighter Hangar."
+      ],
+      "tables": [
+        {
+          "title": "SLF-Compatible Ships",
+          "columns": ["Ship", "Fighter Hangar classes", "Pad"],
+          "rows": [
+            ["Alliance Crusader", "5–6", "Medium"],
+            ["Anaconda", "5–7", "Large"],
+            ["Beluga Liner", "5–6", "Large"],
+            ["Caspian Explorer", "5–7", "Large"],
+            ["Federal Corvette", "5–7", "Large"],
+            ["Federal Gunship", "5–6", "Medium"],
+            ["Imperial Cutter", "5–7", "Large"],
+            ["Keelback", "5", "Medium"],
+            ["Krait Mk II", "5–6", "Medium"],
+            ["Panther Clipper Mk II", "5–7", "Large"],
+            ["Type-9 Heavy", "5–7", "Large"],
+            ["Type-10 Defender", "5–7", "Large"],
+            ["Type-11 Prospector", "5–6", "Medium"]
+          ]
+        },
+        {
+          "title": "Fighter Hangar Capacity",
+          "columns": ["Class", "Fighter bays", "Fighters per bay"],
+          "rows": [
+            ["5D", "1", "6"],
+            ["6D", "2", "8"],
+            ["7D", "2", "15"]
+          ]
+        }
+      ],
+      "commonMistakes": [
+        "Assuming any multicrew-capable ship can fit a Fighter Hangar. Fighter Hangar compatibility is hull-specific.",
+        "Using an old SLF ship list that omits newer compatible hulls such as the Caspian Explorer, Panther Clipper Mk II, and Type-11 Prospector.",
+        "Assuming a Class 5 hangar can field two fighter loadouts at once; Class 5 has only one bay."
+      ],
+      "pve": "SLFs are useful for adding pressure, distraction and an NPC or human wingman to combat-capable motherships.",
+      "pvp": "The Mongrels permit SLFs generally but strongly discourage them in PvP because fighter synchronization/lag can degrade the fight for other players.",
+      "sources": [
+        {"name": "Elite Dangerous Wiki — Fighter Hangar", "url": "https://elite-dangerous.fandom.com/wiki/Fighter_Hangar"},
+        {"name": "Frontier Developments — Type-11 Prospector announcement", "url": "https://store.steampowered.com/news/posts/?appids=359320"}
+      ],
+      "reviewedAt": "2026-09-15",
+      "stability": "current / reviewed"
+    }
+  ]
+}
