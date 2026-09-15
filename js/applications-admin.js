@@ -30,25 +30,36 @@
     list.innerHTML = rows.map(app => {
       const a = app.answers || {};
       return `<article class="application-review-card" data-application-id="${esc(app.id)}">
-        <div class="application-review-head"><div><p class="eyebrow">${esc(statusLabel(app.status))}</p><h2>${esc(a.commanderName || 'Unnamed Commander')}</h2><div class="application-review-meta"><span>Discord: ${esc(app.ownerName || 'Unknown')}${app.discordUsername ? ` · @${esc(app.discordUsername)}` : ''}</span><span>Submitted: ${esc(dateLabel(app.submittedAt))}</span>${app.reviewedBy ? `<span>Reviewed by: ${esc(app.reviewedBy)}</span>` : ''}</div></div><span class="application-status-badge ${esc(app.status)}">${esc(statusLabel(app.status))}</span></div>
+        <div class="application-review-head"><div><p class="eyebrow">${esc(statusLabel(app.status))}</p><h2>${esc(a.commanderName || 'Unnamed Commander')}</h2><div class="application-review-meta"><span>Discord: ${esc(app.ownerName || 'Unknown')}${app.discordUsername ? ` · @${esc(app.discordUsername)}` : ''}</span><span>Submitted: ${esc(dateLabel(app.submittedAt))}</span>${app.reviewedBy ? `<span>Reviewed by: ${esc(app.reviewedBy)}</span>` : ''}${app.status === 'accepted' && app.acceptedAt ? `<span>Accepted: ${esc(dateLabel(app.acceptedAt))}</span>` : ''}</div></div><span class="application-status-badge ${esc(app.status)}">${esc(statusLabel(app.status))}</span></div>
         <details><summary>View application answers</summary><div class="application-answer-grid">
           ${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
           ${answer('Current Activities', a.currentActivities, true)}${answer('Want to Learn / Do More', a.learnActivities, true)}${answer('PvP Experience', a.pvpExperience)}${answer('Discord Voice', a.voiceComfort)}
           ${answer('Open Play', a.openPlay)}${answer('BGS in Open Acknowledged', a.bgsOpenAcknowledged ? 'Yes' : 'No')}${answer('Why the Mongrels?', a.interestReason, true)}${answer('Looking for from a Squadron', a.squadGoals, true)}${answer('Anything Else', a.additionalInfo, true)}${answer('Final Rules Acknowledgement', a.rulesAcknowledged ? 'Yes' : 'No')}
         </div></details>
         <label class="application-note"><span>Private Officer Notes</span><textarea rows="3" maxlength="4000" data-officer-notes placeholder="Visible only to Officers and Site Admin.">${esc(app.officerNotes || '')}</textarea></label>
-        <div class="application-review-actions"><button class="btn btn-ghost" type="button" data-review-action="${esc(app.status)}">Save Note</button>${app.status !== 'under_review' ? '<button class="btn btn-ghost" type="button" data-review-action="under_review">Mark Under Review</button>' : ''}${app.status !== 'accepted' ? '<button class="btn btn-primary" type="button" data-review-action="accepted">Accept</button>' : ''}${app.status !== 'declined' ? '<button class="btn btn-ghost" type="button" data-review-action="declined">Decline</button>' : ''}<span class="application-save-status" data-card-status></span></div>
+        <div class="application-review-actions"><button class="btn btn-ghost" type="button" data-review-action="${esc(app.status)}">Save Note</button>${app.status !== 'under_review' ? '<button class="btn btn-ghost" type="button" data-review-action="under_review">Mark Under Review</button>' : ''}${app.status !== 'accepted' ? '<button class="btn btn-primary" type="button" data-review-action="accepted">Approve & Grant Member Access</button>' : ''}${app.status !== 'declined' ? '<button class="btn btn-ghost" type="button" data-review-action="declined">Decline</button>' : ''}<span class="application-save-status" data-card-status></span></div>
       </article>`;
     }).join('');
   }
 
   async function updateApplication(card, status) {
     const id = card.dataset.applicationId;
+    const current = applications.find(app => app.id === id);
+    const commander = current?.answers?.commanderName || 'this Commander';
+    const newlyAccepted = status === 'accepted' && current?.status !== 'accepted';
+
+    if (newlyAccepted) {
+      const approved = window.confirm(
+        `Approve ${commander}?\n\nThis will grant the Mongrel Member role in Discord, remove Applicant/Guest onboarding roles, and send the Commander a welcome message with a Member Portal activation link.`,
+      );
+      if (!approved) return;
+    }
+
     const notes = card.querySelector('[data-officer-notes]')?.value || '';
     const state = card.querySelector('[data-card-status]');
     const buttons = [...card.querySelectorAll('button[data-review-action]')];
     buttons.forEach(button => { button.disabled = true; });
-    if (state) { state.textContent = 'Saving…'; state.dataset.state = ''; }
+    if (state) { state.textContent = newlyAccepted ? 'Granting Member access…' : 'Saving…'; state.dataset.state = ''; }
     try {
       const response = await fetch('/api/applications', {
         method:'PUT', credentials:'same-origin', cache:'no-store',
@@ -56,13 +67,26 @@
         body:JSON.stringify({ id, status, officerNotes:notes }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `Save failed (${response.status})`);
+      if (!response.ok) {
+        if (data.error === 'member_role_assignment_failed') {
+          const detail = data.detail ? `\n\nDiscord: ${data.detail}` : '';
+          throw new Error(`Member role could not be granted. The application was NOT marked Accepted. Check the Imperial Mongrels Website bot role hierarchy and Manage Roles permission.${detail}`);
+        }
+        throw new Error(data.error || `Save failed (${response.status})`);
+      }
       const index = applications.findIndex(app => app.id === id);
       if (index >= 0) applications[index] = data.application;
+
+      if (newlyAccepted) {
+        const notes = [];
+        if (data.provisioning?.cleanupWarnings) notes.push('One or more Applicant/Guest roles could not be removed automatically; check the member in Discord.');
+        if (['failed','cooldown','storage_unavailable'].includes(data.provisioning?.dmStatus)) notes.push('Member access was granted, but the acceptance DM was not delivered automatically.');
+        window.alert(`Approved ${commander}.\n\nThe Discord Member role was granted successfully.${notes.length ? `\n\n${notes.join('\n')}` : ''}`);
+      }
       render();
     } catch (error) {
       console.error('Application review save failed', error);
-      if (state) { state.textContent = 'Could not save. Try again.'; state.dataset.state = 'error'; }
+      if (state) { state.textContent = error?.message || 'Could not save. Try again.'; state.dataset.state = 'error'; }
       buttons.forEach(button => { button.disabled = false; });
     }
   }
