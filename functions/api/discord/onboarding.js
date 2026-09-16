@@ -1,6 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { onboardingConfig, publishOnboardingBundle } from '../../../lib/discord-onboarding.js';
-import { recruitmentConfig, sendRecruitmentTestAlert } from '../../../lib/discord-recruitment.js';
+import { recruitmentConfig, sendAcceptanceTestDm, sendRecruitmentTestAlert } from '../../../lib/discord-recruitment.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await readSession(request, env);
@@ -55,11 +55,25 @@ export async function onRequestPost({ request, env }) {
       );
       return reply({ ok: true, ...result });
     }
+    if (body?.action === 'test_acceptance_dm') {
+      const result = await sendAcceptanceTestDm(
+        env,
+        session.sub,
+        expectedOrigin,
+        'Wolf258',
+      );
+      return reply({ ok: true, ...result });
+    }
     return reply({ ok: false, error: 'unsupported_action' }, 400);
   } catch (error) {
+    const errorCode = body?.action === 'test_recruitment_alert'
+      ? 'recruitment_alert_test_failed'
+      : body?.action === 'test_acceptance_dm'
+        ? 'acceptance_dm_test_failed'
+        : 'discord_publish_failed';
     return reply({
       ok: false,
-      error: body?.action === 'test_recruitment_alert' ? 'recruitment_alert_test_failed' : 'discord_publish_failed',
+      error: errorCode,
       detail: String(error?.message || error).slice(0, 700),
     }, 502);
   }
