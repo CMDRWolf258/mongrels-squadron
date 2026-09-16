@@ -1,14 +1,14 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-09-15_
+_Last updated: 2026-09-16_
 
 ## Read this first
 
-**AI / developer handoff:** Before making changes, read this file and inspect the current repository. The repository is the source of truth. If this document, memory, an old chat, a screenshot, or release notes conflict with current code, **current code wins**.
+**AI / developer handoff:** Read this file, then inspect the current repository before changing anything. The repository is the source of truth. If this document, memory, an old chat, screenshots, or release notes conflict with current code, **current code wins**.
 
-Never reuse remembered file SHAs. Fetch the current file before modifying it.
+Never reuse remembered file SHAs. Fetch the current target file immediately before modifying it and use the current SHA.
 
-This is an architecture/handoff guide, not a changelog or duplicate of the codebase. Update it after meaningful workflow, permission, storage, integration, navigation, or project-direction changes.
+This is an architecture/handoff guide, not a changelog. Update it after meaningful workflow, permission, storage, integration, navigation, Pathway, or project-direction changes.
 
 ---
 
@@ -23,7 +23,7 @@ This is an architecture/handoff guide, not a changelog or duplicate of the codeb
 - **Theme:** black/charcoal with cyan/blue; restrained military/HUD styling
 - **Navigation convention:** use **CARRIERS**, not Fleet
 
-The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, Ask the Mongrels, and My Pathway all live here.
+The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, Ask the Mongrels, Start Here, and My Pathway.
 
 ---
 
@@ -31,87 +31,94 @@ The site is both a public squadron presence and a private operational platform: 
 
 ### Website vs Discord
 
-- **Website = structured source of truth** for applications, profiles, projects, tasking, status, pathway preferences, and admin workflows.
+- **Website = structured source of truth** for applications, profiles, projects, tasking, status, pathway preferences/progress, campaign state, and admin workflows.
 - **Discord = identity/community + communication + notifications + immediate coordination.**
 
 Do not duplicate structured website workflows into Discord unless there is a clear reason.
-
-### Visibility behavior
-
-Completed authenticated workflows should usually show a clear completed/status state rather than disappearing entirely.
 
 ### Mobile/tablet
 
 Wolf travels often and uses desktop, phone, and iPad. Admin/member tools must remain practical on smaller screens.
 
+### Development behavior
+
+- Prefer direct GitHub implementation; Wolf usually does not want manual whole-file replacement.
+- Keep progress updates short during multi-step work.
+- GitHub commit success does **not** prove Cloudflare deployment. Do not call a feature live/validated unless production is actually checked or Wolf confirms it.
+- Avoid base64 image workflows unless truly necessary; prefer normal repo assets.
+
+---
+
+## Authentication / authority
+
+Discord OAuth is implemented in `lib/auth.js` and `/api/auth/*`.
+
+Access tiers:
+1. Public
+2. Member
+3. Officer
+4. Site Admin — intentionally Wolf-only
+
+Important rules:
+- `ADMIN_USER_ID` resolves to `site_admin`.
+- `OFFICER_ROLE_IDS` drives Officer access.
+- `MEMBER_ROLE_ID` drives Member access.
+- Authenticated Discord server users without Member role may still have `access:no_access` with `membershipVerified:true` for applicant flows.
+- Sessions use signed `mongrels_session` cookies.
+- UI hiding is never a substitute for server authorization.
+
+Never expose secrets such as:
+- `DISCORD_BOT_TOKEN`
+- `DISCORD_CLIENT_SECRET`
+- `SESSION_SECRET`
+
+Important KV bindings:
+- **`PROJECTS`** — applications, profiles, Discord onboarding, member onboarding, My Pathway preferences/progress, Start Here daily tasks, Engineering campaigns/facts, and related structured state.
+- **`DAILY_ORDERS`** — private Mission Control/BGS strategy/configuration.
+
+Do not create a new KV namespace casually when an existing binding is appropriate.
+
 ---
 
 ## Navigation / information architecture
 
-The site has reached the point where adding more top-level links would make it harder to use. Future growth uses **progressive disclosure** rather than continuing to widen the main menu.
-
-Current public navigation model:
-- **Start Here** — low-overwhelm route for new, returning, or casual Commanders
-- **Activities** — browse Elite by what the player wants to do
-- **Command** — Mission Control, Daily Orders, projects, carrier coordination, squad operations
-- **Resources** — Field Manual, Engineering, Ship Catalogue, reference, glossary, Ask the Mongrels
-- **Community** — About, roster/profiles, gallery, Discord/community links
-- **Join Us** — recruitment
-- Mongrels logo acts as Home
-- authenticated member identity/access remains separate from the public navigation
-
-### Current site-wide navigation system
-
-Primary files:
+Canonical grouped navigation is owned by:
 - `js/site.js`
 - `css/navigation-v2.css`
-- `start/index.html`
-- `activities/index.html`
-- `css/hubs.css`
 
-Current behavior:
-- `js/site.js` is the single source of truth for the grouped menu and replaces the legacy header link list at runtime on pages that expose the normal `[data-nav]` header.
-- It derives the repository/site root from the page's brand/Home link so nested pages can reuse the same menu definition.
-- Desktop uses compact top-level groups with click-open mega panels.
-- Mobile/tablet uses the same semantic groups as stacked accordions inside the menu drawer.
-- Opening one navigation group closes sibling groups; outside-click and Escape dismiss open groups.
-- Compact/mobile drawer resets its own scroll position when opened; expanding a group brings that group heading back into view so long menus do not appear clipped above the viewport.
-- Existing static legacy links remain useful as no-JavaScript fallback markup on older pages.
-- Home exposes Start Here and Activities cards as natural entry points.
-- `/start/` and `/activities/` remain the dedicated information-architecture hubs.
+Public groups:
+- Start Here
+- Activities
+- Command
+- Resources
+- Community
+- Join Us
+- logo = Home
 
-The grouped-navigation direction was approved by Wolf after the initial two-page prototype, and the source has now been rolled out site-wide through `js/site.js`. **Production behavior still needs live desktop/mobile validation after deployment.**
-
-### Authenticated member menu
-
-When `/api/auth/session` reports an authenticated user, the old Member Login chip becomes a compact personal menu containing:
-- **My Pathway**
+Authenticated member menu:
+- My Pathway
 - Member Portal
 - My Profile
 - Sign Out
 
-This keeps personalized/private destinations prominent without adding them to the public top-level menu. Discord display/access names inserted into this control must be HTML-escaped.
+### Compact/mobile focus mode
 
-### Start Here philosophy
+The compact drawer had a persistent issue where opening Activities could appear already scrolled down. The accepted solution is **focus mode**: when one top-level group is open, other top-level links/groups disappear, the active group owns the drawer, the drawer scrolls as a whole, and the active summary remains sticky. Closing the group restores the root list.
 
-`/start/` is not another giant beginner manual. It should answer: **“What is one useful thing I can do next?”**
+Wolf reported this behavior was doing okay after the fix, so treat it as provisionally validated.
 
-Current tracks:
-- New to Elite
-- Know the Basics
-- Experienced Commander
+Legacy cleanup:
+- `js/navigation-v2.js` is now only a compatibility shim; canonical behavior belongs to `js/site.js`.
+- `css/hubs.css` no longer owns the old grouped-nav prototype CSS.
+- `activities/index.html` may still contain an obsolete legacy `navigation-v2.js` reference; removing remaining references is low-priority cleanup after stability is confirmed.
 
-Rules:
-- no rigid progression gates;
-- players can skip anything they already know;
-- challenges should feel useful, not like homework;
-- detailed guides remain available when the player wants depth.
+---
 
-### Start Here — personalized daily tasks
+## Start Here
 
-Start Here also owns the lightweight **“What Should I Do Today?”** system. This is intentionally separate from My Pathway progression:
-- **Start Here daily tasks = give me something to do today.**
-- **My Pathway = help me grow over time.**
+`/start/` answers: **“What is one useful thing I can do next?”** It is intentionally lower-overwhelm than My Pathway.
+
+### Personalized daily tasks
 
 Primary files:
 - `start/index.html`
@@ -125,533 +132,380 @@ API:
 
 Storage:
 - `PROJECTS`
-- daily per-user prefix: `start-daily-v1:` followed by local-date key and Discord owner ID
-- daily state is short-lived and written with a seven-day KV expiration
+- prefix `start-daily-v1:` + local date + Discord owner ID
 
-Behavior:
-- Start Here remains public; personalized task generation requires authenticated Member / Officer / Site Admin access.
-- Selected activity categories and experience come from the member's existing private My Pathway preferences, but daily tasks **never modify Pathway progress**.
-- Curated task pools exist for all current preference activities: PvE, PvP, AX, Surface Operations, Mining, Trade, Carrier Logistics, Engineering, Exploration, Exobiology, BGS, Colonization, Powerplay, and Squad Operations.
-- Tasks are filtered by experience; play style is a preference rather than an absolute blocker when an activity inherently requires other players.
-- Each activity allows a maximum of **three revealed task options per local calendar day**. The limit is enforced server-side, not only in JavaScript.
-- Revealed options remain visible for that day so members can choose among the options they already spent a reveal on.
-- Task kinds are **Activity Task**, **Challenge**, and **Squad Opportunity**.
-- The browser's IANA timezone is used to determine the member's local calendar day; invalid/missing zones fall back to UTC.
-- BGS and Squad Operations can currently inject a live **Squad Opportunity** derived from current Mission Control priority/watch objectives. The task always tells the member to check current Daily Orders/Mission Control before acting so it does not invent faction/method/stop conditions.
-- Future live-opportunity expansion can pull appropriately from carrier coordination, projects, trade/logistics, events, or other authoritative site state.
+Rules:
+- public page, but personalized tasks require Member / Officer / Site Admin.
+- categories come from My Pathway preferences but daily tasks **never change Pathway progress**.
+- task kinds: Activity Task, Challenge, Squad Opportunity.
+- maximum **3 reveals per category per local calendar day**, server-authoritative.
+- all revealed options stay saved for that day and display in a carousel; one at a time with previous/next controls and `N / count`.
+- Wolf validated the daily-task cards/carousel visually.
+- BGS/Squad Operations may inject a live Mission Control opportunity; it always directs the user to authoritative Daily Orders before acting.
 
-The three-reveal limit is deliberate: this is meant to break indecision, not become an infinite reroll machine until the site tells someone exactly what they already wanted to do.
+---
 
-### Activities philosophy
+## My Pathway — core model
 
-`/activities/` organizes information around user intent rather than internal site structure. A player should not need to know whether something technically lives under Guides, Ships, Projects, or Command before finding it.
-
-Current families:
-- Combat — PvE, PvP, AX, Surface Operations
-- Industry & Logistics — Mining, Trade, Carriers, Engineering
-- Exploration & Discovery — Exploration, Exobiology, Expeditions
-- Galaxy & Frontier — BGS, Colonization, Powerplay, current squad tasking
-
-The hub should expose both live material and clearly marked planned gaps without pretending unfinished content exists.
-
-### My Pathway — Pathway v2 / AX live model
-
-**My Pathway** is a personalized lens over the same canonical site content, not a duplicate knowledge base.
-
-Primary files:
+Primary shared files:
 - `pathway/index.html`
-- `js/pathway.js`
 - `css/pathway.css`
+- `js/pathway.js`
 - `functions/api/pathway/preferences.js`
 - `functions/api/pathway/assignments.js`
-- `lib/pathway-ax.js`
 
-APIs:
-- `/api/pathway/preferences`
-- `/api/pathway/assignments`
+Storage:
+- preferences: `pathway-preferences-v1:<ownerId>`
+- progress: `pathway-progress-v1:<ownerId>:<activity>`
+
+Experience values:
+- `new` → Beginner
+- `some` → Developing
+- `comfortable` → Experienced
+- `experienced` → Veteran / Mentor
+
+Do **not** add another global experience band just to give Engineering more room. Engineering gets extra internal campaign layers instead.
+
+Task statuses:
+- Complete
+- Already Know / Have This
+- Skip for Now
+- pending/reopen
+
+Only Complete and Already Know earn progress credit. Skip for Now does not; skipped work resurfaces after untouched pending work is exhausted.
+
+Assignment types:
+- Learn
+- Build
+- Demonstrate
+- Challenge
+- Wing / Team
+- Teach / Mentor
+
+### Lasting Pathway design rule
+
+Beginner assignments should generally **teach through actions before analysis**.
+
+Preferred progression:
+
+> **Do → observe → compare → understand → optimize → lead/teach**
+
+Use one primary concept/capability per early assignment when practical. Avoid turning beginner tasks into multi-variable mini-textbooks. AX is the reference roadmap style: discrete concrete capabilities with visible progression.
+
+---
+
+## Shared full-pathway engine
+
+`functions/api/pathway/assignments.js` hosts the provider registry and shared progress behavior.
+
+Current full pathway providers:
+1. Anti-Xeno — seed `ax-v2`
+2. BGS — seed `bgs-v1`
+3. Mining — seed `mining-v1`
+4. Trade & Hauling — seed `trade-v2`
+5. Carrier Logistics — seed `carrier-logistics-v1`
+6. Engineering & Shipbuilding — seed `engineering-v1`
+
+Each provider keeps independent per-activity progress in `PROJECTS`.
+
+`js/pathway-full-routes.js` removes old generic recommendation cards for activities that now have full route engines.
+
+---
+
+## Anti-Xeno pathway
+
+Reference-standard route families:
+- Scout School — Vulture
+- Interceptor Academy — Chieftain
+- Interceptor Hunter — Basilisk
+- Guardian Systems — AX Specialist
+- Hellhound Development — Hunt, Lead, Teach
+
+Hellhound work includes Medusa, AXCZ/wing work, engagement leadership, helping a less-experienced Mongrel through a first Interceptor without carrying them, build review, Hydra wing contribution, diagnosis, and teach-back.
+
+---
+
+## BGS pathway
+
+Primary route families:
+- Foundations — Read Before You Push
+- Operator — Execute With Precision
+- Strategist — Shape the Board
+- Lead/Mentor — Plan, Calibrate, Teach
+
+Critical doctrine:
+- mission **INF = mission influence reward ticks/pips, not faction influence percentage**.
+- read the whole faction board and issuer/target/destination/reward.
+- bounty vouchers ≠ combat bonds.
+- control ≠ asset ownership.
+- match the lever to the objective.
+- use quantified orders and stop conditions.
+- use post-tick feedback.
+
+Mission Control is member-only and remains authoritative for live squad BGS instructions.
+
+---
+
+## Mining pathway
+
+Route families:
+- Mining Foundations — First Full Loop
+- Efficient Miner — Find Bottleneck
+- Advanced Extraction — Core/Subsurface/Surface
+- Rhino Field Operations
+- Mining Specialist — Scout/Compare/Support
+- Mining Lead — Survey/Coordinate/Teach
+
+Grounded in the Mining Field Manual and Rhino workflow, not a separate duplicated knowledge base.
+
+---
+
+## Trade & Hauling pathway — v2
+
+Trade was rewritten after Wolf identified that early tasks were combining too many concepts.
+
+Current route families:
+- Trade Foundations — Build, Haul, Discover
+- Route Runner — Learn What Makes a Route Good
+- Medium-Pad Specialist — Access Over Raw Capacity
+- Strategic Hauler — Move What the Pack Needs
+- Market Specialist — Verify, Benchmark, Adapt
+- Logistics Lead — Plan, Coordinate, Teach
+
+Beginner progression intentionally starts with a simple hauler, a cheap low-margin haul, finding/buying/selling Silver, comparing payouts, an outpost trade, choosing another commodity, then completing a profitable trade without instructions.
+
+Trade seed is `trade-v2`. Materially rewritten beginner/developing task IDs use `-v2` so stale completions do not falsely credit new lessons.
+
+Trade participates in carrier load/unload work, but **carrier ownership, movement, tritium, jump planning, staging, and carrier-operation leadership belong to Carrier Logistics**.
+
+---
+
+## Carrier Logistics pathway
+
+Route families:
+- Carrier Foundations — Join the Operation
+- Carrier Crew — Load, Move, Unload
+- Cargo Coordinator — Stage, Measure, Control
+- Movement Planner — Jumps, Tritium, Timing
+- Carrier Logistics Lead — Plan, Recover, Teach
+
+Carrier ownership is not required. Skills that can be demonstrated alongside another Mongrel carrier owner should not be gated by wealth/ownership.
+
+---
+
+## Engineering & Shipbuilding pathway
+
+Full route families:
+- Engineering Foundations — Improve One Ship
+- Engineer Network — Unlock, Gather, Pin
+- Role Builder — Make the Whole Ship Agree
+- Combat Systems — Weapons, Defense, Core Tradeoffs
+- Ship Architect — Diagnose, Test, Refine
+- Engineering Mentor — Review, Explain, Teach
+
+### Engineering pacing rule
+
+Engineering is unusually grind-heavy and dangerous for new-player retention. Never hide a multi-hour or multi-day prerequisite chain inside one innocent-looking assignment.
+
+Large goals should be decomposed into small milestones with frequent stopping points and visible payoff. Partial improvement is valid; G5 is not the only meaningful definition of success.
+
+### Engineering Campaign Planner
+
+Framework files:
+- `lib/engineering-campaign.js`
+- `lib/engineering-campaign-data.js`
+- `functions/api/pathway/engineering-campaign.js`
 
 Storage:
 - `PROJECTS`
-- per-user preferences prefix: `pathway-preferences-v1:`
-- per-user persistent assignment progress prefix: `pathway-progress-v1:`
+- prefix `engineering-campaign-v1:<ownerId>`
 
-Privacy/authority:
-- Member / Officer / Site Admin only.
-- Each member may read/write only their own pathway preferences/progress.
-- Preferences are intentionally separate from the roster/profile record even though both are linked by Discord user ID. Public/member-directory identity and private development confidence/goals are different concerns.
+Model:
+1. **Goal** — what the Commander wants to improve.
+2. **Current/shared facts** — engineer access, cumulative prerequisites, etc.
+3. **Dependency plan** — data-driven chain between current state and next useful stopping point.
+4. **Next Engineering assignment** — one manageable step.
+5. **Background Prep** — optional Engineering progress that another pathway can expose without hijacking that pathway.
 
-Current pathway inputs:
-- activities/interests the Commander enjoys;
-- areas they want to improve;
-- experience per selected activity stored as `new`, `some`, `comfortable`, `experienced`;
-- visible experience-band labels are **Beginner**, **Developing**, **Experienced**, **Veteran / Mentor**;
-- preferred play style: solo, group, or either;
-- optional current personal goal.
+Campaign history can be paused/reused. Shared facts live separately from a single campaign so prior work can satisfy future goals. Facts keep provenance (`manual` today; future trusted import/sync can use server-owned provenance without replacing the model).
 
-Current behavior:
-- deterministic recommendation preview generated from selections;
-- “want to improve” receives priority emphasis;
-- related canonical site content is linked rather than duplicated;
-- no content is locked;
-- members can change preferences whenever interests or confidence change;
-- full pathways can store per-task **Complete**, **Already Know / Have This**, **Skip for Now**, and reopen state;
-- only **Complete** and **Already Know / Have This** earn progress-bar/qualification credit;
-- **Skip for Now** defers an assignment without giving credit; untouched pending work is shown first, then skipped tasks resurface after other pending work is exhausted, so a route cannot be “completed” by skipping everything;
-- assignment types are **Learn**, **Build**, **Demonstrate**, **Challenge**, **Wing / Team**, and **Teach / Mentor**;
-- experience changes the nature of work, not merely difficulty: beginners acquire capability, developing pilots practice, experienced pilots demonstrate breadth/mastery, veterans receive advanced challenges plus leadership/teaching work.
+Current goal catalog includes shields, jump range, mobility, distributor, power/thermal, weapons, and whole-ship role build.
 
-Pathway philosophy:
-- deterministic structured progression, not opaque AI-generated progression;
-- assignments should usually state **what to accomplish**, not spell out every prerequisite or click-by-click step;
-- hidden research is intentional learning: e.g. being told to fit/acquire a module may require the Commander to learn where it comes from and how it works;
-- Ask the Mongrels is the safety net when a Commander gets stuck, but should not secretly own progression state;
-- never lock the rest of the site or force experienced Commanders through beginner tasks;
-- **Already Know / Have This** exists specifically so qualified pilots can bypass material they already mastered;
-- veteran progression should include mastery, wing responsibility, leadership, diagnosis, and teaching — not just accumulating more modules or kills;
-- future pathways should mix personal development goals with relevant live squad opportunities when useful.
+### Cumulative prerequisite tracking
 
-AX is the first complete Pathway model. Current AX route families include:
-- **Scout School — Vulture** — beginner Scout entry route;
-- **Interceptor Academy — Chieftain** — beginner/developing engineering, Guardian, flight, and first-Cyclops route;
-- **Interceptor Hunter — Basilisk** — repeatable Cyclops competence, Basilisk knowledge, swarm technique, Basilisk kill, wing combat;
-- **Guardian Systems — AX Specialist** — independent Guardian fieldwork, alternate Guardian weapon/build knowledge, anti-Guardian planning, adaptive combat;
-- **Hellhound Development — Hunt, Lead, Teach** — veteran challenges including Medusa, wing AXCZ work, wing leadership, helping a Mongrel through a first Interceptor, build review, Hydra wing contribution, and teach-back. Completing this route does **not** automatically grant a squad rank/role.
+Requirements such as “trade at 50 markets” are numeric facts, not binary Complete buttons.
 
-Current AX route selection is experience-appropriate; veteran selections no longer route members through the beginner Scout curriculum by default. Existing route/task IDs were preserved where possible so stored progress survives Pathway v2.
+Current tracked counters include:
+- `trade.markets-visited-distinct`
+- `trade.black-markets-used-distinct`
 
-**Next full pathway candidate: BGS.** The intent is to prove the same engine works for a strategic/squad-operations activity after AX proves the multi-experience model in combat.
+API supports:
+- adding actual progress (`+3`, not pretending a suggested 5 was completed);
+- correcting the cumulative total;
+- provenance that leaves room for future sync/import.
+
+Manual precise tracking is the practical v1. Frontier/telemetry automation may be investigated later, but the campaign must remain useful without it.
 
 ---
 
-## Authentication / authority
+## First Engineering Win — default gentle onboarding
 
-Authentication is Discord OAuth in `lib/auth.js` and `/api/auth/*`.
+First Engineering Win is an optional automatic onboarding layer designed to open the door to Engineering even if a new member never selects Engineering as a Pathway interest.
 
-OAuth scopes:
-- `identify`
-- `guilds.members.read`
+Purpose:
+- reduce apprehension around Engineering;
+- deliver one obvious quality-of-life improvement that nearly every play style benefits from;
+- teach that partial engineering is useful;
+- create curiosity rather than force a grind.
 
-Access tiers:
-1. Public
-2. Member
-3. Officer
-4. Site Admin — intentionally Wolf-only
+Default goal:
+- take an FSD to **G2 Increased Range**;
+- add the appropriate range-focused experimental (normally Mass Manager; small-drive edge cases can differ deliberately);
+- replot a familiar trip and feel the travel improvement.
 
-Important behavior:
-- `ADMIN_USER_ID` resolves to `site_admin`.
-- `OFFICER_ROLE_IDS` drives Officer access.
-- `MEMBER_ROLE_ID` drives Member access.
-- Discord server members without Member role may still authenticate with `access: no_access` and `membershipVerified: true`; this is required for Applicants.
-- Sessions are signed server-side in `mongrels_session`.
-- UI hiding is never a substitute for server-side authorization.
+Implementation:
+- `lib/engineering-campaign-data.js` defines the audited starter sequence.
+- `/api/pathway/engineering-campaign` returns `firstEngineeringWin` state.
+- `js/first-engineering-win.js` renders the Start Here card.
+- `css/first-engineering-win.css` styles it.
+- `start/index.html` hosts it.
 
----
+UX:
+- signed-in members see **one current step at a time**, not the full chain.
+- progress meter shows overall progress.
+- `Done / Already Did This` advances one step.
+- **Undo Previous Step** reopens only the most recently completed step; this is available during normal progression and immediately after the final completion screen.
+- `Hide this starter` dismisses the optional onboarding.
+- once completed or dismissed, it stops nagging the member.
 
-## Secrets / environment / storage
+Current sequence is deliberately many small cards (~17) rather than a few hidden-grind tasks. It covers choosing a ship, baseline, Scout check/earn-if-needed, current Meta-Alloy sourcing, one Meta-Alloy, G1→G2 material planning, targeted gathering, Deciat safety, Felicity unlock/reputation, G1, complete G2 stopping point, experimental planning/materials, experimental, and payoff test.
 
-Never commit or paste secret values:
-- `DISCORD_BOT_TOKEN`
-- `DISCORD_CLIENT_SECRET`
-- `SESSION_SECRET`
+### Felicity / Deciat safety
 
-Important environment values include:
-- `CLIENT_ID`
-- `REDIRECT_URI`
-- `GUILD_ID`
-- `MEMBER_ROLE_ID`
-- `OFFICER_ROLE_IDS`
-- `ADMIN_USER_ID`
-- `DISCORD_PUBLIC_KEY`
-- `APPLICANT_ROLE_ID`
-- `GUEST_ROLE_ID`
-- `WELCOME_CHANNEL_ID`
-- `RECRUITMENT_CHANNEL_ID`
+Felicity Farseer path currently assumes:
+- Exploration rank Scout or higher to meet her;
+- 1 Meta-Alloy to unlock;
+- Increased Range FSD capability through the needed grades.
 
-Important KV bindings:
-- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences/progress, Start Here daily-task reveal state, and other structured project data.
-- **`DAILY_ORDERS`** — private Mission Control/BGS strategy and related configuration.
+Before the Meta-Alloy delivery, the starter has a dedicated **Prepare for Deciat** safety step. Deciat is treated as a known Open-player traffic/ganking hotspot because Felicity attracts newer Commanders carrying unlock cargo.
 
-Do not create a new KV namespace casually when an existing binding is appropriate.
+The safety step covers:
+- rebuy;
+- selling exploration data the Commander does not want to risk;
+- high wake vs low wake;
+- preselecting an escape system;
+- avoiding unnecessary lingering with Meta-Alloy aboard;
+- explicitly asking a Mongrel for escort/experienced wingmate if desired.
 
----
+This is a small survival-awareness lesson, not full PvP training.
 
-## Discord recruitment integration
+Meta-Alloy source guidance uses current market data rather than blindly hard-coding Maia; Darnielle’s Progress is the traditional reference but supply should be checked.
 
-Use the existing Discord app/bot **Imperial Mongrels Website**. Do not add another general-purpose bot just to duplicate site functionality.
-
-Safe/public Discord identifiers:
-- Application public key: `4d86ba25b2e8457730d568864182cbdf9b7057bd174b6201698f650ac5206064`
-- Applicant role: `1012130660187656233`
-- Guest role: `1017264444553838622`
-- Welcome channel: `1012755466700460163`
-- Recruitment review channel / **The High Council**: `1426641891381739612`
-
-Bot permission principle: minimum required permissions only. No Administrator.
-
-Current role needs:
-- Manage Roles
-- bot role above **Member**, **Applicant**, and **Guest** for roles it must add/remove
-- View Channel / Send Messages / Embed Links in channels it posts to
-
-Discord Interactions endpoint:
-- `/api/discord/interactions`
-
-### Applicant/Guest onboarding
-
-Applicant button:
-1. adds Applicant
-2. removes Guest
-3. sends ephemeral confirmation
-4. sends one-time Applicant DM
-
-Guest button:
-1. adds Guest
-2. removes Applicant
-
-Custom IDs:
-- `mongrels_onboarding_applicant`
-- `mongrels_onboarding_guest`
-
-Applicant DM state prefix:
-- `discord-applicant-welcome-v1:`
-
-Wolf has a deliberate Site Admin testing bypass in `isEstablishedMember()` so he can test Applicant/Guest buttons despite being an established member.
+The G1/G2 plan uses current blueprint recipes and acknowledges deterministic engineering rolls since the 2024 rebalance while allowing engineer reputation to affect number of rolls. Mass Manager is deliberately a separate mini-project after the G2 stopping point.
 
 ---
 
-## Recruitment requirements
+## Specialty / scenario pathways — future layer
 
-Joining requires **both**:
-1. the Mongrels website application; and
-2. an in-game Elite Dangerous Squadron application to **Regiment of Imperial Mongrels [R1MM]**.
+Specialty pathways intentionally combine several core competencies around a scenario instead of replacing core activity pathways.
 
-Beginner-facing in-game guidance currently uses:
-- Right-hand Panel / Internal Panel
-- Squadrons
-- search **Mongrels**
-- select **Regiment of Imperial Mongrels [R1MM]**
-- Apply
+### Community Goal Hauler Prep — queued
 
-Important post-overhaul behavior: after leadership accepts the in-game application, the applicant must return to Squadrons and **confirm the acceptance / choose Join Squadron** before in-game membership is complete.
+First planned cross-discipline scenario pathway.
 
-The website cannot accept that Elite Squadron application itself.
+Concept:
+- start with the player’s **existing cargo ship**, not a required meta hull;
+- balance cargo, speed, shields/hull, utilities, power, engineering, and survival;
+- teach the hauler’s win condition: **survive and deliver**, not kill the attacker;
+- practice interdiction/escape decisions, pip/boost discipline, high wake vs low wake;
+- use controlled mock hostile deliveries with Mongrel PvPers;
+- include Mongrel escort request/rendezvous/comms/contingency planning;
+- capstone can be a real Community Goal or simulated hostile logistics operation.
 
----
-
-## Recruitment application system
-
-Primary files:
-- `apply/index.html`
-- `js/application.js`
-- `css/application.css`
-- `applications/index.html`
-- `js/applications-admin.js`
-- `functions/api/applications/index.js`
-- `lib/discord-recruitment.js`
-
-Storage:
-- `PROJECTS`
-- key `applications-v1`
-
-Statuses:
-- `draft`
-- `submitted`
-- `under_review`
-- `accepted`
-- `declined`
-
-### Applicant rules
-
-- One current application record per Discord owner ID.
-- Drafts are editable/saveable.
-- Website submission requires the applicant to acknowledge that the in-game Squadron application has also been submitted.
-- Submitted applications lock applicant editing.
-- Drafts are not shown in the officer queue.
-- Full members/officers/site admin cannot submit another normal application; they get a member/preview state.
-- Tone stays low-pressure: this is a squad application, not a job interview.
-
-### Officer review / state safety
-
-- Officers/Site Admin review submitted/non-draft applications.
-- Private Officer Notes remain leadership-only.
-- Applicant-facing decline text is separate from private notes.
-- In-game Squadron application verification is explicitly tracked by leadership.
-- Normally an application should not be approved until the matching in-game application is verified; an explicit exception path exists and is audited.
-- **Accepted is terminal** in the normal review workflow.
-- **Declined is terminal** unless leadership explicitly chooses **Allow Reapplication**.
-- Normal review cannot casually move Accepted/Declined applications backward into Under Review.
-
-### Acceptance behavior
-
-On first transition to Accepted:
-1. assign `MEMBER_ROLE_ID` in Discord
-2. remove Applicant and Guest best-effort
-3. only then mark the website application Accepted
-4. record approver/time
-5. send one-time acceptance DM
-6. DM reminds applicant to re-authenticate for website access
-7. DM reminds applicant of the final in-game **Join Squadron / Confirm** step
-
-If Discord Member role assignment fails, the application must **not** be marked Accepted.
-
-Acceptance DM state prefix:
-- `discord-recruitment-acceptance-dm-v1:`
-
-### Decline behavior
-
-On Decline:
-- website decision is saved even if Discord DM fails;
-- applicant sees a leadership message on `/apply/`;
-- a one-time Discord decline DM is attempted;
-- private officer notes are not exposed to the applicant.
-
-Decline DM state prefix:
-- `discord-recruitment-decline-dm-v1:`
-
-### Reapplication behavior
-
-**Allow Reapplication** is only available from a Declined application.
-
-When used:
-- the declined cycle is archived into officer-visible decision history;
-- a new application ID/cycle is created as Draft;
-- previous answers are prefilled;
-- in-game application acknowledgement/verification is reset;
-- applicant can edit and resubmit;
-- a Discord DM with **Continue Application** is attempted;
-- the new ID allows normal submission-alert idempotency to work again.
-
-Reapplication DM state prefix:
-- `discord-recruitment-reapplication-dm-v1:`
+Likely prerequisites/signals: Trade plus some Engineering knowledge. PvP experience should help but should not be mandatory.
 
 ---
 
-## Recruitment notifications
+## Other likely future core pathways
 
-New submission alerts go to **The High Council** through `lib/discord-recruitment.js`.
+Still likely candidates:
+- Exploration
+- Exobiology
+- PvE Combat
+- PvP
+- Surface Operations
+- Colonization
+- Squadron Operations
+- Powerplay when doctrine is mature enough
 
-A valid application save/submission is authoritative; Discord notification failure must not invalidate it.
-
-Submission alert idempotency prefix:
-- `discord-recruitment-alert-v1:`
-
----
-
-## New-member onboarding
-
-Newly accepted members who came through the current application workflow receive a temporary checklist on `/member/` after they activate Member access.
-
-API:
-- `/api/member/onboarding`
-- file: `functions/api/member/onboarding.js`
-
-Checklist:
-- Website Member access active — automatic
-- Confirm final in-game Squadron acceptance / Join Squadron — member checkbox
-- Create Member Profile — automatic based on `profiles-v1`
-- Review current Daily Orders — member checkbox
-
-When all items are complete, the member can dismiss the checklist.
-
-State prefix:
-- `member-onboarding-v1:`
-
-Longtime members without a current Accepted application/accepted timestamp should not suddenly receive this checklist.
+Do not automatically build all of these. Inspect current authoritative site content first and continue applying the action-first philosophy.
 
 ---
 
-## Site Admin Lab
+## Recruitment / Discord integration
 
-Wolf-only launch point:
-- `/discord-onboarding/`
+Use the existing Discord app/bot **Imperial Mongrels Website** rather than adding another general-purpose bot.
 
-Member Portal exposes **Site Admin Lab** only for `site_admin`; APIs still enforce Site Admin server-side.
+Recruitment requires both:
+1. Mongrels website application; and
+2. Elite Dangerous Squadron application to **Regiment of Imperial Mongrels [R1MM]**.
 
-Current controls include:
-- Discord integration/config status
-- publish replacement Applicant/Guest selector
-- test The High Council recruitment alert
-- **Send Test Acceptance DM to Me**
+The website cannot accept the in-game application itself. After leadership accepts it in Elite, the applicant must return to Squadrons and confirm/join.
 
-The acceptance-DM test must not:
-- assign/remove roles;
-- alter an application;
-- write the production one-time acceptance-DM state.
+Application statuses:
+- draft
+- submitted
+- under_review
+- accepted
+- declined
 
-Use this page as the preferred home for future safe diagnostics/test buttons.
+Important safety:
+- Accepted/Declined are terminal in normal review.
+- Reapplication is an explicit action from Declined.
+- Member Discord role assignment must succeed before the website marks an application Accepted.
+- private officer notes never become applicant-facing decline text.
 
----
-
-## Member Portal / profiles
-
-`/member/` is the primary authenticated dashboard.
-
-Major private areas include:
-- My Pathway via the authenticated member menu
-- Daily Orders
-- Projects & Events
-- Carrier Coordination
-- Trader's Outpost
-- Squadron Roster / Profiles
-- PvP tools
-- Officer Tools
-- Site Admin Lab / Assistant Knowledge Gaps for Site Admin
-
-Profiles use `PROJECTS` key:
-- `profiles-v1`
-
-Member profile creation is part of new-member onboarding.
-
-Roster/profile data and My Pathway preferences deliberately remain separate records linked by Discord owner ID: the roster is squad-facing identity; pathway experience/goals are private personalization state.
+New accepted members may receive `/member/` onboarding. Site Admin Lab lives at `/discord-onboarding/` and is Wolf-only.
 
 ---
 
 ## Mission Control / BGS conventions
 
-Mission Control is member-only with live/refreshable system/faction data and private officer strategy.
+Mission Control is member-only with refreshable faction/system data and private strategy.
 
-Operational guidance should be concrete and quantified where possible: bounty-credit targets, mission INF targets, factions to support/avoid, and stop conditions.
+Operational guidance should be quantified where possible: bounty-credit targets, mission INF targets, faction support/avoid, and stop conditions.
 
-**INF** means mission Influence reward ticks/pips, not faction influence percentage points.
+**INF means mission Influence reward ticks/pips, not faction influence percentage points.**
 
-Before changing BGS thresholds/defaults, inspect current code and strategy migration/version logic. Do not rely on old chat values.
-
-Known deferred BGS item: a previously discussed retreat-warning default change may still need implementation; inspect current code before acting.
-
----
-
-## Other major modules
-
-- Home
-- Start Here
-- Activities
-- My Pathway
-- About / Rules
-- Mission Control / Operations
-- Projects & Events
-- Recruitment
-- Recruitment Applications
-- Member Portal
-- Squadron Roster / Profiles
-- CARRIERS
-- Trader's Outpost
-- Ship Catalogue
-- PvP / Bounty Board
-- Gallery
-- Guides / Field Manual / Mining Manual
-- Ask the Mongrels
-- Assistant Knowledge Gaps
-- Site Admin Lab
-
-Do not assume a feature is unfinished because it is not described here. Search the repo first.
+Before changing BGS thresholds/defaults, inspect current code and migration/version logic. Do not rely on old remembered values.
 
 ---
 
 ## Ask the Mongrels
 
-The site includes an AI assistant with modular knowledge and knowledge-gap logging.
+The assistant uses curated site/squad knowledge and can provide stable general Elite knowledge when appropriate. It currently does not own Pathway progression state.
 
-Principles:
-- prefer curated squad/site knowledge and current structured context;
-- keep public/member boundaries intact;
-- only provide member-only Mission Control context after authentication;
-- use knowledge gaps to improve content instead of inventing answers;
-- prefer modular additions over one giant prompt/knowledge file.
+Pathway should tell the Commander what to accomplish without explaining every hidden prerequisite; Ask the Mongrels is the help layer when they get stuck.
 
-For My Pathway, the assistant may explain recommendations or help a Commander understand a goal, but deterministic structured pathway data should remain authoritative for progression state. Pathway assignments intentionally leave some acquisition/prerequisite research to the Commander, so the Assistant serves as a help layer when a member gets stuck rather than replacing the learning process.
-
----
-
-## Squad rules that affect site content
-
-- Open Play is the squad standard.
-- Mongrel BGS activity must be performed in Open.
-- Teamwork matters.
-- Respectful conduct/fair play is expected.
-- Combat logging is prohibited.
-- Solo/Private Group is for limited exceptions, not avoiding player opposition during squad BGS work.
-
-Do not silently weaken these expectations in recruitment copy.
-
----
-
-## Development workflow
-
-Before editing:
-1. Read this file in a new chat/context.
-2. Inspect current repo implementation.
-3. Fetch every existing file to obtain the **current SHA**.
-4. Treat current code as source of truth.
-5. Check for existing implementation before adding duplicate functionality.
-
-While editing:
-- Prefer direct GitHub implementation; Wolf usually does not want manual whole-file replacement.
-- Keep changes scoped.
-- Preserve auth boundaries.
-- Privileged actions require server-side checks.
-- Reuse established helpers/patterns.
-- Keep phone/iPad layouts in mind.
-- Give short progress updates during multi-step work.
-
-After editing:
-- GitHub commit success does **not** prove Cloudflare production deployment.
-- Do not claim live verification unless actually checked or Wolf confirms it.
-- Test the narrowest safe operation first.
-
----
-
-## Image/media workflow
-
-Avoid base64 image embedding as a normal workflow. It has been slow and fragile for this project.
-
-Prefer normal repository image files, efficient formats, GitHub/file workflows, and ZIP/batch workflows for many images.
-
----
-
-## Known limitations / hardening
-
-- Applicant welcome DM is one-time state-based and does not currently suppress itself based on application status.
-- Discord interaction verification uses Ed25519 and has been proven by successful live button tests.
-- KV idempotency is practical but not fully transactional under simultaneous races.
-- Acceptance/decline/reapplication Discord messages are best-effort after the authoritative website decision where appropriate.
-- Legacy MEE6/Appy pieces may remain installed until the replacement flow proves itself with real users.
-- Moderated Gallery and Ship Build submission/approval workflows remain deferred.
-- Site-wide grouped navigation has been implemented through `js/site.js` but still needs post-deploy browser validation across representative desktop/mobile pages.
-- Some early hub markup still contains its original prototype navigation/helper; `js/site.js` now owns the canonical site-wide navigation and the old helper can be cleaned up after validation.
-- My Pathway now has persistent AX task state and multi-experience AX routes. Pathway-specific live squad-opportunity merging is not built yet, and non-AX activities still use recommendation previews until their full route libraries are added.
-- Start Here daily tasks currently have live Mission Control injection for BGS/Squad Operations only; broader live project/carrier/trade/event injection is a future expansion.
+High-value future improvement: include the member’s current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
 
 ---
 
 ## Validation status
 
-Confirmed live before the latest hardening/navigation passes:
-- custom Applicant/Guest Discord buttons work;
-- Applicant ↔ Guest switching works;
-- Applicant one-time DM works;
-- Discord Interactions endpoint works;
-- The High Council test alert works;
-- application submission alerts are wired;
-- Site Admin Lab is accessible to Wolf.
+Validated/accepted by Wolf:
+- original AX beginner routes were useful;
+- Start Here random-task cards/carousel look good;
+- compact navigation focus-mode fix was doing okay after the final change.
 
-Wolf approved the **direction** of the Start Here / Activities / grouped-navigation prototype and asked to continue. This is not the same as a full live cross-device validation of the site-wide rollout.
+Implemented but **do not call production-validated unless Wolf confirms or live checks succeed**:
+- Trade v2 route rewrite;
+- Carrier Logistics full pathway;
+- Engineering & Shipbuilding full pathway;
+- Engineering Campaign Planner framework;
+- numeric Engineering prerequisite-counter API;
+- First Engineering Win audited sequence and Start Here surface;
+- First Engineering Win **Undo Previous Step** behavior;
+- assorted latest recruitment/onboarding hardening described by current code.
 
-The original two AX beginner routes were tested by Wolf and reported to work well before the Pathway v2 expansion.
-
-**Implemented but still awaiting live end-to-end validation after deployment:**
-- automatic Member-role provisioning on approval;
-- acceptance DM production path;
-- in-game application verification gate;
-- Accepted/Declined terminal state rules;
-- decline DM/applicant message;
-- reapplication archive + reopen + DM;
-- new-member onboarding checklist;
-- Start Here personalized daily-task engine and three-reveal server-side daily limit;
-- Activities hub;
-- site-wide grouped desktop/mobile navigation through `js/site.js` including latest drawer scroll/spacing QoL fixes;
-- authenticated member dropdown with My Pathway / Member Portal / My Profile;
-- Pathway v2 experience-band labels and assignment-type UI;
-- Pathway skip semantics where Skip for Now defers without progress credit;
-- expanded AX routes for Basilisk, Guardian specialization, and Hellhound/veteran development.
-
-Do not label these latest items “validated” until Wolf tests them or a real applicant/member completes the relevant flow.
+Production deployment can lag GitHub commits. Always distinguish “committed” from “confirmed live.”
