@@ -57,17 +57,19 @@ The lightweight Node smoke suite runs on pull requests and normal pushes to `mai
 
 Current checks include:
 - all six full Pathway route catalogs import, remain non-empty, have unique route/task IDs, and retain required task fields;
+- **cross-path Engineering Prep mappings point only to real current Trade/Mining task IDs and real tracked Engineering counters;**
+- Trade prep still maps relevant market activity to `trade.markets-visited-distinct`, and Mining prep maps relevant mining activity to `mining.ore-mined-total-tonnes`;
 - Engineering campaign fact-completed dependency propagation works;
 - Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
 - **Improve Jump Range reuses permanent Felicity/Scout/G2 access recorded by First Engineering Win and preserves its deliberate stopping points;**
 - **Improve Speed & Mobility reuses the same Felicity access/reputation and preserves G2 / experimental stopping points;**
 - **Community Goal Hauler Prep retains 14 unique steps, credits only Complete/Already Know, revisits skipped work after untouched pending work, and preserves the survive-and-deliver doctrine;**
-- the personalized Assistant/Pathway context selector can read current Engineering assignments/campaign steps and the query-selected CG Hauler specialty task without activating on unrelated navigation questions;
+- the personalized Assistant/Pathway context selector can read current Engineering assignments/campaign steps, the query-selected CG Hauler specialty task, and optional Engineering Prep attached to a current Trade assignment without activating on unrelated navigation questions;
 - critical Pathway/Assistant Cloudflare Function modules import cleanly, including the CG Hauler specialty API;
 - critical APIs still contain their shared `headers()` / `reply()` response helpers;
-- high-value entry pages, Engineering assets, and CG Hauler specialty assets remain present/wired.
+- high-value entry pages, Engineering assets, CG Hauler specialty assets, and the shared cross-path Engineering Prep helper remain present/wired.
 
-This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed**. After Improve Speed & Mobility was added, smoke-test run **#20 passed**. After Community Goal Hauler Prep was fully wired, smoke-test run **#28 passed**. Preserve and extend this suite when new shared platform behavior is added.
+This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed**. After Improve Speed & Mobility was added, smoke-test run **#20 passed**. After Community Goal Hauler Prep was fully wired, smoke-test run **#28 passed**. After cross-path Engineering Prep was added, smoke-test run **#40 passed** with Trade/Mining mapping, Assistant-context, API-import, and page-wiring checks. Preserve and extend this suite when new shared platform behavior is added.
 
 ---
 
@@ -215,11 +217,13 @@ Pathway context is selected for natural phrases such as:
 - “What is my current Engineering step?”
 - “Why am I doing this step?”
 - references to the Campaign Planner, Improve Shields, Improve Jump Range, Improve Speed & Mobility / Thrusters, Engineering Prep, or a specific full Pathway assignment;
-- **CG Hauler / Community Goal Hauler Prep / hostile hauling / hostile delivery / interdiction or escape drill** wording.
+- **CG Hauler / Community Goal Hauler Prep / hostile hauling / hostile delivery / interdiction or escape drill** wording;
+- cross-path questions such as **“Does my current Trade task help Engineering?”** or **“Does this Mining task give me Engineering prep?”**
 
 When selected, `modules.pathway` can include:
 - saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
 - concise current assignment state for relevant full Pathways: route, progress, and the current pending/skipped task with objective/checklist/resource;
+- any **optional Engineering Prep overlap attached to that current Trade/Mining assignment**, including the shared fact, target, unit, explanation, and Engineer reference;
 - active Engineering Campaign Planner state: goal, ship, target notes, progress, next campaign step, useful resources/counter progress, and whether a legitimate stopping point has been reached;
 - **query-selected Community Goal Hauler Prep specialty state**: doctrine, progress, and current task/checklist.
 
@@ -227,12 +231,13 @@ Rules:
 - only read the signed-in member's own state from `PROJECTS`;
 - My Pathway / Campaign Planner / specialty UI remain authoritative for saved progress and completion;
 - the assistant may explain a task and help execute it, but may **never** mark it complete or imply completion was recorded;
+- cross-path prep is explanatory/read-only in the Assistant; the member records actual progress through the relevant UI/Prep Tracker;
 - CG Hauler specialty state is loaded only for clearly relevant wording, not ordinary Trade questions;
 - when “my task” is genuinely ambiguous across several current full-Pathway assignments, identify the likely choices rather than silently choosing one;
 - preserve query selectivity to protect prompt size/monthly AI usage;
 - controlled Related buttons prioritize **My Pathway** and, for Engineering campaign questions, **Engineering Guide**.
 
-The smoke suite covers the intent gate and representative in-memory Engineering and CG Hauler specialty lookups. Production behavior still requires member testing after deployment.
+The smoke suite covers the intent gate and representative in-memory Engineering, CG Hauler specialty, and current-task cross-path prep lookups. Production behavior still requires member testing after deployment.
 
 ---
 
@@ -580,10 +585,12 @@ The step-history correction UI intentionally does not offer **Undo Mark** agains
 Current tracked numeric facts:
 - `trade.markets-visited-distinct`
 - `trade.black-markets-used-distinct`
+- `mining.ore-mined-total-tonnes`
 
 Current visible prep milestones:
-- 50 distinct commodity markets for Lei Cheung preparation
-- 5 distinct black markets for The Dweller preparation
+- 50 distinct commodity markets for Lei Cheung preparation;
+- 5 distinct black markets for The Dweller preparation;
+- 500 tonnes of ore mined for Selene Jean's meeting requirement. This **does not** imply Selene is fully unlocked; her separate unlock delivery remains separate.
 
 UI is a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering. Each counter shows status/progress; **Update Progress** expands all manual write controls:
 - quick adds
@@ -592,7 +599,31 @@ UI is a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering
 
 Exact add records only what the Commander actually did; Correct Total replaces the cumulative number.
 
-Cross-path rule: optional Engineering Prep may accelerate Engineering but must never award/block completion in Trade, Mining, etc.
+### Cross-path Engineering Prep
+
+Primary files:
+- `lib/pathway-engineering-prep.js` — maps real current Pathway task IDs to optional Engineering prep opportunities;
+- `lib/pathway-engineering-prep-facts.js` — additional reusable fact definitions, currently Selene's mined-tonnage counter;
+- `js/pathway-engineering-prep.js` — shared compact UI/recording helper used by Trade and Mining;
+- `functions/api/pathway/assignments.js` — attaches `engineeringPrep` metadata to returned tasks;
+- `functions/api/pathway/engineering-campaign.js` — stores/exposes the shared counters in the existing Engineering campaign state.
+
+Current behavior:
+- relevant **Trade** assignments can optionally record genuinely new distinct commodity markets toward `trade.markets-visited-distinct` / Lei Cheung;
+- relevant **Mining** assignments can optionally record actual ore mined toward `mining.ore-mined-total-tonnes` / Selene Jean's 500-tonne meeting requirement;
+- The Dweller's black-market counter remains available in the Engineering Prep Tracker, but normal Trade tasks do **not** pretend to advance it unless the Commander genuinely used a distinct black market. Add a cross-path mapping only when a real task explicitly performs that activity.
+
+Critical rules:
+- **Never auto-infer or auto-award a unique market, black market, mined tonnage, or similar prerequisite from ordinary task completion.** The Commander explicitly records what actually happened.
+- The optional prep disclosure is visually secondary and says it does not affect the activity assignment.
+- Recording Engineering prep does **not** complete, score, block, or modify the Trade/Mining assignment.
+- Completing/reopening/resetting/changing a Trade or Mining route does not erase the shared Engineering fact total; those facts live in the Engineering campaign state.
+- Duplicate markets must not be counted twice. The UI asks for only genuinely new distinct markets.
+- Mining tonnage should reflect ore actually mined. If exact mined tonnage was not tracked, cargo sold can be used as a conservative lower bound rather than inventing a larger number.
+- The shared browser helper dispatches `mongrels:engineering-campaign-updated`, so the Engineering Prep Tracker/Campaign Planner can refresh after cross-path recording.
+- Ask the Mongrels may explain that the member's **current** Trade/Mining assignment offers optional prep, but remains read-only and does not record it.
+
+Cross-path prep is intentionally expandable. Future mappings can cover combat, exploration, material gathering, or other Engineers only after the underlying Pathway action genuinely proves that prerequisite.
 
 ---
 
@@ -736,13 +767,14 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win Undo Previous Step on phone;
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
 - initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
-- automated GitHub Actions smoke suite; **run #28 passes with all three Engineering campaigns plus Community Goal Hauler Prep specialty/Assistant coverage**.
+- automated GitHub Actions smoke suite; **run #40 passes with all three Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage**.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
+- cross-path **Engineering Prep** on relevant Trade and Mining assignments, including explicit user-confirmed progress recording, Lei market-count reuse, Selene mined-tonnage tracking, Prep Tracker integration, and Assistant awareness;
 - second audited **Improve Jump Range** Engineering campaign, including campaign selector UI, First Engineering Win access reuse, G2/experimental/G3 stopping points, and Assistant awareness;
 - third audited **Improve Speed & Mobility** Engineering campaign, including Felicity reuse, blueprint/experimental tradeoff guidance, G2/experimental/G3 stopping points, and Assistant awareness;
 - first specialty **Community Goal Hauler Prep** inside Trade & Hauling, including its 14-step progression, independent persistence, responsive UI, and query-selective Assistant awareness;
-- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign/specialty context;
+- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign/specialty/cross-path prep context;
 - full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
 - full end-to-end **Improve Jump Range** behavior through actual in-game progression;
 - full end-to-end **Improve Speed & Mobility** behavior through actual in-game progression;
