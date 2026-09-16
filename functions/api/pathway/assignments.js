@@ -297,3 +297,16 @@ async function readJson(namespace, key) {
     return value && typeof value === 'object' ? value : null;
   } catch { return null; }
 }
+
+function headers() {
+  return {
+    'Cache-Control':'private, no-store, no-cache, must-revalidate',
+    Pragma:'no-cache',
+    Vary:'Cookie',
+    'X-Content-Type-Options':'nosniff',
+  };
+}
+
+function reply(data, status = 200) {
+  return json(data, { status, headers:headers() });
+}
