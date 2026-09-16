@@ -19,6 +19,7 @@
 .engineering-prep-track{height:6px;margin-top:9px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
 .engineering-prep-track i{display:block;height:100%;background:var(--accent);border-radius:inherit}
 .engineering-prep-target small{display:block;margin-top:7px;color:var(--muted);font-size:.68rem}
+.engineering-prep-target .engineering-prep-target-note{margin-top:8px;font-size:.72rem;color:#aab7be}
 .engineering-prep-target.is-complete{border-color:rgba(94,230,168,.34);background:rgba(94,230,168,.055)}
 .engineering-prep-target.is-complete .engineering-prep-track i{background:var(--success)}
 .engineering-prep-target.is-complete small{color:var(--success)}
