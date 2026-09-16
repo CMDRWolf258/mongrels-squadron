@@ -16,12 +16,17 @@ import {
   buildEngineeringDependencyNodes,
   buildFirstEngineeringWinView,
 } from '../../../lib/engineering-campaign-data.js';
+import { CROSS_PATH_ENGINEERING_TRACKED_FACTS } from '../../../lib/pathway-engineering-prep-facts.js';
 import { buildShieldEngineeringDependencyNodes } from '../../../lib/engineering-campaign-shields.js';
 import { buildJumpRangeEngineeringDependencyNodes } from '../../../lib/engineering-campaign-jump-range.js';
 import { buildMobilityEngineeringDependencyNodes } from '../../../lib/engineering-campaign-mobility.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
+const TRACKED_FACTS = {
+  ...ENGINEERING_TRACKED_FACTS,
+  ...CROSS_PATH_ENGINEERING_TRACKED_FACTS,
+};
 const TRACKED_COUNTER_TARGETS = {
   'trade.markets-visited-distinct': {
     target:50,
@@ -32,6 +37,11 @@ const TRACKED_COUNTER_TARGETS = {
     target:5,
     targetLabel:'The Dweller preparation',
     targetNote:'At 5 distinct black markets, check your Engineer panel to confirm the meeting requirement registered.',
+  },
+  'mining.ore-mined-total-tonnes': {
+    target:500,
+    targetLabel:'Selene Jean meeting requirement',
+    targetNote:'At 500 tonnes mined, the historical mining requirement is covered. Selene Jean still has a separate unlock delivery, so reaching this counter does not mean the Engineer is fully unlocked.',
   },
 };
 
@@ -120,7 +130,7 @@ function present(stateValue) {
     ok:true,
     frameworkVersion:1,
     goalCatalog:ENGINEERING_GOAL_CATALOG,
-    trackedFacts:ENGINEERING_TRACKED_FACTS,
+    trackedFacts:TRACKED_FACTS,
     trackedCounters:presentTrackedCounters(state),
     firstEngineeringWin:buildFirstEngineeringWinView(state.facts),
     state,
@@ -129,7 +139,7 @@ function present(stateValue) {
 }
 
 function presentTrackedCounters(state) {
-  return Object.values(ENGINEERING_TRACKED_FACTS)
+  return Object.values(TRACKED_FACTS)
     .filter(definition => definition?.kind === 'counter')
     .map(definition => {
       const stored = state?.facts?.[definition.id];
@@ -154,7 +164,7 @@ function presentTrackedCounters(state) {
 
 function recordCounter(stateValue, factIdValue, amountValue, now) {
   const factId = String(factIdValue || '');
-  const definition = ENGINEERING_TRACKED_FACTS[factId];
+  const definition = TRACKED_FACTS[factId];
   if (!definition || definition.kind !== 'counter') throw new Error('invalid_counter');
   const amount = Number(amountValue);
   if (!Number.isInteger(amount) || amount <= 0 || amount > 10000) throw new Error('invalid_counter_amount');
@@ -167,7 +177,7 @@ function recordCounter(stateValue, factIdValue, amountValue, now) {
 
 function setCounterTotal(stateValue, factIdValue, value, now) {
   const factId = String(factIdValue || '');
-  const definition = ENGINEERING_TRACKED_FACTS[factId];
+  const definition = TRACKED_FACTS[factId];
   if (!definition || definition.kind !== 'counter') throw new Error('invalid_counter');
   const total = Number(value);
   const minimum = Number.isFinite(Number(definition.minimum)) ? Number(definition.minimum) : 0;
