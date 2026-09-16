@@ -174,6 +174,14 @@ Prefer exact section anchors when available. Current useful anchors include:
 
 This means a question like “Where can I create a carrier loading event?” can provide a **Carrier Coordination** button that lands directly on that section rather than merely opening the top of the Carriers page.
 
+### Mission Control system filtering
+
+The assistant does not receive all Mission Control systems on every request. `selectMissionControlForAssistant()` deliberately sends a query-filtered subset to limit prompt size.
+
+Important guardrail: **an empty filtered subset does not mean Mission Control has no systems.** The returned object now includes `selection.mode`, `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explicit note explaining that distinction.
+
+Faction-presence wording such as “what systems our faction is in,” “which systems,” “where are we present,” “territory,” and “footprint” should select up to 30 active-presence systems while preserving the authoritative total from Mission Control metadata. Never tell the user the live system list is empty merely because the query filter returned zero rows.
+
 High-value future improvement: include current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
 
 ---
@@ -483,6 +491,7 @@ Validated / accepted by Wolf:
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
 - 1061–1280px compressed full-navigation tablet/iPad layout;
 - generalized Ask the Mongrels navigation paths and direct section buttons;
+- Mission Control assistant faction-presence selection / filtered-subset guardrail;
 - latest direct Carrier Coordination / Member Portal anchors;
 - Trade v2 route rewrite;
 - Carrier Logistics full pathway;
