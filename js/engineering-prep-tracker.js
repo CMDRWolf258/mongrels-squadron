@@ -154,6 +154,7 @@
       trackerOpen = true;
       flash = { id:factId, state:'success', message:`Recorded +${amount} actual progress.` };
       render(await api('POST', { action:'record_counter', factId, amount }));
+      window.dispatchEvent(new CustomEvent('mongrels:engineering-campaign-updated', { detail:{ source:'prep-tracker' } }));
     } catch (error) {
       console.error('Could not record Engineering prep progress', error);
       flash = { id:factId, state:'error', message:'Could not save that progress. Try again.' };
@@ -172,6 +173,7 @@
       trackerOpen = true;
       flash = { id:factId, state:'success', message:`Stored total corrected to ${value}.` };
       render(await api('POST', { action:'set_counter_total', factId, value }));
+      window.dispatchEvent(new CustomEvent('mongrels:engineering-campaign-updated', { detail:{ source:'prep-tracker' } }));
     } catch (error) {
       console.error('Could not correct Engineering prep total', error);
       flash = { id:factId, state:'error', message:'Could not correct that total. Try again.' };
@@ -198,6 +200,11 @@
   function enableButtons() {
     root.querySelectorAll('button').forEach(button => { button.disabled = false; });
   }
+
+  window.addEventListener('mongrels:engineering-campaign-updated', event => {
+    if (event?.detail?.source === 'prep-tracker') return;
+    api().then(render).catch(error => console.error('Could not refresh Engineering prep tracker', error));
+  });
 
   (async () => {
     try { render(await api()); }
