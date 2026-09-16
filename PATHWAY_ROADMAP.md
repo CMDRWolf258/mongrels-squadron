@@ -13,6 +13,7 @@ This file records current Pathway direction and specialty concepts that should s
 7. **Exploration** — Foundations, Surveyor, Deep-Space Navigator, Discovery Specialist, and Expedition Lead/Mentor routes.
 8. **Exobiology** — First Bio Survey, Field Surveyor, Efficient Naturalist, Target Specialist, and Expedition Bio Lead/Mentor routes.
 9. **PvE Combat** — Combat Foundations, Bounty Hunter, Conflict Zone Specialist, Combat Specialist, and Combat Lead/Mentor routes.
+10. **PvP** — PvP Foundations, Duelist, Precision Fighter, Wing Fighter, and PvP Lead/Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
@@ -246,7 +247,73 @@ Veteran/Mentor route:
 - make another PvE pilot more independent;
 - debrief the operation and preserve one concrete next adjustment.
 
-**Boundary:** PvE Combat teaches NPC combat and squad combat operations. PvP remains a separate full Pathway candidate because human-opponent range control, prediction, matchup knowledge, Open survival, and organized PvP require a different progression.
+**Boundary:** PvE Combat teaches NPC combat and squad combat operations. PvP is a separate full Pathway because human-opponent range control, prediction, matchup knowledge, Open survival, and organized player combat require a different progression.
+
+## PvP — implemented full pathway
+
+Primary files:
+- `lib/pathway-pvp.js`
+- `js/pathway-pvp.js`
+- shared `functions/api/pathway/assignments.js`
+- personalized Assistant integration in `lib/assistant-pathway-context.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-pvp.mjs`
+
+Current routes:
+
+### PvP Foundations — Survive, Fight, Learn
+Beginner route:
+- read and understand the Mongrel Open Play and no-combat-logging standards;
+- prepare one rebuy-safe PvP training ship rather than requiring a meta hull;
+- practice defensive/offensive pip transitions under player pressure;
+- learn to create and break firing solutions through movement;
+- practice a legitimate disengagement entirely through normal game mechanics;
+- complete a structured 1v1 with agreed start/stop conditions;
+- separate pilot problems from build problems in the debrief;
+- repeat the complete learning loop with less coaching.
+
+### Duelist — Range, Pips & Pressure
+Developing route:
+- record an honest multi-round duel baseline;
+- fight for the range the current weapon package actually wants;
+- distinguish favorable exchanges from moments that should be reset;
+- use target/subsystem information without losing basic control;
+- change only one measured bottleneck before retesting;
+- graduate through a measured set of at least three structured rounds.
+
+### Precision Fighter — Aim, Prediction & Weapon Application
+Developing/Experienced route:
+- choose one aim-dependent package to train rather than making fixed weapons mandatory for everyone;
+- stop spending shots on poor firing windows;
+- improve vector reading and prediction through repeated passes;
+- keep WEP, heat, ammunition, and defense sustainable while aiming;
+- preserve precision under real opponent pressure;
+- prove the package across complete duel rounds without letting aim practice collapse the rest of the ship.
+
+### Wing Fighter — Focus, Comms & Mutual Support
+Experienced route:
+- understand the ship's role, strength, and limitation inside a wing;
+- practice concise target/status/disengagement calls;
+- acquire and maintain pressure on the called target;
+- execute coordinated target switches for a stated tactical reason;
+- support a wingmate under focus rather than drifting into isolated private duels;
+- complete and debrief a structured small-group fight with agreed stop/disengagement conditions.
+
+### PvP Lead — Plan, Command, Teach
+Veteran/Mentor route:
+- design a training/combat session around one clear objective;
+- brief conduct, roles, comms, start/stop conditions, and disengagement before launch;
+- lead the session and make at least one evidence-based adaptation;
+- review another pilot's build without simply prescribing the mentor's preferred ship;
+- make another Commander more independent in one specific PvP skill;
+- publish a debrief that preserves the lesson rather than only the score.
+
+Core PvP doctrine carried through the Pathway:
+- Open Play is the squad standard;
+- Solo/Private Group must not be used to avoid player opposition;
+- combat logging is not an escape technique;
+- a beginner's first objective is composure, legitimate survival, and learning—not owning an FDL or winning every fight;
+- controlled squadmate practice is preferred for first repetitions before expecting a new pilot to learn through random hostile encounters.
 
 ## Community Goal Hauler Prep — implemented Trade specialty
 
@@ -259,8 +326,7 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 ## Next core Pathways
 
 Broader coverage remains the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
-- **PvP**
-- Surface Operations
+- **Surface Operations**
 - Colonization
 - Squadron Operations
 - Powerplay only when squad doctrine is mature enough to support a stable pathway
@@ -269,6 +335,6 @@ Do not automatically build every item without inspecting current site content fi
 
 ## Validation direction
 
-The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology and PvE Combat additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, and PvP additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
