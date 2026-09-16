@@ -77,6 +77,12 @@ export async function onRequestPost({ request, env }) {
     acceptedBy: existing?.acceptedBy || '',
     discordProvisionedAt: existing?.discordProvisionedAt || null,
     acceptanceDmStatus: existing?.acceptanceDmStatus || '',
+    inGameApplicationVerified: Boolean(existing?.inGameApplicationVerified),
+    inGameApplicationVerifiedAt: existing?.inGameApplicationVerifiedAt || null,
+    inGameApplicationVerifiedBy: existing?.inGameApplicationVerifiedBy || '',
+    inGameRequirementOverridden: Boolean(existing?.inGameRequirementOverridden),
+    inGameRequirementOverriddenAt: existing?.inGameRequirementOverriddenAt || null,
+    inGameRequirementOverriddenBy: existing?.inGameRequirementOverriddenBy || '',
   };
 
   if (existingIndex >= 0) items[existingIndex] = item;
@@ -119,6 +125,22 @@ export async function onRequestPut({ request, env }) {
   const now = new Date().toISOString();
   let provisioning = null;
 
+  const requestedVerification = typeof body.value?.inGameApplicationVerified === 'boolean'
+    ? body.value.inGameApplicationVerified
+    : Boolean(existing.inGameApplicationVerified);
+  // Once an officer has verified the in-game application, preserve that audit state.
+  const inGameApplicationVerified = Boolean(existing.inGameApplicationVerified) || requestedVerification;
+  const verificationBecameTrue = inGameApplicationVerified && !existing.inGameApplicationVerified;
+  const overrideInGameRequirement = body.value?.overrideInGameRequirement === true;
+
+  if (newlyAccepted && !inGameApplicationVerified && !overrideInGameRequirement) {
+    return reply({
+      ok: false,
+      error: 'ingame_application_not_verified',
+      detail: 'Verify the Commander has submitted an in-game Squadron application, or explicitly approve as an exception.',
+    }, 409);
+  }
+
   // Discord Member role assignment is part of approval, not a follow-up manual step.
   // The application is only marked Accepted after Member role provisioning succeeds.
   if (newlyAccepted) {
@@ -133,6 +155,7 @@ export async function onRequestPut({ request, env }) {
     }
   }
 
+  const requirementOverriddenNow = newlyAccepted && !inGameApplicationVerified && overrideInGameRequirement;
   items[index] = {
     ...existing,
     status,
@@ -144,6 +167,12 @@ export async function onRequestPut({ request, env }) {
     acceptedBy: newlyAccepted ? reviewerName : (existing.acceptedBy || ''),
     discordProvisionedAt: newlyAccepted ? now : (existing.discordProvisionedAt || null),
     acceptanceDmStatus: newlyAccepted ? (provisioning?.dmStatus || '') : (existing.acceptanceDmStatus || ''),
+    inGameApplicationVerified,
+    inGameApplicationVerifiedAt: verificationBecameTrue ? now : (existing.inGameApplicationVerifiedAt || null),
+    inGameApplicationVerifiedBy: verificationBecameTrue ? reviewerName : (existing.inGameApplicationVerifiedBy || ''),
+    inGameRequirementOverridden: requirementOverriddenNow ? true : Boolean(existing.inGameRequirementOverridden),
+    inGameRequirementOverriddenAt: requirementOverriddenNow ? now : (existing.inGameRequirementOverriddenAt || null),
+    inGameRequirementOverriddenBy: requirementOverriddenNow ? reviewerName : (existing.inGameRequirementOverriddenBy || ''),
   };
   await writeApplications(env, items);
   return reply({
@@ -153,6 +182,8 @@ export async function onRequestPut({ request, env }) {
       memberRoleGranted: true,
       dmStatus: provisioning?.dmStatus || 'unknown',
       cleanupWarnings: Array.isArray(provisioning?.cleanupWarnings) ? provisioning.cleanupWarnings.length : 0,
+      inGameApplicationVerified,
+      inGameRequirementOverridden: requirementOverriddenNow,
     } : null,
   });
 }
@@ -175,6 +206,7 @@ function normalizeAnswers(value, fallback = {}) {
     bgsOpenAcknowledged: booleanValue(src.bgsOpenAcknowledged, fallback.bgsOpenAcknowledged || false),
     squadGoals: clean(src.squadGoals, fallback.squadGoals || '', 1000),
     additionalInfo: clean(src.additionalInfo, fallback.additionalInfo || '', 1500),
+    inGameApplicationSubmitted: booleanValue(src.inGameApplicationSubmitted, fallback.inGameApplicationSubmitted || false),
     rulesAcknowledged: booleanValue(src.rulesAcknowledged, fallback.rulesAcknowledged || false),
   };
 }
@@ -193,12 +225,26 @@ function submissionErrors(a) {
   if (!a.openPlay) missing.push('openPlay');
   if (!a.bgsOpenAcknowledged) missing.push('bgsOpenAcknowledged');
   if (!a.squadGoals) missing.push('squadGoals');
+  if (!a.inGameApplicationSubmitted) missing.push('inGameApplicationSubmitted');
   if (!a.rulesAcknowledged) missing.push('rulesAcknowledged');
   return missing;
 }
 
 function itemForApplicant(item) {
-  const { officerNotes, reviewedBy, acceptedBy, discordProvisionedAt, acceptanceDmStatus, ...safe } = item;
+  const {
+    officerNotes,
+    reviewedBy,
+    acceptedBy,
+    discordProvisionedAt,
+    acceptanceDmStatus,
+    inGameApplicationVerified,
+    inGameApplicationVerifiedAt,
+    inGameApplicationVerifiedBy,
+    inGameRequirementOverridden,
+    inGameRequirementOverriddenAt,
+    inGameRequirementOverriddenBy,
+    ...safe
+  } = item;
   return safe;
 }
 function presentApplicant(item) { return item; }
