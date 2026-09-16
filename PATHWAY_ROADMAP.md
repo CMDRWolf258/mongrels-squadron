@@ -16,14 +16,17 @@ This file records current Pathway direction and specialty concepts that should s
 10. **PvP** — PvP Foundations, Duelist, Precision Fighter, Wing Fighter, and PvP Lead/Mentor routes.
 11. **Operations** — Operations Foundations, Multi-Role Operator, Scenario Specialist, Hard Operations Specialist, and Operations Lead/Mentor routes.
 12. **Colonization** — Colonization Foundations, Construction Operator, System Architect, Colony Developer, and Colonization Lead/Mentor routes.
+13. **Squadron Coordination** — Coordination Foundations, Squad Contributor, Cross-Activity Coordinator, Mission Planner, and Squadron Coordination Lead routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
-### Operations naming / compatibility rule
+### Operations / Squadron Coordination naming and compatibility rule
 
 The Elite Dangerous game feature is called **Operations** throughout the user-facing site. Do not label this feature “Surface Operations.” Operations deliberately includes ship combat, on-foot activity, rescue, and mixed-phase scenarios.
 
-For backwards compatibility, its persisted My Pathway activity ID remains `surface`. Do not migrate or expose that internal identifier just to match the display name. The separate activity ID `operations` continues to mean **Squad Operations** / Mission Control / Daily Orders and must not be conflated with the game feature.
+For backwards compatibility, the game-feature Operations persisted My Pathway activity ID remains `surface`. Do not migrate or expose that internal identifier just to match the display name.
+
+The separate persisted activity ID `operations` now has the user-facing name **Squadron Coordination**. It covers Mission Control, Daily Orders, Projects, cross-activity support, handoffs, reporting, planning, and squad coordination. The old “Squad Operations” label should not return, and `operations` must never be conflated with the game-feature Operations provider at `surface`.
 
 ## Pathway design rules
 
@@ -460,6 +463,78 @@ Core Colonization principles:
 - later development is evidence-driven because economy/stat interactions can be moving or partially opaque;
 - Projects & Events is the natural coordination surface for live colony work.
 
+## Squadron Coordination — implemented full pathway
+
+Primary files:
+- `lib/pathway-squadron-coordination.js`
+- `js/pathway-squadron-coordination.js`
+- shared `functions/api/pathway/assignments.js`
+- visible catalog label in `functions/api/pathway/preferences.js`
+- personalized Assistant integration in `lib/assistant-pathway-context.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-squadron-coordination.mjs`
+
+Current routes:
+
+### Squadron Coordination Foundations — Read, Choose, Report
+Beginner route:
+- find Mission Control, Daily Orders, and Projects & Events and know which current source owns an objective;
+- read the complete order before acting, including purpose, beneficiary/destination, workload, avoid instructions, and stop condition;
+- choose a contribution lane that uses an existing capability when possible;
+- if Coordination is one of the member's only selected Pathways, use a manageable unfamiliar support lane as guided exposure rather than pretending one task proves mastery;
+- complete one meaningful contribution without violating current avoid/stop instructions;
+- report what actually happened using the same unit/evidence the objective uses;
+- recheck the authoritative source before continuing;
+- close the complete contribution loop independently.
+
+### Squad Contributor — Work the Plan, Respect the Stop
+Developing route:
+- separate the real objective from tempting non-goal work;
+- match existing capability to the job instead of repeating activity training;
+- complete bounded workloads and stop at the requested condition;
+- leave another Commander a clean handoff;
+- use a second activity lane only when it genuinely adds value;
+- complete multiple clean contribution loops without requiring another member to reconstruct the work.
+
+### Cross-Activity Coordinator — Match People to Work
+Developing/Experienced route:
+- break one objective into only the contribution lanes it actually needs;
+- match people to demonstrated capability, selected interests, or explicitly supported learning roles;
+- define handoffs before launch;
+- add carrier/staging/escort/logistics complexity only when it removes a real bottleneck;
+- maintain one shared current progress picture;
+- move effort when the bottleneck moves;
+- coordinate a multi-lane objective to closure.
+
+### Mission Planner — Turn Strategy Into Jobs
+Experienced route:
+- define a measurable end state and authoritative owner/source;
+- translate the goal into owned jobs, parallel work, and dependencies;
+- write explicit stop, avoid, cap, and recheck conditions where overshoot matters;
+- publish a concise brief another Mongrel can execute;
+- monitor the plan after launch rather than disappearing after tasking;
+- change the plan from evidence when conditions move;
+- close the objective cleanly and preserve a reusable planning lesson.
+
+### Squadron Coordination Lead — Brief, Adapt, Teach
+Veteran/Mentor route:
+- state command intent clearly enough that members can still make good decisions when detailed tasking becomes stale;
+- delegate by capability, equipment, availability, and learning goals rather than rank or habit;
+- define comms, reporting, authoritative-status location, and stop/redirect authority;
+- recover the operation when an assumption fails;
+- protect a single authoritative operational picture;
+- make another coordinator more independent;
+- debrief the coordination system itself, not only whether the objective succeeded.
+
+Core Squadron Coordination principles:
+- this Pathway **does not reteach** Mining, Trade, PvE, PvP, BGS, Colonization, Carrier Logistics, Exploration, Operations, or other specialist fundamentals;
+- the Capability Map reads selected activities and credited (`complete` / `known`) progress from the member's other Pathways so Coordination can use demonstrated capability instead of sending veterans through beginner work again;
+- cross-path progress is **evidence only** and never automatically marks Squadron Coordination assignments complete;
+- a member with few or no other selected activity Pathways receives **guided exposure**, not false specialist credit;
+- current authoritative tasking outranks examples, old screenshots, stale Discord fragments, and memory;
+- useful coordination includes restraint: respect stop conditions, avoid lists, ownership, handoffs, and changed objectives;
+- Mission Control / Daily Orders own current operational tasking; activity-specific Pathways remain authoritative for the specialist skills themselves.
+
 ## Community Goal Hauler Prep — implemented Trade specialty
 
 Community Goal Hauler Prep is nested inside Trade & Hauling and uses its own saved specialty state. The 14-step progression teaches hostile-Open logistics around the doctrine:
@@ -470,14 +545,13 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 
 ## Next core Pathways
 
-Broad core coverage is nearly complete. The remaining roadmap is:
-- **Squadron Operations** — the next definite full Pathway, centered on Mission Control, Daily Orders, Projects, carrier coordination, BGS execution, cross-activity support, reporting, and leadership.
+Broad core coverage is now complete except for one conditional category:
 - **Powerplay** — conditional final Pathway; build it only when squad doctrine is mature enough to support stable teaching instead of immediate rewrites.
 
-Do not automatically build every item without inspecting current site content first. Reuse the shared assignment API and normal Pathway progress model unless a real domain requirement justifies a specialty or separate state model.
+Do not automatically build Powerplay without inspecting current site content and current squad doctrine first. Reuse the shared assignment API and normal Pathway progress model unless a real domain requirement justifies a specialty or separate state model.
 
 ## Validation direction
 
-The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, PvP, Operations, and Colonization additionally have focused regression scripts that protect their route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Operations additionally guards the Runner-to-extraction loop, mixed ship/on-foot preparation and phase transitions, and the visible Operations naming rule. Colonization additionally guards the beginner no-ownership rule, real construction-delivery loop, System Architect claim/shadow and primary-port decisions, and public Activities-hub state. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, PvP, Operations, Colonization, and Squadron Coordination additionally have focused regression scripts that protect their route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Operations additionally guards the Runner-to-extraction loop, mixed ship/on-foot preparation and phase transitions, and the visible Operations naming rule. Colonization additionally guards the beginner no-ownership rule, real construction-delivery loop, System Architect claim/shadow and primary-port decisions, and public Activities-hub state. Squadron Coordination additionally guards the `surface` = game-feature Operations / `operations` = Squadron Coordination compatibility rule, the no-duplicate-training doctrine, Capability Map wiring, and personalized Assistant routing. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
