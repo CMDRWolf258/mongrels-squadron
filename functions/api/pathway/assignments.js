@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { AX_ACTIVITY_ID, eligibleAxRoutes, getAxRoute } from '../../../lib/pathway-ax.js';
+import { BGS_ACTIVITY_ID, eligibleBgsRoutes, getBgsRoute } from '../../../lib/pathway-bgs.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFERENCES_PREFIX = 'pathway-preferences-v1:';
@@ -7,12 +8,32 @@ const PROGRESS_PREFIX = 'pathway-progress-v1:';
 const TASK_STATUSES = new Set(['complete','known','skipped','pending']);
 const TASK_TYPES = new Set(['learn','build','demonstrate','challenge','wing','mentor']);
 
+const PROVIDERS = {
+  [AX_ACTIVITY_ID]: {
+    id:AX_ACTIVITY_ID,
+    label:'Anti-Xeno',
+    getRoute:getAxRoute,
+    eligibleRoutes:eligibleAxRoutes,
+    seedVersion:'ax-v2',
+  },
+  [BGS_ACTIVITY_ID]: {
+    id:BGS_ACTIVITY_ID,
+    label:'BGS',
+    getRoute:getBgsRoute,
+    eligibleRoutes:eligibleBgsRoutes,
+    seedVersion:'bgs-v1',
+  },
+};
+
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
   if (auth.response) return auth.response;
   const storageError = requireStorage(env, false);
   if (storageError) return storageError;
-  const result = await buildState(env, auth.session);
+  const activity = activityFromUrl(request.url);
+  const provider = PROVIDERS[activity];
+  if (!provider) return reply({ ok:false, error:'unsupported_activity' }, 400);
+  const result = await buildState(env, auth.session, activity);
   return reply({ ok:true, ...result });
 }
 
@@ -28,27 +49,32 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); }
   catch { return reply({ ok:false, error:'invalid_json' }, 400); }
 
-  const prefs = await readJson(env.PROJECTS, `${PREFERENCES_PREFIX}${auth.session.sub}`) || {};
-  const selectedAx = new Set([...(Array.isArray(prefs.interests) ? prefs.interests : []), ...(Array.isArray(prefs.improve) ? prefs.improve : [])]).has(AX_ACTIVITY_ID);
-  if (!selectedAx) return reply({ ok:false, error:'ax_not_selected', detail:'Add Anti-Xeno to My Pathway before using AX assignments.' }, 409);
+  const activity = normalizeActivity(body?.activity || activityFromUrl(request.url));
+  const provider = PROVIDERS[activity];
+  if (!provider) return reply({ ok:false, error:'unsupported_activity' }, 400);
 
-  const experience = normalizeExperience(prefs?.experience?.ax);
-  const eligible = eligibleAxRoutes(experience);
-  const key = `${PROGRESS_PREFIX}${auth.session.sub}:ax`;
+  const prefs = await readJson(env.PROJECTS, `${PREFERENCES_PREFIX}${auth.session.sub}`) || {};
+  const selected = new Set([...(Array.isArray(prefs.interests) ? prefs.interests : []), ...(Array.isArray(prefs.improve) ? prefs.improve : [])]).has(activity);
+  if (!selected) return reply({ ok:false, error:`${activity}_not_selected`, detail:`Add ${provider.label} to My Pathway before using its assignments.` }, 409);
+
+  const experience = normalizeExperience(prefs?.experience?.[activity]);
+  const eligible = provider.eligibleRoutes(experience);
+  if (!eligible.length) return reply({ ok:false, error:'no_eligible_route' }, 409);
+  const key = `${PROGRESS_PREFIX}${auth.session.sub}:${activity}`;
   const existing = await readJson(env.PROJECTS, key) || {};
-  const progress = normalizeProgress(existing, auth.session.sub);
-  const currentRouteId = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(auth.session.sub, experience, eligible);
+  const progress = normalizeProgress(existing, auth.session.sub, provider);
+  const currentRouteId = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(auth.session.sub, experience, eligible, provider);
   const action = String(body?.action || '');
 
   if (action === 'set_task') {
-    const route = getAxRoute(currentRouteId);
+    const route = provider.getRoute(currentRouteId);
     if (!route) return reply({ ok:false, error:'route_not_found' }, 404);
     const taskId = String(body?.taskId || '');
     if (!route.tasks.some(task => task.id === taskId)) return reply({ ok:false, error:'task_not_found' }, 404);
     const status = String(body?.status || 'pending');
     if (!TASK_STATUSES.has(status)) return reply({ ok:false, error:'invalid_task_status' }, 400);
 
-    const next = ensureRouteState(progress, currentRouteId);
+    const next = ensureRouteState(progress, currentRouteId, provider);
     if (status === 'pending') delete next.routes[currentRouteId].taskStates[taskId];
     else next.routes[currentRouteId].taskStates[taskId] = status;
     next.selectedRoute = currentRouteId;
@@ -56,48 +82,52 @@ export async function onRequestPost({ request, env }) {
     next.routes[currentRouteId].updatedAt = next.updatedAt;
     if (!next.routes[currentRouteId].startedAt) next.routes[currentRouteId].startedAt = next.updatedAt;
     await env.PROJECTS.put(key, JSON.stringify(next));
-    return reply({ ok:true, ...(await buildState(env, auth.session, next)) });
+    return reply({ ok:true, ...(await buildState(env, auth.session, activity, next)) });
   }
 
   if (action === 'another_route') {
-    let next = ensureRouteState(progress, currentRouteId);
+    let next = ensureRouteState(progress, currentRouteId, provider);
     const index = Math.max(0, eligible.indexOf(currentRouteId));
     const nextRouteId = eligible[(index + 1) % eligible.length];
     next.selectedRoute = nextRouteId;
     next.routeGeneration = Number(next.routeGeneration || 0) + 1;
     next.updatedAt = new Date().toISOString();
-    next = ensureRouteState(next, nextRouteId);
+    next = ensureRouteState(next, nextRouteId, provider);
     next.selectedRoute = nextRouteId;
     next.updatedAt = new Date().toISOString();
     if (!next.routes[nextRouteId].startedAt) next.routes[nextRouteId].startedAt = next.updatedAt;
     await env.PROJECTS.put(key, JSON.stringify(next));
-    return reply({ ok:true, routeChanged:true, ...(await buildState(env, auth.session, next)) });
+    return reply({ ok:true, routeChanged:true, ...(await buildState(env, auth.session, activity, next)) });
   }
 
   if (action === 'reset_route') {
-    const next = ensureRouteState(progress, currentRouteId);
+    const next = ensureRouteState(progress, currentRouteId, provider);
     next.routes[currentRouteId] = { taskStates:{}, startedAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
     next.selectedRoute = currentRouteId;
     next.updatedAt = new Date().toISOString();
     await env.PROJECTS.put(key, JSON.stringify(next));
-    return reply({ ok:true, ...(await buildState(env, auth.session, next)) });
+    return reply({ ok:true, ...(await buildState(env, auth.session, activity, next)) });
   }
 
   return reply({ ok:false, error:'unsupported_action' }, 400);
 }
 
-async function buildState(env, session, suppliedProgress = null) {
+async function buildState(env, session, activity, suppliedProgress = null) {
+  const provider = PROVIDERS[activity];
+  if (!provider) return { activity, eligible:false, reason:'unsupported_activity' };
+
   const prefs = await readJson(env.PROJECTS, `${PREFERENCES_PREFIX}${session.sub}`) || {};
   const selected = new Set([...(Array.isArray(prefs.interests) ? prefs.interests : []), ...(Array.isArray(prefs.improve) ? prefs.improve : [])]);
-  if (!selected.has(AX_ACTIVITY_ID)) return { activity:'ax', eligible:false, reason:'not_selected' };
+  if (!selected.has(activity)) return { activity, eligible:false, reason:'not_selected' };
 
-  const experience = normalizeExperience(prefs?.experience?.ax);
-  const eligible = eligibleAxRoutes(experience);
-  const stored = suppliedProgress || await readJson(env.PROJECTS, `${PROGRESS_PREFIX}${session.sub}:ax`) || {};
-  const progress = normalizeProgress(stored, session.sub);
-  const selectedRoute = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(session.sub, experience, eligible);
-  const route = getAxRoute(selectedRoute) || getAxRoute(eligible[0]);
-  if (!route) return { activity:'ax', eligible:false, reason:'no_route' };
+  const experience = normalizeExperience(prefs?.experience?.[activity]);
+  const eligible = provider.eligibleRoutes(experience);
+  if (!eligible.length) return { activity, eligible:false, reason:'no_route' };
+  const stored = suppliedProgress || await readJson(env.PROJECTS, `${PROGRESS_PREFIX}${session.sub}:${activity}`) || {};
+  const progress = normalizeProgress(stored, session.sub, provider);
+  const selectedRoute = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(session.sub, experience, eligible, provider);
+  const route = provider.getRoute(selectedRoute) || provider.getRoute(eligible[0]);
+  if (!route) return { activity, eligible:false, reason:'no_route' };
   const routeState = progress.routes?.[route.id] || { taskStates:{} };
   const taskStates = routeState.taskStates || {};
   const tasks = route.tasks.map((task, index) => ({
@@ -109,16 +139,13 @@ async function buildState(env, session, suppliedProgress = null) {
   const creditedStatuses = new Set(['complete','known']);
   const completed = tasks.filter(task => creditedStatuses.has(task.status)).length;
   const skipped = tasks.filter(task => task.status === 'skipped').length;
-  // "Skip for Now" defers work; it does not grant progress or qualification.
-  // Work through untouched assignments first, then surface skipped work again once
-  // nothing else remains so a route can only truly finish at 100% credited progress.
   const current = tasks.find(task => task.status === 'pending') || tasks.find(task => task.status === 'skipped') || null;
 
   return {
-    activity:'ax', eligible:true, experience,
+    activity, eligible:true, experience,
     route:{ id:route.id, band:route.band || '', title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
     routeOptions:eligible.map(id => {
-      const option = getAxRoute(id);
+      const option = provider.getRoute(id);
       return option ? { id:option.id, band:option.band || '', title:option.title, subtitle:option.subtitle } : null;
     }).filter(Boolean),
     currentTaskId:current?.id || null,
@@ -127,15 +154,15 @@ async function buildState(env, session, suppliedProgress = null) {
   };
 }
 
-function chooseInitialRoute(ownerId, experience, eligible) {
+function chooseInitialRoute(ownerId, experience, eligible, provider) {
   if (!eligible.length) return '';
-  const seed = `${ownerId}:${experience}:ax-v2`;
+  const seed = `${ownerId}:${experience}:${provider.seedVersion}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   return eligible[Math.abs(hash) % eligible.length];
 }
 
-function normalizeProgress(value, ownerId) {
+function normalizeProgress(value, ownerId, provider) {
   const source = value && typeof value === 'object' ? value : {};
   let routes = {};
   if (source.routes && typeof source.routes === 'object') {
@@ -143,7 +170,7 @@ function normalizeProgress(value, ownerId) {
     catch { routes = {}; }
   }
   for (const [routeId, state] of Object.entries(routes)) {
-    if (!getAxRoute(routeId) || !state || typeof state !== 'object') {
+    if (!provider.getRoute(routeId) || !state || typeof state !== 'object') {
       delete routes[routeId];
       continue;
     }
@@ -163,8 +190,8 @@ function normalizeProgress(value, ownerId) {
   };
 }
 
-function ensureRouteState(progress, routeId) {
-  const next = normalizeProgress(progress, progress.ownerId || '');
+function ensureRouteState(progress, routeId, provider) {
+  const next = normalizeProgress(progress, progress.ownerId || '', provider);
   if (!next.routes[routeId]) next.routes[routeId] = { taskStates:{}, startedAt:null, updatedAt:null };
   return next;
 }
@@ -172,12 +199,22 @@ function ensureRouteState(progress, routeId) {
 function normalizeTaskType(task) {
   if (TASK_TYPES.has(task?.type)) return task.type;
   const stage = String(task?.stage || '').toLowerCase();
-  if (/graduate|challenge/.test(stage)) return 'challenge';
+  if (/mentor|teach/.test(stage)) return 'mentor';
+  if (/wing|operations|lead|campaign/.test(stage)) return 'wing';
+  if (/graduate|challenge|control|strategy|diagnosis/.test(stage)) return 'challenge';
   if (/build|platform|engineering|guardian tech|internals|unlock/.test(stage)) return 'build';
-  if (/ready|cockpit|training|deploy|fight|interceptor|field test|first contact|technique|baseline/.test(stage)) return 'demonstrate';
-  if (/wing|operations|lead/.test(stage)) return 'wing';
-  if (/teach|mentor/.test(stage)) return 'mentor';
+  if (/ready|cockpit|training|deploy|fight|interceptor|field test|first contact|technique|baseline|snapshot|operate|feedback|conflict|states|assets|expansion|retreat|influence|planning|attribution|levers/.test(stage)) return 'demonstrate';
   return 'learn';
+}
+
+function activityFromUrl(url) {
+  try { return normalizeActivity(new URL(url).searchParams.get('activity') || AX_ACTIVITY_ID); }
+  catch { return AX_ACTIVITY_ID; }
+}
+
+function normalizeActivity(value) {
+  const activity = String(value || AX_ACTIVITY_ID).toLowerCase();
+  return activity;
 }
 
 function normalizeExperience(value) {
