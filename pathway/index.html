@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=68" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=68">
+  <title>My Pathway | The Mongrels</title>
+  <meta name="description" content="Private personalized activity and development pathway for Mongrel members.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/pathway.css?v=1">
+</head>
+<body class="visual-page page-members page-pathway">
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav></nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero pathway-hero hero-flare member-flare">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Personal Commander Development</p>
+        <h1>My Pathway</h1>
+        <p>Tell us what you enjoy, what you want to improve, and what you already know. My Pathway turns those choices into a smaller, more useful view of the enormous amount of Elite content available to you.</p>
+        <div class="actions"><a class="btn btn-ghost" href="../activities/">Browse All Activities</a><a class="btn btn-ghost" href="../member/">Member Portal</a></div>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section" data-pathway-gate>
+    <div class="container">
+      <div class="profile-auth-gate">
+        <p class="eyebrow">Members Only</p>
+        <h2>Discord authentication required</h2>
+        <p data-pathway-gate-status>Checking your Mongrel Member access…</p>
+        <a class="btn btn-primary" href="/api/auth/login?return=%2Fpathway%2F">Sign in with Discord</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-pathway-app hidden>
+    <div class="container pathway-shell">
+      <form class="pathway-panel" data-pathway-form>
+        <div class="pathway-panel-head">
+          <div><p class="eyebrow">Tune Your Pathway</p><h2>What matters to you?</h2><p>Select only the areas you care about. “Interested” means you enjoy or want to see the activity. “Want to improve” gives it extra priority in your pathway.</p></div>
+          <span class="pathway-privacy">Private to You</span>
+        </div>
+
+        <div data-pathway-groups></div>
+
+        <div class="pathway-settings">
+          <label>Preferred Play Style
+            <select data-pathway-play-style>
+              <option value="either">Solo or group</option>
+              <option value="solo">Usually solo</option>
+              <option value="group">Prefer group play</option>
+            </select>
+          </label>
+          <label>Current Personal Goal
+            <textarea maxlength="500" data-pathway-current-goal placeholder="Optional — e.g. Build my first AX ship, learn PvP fixed weapons, finish Engineering, become more useful in BGS…"></textarea>
+          </label>
+        </div>
+
+        <div class="pathway-form-actions">
+          <span class="pathway-save-status" data-pathway-save-status>Your selections are private and only used to personalize your Mongrel experience.</span>
+          <button class="btn btn-primary" type="submit" data-pathway-save>Save My Pathway</button>
+        </div>
+      </form>
+
+      <aside class="pathway-panel is-accent">
+        <div class="pathway-panel-head">
+          <div><p class="eyebrow">Your Pathway</p><h2>What should I work on next?</h2><p>This first version gives deterministic recommendations from your selections. As our activity content grows, these recommendations will become real milestone chains and live squad opportunities.</p></div>
+        </div>
+        <div class="pathway-summary" data-pathway-summary></div>
+        <div data-pathway-preview></div>
+        <div class="pathway-goal-card" data-pathway-goal-preview hidden></div>
+        <p class="pathway-footnote">Nothing here locks the rest of the site. You can always browse every activity, skip a recommendation, or change your experience level whenever your interests change.</p>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=72"></script>
+<script src="../js/pathway.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=69"></script>
+</body>
+</html>
