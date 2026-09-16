@@ -1,0 +1,55 @@
+/* My Pathway — private Commander development preferences and recommendations. */
+.pathway-hero{background:linear-gradient(105deg,rgba(34,211,238,.07),rgba(7,10,12,.25) 48%,transparent)}
+.pathway-shell{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(330px,.95fr);gap:22px;align-items:start}
+.pathway-panel{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:linear-gradient(155deg,rgba(15,21,25,.94),rgba(8,12,15,.98));box-shadow:var(--shadow)}
+.pathway-panel.is-accent{border-color:var(--line-accent);background:linear-gradient(155deg,rgba(34,211,238,.06),rgba(8,12,15,.98) 45%)}
+.pathway-panel-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}
+.pathway-panel-head h2{margin:0 0 7px;font-size:clamp(1.35rem,2.7vw,2rem);text-transform:uppercase;letter-spacing:-.02em}
+.pathway-panel-head p:not(.eyebrow){margin:0;color:var(--muted);line-height:1.65;max-width:660px}
+.pathway-privacy{flex:0 0 auto;border:1px solid rgba(94,230,168,.3);border-radius:999px;padding:6px 9px;color:#8af0bd;background:rgba(94,230,168,.035);font-size:.58rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.pathway-group{margin-top:24px}
+.pathway-group+.pathway-group{padding-top:24px;border-top:1px solid rgba(255,255,255,.07)}
+.pathway-group-title{margin:0 0 12px;color:#dfecef;font-size:.78rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.pathway-preference-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pathway-pref-card{display:grid;gap:11px;border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:14px;background:rgba(255,255,255,.018)}
+.pathway-pref-card.is-selected{border-color:rgba(34,211,238,.3);background:rgba(34,211,238,.04)}
+.pathway-pref-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pathway-pref-card h3{margin:0;font-size:.88rem;text-transform:uppercase;letter-spacing:.025em}
+.pathway-pref-card small{color:var(--muted);font-size:.61rem}
+.pathway-pref-options{display:flex;gap:8px;flex-wrap:wrap}
+.pathway-choice{display:flex;align-items:center;gap:7px;cursor:pointer;color:#cbd7dc;font-size:.68rem}
+.pathway-choice input{accent-color:var(--accent)}
+.pathway-experience{display:grid;gap:5px;color:var(--muted);font-size:.6rem;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.pathway-experience select,.pathway-settings select,.pathway-settings textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#080d10;color:#edf8fa;padding:9px 10px;outline:none}
+.pathway-experience select:focus,.pathway-settings select:focus,.pathway-settings textarea:focus{border-color:rgba(34,211,238,.55);box-shadow:0 0 0 3px rgba(34,211,238,.07)}
+.pathway-experience select:disabled{opacity:.45;cursor:not-allowed}
+.pathway-settings{display:grid;grid-template-columns:220px 1fr;gap:14px;margin-top:24px;padding-top:24px;border-top:1px solid rgba(255,255,255,.07)}
+.pathway-settings label{display:grid;gap:7px;color:#d6e4e8;font-size:.68rem;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+.pathway-settings textarea{resize:vertical;min-height:94px;line-height:1.5}
+.pathway-form-actions{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:22px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)}
+.pathway-save-status{color:var(--muted);font-size:.68rem;line-height:1.45}
+.pathway-save-status[data-state="success"]{color:#8af0bd}.pathway-save-status[data-state="error"]{color:#ffc1c1}
+.pathway-form-actions .btn:disabled{opacity:.55;cursor:wait}
+.pathway-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.pathway-summary span{border:1px solid var(--line);border-radius:999px;padding:6px 9px;color:var(--muted);font-size:.6rem;font-weight:850;text-transform:uppercase;letter-spacing:.06em}
+.pathway-summary strong{color:var(--accent)}
+.pathway-empty{border:1px dashed rgba(34,211,238,.28);border-radius:11px;padding:22px;color:var(--muted);line-height:1.65;background:rgba(34,211,238,.025)}
+.pathway-recommendations{display:grid;gap:12px}
+.pathway-recommendation{border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:17px;background:rgba(255,255,255,.018)}
+.pathway-recommendation.is-priority{border-color:rgba(34,211,238,.32);background:rgba(34,211,238,.04)}
+.pathway-recommendation-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.pathway-recommendation h3{margin:0;font-size:1rem;text-transform:uppercase;letter-spacing:.02em}
+.pathway-recommendation-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pathway-badge{border:1px solid var(--line);border-radius:999px;padding:4px 7px;color:var(--muted);font-size:.53rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
+.pathway-badge.is-improve{border-color:rgba(34,211,238,.32);color:var(--accent)}
+.pathway-recommendation p{margin:11px 0 14px;color:#afbdc3;font-size:.78rem;line-height:1.58}
+.pathway-next-label{display:block;margin-bottom:4px;color:var(--accent);font-size:.55rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.pathway-recommendation strong{display:block;color:#e7f4f6;font-size:.78rem;line-height:1.45}
+.pathway-recommendation .btn{margin-top:14px;min-height:38px;padding:0 13px;font-size:.66rem}
+.pathway-goal-card{margin-top:18px;padding:17px;border-left:2px solid var(--accent);background:rgba(34,211,238,.035);border-radius:0 10px 10px 0}
+.pathway-goal-card span{display:block;margin-bottom:6px;color:var(--accent);font-size:.58rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.pathway-goal-card p{margin:0;color:#c5d1d5;line-height:1.58;font-size:.78rem;white-space:pre-wrap}
+.pathway-footnote{margin-top:18px;color:var(--muted);font-size:.65rem;line-height:1.55}
+
+@media(max-width:980px){.pathway-shell{grid-template-columns:1fr}.pathway-panel.is-accent{order:-1}}
+@media(max-width:720px){.pathway-preference-grid{grid-template-columns:1fr}.pathway-settings{grid-template-columns:1fr}.pathway-panel{padding:21px}.pathway-panel-head{display:grid}.pathway-privacy{justify-self:start}.pathway-form-actions{align-items:flex-start;flex-direction:column}.pathway-recommendation-top{display:grid}.pathway-recommendation-badges{justify-content:flex-start}}
