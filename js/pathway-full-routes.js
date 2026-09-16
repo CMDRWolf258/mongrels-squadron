@@ -17,14 +17,13 @@
     ['Squadron Coordination', document.querySelector('[data-squadron-coordination-pathway]')],
   ]);
 
-  function fullRouteIsVisible(label) {
-    const root = fullPathwayRoots.get(label);
-    return Boolean(root && !root.hidden);
+  function fullRouteExists(label) {
+    return Boolean(fullPathwayRoots.get(label));
   }
 
   function removeDuplicateGenericSections() {
     preview.querySelectorAll('.pathway-generic-section[data-pathway-label]').forEach(section => {
-      if (fullRouteIsVisible(section.dataset.pathwayLabel || '')) section.remove();
+      if (fullRouteExists(section.dataset.pathwayLabel || '')) section.remove();
     });
   }
 
@@ -34,7 +33,9 @@
       const label = heading?.textContent?.trim();
       if (!label) return;
 
-      if (fullRouteIsVisible(label)) {
+      // Full Pathways own their activity presentation. Never leave the old
+      // generic recommendation card behind while the provider is loading.
+      if (fullRouteExists(label)) {
         card.remove();
         return;
       }
@@ -76,10 +77,5 @@
   }
 
   new MutationObserver(normalizePreviewCards).observe(preview, { childList:true, subtree:true });
-  fullPathwayRoots.forEach(root => {
-    if (!root) return;
-    new MutationObserver(removeDuplicateGenericSections).observe(root, { attributes:true, attributeFilter:['hidden'] });
-  });
-
   normalizePreviewCards();
 })();
