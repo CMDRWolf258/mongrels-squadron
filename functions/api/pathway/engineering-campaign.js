@@ -10,9 +10,15 @@ import {
   setEngineeringCampaignStatus,
   buildEngineeringCampaignView,
 } from '../../../lib/engineering-campaign.js';
-import { buildEngineeringDependencyNodes } from '../../../lib/engineering-campaign-data.js';
+import {
+  FIRST_ENGINEERING_WIN,
+  ENGINEERING_TRACKED_FACTS,
+  buildEngineeringDependencyNodes,
+  buildFirstEngineeringWinView,
+} from '../../../lib/engineering-campaign-data.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
+const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -53,6 +59,21 @@ export async function onRequestPost({ request, env }) {
       state = setEngineeringFact(state, body?.factId, body?.value, 'manual', now);
     } else if (action === 'clear_fact') {
       state = clearEngineeringFact(state, body?.factId, now);
+    } else if (action === 'record_counter') {
+      state = recordCounter(state, body?.factId, body?.amount, now);
+    } else if (action === 'set_counter_total') {
+      state = setCounterTotal(state, body?.factId, body?.value, now);
+    } else if (action === 'set_first_win_step') {
+      const factId = String(body?.factId || '');
+      if (!FIRST_WIN_FACTS.has(factId)) throw new Error('invalid_first_win_step');
+      state = setEngineeringFact(state, factId, Boolean(body?.complete), 'manual', now);
+    } else if (action === 'complete_first_win') {
+      state = setEngineeringFact(state, 'first-win.complete', true, 'manual', now);
+      state = clearEngineeringFactIfPresent(state, 'first-win.dismissed', now);
+    } else if (action === 'dismiss_first_win') {
+      state = setEngineeringFact(state, 'first-win.dismissed', true, 'manual', now);
+    } else if (action === 'restore_first_win') {
+      state = clearEngineeringFactIfPresent(state, 'first-win.dismissed', now);
     } else if (action === 'set_node') {
       state = setEngineeringNodeComplete(state, body?.campaignId, body?.nodeId, Boolean(body?.complete), 'manual', now);
     } else if (action === 'set_campaign_status') {
@@ -79,9 +100,39 @@ function present(stateValue) {
     ok:true,
     frameworkVersion:1,
     goalCatalog:ENGINEERING_GOAL_CATALOG,
+    trackedFacts:ENGINEERING_TRACKED_FACTS,
+    firstEngineeringWin:buildFirstEngineeringWinView(state.facts),
     state,
     planner:buildEngineeringCampaignView(state, dependencyNodes),
   };
+}
+
+function recordCounter(stateValue, factIdValue, amountValue, now) {
+  const factId = String(factIdValue || '');
+  const definition = ENGINEERING_TRACKED_FACTS[factId];
+  if (!definition || definition.kind !== 'counter') throw new Error('invalid_counter');
+  const amount = Number(amountValue);
+  if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 10000) throw new Error('invalid_counter_amount');
+  const currentRaw = stateValue?.facts?.[factId]?.value;
+  const current = Number.isFinite(Number(currentRaw)) ? Number(currentRaw) : 0;
+  const minimum = Number.isFinite(Number(definition.minimum)) ? Number(definition.minimum) : 0;
+  const next = Math.max(minimum, current + amount);
+  return setEngineeringFact(stateValue, factId, next, 'manual', now);
+}
+
+function setCounterTotal(stateValue, factIdValue, value, now) {
+  const factId = String(factIdValue || '');
+  const definition = ENGINEERING_TRACKED_FACTS[factId];
+  if (!definition || definition.kind !== 'counter') throw new Error('invalid_counter');
+  const total = Number(value);
+  const minimum = Number.isFinite(Number(definition.minimum)) ? Number(definition.minimum) : 0;
+  if (!Number.isInteger(total) || total < minimum || total > 1000000) throw new Error('invalid_counter_total');
+  return setEngineeringFact(stateValue, factId, total, 'manual', now);
+}
+
+function clearEngineeringFactIfPresent(stateValue, factId, now) {
+  if (!stateValue?.facts?.[factId]) return stateValue;
+  return clearEngineeringFact(stateValue, factId, now);
 }
 
 async function loadState(env, ownerId) {
