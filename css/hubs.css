@@ -1,52 +1,5 @@
-/* Hub navigation prototype + Start Here / Activities landing pages.
-   Loaded only by the new hub pages until the navigation model is validated. */
-
-/* ---------- grouped navigation prototype ---------- */
-.site-header-v2 .nav-wrap{position:relative;gap:18px}
-.site-header-v2 .menu-toggle{display:none}
-.site-header-v2 .nav-links-v2{gap:3px}
-.site-header-v2 .nav-links-v2>a,
-.site-header-v2 .nav-group>summary{display:flex;align-items:center;min-height:42px;padding:0 10px;border-radius:8px;color:#cbd5da;font-size:.74rem;font-weight:850;letter-spacing:.085em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:.18s ease;white-space:nowrap;list-style:none}
-.site-header-v2 .nav-group>summary::-webkit-details-marker{display:none}
-.site-header-v2 .nav-group>summary::after{content:"⌄";margin-left:7px;color:var(--muted);font-size:.72rem;transform:translateY(-1px)}
-.site-header-v2 .nav-links-v2>a:hover,
-.site-header-v2 .nav-links-v2>a[aria-current="page"],
-.site-header-v2 .nav-group>summary:hover,
-.site-header-v2 .nav-group[open]>summary,
-.site-header-v2 .nav-group.is-current>summary{color:var(--accent);background:var(--accent-soft)}
-.site-header-v2 .nav-group{position:static}
-.site-header-v2 .nav-mega{position:absolute;z-index:70;top:68px;right:0;width:min(820px,calc(100vw - 32px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(7,11,14,.985);box-shadow:0 24px 70px rgba(0,0,0,.55);backdrop-filter:blur(20px)}
-.site-header-v2 .nav-mega-two{grid-template-columns:repeat(2,minmax(0,1fr));width:min(650px,calc(100vw - 32px))}
-.site-header-v2 .nav-mega-column{min-width:0;padding:6px}
-.site-header-v2 .nav-mega-label{display:block;margin:0 0 8px;padding:0 8px;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-.site-header-v2 .nav-links-v2 .nav-mega a{display:block;padding:9px 8px;border-radius:8px;color:#d7e1e5;font-size:.75rem;font-weight:750;letter-spacing:0;text-transform:none;text-decoration:none;white-space:normal}
-.site-header-v2 .nav-links-v2 .nav-mega a:hover{color:#f4fdff;background:rgba(34,211,238,.09)}
-.site-header-v2 .nav-mega a small{display:block;margin-top:2px;color:var(--muted);font-size:.63rem;font-weight:600;line-height:1.35}
-.site-header-v2 .nav-mega-footer{grid-column:1/-1;display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:2px;padding:12px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:.66rem;line-height:1.45}
-.site-header-v2 .nav-mega-footer strong{color:#dcecef}
-
-/* Defeat the old nth-child progressive-collapse rules on the prototype nav. */
-@media (min-width:1061px){
-  .site-header-v2 .nav-links-v2{position:static;inset:auto;display:flex;flex-direction:row;align-items:center;padding:0;border:0;background:transparent;box-shadow:none}
-  .site-header-v2 .nav-links-v2>a{display:flex}
-  .site-header-v2 .nav-links-v2 .nav-mega a{display:block}
-}
-
-@media(max-width:1060px){
-  .site-header-v2 .menu-toggle{display:inline-flex}
-  .site-header-v2 .nav-links-v2{top:79px;max-height:calc(100vh - 96px);overflow:auto;gap:3px}
-  .site-header-v2 .nav-links-v2>a,
-  .site-header-v2 .nav-group>summary{display:flex;min-height:46px;padding:0 13px;font-size:.76rem}
-  .site-header-v2 .nav-group{width:100%;border-top:1px solid rgba(255,255,255,.035)}
-  .site-header-v2 .nav-group:first-of-type{border-top:0}
-  .site-header-v2 .nav-group>summary{justify-content:space-between}
-  .site-header-v2 .nav-mega,
-  .site-header-v2 .nav-mega-two{position:static;width:auto;grid-template-columns:1fr;gap:8px;margin:0 5px 8px;padding:10px;border-radius:10px;box-shadow:none;background:rgba(255,255,255,.018)}
-  .site-header-v2 .nav-mega-column{padding:3px}
-  .site-header-v2 .nav-mega-label{margin-top:4px}
-  .site-header-v2 .nav-mega-footer{display:block;padding:11px 9px}
-}
-@media(max-width:520px){.site-header-v2 .nav-links-v2{top:69px}}
+/* Start Here / Activities landing-page styles.
+   Site-wide navigation is owned exclusively by css/navigation-v2.css + js/site.js. */
 
 /* ---------- shared hub page visual language ---------- */
 .hub-hero{position:relative;overflow:hidden;background:linear-gradient(105deg,rgba(34,211,238,.07),rgba(7,10,12,.2) 45%,transparent)}
