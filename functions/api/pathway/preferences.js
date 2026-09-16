@@ -19,7 +19,7 @@ const ACTIVITIES = [
   { id:'bgs', label:'Background Simulation', group:'Galaxy & Frontier' },
   { id:'colonization', label:'Colonization', group:'Galaxy & Frontier' },
   { id:'powerplay', label:'Powerplay', group:'Galaxy & Frontier' },
-  { id:'operations', label:'Squad Operations', group:'Galaxy & Frontier' },
+  { id:'operations', label:'Squadron Coordination', group:'Galaxy & Frontier' },
 ];
 const ACTIVITY_IDS = new Set(ACTIVITIES.map(item => item.id));
 
