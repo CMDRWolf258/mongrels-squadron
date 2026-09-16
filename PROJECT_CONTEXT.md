@@ -496,7 +496,9 @@ High-value future improvement: include the member’s current Pathway assignment
 Validated/accepted by Wolf:
 - original AX beginner routes were useful;
 - Start Here random-task cards/carousel look good;
-- compact navigation focus-mode fix was doing okay after the final change.
+- compact navigation focus-mode fix was doing okay after the final change;
+- First Engineering Win Start Here card looks good on Wolf’s phone;
+- First Engineering Win **Undo Previous Step** control works/looked good on Wolf’s phone. This validates the surface/reversal behavior, not a full in-game completion of all ~17 Engineering steps.
 
 Implemented but **do not call production-validated unless Wolf confirms or live checks succeed**:
 - Trade v2 route rewrite;
@@ -504,8 +506,7 @@ Implemented but **do not call production-validated unless Wolf confirms or live 
 - Engineering & Shipbuilding full pathway;
 - Engineering Campaign Planner framework;
 - numeric Engineering prerequisite-counter API;
-- First Engineering Win audited sequence and Start Here surface;
-- First Engineering Win **Undo Previous Step** behavior;
+- full in-game/end-to-end completion of the First Engineering Win audited sequence;
 - assorted latest recruitment/onboarding hardening described by current code.
 
 Production deployment can lag GitHub commits. Always distinguish “committed” from “confirmed live.”
