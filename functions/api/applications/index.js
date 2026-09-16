@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { provisionAcceptedApplicant, sendRecruitmentSubmissionAlert } from '../../../lib/discord-recruitment.js';
+import { provisionAcceptedApplicant, sendRecruitmentDeclineNotice, sendRecruitmentSubmissionAlert } from '../../../lib/discord-recruitment.js';
 
 const STORAGE_KEY = 'applications-v1';
 const REVIEW_ACCESS = new Set(['officer', 'site_admin']);
@@ -12,6 +12,7 @@ const DISCOVERY = ['Current Mongrel member', 'INARA', 'Social media', 'Discord /
 const PVP = ['None', 'Beginner', 'Comfortable', 'Experienced'];
 const VOICE = ['Yes', 'Usually', 'No'];
 const OPEN = ['Yes', 'No'];
+const DEFAULT_DECLINE_MESSAGE = 'Thank you for taking the time to apply. Your application was not accepted at this time. If leadership invited you to reapply later or you would like clarification, please contact us in Discord.';
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireDiscordIdentity(request, env);
@@ -68,6 +69,7 @@ export async function onRequestPost({ request, env }) {
     status: action === 'submit' ? 'submitted' : 'draft',
     answers,
     officerNotes: existing?.officerNotes || '',
+    applicantMessage: existing?.applicantMessage || '',
     createdAt: existing?.createdAt || now,
     updatedAt: now,
     submittedAt: action === 'submit' ? now : (existing?.submittedAt || null),
@@ -75,27 +77,33 @@ export async function onRequestPost({ request, env }) {
     reviewedBy: existing?.reviewedBy || '',
     acceptedAt: existing?.acceptedAt || null,
     acceptedBy: existing?.acceptedBy || '',
+    declinedAt: existing?.declinedAt || null,
+    declinedBy: existing?.declinedBy || '',
     discordProvisionedAt: existing?.discordProvisionedAt || null,
     acceptanceDmStatus: existing?.acceptanceDmStatus || '',
+    declineDmStatus: existing?.declineDmStatus || '',
     inGameApplicationVerified: Boolean(existing?.inGameApplicationVerified),
     inGameApplicationVerifiedAt: existing?.inGameApplicationVerifiedAt || null,
     inGameApplicationVerifiedBy: existing?.inGameApplicationVerifiedBy || '',
     inGameRequirementOverridden: Boolean(existing?.inGameRequirementOverridden),
     inGameRequirementOverriddenAt: existing?.inGameRequirementOverriddenAt || null,
     inGameRequirementOverriddenBy: existing?.inGameRequirementOverriddenBy || '',
+    decisionHistory: Array.isArray(existing?.decisionHistory) ? existing.decisionHistory : [],
+    reapplicationCycle: Number(existing?.reapplicationCycle || 1),
+    reapplicationAllowedAt: existing?.reapplicationAllowedAt || null,
+    reapplicationAllowedBy: existing?.reapplicationAllowedBy || '',
+    previousApplicationId: existing?.previousApplicationId || null,
   };
 
   if (existingIndex >= 0) items[existingIndex] = item;
   else items.push(item);
   await writeApplications(env, items);
 
-  // Application submission is authoritative even if Discord is temporarily unavailable.
-  // The alert helper keeps its own per-application idempotency record to prevent duplicates.
   if (action === 'submit') {
     try {
       await sendRecruitmentSubmissionAlert(env, item, new URL(request.url).origin);
     } catch {
-      // Do not make an otherwise valid application fail because an officer notification failed.
+      // Submission remains authoritative even if Discord notification is unavailable.
     }
   }
 
@@ -117,18 +125,72 @@ export async function onRequestPut({ request, env }) {
   const index = items.findIndex(item => item.id === id);
   if (index < 0) return reply({ ok: false, error: 'application_not_found' }, 404);
   const existing = items[index];
-  if (existing.status === 'draft') return reply({ ok: false, error: 'application_not_submitted' }, 409);
-  const requested = clean(body.value?.status, existing.status, 30);
-  const status = STATUSES.includes(requested) && requested !== 'draft' ? requested : existing.status;
-  const newlyAccepted = status === 'accepted' && existing.status !== 'accepted';
   const reviewerName = session.displayName || session.username || 'Mongrel Officer';
   const now = new Date().toISOString();
+
+  if (body.value?.action === 'allow_reapplication') {
+    if (existing.status !== 'declined') return reply({ ok: false, error: 'reapplication_requires_declined_status' }, 409);
+    const archived = archiveDecision(existing);
+    const history = [...(Array.isArray(existing.decisionHistory) ? existing.decisionHistory : []), archived].slice(-10);
+    const reopened = {
+      ...existing,
+      id: crypto.randomUUID(),
+      status: 'draft',
+      answers: { ...(existing.answers || {}), inGameApplicationSubmitted: false },
+      officerNotes: '',
+      applicantMessage: '',
+      createdAt: now,
+      updatedAt: now,
+      submittedAt: null,
+      reviewedAt: null,
+      reviewedBy: '',
+      acceptedAt: null,
+      acceptedBy: '',
+      declinedAt: null,
+      declinedBy: '',
+      discordProvisionedAt: null,
+      acceptanceDmStatus: '',
+      declineDmStatus: '',
+      inGameApplicationVerified: false,
+      inGameApplicationVerifiedAt: null,
+      inGameApplicationVerifiedBy: '',
+      inGameRequirementOverridden: false,
+      inGameRequirementOverriddenAt: null,
+      inGameRequirementOverriddenBy: '',
+      decisionHistory: history,
+      reapplicationCycle: Number(existing.reapplicationCycle || 1) + 1,
+      reapplicationAllowedAt: now,
+      reapplicationAllowedBy: reviewerName,
+      previousApplicationId: existing.id,
+    };
+    items[index] = reopened;
+    await writeApplications(env, items);
+    return reply({ ok: true, reapplicationOpened: true, application: presentReviewer(reopened) });
+  }
+
+  if (existing.status === 'draft') return reply({ ok: false, error: 'application_not_submitted' }, 409);
+  const requested = clean(body.value?.status, existing.status, 30);
+  if (!STATUSES.includes(requested) || requested === 'draft') return reply({ ok: false, error: 'invalid_application_status' }, 400);
+  if (!transitionAllowed(existing.status, requested)) {
+    return reply({
+      ok: false,
+      error: ['accepted', 'declined'].includes(existing.status) ? 'application_terminal' : 'invalid_status_transition',
+      detail: existing.status === 'accepted'
+        ? 'Accepted applications are terminal. Use member-management tools for later membership changes.'
+        : existing.status === 'declined'
+          ? 'Declined applications are terminal unless leadership explicitly opens a reapplication.'
+          : `Cannot move an application from ${existing.status} to ${requested}.`,
+    }, 409);
+  }
+
+  const status = requested;
+  const newlyAccepted = status === 'accepted' && existing.status !== 'accepted';
+  const newlyDeclined = status === 'declined' && existing.status !== 'declined';
   let provisioning = null;
 
   const requestedVerification = typeof body.value?.inGameApplicationVerified === 'boolean'
     ? body.value.inGameApplicationVerified
     : Boolean(existing.inGameApplicationVerified);
-  // Once an officer has verified the in-game application, preserve that audit state.
   const inGameApplicationVerified = Boolean(existing.inGameApplicationVerified) || requestedVerification;
   const verificationBecameTrue = inGameApplicationVerified && !existing.inGameApplicationVerified;
   const overrideInGameRequirement = body.value?.overrideInGameRequirement === true;
@@ -141,8 +203,6 @@ export async function onRequestPut({ request, env }) {
     }, 409);
   }
 
-  // Discord Member role assignment is part of approval, not a follow-up manual step.
-  // The application is only marked Accepted after Member role provisioning succeeds.
   if (newlyAccepted) {
     try {
       provisioning = await provisionAcceptedApplicant(env, existing, new URL(request.url).origin);
@@ -156,15 +216,22 @@ export async function onRequestPut({ request, env }) {
   }
 
   const requirementOverriddenNow = newlyAccepted && !inGameApplicationVerified && overrideInGameRequirement;
+  const applicantMessage = newlyDeclined
+    ? clean(body.value?.applicantMessage, DEFAULT_DECLINE_MESSAGE, 1000)
+    : (existing.applicantMessage || '');
+
   items[index] = {
     ...existing,
     status,
     officerNotes: clean(body.value?.officerNotes, existing.officerNotes || '', 4000),
+    applicantMessage,
     updatedAt: now,
     reviewedAt: status === 'submitted' ? existing.reviewedAt : now,
     reviewedBy: status === 'submitted' ? existing.reviewedBy : reviewerName,
     acceptedAt: newlyAccepted ? now : (existing.acceptedAt || null),
     acceptedBy: newlyAccepted ? reviewerName : (existing.acceptedBy || ''),
+    declinedAt: newlyDeclined ? now : (existing.declinedAt || null),
+    declinedBy: newlyDeclined ? reviewerName : (existing.declinedBy || ''),
     discordProvisionedAt: newlyAccepted ? now : (existing.discordProvisionedAt || null),
     acceptanceDmStatus: newlyAccepted ? (provisioning?.dmStatus || '') : (existing.acceptanceDmStatus || ''),
     inGameApplicationVerified,
@@ -175,6 +242,19 @@ export async function onRequestPut({ request, env }) {
     inGameRequirementOverriddenBy: requirementOverriddenNow ? reviewerName : (existing.inGameRequirementOverriddenBy || ''),
   };
   await writeApplications(env, items);
+
+  if (newlyDeclined) {
+    let declineDmStatus = 'unknown';
+    try {
+      const notice = await sendRecruitmentDeclineNotice(env, items[index], new URL(request.url).origin);
+      declineDmStatus = notice?.status || 'unknown';
+    } catch {
+      declineDmStatus = 'failed';
+    }
+    items[index] = { ...items[index], declineDmStatus };
+    await writeApplications(env, items);
+  }
+
   return reply({
     ok: true,
     application: presentReviewer(items[index]),
@@ -185,7 +265,33 @@ export async function onRequestPut({ request, env }) {
       inGameApplicationVerified,
       inGameRequirementOverridden: requirementOverriddenNow,
     } : null,
+    declineNotice: newlyDeclined ? { status: items[index].declineDmStatus || 'unknown' } : null,
   });
+}
+
+function transitionAllowed(from, to) {
+  if (from === to) return true;
+  if (from === 'submitted') return ['under_review', 'accepted', 'declined'].includes(to);
+  if (from === 'under_review') return ['accepted', 'declined'].includes(to);
+  return false;
+}
+
+function archiveDecision(item) {
+  return {
+    id: item.id,
+    cycle: Number(item.reapplicationCycle || 1),
+    status: item.status,
+    answers: item.answers || {},
+    officerNotes: item.officerNotes || '',
+    applicantMessage: item.applicantMessage || '',
+    createdAt: item.createdAt || null,
+    submittedAt: item.submittedAt || null,
+    reviewedAt: item.reviewedAt || null,
+    reviewedBy: item.reviewedBy || '',
+    declinedAt: item.declinedAt || null,
+    declinedBy: item.declinedBy || '',
+    inGameApplicationVerified: Boolean(item.inGameApplicationVerified),
+  };
 }
 
 function normalizeAnswers(value, fallback = {}) {
@@ -235,14 +341,18 @@ function itemForApplicant(item) {
     officerNotes,
     reviewedBy,
     acceptedBy,
+    declinedBy,
     discordProvisionedAt,
     acceptanceDmStatus,
+    declineDmStatus,
     inGameApplicationVerified,
     inGameApplicationVerifiedAt,
     inGameApplicationVerifiedBy,
     inGameRequirementOverridden,
     inGameRequirementOverriddenAt,
     inGameRequirementOverriddenBy,
+    decisionHistory,
+    reapplicationAllowedBy,
     ...safe
   } = item;
   return safe;
@@ -290,6 +400,6 @@ function allowedList(value, choices, fallback) {
   return [...new Set(list.filter(item => set.has(item)))].slice(0, choices.length);
 }
 function booleanValue(value, fallback) { return typeof value === 'boolean' ? value : fallback; }
-function clean(value, fallback, max) { if (typeof value !== 'string') return fallback; const out = value.trim(); return out ? out.slice(0, max) : ''; }
+function clean(value, fallback, max) { if (typeof value !== 'string') return fallback; const out = value.trim(); return out ? out.slice(0, max) : fallback; }
 function headers() { return { 'Cache-Control': 'private, no-store, no-cache, must-revalidate', Pragma: 'no-cache', Vary: 'Cookie', 'X-Content-Type-Options':'nosniff' }; }
 function reply(data, status = 200) { return json(data, { status, headers: headers() }); }
