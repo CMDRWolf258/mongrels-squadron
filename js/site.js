@@ -5,6 +5,7 @@
   const nav = document.querySelector('[data-nav]');
   const button = document.querySelector('[data-menu-toggle]');
   let memberMenu = null;
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   const rootBase = (() => {
     const raw = brand?.getAttribute('href') || '';
@@ -172,8 +173,8 @@
       const menu = document.createElement('details');
       menu.className = 'member-access-menu';
       menu.setAttribute('data-member-access', '');
-      const displayName = session.displayName || 'Member';
-      const accessLabel = session.accessLabel || 'Member';
+      const displayName = escapeHtml(session.displayName || 'Member');
+      const accessLabel = escapeHtml(session.accessLabel || 'Member');
       menu.innerHTML = `
         <summary><span class="member-access-dot" aria-hidden="true"></span><span class="member-access-name">${displayName} · ${accessLabel}</span></summary>
         <div class="member-access-menu-panel">
