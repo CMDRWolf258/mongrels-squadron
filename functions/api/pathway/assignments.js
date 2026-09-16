@@ -37,7 +37,7 @@ const PROVIDERS = {
     label:'Trade & Hauling',
     getRoute:getTradeRoute,
     eligibleRoutes:eligibleTradeRoutes,
-    seedVersion:'trade-v1',
+    seedVersion:'trade-v2',
   },
 };
 
