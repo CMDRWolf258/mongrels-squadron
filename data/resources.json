@@ -1,0 +1,138 @@
+{
+  "version": "1",
+  "reviewedAt": "2026-09-16",
+  "resources": [
+    {
+      "id": "inara",
+      "name": "INARA",
+      "url": "https://inara.cz/elite/",
+      "type": "Website",
+      "activities": ["General", "Engineering", "Trade", "BGS", "Shipbuilding"],
+      "summary": "Commander profiles, engineering data, markets, stations, outfitting, minor factions, community activity and other broad Elite Dangerous reference tools.",
+      "mongrelUse": "Use it as a general-purpose lookup for engineering, stations, markets, factions, outfitting and Commander information.",
+      "tags": ["database", "markets", "stations", "engineering", "factions", "commander"]
+    },
+    {
+      "id": "edsy",
+      "name": "EDSY",
+      "url": "https://edsy.org/",
+      "type": "Website",
+      "activities": ["Shipbuilding", "Engineering", "Combat", "AX"],
+      "summary": "Detailed ship builder for modelling modules, engineering, power priorities, thermals, jump range and defensive performance.",
+      "mongrelUse": "Use it before spending credits or materials when you want to understand how a complete engineered build will behave.",
+      "tags": ["ship builder", "builds", "engineering", "thermals", "power", "defenses"]
+    },
+    {
+      "id": "spansh",
+      "name": "Spansh",
+      "url": "https://www.spansh.co.uk/",
+      "type": "Website",
+      "activities": ["Exploration", "Travel", "Carrier Logistics"],
+      "summary": "Galaxy routing and search tools for neutron travel, exploration, fleet carriers and specialist long-range planning.",
+      "mongrelUse": "Use it when the in-game route planner is not enough, especially for neutron routes, carrier movement and galaxy-scale searches.",
+      "tags": ["routing", "neutron", "fleet carrier", "galaxy", "exploration", "travel"]
+    },
+    {
+      "id": "elite-official",
+      "name": "Elite Dangerous",
+      "url": "https://www.elitedangerous.com/",
+      "type": "Website",
+      "activities": ["General"],
+      "summary": "Frontier's official Elite Dangerous website for official game information, updates and announcements.",
+      "mongrelUse": "Use it when you need first-party information about the game rather than community interpretation.",
+      "tags": ["official", "frontier", "news", "updates"]
+    },
+    {
+      "id": "eddiscovery",
+      "name": "EDDiscovery",
+      "url": "https://github.com/EDDiscovery/EDDiscovery",
+      "type": "Desktop App",
+      "activities": ["General", "Exploration", "Trade", "Engineering"],
+      "summary": "A broad journal companion that tracks travel history, materials, commodities, missions, expeditions, combat and other Commander activity.",
+      "mongrelUse": "Use it when you want a deep personal log of what your Commander has done and a powerful desktop view of journal-driven game data.",
+      "tags": ["journal", "history", "materials", "missions", "expeditions", "commander log"]
+    },
+    {
+      "id": "edcopilot",
+      "name": "EDCoPilot",
+      "url": "https://www.razzafrag.com/",
+      "type": "Desktop App",
+      "activities": ["General", "Exploration", "Travel"],
+      "summary": "Virtual cockpit assistant with searchable game information, navigation help, spoken assistance and an additional cockpit-style interface.",
+      "mongrelUse": "Use it when you want information and navigation help surfaced during play without constantly leaving the cockpit for external searches.",
+      "tags": ["voice", "assistant", "navigation", "cockpit", "vr", "companion"]
+    },
+    {
+      "id": "srvsurvey",
+      "name": "SRVSurvey",
+      "url": "https://github.com/njthomson/SrvSurvey/wiki",
+      "type": "Desktop App",
+      "activities": ["Exobiology", "Exploration", "Colonization", "Operations"],
+      "summary": "Surface-focused companion for planetary survey work, exobiology, navigation, settlement activity and Colonization support.",
+      "mongrelUse": "Use it for serious surface work, especially exobiology and Colonization where journal-aware overlays and tracking save time.",
+      "tags": ["surface", "exobiology", "colonization", "overlay", "survey", "planetary"]
+    },
+    {
+      "id": "raven-colonial",
+      "name": "Raven Colonial",
+      "url": "https://ravencolonial.com/",
+      "type": "Website",
+      "activities": ["Colonization", "Carrier Logistics", "Trade"],
+      "summary": "Colonization planning and logistics tool for construction progress, shopping lists, carrier staging, teamwork and system planning.",
+      "mongrelUse": "Use it to plan colony systems and keep multi-build hauling, construction requirements and carrier staging organized.",
+      "tags": ["colonization", "construction", "shopping list", "fleet carrier", "system planning", "logistics"]
+    },
+    {
+      "id": "edmc",
+      "name": "Elite Dangerous Market Connector",
+      "shortName": "EDMC",
+      "url": "https://github.com/EDCD/EDMarketConnector",
+      "type": "Desktop App",
+      "activities": ["General", "Trade", "BGS"],
+      "summary": "Journal and Companion API utility that shares game data with community services and supports a large plugin ecosystem.",
+      "mongrelUse": "Use it when you want a lightweight data connector or need an EDMC plugin for a specific community tool or workflow.",
+      "tags": ["journal", "market data", "plugins", "api", "community data", "connector"]
+    },
+    {
+      "id": "edsm",
+      "name": "EDSM",
+      "url": "https://www.edsm.net/",
+      "type": "Website",
+      "activities": ["Exploration", "Travel", "BGS"],
+      "summary": "Elite Dangerous Star Map database for systems, stations, celestial bodies, minor factions, travel history and exploration data.",
+      "mongrelUse": "Use it for galaxy and system lookups, exploration history and detailed information about systems, bodies and stations.",
+      "tags": ["star map", "systems", "stations", "bodies", "exploration", "factions"]
+    },
+    {
+      "id": "miners-tool",
+      "name": "Miner's Tool",
+      "url": "https://edtools.cc/miner",
+      "type": "Website",
+      "activities": ["Mining", "Trade"],
+      "summary": "Mining-focused lookup for known mining locations and current sell opportunities for valuable mined commodities.",
+      "mongrelUse": "Use it when you need an external mining location or want to find a strong current market for what you mined.",
+      "tags": ["mining", "hotspots", "sell markets", "commodities", "prices"]
+    },
+    {
+      "id": "axi",
+      "name": "Anti-Xeno Initiative Wiki",
+      "shortName": "AXI",
+      "url": "https://wiki.antixenoinitiative.com/",
+      "type": "Community Knowledge Base",
+      "activities": ["AX", "Combat", "Shipbuilding"],
+      "summary": "Specialist Anti-Xeno knowledge base with Thargoid mechanics, combat guides, ship builds and advanced AX technique.",
+      "mongrelUse": "Use it when you need dedicated AX doctrine or deeper Thargoid combat information than a general Elite reference can provide.",
+      "tags": ["anti-xeno", "thargoid", "interceptor", "combat", "ship builds", "axi"]
+    },
+    {
+      "id": "canonn",
+      "name": "Canonn Research Group",
+      "url": "https://canonn.science/",
+      "type": "Community Knowledge Base",
+      "activities": ["Exploration", "AX", "Guardian", "Science & Lore"],
+      "summary": "Community research hub focused on exploration, mysteries, Guardian and Thargoid discoveries, unusual phenomena and scientific investigation.",
+      "mongrelUse": "Use it when the question is about discoveries, alien or Guardian research, unusual galaxy phenomena, or the deeper investigative side of Elite.",
+      "tags": ["canonn", "science", "guardian", "thargoid", "mysteries", "exploration", "lore"]
+    }
+  ]
+}
