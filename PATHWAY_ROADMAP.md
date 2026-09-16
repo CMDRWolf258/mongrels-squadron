@@ -11,6 +11,7 @@ This file records current Pathway direction and specialty concepts that should s
 5. **Carrier Logistics** — Carrier Foundations, Carrier Crew, Cargo Coordinator, Movement Planner, and Carrier Logistics Lead.
 6. **Engineering & Shipbuilding** — Engineering Foundations, Engineer Network, Role Builder, Combat Systems, Ship Architect, and Engineering Mentor routes.
 7. **Exploration** — Foundations, Surveyor, Deep-Space Navigator, Discovery Specialist, and Expedition Lead/Mentor routes.
+8. **Exobiology** — First Bio Survey, Field Surveyor, Efficient Naturalist, Target Specialist, and Expedition Bio Lead/Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
@@ -121,7 +122,67 @@ Veteran/Mentor route:
 - make another explorer more independent;
 - debrief and preserve lessons/findings.
 
-Exploration intentionally **does not absorb Exobiology**. It may support biological discovery and long-range travel, but Exobiology remains its own future full Pathway with its own field skills and progression.
+Exploration intentionally **does not absorb Exobiology**. It may support biological discovery and long-range travel, but Exobiology has its own field-skill progression below.
+
+## Exobiology — implemented full pathway
+
+Primary files:
+- `lib/pathway-exobiology.js`
+- `js/pathway-exobiology.js`
+- shared `functions/api/pathway/assignments.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-exobiology.mjs`
+
+Current routes:
+
+### First Bio Survey — Find, Sample, Sell
+Beginner complete-loop route:
+- prepare a practical ship + Artemis/Genetic Sampler setup;
+- select a landable body with biological signals;
+- use the DSS biological heatmap and terrain together;
+- locate the organism without relying on a fixed coordinate;
+- complete the required three genetically distinct samples while using sampler feedback for spacing;
+- return from the surface safely;
+- sell the data at Vista Genomics;
+- repeat the full loop independently.
+
+### Field Surveyor — Read Terrain & Signals
+Developing route:
+- time a normal biological search;
+- compare heatmap/terrain regions before landing;
+- use a repeatable search pattern;
+- compare sample-spacing behavior across organisms;
+- compare ship/SRV/on-foot movement where practical;
+- work a multi-species body without letting one stubborn target consume the session.
+
+### Efficient Naturalist — Find the Time Sink
+Developing/Experienced route:
+- measure one complete exobiology stop;
+- create a deliberate biological-detour rule;
+- improve landing choice before trying to move faster afterward;
+- optimize the full three-sample sequence;
+- intentionally abandon/relocate a bad search when evidence justifies it;
+- rerun after changing the real bottleneck.
+
+### Target Specialist — Hunt Biology With a Purpose
+Experienced route:
+- define a biological search objective;
+- build a candidate shortlist before flying;
+- ground-truth tool predictions in the field;
+- create a reusable biological field report;
+- adapt the search after new evidence;
+- turn the result into squad-useful reconnaissance.
+
+### Expedition Bio Lead — Survey, Coordinate, Teach
+Veteran/Mentor route:
+- design a biological survey with a real objective;
+- divide survey work without removing discovery;
+- lead and adapt the field plan;
+- quality-check shared biological reports;
+- make another Commander more independent in the field;
+- debrief and preserve discoveries, failed assumptions, and lessons.
+
+Exobiology and Exploration remain separate full providers even though they naturally support one another.
 
 ## Community Goal Hauler Prep — implemented Trade specialty
 
@@ -133,9 +194,8 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 
 ## Next core Pathways
 
-Broader coverage is now the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
-- **Exobiology**
-- PvE Combat
+Broader coverage remains the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
+- **PvE Combat**
 - PvP
 - Surface Operations
 - Colonization
@@ -146,6 +206,6 @@ Do not automatically build every item without inspecting current site content fi
 
 ## Validation direction
 
-Automated smoke tests protect provider catalogs, shared API imports/helpers, high-value page wiring, Engineering campaign behavior, specialty behavior, Assistant context, and now Exploration full-route integration. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology additionally has a small focused regression script that checks its five-route catalog, beginner flow, Assistant recognition, shared-provider registration, UI mount, and generic-card suppression. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
