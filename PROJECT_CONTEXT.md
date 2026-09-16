@@ -8,7 +8,7 @@ _Last updated: 2026-09-15_
 
 Never reuse remembered file SHAs. Fetch the current file before modifying it.
 
-This is an architecture/handoff guide, not a changelog or duplicate of the codebase. Update it after meaningful workflow, permission, storage, integration, or project-direction changes.
+This is an architecture/handoff guide, not a changelog or duplicate of the codebase. Update it after meaningful workflow, permission, storage, integration, navigation, or project-direction changes.
 
 ---
 
@@ -43,6 +43,86 @@ Completed authenticated workflows should usually show a clear completed/status s
 ### Mobile/tablet
 
 Wolf travels often and uses desktop, phone, and iPad. Admin/member tools must remain practical on smaller screens.
+
+---
+
+## Navigation / information architecture direction
+
+The site has reached the point where adding more top-level links would make it harder to use. Future growth should use **progressive disclosure** rather than continuing to widen the main menu.
+
+Long-term public navigation model:
+- **Start Here** — low-overwhelm route for new, returning, or casual Commanders
+- **Activities** — browse Elite by what the player wants to do
+- **Command** — Mission Control, Daily Orders, projects, carrier coordination, squad operations
+- **Resources** — Field Manual, Engineering, Ship Catalogue, reference, glossary, Ask the Mongrels
+- **Community** — About, roster/profiles, gallery, Discord/community links
+- **Join Us** — recruitment
+- Mongrels logo acts as Home
+- authenticated member identity/access remains separate from the public navigation
+
+### Current navigation pilot
+
+Files:
+- `start/index.html`
+- `activities/index.html`
+- `css/hubs.css`
+
+Current state:
+- `/start/` and `/activities/` use the grouped-navigation prototype.
+- Desktop uses compact top-level groups with click-open mega panels.
+- Mobile/tablet uses the same semantic groups as stacked accordions inside the existing menu drawer.
+- The pilot uses `<details>`/`<summary>` plus the existing `js/site.js`; no separate navigation JavaScript was added.
+- Existing site-wide headers have **not** been replaced yet.
+- Home exposes Start Here and Activities cards so the pilot can be reached naturally.
+
+Do **not** roll the new navigation across the entire site until Wolf reviews the live desktop/mobile behavior and confirms the direction.
+
+### Start Here philosophy
+
+`/start/` is not another giant beginner manual. It should answer: **“What is one useful thing I can do next?”**
+
+Current tracks:
+- New to Elite
+- Know the Basics
+- Experienced Commander
+
+Rules:
+- no rigid progression gates;
+- players can skip anything they already know;
+- challenges should feel useful, not like homework;
+- detailed guides remain available when the player wants depth.
+
+### Activities philosophy
+
+`/activities/` organizes information around user intent rather than internal site structure. A player should not need to know whether something technically lives under Guides, Ships, Projects, or Command before finding it.
+
+Current families:
+- Combat — PvE, PvP, AX, Surface Operations
+- Industry & Logistics — Mining, Trade, Carriers, Engineering
+- Exploration & Discovery — Exploration, Exobiology, Expeditions
+- Galaxy & Frontier — BGS, Colonization, Powerplay, current squad tasking
+
+The hub should expose both live material and clearly marked planned gaps without pretending unfinished content exists.
+
+### My Pathway — planned personalized layer
+
+**My Pathway** is intended to be a personalized lens over the same canonical site content, not a duplicate knowledge base.
+
+Planned inputs from member profiles:
+- activities/interests the Commander enjoys;
+- areas they want to improve;
+- approximate experience per selected activity;
+- optional current goals/preferences.
+
+Planned behavior:
+- deterministic structured progression, not opaque AI-generated progression;
+- recommend useful next goals based on interest, experience, prerequisites, and current squad opportunities;
+- allow **Complete**, **I already know this**, **Skip / not now** behavior;
+- never lock the rest of the site or force experienced Commanders through beginner tasks;
+- mix personal development goals with relevant live squad opportunities where useful;
+- Ask the Mongrels may explain pathway recommendations, but should not secretly own the progression state.
+
+**AX is planned as the first complete pathway model** because it naturally spans preparation, modules, Engineering, training, first combat, Interceptor fundamentals, and advanced play.
 
 ---
 
@@ -324,6 +404,8 @@ Profiles use `PROJECTS` key:
 
 Member profile creation is part of new-member onboarding.
 
+Future profile evolution for My Pathway should extend the existing specialties/activities model rather than create a second unrelated identity/profile system.
+
 ---
 
 ## Mission Control / BGS conventions
@@ -343,6 +425,8 @@ Known deferred BGS item: a previously discussed retreat-warning default change m
 ## Other major modules
 
 - Home
+- Start Here
+- Activities
 - About / Rules
 - Mission Control / Operations
 - Projects & Events
@@ -374,6 +458,8 @@ Principles:
 - only provide member-only Mission Control context after authentication;
 - use knowledge gaps to improve content instead of inventing answers;
 - prefer modular additions over one giant prompt/knowledge file.
+
+For My Pathway, the assistant may explain recommendations or help a Commander understand a goal, but deterministic structured pathway data should remain authoritative for progression state.
 
 ---
 
@@ -431,12 +517,14 @@ Prefer normal repository image files, efficient formats, GitHub/file workflows, 
 - Acceptance/decline/reapplication Discord messages are best-effort after the authoritative website decision where appropriate.
 - Legacy MEE6/Appy pieces may remain installed until the replacement flow proves itself with real users.
 - Moderated Gallery and Ship Build submission/approval workflows remain deferred.
+- New grouped navigation is still a two-page pilot; site-wide rollout intentionally waits for Wolf's review.
+- My Pathway is an architecture direction, not yet a live member feature.
 
 ---
 
 ## Validation status
 
-Confirmed live before the latest hardening pass:
+Confirmed live before the latest hardening/navigation passes:
 - custom Applicant/Guest Discord buttons work;
 - Applicant ↔ Guest switching works;
 - Applicant one-time DM works;
@@ -452,6 +540,9 @@ Confirmed live before the latest hardening pass:
 - Accepted/Declined terminal state rules;
 - decline DM/applicant message;
 - reapplication archive + reopen + DM;
-- new-member onboarding checklist.
+- new-member onboarding checklist;
+- Start Here hub;
+- Activities hub;
+- grouped desktop/mobile navigation pilot on those two hubs.
 
-Do not label these latest items “validated” until Wolf tests them or a real applicant completes the flow.
+Do not label these latest items “validated” until Wolf tests them or a real applicant completes the relevant flow.
