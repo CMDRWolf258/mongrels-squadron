@@ -5,7 +5,7 @@
   if (!document.querySelector('link[data-start-tasks-style]')) {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '../css/start-tasks.css?v=1';
+    style.href = '../css/start-tasks.css?v=2';
     style.dataset.startTasksStyle = 'true';
     document.head.appendChild(style);
   }
@@ -13,6 +13,8 @@
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const experienceLabels = { new:'Beginner', some:'Developing', comfortable:'Experienced', experienced:'Veteran / Mentor' };
   const kindLabels = { activity:'Activity Task', challenge:'Challenge', squad:'Squad Opportunity' };
+  const carouselIndex = new Map();
+  let currentData = null;
   let busy = false;
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -32,10 +34,9 @@
   }
 
   function renderGate() {
-    const returnPath = encodeURIComponent('/start/#daily-tasks');
     root.innerHTML = `<div class="daily-task-gate">
       <div><span class="daily-task-kicker">Members Get Personalized Picks</span><h3>Sign in for today’s assignments</h3><p>Start Here can use your private My Pathway preferences to offer tasks from activities you actually care about. It does not change Pathway progress.</p></div>
-      <a class="btn btn-primary" href="/api/auth/login?return=${returnPath}">Sign in with Discord</a>
+      <a class="btn btn-primary" href="/api/auth/login?return=${encodeURIComponent('/start/#daily-tasks')}">Sign in with Discord</a>
     </div>`;
   }
 
@@ -56,18 +57,39 @@
     </article>`;
   }
 
+  function normalizedCarouselIndex(categoryId, count) {
+    if (!count) return 0;
+    const saved = Number(carouselIndex.get(categoryId));
+    const index = Number.isFinite(saved) ? saved : count - 1;
+    const normalized = Math.max(0, Math.min(count - 1, index));
+    carouselIndex.set(categoryId, normalized);
+    return normalized;
+  }
+
   function categoryMarkup(category) {
     const revealed = Array.isArray(category.revealed) ? category.revealed : [];
     const remaining = Number(category.remaining) || 0;
     const count = revealed.length;
+    const activeIndex = normalizedCarouselIndex(category.id, count);
+    const activeTask = count ? revealed[activeIndex] : null;
     const buttonText = count === 0 ? 'Give Me a Task' : remaining > 0 ? `Another Task · ${remaining} Left` : 'Daily Limit Reached';
+    const carousel = activeTask ? `
+      <div class="daily-carousel" data-daily-carousel="${esc(category.id)}">
+        ${taskMarkup(activeTask, activeIndex)}
+        ${count > 1 ? `<div class="daily-carousel-nav">
+          <button type="button" data-daily-slide="prev" data-daily-activity="${esc(category.id)}" aria-label="Previous ${esc(category.label)} task">←</button>
+          <span><strong>${activeIndex + 1}</strong> / ${count}</span>
+          <button type="button" data-daily-slide="next" data-daily-activity="${esc(category.id)}" aria-label="Next ${esc(category.label)} task">→</button>
+        </div>` : '<div class="daily-carousel-nav is-single"><span>Task 1 of 1</span></div>'}
+      </div>` : '<p class="daily-category-empty">Nothing assigned yet. Hit the button and take what the computer gives you.</p>';
+
     return `<article class="daily-category" data-daily-category="${esc(category.id)}">
       <div class="daily-category-head">
         <div><span class="daily-category-group">${esc(category.group)}</span><h3>${esc(category.label)}</h3></div>
         <span class="daily-experience">${esc(experienceLabels[category.experience] || category.experience)}</span>
       </div>
       <div class="daily-category-meter"><span><strong>${count}</strong> / ${category.limit} revealed today</span><i><b style="width:${Math.min(100, (count / Math.max(1, category.limit)) * 100)}%"></b></i></div>
-      ${revealed.length ? `<div class="daily-options">${revealed.map(taskMarkup).join('')}</div>` : '<p class="daily-category-empty">Nothing assigned yet. Hit the button and take what the computer gives you.</p>'}
+      ${carousel}
       <div class="daily-category-actions">
         <button class="btn ${count === 0 ? 'btn-primary' : 'btn-ghost'}" type="button" data-daily-reveal="${esc(category.id)}" ${remaining <= 0 ? 'disabled' : ''}>${esc(buttonText)}</button>
         <a class="daily-browse-link" href="${esc(category.link || '../activities/')}">Browse ${esc(category.label)}</a>
@@ -75,7 +97,22 @@
     </article>`;
   }
 
+  function bindInteractions() {
+    root.querySelectorAll('[data-daily-reveal]').forEach(button => button.addEventListener('click', () => reveal(button.dataset.dailyReveal)));
+    root.querySelectorAll('[data-daily-slide]').forEach(button => button.addEventListener('click', () => {
+      const activity = button.dataset.dailyActivity;
+      const category = currentData?.categories?.find(item => item.id === activity);
+      const count = Array.isArray(category?.revealed) ? category.revealed.length : 0;
+      if (count < 2) return;
+      const current = normalizedCarouselIndex(activity, count);
+      const delta = button.dataset.dailySlide === 'prev' ? -1 : 1;
+      carouselIndex.set(activity, (current + delta + count) % count);
+      render(currentData);
+    }));
+  }
+
   function render(data) {
+    currentData = data;
     if (!data.authenticated) return renderGate();
     if (!data.hasPreferences) return renderNoPreferences();
     const categories = Array.isArray(data.categories) ? data.categories : [];
@@ -85,8 +122,7 @@
         <a class="btn btn-ghost" href="../pathway/">Adjust Preferences</a>
       </div>
       <div class="daily-category-grid">${categories.map(categoryMarkup).join('')}</div>`;
-
-    root.querySelectorAll('[data-daily-reveal]').forEach(button => button.addEventListener('click', () => reveal(button.dataset.dailyReveal)));
+    bindInteractions();
   }
 
   async function reveal(activity) {
@@ -96,6 +132,9 @@
     if (button) { button.disabled = true; button.textContent = 'Picking…'; }
     try {
       const result = await api('POST', { action:'reveal', activity });
+      const category = result?.categories?.find(item => item.id === activity);
+      const count = Array.isArray(category?.revealed) ? category.revealed.length : 0;
+      if (count) carouselIndex.set(activity, count - 1);
       render(result);
     } catch (error) {
       console.error('Could not reveal Start Here daily task', error);
