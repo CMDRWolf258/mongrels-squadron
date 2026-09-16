@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../css/global.css?v=70">
   <link rel="stylesheet" href="../css/pathway.css?v=3">
   <link rel="stylesheet" href="../css/engineering-prep-tracker.css?v=5">
+  <link rel="stylesheet" href="../css/pathway-activity-sections.css?v=1">
 </head>
 <body class="visual-page page-members page-pathway">
 <header class="site-header">
@@ -80,36 +81,54 @@
         </div>
         <div class="pathway-summary" data-pathway-summary></div>
 
-        <section class="ax-pathway" data-ax-pathway hidden>
-          <div class="ax-pathway-loading" data-ax-loading>Building your AX assignment…</div>
-          <div data-ax-content></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section" data-ax-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Anti-Xeno</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-ax-loading>Building your AX assignment…</div>
+            <div data-ax-content></div>
+          </div>
+        </details>
 
-        <section class="ax-pathway" data-bgs-pathway hidden>
-          <div class="ax-pathway-loading" data-bgs-loading>Building your BGS assignment…</div>
-          <div data-bgs-content></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section" data-bgs-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Background Simulation</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-bgs-loading>Building your BGS assignment…</div>
+            <div data-bgs-content></div>
+          </div>
+        </details>
 
-        <section class="ax-pathway" data-mining-pathway hidden>
-          <div class="ax-pathway-loading" data-mining-loading>Building your Mining assignment…</div>
-          <div data-mining-content></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section" data-mining-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Mining</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-mining-loading>Building your Mining assignment…</div>
+            <div data-mining-content></div>
+          </div>
+        </details>
 
-        <section class="ax-pathway" data-trade-pathway hidden>
-          <div class="ax-pathway-loading" data-trade-loading>Building your Trade assignment…</div>
-          <div data-trade-content></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section" data-trade-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Trade &amp; Hauling</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-trade-loading>Building your Trade assignment…</div>
+            <div data-trade-content></div>
+          </div>
+        </details>
 
-        <section class="ax-pathway" data-carrier-logistics-pathway hidden>
-          <div class="ax-pathway-loading" data-carrier-logistics-loading>Building your Carrier Logistics assignment…</div>
-          <div data-carrier-logistics-content></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section" data-carrier-logistics-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Carrier Logistics</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-carrier-logistics-loading>Building your Carrier Logistics assignment…</div>
+            <div data-carrier-logistics-content></div>
+          </div>
+        </details>
 
-        <section class="ax-pathway engineering-pathway-group" data-engineering-pathway hidden>
-          <div class="ax-pathway-loading" data-engineering-loading>Building your Engineering assignment…</div>
-          <div data-engineering-content></div>
-          <div data-engineering-prep-tracker hidden></div>
-        </section>
+        <details class="ax-pathway pathway-activity-section engineering-pathway-group" data-engineering-pathway hidden>
+          <summary><span class="pathway-activity-title"><small>Pathway</small><strong>Engineering &amp; Shipbuilding</strong></span></summary>
+          <div class="pathway-activity-body">
+            <div class="ax-pathway-loading" data-engineering-loading>Building your Engineering assignment…</div>
+            <div data-engineering-content></div>
+            <div data-engineering-prep-tracker hidden></div>
+          </div>
+        </details>
 
         <div data-pathway-preview></div>
         <div class="pathway-goal-card" data-pathway-goal-preview hidden></div>
