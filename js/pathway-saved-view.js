@@ -11,7 +11,10 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const experienceLabels = { new:'Beginner', some:'Developing', comfortable:'Experienced', experienced:'Veteran / Mentor' };
   const styleLabels = { either:'Solo or group', solo:'Usually solo', group:'Prefer group play' };
-  const fullRouteIds = new Set(['ax','bgs','mining','trade','carrier-logistics','engineering']);
+  const fullRouteIds = new Set([
+    'pve','pvp','ax','surface','bgs','mining','trade','carrier-logistics','engineering',
+    'exploration','exobiology','colonization','operations',
+  ]);
   const linkMap = {
     pve:'../activities/#combat', pvp:'../pvp/', surface:'../guides/operations/',
     exploration:'../activities/#exploration', exobiology:'../activities/#exploration', colonization:'../projects/',
@@ -68,8 +71,9 @@
 
     summary.innerHTML = `<span><strong>${selectedItems.length}</strong> saved</span><span><strong>${improve.length}</strong> improvement focus${improve.length === 1 ? '' : 'es'}</span><span>${esc(styleLabels[prefs.playStyle] || styleLabels.either)}</span>`;
 
-    // Full route renderers own their own visibility and loading state. This layer
-    // deliberately does not force AX/BGS/Mining/Trade/Carrier/Engineering open.
+    // Every implemented full Pathway owns its own visibility and assignment UI.
+    // The saved-view layer only renders fallback cards for activities that do
+    // not yet have a full provider (currently Powerplay).
     const genericItems = selectedItems.filter(item => !fullRouteIds.has(item.id));
     preview.innerHTML = `<div data-saved-pathway-preview>${genericItems.length ? `<div class="pathway-recommendations">${genericItems.map(item => genericMarkup(item, prefs, improveSet)).join('')}</div>` : ''}</div>`;
 
