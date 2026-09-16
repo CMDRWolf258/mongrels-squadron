@@ -20,14 +20,14 @@ This is an architecture/handoff guide, not a changelog. Update it after meaningf
 - **Repository:** `CMDRWolf258/mongrels-squadron`
 - **Production:** `https://mongrels-squadron.pages.dev/`
 - **Hosting/runtime:** Cloudflare Pages + Pages Functions + KV-backed server features
-- **Theme:** black/charcoal with cyan/blue; restrained military/HUD styling
+- **Theme:** black/charcoal with restrained cyan/blue military/HUD styling
 - **Navigation convention:** use **CARRIERS**, not Fleet
 
 The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, Ask the Mongrels, Start Here, and My Pathway.
 
 ---
 
-## Product architecture
+## Product architecture / development behavior
 
 ### Website vs Discord
 
@@ -36,16 +36,17 @@ The site is both a public squadron presence and a private operational platform: 
 
 Do not duplicate structured website workflows into Discord unless there is a clear reason.
 
-### Mobile / tablet
+### Device support
 
 Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on all three.
 
-### Development behavior
+### Implementation rules
 
 - Prefer direct GitHub implementation; Wolf usually does not want manual whole-file replacement.
 - Keep progress updates short during multi-step work.
 - GitHub commit success does **not** prove Cloudflare deployment. Do not call a feature live/validated unless production is actually checked or Wolf confirms it.
 - Avoid base64 image workflows unless truly necessary; prefer normal repo assets.
+- Preserve one authoritative state model per domain instead of creating parallel copies of the same data.
 
 ### Automated smoke tests
 
@@ -53,23 +54,30 @@ Primary files:
 - `scripts/smoke-test.mjs`
 - `.github/workflows/site-smoke-tests.yml`
 
-The lightweight Node smoke suite runs on pull requests and normal pushes to `main`; pushes that only change `data/live-bgs.json` are ignored so the scheduled BGS refresh does not waste CI runs. It can also be started manually.
+The Node smoke suite runs on pull requests and normal pushes to `main`; commits that only refresh `data/live-bgs.json` are ignored. It can also be run manually.
 
 Current checks include:
-- all six full Pathway route catalogs import, remain non-empty, have unique route/task IDs, and retain required task fields;
-- **cross-path Engineering Prep mappings point only to real current Trade/Mining task IDs and real tracked Engineering counters;**
-- Trade prep still maps relevant market activity to `trade.markets-visited-distinct`, and Mining prep maps relevant mining activity to `mining.ore-mined-total-tonnes`;
+- all six full Pathway provider catalogs remain structurally valid;
+- cross-path Engineering Prep mappings point only to real current Trade/Mining tasks and tracked Engineering facts;
 - Engineering campaign fact-completed dependency propagation works;
-- Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
-- **Improve Jump Range reuses permanent Felicity/Scout/G2 access recorded by First Engineering Win and preserves its deliberate stopping points;**
-- **Improve Speed & Mobility reuses the same Felicity access/reputation and preserves G2 / experimental stopping points;**
-- **Community Goal Hauler Prep retains 14 unique steps, credits only Complete/Already Know, revisits skipped work after untouched pending work, and preserves the survive-and-deliver doctrine;**
-- the personalized Assistant/Pathway context selector can read current Engineering assignments/campaign steps, the query-selected CG Hauler specialty task, and optional Engineering Prep attached to a current Trade assignment without activating on unrelated navigation questions;
-- critical Pathway/Assistant Cloudflare Function modules import cleanly, including the CG Hauler specialty API;
-- critical APIs still contain their shared `headers()` / `reply()` response helpers;
-- high-value entry pages, Engineering assets, CG Hauler specialty assets, and the shared cross-path Engineering Prep helper remain present/wired.
+- Improve Shields honors later/persistent Lei/Dweller access instead of forcing historical counters;
+- Improve Jump Range reuses First Engineering Win Scout/Felicity/G2 progress;
+- Improve Speed & Mobility reuses existing Felicity access/reputation;
+- **Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress and preserves G2, experimental, and G3 stopping points;**
+- Community Goal Hauler Prep keeps 14 unique steps and the survive-and-deliver doctrine;
+- Ask the Mongrels can read query-selected Pathway/campaign/specialty/cross-path-prep context;
+- critical Cloudflare Function modules import cleanly and retain `headers()` / `reply()` helpers;
+- critical pages/assets are present and wired.
 
-This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed**. After Improve Speed & Mobility was added, smoke-test run **#20 passed**. After Community Goal Hauler Prep was fully wired, smoke-test run **#28 passed**. After cross-path Engineering Prep was added, smoke-test run **#40 passed** with Trade/Mining mapping, Assistant-context, API-import, and page-wiring checks. Preserve and extend this suite when new shared platform behavior is added.
+Notable successful runs:
+- #5 — fixed overly literal Assistant Pathway intent handling;
+- #13 — Jump Range cross-campaign reuse;
+- #20 — Mobility/Felicity reuse;
+- #28 — Community Goal Hauler Prep;
+- #40 — cross-path Trade/Mining Engineering Prep;
+- **#47 — Improve Power Distributor / The Dweller reuse.**
+
+The smoke suite is a regression safety net, **not** a browser or production test.
 
 ---
 
@@ -90,11 +98,10 @@ Important rules:
 - Authenticated Discord server users without Member role may still have `access:no_access` with `membershipVerified:true` for applicant flows.
 - Sessions use signed `mongrels_session` cookies.
 - UI hiding is never a substitute for server authorization.
-
-Never expose secrets such as `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, API keys, or hidden IDs.
+- Never expose Discord secrets, session secrets, API keys, or hidden IDs.
 
 Important KV bindings:
-- **`PROJECTS`** — applications, profiles, Discord onboarding, member onboarding, My Pathway preferences/progress, Start Here daily tasks, Engineering campaigns/facts, specialty training such as CG Hauler Prep, and related structured state.
+- **`PROJECTS`** — applications, profiles, onboarding, Pathway preferences/progress, Start Here tasks, Engineering campaigns/facts, CG Hauler specialty state, and related member state.
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy/configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
@@ -103,7 +110,7 @@ Do not create a new KV namespace casually when an existing binding is appropriat
 
 ## Navigation / information architecture
 
-Canonical grouped navigation is owned by:
+Canonical navigation behavior:
 - `js/site.js`
 - `css/navigation-v2.css`
 
@@ -122,21 +129,18 @@ Authenticated member menu:
 - My Profile
 - Sign Out
 
-### Desktop / tablet / compact behavior
+Responsive behavior:
+- **>=1281px:** normal desktop navigation;
+- **1061–1280px:** compressed but fully visible navigation; smaller logo, hidden brand subtitle, tighter spacing;
+- **<=1060px:** compact `MENU` drawer.
 
-**>= 1281px:** normal full desktop navigation.
+Compact drawer uses **focus mode**: one open top-level group hides siblings, owns the scrollable drawer, and keeps its summary sticky. Closing it restores the root list.
 
-**1061–1280px:** keep the **full visible navigation** rather than collapsing everything into `MENU`. This tablet-width mode deliberately compresses nonessential spacing: smaller logo, hidden brand subtitle, tighter nav padding/letter spacing, and a narrower authenticated member control. Wolf prefers having the main nav choices visible on iPad when they can reasonably fit.
+Legacy:
+- `js/navigation-v2.js` is only a compatibility shim;
+- canonical behavior belongs to `js/site.js`.
 
-**<= 1060px:** use the compact `MENU` drawer.
-
-The compact drawer uses **focus mode**: when one top-level group is open, sibling top-level links/groups disappear, the active group owns the drawer, the drawer remains scrollable, and the active summary stays sticky. Closing the group restores the root list. Wolf previously reported this compact behavior was doing okay.
-
-The latest 1061–1280 tablet-compression layout is implemented but **not yet production-validated** by Wolf.
-
-Legacy cleanup:
-- `js/navigation-v2.js` is only a compatibility shim; canonical behavior belongs to `js/site.js`.
-- `css/hubs.css` no longer owns the old grouped-nav prototype CSS.
+The latest 1061–1280 tablet/iPad compression is implemented but not yet production-validated by Wolf.
 
 ---
 
@@ -148,96 +152,61 @@ Primary files:
 - `lib/assistant-pathway-context.js`
 - `js/mongrel-assistant.js`
 
-The assistant is read-only. It uses current squad/site data where available and curated Elite knowledge where appropriate. It must never claim it changed, posted, scheduled, registered, or edited anything.
+The Assistant is **read-only**. It may explain current member state but must never claim to mark Pathway/campaign/specialty progress complete or to change squad/site data.
 
-### Website-navigation help
+### Navigation help
 
-Navigation help is **not carrier-specific anymore**.
+`lib/assistant-context.js` owns a query-selective navigation map. Current destinations include Carrier Coordination/Registry, Projects, Daily Orders/Mission Control, Member Portal/My Pathway/Profile, PvP Bounty Board, Trader's Outpost, Roster, Rules, Ship Catalogue, Engineering/Mining/BGS guides, Reference/Field Manual/Glossary, Start Here, and Recruitment.
 
-`lib/assistant-context.js` contains a query-selective `NAVIGATION_DESTINATIONS` map and returns only the most relevant `modules.siteNavigation` entries for a question. This avoids injecting the whole site map into every AI request while giving the model authoritative visible click paths.
+Use trusted server `{label,href}` values for Related buttons; the model should not invent arbitrary links.
 
-Current mapped destinations include major operational/help surfaces such as:
-- Carrier Coordination / Carrier Registry
-- Projects & Events
-- Daily Orders / Mission Control
-- Member Portal / My Pathway / My Profile
-- PvP Bounty Board
-- Trader's Outpost
-- Squadron Roster
-- Rules & ROE
-- Ship Catalogue
-- Engineering / Mining / BGS guides
-- Reference Database / Field Manual / Glossary
-- Start Here
-- Recruitment
-
-When a user asks where to **find, open, create, post, or navigate to** something:
-- use `modules.siteNavigation` when present;
-- describe the exact visible desktop/tablet path;
-- give the compact `MENU` path when useful;
-- mention a Member Portal alternate when it materially helps;
-- never invent menu labels.
-
-Example for carrier loading:
-- desktop/tablet: **Command → Carrier Coordination**;
-- compact: **MENU → Command → Carrier Coordination**;
-- member alternate: **member button → Member Portal → Carrier Coordination → Open Carrier Board**;
-- create: **New Coordination Post → Activity: Loading**.
-
-### Direct navigation buttons / deep links
-
-The model does **not** invent arbitrary URLs in prose. The server returns trusted `{label, href}` navigation objects and `js/mongrel-assistant.js` renders them as clickable **Related** buttons.
-
-Prefer exact section anchors when available. Current useful anchors include:
+Useful anchors include:
 - `/operations/#daily-orders`
 - `/projects/#project-list`
 - `/carriers/#carrier-directory`
 - `/carriers/#carrier-coordination`
 - `/pvp/#bounty-board`
 - `/about/#squad-rules`
-- Member Portal card anchors such as `/member/#carrier-coordination`
 
-This means a question like “Where can I create a carrier loading event?” can provide a **Carrier Coordination** button that lands directly on that section rather than merely opening the top of the Carriers page.
+Carrier-loading navigation convention:
+- desktop/tablet: **Command → Carrier Coordination**;
+- compact: **MENU → Command → Carrier Coordination**;
+- member alternate: member button → Member Portal → Carrier Coordination → Open Carrier Board;
+- create: New Coordination Post → Activity: Loading.
 
-### Mission Control system filtering
+### Mission Control Assistant filtering
 
-The assistant does not receive all Mission Control systems on every request. `selectMissionControlForAssistant()` deliberately sends a query-filtered subset to limit prompt size.
+Mission Control system data is query-filtered before being sent to the Assistant. An empty filtered subset does **not** mean Mission Control has no systems. The selector returns metadata such as `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explanatory note.
 
-Important guardrail: **an empty filtered subset does not mean Mission Control has no systems.** The returned object includes `selection.mode`, `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explicit note explaining that distinction.
-
-Faction-presence wording such as “what systems our faction is in,” “which systems,” “where are we present,” “territory,” and “footprint” should select up to 30 active-presence systems while preserving the authoritative total from Mission Control metadata. Never tell the user the live system list is empty merely because the query filter returned zero rows.
+Faction-presence wording such as “what systems our faction is in,” “where are we present,” “territory,” and “footprint” should return an active-presence subset while preserving the authoritative total.
 
 ### Personalized My Pathway context
 
-`lib/assistant-pathway-context.js` gives Ask the Mongrels **query-selective, read-only access to the authenticated member's own saved My Pathway state**. Do not inject this data into every assistant request.
+`lib/assistant-pathway-context.js` gives query-selective, read-only access to the authenticated member's own Pathway data.
 
-Pathway context is selected for natural phrases such as:
-- “What is my current assignment?”
-- “How do I do my current task?”
-- “What is my current Engineering step?”
-- “Why am I doing this step?”
-- references to the Campaign Planner, Improve Shields, Improve Jump Range, Improve Speed & Mobility / Thrusters, Engineering Prep, or a specific full Pathway assignment;
-- **CG Hauler / Community Goal Hauler Prep / hostile hauling / hostile delivery / interdiction or escape drill** wording;
-- cross-path questions such as **“Does my current Trade task help Engineering?”** or **“Does this Mining task give me Engineering prep?”**
+Recognized concepts include:
+- current Pathway assignment/task/step;
+- Engineering Campaign Planner;
+- Improve Shields;
+- Improve Jump Range;
+- Improve Speed & Mobility / Thrusters;
+- **Improve Power Distributor / distributor / capacitor campaign wording;**
+- Engineering Prep / cross-path Engineering questions;
+- CG Hauler / hostile-hauling/interdiction/escape-drill wording.
 
-When selected, `modules.pathway` can include:
-- saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
-- concise current assignment state for relevant full Pathways: route, progress, and the current pending/skipped task with objective/checklist/resource;
-- any **optional Engineering Prep overlap attached to that current Trade/Mining assignment**, including the shared fact, target, unit, explanation, and Engineer reference;
-- active Engineering Campaign Planner state: goal, ship, target notes, progress, next campaign step, useful resources/counter progress, and whether a legitimate stopping point has been reached;
-- **query-selected Community Goal Hauler Prep specialty state**: doctrine, progress, and current task/checklist.
+When selected, `modules.pathway` can contain:
+- selected activities, priority, experience, play style, and current goal;
+- relevant full-route assignment progress/current task;
+- optional Engineering Prep attached to the current Trade/Mining task;
+- active Engineering campaign goal/ship/progress/next step/stopping-point state;
+- query-selected Community Goal Hauler Prep state.
 
 Rules:
 - only read the signed-in member's own state from `PROJECTS`;
-- My Pathway / Campaign Planner / specialty UI remain authoritative for saved progress and completion;
-- the assistant may explain a task and help execute it, but may **never** mark it complete or imply completion was recorded;
-- cross-path prep is explanatory/read-only in the Assistant; the member records actual progress through the relevant UI/Prep Tracker;
-- CG Hauler specialty state is loaded only for clearly relevant wording, not ordinary Trade questions;
-- when “my task” is genuinely ambiguous across several current full-Pathway assignments, identify the likely choices rather than silently choosing one;
-- preserve query selectivity to protect prompt size/monthly AI usage;
-- controlled Related buttons prioritize **My Pathway** and, for Engineering campaign questions, **Engineering Guide**.
-
-The smoke suite covers the intent gate and representative in-memory Engineering, CG Hauler specialty, and current-task cross-path prep lookups. Production behavior still requires member testing after deployment.
+- My Pathway/Campaign Planner/specialty UI remain authoritative;
+- Assistant may explain but never write completion;
+- CG Hauler state is loaded only for clearly relevant wording;
+- preserve query selectivity to control prompt size/monthly AI usage.
 
 ---
 
@@ -245,9 +214,7 @@ The smoke suite covers the intent gate and representative in-memory Engineering,
 
 `/start/` answers: **“What is one useful thing I can do next?”** It is intentionally lower-overwhelm than My Pathway.
 
-### Personalized daily tasks
-
-Primary files:
+Primary personalized-task files:
 - `start/index.html`
 - `js/start-tasks.js`
 - `css/start-tasks.css`
@@ -256,23 +223,24 @@ Primary files:
 
 Storage:
 - `PROJECTS`
-- prefix `start-daily-v1:` + local date + Discord owner ID
+- `start-daily-v1:<local date>:<ownerId>`
 
 Rules:
-- personalized tasks require Member / Officer / Site Admin;
-- categories come from My Pathway preferences but daily tasks **never change Pathway progress**;
-- task kinds: Activity Task, Challenge, Squad Opportunity;
-- maximum 3 reveals per category per local calendar day, server-authoritative;
-- all revealed choices remain saved for the day and display in a carousel;
-- BGS/Squad Operations may inject a live Mission Control opportunity, but authoritative Daily Orders must be checked before acting.
+- Member/Officer/Site Admin only;
+- categories derive from Pathway preferences;
+- daily tasks never change Pathway progress;
+- task types: Activity Task, Challenge, Squad Opportunity;
+- maximum 3 reveals/category/local day, server-authoritative;
+- revealed choices remain saved in the daily carousel;
+- BGS/Squad Operations may include Mission Control opportunities but Daily Orders remain authoritative.
 
-Wolf validated the daily-task cards/carousel visually.
+Wolf visually validated the daily-task cards/carousel.
 
 ---
 
 ## My Pathway — core model
 
-Primary shared files:
+Primary files:
 - `pathway/index.html`
 - `css/pathway.css`
 - `css/pathway-activity-sections.css`
@@ -290,7 +258,7 @@ Experience values:
 - `comfortable` → Experienced
 - `experienced` → Veteran / Mentor
 
-Do **not** add another global experience band just to give Engineering more room. Engineering gets extra internal campaign layers instead.
+Do not add another global experience band just for Engineering; Engineering gets deeper internal campaign layers instead.
 
 Task statuses:
 - Complete
@@ -298,7 +266,7 @@ Task statuses:
 - Skip for Now
 - pending/reopen
 
-Only Complete and Already Know earn progress credit. Skip for Now does not; skipped work resurfaces after untouched pending work is exhausted.
+Only Complete and Already Know earn progress. Skip does not; skipped work resurfaces after untouched pending work is exhausted.
 
 Assignment types:
 - Learn
@@ -308,11 +276,9 @@ Assignment types:
 - Wing / Team
 - Teach / Mentor
 
-### Activity-collapse UX
+### Activity collapse UX
 
-The right-hand **Your Pathway** area uses compact expandable categories. Full pathway activities are native `<details>` groups, and generic selected activities are also rendered as compact disclosures.
-
-Full-route categories:
+The right-hand **Your Pathway** area uses compact `<details>` sections. Full-route categories are:
 - Anti-Xeno
 - Background Simulation
 - Mining
@@ -322,26 +288,23 @@ Full-route categories:
 
 Rules:
 - collapsed by default;
-- click the category header to expand/collapse;
-- do not add separate Open/Close buttons unless needed;
+- category header controls expansion;
 - multiple categories may remain open;
-- each full-route renderer owns its own loading/visibility/content. Do **not** add a second controller that forcibly shows route roots.
+- each route renderer owns its own loading/visibility/content;
+- do not introduce another controller that forcibly shows route roots.
 
-A temporary collapse implementation exposed an API failure; the real root cause was an accidentally removed shared `reply()` helper in `functions/api/pathway/assignments.js`. That helper was restored, and Wolf confirmed the full Pathway loading was fixed. Preserve it.
+A previous regression was caused by accidentally removing shared `headers()` / `reply()` helpers from `functions/api/pathway/assignments.js`; smoke tests now guard them.
 
-### Lasting design rule
-
-Beginner assignments should generally **teach through actions before analysis**:
-
+Lasting beginner design rule:
 > **Do → observe → compare → understand → optimize → lead/teach**
 
-Avoid hiding several concepts or hours of prerequisite work inside one early assignment.
+Avoid hiding hours of prerequisite work inside one early assignment.
 
 ---
 
-## Shared full-pathway engine
+## Full Pathway providers
 
-`functions/api/pathway/assignments.js` hosts provider/progress behavior.
+`functions/api/pathway/assignments.js` hosts the shared provider/progress behavior.
 
 Current full providers:
 1. Anti-Xeno — `ax-v2`
@@ -351,21 +314,7 @@ Current full providers:
 5. Carrier Logistics — `carrier-logistics-v1`
 6. Engineering & Shipbuilding — `engineering-v1`
 
-Each provider keeps independent per-activity progress in `PROJECTS`.
-
-### Engineering Give Me Another Route
-
-Engineering route cycling should stay at the Commander's selected experience level rather than dropping to lower-band material:
-- Beginner → Engineering Foundations only
-- Developing → Role Builder, Engineer Network
-- Experienced → Ship Architect, Combat Systems, Role Builder
-- Veteran / Mentor → Engineering Mentor, Ship Architect
-
-Lower-band progress remains stored and can be revisited by changing the saved Engineering experience level.
-
----
-
-## Pathway route references
+Route references:
 
 ### Anti-Xeno
 - Scout School — Vulture
@@ -384,7 +333,7 @@ Critical doctrine: mission **INF = mission influence reward ticks/pips, not fact
 
 ### Mining
 - Mining Foundations — First Full Loop
-- Efficient Miner — Find Bottleneck
+- Efficient Miner — Find the Bottleneck
 - Advanced Extraction — Core/Subsurface/Surface
 - Rhino Field Operations
 - Mining Specialist — Scout/Compare/Support
@@ -417,6 +366,12 @@ Carrier ownership is optional.
 - Ship Architect — Diagnose, Test, Refine
 - Engineering Mentor — Review, Explain, Teach
 
+Engineering route cycling should stay within the selected experience band:
+- Beginner → Foundations only
+- Developing → Role Builder / Engineer Network
+- Experienced → Ship Architect / Combat Systems / Role Builder
+- Veteran → Mentor / Ship Architect
+
 ---
 
 ## Engineering Campaign Planner
@@ -427,209 +382,195 @@ Framework files:
 - `lib/engineering-campaign-shields.js`
 - `lib/engineering-campaign-jump-range.js`
 - `lib/engineering-campaign-mobility.js`
+- **`lib/engineering-campaign-distributor.js`**
 - `functions/api/pathway/engineering-campaign.js`
 - `js/engineering-campaign-planner.js`
 - `css/engineering-campaign-planner.css`
 
 Storage:
 - `PROJECTS`
-- prefix `engineering-campaign-v1:<ownerId>`
+- `engineering-campaign-v1:<ownerId>`
 
-Engineering pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid; G2/G3 can be a legitimate stopping point.
+Pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid. G2/G3 can be legitimate stopping points.
 
 Model:
 1. Goal
 2. Current/shared facts
 3. Dependency plan
 4. Next manageable Engineering assignment
-5. Optional Background Prep from other pathways
+5. Optional background prep from other Pathways
 
-Shared facts retain provenance so future trusted sync/import can write the same fact IDs instead of creating a parallel model.
+Shared facts retain provenance so future trusted sync/import can write the same facts instead of creating a parallel model.
 
 ### Dependency evaluation rule
 
-Campaign dependency readiness must treat **fact-completed nodes exactly like manually completed nodes**. `lib/engineering-campaign.js` builds a completion map before evaluating dependencies. This is critical for adaptive campaigns: if a Commander already has an Engineer unlocked or already completed a cumulative prerequisite, downstream work should unlock automatically without requiring a fake manual completion.
+Fact-completed nodes must unlock downstream work exactly like manually completed nodes. Later/permanent access facts may also prove earlier prerequisites were already satisfied. Never force an experienced Commander to reconstruct or falsify historical counters when a later Engineer-access milestone proves the chain was completed.
 
-A later access fact can also prove earlier prerequisites were already satisfied. For example, recording **Lei Cheung already unlocked** should clear the older Dweller/market unlock gates instead of forcing a veteran Commander to reconstruct or falsify historical market counts. Relevant steps expose explicit **I Already Unlocked…** shortcuts, and the campaign data changes its completion proof accordingly on the next render.
+Generic setup deliberately stops at:
+**assess current state → choose useful stopping point → map dependencies**.
 
-Generic campaign setup deliberately stops at **assess current state → choose useful stopping point → map dependencies**. Material planning belongs inside each goal-specific graph after the actual module/blueprint choice is known.
+Material planning belongs inside the goal-specific graph after the module/blueprint choice is known.
 
-### Improve Shields — first live goal-specific campaign
+### Improve Shields — first campaign
 
-`lib/engineering-campaign-shields.js` contains the first audited goal chain. It is intentionally a **G2/G3 Shield Generator phase through Lei Cheung**, not an automatic endgame G5 shield/booster grind.
+`lib/engineering-campaign-shields.js`
 
-Current chain:
-1. generic campaign assessment, target selection, and dependency mapping;
-2. choose the Shield Generator blueprint around the ship's role rather than one universal recipe;
-3. plan only the chosen blueprint's **G1 → G2** material job;
-4. gather only the materials in that small plan, then stop;
-5. use 5 distinct black markets for The Dweller meeting requirement, unless existing engineer access already proves this was done;
-6. unlock The Dweller at Black Hide (500,000 Cr);
-7. engineer with The Dweller only until the Lei Cheung referral appears;
-8. accumulate the Lei Cheung distinct-market requirement using the existing market counter, unless Lei is already unlocked;
-9. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
-10. open G2 shield access only as far as needed;
-11. refresh the exact G1 → G2 material shortfall once Lei's current access/reputation is known and cover only any missing amount;
-12. engineer the selected Shield Generator through G2;
-13. **fly/test the G2 result before doing more**;
-14. optionally continue to G3 only if the G2 test says the ship still needs it;
-15. engineer to G3;
-16. test G3 and end the phase.
+Purpose: useful **G2/G3 Shield Generator** phase through Lei Cheung, not an automatic G5 shield/booster grind.
 
-Design rules:
-- **Define the job first, then gather for the job.** Blueprint choice comes before the material plan.
-- The initial gather is targeted to the intended G1 → G2 job, not a general material-cap grind.
-- Because exact roll count can depend on engineer reputation, a small post-access shortage check catches any difference instead of asking the Commander to farm G3–G5 preemptively.
-- Never make a veteran fake old counter totals to prove an Engineer they already have. Later access facts can supersede earlier unlock prerequisites.
-- G2 is an explicit legitimate stopping point.
-- After the G2 test, the UI exposes **Take the Win · Complete Campaign** even though optional G3 refinement remains.
-- G5 Shield Generator and G5 Shield Booster work are deliberately deferred to later campaign phases/goals.
-- The 5-black-market and market-count steps use the existing cumulative facts, so prior progress can auto-clear them.
-- Permanent/access-like milestones (The Dweller unlocked, Lei referral, Lei unlocked, Lei G2/G3 access) are stored as shared Engineering facts.
-- Accidental fact marks can be corrected from the campaign step history; counter corrections belong in the Prep Tracker.
+Key behavior:
+- choose blueprint around ship role;
+- plan/gather only G1→G2;
+- use shared 5-black-market Dweller counter unless access already proves it;
+- unlock/work The Dweller only until Lei referral;
+- use shared 50-market Lei counter;
+- unlock Lei with 200 Gold;
+- engineer G2, fly/test, optionally G3;
+- G2 is an explicit Take-the-Win point;
+- later Lei access supersedes old Dweller/market gates.
 
-### Improve Jump Range — second goal-specific campaign
+Shared facts include The Dweller unlocked, Lei referral, Lei unlocked, and Lei G2/G3 access.
 
-`lib/engineering-campaign-jump-range.js` is the second audited campaign and the first explicit **cross-campaign reuse test**. It targets a useful **G2 Increased Range FSD** result first, then separates the range-focused experimental and optional G3 refinement into their own small jobs.
+### Improve Jump Range — second campaign
 
-Current chain:
-1. generic campaign assessment, target selection, and dependency mapping;
-2. confirm Increased Range is the right FSD job for the ship's actual role and establish a practical travel baseline;
-3. plan only the **G1 → G2** Increased Range material job;
-4. gather only that small G2 material plan;
-5. satisfy Felicity's Scout requirement only if permanent saved progress does not already prove it;
-6. acquire one Meta-Alloy and prepare the Deciat/Open safety plan only if Felicity is still locked;
-7. unlock Felicity Farseer;
-8. open only enough Felicity reputation for G2 Increased Range;
-9. refresh the exact G2 material shortfall once current reputation is known;
-10. engineer the selected FSD through complete G2 Increased Range;
-11. **replot/fly a familiar trip and test the practical G2 result**;
-12. optionally plan, gather, apply, and test the range-focused experimental as its own job;
-13. optionally open G3 only if the G2/experimental tests still leave a meaningful travel problem;
-14. plan/gather only the remaining G3 materials;
-15. engineer to G3 and test the result;
-16. end the campaign phase rather than silently appending G4/G5.
+`lib/engineering-campaign-jump-range.js`
 
-Cross-campaign rules:
-- First Engineering Win facts for **Scout**, **Felicity unlocked**, and **Felicity G2 access** are valid permanent proof for the corresponding Jump Range gates.
-- New shared facts include `rank.exploration.scout-or-higher`, `engineer.felicity-farseer.unlocked`, `engineer.felicity-farseer.fsd-g2-ready`, and `engineer.felicity-farseer.fsd-g3-ready`.
-- Later Felicity access proves earlier unlock requirements were already satisfied; do not ask an experienced Commander to buy another Meta-Alloy or repeat Deciat unlock prep.
-- Ship-specific First Engineering Win completion such as “that old FSD reached G2” does **not** automatically complete the new ship's FSD engineering step. Only account-wide/permanent access is reused.
-- G2, G2 + experimental, and G3 are all legitimate **Take the Win** points.
-- The experimental is deliberately separate so the Commander understands the choice. Inara currently exposes Mass Manager and Deep Charge as range-focused options; use the ship/FSD-specific planner result instead of hard-coding one choice for every drive.
-- G4/G5 are deliberately deferred to a later goal rather than being appended by default.
+Purpose: useful **G2 Increased Range FSD** first, with the experimental and G3 as separate optional jobs.
 
-### Improve Speed & Mobility — third goal-specific campaign
+Key behavior:
+- record a travel baseline;
+- plan/gather only G1→G2;
+- reuse First Engineering Win Scout/Felicity/G2 facts;
+- only acquire Meta-Alloy/Deciat prep if Felicity is still locked;
+- engineer G2 and replot/test a familiar trip;
+- optional experimental plan/gather/apply/test;
+- optional G3 if a meaningful travel problem remains;
+- G2, G2+experimental, and G3 are Take-the-Win points;
+- G4/G5 deliberately deferred.
 
-`lib/engineering-campaign-mobility.js` is the third audited campaign. It targets a useful **G2 Thrusters** result first, makes the Commander fly/test the ship, then treats the experimental and optional G3 as separate decisions.
+Only permanent/account-wide access is reused; an old ship's G2 module does not auto-complete a new ship's module work.
+
+### Improve Speed & Mobility — third campaign
+
+`lib/engineering-campaign-mobility.js`
+
+Purpose: useful **G2 Thrusters** first, then fly/test before experimental/G3 decisions.
+
+Key behavior:
+- record practical movement baseline;
+- choose Dirty/Clean/Reinforced around the ship's problem;
+- reuse Felicity access/reputation from earlier campaigns;
+- plan/gather only G1→G2;
+- engineer and test G2;
+- compare experimentals separately, especially Drag Drives vs Drive Distributors using actual mass/role;
+- optional G3 only when the blueprint/Engineer path supports it and the ship still needs more;
+- G2, G2+experimental, and G3 are Take-the-Win points;
+- G4/G5 deliberately deferred.
+
+The legacy FSD-named Felicity G2/G3 facts are currently treated as Engineer-reputation proof, not module completion.
+
+### Improve Power Distributor — fourth campaign
+
+`lib/engineering-campaign-distributor.js`
+
+Purpose: diagnose the ship's actual **SYS / ENG / WEP** bottleneck, build a useful G2 Power Distributor through The Dweller, test it in the real workload, then treat the experimental and G3 as optional refinements.
 
 Current chain:
-1. generic campaign assessment, target selection, and dependency mapping;
-2. record a practical movement baseline such as boost/normal speed, handling, heat, power headroom, or behavior at normal operating mass;
-3. choose the Thrusters blueprint around the ship's role: Dirty, Clean, or Reinforced rather than assuming one universal recipe;
-4. plan and gather only the chosen **G1 → G2** material job;
-5. reuse permanent Felicity access from First Engineering Win / Improve Jump Range where already known;
-6. if Felicity is still locked, satisfy Scout, one Meta-Alloy, Deciat safety prep, and unlock her;
-7. open only enough Felicity reputation for G2 Thrusters work;
-8. refresh the exact G2 material shortfall once reputation is known;
-9. engineer the chosen Thrusters blueprint through G2;
-10. **fly/test G2 before deciding what comes next**;
-11. optionally compare experimentals as a separate job — especially Drag Drives vs Drive Distributors for the actual drive/ship mass curve;
-12. gather/apply only the chosen experimental and fly/test it;
-13. optionally continue to G3 only when the chosen blueprint/Engineer path supports it and the ship still needs more;
-14. plan/apply G3 and test the result;
-15. end the phase instead of silently appending G4/G5 or another Engineer unlock.
+1. generic campaign assessment/target/dependency mapping;
+2. record the current distributor and identify the felt bottleneck — boost cadence, WEP sustain, SYS recovery, reserve size, or broad recharge;
+3. choose the blueprint around that bottleneck rather than assuming one universal recipe;
+4. plan only G1→G2 materials;
+5. gather only that small plan;
+6. use 5 distinct black markets only if The Dweller is still locked;
+7. unlock The Dweller with 500,000 Cr only if needed;
+8. open only enough The Dweller reputation for G2;
+9. refresh the exact G2 material shortfall;
+10. engineer the distributor through G2;
+11. **stress-test G2 in the ship's actual workload**;
+12. optionally choose the experimental as a separate decision;
+13. gather/apply only that experimental and re-test;
+14. optionally open G3 only if the ship still has a real capacitor problem;
+15. plan/gather/apply G3;
+16. test G3 and end the campaign phase.
 
-Mobility-specific rules:
-- Felicity reputation is shared across modules she engineers. Existing First Engineering Win / Jump Range facts proving Felicity unlocked or G2/G3 access legitimately satisfy the corresponding Thrusters gates.
-- The older stored IDs `engineer.felicity-farseer.fsd-g2-ready` / `...fsd-g3-ready` are currently reused as Engineer-reputation proof even though their names are FSD-specific. Do not interpret them as ship/module completion; they only prove Felicity access level.
-- The campaign deliberately distinguishes **performance goals** from heat/durability goals. Dirty is the main speed/mobility comparison, but the site does not force a universal blueprint.
-- G2, G2 + experimental, and G3 are legitimate **Take the Win** points.
-- The experimental is kept separate because the best choice depends on thruster size, ship mass, role, and sometimes Enhanced Performance Thrusters; do not hard-code Drag Drives as universally correct.
-- Current Inara data shows Felicity offers G3 Dirty and Clean Thrusters, while Reinforced G3 is outside this Felicity path. A Reinforced build should normally finish this campaign at G2/experimental rather than silently opening another Engineer-unlock chain.
-- G4/G5 are deliberately deferred.
+Distributor-specific rules:
+- The Dweller is the primary path. Current game references show he can engineer Power Distributors through G5, but this campaign intentionally stops at G2/G3 unless later work is justified.
+- Charge Enhanced is the broad recharge comparison, not a mandatory universal answer.
+- Engine Focused, Weapon Focused, System Focused, High Charge Capacity, and Shielded remain valid role-specific choices; Balanced/Support Focused are Merc-module special cases.
+- Super Conduits vs Cluster Capacitors is a recharge-vs-reserve tradeoff; other experimentals may solve integrity, power-draw, or mass problems.
+- **Improve Shields cross-campaign reuse is important:** a saved Lei Cheung referral/unlock proves The Dweller had already reached the G3–G4 reputation band, so the Distributor campaign may automatically satisfy its black-market, Dweller unlock, G2-access, and G3-access gates.
+- New persistent facts: `engineer.dweller.power-distributor-g2-ready` and `engineer.dweller.power-distributor-g3-ready`.
+- G2, G2+experimental, and G3 are Take-the-Win points.
+- G4/G5 are deliberately deferred so the member diagnoses the whole build before assuming more distributor grade is the answer.
 
 ### Campaign Planner UI
 
-My Pathway → Engineering hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
+My Pathway → Engineering hosts a collapsed **Campaign Planner** above the Prep Tracker.
 
 Inactive state:
-- exposes a compact selector for the three audited campaigns: **Improve Shields**, **Improve Jump Range**, and **Improve Speed & Mobility**;
-- asks for the ship and the specific problem/goal rather than rendering a giant campaign catalog;
-- shows at most the 4 most recent visible paused/completed campaigns;
-- completed campaigns can be **Reopened** with their existing progress intact;
-- paused campaigns can be resumed;
-- paused/completed campaigns can be **Removed from History**, which archives the campaign record instead of deleting it and leaves shared Engineering facts intact;
-- archived campaigns are excluded from visible history and from the “Last campaign win” surface.
+- compact selector for four audited campaigns: **Improve Shields**, **Improve Jump Range**, **Improve Speed & Mobility**, **Improve Power Distributor**;
+- asks for ship and specific problem/goal;
+- visible previous history capped at 4;
+- paused campaigns Resume;
+- completed campaigns Reopen;
+- Remove from History archives instead of deleting shared facts.
 
 Active state:
-- shows one next campaign step at a time;
+- one next step at a time;
 - progress meter;
-- resource links from trusted campaign data;
-- permanent-access milestone button or normal Done action as appropriate;
-- relevant prerequisite steps can expose **I Already Unlocked… / I Already Have G3+ Access** shortcuts so existing progress skips old gates cleanly;
-- counter steps link/scroll to the existing Prep Tracker;
-- full compact step history with Reopen / Undo Mark / Update Tracker corrections;
+- trusted resource links;
+- permanent-access shortcut buttons where relevant;
+- counter steps open the Prep Tracker;
+- compact step history with correction actions;
 - Pause Campaign;
-- goal-aware **Take the Win** copy at valid stopping points;
-- previous visible campaigns still expose Resume / Reopen / Remove from History controls. Reopening an older campaign while another campaign is active pauses the current one.
+- goal-aware Take-the-Win copy at valid stopping points.
 
-Campaign explanatory cards use the plain-language label **Why this is a separate step**. It means the prerequisite or subtask is deliberately being shown as its own manageable unit instead of being hidden inside a larger assignment.
+Plain-language explanatory label is **Why this is a separate step**.
 
-The step-history correction UI intentionally does not offer **Undo Mark** against inherited `first-win.*` proof or against an alternate/superseding fact used to satisfy an earlier gate. This avoids accidentally erasing valid permanent progress simply because it auto-cleared another campaign step.
+`js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through `mongrels:engineering-campaign-updated`.
 
-`js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through the `mongrels:engineering-campaign-updated` browser event so counter edits immediately refresh the active campaign without a page reload.
+---
 
-### Engineering Prep Tracker
+## Engineering Prep Tracker / cross-path prep
 
-Current tracked numeric facts:
+Current numeric facts:
 - `trade.markets-visited-distinct`
 - `trade.black-markets-used-distinct`
 - `mining.ore-mined-total-tonnes`
 
-Current visible prep milestones:
+Visible milestones:
 - 50 distinct commodity markets for Lei Cheung preparation;
 - 5 distinct black markets for The Dweller preparation;
-- 500 tonnes of ore mined for Selene Jean's meeting requirement. This **does not** imply Selene is fully unlocked; her separate unlock delivery remains separate.
+- 500 tonnes mined for Selene Jean's meeting requirement; this does **not** imply Selene is fully unlocked.
 
-UI is a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering. Each counter shows status/progress; **Update Progress** expands all manual write controls:
-- quick adds
-- exact amount completed
-- Set / Correct Total
+Prep Tracker UI supports:
+- quick adds;
+- exact actual progress;
+- Set / Correct Total.
 
-Exact add records only what the Commander actually did; Correct Total replaces the cumulative number.
+Primary cross-path files:
+- `lib/pathway-engineering-prep.js`
+- `lib/pathway-engineering-prep-facts.js`
+- `js/pathway-engineering-prep.js`
+- `functions/api/pathway/assignments.js`
+- `functions/api/pathway/engineering-campaign.js`
 
-### Cross-path Engineering Prep
-
-Primary files:
-- `lib/pathway-engineering-prep.js` — maps real current Pathway task IDs to optional Engineering prep opportunities;
-- `lib/pathway-engineering-prep-facts.js` — additional reusable fact definitions, currently Selene's mined-tonnage counter;
-- `js/pathway-engineering-prep.js` — shared compact UI/recording helper used by Trade and Mining;
-- `functions/api/pathway/assignments.js` — attaches `engineeringPrep` metadata to returned tasks;
-- `functions/api/pathway/engineering-campaign.js` — stores/exposes the shared counters in the existing Engineering campaign state.
-
-Current behavior:
-- relevant **Trade** assignments can optionally record genuinely new distinct commodity markets toward `trade.markets-visited-distinct` / Lei Cheung;
-- relevant **Mining** assignments can optionally record actual ore mined toward `mining.ore-mined-total-tonnes` / Selene Jean's 500-tonne meeting requirement;
-- The Dweller's black-market counter remains available in the Engineering Prep Tracker, but normal Trade tasks do **not** pretend to advance it unless the Commander genuinely used a distinct black market. Add a cross-path mapping only when a real task explicitly performs that activity.
+Current cross-path behavior:
+- relevant Trade assignments may optionally record **genuinely new** commodity markets toward Lei Cheung;
+- relevant Mining assignments may optionally record **actual ore mined** toward Selene Jean.
 
 Critical rules:
-- **Never auto-infer or auto-award a unique market, black market, mined tonnage, or similar prerequisite from ordinary task completion.** The Commander explicitly records what actually happened.
-- The optional prep disclosure is visually secondary and says it does not affect the activity assignment.
-- Recording Engineering prep does **not** complete, score, block, or modify the Trade/Mining assignment.
-- Completing/reopening/resetting/changing a Trade or Mining route does not erase the shared Engineering fact total; those facts live in the Engineering campaign state.
-- Duplicate markets must not be counted twice. The UI asks for only genuinely new distinct markets.
-- Mining tonnage should reflect ore actually mined. If exact mined tonnage was not tracked, cargo sold can be used as a conservative lower bound rather than inventing a larger number.
-- The shared browser helper dispatches `mongrels:engineering-campaign-updated`, so the Engineering Prep Tracker/Campaign Planner can refresh after cross-path recording.
-- Ask the Mongrels may explain that the member's **current** Trade/Mining assignment offers optional prep, but remains read-only and does not record it.
-
-Cross-path prep is intentionally expandable. Future mappings can cover combat, exploration, material gathering, or other Engineers only after the underlying Pathway action genuinely proves that prerequisite.
+- never auto-award unique markets, black markets, tonnage, or similar prerequisites from ordinary task completion;
+- the Commander explicitly records what actually happened;
+- optional Engineering prep does not complete, score, block, or modify the Trade/Mining assignment;
+- resetting/changing the activity route does not erase the shared Engineering fact;
+- duplicate markets are not counted twice;
+- Mining tonnage reflects ore actually mined; sold cargo may be used only as a conservative lower bound if exact mined tonnage was not tracked;
+- normal Trade tasks do not pretend to advance black-market progress unless the actual task genuinely used a distinct black market;
+- Ask the Mongrels may explain current-task overlap but remains read-only.
 
 ---
 
 ## Community Goal Hauler Prep — Trade specialty
-
-This is the first implemented **specialty training path**. It is intentionally nested inside **My Pathway → Trade & Hauling** instead of becoming another full provider or top-level navigation item.
 
 Primary files:
 - `lib/pathway-cg-hauler-prep.js`
@@ -640,62 +581,42 @@ Primary files:
 
 Storage:
 - `PROJECTS`
-- prefix `specialty-cg-hauler-v1:<ownerId>`
+- `specialty-cg-hauler-v1:<ownerId>`
 
 Core doctrine:
 > **The win condition is survive and deliver. Killing the attacker is not required.**
 
-Status semantics match the main Pathway model:
-- Complete and Already Know / Have This earn credit;
-- Skip for Now does not earn credit;
-- untouched pending work is served before skipped work resurfaces;
+This is nested inside **My Pathway → Trade & Hauling**, not a separate top-level provider.
+
+Status semantics mirror Pathway:
+- Complete/Already Know earn credit;
+- Skip does not;
+- untouched pending work comes before skipped work;
 - specialty progress is independent of the main Trade route.
 
-Current 14-step sequence:
-1. choose an existing cargo ship — no special PvP ship required;
-2. record cargo, defenses, boost speed, laden range, rebuy, and utilities;
-3. define the logistics win condition: preserve the mission and deliver;
-4. make one survivability pass without deleting the cargo role;
-5. check power, heat, utility choices, and escape-critical module priorities;
-6. practice pips and boost while laden until the inputs are automatic;
-7. understand and pre-plan high-wake vs low-wake escape choices;
-8. practice interdiction response, including deliberate submission when appropriate to get the shorter FSD cooldown;
-9. run a controlled interdiction/escape drill with another Mongrel;
-10. practice awareness entering a busy target system without treating every hollow contact as hostile;
-11. practice final approach/docking under pressure;
-12. build the escort/comms/rendezvous plan;
-13. run one logistics contingency drill when the original plan changes;
-14. complete a controlled hostile-delivery capstone and finish the cargo delivery without needing to destroy the attacker.
+Current 14-step progression:
+1. use an existing cargo ship;
+2. record baseline cargo/defenses/boost/laden range/rebuy/utilities;
+3. define the logistics win condition;
+4. add survivability without deleting the cargo role;
+5. check power/heat/utilities/escape-critical priorities;
+6. practice pips and boost while laden;
+7. learn/pre-plan high wake vs low wake;
+8. practice interdiction response, including deliberate submission when appropriate for the shorter cooldown;
+9. controlled interdiction/escape drill with another Mongrel;
+10. busy-system contact awareness;
+11. final approach/docking under pressure;
+12. escort/comms/rendezvous planning;
+13. logistics contingency drill;
+14. controlled hostile-delivery capstone.
 
-Design rules:
-- use a real hauler the member already flies;
-- cargo capacity, speed, survivability, jump range, heat, power, and utilities are tradeoffs, not independent maxima;
-- Open/PvP survival skill is relevant, but PvP victory is not the training objective;
-- a clean interdiction submission is taught as one escape tool, **not** a universal “always submit” rule;
-- high-wake planning is taught because another ship's normal mass-lock-factor delay affects low-wake/supercruise escape but does not block a hyperspace jump to another system;
-- controlled practice with squadmates is preferred before a real hostile-delivery capstone;
-- escort success depends on communication, rendezvous, and contingency plans, not merely adding combat ships.
-
-UI:
-- collapsed specialty card inside the saved Trade & Hauling section;
-- one current step at a time;
-- progress bar;
-- Complete / Already Know / Skip for Now;
-- compact full-step history with Reopen;
-- reset affects only this specialty, not the main Trade Pathway.
-
-Ask the Mongrels can read the member's own CG Hauler progress only when the question clearly refers to CG hauling, hauler prep, hostile hauling/delivery, or interdiction/escape drills. It remains read-only.
+Use Open/PvP survival skills to support the logistics mission; PvP victory is not the objective.
 
 ---
 
 ## First Engineering Win
 
-Optional default onboarding on Start Here. It can appear even if Engineering is not selected in Pathway preferences and stops nagging after completion/dismissal.
-
-Default target:
-- FSD G2 Increased Range
-- then a range-focused experimental as a separate small job
-- test the payoff on a familiar trip
+Optional Start Here onboarding. It can appear even if Engineering is not selected and stops nagging after completion/dismissal.
 
 Implementation:
 - `lib/engineering-campaign-data.js`
@@ -704,34 +625,23 @@ Implementation:
 - `css/first-engineering-win.css`
 - `start/index.html`
 
-Current code contains **18 small steps**. Do not describe it as 17 unless current code changes.
+Current code contains **18 small steps**.
+
+Default target:
+- FSD G2 Increased Range;
+- range-focused experimental as a separate small job;
+- replot/test a familiar trip.
 
 UX:
-- one current step at a time;
+- one current step;
 - progress meter;
 - Done / Already Did This;
-- **Undo Previous Step** reverses only the most recently completed step, including from the final completion card;
-- Hide this starter dismisses it.
+- Undo Previous Step, including after final completion;
+- Hide this starter.
 
-The Felicity path includes a dedicated Deciat/Open safety step: rebuy, protect valuable exploration data, understand high vs low wake, preselect an escape system, avoid lingering with Meta-Alloy aboard, and ask Mongrels for escort/wing support if desired.
+The Felicity path includes dedicated Deciat/Open safety guidance: rebuy, protect exploration data, high vs low wake, preselected escape system, minimize Meta-Alloy exposure, optional Mongrel escort.
 
-Wolf validated the First Engineering Win card and Undo behavior on phone, but not a full end-to-end in-game completion of all 18 steps.
-
----
-
-## Future pathways / specialties
-
-Likely future core pathways:
-- Exploration
-- Exobiology
-- PvE Combat
-- PvP
-- Surface Operations
-- Colonization
-- Squadron Operations
-- Powerplay when doctrine is mature enough
-
-Do not automatically build all of these; inspect current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
+Wolf validated the card and Undo behavior on phone, but not the complete in-game sequence.
 
 ---
 
@@ -752,7 +662,28 @@ Application statuses:
 - accepted
 - declined
 
-Accepted/Declined are terminal in normal review; reapplication is explicit. Discord Member role assignment must succeed before website acceptance is finalized. Private officer notes never become applicant-facing decline text.
+Accepted/Declined are terminal in the normal workflow. Discord Member role assignment must succeed before website acceptance is finalized. Private officer notes never become applicant-facing decline text.
+
+---
+
+## Future pathways / specialties
+
+Likely future core Pathways:
+- Exploration
+- Exobiology
+- PvE Combat
+- PvP
+- Surface Operations
+- Colonization
+- Squadron Operations
+- Powerplay when doctrine is mature enough
+
+Do not automatically build all of these. Inspect current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
+
+Likely next Engineering campaign candidates after the current review batch:
+- Improve Power & Heat
+- Improve Weapon Package
+- whole-ship role build / Ship Architect campaign
 
 ---
 
@@ -762,35 +693,35 @@ Validated / accepted by Wolf or CI:
 - original AX beginner route direction;
 - Start Here random-task cards/carousel;
 - compact navigation focus mode;
-- full My Pathway assignment loading after restoring the shared assignments API response helper;
-- First Engineering Win card on phone;
-- First Engineering Win Undo Previous Step on phone;
-- Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
-- initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
-- automated GitHub Actions smoke suite; **run #40 passes with all three Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage**.
+- full My Pathway assignment loading after restoring the shared assignments API response helpers;
+- First Engineering Win card and Undo behavior on phone;
+- Engineering Prep Tracker concept/styling;
+- initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
+- automated smoke suite through **run #47**, including all four Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage.
 
-Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
-- cross-path **Engineering Prep** on relevant Trade and Mining assignments, including explicit user-confirmed progress recording, Lei market-count reuse, Selene mined-tonnage tracking, Prep Tracker integration, and Assistant awareness;
-- second audited **Improve Jump Range** Engineering campaign, including campaign selector UI, First Engineering Win access reuse, G2/experimental/G3 stopping points, and Assistant awareness;
-- third audited **Improve Speed & Mobility** Engineering campaign, including Felicity reuse, blueprint/experimental tradeoff guidance, G2/experimental/G3 stopping points, and Assistant awareness;
-- first specialty **Community Goal Hauler Prep** inside Trade & Hauling, including its 14-step progression, independent persistence, responsive UI, and query-selective Assistant awareness;
-- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign/specialty/cross-path prep context;
-- full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
-- full end-to-end **Improve Jump Range** behavior through actual in-game progression;
-- full end-to-end **Improve Speed & Mobility** behavior through actual in-game progression;
-- full end-to-end **Community Goal Hauler Prep** progression through controlled in-game drills;
-- fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
-- Campaign Planner ↔ Prep Tracker live browser synchronization across all campaign steps;
-- 1061–1280px compressed full-navigation tablet/iPad layout;
-- generalized Ask the Mongrels navigation paths and direct section buttons;
-- Mission Control assistant faction-presence selection / filtered-subset guardrail;
+Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
+- Improve Jump Range;
+- Improve Speed & Mobility;
+- **Improve Power Distributor**;
+- cross-path Engineering Prep on relevant Trade/Mining assignments;
+- Community Goal Hauler Prep full progression;
+- personalized Ask the Mongrels Pathway/campaign/specialty/cross-path context;
+- full end-to-end Improve Shields in-game progression;
+- full end-to-end Jump Range in-game progression;
+- full end-to-end Mobility in-game progression;
+- full end-to-end Power Distributor in-game progression;
+- fact-completed dependency propagation / later-access prerequisite supersession under real member state;
+- Campaign Planner ↔ Prep Tracker live synchronization under all campaign cases;
+- 1061–1280 compressed tablet/iPad navigation;
+- generalized Assistant navigation buttons;
+- Mission Control faction-presence Assistant selection guardrail;
 - latest direct Carrier Coordination / Member Portal anchors;
-- Trade v2 route rewrite;
-- Carrier Logistics full pathway;
-- Engineering & Shipbuilding full pathway;
-- numeric Engineering prerequisite tracker latest Update Progress layout;
-- Engineering route filtering for Give Me Another Route;
+- Trade v2, Carrier Logistics, Engineering full Pathways;
+- latest numeric Engineering Prep layout;
+- Engineering route filtering;
 - latest collapsible My Pathway category UX;
-- full end-to-end First Engineering Win in-game sequence.
+- complete First Engineering Win in-game sequence.
+
+Wolf plans to review the recent Engineering/specialty work in detail as a **batch** rather than interrupting development after each item.
 
 Production deployment can lag GitHub commits. Always distinguish **committed** from **confirmed live**.
