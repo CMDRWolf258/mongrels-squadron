@@ -64,15 +64,15 @@
       </div>
       ${targetMarkup(counter, current)}
 
-      ${quick.length ? `<div class="engineering-prep-action-block is-add">
-        <div class="engineering-prep-action-head"><strong>Quick add</strong><span>Record only what you actually completed.</span></div>
-        <div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${unit}">+${Number(amount)}</button>`).join('')}</div>
-      </div>` : ''}
-
       <details class="engineering-prep-manual">
-        <summary>Manual Entries</summary>
+        <summary>Update Progress</summary>
         <div class="engineering-prep-manual-body">
-          <div class="engineering-prep-action-block is-manual-add">
+          ${quick.length ? `<div class="engineering-prep-action-block is-manual-add">
+            <div class="engineering-prep-action-head"><strong>Quick add</strong><span>Use a shortcut when it matches what you actually completed.</span></div>
+            <div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${unit}">+${Number(amount)}</button>`).join('')}</div>
+          </div>` : ''}
+
+          <div class="engineering-prep-action-block${quick.length ? '' : ' is-manual-add'}">
             <div class="engineering-prep-action-head"><strong>Add exact progress</strong><span>Use this when the quick buttons do not match what you actually completed.</span></div>
             <div class="engineering-prep-entry">
               <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Actual amount completed" aria-label="Actual additional ${unit}" data-prep-actual>
