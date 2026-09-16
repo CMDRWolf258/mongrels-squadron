@@ -5,6 +5,7 @@ import { MINING_ACTIVITY_ID, eligibleMiningRoutes, getMiningRoute } from '../../
 import { TRADE_ACTIVITY_ID, eligibleTradeRoutes, getTradeRoute } from '../../../lib/pathway-trade.js';
 import { CARRIER_LOGISTICS_ACTIVITY_ID, eligibleCarrierLogisticsRoutes, getCarrierLogisticsRoute } from '../../../lib/pathway-carrier-logistics.js';
 import { ENGINEERING_ACTIVITY_ID, eligibleEngineeringRoutes, getEngineeringRoute } from '../../../lib/pathway-engineering.js';
+import { EXPLORATION_ACTIVITY_ID, eligibleExplorationRoutes, getExplorationRoute } from '../../../lib/pathway-exploration.js';
 import { engineeringPrepForTask } from '../../../lib/pathway-engineering-prep.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
@@ -55,6 +56,13 @@ const PROVIDERS = {
     getRoute:getEngineeringRoute,
     eligibleRoutes:eligibleEngineeringRoutes,
     seedVersion:'engineering-v1',
+  },
+  [EXPLORATION_ACTIVITY_ID]: {
+    id:EXPLORATION_ACTIVITY_ID,
+    label:'Exploration',
+    getRoute:getExplorationRoute,
+    eligibleRoutes:eligibleExplorationRoutes,
+    seedVersion:'exploration-v1',
   },
 };
 
