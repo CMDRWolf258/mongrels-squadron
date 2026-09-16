@@ -20,6 +20,7 @@ import { CROSS_PATH_ENGINEERING_TRACKED_FACTS } from '../../../lib/pathway-engin
 import { buildShieldEngineeringDependencyNodes } from '../../../lib/engineering-campaign-shields.js';
 import { buildJumpRangeEngineeringDependencyNodes } from '../../../lib/engineering-campaign-jump-range.js';
 import { buildMobilityEngineeringDependencyNodes } from '../../../lib/engineering-campaign-mobility.js';
+import { buildDistributorEngineeringDependencyNodes } from '../../../lib/engineering-campaign-distributor.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
@@ -125,6 +126,7 @@ function present(stateValue) {
     ...buildShieldEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
     ...buildJumpRangeEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
     ...buildMobilityEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
+    ...buildDistributorEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
   ];
   return {
     ok:true,
