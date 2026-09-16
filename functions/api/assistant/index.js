@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { buildAssistantContext } from '../../../lib/assistant-context.js';
+import { buildAssistantPathwayContext } from '../../../lib/assistant-pathway-context.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MAX_MESSAGE = 1600;
@@ -49,7 +50,16 @@ export async function onRequestPost({ request, env }) {
   if (!preflight.ok) return reply({ ok:false, error:preflight.error, usage:preflight.usage }, 429);
 
   const history = normalizeHistory(body?.history);
-  const { context, links } = await buildAssistantContext(request, env, session, message);
+  const { context, links:baseLinks } = await buildAssistantContext(request, env, session, message);
+  const pathwayContext = await buildAssistantPathwayContext(env, session, message);
+  if (pathwayContext) context.modules.pathway = pathwayContext;
+  const pathwayLinks = pathwayContext
+    ? [
+        { label:'My Pathway', href:'/pathway/' },
+        ...(pathwayContext.engineeringCampaign ? [{ label:'Engineering Guide', href:'/guides/engineering/' }] : []),
+      ]
+    : [];
+  const links = mergeLinks(pathwayLinks, baseLinks);
 
   const model = clean(env.OPENAI_MODEL, 'gpt-5.6-luna', 80);
   const pricing = pricingFor(model, env);
@@ -66,6 +76,7 @@ Rules:
 - For broad questions such as "what's happening today?", synthesize the most actionable items across Daily Orders, upcoming events/projects, carrier coordination, trade opportunities, and PvP notices. Lead with Daily Orders and urgent/time-sensitive items; omit empty categories.
 - Treat timestamps and freshness/source fields as meaningful. If data is marked stale/aging or has an old timestamp, say so rather than presenting it as live.
 - When the member asks where to find, open, create, or post something, use modules.siteNavigation when present. Give the exact visible click path for desktop/tablet and, when useful, the compact MENU path or Member Portal alternate. Do not invent menu labels. The site renders the matching direct navigation button separately, often to the exact requested section.
+- When SQUAD DATA includes modules.pathway, treat it as the authenticated member's current saved My Pathway state. Use assignments[].currentTask and engineeringCampaign.nextStep to answer references such as "my task," "this assignment," or "this step." Explain the task and help the member complete it, but never mark progress or imply the site recorded completion. My Pathway and the Campaign Planner remain authoritative for progress. If several current assignments are present and the member's reference is genuinely ambiguous, identify the likely choices briefly instead of guessing.
 - Role boundaries are strict. Member viewers must never receive Officer/Site Admin-only notes or fields. Officers may receive officer-visible operational context. Site Admin may receive all site-visible operational context, but never secrets or hidden identifiers.
 - When SQUAD DATA includes modules.eliteKnowledge, treat it as the preferred curated reference for covered Elite Dangerous mechanics, including engineering, combat, BGS, asteroid mining, and Rhino surface mining. Use it before general model knowledge. When an entry contains quickFacts, tables, or worked examples, prefer those exact structured facts over vague ranges or generic model memory.
 - If you materially rely on modules.eliteKnowledge, end with a short source note naming the knowledge-base source(s) and reviewed date, for example: Knowledge base: INARA · reviewed 2026-09-13. Do not print raw URLs unless specifically asked.
@@ -118,7 +129,6 @@ Rules:
 
   return reply({ ok:true, answer, links, model, usage });
 }
-
 
 export async function onRequestDelete({ request, env }) {
   const auth = await requireMember(request, env);
@@ -329,6 +339,18 @@ function validateSameOrigin(request) {
   const marker = request.headers.get('X-Mongrels-Request');
   if (origin !== expected || marker !== 'mongrel-assistant') return reply({ ok:false, error:'request_validation_failed' }, 403);
   return null;
+}
+
+function mergeLinks(...groups) {
+  const output = [];
+  for (const group of groups) {
+    for (const item of Array.isArray(group) ? group : []) {
+      if (!item?.href || output.some(existing => existing.href === item.href)) continue;
+      output.push({ label:item.label || 'Open', href:item.href });
+      if (output.length >= 4) return output;
+    }
+  }
+  return output;
 }
 
 function monthKey() { return new Date().toISOString().slice(0,7); }
