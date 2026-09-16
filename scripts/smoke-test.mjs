@@ -17,6 +17,10 @@ import {
   SHIELD_CAMPAIGN_FACTS,
   buildShieldEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-shields.js';
+import {
+  assistantPathwayIntent,
+  buildAssistantPathwayContext,
+} from '../lib/assistant-pathway-context.js';
 
 const providers = [
   ['Anti-Xeno', AX_ROUTES],
@@ -105,19 +109,50 @@ for (const nodeId of ['shields.dweller.black-markets', 'shields.dweller.unlock',
 }
 console.log('✓ Improve Shields honors existing Lei Cheung access');
 
+// The assistant should only receive personalized Pathway data when the member's
+// question actually refers to their assignment/progress. Exercise the selector
+// and a small in-memory PROJECTS binding so this bridge is covered by CI.
+assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
+assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
+const kvRecords = new Map([
+  ['pathway-preferences-v1:smoke-user', {
+    interests:['engineering'],
+    improve:['engineering'],
+    experience:{ engineering:'comfortable' },
+    playStyle:'either',
+    currentGoal:'Improve the test ship shields.',
+  }],
+  ['engineering-campaign-v1:smoke-user', state],
+]);
+const mockProjects = {
+  async get(key) { return kvRecords.get(key) ?? null; },
+};
+const assistantPathway = await buildAssistantPathwayContext(
+  { PROJECTS:mockProjects },
+  { sub:'smoke-user', access:'member', displayName:'Smoke Commander' },
+  'What is my current engineering step?',
+);
+assert.ok(assistantPathway, 'assistant did not build personalized Pathway context');
+assert.equal(assistantPathway.assignments.length, 1, 'assistant did not return the selected Engineering assignment');
+assert.equal(assistantPathway.assignments[0].activity, 'engineering', 'assistant returned the wrong Pathway activity');
+assert.equal(assistantPathway.engineeringCampaign?.active, true, 'assistant missed the active Engineering campaign');
+assert.ok(assistantPathway.engineeringCampaign?.nextStep?.title, 'assistant Engineering campaign context has no next step');
+console.log('✓ Ask the Mongrels can read concise current Pathway/campaign context');
+
 // Import the critical Cloudflare Pages Function modules. This catches syntax and
 // broken-import failures before Cloudflare sees the commit.
 const apiModules = [
   '../functions/api/pathway/preferences.js',
   '../functions/api/pathway/assignments.js',
   '../functions/api/pathway/engineering-campaign.js',
+  '../functions/api/assistant/index.js',
 ];
 for (const path of apiModules) {
   const module = await import(path);
   assert.equal(typeof module.onRequestGet, 'function', `${path} is missing onRequestGet`);
   assert.equal(typeof module.onRequestPost, 'function', `${path} is missing onRequestPost`);
 }
-console.log('✓ critical Pathway API modules import cleanly');
+console.log('✓ critical API modules import cleanly');
 
 // Guard the shared response helpers that were accidentally removed once and
 // caused every full-route assignment request to fail.
@@ -125,12 +160,13 @@ for (const path of [
   'functions/api/pathway/preferences.js',
   'functions/api/pathway/assignments.js',
   'functions/api/pathway/engineering-campaign.js',
+  'functions/api/assistant/index.js',
 ]) {
   const source = readFileSync(path, 'utf8');
   assert.match(source, /function\s+headers\s*\(/, `${path} is missing headers()`);
   assert.match(source, /function\s+reply\s*\(/, `${path} is missing reply()`);
 }
-console.log('✓ critical Pathway API response helpers are present');
+console.log('✓ critical API response helpers are present');
 
 // Verify a few high-value entry pages and Pathway assets are still present and
 // wired. These are intentionally shallow smoke checks, not browser tests.
