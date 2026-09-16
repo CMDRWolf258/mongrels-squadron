@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=10');
+    link.href = root('css/navigation-v2.css?v=11');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -83,7 +83,7 @@
           { href:root('projects/'), title:'Projects & Events', note:'Campaigns, construction and expeditions' },
         ]},
         { label:'Coordination', links:[
-          { href:root('carriers/'), title:'Carrier Coordination', note:'Fleet carriers, movement and logistics' },
+          { href:root('carriers/#carrier-coordination'), title:'Carrier Coordination', note:'Fleet carriers, movement and logistics' },
           { href:root('guides/operations/'), title:'Operations Field Manual', note:'Prepare for squad operations' },
           { href:root('member/'), title:'Member Portal', note:'Private member starting point' },
         ]},
@@ -119,7 +119,7 @@
 
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
-  const compactNav = () => window.matchMedia('(max-width:1280px)').matches;
+  const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
 
   const pinActivitiesTop = group => {
     if (!nav || !compactNav() || group?.dataset?.navKey !== 'activities') return;
