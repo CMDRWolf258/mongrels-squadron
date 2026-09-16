@@ -8,6 +8,7 @@ import { ENGINEERING_ACTIVITY_ID, eligibleEngineeringRoutes, getEngineeringRoute
 import { EXPLORATION_ACTIVITY_ID, eligibleExplorationRoutes, getExplorationRoute } from '../../../lib/pathway-exploration.js';
 import { EXOBIOLOGY_ACTIVITY_ID, eligibleExobiologyRoutes, getExobiologyRoute } from '../../../lib/pathway-exobiology.js';
 import { PVE_ACTIVITY_ID, eligiblePveRoutes, getPveRoute } from '../../../lib/pathway-pve.js';
+import { PVP_ACTIVITY_ID, eligiblePvpRoutes, getPvpRoute } from '../../../lib/pathway-pvp.js';
 import { engineeringPrepForTask } from '../../../lib/pathway-engineering-prep.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
@@ -79,6 +80,13 @@ const PROVIDERS = {
     getRoute:getPveRoute,
     eligibleRoutes:eligiblePveRoutes,
     seedVersion:'pve-v1',
+  },
+  [PVP_ACTIVITY_ID]: {
+    id:PVP_ACTIVITY_ID,
+    label:'PvP',
+    getRoute:getPvpRoute,
+    eligibleRoutes:eligiblePvpRoutes,
+    seedVersion:'pvp-v1',
   },
 };
 
