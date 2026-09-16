@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=7');
+    link.href = root('css/navigation-v2.css?v=8');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -120,26 +120,43 @@
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
   const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
-  const pinActivitiesTop = group => {
+
+  const pinActivitiesTop = (group, holdMs = 450) => {
     if (!nav || !compactNav() || group?.dataset?.navKey !== 'activities') return;
-    const reset = () => {
-      if (group.open && nav.classList.contains('open')) nav.scrollTop = 0;
+    const started = performance.now();
+    const pin = () => {
+      if (!group.open || !nav.classList.contains('open')) return;
+      if (nav.scrollTop !== 0) nav.scrollTop = 0;
+      if (performance.now() - started < holdMs) requestAnimationFrame(pin);
     };
-    reset();
-    requestAnimationFrame(() => {
-      reset();
-      requestAnimationFrame(reset);
-    });
-    window.setTimeout(reset, 120);
+    nav.scrollTop = 0;
+    requestAnimationFrame(pin);
   };
 
-  groups.forEach(group => group.addEventListener('toggle', () => {
-    if (group.open) {
+  groups.forEach(group => {
+    const summary = group.querySelector(':scope > summary');
+    summary?.addEventListener('click', event => {
+      if (!compactNav()) return;
+      event.preventDefault();
+      const opening = !group.open;
+      if (!opening) {
+        group.open = false;
+        return;
+      }
+      if (group.dataset.navKey === 'activities' && nav) nav.scrollTop = 0;
+      closeGroups(group);
+      group.open = true;
+      if (memberMenu) memberMenu.open = false;
+      pinActivitiesTop(group);
+    });
+
+    group.addEventListener('toggle', () => {
+      if (!group.open) return;
       closeGroups(group);
       if (memberMenu) memberMenu.open = false;
       pinActivitiesTop(group);
-    }
-  }));
+    });
+  });
 
   if (button && nav) button.addEventListener('click', () => {
     const open = nav.classList.toggle('open');
@@ -219,7 +236,7 @@
     const fetchSession = () => fetch(`/api/auth/session?_=${Date.now()}`, {
       credentials: 'same-origin',
       headers: { Accept:'application/json' },
-      cache: 'no-store',
+      cache:'no-store',
     }).then(response => response.ok ? response.json() : null);
 
     const callbackJustReturned = new URLSearchParams(window.location.search).get('login') === 'success';
