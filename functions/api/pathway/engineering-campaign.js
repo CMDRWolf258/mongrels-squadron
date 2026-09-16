@@ -22,6 +22,7 @@ import { buildJumpRangeEngineeringDependencyNodes } from '../../../lib/engineeri
 import { buildMobilityEngineeringDependencyNodes } from '../../../lib/engineering-campaign-mobility.js';
 import { buildDistributorEngineeringDependencyNodes } from '../../../lib/engineering-campaign-distributor.js';
 import { buildPowerThermalEngineeringDependencyNodes } from '../../../lib/engineering-campaign-power-thermal.js';
+import { buildWeaponEngineeringDependencyNodes } from '../../../lib/engineering-campaign-weapons.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
@@ -81,8 +82,6 @@ export async function onRequestPost({ request, env }) {
         targetNotes:body?.targetNotes,
       }, now);
     } else if (action === 'set_fact') {
-      // Browser/API writes are manual in v1. Future imports/connectors should use
-      // server-owned source labels rather than accepting provenance from the client.
       state = setEngineeringFact(state, body?.factId, body?.value, 'manual', now);
     } else if (action === 'clear_fact') {
       state = clearEngineeringFact(state, body?.factId, now);
@@ -129,6 +128,7 @@ function present(stateValue) {
     ...buildMobilityEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
     ...buildDistributorEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
     ...buildPowerThermalEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
+    ...buildWeaponEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
   ];
   return {
     ok:true,
