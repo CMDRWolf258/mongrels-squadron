@@ -538,6 +538,16 @@ The assistant uses curated site/squad knowledge and can provide stable general E
 
 Pathway should tell the Commander what to accomplish without explaining every hidden prerequisite; Ask the Mongrels is the help layer when they get stuck.
 
+For website-navigation questions, the assistant should prefer **explicit click paths that match the current UI**, not vague page-name directions. When a destination differs by layout, describe both desktop and compact navigation when useful. If the same tool is reachable through the Member Portal, mention that alternate route when it materially helps.
+
+Carrier coordination example now encoded in `lib/assistant-context.js`:
+- desktop: **Command → Carrier Coordination**;
+- compact/tablet/mobile: **MENU → Command → Carrier Coordination**;
+- member route: **member button → Member Portal → Carrier Coordination → Open Carrier Board**;
+- to create a loading event: **Carrier Coordination → New Coordination Post → Activity: Loading**.
+
+Carrier-related assistant responses should also surface both **Carrier Coordination** and **Member Portal** as relevant navigation buttons when available.
+
 High-value future improvement: include the member’s current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
 
 ---
