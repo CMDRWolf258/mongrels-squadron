@@ -62,19 +62,20 @@
   .site-header-v2 .menu-toggle{display:inline-flex!important;flex:0 0 auto;margin-left:0}
 
   /* Compact focus mode: an expanded category owns the drawer. Sibling categories
-     temporarily disappear instead of reserving height beneath the open content. */
+     disappear, but the drawer itself remains scrollable on short windows/screens. */
   .site-header-v2 .nav-links-v2:has(.nav-group[open]){
-    height:calc(100vh - 103px);
-    height:calc(100dvh - 103px);
+    height:auto;
     max-height:calc(100vh - 103px);
     max-height:calc(100dvh - 103px);
-    overflow:clip;
+    overflow-x:hidden;
+    overflow-y:auto;
+    scrollbar-gutter:stable;
   }
   .site-header-v2 .nav-links-v2:has(.nav-group[open])>a,
   .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group:not([open]){display:none!important}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;overflow:hidden;border-top:0}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>summary{flex:0 0 46px;position:relative;z-index:2;background:rgba(8,11,14,.99)}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>.nav-mega{flex:1 1 auto;min-height:0;max-height:none;margin-bottom:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]{display:block;min-height:0;overflow:visible;border-top:0}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>summary{position:sticky;top:0;z-index:3;background:rgba(8,11,14,.99);box-shadow:0 8px 14px rgba(8,11,14,.96)}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>.nav-mega{max-height:none;margin-bottom:8px;overflow:visible}
 }
 @media(max-width:620px){
   .site-header-v2 .nav-wrap{gap:10px}
@@ -85,5 +86,5 @@
 }
 @media(max-width:520px){
   .site-header-v2 .nav-links-v2{top:77px!important;max-height:calc(100vh - 93px);max-height:calc(100dvh - 93px)}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open]){height:calc(100vh - 93px);height:calc(100dvh - 93px);max-height:calc(100vh - 93px);max-height:calc(100dvh - 93px)}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open]){max-height:calc(100vh - 93px);max-height:calc(100dvh - 93px)}
 }
