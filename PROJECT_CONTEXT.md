@@ -59,12 +59,13 @@ Current checks include:
 - all six full Pathway route catalogs import, remain non-empty, have unique route/task IDs, and retain required task fields;
 - Engineering campaign fact-completed dependency propagation works;
 - Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
-- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step without activating on unrelated navigation questions;
+- **Improve Jump Range reuses permanent Felicity/Scout/G2 access recorded by First Engineering Win and preserves its deliberate stopping points;**
+- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step, recognizes Jump Range campaign wording, and does not activate on unrelated navigation questions;
 - critical Pathway/Assistant Cloudflare Function modules import cleanly;
 - critical APIs still contain their shared `headers()` / `reply()` response helpers;
 - high-value entry pages and Engineering Pathway assets are still present/wired.
 
-This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. Preserve and extend this suite when new shared platform behavior is added.
+This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed** with the new cross-campaign reuse checks. Preserve and extend this suite when new shared platform behavior is added.
 
 ---
 
@@ -211,7 +212,7 @@ Pathway context is selected for natural phrases such as:
 - “How do I do my current task?”
 - “What is my current Engineering step?”
 - “Why am I doing this step?”
-- references to the Campaign Planner, Improve Shields, Engineering Prep, or a specific full Pathway assignment.
+- references to the Campaign Planner, Improve Shields, **Improve Jump Range**, Engineering Prep, or a specific full Pathway assignment.
 
 When selected, `modules.pathway` can include:
 - saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
@@ -226,7 +227,7 @@ Rules:
 - preserve query selectivity to protect prompt size/monthly AI usage;
 - controlled Related buttons prioritize **My Pathway** and, for Engineering campaign questions, **Engineering Guide**.
 
-The smoke suite covers the intent gate and a representative in-memory Engineering assignment/campaign lookup. Production behavior still requires member testing after deployment.
+The smoke suite covers the intent gate and representative in-memory Engineering assignment/campaign lookups. Production behavior still requires member testing after deployment.
 
 ---
 
@@ -414,6 +415,7 @@ Framework files:
 - `lib/engineering-campaign.js`
 - `lib/engineering-campaign-data.js`
 - `lib/engineering-campaign-shields.js`
+- `lib/engineering-campaign-jump-range.js`
 - `functions/api/pathway/engineering-campaign.js`
 - `js/engineering-campaign-planner.js`
 - `css/engineering-campaign-planner.css`
@@ -475,13 +477,44 @@ Design rules:
 - Permanent/access-like milestones (The Dweller unlocked, Lei referral, Lei unlocked, Lei G2/G3 access) are stored as shared Engineering facts.
 - Accidental fact marks can be corrected from the campaign step history; counter corrections belong in the Prep Tracker.
 
+### Improve Jump Range — second goal-specific campaign
+
+`lib/engineering-campaign-jump-range.js` is the second audited campaign and the first explicit **cross-campaign reuse test**. It targets a useful **G2 Increased Range FSD** result first, then separates the range-focused experimental and optional G3 refinement into their own small jobs.
+
+Current chain:
+1. generic campaign assessment, target selection, and dependency mapping;
+2. confirm Increased Range is the right FSD job for the ship's actual role and establish a practical travel baseline;
+3. plan only the **G1 → G2** Increased Range material job;
+4. gather only that small G2 material plan;
+5. satisfy Felicity's Scout requirement only if permanent saved progress does not already prove it;
+6. acquire one Meta-Alloy and prepare the Deciat/Open safety plan only if Felicity is still locked;
+7. unlock Felicity Farseer;
+8. open only enough Felicity reputation for G2 Increased Range;
+9. refresh the exact G2 material shortfall once current reputation is known;
+10. engineer the selected FSD through complete G2 Increased Range;
+11. **replot/fly a familiar trip and test the practical G2 result**;
+12. optionally plan, gather, apply, and test the range-focused experimental as its own job;
+13. optionally open G3 only if the G2/experimental tests still leave a meaningful travel problem;
+14. plan/gather only the remaining G3 materials;
+15. engineer to G3 and test the result;
+16. end the campaign phase rather than silently appending G4/G5.
+
+Cross-campaign rules:
+- First Engineering Win facts for **Scout**, **Felicity unlocked**, and **Felicity G2 access** are valid permanent proof for the corresponding Jump Range gates.
+- New shared facts include `rank.exploration.scout-or-higher`, `engineer.felicity-farseer.unlocked`, `engineer.felicity-farseer.fsd-g2-ready`, and `engineer.felicity-farseer.fsd-g3-ready`.
+- Later Felicity access proves earlier unlock requirements were already satisfied; do not ask an experienced Commander to buy another Meta-Alloy or repeat Deciat unlock prep.
+- Ship-specific First Engineering Win completion such as “that old FSD reached G2” does **not** automatically complete the new ship's FSD engineering step. Only account-wide/permanent access is reused.
+- G2, G2 + experimental, and G3 are all legitimate **Take the Win** points.
+- The experimental is deliberately separate so the Commander understands the choice. Inara currently exposes Mass Manager and Deep Charge as range-focused options; use the ship/FSD-specific planner result instead of hard-coding one choice for every drive.
+- G4/G5 are deliberately deferred to a later goal rather than being appended by default.
+
 ### Campaign Planner UI
 
 My Pathway → Engineering hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
 
 Inactive state:
-- exposes the audited **Improve Shields** campaign only;
-- asks for the ship and the specific shield problem/goal;
+- exposes a compact selector for the two audited campaigns: **Improve Shields** and **Improve Jump Range**;
+- asks for the ship and the specific problem/goal rather than rendering a giant campaign catalog;
 - shows at most the 4 most recent visible paused/completed campaigns;
 - completed campaigns can be **Reopened** with their existing progress intact;
 - paused campaigns can be resumed;
@@ -497,10 +530,12 @@ Active state:
 - counter steps link/scroll to the existing Prep Tracker;
 - full compact step history with Reopen / Undo Mark / Update Tracker corrections;
 - Pause Campaign;
-- explicit Take the Win completion at valid stopping points;
+- goal-aware **Take the Win** copy at valid stopping points;
 - previous visible campaigns still expose Resume / Reopen / Remove from History controls. Reopening an older campaign while another campaign is active pauses the current one.
 
 Campaign explanatory cards use the plain-language label **Why this is a separate step**. It means the prerequisite or subtask is deliberately being shown as its own manageable unit instead of being hidden inside a larger assignment.
+
+The step-history correction UI intentionally does not offer **Undo Mark** against inherited `first-win.*` proof or against an alternate/superseding fact used to satisfy an earlier gate. This avoids accidentally erasing valid permanent progress simply because it auto-cleared another campaign step.
 
 `js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through the `mongrels:engineering-campaign-updated` browser event so counter edits immediately refresh the active campaign without a page reload.
 
@@ -606,11 +641,13 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win Undo Previous Step on phone;
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
 - initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
-- automated GitHub Actions smoke suite; current suite passes after catching/fixing the Assistant `current engineering step` intent gap.
+- automated GitHub Actions smoke suite; **run #13 passes with Improve Jump Range cross-campaign reuse coverage**.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
+- second audited **Improve Jump Range** Engineering campaign, including campaign selector UI, First Engineering Win access reuse, G2/experimental/G3 stopping points, and Assistant awareness;
 - personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign context;
 - full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
+- full end-to-end **Improve Jump Range** behavior through actual in-game progression;
 - fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
 - Campaign Planner ↔ Prep Tracker live browser synchronization across all campaign steps;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
