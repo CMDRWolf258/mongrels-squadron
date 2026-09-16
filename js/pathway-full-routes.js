@@ -14,6 +14,7 @@
     ['Exploration', document.querySelector('[data-exploration-pathway]')],
     ['Exobiology', document.querySelector('[data-exobiology-pathway]')],
     ['Colonization', document.querySelector('[data-colonization-pathway]')],
+    ['Squadron Coordination', document.querySelector('[data-squadron-coordination-pathway]')],
   ]);
 
   function fullRouteIsVisible(label) {
