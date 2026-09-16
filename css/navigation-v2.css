@@ -46,15 +46,16 @@
 }
 
 @media(max-width:1060px){
-  .site-header-v2 .nav-links-v2{position:fixed!important;inset:87px 16px auto 16px!important;display:none!important;flex-direction:column!important;align-items:stretch!important;max-height:calc(100vh - 103px);max-height:calc(100dvh - 103px);overflow:auto;overscroll-behavior:contain;scroll-padding-top:8px;gap:3px;padding:10px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:rgba(8,11,14,.985)!important;box-shadow:var(--shadow)!important}
+  .site-header-v2 .nav-links-v2{position:fixed!important;inset:87px 16px auto 16px!important;display:none!important;flex-direction:column!important;align-items:stretch!important;max-height:calc(100vh - 103px);max-height:calc(100dvh - 103px);overflow:auto;overscroll-behavior:contain;overflow-anchor:none;scroll-padding-top:18px;gap:3px;padding:16px 10px 10px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:rgba(8,11,14,.985)!important;box-shadow:var(--shadow)!important}
   .site-header-v2 .nav-links-v2.open{display:flex!important}
   .site-header-v2 .nav-links-v2>a,
   .site-header-v2 .nav-group>summary{display:flex!important;min-height:46px;padding:0 13px!important;font-size:.76rem!important}
+  .site-header-v2 .nav-group>summary{scroll-margin-top:18px}
   .site-header-v2 .nav-group{width:100%;border-top:1px solid rgba(255,255,255,.035)}
   .site-header-v2 .nav-group:first-of-type{border-top:0}
   .site-header-v2 .nav-group>summary{justify-content:space-between}
   .site-header-v2 .nav-mega,
-  .site-header-v2 .nav-mega-two{position:static;width:auto;grid-template-columns:1fr;gap:8px;margin:0 5px 8px;padding:10px;border-radius:10px;box-shadow:none;background:rgba(255,255,255,.018)}
+  .site-header-v2 .nav-mega-two{position:static;width:auto;grid-template-columns:1fr;gap:8px;margin:6px 5px 8px;padding:12px 10px 10px;border-radius:10px;box-shadow:none;background:rgba(255,255,255,.018)}
   .site-header-v2 .nav-mega-column{padding:3px}
   .site-header-v2 .nav-mega-label{margin-top:4px}
   .site-header-v2 .nav-mega-footer{display:block;padding:11px 9px}
