@@ -10,6 +10,7 @@ import { EXOBIOLOGY_ACTIVITY_ID, eligibleExobiologyRoutes, getExobiologyRoute } 
 import { PVE_ACTIVITY_ID, eligiblePveRoutes, getPveRoute } from '../../../lib/pathway-pve.js';
 import { PVP_ACTIVITY_ID, eligiblePvpRoutes, getPvpRoute } from '../../../lib/pathway-pvp.js';
 import { OPERATIONS_ACTIVITY_ID, eligibleOperationsRoutes, getOperationsRoute } from '../../../lib/pathway-operations.js';
+import { COLONIZATION_ACTIVITY_ID, eligibleColonizationRoutes, getColonizationRoute } from '../../../lib/pathway-colonization.js';
 import { engineeringPrepForTask } from '../../../lib/pathway-engineering-prep.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
@@ -95,6 +96,13 @@ const PROVIDERS = {
     getRoute:getOperationsRoute,
     eligibleRoutes:eligibleOperationsRoutes,
     seedVersion:'operations-v1',
+  },
+  [COLONIZATION_ACTIVITY_ID]: {
+    id:COLONIZATION_ACTIVITY_ID,
+    label:'Colonization',
+    getRoute:getColonizationRoute,
+    eligibleRoutes:eligibleColonizationRoutes,
+    seedVersion:'colonization-v1',
   },
 };
 
