@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=5');
+    link.href = root('css/navigation-v2.css?v=6');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -63,7 +63,7 @@
         { label:'Combat', links:[
           { href:root('activities/#combat'), title:'Combat Overview', note:'PvE, PvP, AX and surface combat' },
           { href:root('pvp/'), title:'PvP', note:'Training, Bounty Board and combat tools' },
-          { href:root('activities/#ax'), title:'Anti-Xeno', note:'Preparation today; full pathway coming' },
+          { href:root('activities/#ax'), title:'Anti-Xeno', note:'Guided AX pathways, training and combat progression' },
         ]},
         { label:'Industry & Discovery', links:[
           { href:root('guides/mining/'), title:'Mining', note:'Field Manual and mining workflows' },
@@ -122,12 +122,17 @@
   const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
   const revealGroupTop = group => {
     if (!nav || !compactNav()) return;
-    requestAnimationFrame(() => {
+    const summary = group.querySelector(':scope > summary');
+    if (!summary) return;
+    // Let native <details> finish its layout before setting the drawer scroll.
+    // Use the summary itself as the anchor and leave visible breathing room above it.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       const navRect = nav.getBoundingClientRect();
-      const groupRect = group.getBoundingClientRect();
-      const top = nav.scrollTop + (groupRect.top - navRect.top) - 8;
-      nav.scrollTo({ top:Math.max(0, top), behavior:'auto' });
-    });
+      const summaryRect = summary.getBoundingClientRect();
+      const inset = 18;
+      const top = nav.scrollTop + (summaryRect.top - navRect.top) - inset;
+      nav.scrollTop = Math.max(0, top);
+    }));
   };
 
   groups.forEach(group => group.addEventListener('toggle', () => {
