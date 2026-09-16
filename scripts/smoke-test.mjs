@@ -28,6 +28,10 @@ import {
   buildDistributorEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-distributor.js';
 import {
+  POWER_THERMAL_CAMPAIGN_FACTS,
+  buildPowerThermalEngineeringDependencyNodes,
+} from '../lib/engineering-campaign-power-thermal.js';
+import {
   CROSS_PATH_ENGINEERING_PREP,
   engineeringPrepForTask,
 } from '../lib/pathway-engineering-prep.js';
@@ -245,6 +249,38 @@ assert.ok(distributorView.nodes.some(node => node.id === 'distributor.experiment
 assert.ok(distributorView.nodes.some(node => node.id === 'distributor.test.g3' && node.meta?.readyToFinish), 'Improve Power Distributor has no G3 stopping point');
 console.log('✓ Improve Power Distributor reuses The Dweller progress and preserves stopping points');
 
+// Improve Power & Heat must reuse Felicity access for its small G1 phase and let
+// a known higher-grade Power Plant capability supersede both Felicity and later
+// G2/G3 access gates. The priority audit is also a legitimate no-engineering win.
+let powerThermalState = createEmptyEngineeringCampaignState('power-thermal-smoke-user');
+powerThermalState = startEngineeringCampaign(powerThermalState, {
+  goalId:'power-thermal',
+  shipName:'Thermal Smoke Ship',
+  targetNotes:'Fix deployed power and sustained heat without unnecessary overcharge.',
+}, '2026-09-16T12:27:00.000Z');
+powerThermalState = setEngineeringFact(powerThermalState, 'first-win.fsd.scout-ready', true, 'smoke', '2026-09-16T12:28:00.000Z');
+powerThermalState = setEngineeringFact(powerThermalState, 'first-win.fsd.engineer-access-ready', true, 'smoke', '2026-09-16T12:29:00.000Z');
+powerThermalState = setEngineeringFact(powerThermalState, POWER_THERMAL_CAMPAIGN_FACTS.powerPlantG3Ready, true, 'smoke', '2026-09-16T12:30:00.000Z');
+const powerThermalCampaign = powerThermalState.campaigns[powerThermalState.activeCampaignId];
+const powerThermalNodes = buildPowerThermalEngineeringDependencyNodes({ campaign:powerThermalCampaign, facts:powerThermalState.facts });
+const powerThermalView = buildEngineeringCampaignView(powerThermalState, powerThermalNodes);
+for (const nodeId of [
+  'power-thermal.felicity.scout',
+  'power-thermal.felicity.meta-alloy',
+  'power-thermal.felicity.deciat-safety',
+  'power-thermal.felicity.unlock',
+  'power-thermal.g2-access',
+  'power-thermal.g3-access',
+]) {
+  const node = powerThermalView.nodes.find(item => item.id === nodeId);
+  assert.ok(node, `Improve Power & Heat is missing expected node ${nodeId}`);
+  assert.equal(node.status, 'complete', `${nodeId} did not reuse existing Engineer access`);
+}
+for (const nodeId of ['power-thermal.priority-test','power-thermal.test.g1','power-thermal.test.g2','power-thermal.experimental.test','power-thermal.test.g3']) {
+  assert.ok(powerThermalView.nodes.some(node => node.id === nodeId && node.meta?.readyToFinish), `Improve Power & Heat lost stopping point ${nodeId}`);
+}
+console.log('✓ Improve Power & Heat reuses Engineer access and preserves no-engineering/G1/G2/experimental/G3 stopping points');
+
 // Community Goal Hauler Prep is an independent Trade specialty, not another full
 // Pathway provider. Keep the sequence compact, unique, and status semantics aligned
 // with the main Pathway model: complete/known earn credit; skip does not.
@@ -267,6 +303,7 @@ assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assi
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
 assert.equal(assistantPathwayIntent('What is my power distributor campaign step?'), true, 'assistant missed Power Distributor campaign intent');
+assert.equal(assistantPathwayIntent('What is my power and heat campaign step?'), true, 'assistant missed Power and Heat campaign intent');
 assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
 assert.equal(assistantPathwayIntent('Does my current trade task help engineering?'), true, 'assistant missed cross-path Engineering prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
@@ -311,6 +348,24 @@ const distributorAssistant = await buildAssistantPathwayContext(
 );
 assert.equal(distributorAssistant?.engineeringCampaign?.goal, 'Improve Power Distributor', 'assistant missed the Power Distributor campaign goal');
 assert.ok(distributorAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Power Distributor context has no next step');
+
+const powerThermalKvRecords = new Map([
+  ['pathway-preferences-v1:power-thermal-smoke-user', {
+    interests:['engineering'],
+    improve:['engineering'],
+    experience:{ engineering:'comfortable' },
+    playStyle:'either',
+    currentGoal:'Fix a power and heat problem.',
+  }],
+  ['engineering-campaign-v1:power-thermal-smoke-user', powerThermalState],
+]);
+const powerThermalAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return powerThermalKvRecords.get(key) ?? null; } } },
+  { sub:'power-thermal-smoke-user', access:'member', displayName:'Thermal Smoke Commander' },
+  'What is my power and heat campaign step?',
+);
+assert.equal(powerThermalAssistant?.engineeringCampaign?.goal, 'Improve Power & Heat', 'assistant missed the Power & Heat campaign goal');
+assert.ok(powerThermalAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Power & Heat context has no next step');
 
 const prepKvRecords = new Map([
   ['pathway-preferences-v1:prep-smoke-user', {
@@ -402,6 +457,7 @@ for (const path of [
   'lib/engineering-campaign-jump-range.js',
   'lib/engineering-campaign-mobility.js',
   'lib/engineering-campaign-distributor.js',
+  'lib/engineering-campaign-power-thermal.js',
   'lib/pathway-engineering-prep.js',
   'lib/pathway-engineering-prep-facts.js',
   'lib/pathway-cg-hauler-prep.js',
@@ -426,6 +482,7 @@ const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8')
 assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
 assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
 assert.match(plannerSource, /distributor/, 'Campaign Planner is not exposing Improve Power Distributor');
+assert.match(plannerSource, /power-thermal/, 'Campaign Planner is not exposing Improve Power & Heat');
 const tradeSource = readFileSync('js/pathway-trade.js', 'utf8');
 const miningSource = readFileSync('js/pathway-mining.js', 'utf8');
 assert.match(tradeSource, /MongrelEngineeringPrep/, 'Trade Pathway is not rendering cross-path Engineering prep');
