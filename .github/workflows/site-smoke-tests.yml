@@ -37,3 +37,4 @@ jobs:
           node --experimental-default-type=module scripts/smoke-pvp.mjs
           node --experimental-default-type=module scripts/smoke-operations.mjs
           node --experimental-default-type=module scripts/smoke-colonization.mjs
+          node --experimental-default-type=module scripts/smoke-squadron-coordination.mjs
