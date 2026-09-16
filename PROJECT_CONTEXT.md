@@ -23,7 +23,7 @@ This is an architecture/handoff guide, not a changelog or duplicate of the codeb
 - **Theme:** black/charcoal with cyan/blue; restrained military/HUD styling
 - **Navigation convention:** use **CARRIERS**, not Fleet
 
-The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, and Ask the Mongrels all live here.
+The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, Ask the Mongrels, and My Pathway all live here.
 
 ---
 
@@ -31,7 +31,7 @@ The site is both a public squadron presence and a private operational platform: 
 
 ### Website vs Discord
 
-- **Website = structured source of truth** for applications, profiles, projects, tasking, status, and admin workflows.
+- **Website = structured source of truth** for applications, profiles, projects, tasking, status, pathway preferences, and admin workflows.
 - **Discord = identity/community + communication + notifications + immediate coordination.**
 
 Do not duplicate structured website workflows into Discord unless there is a clear reason.
@@ -46,11 +46,11 @@ Wolf travels often and uses desktop, phone, and iPad. Admin/member tools must re
 
 ---
 
-## Navigation / information architecture direction
+## Navigation / information architecture
 
-The site has reached the point where adding more top-level links would make it harder to use. Future growth should use **progressive disclosure** rather than continuing to widen the main menu.
+The site has reached the point where adding more top-level links would make it harder to use. Future growth uses **progressive disclosure** rather than continuing to widen the main menu.
 
-Long-term public navigation model:
+Current public navigation model:
 - **Start Here** — low-overwhelm route for new, returning, or casual Commanders
 - **Activities** — browse Elite by what the player wants to do
 - **Command** — Mission Control, Daily Orders, projects, carrier coordination, squad operations
@@ -60,23 +60,36 @@ Long-term public navigation model:
 - Mongrels logo acts as Home
 - authenticated member identity/access remains separate from the public navigation
 
-### Current navigation pilot
+### Current site-wide navigation system
 
-Files:
+Primary files:
+- `js/site.js`
+- `css/navigation-v2.css`
 - `start/index.html`
 - `activities/index.html`
 - `css/hubs.css`
-- `js/navigation-v2.js`
 
-Current state:
-- `/start/` and `/activities/` use the grouped-navigation prototype.
+Current behavior:
+- `js/site.js` is the single source of truth for the grouped menu and replaces the legacy header link list at runtime on pages that expose the normal `[data-nav]` header.
+- It derives the repository/site root from the page's brand/Home link so nested pages can reuse the same menu definition.
 - Desktop uses compact top-level groups with click-open mega panels.
-- Mobile/tablet uses the same semantic groups as stacked accordions inside the existing menu drawer.
-- The pilot uses semantic `<details>`/`<summary>`, the existing `js/site.js` for the main menu/member access, and a small `js/navigation-v2.js` helper to close sibling groups, Escape/outside-click dismissals, and same-page mobile selections.
-- Existing site-wide headers have **not** been replaced yet.
-- Home exposes Start Here and Activities cards so the pilot can be reached naturally.
+- Mobile/tablet uses the same semantic groups as stacked accordions inside the menu drawer.
+- Opening one navigation group closes sibling groups; outside-click and Escape dismiss open groups.
+- Existing static legacy links remain useful as no-JavaScript fallback markup on older pages.
+- Home exposes Start Here and Activities cards as natural entry points.
+- `/start/` and `/activities/` remain the dedicated information-architecture hubs.
 
-Do **not** roll the new navigation across the entire site until Wolf reviews the live desktop/mobile behavior and confirms the direction.
+The grouped-navigation direction was approved by Wolf after the initial two-page prototype, and the source has now been rolled out site-wide through `js/site.js`. **Production behavior still needs live desktop/mobile validation after deployment.**
+
+### Authenticated member menu
+
+When `/api/auth/session` reports an authenticated user, the old Member Login chip becomes a compact personal menu containing:
+- **My Pathway**
+- Member Portal
+- My Profile
+- Sign Out
+
+This keeps personalized/private destinations prominent without adding them to the public top-level menu. Discord display/access names inserted into this control must be HTML-escaped.
 
 ### Start Here philosophy
 
@@ -105,17 +118,45 @@ Current families:
 
 The hub should expose both live material and clearly marked planned gaps without pretending unfinished content exists.
 
-### My Pathway — planned personalized layer
+### My Pathway — live foundation
 
-**My Pathway** is intended to be a personalized lens over the same canonical site content, not a duplicate knowledge base.
+**My Pathway** is a personalized lens over the same canonical site content, not a duplicate knowledge base.
 
-Planned inputs from member profiles:
+Primary files:
+- `pathway/index.html`
+- `js/pathway.js`
+- `css/pathway.css`
+- `functions/api/pathway/preferences.js`
+
+API:
+- `/api/pathway/preferences`
+
+Storage:
+- `PROJECTS`
+- per-user prefix: `pathway-preferences-v1:`
+
+Privacy/authority:
+- Member / Officer / Site Admin only.
+- Each member may read/write only their own pathway preferences.
+- Preferences are intentionally separate from the roster/profile record even though both are linked by Discord user ID. Public/member-directory identity and private development confidence/goals are different concerns.
+
+Current pathway inputs:
 - activities/interests the Commander enjoys;
 - areas they want to improve;
-- approximate experience per selected activity;
-- optional current goals/preferences.
+- experience per selected activity: `new`, `some`, `comfortable`, `experienced`;
+- preferred play style: solo, group, or either;
+- optional current personal goal.
 
-Planned behavior:
+Current behavior:
+- deterministic recommendation preview generated from those selections;
+- “want to improve” receives priority emphasis;
+- related canonical site content is linked rather than duplicated;
+- no content is locked;
+- members can change preferences whenever interests or confidence change.
+
+The current recommendation layer is **foundation/v1**, not the finished milestone engine. It does not yet store per-task Complete / Already Know / Skip state or automatically merge live squad opportunities.
+
+Planned pathway rules:
 - deterministic structured progression, not opaque AI-generated progression;
 - recommend useful next goals based on interest, experience, prerequisites, and current squad opportunities;
 - allow **Complete**, **I already know this**, **Skip / not now** behavior;
@@ -123,7 +164,7 @@ Planned behavior:
 - mix personal development goals with relevant live squad opportunities where useful;
 - Ask the Mongrels may explain pathway recommendations, but should not secretly own the progression state.
 
-**AX is planned as the first complete pathway model** because it naturally spans preparation, modules, Engineering, training, first combat, Interceptor fundamentals, and advanced play.
+**AX is the first planned complete pathway model** because it naturally spans preparation, modules, Engineering, training, first combat, Interceptor fundamentals, and advanced play.
 
 ---
 
@@ -172,7 +213,7 @@ Important environment values include:
 - `RECRUITMENT_CHANNEL_ID`
 
 Important KV bindings:
-- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, and other structured project data.
+- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences, and other structured project data.
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy and related configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
@@ -391,6 +432,7 @@ Use this page as the preferred home for future safe diagnostics/test buttons.
 `/member/` is the primary authenticated dashboard.
 
 Major private areas include:
+- My Pathway via the authenticated member menu
 - Daily Orders
 - Projects & Events
 - Carrier Coordination
@@ -405,7 +447,7 @@ Profiles use `PROJECTS` key:
 
 Member profile creation is part of new-member onboarding.
 
-Future profile evolution for My Pathway should extend the existing specialties/activities model rather than create a second unrelated identity/profile system.
+Roster/profile data and My Pathway preferences deliberately remain separate records linked by Discord owner ID: the roster is squad-facing identity; pathway experience/goals are private personalization state.
 
 ---
 
@@ -428,6 +470,7 @@ Known deferred BGS item: a previously discussed retreat-warning default change m
 - Home
 - Start Here
 - Activities
+- My Pathway
 - About / Rules
 - Mission Control / Operations
 - Projects & Events
@@ -518,8 +561,9 @@ Prefer normal repository image files, efficient formats, GitHub/file workflows, 
 - Acceptance/decline/reapplication Discord messages are best-effort after the authoritative website decision where appropriate.
 - Legacy MEE6/Appy pieces may remain installed until the replacement flow proves itself with real users.
 - Moderated Gallery and Ship Build submission/approval workflows remain deferred.
-- New grouped navigation is still a two-page pilot; site-wide rollout intentionally waits for Wolf's review.
-- My Pathway is an architecture direction, not yet a live member feature.
+- Site-wide grouped navigation has been implemented through `js/site.js` but still needs post-deploy browser validation across representative desktop/mobile pages.
+- Some early hub markup still contains its original prototype navigation/helper; `js/site.js` now owns the canonical site-wide navigation and the old helper can be cleaned up after validation.
+- My Pathway currently stores private preferences and produces deterministic recommendation previews; persistent milestone completion/skip state and live-opportunity merging are not built yet.
 
 ---
 
@@ -534,6 +578,8 @@ Confirmed live before the latest hardening/navigation passes:
 - application submission alerts are wired;
 - Site Admin Lab is accessible to Wolf.
 
+Wolf approved the **direction** of the Start Here / Activities / grouped-navigation prototype and asked to continue. This is not the same as a full live cross-device validation of the site-wide rollout.
+
 **Implemented but still awaiting live end-to-end validation after deployment:**
 - automatic Member-role provisioning on approval;
 - acceptance DM production path;
@@ -544,6 +590,8 @@ Confirmed live before the latest hardening/navigation passes:
 - new-member onboarding checklist;
 - Start Here hub;
 - Activities hub;
-- grouped desktop/mobile navigation pilot on those two hubs.
+- site-wide grouped desktop/mobile navigation through `js/site.js`;
+- authenticated member dropdown with My Pathway / Member Portal / My Profile;
+- My Pathway private preferences API and recommendation UI.
 
-Do not label these latest items “validated” until Wolf tests them or a real applicant completes the relevant flow.
+Do not label these latest items “validated” until Wolf tests them or a real applicant/member completes the relevant flow.
