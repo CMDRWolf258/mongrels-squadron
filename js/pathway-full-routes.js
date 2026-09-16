@@ -6,6 +6,7 @@
     'Background Simulation',
     'Mining',
     'Trade & Hauling',
+    'Carrier Logistics',
   ]);
 
   function removeGenericFullPathwayCards() {
