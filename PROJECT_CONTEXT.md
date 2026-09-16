@@ -59,6 +59,7 @@ Primary files:
 - `scripts/smoke-pve.mjs`
 - `scripts/smoke-pvp.mjs`
 - `scripts/smoke-operations.mjs`
+- `scripts/smoke-colonization.mjs`
 - `.github/workflows/site-smoke-tests.yml`
 
 The workflow runs on pull requests and normal pushes to `main`; commits that only refresh `data/live-bgs.json` are ignored. It can also be run manually.
@@ -70,6 +71,7 @@ Current regression coverage includes:
 - PvE Combat’s five-route catalog, beginner first task, legal WANTED-target lesson, measurable three-kill beginner capstone, Conflict Zone → Daily Orders handoff, Assistant context, shared-provider registration, My Pathway mount/client, and duplicate-card suppression;
 - PvP’s five-route catalog, Open/no-combat-logging beginner doctrine, legitimate in-game escape training, Assistant context, provider registration, My Pathway mount/client, and duplicate-card suppression;
 - Operations’ five-route catalog, Runner-to-extraction beginner loop, mixed ship/on-foot preparation, phase-transition training, visible naming, Assistant context, provider registration, My Pathway mount/client, and duplicate-card suppression;
+- Colonization’s five-route catalog, beginner no-ownership rule, live-project construction-support loop, System Architect claim/shadow and primary-port decisions, Assistant context, provider registration, My Pathway mount/client, duplicate-card suppression, and public Activities-hub status;
 - cross-path Engineering Prep mappings point only to real current Trade/Mining tasks and tracked Engineering facts;
 - Engineering campaign fact-completed dependency propagation;
 - Improve Shields later/persistent Lei/Dweller access reuse;
@@ -97,7 +99,8 @@ Notable successful runs:
 - #81 — Exobiology public Activities-hub cleanup with the complete smoke workflow still green
 - #91 — dedicated PvE Combat full-Pathway regression suite
 - #102 — dedicated PvP full-Pathway regression suite
-- **#115 — dedicated Operations full-Pathway regression suite and naming guard**
+- #115 — dedicated Operations full-Pathway regression suite and naming guard
+- **#126 — dedicated Colonization full-Pathway regression suite**
 
 Smoke tests are a regression safety net, **not** a browser or production test.
 
@@ -211,6 +214,7 @@ Recognized concepts include:
 - PvE Combat assignment/task/step, including PvE, NPC combat, bounty-hunting and Conflict Zone wording;
 - PvP assignment/task/step, including duel, player-combat, Open-combat, wing-PvP, and fixed-weapon-practice wording;
 - **Operations** assignment/task/step, including Operation Runner, Merc Coin, Hard Operation, scenario-choice, and multi-role wording;
+- **Colonization** assignment/task/step, including colony/colonisation, construction, primary-port, colony-build, and system-claim wording;
 - Exploration assignment/task/step, including survey/deep-space/neutron-route wording;
 - Exobiology assignment/task/step, including exobio, bio survey, Genetic Sampler, Vista Genomics, biological signal, and biological heatmap wording;
 - Engineering Campaign Planner and all six current Engineering campaign goals;
@@ -219,7 +223,7 @@ Recognized concepts include:
 
 When selected, `modules.pathway` can contain:
 - selected activities, priority, experience, play style, and current goal;
-- relevant full-route assignment progress/current task, including PvE Combat, PvP, Operations, Exploration, and Exobiology;
+- relevant full-route assignment progress/current task, including PvE Combat, PvP, Operations, Colonization, Exploration, and Exobiology;
 - optional Engineering Prep attached to the current Trade/Mining task;
 - active Engineering campaign goal/ship/progress/next step/stopping-point state;
 - query-selected Community Goal Hauler Prep state.
@@ -308,6 +312,7 @@ The right-hand **Your Pathway** area uses compact `<details>` sections. Current 
 - PvE Combat
 - PvP
 - Operations
+- Colonization
 - Anti-Xeno
 - Background Simulation
 - Mining
@@ -349,7 +354,8 @@ Current full providers:
 8. Exobiology — `exobiology-v1`
 9. PvE Combat — `pve-v1`
 10. PvP — `pvp-v1`
-11. **Operations — `operations-v1`** (persisted activity ID remains `surface`)
+11. Operations — `operations-v1` (persisted activity ID remains `surface`)
+12. **Colonization — `colonization-v1`**
 
 ### Anti-Xeno
 - Scout School — Vulture
@@ -536,6 +542,38 @@ Important naming / architecture guardrail:
 - `operations` remains the separate **Squad Operations** / Mission Control / Daily Orders activity;
 - literal uses of “surface” in unrelated domains (surface mining, planetary surface travel, etc.) remain valid.
 
+### Colonization
+
+Primary files:
+- `lib/pathway-colonization.js`
+- `js/pathway-colonization.js`
+- shared provider registration in `functions/api/pathway/assignments.js`
+- personalized Assistant integration in `lib/assistant-pathway-context.js`
+- mount in `pathway/index.html`
+- focused regression suite: `scripts/smoke-colonization.mjs`
+
+Routes:
+- **Colonization Foundations — Join a Build, Finish a Loop**
+- **Construction Operator — Supply, Stage, Close**
+- **System Architect — Claim With a Purpose**
+- **Colony Developer — Build a System, Not a Pile of Sites**
+- **Colonization Lead — Plan, Coordinate, Teach**
+
+Progression intent:
+- Beginner joins a real current project, understands the claim/primary-port/construction loop, uses an existing suitable ship, sources only what the build still needs, contributes cargo through the correct construction interface, verifies the requirement changed, observes the next state, then repeats the support loop independently.
+- Construction Operator manages accurate requirement snapshots, sensible load splitting, optional carrier staging, live multi-hauler updates, bottleneck diagnosis, and clean closeout/handoff.
+- System Architect defines system purpose, evaluates the candidate system, performs or shadows the claim sequence, compares primary-port choices, drafts the first build sequence, reality-checks logistics burden, and produces an actionable squad brief.
+- Colony Developer chooses one measurable development goal, records a baseline, selects one build or operational intervention, measures the result after activation, and preserves evidence/uncertainty for later decisions.
+- Veteran/Mentor route plans a staged colony project, assigns logistics/scouting/construction/reporting work, tracks the live bottleneck, adapts the plan, mentors another Commander, and preserves a useful debrief.
+
+Important guardrails:
+- **ownership is not required for beginner progression**; supporting another Mongrel's active colony is a valid learning path;
+- current in-game construction requirements beat old screenshots, estimates, or planned future needs;
+- Fleet Carriers are optional logistics tools, not mandatory extra handling;
+- primary-port and build-sequence decisions should follow the colony's actual purpose rather than prestige;
+- economy/system-stat effects can be moving or partially opaque, so later development emphasizes observed results over false certainty;
+- Projects & Events is the natural coordination surface for live colony work.
+
 ---
 
 ## Engineering Campaign Planner
@@ -714,10 +752,9 @@ Accepted/Declined are terminal in the normal workflow. Discord Member role assig
 
 ## Current roadmap
 
-Broader full-Pathway coverage remains the next major development priority. Exploration, Exobiology, PvE Combat, PvP, and Operations are now implemented, so the likely working order is:
-- **Colonization**
-- Squadron Operations
-- Powerplay only when doctrine is mature enough
+Broad core Pathway coverage is nearly complete. Colonization is now implemented, leaving:
+- **Squadron Operations** — next definite full Pathway, centered on Mission Control, Daily Orders, Projects, carrier coordination, BGS execution, cross-activity support, reporting, and leadership.
+- **Powerplay** — conditional final Pathway; build only when squad doctrine is mature enough to support stable teaching instead of immediate rewrites.
 
 Do not automatically build every item without inspecting current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
 
@@ -735,7 +772,7 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win card and Undo behavior on phone;
 - Engineering Prep Tracker concept/styling;
 - initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
-- automated workflow through **run #115**, including focused Exobiology, PvE Combat, PvP, and Operations regression suites, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Engineering Prep, personalized Assistant context, API imports, and key page wiring.
+- automated workflow through **run #126**, including focused Exobiology, PvE Combat, PvP, Operations, and Colonization regression suites, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Engineering Prep, personalized Assistant context, API imports, and key page wiring.
 
 Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
 - **Exploration full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, and Assistant context;
@@ -743,6 +780,7 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - **PvE Combat full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, Assistant context, CZ → Daily Orders operational handoff, and Activities-hub status;
 - **PvP full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, Assistant context, PvP-hub linkage, and focused regression coverage;
 - **Operations full Pathway** — all five routes, mixed ship/on-foot beginner flow, My Pathway UI, progress persistence, generic-card suppression, Assistant context, Activities-hub status, and visible Operations naming;
+- **Colonization full Pathway** — all five routes, no-ownership beginner support loop, My Pathway UI, progress persistence, generic-card suppression, Assistant context, Activities-hub status, System Architect claim/primary-port training, and focused regression coverage;
 - Improve Jump Range;
 - Improve Speed & Mobility;
 - Improve Power Distributor;
