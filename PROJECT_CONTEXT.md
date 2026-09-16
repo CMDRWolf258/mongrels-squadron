@@ -150,6 +150,7 @@ Rules:
 Primary shared files:
 - `pathway/index.html`
 - `css/pathway.css`
+- `css/pathway-activity-sections.css`
 - `js/pathway.js`
 - `functions/api/pathway/preferences.js`
 - `functions/api/pathway/assignments.js`
@@ -182,6 +183,23 @@ Assignment types:
 - Wing / Team
 - Teach / Mentor
 
+### My Pathway activity-collapse UX
+
+Full pathway activities in the right-hand **Your Pathway** panel are native expandable `<details>` groups rather than permanently expanded blocks. Current categories are:
+- Anti-Xeno
+- Background Simulation
+- Mining
+- Trade & Hauling
+- Carrier Logistics
+- Engineering & Shipbuilding
+
+Rules:
+- categories are collapsed by default to reduce page length and mobile clutter;
+- clicking the category title/header expands or collapses it;
+- do not add separate Open/Close buttons unless native disclosure proves insufficient;
+- multiple categories may remain open; this is not intentionally a forced single-open accordion;
+- existing `data-*` hooks remain on the disclosure root, so the activity renderers continue to own visibility and content.
+
 ### Lasting Pathway design rule
 
 Beginner assignments should generally **teach through actions before analysis**.
@@ -209,6 +227,16 @@ Current full pathway providers:
 Each provider keeps independent per-activity progress in `PROJECTS`.
 
 `js/pathway-full-routes.js` removes old generic recommendation cards for activities that now have full route engines.
+
+The **Give Me Another Route** action should feel like “give me another appropriate challenge,” not “randomly change my difficulty.” Engineering now uses a filtered route-choice pool so normal cycling does not drop the Commander into lower-band material. Lower-band progress remains stored and can be revisited by changing the saved Engineering experience level.
+
+Engineering route-choice pool by saved experience:
+- Beginner → Engineering Foundations only
+- Developing → Role Builder, Engineer Network
+- Experienced → Ship Architect, Combat Systems, Role Builder
+- Veteran / Mentor → Engineering Mentor, Ship Architect
+
+Other pathway providers still use their existing eligible-route behavior unless deliberately changed later.
 
 ---
 
@@ -351,9 +379,11 @@ The tracker shows the running total plus the current preparation milestone:
 These targets are presentation/data metadata rather than baked into stored progress, so wording/threshold corrections can be made without migrating a member’s saved count.
 
 Tracker behavior:
-- quick-add buttons for common small increments;
-- custom **Record Actual Progress** field, so a suggested +5 task can truthfully record +3;
-- separate **Correct the stored total** control that replaces the cumulative number rather than adding to it;
+- each counter’s read-only status/progress remains visible while its editing controls stay collapsed;
+- a single **Update Progress** disclosure contains all manual write controls;
+- inside Update Progress: quick-add buttons, exact amount entry, and **Set / Correct Total**;
+- exact-add records only what the Commander actually completed;
+- Set / Correct Total replaces the cumulative number rather than adding to it;
 - progress bar against the tracked milestone;
 - manual/source and last-updated display;
 - responsive phone layout.
@@ -399,7 +429,7 @@ UX:
 - `Hide this starter` dismisses the optional onboarding.
 - once completed or dismissed, it stops nagging the member.
 
-Current sequence is deliberately many small cards (~17) rather than a few hidden-grind tasks. It covers choosing a ship, baseline, Scout check/earn-if-needed, current Meta-Alloy sourcing, one Meta-Alloy, G1→G2 material planning, targeted gathering, Deciat safety, Felicity unlock/reputation, G1, complete G2 stopping point, experimental planning/materials, experimental, and payoff test.
+Current code contains **18 small steps** rather than a few hidden-grind tasks. It covers choosing a ship, baseline, Scout check/earn-if-needed, current Meta-Alloy sourcing, one Meta-Alloy, G1→G2 material planning, targeted gathering, Deciat safety, Felicity arrival/unlock/reputation, G1, complete G2 stopping point, experimental planning/materials, experimental application, and payoff test.
 
 ### Felicity / Deciat safety
 
@@ -519,14 +549,17 @@ Validated/accepted by Wolf:
 - Start Here random-task cards/carousel look good;
 - compact navigation focus-mode fix was doing okay after the final change;
 - First Engineering Win Start Here card looks good on Wolf’s phone;
-- First Engineering Win **Undo Previous Step** control works/looked good on Wolf’s phone. This validates the surface/reversal behavior, not a full in-game completion of all ~17 Engineering steps.
+- First Engineering Win **Undo Previous Step** control works/looked good on Wolf’s phone. This validates the surface/reversal behavior, not a full in-game completion of all 18 Engineering steps;
+- Engineering Prep Tracker’s integrated Engineering styling and visible correction capability looked good before the latest decluttering pass.
 
 Implemented but **do not call production-validated unless Wolf confirms or live checks succeed**:
 - Trade v2 route rewrite;
 - Carrier Logistics full pathway;
 - Engineering & Shipbuilding full pathway;
 - Engineering Campaign Planner framework;
-- numeric Engineering prerequisite-counter API and **Engineering Prep Tracker** UI;
+- numeric Engineering prerequisite-counter API and latest **Update Progress** tracker disclosure;
+- Engineering route filtering that keeps Give Me Another Route at the selected experience band;
+- collapsible My Pathway activity-category disclosures;
 - full in-game/end-to-end completion of the First Engineering Win audited sequence;
 - assorted latest recruitment/onboarding hardening described by current code.
 
