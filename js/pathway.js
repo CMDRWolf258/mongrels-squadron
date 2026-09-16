@@ -181,7 +181,7 @@
 
   function axTaskLink(task) {
     if (!task?.link?.url) return '';
-    const external = task.link.external || /^https?:\/\//i.test(task.url);
+    const external = task.link.external || /^https?:\/\//i.test(task.link.url);
     return `<a class="btn btn-ghost" href="${esc(task.link.url)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${esc(task.link.label || 'Open Resource')}${external ? ' ↗' : ''}</a>`;
   }
 
