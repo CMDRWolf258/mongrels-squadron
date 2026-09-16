@@ -4,6 +4,7 @@ import { BGS_ACTIVITY_ID, eligibleBgsRoutes, getBgsRoute } from '../../../lib/pa
 import { MINING_ACTIVITY_ID, eligibleMiningRoutes, getMiningRoute } from '../../../lib/pathway-mining.js';
 import { TRADE_ACTIVITY_ID, eligibleTradeRoutes, getTradeRoute } from '../../../lib/pathway-trade.js';
 import { CARRIER_LOGISTICS_ACTIVITY_ID, eligibleCarrierLogisticsRoutes, getCarrierLogisticsRoute } from '../../../lib/pathway-carrier-logistics.js';
+import { ENGINEERING_ACTIVITY_ID, eligibleEngineeringRoutes, getEngineeringRoute } from '../../../lib/pathway-engineering.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFERENCES_PREFIX = 'pathway-preferences-v1:';
@@ -46,6 +47,13 @@ const PROVIDERS = {
     getRoute:getCarrierLogisticsRoute,
     eligibleRoutes:eligibleCarrierLogisticsRoutes,
     seedVersion:'carrier-logistics-v1',
+  },
+  [ENGINEERING_ACTIVITY_ID]: {
+    id:ENGINEERING_ACTIVITY_ID,
+    label:'Engineering & Shipbuilding',
+    getRoute:getEngineeringRoute,
+    eligibleRoutes:eligibleEngineeringRoutes,
+    seedVersion:'engineering-v1',
   },
 };
 
