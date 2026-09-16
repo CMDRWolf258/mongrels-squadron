@@ -1,0 +1,33 @@
+name: Site smoke tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'data/live-bgs.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-smoke-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check out site
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run smoke checks
+        run: node --experimental-default-type=module scripts/smoke-test.mjs
