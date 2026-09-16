@@ -25,6 +25,9 @@ import {
   buildMobilityEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-mobility.js';
 import {
+  buildDistributorEngineeringDependencyNodes,
+} from '../lib/engineering-campaign-distributor.js';
+import {
   CROSS_PATH_ENGINEERING_PREP,
   engineeringPrepForTask,
 } from '../lib/pathway-engineering-prep.js';
@@ -214,6 +217,34 @@ assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.test.g2' && node
 assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.experimental.test' && node.meta?.readyToFinish), 'Improve Speed & Mobility has no experimental stopping point');
 console.log('✓ Improve Speed & Mobility reuses Felicity access and preserves stopping points');
 
+// Improve Power Distributor should reuse The Dweller reputation established by
+// Improve Shields. A recorded Lei referral means The Dweller was already in the
+// G3–G4 band, so the black-market, unlock, G2 and G3 gates must all clear.
+let distributorState = createEmptyEngineeringCampaignState('distributor-smoke-user');
+distributorState = startEngineeringCampaign(distributorState, {
+  goalId:'distributor',
+  shipName:'Distributor Smoke Ship',
+  targetNotes:'Keep WEP from drying out without losing boost cadence.',
+}, '2026-09-16T12:25:00.000Z');
+distributorState = setEngineeringFact(distributorState, SHIELD_CAMPAIGN_FACTS.leiReferralReady, true, 'smoke', '2026-09-16T12:26:00.000Z');
+const distributorCampaign = distributorState.campaigns[distributorState.activeCampaignId];
+const distributorNodes = buildDistributorEngineeringDependencyNodes({ campaign:distributorCampaign, facts:distributorState.facts });
+const distributorView = buildEngineeringCampaignView(distributorState, distributorNodes);
+for (const nodeId of [
+  'distributor.dweller.black-markets',
+  'distributor.dweller.unlock',
+  'distributor.dweller.g2-access',
+  'distributor.dweller.g3-access',
+]) {
+  const node = distributorView.nodes.find(item => item.id === nodeId);
+  assert.ok(node, `Improve Power Distributor is missing expected node ${nodeId}`);
+  assert.equal(node.status, 'complete', `${nodeId} did not reuse existing The Dweller reputation`);
+}
+assert.ok(distributorView.nodes.some(node => node.id === 'distributor.test.g2' && node.meta?.readyToFinish), 'Improve Power Distributor has no G2 stopping point');
+assert.ok(distributorView.nodes.some(node => node.id === 'distributor.experimental.test' && node.meta?.readyToFinish), 'Improve Power Distributor has no experimental stopping point');
+assert.ok(distributorView.nodes.some(node => node.id === 'distributor.test.g3' && node.meta?.readyToFinish), 'Improve Power Distributor has no G3 stopping point');
+console.log('✓ Improve Power Distributor reuses The Dweller progress and preserves stopping points');
+
 // Community Goal Hauler Prep is an independent Trade specialty, not another full
 // Pathway provider. Keep the sequence compact, unique, and status semantics aligned
 // with the main Pathway model: complete/known earn credit; skip does not.
@@ -235,6 +266,7 @@ console.log('✓ Community Goal Hauler Prep specialty progression is structurall
 assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
+assert.equal(assistantPathwayIntent('What is my power distributor campaign step?'), true, 'assistant missed Power Distributor campaign intent');
 assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
 assert.equal(assistantPathwayIntent('Does my current trade task help engineering?'), true, 'assistant missed cross-path Engineering prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
@@ -261,6 +293,24 @@ assert.equal(assistantPathway.assignments.length, 1, 'assistant did not return t
 assert.equal(assistantPathway.assignments[0].activity, 'engineering', 'assistant returned the wrong Pathway activity');
 assert.equal(assistantPathway.engineeringCampaign?.active, true, 'assistant missed the active Engineering campaign');
 assert.ok(assistantPathway.engineeringCampaign?.nextStep?.title, 'assistant Engineering campaign context has no next step');
+
+const distributorKvRecords = new Map([
+  ['pathway-preferences-v1:distributor-smoke-user', {
+    interests:['engineering'],
+    improve:['engineering'],
+    experience:{ engineering:'comfortable' },
+    playStyle:'either',
+    currentGoal:'Improve distributor sustain.',
+  }],
+  ['engineering-campaign-v1:distributor-smoke-user', distributorState],
+]);
+const distributorAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return distributorKvRecords.get(key) ?? null; } } },
+  { sub:'distributor-smoke-user', access:'member', displayName:'Distributor Smoke Commander' },
+  'What is my power distributor campaign step?',
+);
+assert.equal(distributorAssistant?.engineeringCampaign?.goal, 'Improve Power Distributor', 'assistant missed the Power Distributor campaign goal');
+assert.ok(distributorAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Power Distributor context has no next step');
 
 const prepKvRecords = new Map([
   ['pathway-preferences-v1:prep-smoke-user', {
@@ -351,6 +401,7 @@ for (const path of [
   'carriers/index.html',
   'lib/engineering-campaign-jump-range.js',
   'lib/engineering-campaign-mobility.js',
+  'lib/engineering-campaign-distributor.js',
   'lib/pathway-engineering-prep.js',
   'lib/pathway-engineering-prep-facts.js',
   'lib/pathway-cg-hauler-prep.js',
@@ -374,6 +425,7 @@ assert.match(pathwayHtml, /cg-hauler-prep\.css/, 'My Pathway is not loading the 
 const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8');
 assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
 assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
+assert.match(plannerSource, /distributor/, 'Campaign Planner is not exposing Improve Power Distributor');
 const tradeSource = readFileSync('js/pathway-trade.js', 'utf8');
 const miningSource = readFileSync('js/pathway-mining.js', 'utf8');
 assert.match(tradeSource, /MongrelEngineeringPrep/, 'Trade Pathway is not rendering cross-path Engineering prep');
