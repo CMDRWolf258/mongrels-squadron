@@ -49,6 +49,17 @@
     return `<div class="container first-engineering-win-shell">${markup}</div>`;
   }
 
+  function previousCompletedStep(first) {
+    const completed = Array.isArray(first?.steps) ? first.steps.filter(step => step?.complete && step?.factId) : [];
+    if (!completed.length) return null;
+    return completed.reduce((latest, step) => Number(step.index || 0) > Number(latest.index || 0) ? step : latest, completed[0]);
+  }
+
+  function undoButton(step) {
+    if (!step) return '';
+    return `<button class="btn btn-ghost" type="button" data-first-win-undo data-fact-id="${esc(step.factId)}">Undo Previous Step</button>`;
+  }
+
   function render(data) {
     const first = data?.firstEngineeringWin;
     if (data?.unavailable || !first || first.readyForPublicUI !== true || first.dismissed) {
@@ -56,6 +67,8 @@
       root.innerHTML = '';
       return;
     }
+
+    const previous = previousCompletedStep(first);
 
     if (first.complete) {
       if (!justCompleted) {
@@ -68,8 +81,10 @@
         <div class="first-win-kicker">First Engineering Win</div>
         <h3>You opened the door.</h3>
         <p>You have taken a ship you already use, made a real Engineering improvement, and tested the payoff. From here, deeper Engineering is your choice.</p>
-        <div class="first-win-actions"><a class="btn btn-primary" href="../pathway/">Explore My Pathway</a><a class="btn btn-ghost" href="../guides/engineering/">Engineering Guide</a></div>
+        <div class="first-win-actions"><a class="btn btn-primary" href="../pathway/">Explore My Pathway</a><a class="btn btn-ghost" href="../guides/engineering/">Engineering Guide</a>${undoButton(previous)}</div>
+        <div class="first-win-status" data-first-win-status aria-live="polite"></div>
       </article>`);
+      root.querySelector('[data-first-win-undo]')?.addEventListener('click', undoPrevious);
       return;
     }
 
@@ -101,6 +116,7 @@
       <div class="first-win-actions">
         <button class="btn btn-primary" type="button" data-first-win-done data-fact-id="${esc(step.factId)}">Done / Already Did This</button>
         ${resourceLink(step)}
+        ${undoButton(previous)}
         <button class="first-win-dismiss" type="button" data-first-win-dismiss>Hide this starter</button>
       </div>
       <p class="first-win-foot">One small step at a time. This starter is optional, and finishing it does not force you into a larger Engineering campaign.</p>
@@ -108,6 +124,7 @@
     </article>`);
 
     root.querySelector('[data-first-win-done]')?.addEventListener('click', completeStep);
+    root.querySelector('[data-first-win-undo]')?.addEventListener('click', undoPrevious);
     root.querySelector('[data-first-win-dismiss]')?.addEventListener('click', dismiss);
   }
 
@@ -124,6 +141,24 @@
     } catch (error) {
       console.error('Could not update First Engineering Win', error);
       setBusy('Could not save that step. Try again.', 'error');
+    } finally {
+      busy = false;
+      enableButtons();
+    }
+  }
+
+  async function undoPrevious(event) {
+    if (busy) return;
+    const factId = event.currentTarget?.dataset?.factId;
+    if (!factId) return;
+    busy = true;
+    setBusy('Reopening previous step…');
+    try {
+      justCompleted = false;
+      render(await api('POST', { action:'set_first_win_step', factId, complete:false }));
+    } catch (error) {
+      console.error('Could not undo First Engineering Win step', error);
+      setBusy('Could not reopen that step. Try again.', 'error');
     } finally {
       busy = false;
       enableButtons();
