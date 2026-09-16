@@ -7,6 +7,19 @@
   <title>Member Portal | The Mongrels</title>
   <meta name="description" content="Discord-authenticated member dashboard for the Regiment of Imperial Mongrels.">
   <link rel="stylesheet" href="../css/global.css?v=70">
+  <style>
+    .member-onboarding-card{margin:0 0 24px}
+    .member-onboarding-list{display:grid;gap:10px;margin:18px 0}
+    .member-onboarding-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 14px;border:1px solid rgba(98,220,255,.16);background:rgba(255,255,255,.018)}
+    .member-onboarding-step input{margin-top:4px}
+    .member-onboarding-step strong{display:block;margin-bottom:3px}
+    .member-onboarding-step span{color:var(--muted,#aab5bf);font-size:.92rem;line-height:1.45}
+    .member-onboarding-step .btn{align-self:center;white-space:nowrap}
+    .member-onboarding-complete{border-color:rgba(98,220,255,.34);background:rgba(98,220,255,.045)}
+    .member-onboarding-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .member-onboarding-actions small{color:var(--muted,#aab5bf)}
+    @media(max-width:700px){.member-onboarding-step{grid-template-columns:auto minmax(0,1fr)}.member-onboarding-step .btn{grid-column:2;justify-self:start}}
+  </style>
 </head>
 <body class="visual-page page-members page-member-portal">
 <header class="site-header">
@@ -77,6 +90,38 @@
           <a href="/api/auth/logout?return=%2Fmember%2F">Sign out</a>
         </div>
       </div>
+
+      <article class="member-command-card member-command-primary member-onboarding-card" data-new-member-onboarding hidden>
+        <div class="member-command-card-head">
+          <div><p class="eyebrow">Welcome Aboard</p><h3>New Member Checklist</h3></div>
+          <span class="member-command-badge" data-onboarding-badge>Getting Started</span>
+        </div>
+        <p data-onboarding-intro>Your Discord access is active. Finish these last setup items so your in-game and website membership are fully squared away.</p>
+        <div class="member-onboarding-list">
+          <label class="member-onboarding-step member-onboarding-complete">
+            <input type="checkbox" checked disabled>
+            <span><strong>Website member access active</strong>You are signed in with the Mongrel Member role and can use private squad tools.</span>
+          </label>
+          <label class="member-onboarding-step" data-onboarding-row="inGameConfirmed">
+            <input type="checkbox" data-onboarding-task="inGameConfirmed">
+            <span><strong>Confirm your in-game Squadron acceptance</strong>After leadership accepts your Elite Squadron application, return to Squadrons and choose Join Squadron / Confirm.</span>
+          </label>
+          <div class="member-onboarding-step" data-onboarding-row="profileCreated">
+            <input type="checkbox" data-onboarding-profile disabled>
+            <span><strong>Create your member profile</strong>Add your CMDR name, specialties, activities, availability, ships, and carrier information to the Member Network.</span>
+            <a class="btn btn-ghost" href="../profile/">Open Profile</a>
+          </div>
+          <label class="member-onboarding-step" data-onboarding-row="reviewedTasking">
+            <input type="checkbox" data-onboarding-task="reviewedTasking">
+            <span><strong>Review current Daily Orders</strong>Take a look at current squad tasking so you know where active operations and priorities live.</span>
+            <a class="btn btn-ghost" href="../operations/#daily-orders">Daily Orders</a>
+          </label>
+        </div>
+        <div class="member-onboarding-actions">
+          <button class="btn btn-primary" type="button" data-onboarding-dismiss hidden>Complete Onboarding</button>
+          <small data-onboarding-result>Checklist progress saves automatically.</small>
+        </div>
+      </article>
 
       <div class="member-command-grid">
         <article class="member-command-card member-command-primary" data-dashboard-orders>
@@ -162,7 +207,7 @@
 </footer>
 <script src="../js/site.js?v=68"></script>
 <script src="../js/auth-ui.js?v=68"></script>
-<script src="../js/member-dashboard.js?v=70"></script>
+<script src="../js/member-dashboard.js?v=71"></script>
 <script src="../js/mongrel-assistant.js?v=69"></script>
 </body>
 </html>
