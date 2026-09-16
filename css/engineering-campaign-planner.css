@@ -16,9 +16,12 @@
 .engineering-campaign-start{display:grid;gap:12px;margin-top:14px}
 .engineering-campaign-start label{display:grid;gap:6px}
 .engineering-campaign-start label>span{color:var(--muted);font-size:.68rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
-.engineering-campaign-start input,.engineering-campaign-start textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#080d10;color:var(--text);padding:11px 12px;font:inherit}
-.engineering-campaign-start input:focus,.engineering-campaign-start textarea:focus{outline:none;border-color:var(--accent)}
+.engineering-campaign-start input,.engineering-campaign-start textarea,.engineering-campaign-start select{width:100%;border:1px solid var(--line);border-radius:8px;background:#080d10;color:var(--text);padding:11px 12px;font:inherit}
+.engineering-campaign-start input:focus,.engineering-campaign-start textarea:focus,.engineering-campaign-start select:focus{outline:none;border-color:var(--accent)}
 .engineering-campaign-start .btn{justify-self:start}
+.engineering-campaign-goal-hints{display:grid;gap:7px;margin-top:-2px;padding:0 2px}
+.engineering-campaign-goal-hints p{margin:0;color:var(--muted);font-size:.72rem;line-height:1.45}
+.engineering-campaign-goal-hints strong{display:inline;margin-right:6px;color:var(--text);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
 .engineering-campaign-last-win{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;padding:12px 14px;border:1px solid rgba(94,230,168,.22);border-radius:9px;background:rgba(94,230,168,.045)}
 .engineering-campaign-last-win small{color:var(--success)}
 .engineering-campaign-head-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px;border:1px solid rgba(34,211,238,.18);border-radius:10px;background:rgba(34,211,238,.035)}
@@ -80,7 +83,7 @@
 .engineering-campaign-status[data-state='success']{color:var(--success)}
 .engineering-campaign-status[data-state='error']{color:var(--danger)}
 .engineering-campaign-status[data-state='working']{color:var(--accent)}
-.engineering-campaign-planner button:disabled,.engineering-campaign-planner input:disabled,.engineering-campaign-planner textarea:disabled{opacity:.55;cursor:not-allowed}
+.engineering-campaign-planner button:disabled,.engineering-campaign-planner input:disabled,.engineering-campaign-planner textarea:disabled,.engineering-campaign-planner select:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:620px){
   .engineering-campaign-planner>summary{grid-template-columns:minmax(0,1fr) auto;gap:10px}
   .engineering-campaign-summary-state{grid-column:1/2;text-align:left}
