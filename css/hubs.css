@@ -3,6 +3,7 @@
 
 /* ---------- grouped navigation prototype ---------- */
 .site-header-v2 .nav-wrap{position:relative;gap:18px}
+.site-header-v2 .menu-toggle{display:none}
 .site-header-v2 .nav-links-v2{gap:3px}
 .site-header-v2 .nav-links-v2>a,
 .site-header-v2 .nav-group>summary{display:flex;align-items:center;min-height:42px;padding:0 10px;border-radius:8px;color:#cbd5da;font-size:.74rem;font-weight:850;letter-spacing:.085em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:.18s ease;white-space:nowrap;list-style:none}
@@ -25,12 +26,14 @@
 .site-header-v2 .nav-mega-footer strong{color:#dcecef}
 
 /* Defeat the old nth-child progressive-collapse rules on the prototype nav. */
-@media (min-width:861px){
-  .site-header-v2 .nav-links-v2 a{display:block}
-  .site-header-v2 .nav-links-v2{position:static;inset:auto;flex-direction:row;align-items:center;padding:0;border:0;background:transparent;box-shadow:none}
+@media (min-width:1061px){
+  .site-header-v2 .nav-links-v2{position:static;inset:auto;display:flex;flex-direction:row;align-items:center;padding:0;border:0;background:transparent;box-shadow:none}
+  .site-header-v2 .nav-links-v2>a{display:flex}
+  .site-header-v2 .nav-links-v2 .nav-mega a{display:block}
 }
 
 @media(max-width:1060px){
+  .site-header-v2 .menu-toggle{display:inline-flex}
   .site-header-v2 .nav-links-v2{top:79px;max-height:calc(100vh - 96px);overflow:auto;gap:3px}
   .site-header-v2 .nav-links-v2>a,
   .site-header-v2 .nav-group>summary{display:flex;min-height:46px;padding:0 13px;font-size:.76rem}
