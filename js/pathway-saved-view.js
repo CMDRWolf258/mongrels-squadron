@@ -12,14 +12,6 @@
   const experienceLabels = { new:'Beginner', some:'Developing', comfortable:'Experienced', experienced:'Veteran / Mentor' };
   const styleLabels = { either:'Solo or group', solo:'Usually solo', group:'Prefer group play' };
   const fullRouteIds = new Set(['ax','bgs','mining','trade','carrier-logistics','engineering']);
-  const fullRouteRoots = new Map([
-    ['ax', document.querySelector('[data-ax-pathway]')],
-    ['bgs', document.querySelector('[data-bgs-pathway]')],
-    ['mining', document.querySelector('[data-mining-pathway]')],
-    ['trade', document.querySelector('[data-trade-pathway]')],
-    ['carrier-logistics', document.querySelector('[data-carrier-logistics-pathway]')],
-    ['engineering', document.querySelector('[data-engineering-pathway]')],
-  ]);
   const linkMap = {
     pve:'../activities/#combat', pvp:'../pvp/', surface:'../guides/operations/',
     exploration:'../activities/#exploration', exobiology:'../activities/#exploration', colonization:'../projects/',
@@ -76,11 +68,8 @@
 
     summary.innerHTML = `<span><strong>${selectedItems.length}</strong> saved</span><span><strong>${improve.length}</strong> improvement focus${improve.length === 1 ? '' : 'es'}</span><span>${esc(styleLabels[prefs.playStyle] || styleLabels.either)}</span>`;
 
-    fullRouteRoots.forEach((root, id) => {
-      if (!root) return;
-      root.hidden = !selected.has(id);
-    });
-
+    // Full route renderers own their own visibility and loading state. This layer
+    // deliberately does not force AX/BGS/Mining/Trade/Carrier/Engineering open.
     const genericItems = selectedItems.filter(item => !fullRouteIds.has(item.id));
     preview.innerHTML = `<div data-saved-pathway-preview>${genericItems.length ? `<div class="pathway-recommendations">${genericItems.map(item => genericMarkup(item, prefs, improveSet)).join('')}</div>` : ''}</div>`;
 
@@ -89,8 +78,6 @@
       goalPreview.hidden = !goal;
       goalPreview.innerHTML = goal ? `<span>Current Personal Goal</span><p>${esc(goal)}</p>` : '';
     }
-
-    repairAxSavedState(selected);
   }
 
   function genericMarkup(item, prefs, improveSet) {
@@ -108,20 +95,6 @@
         <a class="btn btn-ghost" href="${esc(linkMap[item.id] || '../activities/')}">Open Related Content</a>
       </div>
     </details>`;
-  }
-
-  function repairAxSavedState(selected) {
-    if (!selected.has('ax')) return;
-    const axContent = document.querySelector('[data-ax-content]');
-    const axLoading = document.querySelector('[data-ax-loading]');
-    if (!axContent) return;
-    const text = axContent.textContent || '';
-    if (!/save your pathway to receive an ax assignment|ax is not in your saved pathway yet/i.test(text)) return;
-    axContent.innerHTML = '';
-    if (axLoading) {
-      axLoading.hidden = false;
-      axLoading.textContent = 'Loading your saved AX assignment…';
-    }
   }
 
   function normalizedSaved() {
