@@ -47,6 +47,25 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - GitHub commit success does **not** prove Cloudflare deployment. Do not call a feature live/validated unless production is actually checked or Wolf confirms it.
 - Avoid base64 image workflows unless truly necessary; prefer normal repo assets.
 
+### Automated smoke tests
+
+Primary files:
+- `scripts/smoke-test.mjs`
+- `.github/workflows/site-smoke-tests.yml`
+
+The lightweight Node smoke suite runs on pull requests and normal pushes to `main`; pushes that only change `data/live-bgs.json` are ignored so the scheduled BGS refresh does not waste CI runs. It can also be started manually.
+
+Current checks include:
+- all six full Pathway route catalogs import, remain non-empty, have unique route/task IDs, and retain required task fields;
+- Engineering campaign fact-completed dependency propagation works;
+- Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
+- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step without activating on unrelated navigation questions;
+- critical Pathway/Assistant Cloudflare Function modules import cleanly;
+- critical APIs still contain their shared `headers()` / `reply()` response helpers;
+- high-value entry pages and Engineering Pathway assets are still present/wired.
+
+This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. Preserve and extend this suite when new shared platform behavior is added.
+
 ---
 
 ## Authentication / authority
@@ -121,6 +140,7 @@ Legacy cleanup:
 Primary files:
 - `functions/api/assistant/index.js`
 - `lib/assistant-context.js`
+- `lib/assistant-pathway-context.js`
 - `js/mongrel-assistant.js`
 
 The assistant is read-only. It uses current squad/site data where available and curated Elite knowledge where appropriate. It must never claim it changed, posted, scheduled, registered, or edited anything.
@@ -178,11 +198,35 @@ This means a question like “Where can I create a carrier loading event?” can
 
 The assistant does not receive all Mission Control systems on every request. `selectMissionControlForAssistant()` deliberately sends a query-filtered subset to limit prompt size.
 
-Important guardrail: **an empty filtered subset does not mean Mission Control has no systems.** The returned object now includes `selection.mode`, `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explicit note explaining that distinction.
+Important guardrail: **an empty filtered subset does not mean Mission Control has no systems.** The returned object includes `selection.mode`, `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explicit note explaining that distinction.
 
 Faction-presence wording such as “what systems our faction is in,” “which systems,” “where are we present,” “territory,” and “footprint” should select up to 30 active-presence systems while preserving the authoritative total from Mission Control metadata. Never tell the user the live system list is empty merely because the query filter returned zero rows.
 
-High-value future improvement: include current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
+### Personalized My Pathway context
+
+`lib/assistant-pathway-context.js` gives Ask the Mongrels **query-selective, read-only access to the authenticated member's own saved My Pathway state**. Do not inject this data into every assistant request.
+
+Pathway context is selected for natural phrases such as:
+- “What is my current assignment?”
+- “How do I do my current task?”
+- “What is my current Engineering step?”
+- “Why am I doing this step?”
+- references to the Campaign Planner, Improve Shields, Engineering Prep, or a specific full Pathway assignment.
+
+When selected, `modules.pathway` can include:
+- saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
+- concise current assignment state for relevant full Pathways: route, progress, and the current pending/skipped task with objective/checklist/resource;
+- active Engineering Campaign Planner state: goal, ship, target notes, progress, next campaign step, useful resources/counter progress, and whether a legitimate stopping point has been reached.
+
+Rules:
+- only read the signed-in member's own state from `PROJECTS`;
+- My Pathway / Campaign Planner remain authoritative for saved progress and completion;
+- the assistant may explain a task and help execute it, but may **never** mark it complete or imply completion was recorded;
+- when “my task” is genuinely ambiguous across several current full-Pathway assignments, identify the likely choices rather than silently choosing one;
+- preserve query selectivity to protect prompt size/monthly AI usage;
+- controlled Related buttons prioritize **My Pathway** and, for Engineering campaign questions, **Engineering Guide**.
+
+The smoke suite covers the intent gate and a representative in-memory Engineering assignment/campaign lookup. Production behavior still requires member testing after deployment.
 
 ---
 
@@ -553,20 +597,22 @@ Accepted/Declined are terminal in normal review; reapplication is explicit. Disc
 
 ## Validation status
 
-Validated / accepted by Wolf:
+Validated / accepted by Wolf or CI:
 - original AX beginner route direction;
 - Start Here random-task cards/carousel;
 - compact navigation focus mode;
 - full My Pathway assignment loading after restoring the shared assignments API response helper;
 - First Engineering Win card on phone;
 - First Engineering Win Undo Previous Step on phone;
-- Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass.
+- Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
+- initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
+- automated GitHub Actions smoke suite; current suite passes after catching/fixing the Assistant `current engineering step` intent gap.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
-- first live **Improve Shields** Engineering Campaign Planner UI and adaptive goal chain;
-- Engineering Campaign history **Reopen Campaign / Remove from History** controls and wording cleanup;
+- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign context;
+- full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
 - fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
-- Campaign Planner ↔ Prep Tracker live browser synchronization;
+- Campaign Planner ↔ Prep Tracker live browser synchronization across all campaign steps;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
 - generalized Ask the Mongrels navigation paths and direct section buttons;
 - Mission Control assistant faction-presence selection / filtered-subset guardrail;
