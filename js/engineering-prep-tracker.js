@@ -64,22 +64,31 @@
       </div>
       ${targetMarkup(counter, current)}
 
-      <div class="engineering-prep-action-block is-add">
-        <div class="engineering-prep-action-head"><strong>Add progress</strong><span>Record only what you actually completed.</span></div>
-        ${quick.length ? `<div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${unit}">+${Number(amount)}</button>`).join('')}</div>` : ''}
-        <div class="engineering-prep-entry">
-          <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Actual amount completed" aria-label="Actual additional ${unit}" data-prep-actual>
-          <button class="btn btn-ghost" type="button" data-prep-record>Add to Total</button>
-        </div>
-      </div>
+      ${quick.length ? `<div class="engineering-prep-action-block is-add">
+        <div class="engineering-prep-action-head"><strong>Quick add</strong><span>Record only what you actually completed.</span></div>
+        <div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${unit}">+${Number(amount)}</button>`).join('')}</div>
+      </div>` : ''}
 
-      <div class="engineering-prep-action-block is-correct">
-        <div class="engineering-prep-action-head"><strong>Set / correct total</strong><span>Use this if the stored number is wrong. This replaces the total instead of adding to it.</span></div>
-        <div class="engineering-prep-entry">
-          <input type="number" min="${Number(counter.minimum) || 0}" max="1000000" step="1" inputmode="numeric" value="${current}" aria-label="Correct total ${unit}" data-prep-total>
-          <button class="btn btn-ghost" type="button" data-prep-correct-total>Save Correct Total</button>
+      <details class="engineering-prep-manual">
+        <summary>Manual Entries</summary>
+        <div class="engineering-prep-manual-body">
+          <div class="engineering-prep-action-block is-manual-add">
+            <div class="engineering-prep-action-head"><strong>Add exact progress</strong><span>Use this when the quick buttons do not match what you actually completed.</span></div>
+            <div class="engineering-prep-entry">
+              <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Actual amount completed" aria-label="Actual additional ${unit}" data-prep-actual>
+              <button class="btn btn-ghost" type="button" data-prep-record>Add to Total</button>
+            </div>
+          </div>
+
+          <div class="engineering-prep-action-block is-correct">
+            <div class="engineering-prep-action-head"><strong>Set / correct total</strong><span>Use this if the stored number is wrong. This replaces the total instead of adding to it.</span></div>
+            <div class="engineering-prep-entry">
+              <input type="number" min="${Number(counter.minimum) || 0}" max="1000000" step="1" inputmode="numeric" value="${current}" aria-label="Correct total ${unit}" data-prep-total>
+              <button class="btn btn-ghost" type="button" data-prep-correct-total>Save Correct Total</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
 
       <div class="engineering-prep-meta"><span>${esc(sourceLabel(counter.source))}</span><span>${esc(formattedUpdated(counter.updatedAt))}</span></div>
       ${statusMarkup(counter)}
