@@ -63,7 +63,8 @@ Current checks include:
 - Improve Shields honors later/persistent Lei/Dweller access instead of forcing historical counters;
 - Improve Jump Range reuses First Engineering Win Scout/Felicity/G2 progress;
 - Improve Speed & Mobility reuses existing Felicity access/reputation;
-- **Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress and preserves G2, experimental, and G3 stopping points;**
+- Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress and preserves G2, experimental, and G3 stopping points;
+- **Improve Power & Heat reuses existing Felicity/higher-grade Power Plant access and preserves no-engineering, G1, G2, experimental, and G3 stopping points;**
 - Community Goal Hauler Prep keeps 14 unique steps and the survive-and-deliver doctrine;
 - Ask the Mongrels can read query-selected Pathway/campaign/specialty/cross-path-prep context;
 - critical Cloudflare Function modules import cleanly and retain `headers()` / `reply()` helpers;
@@ -75,7 +76,8 @@ Notable successful runs:
 - #20 — Mobility/Felicity reuse;
 - #28 — Community Goal Hauler Prep;
 - #40 — cross-path Trade/Mining Engineering Prep;
-- **#47 — Improve Power Distributor / The Dweller reuse.**
+- #47 — Improve Power Distributor / The Dweller reuse;
+- **#54 — Improve Power & Heat / Felicity and higher-grade Power Plant access reuse.**
 
 The smoke suite is a regression safety net, **not** a browser or production test.
 
@@ -190,7 +192,8 @@ Recognized concepts include:
 - Improve Shields;
 - Improve Jump Range;
 - Improve Speed & Mobility / Thrusters;
-- **Improve Power Distributor / distributor / capacitor campaign wording;**
+- Improve Power Distributor / distributor / capacitor campaign wording;
+- **Improve Power & Heat / Power Plant / thermal campaign wording;**
 - Engineering Prep / cross-path Engineering questions;
 - CG Hauler / hostile-hauling/interdiction/escape-drill wording.
 
@@ -382,7 +385,8 @@ Framework files:
 - `lib/engineering-campaign-shields.js`
 - `lib/engineering-campaign-jump-range.js`
 - `lib/engineering-campaign-mobility.js`
-- **`lib/engineering-campaign-distributor.js`**
+- `lib/engineering-campaign-distributor.js`
+- **`lib/engineering-campaign-power-thermal.js`**
 - `functions/api/pathway/engineering-campaign.js`
 - `js/engineering-campaign-planner.js`
 - `css/engineering-campaign-planner.css`
@@ -391,7 +395,7 @@ Storage:
 - `PROJECTS`
 - `engineering-campaign-v1:<ownerId>`
 
-Pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid. G2/G3 can be legitimate stopping points.
+Pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid. G1/G2/G3 can be legitimate stopping points when the measured problem is solved.
 
 Model:
 1. Goal
@@ -502,12 +506,44 @@ Distributor-specific rules:
 - G2, G2+experimental, and G3 are Take-the-Win points.
 - G4/G5 are deliberately deferred so the member diagnoses the whole build before assuming more distributor grade is the answer.
 
+### Improve Power & Heat — fifth campaign
+
+`lib/engineering-campaign-power-thermal.js`
+
+Purpose: diagnose the actual **power-budget or thermal problem** before changing the Power Plant. This campaign may legitimately end with module priorities alone, then uses Felicity for a small G1 test when helpful before escalating to a higher-grade Power Plant Engineer.
+
+Current chain:
+1. generic campaign assessment/target/dependency mapping;
+2. record current Power Plant, deployed/retracted power use, and a practical thermal baseline in the workload that causes trouble;
+3. audit module priorities and disable/deprioritize nonessential modules before adding generation;
+4. **re-test priorities first** — this is a valid no-engineering Take-the-Win point;
+5. choose Armoured, Low Emissions, or Overcharged around the remaining measured problem rather than defaulting to maximum power;
+6. plan/gather only one G1 job;
+7. reuse First Engineering Win / Jump Range Felicity access where already known; only repeat Scout/Meta-Alloy/Deciat unlock work if Felicity is genuinely still locked;
+8. apply one complete G1 Power Plant upgrade and re-test;
+9. G1 is a valid Take-the-Win point;
+10. if the problem remains, confirm any available G2+ Power Plant Engineer rather than forcing one universal unlock route;
+11. plan/gather/apply G2 and re-test;
+12. optionally choose an experimental as its own decision, gather/apply it, and re-test;
+13. optionally confirm G3 capability, plan/gather/apply G3, and perform a final test;
+14. end the campaign phase at G3 instead of silently extending to G4/G5.
+
+Power/thermal-specific rules:
+- Module priorities are part of the build. Do not engineer extra Power Plant output merely to keep every convenience module powered during the ship's most demanding state.
+- Armoured is the balanced integrity/power/thermal option; Low Emissions trades power and mass for better thermal handling; Overcharged adds the most generation but worsens integrity and thermal efficiency. Choose from the measured need.
+- Felicity can provide G1 Power Plant engineering, making existing Felicity access useful even when no higher-grade Power Plant Engineer is unlocked.
+- Higher-grade access is stored as capability facts `engineer.power-plant.g2-ready` and `engineer.power-plant.g3-ready`. The campaign can use Marco Qwent, Hera Tani, Etienne Dorn, or another valid current path; it intentionally does **not** bury one long Marco/Hera unlock chain inside this campaign.
+- If no G2+ Power Plant Engineer is available, unlocking one should be treated as an explicit Engineer Network project, not a disguised one-step prerequisite.
+- Experimentals are problem-specific: Thermal Spread improves heat efficiency, Monstered adds power at a mass cost, Double Braced adds integrity, and Stripped Down reduces mass.
+- Valid Take-the-Win points: **priority-only, G1, G2, G2+experimental, and G3**.
+- G4/G5 are deliberately deferred until a later measured need justifies them.
+
 ### Campaign Planner UI
 
 My Pathway → Engineering hosts a collapsed **Campaign Planner** above the Prep Tracker.
 
 Inactive state:
-- compact selector for four audited campaigns: **Improve Shields**, **Improve Jump Range**, **Improve Speed & Mobility**, **Improve Power Distributor**;
+- compact selector for five audited campaigns: **Improve Shields**, **Improve Jump Range**, **Improve Speed & Mobility**, **Improve Power Distributor**, **Improve Power & Heat**;
 - asks for ship and specific problem/goal;
 - visible previous history capped at 4;
 - paused campaigns Resume;
@@ -681,7 +717,6 @@ Likely future core Pathways:
 Do not automatically build all of these. Inspect current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
 
 Likely next Engineering campaign candidates after the current review batch:
-- Improve Power & Heat
 - Improve Weapon Package
 - whole-ship role build / Ship Architect campaign
 
@@ -697,12 +732,13 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win card and Undo behavior on phone;
 - Engineering Prep Tracker concept/styling;
 - initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
-- automated smoke suite through **run #47**, including all four Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage.
+- automated smoke suite through **run #54**, including all five Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage.
 
 Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
 - Improve Jump Range;
 - Improve Speed & Mobility;
-- **Improve Power Distributor**;
+- Improve Power Distributor;
+- **Improve Power & Heat**;
 - cross-path Engineering Prep on relevant Trade/Mining assignments;
 - Community Goal Hauler Prep full progression;
 - personalized Ask the Mongrels Pathway/campaign/specialty/cross-path context;
@@ -710,6 +746,7 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - full end-to-end Jump Range in-game progression;
 - full end-to-end Mobility in-game progression;
 - full end-to-end Power Distributor in-game progression;
+- full end-to-end Power & Heat in-game progression;
 - fact-completed dependency propagation / later-access prerequisite supersession under real member state;
 - Campaign Planner ↔ Prep Tracker live synchronization under all campaign cases;
 - 1061–1280 compressed tablet/iPad navigation;
