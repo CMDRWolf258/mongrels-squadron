@@ -16,9 +16,10 @@
   if (!gate || !app || !form || !groupsRoot) return;
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const experienceLabels = { new:'New to it', some:'Some experience', comfortable:'Comfortable', experienced:'Experienced' };
+  const experienceLabels = { new:'Beginner', some:'Developing', comfortable:'Experienced', experienced:'Veteran / Mentor' };
   const styleLabels = { either:'Solo or group', solo:'Usually solo', group:'Prefer group play' };
   const taskStatusLabels = { pending:'Next / Pending', complete:'Complete', known:'Already knew / had it', skipped:'Skipped for now' };
+  const taskTypeLabels = { learn:'Learn', build:'Build', demonstrate:'Demonstrate', challenge:'Challenge', wing:'Wing / Team', mentor:'Teach / Mentor' };
   const linkMap = {
     pve:'../activities/#combat', pvp:'../pvp/', ax:'../activities/#ax', surface:'../guides/operations/',
     mining:'../guides/mining/', trade:'../trading/', 'carrier-logistics':'../carriers/', engineering:'../guides/engineering/',
@@ -28,7 +29,7 @@
   const nextSteps = {
     pve:{new:'Start with one rebuy-safe combat ship and a specific low-risk bounty assignment.',some:'Refine one combat ship and practice positioning, module targeting, and tougher PvE fights.',comfortable:'Take on higher-intensity combat, wing roles, and specialized builds.',experienced:'Use your combat experience in squad tasking, mentoring, and advanced build refinement.'},
     pvp:{new:'Start with survivability, pip management, fixed-weapon practice, and an Open-ready ship.',some:'Practice range control, boost timing, target pressure, and consistent damage application.',comfortable:'Refine matchup knowledge, wing coordination, and specialized PvP engineering.',experienced:'Focus on advanced matchups, wing leadership, training others, and competitive refinement.'},
-    ax:{new:'Your live AX assignment chain will pick the first route for you.',some:'Your live AX assignment chain will pick a concrete preparation or combat route.',comfortable:'Use the live AX assignment chain, marking preparation you already know as complete.',experienced:'Use the live AX assignment chain as a structured qualification/refresher and skip known steps.'},
+    ax:{new:'Your AX route will focus on acquiring capability and completing first live fights.',some:'Your AX route will push repeatable Interceptor fundamentals, broader technology, or the next combat tier.',comfortable:'Your AX route will emphasize independent builds, harder Interceptors, and operational competence.',experienced:'Your AX route will emphasize advanced challenges, wing responsibility, and teaching future Hellhounds.'},
     surface:{new:'Learn suit/weapon basics, settlement access, threat awareness, and the Operation Runner workflow before chasing difficult missions.',some:'Improve equipment, movement, mission selection, and repeatable surface-combat routines.',comfortable:'Take on higher-risk operations and coordinate roles with other Commanders.',experienced:'Use advanced loadouts, operation planning, and mentoring to support organized surface activity.'},
     mining:{new:'My Pathway will eventually assign a specific starter mining ship, method, and first full mining run rather than making you choose.',some:'Improve site choice, collection efficiency, cargo workflow, and selling decisions.',comfortable:'Specialize in high-value methods, scouting, carrier workflows, or squad supply runs.',experienced:'Optimize routes, teach newer miners, and support strategic construction or commodity goals.'},
     trade:{new:'Learn pad size, cargo capacity, supply/demand, and complete a simple profitable haul safely.',some:'Compare routes, improve turnaround time, and understand demand-sensitive selling.',comfortable:'Run larger logistics chains, carrier loading, and squad-support hauling efficiently.',experienced:'Plan strategic logistics, coordinate haulers, and optimize large-volume operations.'},
@@ -184,6 +185,10 @@
     return `<a class="btn btn-ghost" href="${esc(task.link.url)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${esc(task.link.label || 'Open Resource')}${external ? ' ↗' : ''}</a>`;
   }
 
+  function taskTypeLabel(task) {
+    return taskTypeLabels[task?.type] || 'Assignment';
+  }
+
   function renderAxAssignments() {
     if (!axRoot || !axContent) return;
     if (!axAssignments?.eligible) {
@@ -202,7 +207,7 @@
       <article class="ax-route-card">
         <div class="ax-route-head">
           <div><span class="ax-route-kicker">We picked a route for you</span><h3>${esc(route.title)}</h3><p>${esc(route.subtitle)}</p></div>
-          <span class="pathway-badge is-improve">AX Route</span>
+          <div class="pathway-recommendation-badges"><span class="pathway-badge">${esc(route.band || experienceLabels[axAssignments.experience] || 'AX')}</span><span class="pathway-badge is-improve">AX Route</span></div>
         </div>
         <div class="ax-progress"><div><strong>${progress.completed} / ${progress.total}</strong><span>assignments cleared</span></div><div class="ax-progress-track"><i style="width:${Math.max(0, Math.min(100, Number(progress.percent) || 0))}%"></i></div><span>${Number(progress.percent) || 0}%</span></div>
         <p class="ax-route-audience">${esc(route.audience)}</p>
@@ -220,6 +225,7 @@
           <div class="ax-assignment-number"><span>${String(current.index).padStart(2,'0')}</span><small>${esc(current.stage)}</small></div>
           <div class="ax-current-copy">
             <span class="ax-next-label">Your Next Assignment</span>
+            <div class="ax-assignment-meta"><span class="ax-type-badge type-${esc(current.type || 'learn')}">${esc(taskTypeLabel(current))}</span></div>
             <h3>${esc(current.title)}</h3>
             <p class="ax-objective">${esc(current.objective)}</p>
             <div class="ax-why"><strong>Why this assignment</strong><p>${esc(current.why)}</p></div>
@@ -238,7 +244,7 @@
         <div class="ax-assignment-list-body">
           ${route.tasks.map(task => `<article class="ax-list-task${task.id === axAssignments.currentTaskId ? ' is-current' : ''}" data-ax-list-task="${esc(task.id)}">
             <div class="ax-list-index">${String(task.index).padStart(2,'0')}</div>
-            <div><span>${esc(task.stage)}</span><strong>${esc(task.title)}</strong><small>${esc(task.objective)}</small></div>
+            <div><span>${esc(task.stage)} · ${esc(taskTypeLabel(task))}</span><strong>${esc(task.title)}</strong><small>${esc(task.objective)}</small></div>
             <div class="ax-list-status status-${esc(task.status)}"><span>${esc(taskStatusLabels[task.status] || task.status)}</span>${task.status !== 'pending' ? `<button type="button" data-ax-task-status="pending" data-ax-task-id="${esc(task.id)}">Reopen</button>` : ''}</div>
           </article>`).join('')}
         </div>
