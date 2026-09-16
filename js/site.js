@@ -4,6 +4,7 @@
   const brand = document.querySelector('.brand');
   const nav = document.querySelector('[data-nav]');
   const button = document.querySelector('[data-menu-toggle]');
+  let memberMenu = null;
 
   const rootBase = (() => {
     const raw = brand?.getAttribute('href') || '';
@@ -19,7 +20,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=2');
+    link.href = root('css/navigation-v2.css?v=3');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -117,12 +118,18 @@
 
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
-  groups.forEach(group => group.addEventListener('toggle', () => { if (group.open) closeGroups(group); }));
+  groups.forEach(group => group.addEventListener('toggle', () => {
+    if (group.open) {
+      closeGroups(group);
+      if (memberMenu) memberMenu.open = false;
+    }
+  }));
 
   if (button && nav) button.addEventListener('click', () => {
     const open = nav.classList.toggle('open');
     button.setAttribute('aria-expanded', String(open));
     if (!open) closeGroups();
+    if (memberMenu) memberMenu.open = false;
   });
 
   nav?.addEventListener('click', event => {
@@ -137,10 +144,12 @@
 
   document.addEventListener('click', event => {
     if (!event.target.closest('.site-header-v2 .nav-group')) closeGroups();
+    if (memberMenu && !event.target.closest('.member-access-menu')) memberMenu.open = false;
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       closeGroups();
+      if (memberMenu) memberMenu.open = false;
       nav?.classList.remove('open');
       button?.setAttribute('aria-expanded', 'false');
     }
@@ -158,11 +167,30 @@
     if (button) headerWrap.insertBefore(memberLink, button);
     else headerWrap.appendChild(memberLink);
 
-    const applySession = session => {
+    const activateMemberMenu = session => {
       if (!session || !session.authenticated) return false;
-      memberLink.classList.add('is-authenticated');
-      const label = memberLink.querySelector('[data-member-access-label]');
-      if (label) label.textContent = `${session.displayName || 'Member'} · ${session.accessLabel || 'Member'}`;
+      const menu = document.createElement('details');
+      menu.className = 'member-access-menu';
+      menu.setAttribute('data-member-access', '');
+      const displayName = session.displayName || 'Member';
+      const accessLabel = session.accessLabel || 'Member';
+      menu.innerHTML = `
+        <summary><span class="member-access-dot" aria-hidden="true"></span><span class="member-access-name">${displayName} · ${accessLabel}</span></summary>
+        <div class="member-access-menu-panel">
+          <a class="member-access-pathway" href="${root('pathway/')}"><strong>My Pathway</strong><small>Personal goals, interests and next steps</small></a>
+          <a href="${root('member/')}"><strong>Member Portal</strong><small>Tasking, projects and private squad tools</small></a>
+          <a href="${root('profile/')}"><strong>My Profile</strong><small>Roster identity, specialties and showcase</small></a>
+          <a class="member-access-signout" href="/api/auth/logout?return=%2F">Sign Out</a>
+        </div>`;
+      menu.addEventListener('toggle', () => {
+        if (menu.open) {
+          closeGroups();
+          nav?.classList.remove('open');
+          button?.setAttribute('aria-expanded', 'false');
+        }
+      });
+      memberLink.replaceWith(menu);
+      memberMenu = menu;
       return true;
     };
 
@@ -179,7 +207,7 @@
       for (const delay of delays) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         const session = await fetchSession().catch(() => null);
-        if (applySession(session)) return;
+        if (activateMemberMenu(session)) return;
       }
     })();
   }
