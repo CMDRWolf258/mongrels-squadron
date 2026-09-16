@@ -5,6 +5,7 @@ const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFERENCES_PREFIX = 'pathway-preferences-v1:';
 const PROGRESS_PREFIX = 'pathway-progress-v1:';
 const TASK_STATUSES = new Set(['complete','known','skipped','pending']);
+const TASK_TYPES = new Set(['learn','build','demonstrate','challenge','wing','mentor']);
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -99,17 +100,22 @@ async function buildState(env, session, suppliedProgress = null) {
   if (!route) return { activity:'ax', eligible:false, reason:'no_route' };
   const routeState = progress.routes?.[route.id] || { taskStates:{} };
   const taskStates = routeState.taskStates || {};
-  const tasks = route.tasks.map((task, index) => ({ ...task, index:index + 1, status:TASK_STATUSES.has(taskStates[task.id]) ? taskStates[task.id] : 'pending' }));
+  const tasks = route.tasks.map((task, index) => ({
+    ...task,
+    type:normalizeTaskType(task),
+    index:index + 1,
+    status:TASK_STATUSES.has(taskStates[task.id]) ? taskStates[task.id] : 'pending',
+  }));
   const doneStatuses = new Set(['complete','known','skipped']);
   const completed = tasks.filter(task => doneStatuses.has(task.status)).length;
   const current = tasks.find(task => !doneStatuses.has(task.status)) || null;
 
   return {
     activity:'ax', eligible:true, experience,
-    route:{ id:route.id, title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
+    route:{ id:route.id, band:route.band || '', title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
     routeOptions:eligible.map(id => {
       const option = getAxRoute(id);
-      return option ? { id:option.id, title:option.title, subtitle:option.subtitle } : null;
+      return option ? { id:option.id, band:option.band || '', title:option.title, subtitle:option.subtitle } : null;
     }).filter(Boolean),
     currentTaskId:current?.id || null,
     progress:{ completed, total:tasks.length, percent:tasks.length ? Math.round((completed / tasks.length) * 100) : 0 },
@@ -119,7 +125,7 @@ async function buildState(env, session, suppliedProgress = null) {
 
 function chooseInitialRoute(ownerId, experience, eligible) {
   if (!eligible.length) return '';
-  const seed = `${ownerId}:${experience}:ax-v1`;
+  const seed = `${ownerId}:${experience}:ax-v2`;
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
   return eligible[Math.abs(hash) % eligible.length];
@@ -157,6 +163,17 @@ function ensureRouteState(progress, routeId) {
   const next = normalizeProgress(progress, progress.ownerId || '');
   if (!next.routes[routeId]) next.routes[routeId] = { taskStates:{}, startedAt:null, updatedAt:null };
   return next;
+}
+
+function normalizeTaskType(task) {
+  if (TASK_TYPES.has(task?.type)) return task.type;
+  const stage = String(task?.stage || '').toLowerCase();
+  if (/graduate|challenge/.test(stage)) return 'challenge';
+  if (/build|platform|engineering|guardian tech|internals|unlock/.test(stage)) return 'build';
+  if (/ready|cockpit|training|deploy|fight|interceptor|field test|first contact|technique|baseline/.test(stage)) return 'demonstrate';
+  if (/wing|operations|lead/.test(stage)) return 'wing';
+  if (/teach|mentor/.test(stage)) return 'mentor';
+  return 'learn';
 }
 
 function normalizeExperience(value) {
