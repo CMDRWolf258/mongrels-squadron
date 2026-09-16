@@ -14,8 +14,15 @@ This file records current Pathway direction and specialty concepts that should s
 8. **Exobiology** — First Bio Survey, Field Surveyor, Efficient Naturalist, Target Specialist, and Expedition Bio Lead/Mentor routes.
 9. **PvE Combat** — Combat Foundations, Bounty Hunter, Conflict Zone Specialist, Combat Specialist, and Combat Lead/Mentor routes.
 10. **PvP** — PvP Foundations, Duelist, Precision Fighter, Wing Fighter, and PvP Lead/Mentor routes.
+11. **Operations** — Operations Foundations, Multi-Role Operator, Scenario Specialist, Hard Operations Specialist, and Operations Lead/Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
+
+### Operations naming / compatibility rule
+
+The Elite Dangerous game feature is called **Operations** throughout the user-facing site. Do not label this feature “Surface Operations.” Operations deliberately includes ship combat, on-foot activity, rescue, and mixed-phase scenarios.
+
+For backwards compatibility, its persisted My Pathway activity ID remains `surface`. Do not migrate or expose that internal identifier just to match the display name. The separate activity ID `operations` continues to mean **Squad Operations** / Mission Control / Daily Orders and must not be conflated with the game feature.
 
 ## Pathway design rules
 
@@ -315,6 +322,74 @@ Core PvP doctrine carried through the Pathway:
 - a beginner's first objective is composure, legitimate survival, and learning—not owning an FDL or winning every fight;
 - controlled squadmate practice is preferred for first repetitions before expecting a new pilot to learn through random hostile encounters.
 
+## Operations — implemented full pathway
+
+Primary files:
+- `lib/pathway-operations.js`
+- `js/pathway-operations.js`
+- shared `functions/api/pathway/assignments.js`
+- visible catalog label in `functions/api/pathway/preferences.js`
+- personalized Assistant integration in `lib/assistant-pathway-context.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-operations.mjs`
+
+Current routes:
+
+### Operations Foundations — Launch, Adapt, Extract
+Beginner complete-loop route:
+- understand the Operation Runner launch, respawn/redeployment, and extraction loop;
+- choose a manageable first scenario based on the equipment already available;
+- prepare both the ship and suit/on-foot side before the ship choice locks;
+- deploy from the Runner with the first objective understood;
+- handle a real phase transition such as ship → foot, foot → ship, rescue → combat, or another objective change;
+- recover or explain the normal Runner recovery loop after a defeat or mistake;
+- complete extraction and verify the reward/Merc Coin result;
+- repeat the complete Operation with less coaching.
+
+### Multi-Role Operator — Ship, Foot & Transition
+Developing route:
+- identify the largest mixed-phase bottleneck;
+- map one scenario into ship, on-foot, support, and transition jobs;
+- fly the assigned ship role rather than chasing personal score;
+- perform the assigned on-foot/objective role rather than turning every phase into a firefight;
+- practice a clean role handoff;
+- remove one critical single point of failure through redundancy;
+- change one measured transition bottleneck and retest.
+
+### Scenario Specialist — Pick the Right Job
+Developing/Experienced route:
+- complete at least three different scenarios, including ship-heavy/mixed and on-foot/rescue-heavy work;
+- identify the real squad capability each scenario demands;
+- choose Easy or Hard for a stated reason rather than treating Hard as the automatic goal;
+- define Merc Coin/reward or training goals before grinding;
+- build a reusable scenario-selection rule based on squad size, equipment, preferred activity, risk, and goal;
+- choose a real squad's scenario and compare the result with the pre-launch reasoning.
+
+### Hard Operations Specialist — Sustain Under Pressure
+Experienced route:
+- choose a repeatable Hard benchmark that exposes a real weakness;
+- change only the ship/suit systems that address the measured problem;
+- manage ship and on-foot resources across the whole run;
+- maintain role discipline under pressure;
+- identify the first repeatable failure mode rather than only the dramatic final event;
+- make one major correction and retest, including deliberately stepping down or changing scenario when the original choice was the mistake.
+
+### Operations Lead — Brief, Adapt, Teach
+Veteran/Mentor route:
+- plan a session around a clear purpose such as onboarding, breadth, Merc Coin, Hard progression, or role training;
+- assign primary roles, secondary coverage, and redundancy before the Runner jumps;
+- lead the run and adapt once when reality disagrees with the brief;
+- recover/reorganize the squad when a Commander is defeated, disconnected, separated, or under-equipped;
+- make another operator more independent in one specific skill;
+- preserve a concise debrief with context and uncertainty for balance-sensitive observations.
+
+Core Operations principles:
+- the feature is not an on-foot-only activity;
+- the Runner and full select → prepare → deploy → adapt → extract loop matter as much as any one combat phase;
+- scenario choice should reflect the real squad and session goal;
+- Easy and Hard are tools, not status labels;
+- leadership emphasizes role coverage, redundancy, recovery, and teaching rather than personal score.
+
 ## Community Goal Hauler Prep — implemented Trade specialty
 
 Community Goal Hauler Prep is nested inside Trade & Hauling and uses its own saved specialty state. The 14-step progression teaches hostile-Open logistics around the doctrine:
@@ -326,8 +401,7 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 ## Next core Pathways
 
 Broader coverage remains the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
-- **Surface Operations**
-- Colonization
+- **Colonization**
 - Squadron Operations
 - Powerplay only when squad doctrine is mature enough to support a stable pathway
 
@@ -335,6 +409,6 @@ Do not automatically build every item without inspecting current site content fi
 
 ## Validation direction
 
-The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, and PvP additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, PvP, and Operations additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Operations additionally guards the Runner-to-extraction loop, mixed ship/on-foot preparation and phase transitions, and the visible Operations naming rule. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
