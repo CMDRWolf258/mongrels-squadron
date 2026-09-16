@@ -2,13 +2,24 @@
   const preview = document.querySelector('[data-pathway-preview]');
   if (!preview) return;
 
-  const fullPathwayLabels = new Set([
-    'Background Simulation',
-    'Mining',
-    'Trade & Hauling',
-    'Carrier Logistics',
-    'Engineering & Shipbuilding',
+  const fullPathwayRoots = new Map([
+    ['Background Simulation', document.querySelector('[data-bgs-pathway]')],
+    ['Mining', document.querySelector('[data-mining-pathway]')],
+    ['Trade & Hauling', document.querySelector('[data-trade-pathway]')],
+    ['Carrier Logistics', document.querySelector('[data-carrier-logistics-pathway]')],
+    ['Engineering & Shipbuilding', document.querySelector('[data-engineering-pathway]')],
   ]);
+
+  function fullRouteIsVisible(label) {
+    const root = fullPathwayRoots.get(label);
+    return Boolean(root && !root.hidden);
+  }
+
+  function removeDuplicateGenericSections() {
+    preview.querySelectorAll('.pathway-generic-section[data-pathway-label]').forEach(section => {
+      if (fullRouteIsVisible(section.dataset.pathwayLabel || '')) section.remove();
+    });
+  }
 
   function normalizePreviewCards() {
     preview.querySelectorAll('.pathway-recommendation').forEach(card => {
@@ -16,7 +27,7 @@
       const label = heading?.textContent?.trim();
       if (!label) return;
 
-      if (fullPathwayLabels.has(label)) {
+      if (fullRouteIsVisible(label)) {
         card.remove();
         return;
       }
@@ -25,6 +36,7 @@
       const badges = top?.querySelector('.pathway-recommendation-badges');
       const details = document.createElement('details');
       details.className = `pathway-activity-section pathway-generic-section${card.classList.contains('is-priority') ? ' is-priority' : ''}`;
+      details.dataset.pathwayLabel = label;
 
       const summary = document.createElement('summary');
       const title = document.createElement('span');
@@ -52,8 +64,15 @@
       details.append(summary, body);
       card.replaceWith(details);
     });
+
+    removeDuplicateGenericSections();
   }
 
   new MutationObserver(normalizePreviewCards).observe(preview, { childList:true, subtree:true });
+  fullPathwayRoots.forEach(root => {
+    if (!root) return;
+    new MutationObserver(removeDuplicateGenericSections).observe(root, { attributes:true, attributeFilter:['hidden'] });
+  });
+
   normalizePreviewCards();
 })();
