@@ -31,7 +31,7 @@ The site is both a public squadron presence and a private operational platform: 
 
 ### Website vs Discord
 
-- **Website = structured source of truth** for applications, profiles, projects, tasking, status, Pathway preferences/progress, campaign state, and admin workflows.
+- **Website = structured source of truth** for applications, profiles, projects, tasking, status, Pathway preferences/progress, campaign state, specialty-training state, and admin workflows.
 - **Discord = identity/community + communication + notifications + immediate coordination.**
 
 Do not duplicate structured website workflows into Discord unless there is a clear reason.
@@ -61,12 +61,13 @@ Current checks include:
 - Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
 - **Improve Jump Range reuses permanent Felicity/Scout/G2 access recorded by First Engineering Win and preserves its deliberate stopping points;**
 - **Improve Speed & Mobility reuses the same Felicity access/reputation and preserves G2 / experimental stopping points;**
-- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step, recognizes Jump Range and Mobility campaign wording, and does not activate on unrelated navigation questions;
-- critical Pathway/Assistant Cloudflare Function modules import cleanly;
+- **Community Goal Hauler Prep retains 14 unique steps, credits only Complete/Already Know, revisits skipped work after untouched pending work, and preserves the survive-and-deliver doctrine;**
+- the personalized Assistant/Pathway context selector can read current Engineering assignments/campaign steps and the query-selected CG Hauler specialty task without activating on unrelated navigation questions;
+- critical Pathway/Assistant Cloudflare Function modules import cleanly, including the CG Hauler specialty API;
 - critical APIs still contain their shared `headers()` / `reply()` response helpers;
-- high-value entry pages and Engineering Pathway assets are still present/wired.
+- high-value entry pages, Engineering assets, and CG Hauler specialty assets remain present/wired.
 
-This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed** with the new cross-campaign reuse checks. After Improve Speed & Mobility was added, smoke-test run **#20 passed** with the Felicity-reuse and stopping-point checks. Preserve and extend this suite when new shared platform behavior is added.
+This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed**. After Improve Speed & Mobility was added, smoke-test run **#20 passed**. After Community Goal Hauler Prep was fully wired, smoke-test run **#28 passed**. Preserve and extend this suite when new shared platform behavior is added.
 
 ---
 
@@ -91,7 +92,7 @@ Important rules:
 Never expose secrets such as `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, API keys, or hidden IDs.
 
 Important KV bindings:
-- **`PROJECTS`** — applications, profiles, Discord onboarding, member onboarding, My Pathway preferences/progress, Start Here daily tasks, Engineering campaigns/facts, and related structured state.
+- **`PROJECTS`** — applications, profiles, Discord onboarding, member onboarding, My Pathway preferences/progress, Start Here daily tasks, Engineering campaigns/facts, specialty training such as CG Hauler Prep, and related structured state.
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy/configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
@@ -213,22 +214,25 @@ Pathway context is selected for natural phrases such as:
 - “How do I do my current task?”
 - “What is my current Engineering step?”
 - “Why am I doing this step?”
-- references to the Campaign Planner, Improve Shields, **Improve Jump Range**, **Improve Speed & Mobility / Thrusters**, Engineering Prep, or a specific full Pathway assignment.
+- references to the Campaign Planner, Improve Shields, Improve Jump Range, Improve Speed & Mobility / Thrusters, Engineering Prep, or a specific full Pathway assignment;
+- **CG Hauler / Community Goal Hauler Prep / hostile hauling / hostile delivery / interdiction or escape drill** wording.
 
 When selected, `modules.pathway` can include:
 - saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
 - concise current assignment state for relevant full Pathways: route, progress, and the current pending/skipped task with objective/checklist/resource;
-- active Engineering Campaign Planner state: goal, ship, target notes, progress, next campaign step, useful resources/counter progress, and whether a legitimate stopping point has been reached.
+- active Engineering Campaign Planner state: goal, ship, target notes, progress, next campaign step, useful resources/counter progress, and whether a legitimate stopping point has been reached;
+- **query-selected Community Goal Hauler Prep specialty state**: doctrine, progress, and current task/checklist.
 
 Rules:
 - only read the signed-in member's own state from `PROJECTS`;
-- My Pathway / Campaign Planner remain authoritative for saved progress and completion;
+- My Pathway / Campaign Planner / specialty UI remain authoritative for saved progress and completion;
 - the assistant may explain a task and help execute it, but may **never** mark it complete or imply completion was recorded;
+- CG Hauler specialty state is loaded only for clearly relevant wording, not ordinary Trade questions;
 - when “my task” is genuinely ambiguous across several current full-Pathway assignments, identify the likely choices rather than silently choosing one;
 - preserve query selectivity to protect prompt size/monthly AI usage;
 - controlled Related buttons prioritize **My Pathway** and, for Engineering campaign questions, **Engineering Guide**.
 
-The smoke suite covers the intent gate and representative in-memory Engineering assignment/campaign lookups. Production behavior still requires member testing after deployment.
+The smoke suite covers the intent gate and representative in-memory Engineering and CG Hauler specialty lookups. Production behavior still requires member testing after deployment.
 
 ---
 
@@ -592,6 +596,67 @@ Cross-path rule: optional Engineering Prep may accelerate Engineering but must n
 
 ---
 
+## Community Goal Hauler Prep — Trade specialty
+
+This is the first implemented **specialty training path**. It is intentionally nested inside **My Pathway → Trade & Hauling** instead of becoming another full provider or top-level navigation item.
+
+Primary files:
+- `lib/pathway-cg-hauler-prep.js`
+- `functions/api/pathway/cg-hauler-prep.js`
+- `js/cg-hauler-prep.js`
+- `css/cg-hauler-prep.css`
+- mount in `pathway/index.html`
+
+Storage:
+- `PROJECTS`
+- prefix `specialty-cg-hauler-v1:<ownerId>`
+
+Core doctrine:
+> **The win condition is survive and deliver. Killing the attacker is not required.**
+
+Status semantics match the main Pathway model:
+- Complete and Already Know / Have This earn credit;
+- Skip for Now does not earn credit;
+- untouched pending work is served before skipped work resurfaces;
+- specialty progress is independent of the main Trade route.
+
+Current 14-step sequence:
+1. choose an existing cargo ship — no special PvP ship required;
+2. record cargo, defenses, boost speed, laden range, rebuy, and utilities;
+3. define the logistics win condition: preserve the mission and deliver;
+4. make one survivability pass without deleting the cargo role;
+5. check power, heat, utility choices, and escape-critical module priorities;
+6. practice pips and boost while laden until the inputs are automatic;
+7. understand and pre-plan high-wake vs low-wake escape choices;
+8. practice interdiction response, including deliberate submission when appropriate to get the shorter FSD cooldown;
+9. run a controlled interdiction/escape drill with another Mongrel;
+10. practice awareness entering a busy target system without treating every hollow contact as hostile;
+11. practice final approach/docking under pressure;
+12. build the escort/comms/rendezvous plan;
+13. run one logistics contingency drill when the original plan changes;
+14. complete a controlled hostile-delivery capstone and finish the cargo delivery without needing to destroy the attacker.
+
+Design rules:
+- use a real hauler the member already flies;
+- cargo capacity, speed, survivability, jump range, heat, power, and utilities are tradeoffs, not independent maxima;
+- Open/PvP survival skill is relevant, but PvP victory is not the training objective;
+- a clean interdiction submission is taught as one escape tool, **not** a universal “always submit” rule;
+- high-wake planning is taught because another ship's normal mass-lock-factor delay affects low-wake/supercruise escape but does not block a hyperspace jump to another system;
+- controlled practice with squadmates is preferred before a real hostile-delivery capstone;
+- escort success depends on communication, rendezvous, and contingency plans, not merely adding combat ships.
+
+UI:
+- collapsed specialty card inside the saved Trade & Hauling section;
+- one current step at a time;
+- progress bar;
+- Complete / Already Know / Skip for Now;
+- compact full-step history with Reopen;
+- reset affects only this specialty, not the main Trade Pathway.
+
+Ask the Mongrels can read the member's own CG Hauler progress only when the question clearly refers to CG hauling, hauler prep, hostile hauling/delivery, or interdiction/escape drills. It remains read-only.
+
+---
+
 ## First Engineering Win
 
 Optional default onboarding on Start Here. It can appear even if Engineering is not selected in Pathway preferences and stops nagging after completion/dismissal.
@@ -623,9 +688,7 @@ Wolf validated the First Engineering Win card and Undo behavior on phone, but no
 
 ---
 
-## Specialty / future pathways
-
-Queued specialty concept: **Community Goal Hauler Prep** — existing cargo ship, survivability, pips/boost, high wake vs low wake, controlled hostile delivery practice, escort coordination, and eventual hostile-logistics capstone. Win condition is survive/deliver, not kill the attacker.
+## Future pathways / specialties
 
 Likely future core pathways:
 - Exploration
@@ -637,7 +700,7 @@ Likely future core pathways:
 - Squadron Operations
 - Powerplay when doctrine is mature enough
 
-Do not automatically build all of these; inspect current authoritative site content first.
+Do not automatically build all of these; inspect current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
 
 ---
 
@@ -673,15 +736,17 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win Undo Previous Step on phone;
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
 - initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
-- automated GitHub Actions smoke suite; **run #20 passes with Improve Jump Range and Improve Speed & Mobility cross-campaign reuse coverage**.
+- automated GitHub Actions smoke suite; **run #28 passes with all three Engineering campaigns plus Community Goal Hauler Prep specialty/Assistant coverage**.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
 - second audited **Improve Jump Range** Engineering campaign, including campaign selector UI, First Engineering Win access reuse, G2/experimental/G3 stopping points, and Assistant awareness;
 - third audited **Improve Speed & Mobility** Engineering campaign, including Felicity reuse, blueprint/experimental tradeoff guidance, G2/experimental/G3 stopping points, and Assistant awareness;
-- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign context;
+- first specialty **Community Goal Hauler Prep** inside Trade & Hauling, including its 14-step progression, independent persistence, responsive UI, and query-selective Assistant awareness;
+- personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign/specialty context;
 - full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
 - full end-to-end **Improve Jump Range** behavior through actual in-game progression;
 - full end-to-end **Improve Speed & Mobility** behavior through actual in-game progression;
+- full end-to-end **Community Goal Hauler Prep** progression through controlled in-game drills;
 - fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
 - Campaign Planner ↔ Prep Tracker live browser synchronization across all campaign steps;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
