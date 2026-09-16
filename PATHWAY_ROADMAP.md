@@ -35,6 +35,7 @@ The hidden/default onboarding goal is **First Engineering Win**:
 - notice its current travel baseline;
 - plan only an FSD **G2 Increased Range** stopping point;
 - unlock/access the needed FSD engineer through bite-size audited steps;
+- before carrying the Meta-Alloy into **Deciat**, pause for a short Open-safety preparation step;
 - gather only the materials required for G1 → G2;
 - apply G2 Increased Range;
 - add the appropriate range-focused experimental (normally **Mass Manager**, with room for small-drive edge cases);
@@ -52,6 +53,19 @@ Rules:
 - once completed or dismissed, it should stop nagging the Commander;
 - do not expose the public UI until the FSD engineer access chain has been audited and split into manageable steps;
 - do not immediately replace it with another automatic Engineering goal after completion. Deeper Engineering becomes player-directed.
+
+### Deciat safety step
+
+Felicity Farseer’s location creates a useful early lesson in Open-survival awareness. Deciat has long been treated by the Elite community as a player-traffic/ganking hotspot because it concentrates newer Commanders travelling to an early engineer, often while carrying Meta-Alloy unlock cargo.
+
+The First Engineering Win should therefore include a dedicated **Prepare for Deciat** step immediately before the Meta-Alloy delivery rather than bury the warning in general text. Keep it concise and actionable:
+- make sure the Commander can afford the rebuy;
+- sell exploration data they do not want to risk losing before the trip;
+- understand low wake vs. high wake and preselect a nearby escape system;
+- avoid unnecessary lingering with the Meta-Alloy aboard;
+- explicitly encourage asking a Mongrel for escort or an experienced wingmate if the Commander is uncomfortable making the run alone.
+
+This is a small safety lesson, not a full PvP-survival curriculum. The deeper hostile-logistics training remains appropriate for the queued Community Goal Hauler Prep specialty pathway.
 
 Framework implementation lives in `lib/engineering-campaign-data.js` and is returned by `/api/pathway/engineering-campaign` as `firstEngineeringWin`.
 
@@ -113,7 +127,7 @@ Framework principles:
 Before the campaign planner becomes the main user-facing Engineering experience:
 - audit current engineer unlock chains and grade capabilities;
 - encode prerequisites as small dependency nodes;
-- finish the FSD access chain used by First Engineering Win, then expose that gentle onboarding UI;
+- finish the FSD access chain used by First Engineering Win, including the Deciat safety step, then expose that gentle onboarding UI;
 - identify which prerequisites are safe/natural to expose as background prep in Trade, Mining, Exploration, combat, missions, etc.;
 - add Inara/resource links for engineering planning and material requirements;
 - design the UI for entering actual progress on counters and correcting totals;
