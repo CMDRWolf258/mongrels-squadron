@@ -24,6 +24,12 @@ import {
   buildMobilityEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-mobility.js';
 import {
+  CG_HAULER_PREP,
+  createCgHaulerPrepState,
+  setCgHaulerTaskStatus,
+  buildCgHaulerPrepView,
+} from '../lib/pathway-cg-hauler-prep.js';
+import {
   assistantPathwayIntent,
   buildAssistantPathwayContext,
 } from '../lib/assistant-pathway-context.js';
@@ -175,12 +181,28 @@ assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.test.g2' && node
 assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.experimental.test' && node.meta?.readyToFinish), 'Improve Speed & Mobility has no experimental stopping point');
 console.log('✓ Improve Speed & Mobility reuses Felicity access and preserves stopping points');
 
+// Community Goal Hauler Prep is an independent Trade specialty, not another full
+// Pathway provider. Keep the sequence compact, unique, and status semantics aligned
+// with the main Pathway model: complete/known earn credit; skip does not.
+assert.equal(CG_HAULER_PREP.steps.length, 14, 'Community Goal Hauler Prep should contain 14 training steps');
+assert.equal(new Set(CG_HAULER_PREP.steps.map(step => step.id)).size, CG_HAULER_PREP.steps.length, 'Community Goal Hauler Prep contains duplicate task IDs');
+let cgState = createCgHaulerPrepState('cg-smoke-user');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.choose-ship', 'complete', '2026-09-16T12:30:00.000Z');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.baseline', 'known', '2026-09-16T12:31:00.000Z');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.win-condition', 'skipped', '2026-09-16T12:32:00.000Z');
+const cgView = buildCgHaulerPrepView(cgState);
+assert.equal(cgView.progress.completed, 2, 'Community Goal Hauler Prep credited a skipped task');
+assert.equal(cgView.current?.id, 'cg-hauler.survivability-pass', 'Community Goal Hauler Prep did not continue to untouched pending work before revisiting skipped work');
+assert.match(cgView.doctrine, /survive and deliver/i, 'Community Goal Hauler Prep lost its logistics-first win condition');
+console.log('✓ Community Goal Hauler Prep specialty progression is structurally sound');
+
 // The assistant should only receive personalized Pathway data when the member's
 // question actually refers to their assignment/progress. Exercise the selector
 // and a small in-memory PROJECTS binding so this bridge is covered by CI.
 assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
+assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
 const kvRecords = new Map([
   ['pathway-preferences-v1:smoke-user', {
@@ -205,7 +227,25 @@ assert.equal(assistantPathway.assignments.length, 1, 'assistant did not return t
 assert.equal(assistantPathway.assignments[0].activity, 'engineering', 'assistant returned the wrong Pathway activity');
 assert.equal(assistantPathway.engineeringCampaign?.active, true, 'assistant missed the active Engineering campaign');
 assert.ok(assistantPathway.engineeringCampaign?.nextStep?.title, 'assistant Engineering campaign context has no next step');
-console.log('✓ Ask the Mongrels can read concise current Pathway/campaign context');
+
+const cgKvRecords = new Map([
+  ['pathway-preferences-v1:cg-smoke-user', {
+    interests:['trade'],
+    improve:['trade'],
+    experience:{ trade:'some' },
+    playStyle:'group',
+    currentGoal:'Prepare for hostile Community Goal hauling.',
+  }],
+  ['specialty-cg-hauler-v1:cg-smoke-user', cgState],
+]);
+const cgAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return cgKvRecords.get(key) ?? null; } } },
+  { sub:'cg-smoke-user', access:'member', displayName:'CG Smoke Commander' },
+  'What is my CG hauler prep task?',
+);
+assert.ok(cgAssistant?.specialties?.communityGoalHaulerPrep, 'assistant missed Community Goal Hauler Prep specialty context');
+assert.equal(cgAssistant.specialties.communityGoalHaulerPrep.currentTask?.id, 'cg-hauler.survivability-pass', 'assistant returned the wrong CG Hauler Prep current task');
+console.log('✓ Ask the Mongrels can read concise Pathway, campaign, and CG Hauler specialty context');
 
 // Import the critical Cloudflare Pages Function modules. This catches syntax and
 // broken-import failures before Cloudflare sees the commit.
@@ -213,6 +253,7 @@ const apiModules = [
   '../functions/api/pathway/preferences.js',
   '../functions/api/pathway/assignments.js',
   '../functions/api/pathway/engineering-campaign.js',
+  '../functions/api/pathway/cg-hauler-prep.js',
   '../functions/api/assistant/index.js',
 ];
 for (const path of apiModules) {
@@ -228,6 +269,7 @@ for (const path of [
   'functions/api/pathway/preferences.js',
   'functions/api/pathway/assignments.js',
   'functions/api/pathway/engineering-campaign.js',
+  'functions/api/pathway/cg-hauler-prep.js',
   'functions/api/assistant/index.js',
 ]) {
   const source = readFileSync(path, 'utf8');
@@ -247,9 +289,12 @@ for (const path of [
   'carriers/index.html',
   'lib/engineering-campaign-jump-range.js',
   'lib/engineering-campaign-mobility.js',
+  'lib/pathway-cg-hauler-prep.js',
   'js/engineering-campaign-planner.js',
   'js/engineering-prep-tracker.js',
+  'js/cg-hauler-prep.js',
   'css/engineering-campaign-planner.css',
+  'css/cg-hauler-prep.css',
 ]) {
   assert.ok(existsSync(path), `critical site file is missing: ${path}`);
 }
@@ -257,9 +302,12 @@ const pathwayHtml = readFileSync('pathway/index.html', 'utf8');
 assert.match(pathwayHtml, /data-engineering-campaign-planner/, 'My Pathway is missing the Engineering Campaign Planner mount');
 assert.match(pathwayHtml, /engineering-campaign-planner\.js/, 'My Pathway is not loading the Campaign Planner script');
 assert.match(pathwayHtml, /engineering-prep-tracker\.js/, 'My Pathway is not loading the Engineering Prep Tracker script');
+assert.match(pathwayHtml, /data-cg-hauler-prep/, 'My Pathway is missing the Community Goal Hauler Prep mount');
+assert.match(pathwayHtml, /cg-hauler-prep\.js/, 'My Pathway is not loading the Community Goal Hauler Prep script');
+assert.match(pathwayHtml, /cg-hauler-prep\.css/, 'My Pathway is not loading the Community Goal Hauler Prep stylesheet');
 const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8');
 assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
 assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
-console.log('✓ critical pages and Engineering Pathway assets are wired');
+console.log('✓ critical pages, Engineering assets, and CG Hauler specialty are wired');
 
 console.log('\nAll Mongrels site smoke checks passed.');
