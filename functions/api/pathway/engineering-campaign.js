@@ -17,6 +17,7 @@ import {
   buildFirstEngineeringWinView,
 } from '../../../lib/engineering-campaign-data.js';
 import { buildShieldEngineeringDependencyNodes } from '../../../lib/engineering-campaign-shields.js';
+import { buildJumpRangeEngineeringDependencyNodes } from '../../../lib/engineering-campaign-jump-range.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
@@ -111,6 +112,7 @@ function present(stateValue) {
   const dependencyNodes = [
     ...buildEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
     ...buildShieldEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
+    ...buildJumpRangeEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
   ];
   return {
     ok:true,
