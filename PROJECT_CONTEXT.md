@@ -27,7 +27,7 @@ The site is both a public squadron presence and a private operational platform: 
 
 ---
 
-## Product architecture / development behavior
+## Development behavior
 
 ### Website vs Discord
 
@@ -47,43 +47,50 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - GitHub commit success does **not** prove Cloudflare deployment. Do not call a feature live/validated unless production is actually checked or Wolf confirms it.
 - Avoid base64 image workflows unless truly necessary; prefer normal repo assets.
 - Preserve one authoritative state model per domain instead of creating parallel copies of the same data.
+- Wolf often reviews a batch of recent features later rather than stopping development after every addition.
 
-### Automated smoke tests
+---
+
+## Automated smoke tests
 
 Primary files:
 - `scripts/smoke-test.mjs`
+- `scripts/smoke-exobiology.mjs`
 - `.github/workflows/site-smoke-tests.yml`
 
-The Node smoke suite runs on pull requests and normal pushes to `main`; commits that only refresh `data/live-bgs.json` are ignored. It can also be run manually.
+The workflow runs on pull requests and normal pushes to `main`; commits that only refresh `data/live-bgs.json` are ignored. It can also be run manually.
 
-Current checks include:
-- all **seven** full Pathway provider catalogs remain structurally valid;
-- Exploration is mounted, its client is loaded, full-route duplicate suppression knows about it, and Assistant context can resolve a beginner Exploration assignment;
+Current regression coverage includes:
+- all **eight** full Pathway providers remain structurally valid;
+- Exploration provider, Assistant context, mount/client wiring, and generic-card suppression;
+- Exobiology’s five-route catalog, beginner first task, three-sample genetic loop, Assistant context, shared-provider registration, My Pathway mount/client, and duplicate-card suppression;
 - cross-path Engineering Prep mappings point only to real current Trade/Mining tasks and tracked Engineering facts;
-- Engineering campaign fact-completed dependency propagation works;
-- Improve Shields honors later/persistent Lei/Dweller access instead of forcing historical counters;
-- Improve Jump Range reuses First Engineering Win Scout/Felicity/G2 progress;
-- Improve Speed & Mobility reuses existing Felicity access/reputation;
-- Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress;
-- Improve Power & Heat reuses existing Felicity/higher-grade Power Plant access and preserves no-engineering/G1/G2/experimental/G3 stopping points;
-- Improve Weapon Package preserves layout-only/G2/experimental/full-package/G3 stopping points and refuses to auto-clear weapon Engineer access from a generic saved Engineer fact;
-- Community Goal Hauler Prep keeps 14 unique steps and the survive-and-deliver doctrine;
-- Ask the Mongrels can read query-selected Pathway/campaign/specialty/cross-path-prep context;
+- Engineering campaign fact-completed dependency propagation;
+- Improve Shields later/persistent Lei/Dweller access reuse;
+- Improve Jump Range reuse of First Engineering Win Scout/Felicity/G2 progress;
+- Improve Speed & Mobility reuse of Felicity access/reputation;
+- Improve Power Distributor reuse of The Dweller reputation;
+- Improve Power & Heat reuse of Felicity/higher-grade Power Plant access and its no-engineering/G1/G2/experimental/G3 stopping points;
+- Improve Weapon Package package-first flow, multiple stopping points, and family-specific Engineer-access guardrail;
+- Community Goal Hauler Prep’s 14 unique steps and survive-and-deliver doctrine;
+- Ask the Mongrels query-selected Pathway/campaign/specialty/cross-path context;
 - critical Cloudflare Function modules import cleanly and retain `headers()` / `reply()` helpers;
 - critical pages/assets are present and wired.
 
 Notable successful runs:
-- #5 — Assistant Pathway intent wording;
-- #13 — Jump Range cross-campaign reuse;
-- #20 — Mobility/Felicity reuse;
-- #28 — Community Goal Hauler Prep;
-- #40 — cross-path Trade/Mining Engineering Prep;
-- #47 — Power Distributor / The Dweller reuse;
-- #54 — Power & Heat / higher-grade Power Plant access reuse;
-- #61 — Weapon Package package-first flow and family-specific Engineer guardrail;
-- **#69 — Exploration full provider, Assistant context, mount/script wiring, and route-catalog coverage.**
+- #5 — Assistant Pathway intent wording
+- #13 — Jump Range cross-campaign reuse
+- #20 — Mobility/Felicity reuse
+- #28 — Community Goal Hauler Prep
+- #40 — cross-path Trade/Mining Engineering Prep
+- #47 — Power Distributor / The Dweller reuse
+- #54 — Power & Heat / higher-grade Power Plant access reuse
+- #61 — Weapon Package package-first flow and family-specific Engineer guardrail
+- #69 — Exploration full provider and wiring
+- #80 — dedicated Exobiology full-Pathway regression suite
+- #81 — Exobiology public Activities-hub cleanup with the complete smoke workflow still green
 
-The smoke suite is a regression safety net, **not** a browser or production test.
+Smoke tests are a regression safety net, **not** a browser or production test.
 
 ---
 
@@ -136,9 +143,9 @@ Authenticated member menu:
 - Sign Out
 
 Responsive behavior:
-- **>=1281px:** normal desktop navigation;
-- **1061–1280px:** compressed but fully visible navigation; smaller logo, hidden brand subtitle, tighter spacing;
-- **<=1060px:** compact `MENU` drawer.
+- **>=1281px:** normal desktop navigation
+- **1061–1280px:** compressed but fully visible navigation
+- **<=1060px:** compact `MENU` drawer
 
 Compact drawer uses **focus mode**: one open top-level group hides siblings, owns the scrollable drawer, and keeps its summary sticky. Closing it restores the root list.
 
@@ -175,12 +182,12 @@ Useful anchors include:
 - `/about/#squad-rules`
 
 Carrier-loading navigation convention:
-- desktop/tablet: **Command → Carrier Coordination**;
-- compact: **MENU → Command → Carrier Coordination**;
-- member alternate: Member Portal → Carrier Coordination → Open Carrier Board;
-- create: New Coordination Post → Activity: Loading.
+- desktop/tablet: **Command → Carrier Coordination**
+- compact: **MENU → Command → Carrier Coordination**
+- member alternate: Member Portal → Carrier Coordination → Open Carrier Board
+- create: New Coordination Post → Activity: Loading
 
-### Mission Control Assistant filtering
+### Mission Control filtering
 
 Mission Control system data is query-filtered before being sent to the Assistant. An empty filtered subset does **not** mean Mission Control has no systems. Preserve authoritative totals and selector metadata.
 
@@ -192,20 +199,15 @@ Faction-presence wording such as “what systems our faction is in,” “where 
 
 Recognized concepts include:
 - current Pathway assignment/task/step;
-- current Exploration assignment/task/step, including “my exploration,” survey/deep-space/neutron-route wording;
-- Engineering Campaign Planner;
-- Improve Shields;
-- Improve Jump Range;
-- Improve Speed & Mobility / Thrusters;
-- Improve Power Distributor / distributor / capacitor campaign wording;
-- Improve Power & Heat / Power Plant / thermal campaign wording;
-- Improve Weapon Package / hardpoint package / relevant weapon-family wording;
+- Exploration assignment/task/step, including survey/deep-space/neutron-route wording;
+- Exobiology assignment/task/step, including exobio, bio survey, Genetic Sampler, Vista Genomics, biological signal, and biological heatmap wording;
+- Engineering Campaign Planner and all six current Engineering campaign goals;
 - Engineering Prep / cross-path Engineering questions;
-- CG Hauler / hostile-hauling/interdiction/escape-drill wording.
+- Community Goal Hauler / hostile-hauling/interdiction/escape-drill wording.
 
 When selected, `modules.pathway` can contain:
 - selected activities, priority, experience, play style, and current goal;
-- relevant full-route assignment progress/current task, now including Exploration;
+- relevant full-route assignment progress/current task, including Exploration and Exobiology;
 - optional Engineering Prep attached to the current Trade/Mining task;
 - active Engineering campaign goal/ship/progress/next step/stopping-point state;
 - query-selected Community Goal Hauler Prep state.
@@ -223,7 +225,7 @@ Rules:
 
 `/start/` answers: **“What is one useful thing I can do next?”** It is intentionally lower-overwhelm than My Pathway.
 
-Primary personalized-task files:
+Primary files:
 - `start/index.html`
 - `js/start-tasks.js`
 - `css/start-tasks.css`
@@ -254,6 +256,7 @@ Primary files:
 - `css/pathway.css`
 - `css/pathway-activity-sections.css`
 - `js/pathway.js`
+- `js/pathway-full-routes.js`
 - `functions/api/pathway/preferences.js`
 - `functions/api/pathway/assignments.js`
 
@@ -285,14 +288,15 @@ Assignment types:
 
 ### Activity collapse UX
 
-The right-hand **Your Pathway** area uses compact `<details>` sections. Full-route categories are:
+The right-hand **Your Pathway** area uses compact `<details>` sections. Current full-route categories are:
 - Anti-Xeno
 - Background Simulation
 - Mining
 - Trade & Hauling
 - Carrier Logistics
 - Engineering & Shipbuilding
-- **Exploration**
+- Exploration
+- Exobiology
 
 Rules:
 - collapsed by default;
@@ -322,7 +326,8 @@ Current full providers:
 4. Trade & Hauling — `trade-v2`
 5. Carrier Logistics — `carrier-logistics-v1`
 6. Engineering & Shipbuilding — `engineering-v1`
-7. **Exploration — `exploration-v1`**
+7. Exploration — `exploration-v1`
+8. Exobiology — `exobiology-v1`
 
 ### Anti-Xeno
 - Scout School — Vulture
@@ -385,7 +390,7 @@ Engineering route cycling stays within the selected experience band:
 Primary files:
 - `lib/pathway-exploration.js`
 - `js/pathway-exploration.js`
-- shared assignment API/provider registration in `functions/api/pathway/assignments.js`
+- shared provider registration in `functions/api/pathway/assignments.js`
 - mount in `pathway/index.html`
 
 Routes:
@@ -395,14 +400,37 @@ Routes:
 - **Discovery Specialist — Scout With a Purpose**
 - **Expedition Lead — Plan, Recover, Teach**
 
-Progression intent:
-- Beginner learns the complete safe loop: prepare ship → plot → FSS → deliberate DSS → fuel/heat/landing safety → return/sell data → improve one real problem → repeat independently.
-- Developing Surveyor measures an honest run, compares route approaches, creates scanning/mapping decision rules, keeps reusable notes, and tests a changed workflow.
-- Deep-Space Navigator adds remote failure-mode planning, fuel margins, neutron-route comparison/practice, real repair practice, and a remote-leg capstone.
-- Discovery Specialist makes exploration purposeful: define a scouting objective, narrow a search without outsourcing it, evaluate findings on more than credits, document them, and turn them into useful squad knowledge.
-- Veteran/Mentor route focuses on expedition objectives, group-compatible route/rendezvous/recovery planning, briefing, adaptation, recovery, mentoring, and debrief.
+Progression moves from the safe complete exploration loop through survey efficiency, neutron/remote recovery, purposeful discovery/scouting, and expedition leadership/mentoring.
 
-**Boundary:** Exploration does not absorb Exobiology. It supports travel/discovery and may encounter biological signals, but Exobiology remains a separate future full Pathway with its own field/sampling skills.
+**Boundary:** Exploration supports travel/discovery and may encounter biological signals, but it does not absorb Exobiology.
+
+### Exobiology
+
+Primary files:
+- `lib/pathway-exobiology.js`
+- `js/pathway-exobiology.js`
+- shared provider registration in `functions/api/pathway/assignments.js`
+- mount in `pathway/index.html`
+- focused regression suite: `scripts/smoke-exobiology.mjs`
+
+Routes:
+- **First Bio Survey — Find, Sample, Sell**
+- **Field Surveyor — Read Terrain & Signals**
+- **Efficient Naturalist — Find the Time Sink**
+- **Target Specialist — Hunt Biology With a Purpose**
+- **Expedition Bio Lead — Survey, Coordinate, Teach**
+
+Progression intent:
+- Beginner learns the complete loop: practical ship + Artemis/Genetic Sampler → select a landable bio body → DSS heatmap + terrain → visual field search → three genetically distinct accepted samples → surface safety → Vista Genomics sale → repeat independently.
+- Field Surveyor develops heatmap/terrain judgement, repeatable search patterns, species-dependent sample-spacing judgement, movement-mode choices, and multi-species management.
+- Efficient Naturalist measures the whole stop, uses a biological-detour rule, improves landing choice, optimizes the complete three-sample sequence, and learns when to relocate or abandon a poor search.
+- Target Specialist uses candidate intelligence, ground-truths predictions, documents repeatable field reports, adapts after evidence, and turns findings into squad-useful reconnaissance.
+- Veteran/Mentor route focuses on survey objectives, group roles, adaptation, report quality control, mentoring, and debrief.
+
+Important guardrails:
+- do not hard-code one universal colony spacing distance; it varies by organism/species, so use Genetic Sampler feedback;
+- Exobiology is its own full provider even though it naturally complements Exploration;
+- first-path teaching prioritizes a complete find/sample/sell loop over credits-per-hour optimization.
 
 ---
 
@@ -580,11 +608,10 @@ Accepted/Declined are terminal in the normal workflow. Discord Member role assig
 
 ---
 
-## Future Pathways / specialties and current roadmap
+## Current roadmap
 
-Broader full-Pathway coverage remains the next major development priority. Exploration is now implemented, so the likely working order is:
-- **Exobiology**
-- PvE Combat
+Broader full-Pathway coverage remains the next major development priority. Exploration and Exobiology are now implemented, so the likely working order is:
+- **PvE Combat**
 - PvP
 - Surface Operations
 - Colonization
@@ -593,7 +620,7 @@ Broader full-Pathway coverage remains the next major development priority. Explo
 
 Do not automatically build every item without inspecting current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
 
-**Current roadmap decision:** Engineering campaign expansion stays paused while the site gets broader. The whole-ship / Ship Architect Engineering campaign is intentionally deferred.
+Engineering campaign expansion stays paused while the site gets broader. The whole-ship / Ship Architect Engineering campaign is intentionally deferred.
 
 ---
 
@@ -607,10 +634,11 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win card and Undo behavior on phone;
 - Engineering Prep Tracker concept/styling;
 - initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
-- automated smoke suite through **run #69**, now covering seven full Pathway provider catalogs, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Trade/Mining Engineering Prep, personalized Assistant context, API imports, and page wiring.
+- automated workflow through **run #81**, covering the eight full Pathway providers plus the focused Exobiology regression suite, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Engineering Prep, personalized Assistant context, API imports, and key page wiring.
 
 Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
 - **Exploration full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, and Assistant context;
+- **Exobiology full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, Assistant context, and Activities-hub status;
 - Improve Jump Range;
 - Improve Speed & Mobility;
 - Improve Power Distributor;
@@ -631,7 +659,5 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - Engineering route filtering;
 - latest collapsible My Pathway category UX;
 - complete First Engineering Win in-game sequence.
-
-Wolf plans to review recent Engineering/specialty/Pathway work in detail as a **batch** rather than interrupting development after each item.
 
 Production deployment can lag GitHub commits. Always distinguish **committed / CI-checked** from **confirmed live / production-validated**.
