@@ -438,7 +438,11 @@ My Pathway → Engineering hosts a collapsed **Campaign Planner** subsection abo
 Inactive state:
 - exposes the audited **Improve Shields** campaign only;
 - asks for the ship and the specific shield problem/goal;
-- shows paused/completed campaign history and allows paused campaigns to resume.
+- shows at most the 4 most recent visible paused/completed campaigns;
+- completed campaigns can be **Reopened** with their existing progress intact;
+- paused campaigns can be resumed;
+- paused/completed campaigns can be **Removed from History**, which archives the campaign record instead of deleting it and leaves shared Engineering facts intact;
+- archived campaigns are excluded from visible history and from the “Last campaign win” surface.
 
 Active state:
 - shows one next campaign step at a time;
@@ -449,7 +453,10 @@ Active state:
 - counter steps link/scroll to the existing Prep Tracker;
 - full compact step history with Reopen / Undo Mark / Update Tracker corrections;
 - Pause Campaign;
-- explicit Take the Win completion at valid stopping points.
+- explicit Take the Win completion at valid stopping points;
+- previous visible campaigns still expose Resume / Reopen / Remove from History controls. Reopening an older campaign while another campaign is active pauses the current one.
+
+Campaign explanatory cards use the plain-language label **Why this is a separate step**. It means the prerequisite or subtask is deliberately being shown as its own manageable unit instead of being hidden inside a larger assignment.
 
 `js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through the `mongrels:engineering-campaign-updated` browser event so counter edits immediately refresh the active campaign without a page reload.
 
@@ -557,6 +564,7 @@ Validated / accepted by Wolf:
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
 - first live **Improve Shields** Engineering Campaign Planner UI and adaptive goal chain;
+- Engineering Campaign history **Reopen Campaign / Remove from History** controls and wording cleanup;
 - fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
 - Campaign Planner ↔ Prep Tracker live browser synchronization;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
