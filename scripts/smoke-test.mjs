@@ -13,6 +13,7 @@ import {
   setEngineeringFact,
   buildEngineeringCampaignView,
 } from '../lib/engineering-campaign.js';
+import { ENGINEERING_TRACKED_FACTS } from '../lib/engineering-campaign-data.js';
 import {
   SHIELD_CAMPAIGN_FACTS,
   buildShieldEngineeringDependencyNodes,
@@ -23,6 +24,11 @@ import {
 import {
   buildMobilityEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-mobility.js';
+import {
+  CROSS_PATH_ENGINEERING_PREP,
+  engineeringPrepForTask,
+} from '../lib/pathway-engineering-prep.js';
+import { CROSS_PATH_ENGINEERING_TRACKED_FACTS } from '../lib/pathway-engineering-prep-facts.js';
 import {
   CG_HAULER_PREP,
   createCgHaulerPrepState,
@@ -67,6 +73,33 @@ function checkRouteCatalog(label, routes) {
 
 for (const [label, routes] of providers) checkRouteCatalog(label, routes);
 console.log(`✓ validated ${providers.length} Pathway provider catalogs`);
+
+// Cross-path Engineering prep must only point at real current Pathway tasks and
+// counters the Engineering API knows how to store. This prevents a route rewrite
+// from leaving behind a dead prep button or a silently invalid fact ID.
+const prepTaskIds = {
+  trade:new Set(TRADE_ROUTES.flatMap(route => route.tasks.map(task => task.id))),
+  mining:new Set(MINING_ROUTES.flatMap(route => route.tasks.map(task => task.id))),
+};
+const trackedPrepFacts = {
+  ...ENGINEERING_TRACKED_FACTS,
+  ...CROSS_PATH_ENGINEERING_TRACKED_FACTS,
+};
+for (const [activity, tasks] of Object.entries(CROSS_PATH_ENGINEERING_PREP)) {
+  assert.ok(prepTaskIds[activity], `cross-path Engineering prep uses unsupported activity ${activity}`);
+  for (const [taskId, opportunities] of Object.entries(tasks)) {
+    assert.ok(prepTaskIds[activity].has(taskId), `cross-path Engineering prep references missing ${activity} task ${taskId}`);
+    assert.ok(Array.isArray(opportunities) && opportunities.length > 0, `${activity}/${taskId} has no Engineering prep opportunity`);
+    for (const opportunity of opportunities) {
+      assert.ok(trackedPrepFacts[opportunity.factId], `${activity}/${taskId} references untracked Engineering fact ${opportunity.factId}`);
+      assert.ok(Number(opportunity.maxContribution) > 0, `${activity}/${taskId} has no positive prep contribution limit`);
+    }
+  }
+}
+assert.equal(engineeringPrepForTask('trade', 'trade-foundations-cheap-haul-v2')[0]?.factId, 'trade.markets-visited-distinct', 'Trade cross-path prep lost Lei Cheung market tracking');
+assert.equal(engineeringPrepForTask('mining', 'mining-efficient-baseline')[0]?.factId, 'mining.ore-mined-total-tonnes', 'Mining cross-path prep lost Selene Jean mined-tonnage tracking');
+assert.equal(CROSS_PATH_ENGINEERING_TRACKED_FACTS['mining.ore-mined-total-tonnes']?.kind, 'counter', 'Selene Jean mining prep is not a tracked counter');
+console.log('✓ cross-path Engineering prep maps real Trade/Mining work to tracked facts');
 
 // Exercise the campaign engine's fact-completed dependency behavior. This guards
 // against a regression where a shared fact could mark its own node complete but
@@ -203,6 +236,7 @@ assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assi
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
 assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
+assert.equal(assistantPathwayIntent('Does my current trade task help engineering?'), true, 'assistant missed cross-path Engineering prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
 const kvRecords = new Map([
   ['pathway-preferences-v1:smoke-user', {
@@ -228,6 +262,34 @@ assert.equal(assistantPathway.assignments[0].activity, 'engineering', 'assistant
 assert.equal(assistantPathway.engineeringCampaign?.active, true, 'assistant missed the active Engineering campaign');
 assert.ok(assistantPathway.engineeringCampaign?.nextStep?.title, 'assistant Engineering campaign context has no next step');
 
+const prepKvRecords = new Map([
+  ['pathway-preferences-v1:prep-smoke-user', {
+    interests:['trade'],
+    improve:['trade'],
+    experience:{ trade:'new' },
+    playStyle:'either',
+    currentGoal:'Learn Trade while preparing future Engineers.',
+  }],
+  ['pathway-progress-v1:prep-smoke-user:trade', {
+    ownerId:'prep-smoke-user',
+    selectedRoute:'trade-foundations',
+    routes:{
+      'trade-foundations':{
+        taskStates:{ 'trade-foundations-build-v2':'complete' },
+        startedAt:'2026-09-16T12:40:00.000Z',
+        updatedAt:'2026-09-16T12:40:00.000Z',
+      },
+    },
+  }],
+]);
+const prepAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return prepKvRecords.get(key) ?? null; } } },
+  { sub:'prep-smoke-user', access:'member', displayName:'Prep Smoke Commander' },
+  'Does my current trade task help engineering?',
+);
+assert.equal(prepAssistant?.assignments?.[0]?.currentTask?.id, 'trade-foundations-cheap-haul-v2', 'assistant did not resolve the expected Trade task for cross-path prep');
+assert.equal(prepAssistant.assignments[0].currentTask.engineeringPrep?.[0]?.factId, 'trade.markets-visited-distinct', 'assistant missed the current Trade task Engineering prep opportunity');
+
 const cgKvRecords = new Map([
   ['pathway-preferences-v1:cg-smoke-user', {
     interests:['trade'],
@@ -245,7 +307,7 @@ const cgAssistant = await buildAssistantPathwayContext(
 );
 assert.ok(cgAssistant?.specialties?.communityGoalHaulerPrep, 'assistant missed Community Goal Hauler Prep specialty context');
 assert.equal(cgAssistant.specialties.communityGoalHaulerPrep.currentTask?.id, 'cg-hauler.survivability-pass', 'assistant returned the wrong CG Hauler Prep current task');
-console.log('✓ Ask the Mongrels can read concise Pathway, campaign, and CG Hauler specialty context');
+console.log('✓ Ask the Mongrels can read Pathway, campaign, specialty, and cross-path prep context');
 
 // Import the critical Cloudflare Pages Function modules. This catches syntax and
 // broken-import failures before Cloudflare sees the commit.
@@ -289,9 +351,12 @@ for (const path of [
   'carriers/index.html',
   'lib/engineering-campaign-jump-range.js',
   'lib/engineering-campaign-mobility.js',
+  'lib/pathway-engineering-prep.js',
+  'lib/pathway-engineering-prep-facts.js',
   'lib/pathway-cg-hauler-prep.js',
   'js/engineering-campaign-planner.js',
   'js/engineering-prep-tracker.js',
+  'js/pathway-engineering-prep.js',
   'js/cg-hauler-prep.js',
   'css/engineering-campaign-planner.css',
   'css/cg-hauler-prep.css',
@@ -302,12 +367,17 @@ const pathwayHtml = readFileSync('pathway/index.html', 'utf8');
 assert.match(pathwayHtml, /data-engineering-campaign-planner/, 'My Pathway is missing the Engineering Campaign Planner mount');
 assert.match(pathwayHtml, /engineering-campaign-planner\.js/, 'My Pathway is not loading the Campaign Planner script');
 assert.match(pathwayHtml, /engineering-prep-tracker\.js/, 'My Pathway is not loading the Engineering Prep Tracker script');
+assert.match(pathwayHtml, /pathway-engineering-prep\.js/, 'My Pathway is not loading the cross-path Engineering Prep helper');
 assert.match(pathwayHtml, /data-cg-hauler-prep/, 'My Pathway is missing the Community Goal Hauler Prep mount');
 assert.match(pathwayHtml, /cg-hauler-prep\.js/, 'My Pathway is not loading the Community Goal Hauler Prep script');
 assert.match(pathwayHtml, /cg-hauler-prep\.css/, 'My Pathway is not loading the Community Goal Hauler Prep stylesheet');
 const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8');
 assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
 assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
-console.log('✓ critical pages, Engineering assets, and CG Hauler specialty are wired');
+const tradeSource = readFileSync('js/pathway-trade.js', 'utf8');
+const miningSource = readFileSync('js/pathway-mining.js', 'utf8');
+assert.match(tradeSource, /MongrelEngineeringPrep/, 'Trade Pathway is not rendering cross-path Engineering prep');
+assert.match(miningSource, /MongrelEngineeringPrep/, 'Mining Pathway is not rendering cross-path Engineering prep');
+console.log('✓ critical pages, Engineering assets, CG Hauler specialty, and cross-path prep are wired');
 
 console.log('\nAll Mongrels site smoke checks passed.');
