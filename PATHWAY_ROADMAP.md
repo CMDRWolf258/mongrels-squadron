@@ -12,6 +12,7 @@ This file records current Pathway direction and specialty concepts that should s
 6. **Engineering & Shipbuilding** — Engineering Foundations, Engineer Network, Role Builder, Combat Systems, Ship Architect, and Engineering Mentor routes.
 7. **Exploration** — Foundations, Surveyor, Deep-Space Navigator, Discovery Specialist, and Expedition Lead/Mentor routes.
 8. **Exobiology** — First Bio Survey, Field Surveyor, Efficient Naturalist, Target Specialist, and Expedition Bio Lead/Mentor routes.
+9. **PvE Combat** — Combat Foundations, Bounty Hunter, Conflict Zone Specialist, Combat Specialist, and Combat Lead/Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
@@ -184,6 +185,69 @@ Veteran/Mentor route:
 
 Exobiology and Exploration remain separate full providers even though they naturally support one another.
 
+## PvE Combat — implemented full pathway
+
+Primary files:
+- `lib/pathway-pve.js`
+- `js/pathway-pve.js`
+- shared `functions/api/pathway/assignments.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-pve.mjs`
+
+Current routes:
+
+### Combat Foundations — Scan, Fight, Cash In
+Beginner complete-loop route:
+- prepare one rebuy-safe combat ship rather than requiring a meta hull;
+- confirm legal WANTED targets before opening fire where local law applies;
+- practice active SYS/ENG/WEP pip management;
+- choose favorable fights instead of attacking everything on the scanner;
+- win a controlled bounty fight;
+- practice disengagement before the ship forces the decision;
+- return and redeem bounty vouchers;
+- graduate with a short independent session of at least three legal NPC bounty kills.
+
+### Bounty Hunter — Pips, Position, Pressure
+Developing route:
+- record an honest session baseline;
+- make fire groups agree with weapon jobs;
+- practice proactive pip rhythm across multiple fights;
+- improve useful time-on-target through positioning;
+- use subsystem targeting only when it solves a real problem;
+- manage a sustained bounty session rather than one perfect duel;
+- change the measured bottleneck and re-run.
+
+### Conflict Zone Specialist — Survive the Battle
+Developing/Experienced route:
+- audit a ship for sustained CZ pressure rather than assuming a bounty build is sufficient;
+- complete a controlled CZ run for the intended side;
+- choose targets that help the local battle and friendly pressure;
+- maintain enough awareness to respond to changing battlefield priorities;
+- step up difficulty deliberately rather than jumping straight to maximum pressure;
+- practice focus fire, separation awareness, and recovery with another Mongrel;
+- when CZ combat supports BGS/squad work, verify Daily Orders before assuming a win or turn-in helps the current objective.
+
+### Combat Specialist — Diagnose, Adapt, Sustain
+Experienced route:
+- choose a repeatable hard-fight benchmark;
+- separate theoretical DPS from real applied damage;
+- identify how the ship actually loses fights;
+- use subsystem pressure as a fight-control tool rather than a ritual;
+- change only the measured build/technique limitation;
+- re-test under comparable pressure;
+- complete a higher-threat PvE capstone or make a disciplined withdrawal with a repeatable lesson.
+
+### Combat Lead — Coordinate, Recover, Teach
+Veteran/Mentor route:
+- plan an operation with a real combat objective and stop condition;
+- brief target calls, focus-fire expectations, separation and exits;
+- lead a wing session and adapt once;
+- recover a pressured wingmate or degraded fight before it becomes a chain of rebuys;
+- make another PvE pilot more independent;
+- debrief the operation and preserve one concrete next adjustment.
+
+**Boundary:** PvE Combat teaches NPC combat and squad combat operations. PvP remains a separate full Pathway candidate because human-opponent range control, prediction, matchup knowledge, Open survival, and organized PvP require a different progression.
+
 ## Community Goal Hauler Prep — implemented Trade specialty
 
 Community Goal Hauler Prep is nested inside Trade & Hauling and uses its own saved specialty state. The 14-step progression teaches hostile-Open logistics around the doctrine:
@@ -195,8 +259,7 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 ## Next core Pathways
 
 Broader coverage remains the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
-- **PvE Combat**
-- PvP
+- **PvP**
 - Surface Operations
 - Colonization
 - Squadron Operations
@@ -206,6 +269,6 @@ Do not automatically build every item without inspecting current site content fi
 
 ## Validation direction
 
-The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology additionally has a small focused regression script that checks its five-route catalog, beginner flow, Assistant recognition, shared-provider registration, UI mount, and generic-card suppression. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology and PvE Combat additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
