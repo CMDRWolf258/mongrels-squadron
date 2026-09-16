@@ -75,6 +75,7 @@ Current behavior:
 - Desktop uses compact top-level groups with click-open mega panels.
 - Mobile/tablet uses the same semantic groups as stacked accordions inside the menu drawer.
 - Opening one navigation group closes sibling groups; outside-click and Escape dismiss open groups.
+- Compact/mobile drawer resets its own scroll position when opened; expanding a group brings that group heading back into view so long menus do not appear clipped above the viewport.
 - Existing static legacy links remain useful as no-JavaScript fallback markup on older pages.
 - Home exposes Start Here and Activities cards as natural entry points.
 - `/start/` and `/activities/` remain the dedicated information-architecture hubs.
@@ -118,7 +119,7 @@ Current families:
 
 The hub should expose both live material and clearly marked planned gaps without pretending unfinished content exists.
 
-### My Pathway — live foundation
+### My Pathway — Pathway v2 / AX live model
 
 **My Pathway** is a personalized lens over the same canonical site content, not a duplicate knowledge base.
 
@@ -127,44 +128,61 @@ Primary files:
 - `js/pathway.js`
 - `css/pathway.css`
 - `functions/api/pathway/preferences.js`
+- `functions/api/pathway/assignments.js`
+- `lib/pathway-ax.js`
 
-API:
+APIs:
 - `/api/pathway/preferences`
+- `/api/pathway/assignments`
 
 Storage:
 - `PROJECTS`
-- per-user prefix: `pathway-preferences-v1:`
+- per-user preferences prefix: `pathway-preferences-v1:`
+- per-user persistent assignment progress prefix: `pathway-progress-v1:`
 
 Privacy/authority:
 - Member / Officer / Site Admin only.
-- Each member may read/write only their own pathway preferences.
+- Each member may read/write only their own pathway preferences/progress.
 - Preferences are intentionally separate from the roster/profile record even though both are linked by Discord user ID. Public/member-directory identity and private development confidence/goals are different concerns.
 
 Current pathway inputs:
 - activities/interests the Commander enjoys;
 - areas they want to improve;
-- experience per selected activity: `new`, `some`, `comfortable`, `experienced`;
+- experience per selected activity stored as `new`, `some`, `comfortable`, `experienced`;
+- visible experience-band labels are **Beginner**, **Developing**, **Experienced**, **Veteran / Mentor**;
 - preferred play style: solo, group, or either;
 - optional current personal goal.
 
 Current behavior:
-- deterministic recommendation preview generated from those selections;
+- deterministic recommendation preview generated from selections;
 - “want to improve” receives priority emphasis;
 - related canonical site content is linked rather than duplicated;
 - no content is locked;
-- members can change preferences whenever interests or confidence change.
+- members can change preferences whenever interests or confidence change;
+- full pathways can store per-task **Complete**, **Already Know / Have This**, **Skip for Now**, and reopen state;
+- assignment types are **Learn**, **Build**, **Demonstrate**, **Challenge**, **Wing / Team**, and **Teach / Mentor**;
+- experience changes the nature of work, not merely difficulty: beginners acquire capability, developing pilots practice, experienced pilots demonstrate breadth/mastery, veterans receive advanced challenges plus leadership/teaching work.
 
-The current recommendation layer is **foundation/v1**, not the finished milestone engine. It does not yet store per-task Complete / Already Know / Skip state or automatically merge live squad opportunities.
-
-Planned pathway rules:
+Pathway philosophy:
 - deterministic structured progression, not opaque AI-generated progression;
-- recommend useful next goals based on interest, experience, prerequisites, and current squad opportunities;
-- allow **Complete**, **I already know this**, **Skip / not now** behavior;
+- assignments should usually state **what to accomplish**, not spell out every prerequisite or click-by-click step;
+- hidden research is intentional learning: e.g. being told to fit/acquire a module may require the Commander to learn where it comes from and how it works;
+- Ask the Mongrels is the safety net when a Commander gets stuck, but should not secretly own progression state;
 - never lock the rest of the site or force experienced Commanders through beginner tasks;
-- mix personal development goals with relevant live squad opportunities where useful;
-- Ask the Mongrels may explain pathway recommendations, but should not secretly own the progression state.
+- **Already Know / Have This** exists specifically so qualified pilots can bypass material they already mastered;
+- veteran progression should include mastery, wing responsibility, leadership, diagnosis, and teaching — not just accumulating more modules or kills;
+- future pathways should mix personal development goals with relevant live squad opportunities when useful.
 
-**AX is the first planned complete pathway model** because it naturally spans preparation, modules, Engineering, training, first combat, Interceptor fundamentals, and advanced play.
+AX is the first complete Pathway model. Current AX route families include:
+- **Scout School — Vulture** — beginner Scout entry route;
+- **Interceptor Academy — Chieftain** — beginner/developing engineering, Guardian, flight, and first-Cyclops route;
+- **Interceptor Hunter — Basilisk** — repeatable Cyclops competence, Basilisk knowledge, swarm technique, Basilisk kill, wing combat;
+- **Guardian Systems — AX Specialist** — independent Guardian fieldwork, alternate Guardian weapon/build knowledge, anti-Guardian planning, adaptive combat;
+- **Hellhound Development — Hunt, Lead, Teach** — veteran challenges including Medusa, wing AXCZ work, wing leadership, helping a Mongrel through a first Interceptor, build review, Hydra wing contribution, and teach-back. Completing this route does **not** automatically grant a squad rank/role.
+
+Current AX route selection is experience-appropriate; veteran selections no longer route members through the beginner Scout curriculum by default. Existing route/task IDs were preserved where possible so stored progress survives Pathway v2.
+
+**Next full pathway candidate: BGS.** The intent is to prove the same engine works for a strategic/squad-operations activity after AX proves the multi-experience model in combat.
 
 ---
 
@@ -213,7 +231,7 @@ Important environment values include:
 - `RECRUITMENT_CHANNEL_ID`
 
 Important KV bindings:
-- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences, and other structured project data.
+- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences/progress, and other structured project data.
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy and related configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
@@ -503,7 +521,7 @@ Principles:
 - use knowledge gaps to improve content instead of inventing answers;
 - prefer modular additions over one giant prompt/knowledge file.
 
-For My Pathway, the assistant may explain recommendations or help a Commander understand a goal, but deterministic structured pathway data should remain authoritative for progression state.
+For My Pathway, the assistant may explain recommendations or help a Commander understand a goal, but deterministic structured pathway data should remain authoritative for progression state. Pathway assignments intentionally leave some acquisition/prerequisite research to the Commander, so the Assistant serves as a help layer when a member gets stuck rather than replacing the learning process.
 
 ---
 
@@ -563,7 +581,7 @@ Prefer normal repository image files, efficient formats, GitHub/file workflows, 
 - Moderated Gallery and Ship Build submission/approval workflows remain deferred.
 - Site-wide grouped navigation has been implemented through `js/site.js` but still needs post-deploy browser validation across representative desktop/mobile pages.
 - Some early hub markup still contains its original prototype navigation/helper; `js/site.js` now owns the canonical site-wide navigation and the old helper can be cleaned up after validation.
-- My Pathway currently stores private preferences and produces deterministic recommendation previews; persistent milestone completion/skip state and live-opportunity merging are not built yet.
+- My Pathway now has persistent AX task state and multi-experience AX routes. Live squad-opportunity merging is not built yet, and non-AX activities still use recommendation previews until their full route libraries are added.
 
 ---
 
@@ -580,6 +598,8 @@ Confirmed live before the latest hardening/navigation passes:
 
 Wolf approved the **direction** of the Start Here / Activities / grouped-navigation prototype and asked to continue. This is not the same as a full live cross-device validation of the site-wide rollout.
 
+The original two AX beginner routes were tested by Wolf and reported to work well before the Pathway v2 expansion.
+
 **Implemented but still awaiting live end-to-end validation after deployment:**
 - automatic Member-role provisioning on approval;
 - acceptance DM production path;
@@ -590,8 +610,9 @@ Wolf approved the **direction** of the Start Here / Activities / grouped-navigat
 - new-member onboarding checklist;
 - Start Here hub;
 - Activities hub;
-- site-wide grouped desktop/mobile navigation through `js/site.js`;
+- site-wide grouped desktop/mobile navigation through `js/site.js` including latest drawer scroll/spacing QoL fixes;
 - authenticated member dropdown with My Pathway / Member Portal / My Profile;
-- My Pathway private preferences API and recommendation UI.
+- Pathway v2 experience-band labels and assignment-type UI;
+- expanded AX routes for Basilisk, Guardian specialization, and Hellhound/veteran development.
 
 Do not label these latest items “validated” until Wolf tests them or a real applicant/member completes the relevant flow.
