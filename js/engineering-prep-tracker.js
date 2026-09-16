@@ -40,6 +40,18 @@
     return `<div class="engineering-prep-status" data-prep-status data-state="${esc(flash.state || 'success')}">${esc(flash.message || '')}</div>`;
   }
 
+  function targetMarkup(counter, current) {
+    const target = Number(counter.target);
+    if (!Number.isFinite(target) || target <= 0) return '';
+    const percent = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+    const complete = current >= target;
+    return `<div class="engineering-prep-target${complete ? ' is-complete' : ''}">
+      <div><span>${esc(counter.targetLabel || 'Tracked prerequisite')}</span><strong>${current.toLocaleString()} / ${target.toLocaleString()} ${esc(counter.unit || '')}</strong></div>
+      <div class="engineering-prep-track"><i style="width:${percent}%"></i></div>
+      <small>${complete ? 'Tracked milestone reached' : `${percent}% tracked`}</small>
+    </div>`;
+  }
+
   function cardMarkup(counter) {
     const quick = Array.isArray(counter.quickAdd) ? counter.quickAdd : [];
     const current = Number.isFinite(Number(counter.current)) ? Number(counter.current) : 0;
@@ -48,6 +60,7 @@
         <div><h4>${esc(counter.label)}</h4><p>${esc(counter.description || '')}</p></div>
         <div class="engineering-prep-total">${current.toLocaleString()}<small>${esc(counter.unit || 'tracked')}</small></div>
       </div>
+      ${targetMarkup(counter, current)}
       ${quick.length ? `<div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${esc(counter.unit || 'items')}">+${Number(amount)}</button>`).join('')}</div>` : ''}
       <div class="engineering-prep-entry">
         <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="How many did you actually do?" aria-label="Actual additional ${esc(counter.unit || 'items')}" data-prep-actual>
