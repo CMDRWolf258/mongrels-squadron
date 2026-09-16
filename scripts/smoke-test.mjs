@@ -7,6 +7,7 @@ import { MINING_ROUTES } from '../lib/pathway-mining.js';
 import { TRADE_ROUTES } from '../lib/pathway-trade.js';
 import { CARRIER_LOGISTICS_ROUTES } from '../lib/pathway-carrier-logistics.js';
 import { ENGINEERING_ROUTES } from '../lib/pathway-engineering.js';
+import { EXPLORATION_ROUTES } from '../lib/pathway-exploration.js';
 import {
   createEmptyEngineeringCampaignState,
   startEngineeringCampaign,
@@ -57,6 +58,7 @@ const providers = [
   ['Trade', TRADE_ROUTES],
   ['Carrier Logistics', CARRIER_LOGISTICS_ROUTES],
   ['Engineering', ENGINEERING_ROUTES],
+  ['Exploration', EXPLORATION_ROUTES],
 ];
 
 function checkRouteCatalog(label, routes) {
@@ -263,9 +265,6 @@ for (const nodeId of ['power-thermal.priority-test','power-thermal.test.g1','pow
 }
 console.log('✓ Improve Power & Heat reuses Engineer access and preserves no-engineering/G1/G2/experimental/G3 stopping points');
 
-// Weapon Package is deliberately family-aware rather than pretending one saved
-// Engineer fact proves access for every hardpoint type. It also supports several
-// legitimate exits: layout-only, test-slice G2, experimental, full G2 rollout, G3.
 let weaponState = createEmptyEngineeringCampaignState('weapon-smoke-user');
 weaponState = startEngineeringCampaign(weaponState, {
   goalId:'weapons',
@@ -304,6 +303,7 @@ assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true,
 assert.equal(assistantPathwayIntent('What is my power distributor campaign step?'), true, 'assistant missed Power Distributor campaign intent');
 assert.equal(assistantPathwayIntent('What is my power and heat campaign step?'), true, 'assistant missed Power and Heat campaign intent');
 assert.equal(assistantPathwayIntent('What is my weapon package campaign step?'), true, 'assistant missed Weapon Package campaign intent');
+assert.equal(assistantPathwayIntent('What is my exploration assignment?'), true, 'assistant missed Exploration pathway intent');
 assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
 assert.equal(assistantPathwayIntent('Does my current trade task help engineering?'), true, 'assistant missed cross-path Engineering prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
@@ -385,6 +385,24 @@ const weaponAssistant = await buildAssistantPathwayContext(
 assert.equal(weaponAssistant?.engineeringCampaign?.goal, 'Improve Weapon Package', 'assistant missed the Weapon Package campaign goal');
 assert.ok(weaponAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Weapon Package context has no next step');
 
+const explorationKvRecords = new Map([
+  ['pathway-preferences-v1:exploration-smoke-user', {
+    interests:['exploration'],
+    improve:['exploration'],
+    experience:{ exploration:'new' },
+    playStyle:'either',
+    currentGoal:'Learn to explore independently and bring the data home.',
+  }],
+]);
+const explorationAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return explorationKvRecords.get(key) ?? null; } } },
+  { sub:'exploration-smoke-user', access:'member', displayName:'Exploration Smoke Commander' },
+  'What is my exploration assignment?',
+);
+assert.equal(explorationAssistant?.assignments?.[0]?.activity, 'exploration', 'assistant missed the Exploration full pathway');
+assert.equal(explorationAssistant.assignments[0].route?.id, 'exploration-foundations', 'assistant did not select the beginner Exploration Foundations route');
+assert.equal(explorationAssistant.assignments[0].currentTask?.id, 'exploration-foundations-ship', 'assistant returned the wrong first Exploration task');
+
 const prepKvRecords = new Map([
   ['pathway-preferences-v1:prep-smoke-user', {
     interests:['trade'],
@@ -430,7 +448,7 @@ const cgAssistant = await buildAssistantPathwayContext(
 );
 assert.ok(cgAssistant?.specialties?.communityGoalHaulerPrep, 'assistant missed Community Goal Hauler Prep specialty context');
 assert.equal(cgAssistant.specialties.communityGoalHaulerPrep.currentTask?.id, 'cg-hauler.survivability-pass', 'assistant returned the wrong CG Hauler Prep current task');
-console.log('✓ Ask the Mongrels can read Pathway, campaign, specialty, and cross-path prep context');
+console.log('✓ Ask the Mongrels can read Pathway, campaign, specialty, cross-path prep, and Exploration context');
 
 const apiModules = [
   '../functions/api/pathway/preferences.js',
@@ -466,6 +484,8 @@ for (const path of [
   'member/index.html',
   'operations/index.html',
   'carriers/index.html',
+  'lib/pathway-exploration.js',
+  'js/pathway-exploration.js',
   'lib/engineering-campaign-jump-range.js',
   'lib/engineering-campaign-mobility.js',
   'lib/engineering-campaign-distributor.js',
@@ -484,6 +504,8 @@ for (const path of [
   assert.ok(existsSync(path), `critical site file is missing: ${path}`);
 }
 const pathwayHtml = readFileSync('pathway/index.html', 'utf8');
+assert.match(pathwayHtml, /data-exploration-pathway/, 'My Pathway is missing the Exploration full-route mount');
+assert.match(pathwayHtml, /pathway-exploration\.js/, 'My Pathway is not loading the Exploration pathway script');
 assert.match(pathwayHtml, /data-engineering-campaign-planner/, 'My Pathway is missing the Engineering Campaign Planner mount');
 assert.match(pathwayHtml, /engineering-campaign-planner\.js/, 'My Pathway is not loading the Campaign Planner script');
 assert.match(pathwayHtml, /engineering-prep-tracker\.js/, 'My Pathway is not loading the Engineering Prep Tracker script');
@@ -497,10 +519,12 @@ assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improv
 assert.match(plannerSource, /distributor/, 'Campaign Planner is not exposing Improve Power Distributor');
 assert.match(plannerSource, /power-thermal/, 'Campaign Planner is not exposing Improve Power & Heat');
 assert.match(plannerSource, /weapons/, 'Campaign Planner is not exposing Improve Weapon Package');
+const fullRoutesSource = readFileSync('js/pathway-full-routes.js', 'utf8');
+assert.match(fullRoutesSource, /Exploration/, 'Full-route collapse handling is not aware of Exploration');
 const tradeSource = readFileSync('js/pathway-trade.js', 'utf8');
 const miningSource = readFileSync('js/pathway-mining.js', 'utf8');
 assert.match(tradeSource, /MongrelEngineeringPrep/, 'Trade Pathway is not rendering cross-path Engineering prep');
 assert.match(miningSource, /MongrelEngineeringPrep/, 'Mining Pathway is not rendering cross-path Engineering prep');
-console.log('✓ critical pages, Engineering assets, CG Hauler specialty, and cross-path prep are wired');
+console.log('✓ critical pages, Exploration, Engineering assets, CG Hauler specialty, and cross-path prep are wired');
 
 console.log('\nAll Mongrels site smoke checks passed.');
