@@ -48,8 +48,15 @@
   letter-spacing:.055em;
   text-transform:uppercase;
 }
+.pathway-activity-summary-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
 .pathway-activity-body{padding:12px}
 .pathway-activity-body>.ax-pathway-loading{margin:0}
+.pathway-generic-section.is-priority{border-color:rgba(34,211,238,.28)}
+.pathway-generic-body{padding:15px 16px 16px}
+.pathway-generic-body>p{margin:0 0 13px;color:#afbdc3;font-size:.78rem;line-height:1.58}
+.pathway-generic-body>.pathway-next-label{display:block;margin-bottom:4px}
+.pathway-generic-body>strong{display:block;color:#e7f4f6;font-size:.78rem;line-height:1.5}
+.pathway-generic-body>.btn{margin-top:14px;min-height:38px;padding:0 13px;font-size:.66rem}
 .pathway-activity-section.engineering-pathway-group{
   margin:0 0 12px;
   padding:0;
@@ -63,7 +70,10 @@
 .engineering-pathway-group .pathway-activity-body>[data-engineering-content]{margin:0}
 .engineering-pathway-group .pathway-activity-body>[data-engineering-prep-tracker]{margin-top:10px}
 @media(max-width:620px){
-  .pathway-activity-section>summary{min-height:50px;padding:12px 13px}
+  .pathway-activity-section>summary{min-height:50px;padding:12px 13px;gap:10px}
   .pathway-activity-body{padding:8px}
   .pathway-activity-title strong{font-size:.82rem}
+  .pathway-activity-summary-badges{gap:4px}
+  .pathway-activity-summary-badges .pathway-badge{font-size:.48rem;padding:3px 6px}
+  .pathway-generic-body{padding:13px}
 }
