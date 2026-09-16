@@ -4,11 +4,11 @@ _Last updated: 2026-09-16_
 
 ## Read this first
 
-**AI / developer handoff:** Read this file, then inspect the current repository before changing anything. The repository is the source of truth. If this document, memory, an old chat, screenshots, or release notes conflict with current code, **current code wins**.
+**AI / developer handoff:** read this file, then inspect the current repository before changing anything. The repository is the source of truth. If this document, memory, an old chat, screenshots, or release notes conflict with current code, **current code wins**.
 
 Never reuse remembered file SHAs. Fetch the current target file immediately before modifying it and use the current SHA.
 
-This is an architecture/handoff guide, not a changelog. Update it after meaningful workflow, permission, storage, integration, navigation, Pathway, or project-direction changes.
+This is an architecture/handoff guide, not a changelog. Update it after meaningful workflow, permission, storage, integration, navigation, Pathway, campaign, or project-direction changes.
 
 ---
 
@@ -63,21 +63,23 @@ Current checks include:
 - Improve Shields honors later/persistent Lei/Dweller access instead of forcing historical counters;
 - Improve Jump Range reuses First Engineering Win Scout/Felicity/G2 progress;
 - Improve Speed & Mobility reuses existing Felicity access/reputation;
-- Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress and preserves G2, experimental, and G3 stopping points;
-- **Improve Power & Heat reuses existing Felicity/higher-grade Power Plant access and preserves no-engineering, G1, G2, experimental, and G3 stopping points;**
+- Improve Power Distributor reuses The Dweller reputation proved by Improve Shields / Lei referral progress;
+- Improve Power & Heat reuses existing Felicity/higher-grade Power Plant access and preserves its no-engineering/G1/G2/experimental/G3 stopping points;
+- **Improve Weapon Package preserves layout-only/G2/experimental/full-package/G3 stopping points and deliberately refuses to auto-clear weapon Engineer access from a generic saved Engineer fact;**
 - Community Goal Hauler Prep keeps 14 unique steps and the survive-and-deliver doctrine;
 - Ask the Mongrels can read query-selected Pathway/campaign/specialty/cross-path-prep context;
 - critical Cloudflare Function modules import cleanly and retain `headers()` / `reply()` helpers;
 - critical pages/assets are present and wired.
 
 Notable successful runs:
-- #5 — fixed overly literal Assistant Pathway intent handling;
+- #5 — Assistant Pathway intent wording;
 - #13 — Jump Range cross-campaign reuse;
 - #20 — Mobility/Felicity reuse;
 - #28 — Community Goal Hauler Prep;
 - #40 — cross-path Trade/Mining Engineering Prep;
-- #47 — Improve Power Distributor / The Dweller reuse;
-- **#54 — Improve Power & Heat / Felicity and higher-grade Power Plant access reuse.**
+- #47 — Power Distributor / The Dweller reuse;
+- #54 — Power & Heat / Felicity and higher-grade Power Plant access reuse;
+- **#61 — Weapon Package package-first flow, family-specific Engineer guardrail, Assistant context, and page wiring.**
 
 The smoke suite is a regression safety net, **not** a browser or production test.
 
@@ -178,7 +180,7 @@ Carrier-loading navigation convention:
 
 ### Mission Control Assistant filtering
 
-Mission Control system data is query-filtered before being sent to the Assistant. An empty filtered subset does **not** mean Mission Control has no systems. The selector returns metadata such as `returnedCount`, `totalSystemRows`, `activePresenceCount`, `truncated`, and an explanatory note.
+Mission Control system data is query-filtered before being sent to the Assistant. An empty filtered subset does **not** mean Mission Control has no systems. Preserve authoritative totals and the selector metadata.
 
 Faction-presence wording such as “what systems our faction is in,” “where are we present,” “territory,” and “footprint” should return an active-presence subset while preserving the authoritative total.
 
@@ -193,7 +195,8 @@ Recognized concepts include:
 - Improve Jump Range;
 - Improve Speed & Mobility / Thrusters;
 - Improve Power Distributor / distributor / capacitor campaign wording;
-- **Improve Power & Heat / Power Plant / thermal campaign wording;**
+- Improve Power & Heat / Power Plant / thermal campaign wording;
+- **Improve Weapon Package / hardpoint package / relevant weapon-family wording;**
 - Engineering Prep / cross-path Engineering questions;
 - CG Hauler / hostile-hauling/interdiction/escape-drill wording.
 
@@ -307,7 +310,7 @@ Avoid hiding hours of prerequisite work inside one early assignment.
 
 ## Full Pathway providers
 
-`functions/api/pathway/assignments.js` hosts the shared provider/progress behavior.
+`functions/api/pathway/assignments.js` hosts shared provider/progress behavior.
 
 Current full providers:
 1. Anti-Xeno — `ax-v2`
@@ -386,7 +389,8 @@ Framework files:
 - `lib/engineering-campaign-jump-range.js`
 - `lib/engineering-campaign-mobility.js`
 - `lib/engineering-campaign-distributor.js`
-- **`lib/engineering-campaign-power-thermal.js`**
+- `lib/engineering-campaign-power-thermal.js`
+- **`lib/engineering-campaign-weapons.js`**
 - `functions/api/pathway/engineering-campaign.js`
 - `js/engineering-campaign-planner.js`
 - `css/engineering-campaign-planner.css`
@@ -395,7 +399,7 @@ Storage:
 - `PROJECTS`
 - `engineering-campaign-v1:<ownerId>`
 
-Pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid. G1/G2/G3 can be legitimate stopping points when the measured problem is solved.
+Pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid. No-engineering/G1/G2/G3 can all be legitimate stopping points when the measured problem is solved.
 
 Model:
 1. Goal
@@ -408,12 +412,9 @@ Shared facts retain provenance so future trusted sync/import can write the same 
 
 ### Dependency evaluation rule
 
-Fact-completed nodes must unlock downstream work exactly like manually completed nodes. Later/permanent access facts may also prove earlier prerequisites were already satisfied. Never force an experienced Commander to reconstruct or falsify historical counters when a later Engineer-access milestone proves the chain was completed.
+Fact-completed nodes must unlock downstream work exactly like manually completed nodes. Later/permanent access facts may prove earlier prerequisites were already satisfied. Never force an experienced Commander to reconstruct historical counters when a later Engineer-access milestone proves the chain was completed.
 
-Generic setup deliberately stops at:
-**assess current state → choose useful stopping point → map dependencies**.
-
-Material planning belongs inside the goal-specific graph after the module/blueprint choice is known.
+Generic setup deliberately stops at **assess current state → choose useful stopping point → map dependencies**. Material planning belongs inside the goal-specific graph after the module/blueprint choice is known.
 
 ### Improve Shields — first campaign
 
@@ -424,15 +425,10 @@ Purpose: useful **G2/G3 Shield Generator** phase through Lei Cheung, not an auto
 Key behavior:
 - choose blueprint around ship role;
 - plan/gather only G1→G2;
-- use shared 5-black-market Dweller counter unless access already proves it;
-- unlock/work The Dweller only until Lei referral;
-- use shared 50-market Lei counter;
-- unlock Lei with 200 Gold;
+- use shared Dweller/Lei prerequisite counters unless later access already proves them;
 - engineer G2, fly/test, optionally G3;
-- G2 is an explicit Take-the-Win point;
-- later Lei access supersedes old Dweller/market gates.
-
-Shared facts include The Dweller unlocked, Lei referral, Lei unlocked, and Lei G2/G3 access.
+- later Lei access supersedes old Dweller/market gates;
+- G2 is an explicit Take-the-Win point.
 
 ### Improve Jump Range — second campaign
 
@@ -441,13 +437,10 @@ Shared facts include The Dweller unlocked, Lei referral, Lei unlocked, and Lei G
 Purpose: useful **G2 Increased Range FSD** first, with the experimental and G3 as separate optional jobs.
 
 Key behavior:
-- record a travel baseline;
-- plan/gather only G1→G2;
 - reuse First Engineering Win Scout/Felicity/G2 facts;
-- only acquire Meta-Alloy/Deciat prep if Felicity is still locked;
+- only repeat Meta-Alloy/Deciat work if Felicity is genuinely still locked;
 - engineer G2 and replot/test a familiar trip;
-- optional experimental plan/gather/apply/test;
-- optional G3 if a meaningful travel problem remains;
+- optional experimental and optional G3;
 - G2, G2+experimental, and G3 are Take-the-Win points;
 - G4/G5 deliberately deferred.
 
@@ -463,87 +456,74 @@ Key behavior:
 - record practical movement baseline;
 - choose Dirty/Clean/Reinforced around the ship's problem;
 - reuse Felicity access/reputation from earlier campaigns;
-- plan/gather only G1→G2;
-- engineer and test G2;
-- compare experimentals separately, especially Drag Drives vs Drive Distributors using actual mass/role;
-- optional G3 only when the blueprint/Engineer path supports it and the ship still needs more;
+- compare experimentals separately using actual mass/role;
 - G2, G2+experimental, and G3 are Take-the-Win points;
 - G4/G5 deliberately deferred.
 
-The legacy FSD-named Felicity G2/G3 facts are currently treated as Engineer-reputation proof, not module completion.
+Legacy FSD-named Felicity G2/G3 facts are Engineer-reputation proof, not module completion.
 
 ### Improve Power Distributor — fourth campaign
 
 `lib/engineering-campaign-distributor.js`
 
-Purpose: diagnose the ship's actual **SYS / ENG / WEP** bottleneck, build a useful G2 Power Distributor through The Dweller, test it in the real workload, then treat the experimental and G3 as optional refinements.
+Purpose: diagnose **SYS / ENG / WEP** behavior, build a useful G2 Power Distributor through The Dweller, test it in the real workload, then treat the experimental and G3 as optional refinements.
 
-Current chain:
-1. generic campaign assessment/target/dependency mapping;
-2. record the current distributor and identify the felt bottleneck — boost cadence, WEP sustain, SYS recovery, reserve size, or broad recharge;
-3. choose the blueprint around that bottleneck rather than assuming one universal recipe;
-4. plan only G1→G2 materials;
-5. gather only that small plan;
-6. use 5 distinct black markets only if The Dweller is still locked;
-7. unlock The Dweller with 500,000 Cr only if needed;
-8. open only enough The Dweller reputation for G2;
-9. refresh the exact G2 material shortfall;
-10. engineer the distributor through G2;
-11. **stress-test G2 in the ship's actual workload**;
-12. optionally choose the experimental as a separate decision;
-13. gather/apply only that experimental and re-test;
-14. optionally open G3 only if the ship still has a real capacitor problem;
-15. plan/gather/apply G3;
-16. test G3 and end the campaign phase.
-
-Distributor-specific rules:
-- The Dweller is the primary path. Current game references show he can engineer Power Distributors through G5, but this campaign intentionally stops at G2/G3 unless later work is justified.
-- Charge Enhanced is the broad recharge comparison, not a mandatory universal answer.
-- Engine Focused, Weapon Focused, System Focused, High Charge Capacity, and Shielded remain valid role-specific choices; Balanced/Support Focused are Merc-module special cases.
-- Super Conduits vs Cluster Capacitors is a recharge-vs-reserve tradeoff; other experimentals may solve integrity, power-draw, or mass problems.
-- **Improve Shields cross-campaign reuse is important:** a saved Lei Cheung referral/unlock proves The Dweller had already reached the G3–G4 reputation band, so the Distributor campaign may automatically satisfy its black-market, Dweller unlock, G2-access, and G3-access gates.
-- New persistent facts: `engineer.dweller.power-distributor-g2-ready` and `engineer.dweller.power-distributor-g3-ready`.
-- G2, G2+experimental, and G3 are Take-the-Win points.
-- G4/G5 are deliberately deferred so the member diagnoses the whole build before assuming more distributor grade is the answer.
+Rules:
+- Charge Enhanced is a broad comparison, not a universal answer;
+- role-specific Focused/High Capacity/Shielded choices remain valid;
+- Lei referral/unlock proves enough Dweller reputation to satisfy older Distributor access gates;
+- G2, G2+experimental, and G3 are Take-the-Win points;
+- G4/G5 deliberately deferred.
 
 ### Improve Power & Heat — fifth campaign
 
 `lib/engineering-campaign-power-thermal.js`
 
-Purpose: diagnose the actual **power-budget or thermal problem** before changing the Power Plant. This campaign may legitimately end with module priorities alone, then uses Felicity for a small G1 test when helpful before escalating to a higher-grade Power Plant Engineer.
+Purpose: diagnose the actual **power-budget or thermal problem** before changing the Power Plant.
 
-Current chain:
-1. generic campaign assessment/target/dependency mapping;
-2. record current Power Plant, deployed/retracted power use, and a practical thermal baseline in the workload that causes trouble;
-3. audit module priorities and disable/deprioritize nonessential modules before adding generation;
-4. **re-test priorities first** — this is a valid no-engineering Take-the-Win point;
-5. choose Armoured, Low Emissions, or Overcharged around the remaining measured problem rather than defaulting to maximum power;
-6. plan/gather only one G1 job;
-7. reuse First Engineering Win / Jump Range Felicity access where already known; only repeat Scout/Meta-Alloy/Deciat unlock work if Felicity is genuinely still locked;
-8. apply one complete G1 Power Plant upgrade and re-test;
-9. G1 is a valid Take-the-Win point;
-10. if the problem remains, confirm any available G2+ Power Plant Engineer rather than forcing one universal unlock route;
-11. plan/gather/apply G2 and re-test;
-12. optionally choose an experimental as its own decision, gather/apply it, and re-test;
-13. optionally confirm G3 capability, plan/gather/apply G3, and perform a final test;
-14. end the campaign phase at G3 instead of silently extending to G4/G5.
+Rules:
+- module priorities are tested first and can be a complete no-engineering win;
+- Armoured, Low Emissions, and Overcharged are chosen from the measured need;
+- existing Felicity access enables a small G1 test;
+- higher-grade Power Plant access is capability-based rather than forcing one Marco/Hera unlock chain;
+- valid Take-the-Win points: **priority-only, G1, G2, G2+experimental, G3**;
+- G4/G5 deliberately deferred.
 
-Power/thermal-specific rules:
-- Module priorities are part of the build. Do not engineer extra Power Plant output merely to keep every convenience module powered during the ship's most demanding state.
-- Armoured is the balanced integrity/power/thermal option; Low Emissions trades power and mass for better thermal handling; Overcharged adds the most generation but worsens integrity and thermal efficiency. Choose from the measured need.
-- Felicity can provide G1 Power Plant engineering, making existing Felicity access useful even when no higher-grade Power Plant Engineer is unlocked.
-- Higher-grade access is stored as capability facts `engineer.power-plant.g2-ready` and `engineer.power-plant.g3-ready`. The campaign can use Marco Qwent, Hera Tani, Etienne Dorn, or another valid current path; it intentionally does **not** bury one long Marco/Hera unlock chain inside this campaign.
-- If no G2+ Power Plant Engineer is available, unlocking one should be treated as an explicit Engineer Network project, not a disguised one-step prerequisite.
-- Experimentals are problem-specific: Thermal Spread improves heat efficiency, Monstered adds power at a mass cost, Double Braced adds integrity, and Stripped Down reduces mass.
-- Valid Take-the-Win points: **priority-only, G1, G2, G2+experimental, and G3**.
-- G4/G5 are deliberately deferred until a later measured need justifies them.
+### Improve Weapon Package — sixth campaign
+
+`lib/engineering-campaign-weapons.js`
+
+Purpose: treat the ship's **hardpoints as one weapon system**, not as independent modules to max one by one.
+
+Package flow:
+1. map every hardpoint, mount, current Engineering, fire group and engagement role;
+2. assign package jobs such as shield pressure, hull/module damage, utility, burst/sustain, range coverage, or ammunition economy;
+3. measure whole-package WEP drain, heat, deployed power, ammo, reload rhythm, range/falloff, projectile travel and convergence;
+4. audit fire groups/layout/mount/range before Engineering — this is a valid layout-only Take-the-Win point;
+5. choose one representative weapon family or 1–2 hardpoints as a **test slice**;
+6. choose its blueprint around the package role instead of defaulting to one universal damage blueprint;
+7. manually confirm a suitable G2 Engineer for that exact weapon family;
+8. plan/gather only the G1→G2 test materials;
+9. engineer the test slice to G2 and combat-test it inside the otherwise unchanged package;
+10. optionally choose experimentals by **package function**, gather/apply them, and re-test;
+11. decide what should actually roll out to the rest of the hardpoints — copying one successful test weapon everywhere is not assumed;
+12. build/test the complete intended G2 package;
+13. optionally confirm family-appropriate G3 access and refine only the weapons still limiting the package;
+14. run the final package test and end the phase at G3 rather than silently extending to G4/G5.
+
+Weapon-package guardrails:
+- **Engineer access is deliberately manual and weapon-family-specific.** A saved “weapon Engineer” fact would be unsafe because an Engineer who handles lasers may not handle multi-cannons, plasma accelerators, or another family at the required grade.
+- Current references show Tod McQuinn is a useful early path for multi-cannons/rail and some cannon/fragment work, The Dweller can cover early laser work, and Broo Tarquin takes lasers farther; other families use other Engineers. Always check current family/grade capability.
+- Higher theoretical DPS is not automatically an upgrade if it damages WEP sustain, heat, ammo endurance, range application, convergence, or the ship's ability to move/defend.
+- Valid Take-the-Win points: **layout-only, G2 test slice, G2+experimental test slice, full G2 package, selective G3 package**.
+- G4/G5 are deliberately deferred until a later measured package limitation justifies them.
 
 ### Campaign Planner UI
 
 My Pathway → Engineering hosts a collapsed **Campaign Planner** above the Prep Tracker.
 
 Inactive state:
-- compact selector for five audited campaigns: **Improve Shields**, **Improve Jump Range**, **Improve Speed & Mobility**, **Improve Power Distributor**, **Improve Power & Heat**;
+- compact selector for six audited campaigns: **Improve Shields**, **Improve Jump Range**, **Improve Speed & Mobility**, **Improve Power Distributor**, **Improve Power & Heat**, **Improve Weapon Package**;
 - asks for ship and specific problem/goal;
 - visible previous history capped at 4;
 - paused campaigns Resume;
@@ -554,7 +534,7 @@ Active state:
 - one next step at a time;
 - progress meter;
 - trusted resource links;
-- permanent-access shortcut buttons where relevant;
+- permanent-access shortcut buttons where safe/relevant;
 - counter steps open the Prep Tracker;
 - compact step history with correction actions;
 - Pause Campaign;
@@ -563,6 +543,8 @@ Active state:
 Plain-language explanatory label is **Why this is a separate step**.
 
 `js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through `mongrels:engineering-campaign-updated`.
+
+**Development direction:** the six-campaign Engineering expansion block is now intentionally paused. Do **not** continue adding Engineering campaigns by default. The next development block should return to missing full Pathways. A whole-ship / Ship Architect campaign remains a later candidate after broader Pathway coverage exists.
 
 ---
 
@@ -578,10 +560,7 @@ Visible milestones:
 - 5 distinct black markets for The Dweller preparation;
 - 500 tonnes mined for Selene Jean's meeting requirement; this does **not** imply Selene is fully unlocked.
 
-Prep Tracker UI supports:
-- quick adds;
-- exact actual progress;
-- Set / Correct Total.
+Prep Tracker UI supports quick adds, exact actual progress, and Set / Correct Total.
 
 Primary cross-path files:
 - `lib/pathway-engineering-prep.js`
@@ -601,7 +580,6 @@ Critical rules:
 - resetting/changing the activity route does not erase the shared Engineering fact;
 - duplicate markets are not counted twice;
 - Mining tonnage reflects ore actually mined; sold cargo may be used only as a conservative lower bound if exact mined tonnage was not tracked;
-- normal Trade tasks do not pretend to advance black-market progress unless the actual task genuinely used a distinct black market;
 - Ask the Mongrels may explain current-task overlap but remains read-only.
 
 ---
@@ -624,27 +602,9 @@ Core doctrine:
 
 This is nested inside **My Pathway → Trade & Hauling**, not a separate top-level provider.
 
-Status semantics mirror Pathway:
-- Complete/Already Know earn credit;
-- Skip does not;
-- untouched pending work comes before skipped work;
-- specialty progress is independent of the main Trade route.
+Status semantics mirror Pathway: Complete/Already Know earn credit; Skip does not; untouched pending work comes before skipped work; specialty progress is independent of the main Trade route.
 
-Current 14-step progression:
-1. use an existing cargo ship;
-2. record baseline cargo/defenses/boost/laden range/rebuy/utilities;
-3. define the logistics win condition;
-4. add survivability without deleting the cargo role;
-5. check power/heat/utilities/escape-critical priorities;
-6. practice pips and boost while laden;
-7. learn/pre-plan high wake vs low wake;
-8. practice interdiction response, including deliberate submission when appropriate for the shorter cooldown;
-9. controlled interdiction/escape drill with another Mongrel;
-10. busy-system contact awareness;
-11. final approach/docking under pressure;
-12. escort/comms/rendezvous planning;
-13. logistics contingency drill;
-14. controlled hostile-delivery capstone.
+Current 14-step progression moves from using a real existing hauler and recording a baseline through survivability/power/heat, pips/boost, high-vs-low-wake planning, interdiction response, controlled squadmate escape practice, busy-system awareness, pressure docking, escort/comms, contingency planning, and a hostile-delivery capstone.
 
 Use Open/PvP survival skills to support the logistics mission; PvP victory is not the objective.
 
@@ -702,9 +662,9 @@ Accepted/Declined are terminal in the normal workflow. Discord Member role assig
 
 ---
 
-## Future pathways / specialties
+## Future Pathways / specialties and current roadmap
 
-Likely future core Pathways:
+Missing full Pathway coverage remains the next major development priority. Planned order can be adjusted after inspecting current content, but the working direction is:
 - Exploration
 - Exobiology
 - PvE Combat
@@ -712,13 +672,11 @@ Likely future core Pathways:
 - Surface Operations
 - Colonization
 - Squadron Operations
-- Powerplay when doctrine is mature enough
+- Powerplay only when doctrine is mature enough
 
-Do not automatically build all of these. Inspect current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
+Do not automatically build every item without inspecting current authoritative site content first. Specialty paths should normally live inside the most relevant full Pathway unless there is a strong information-architecture reason to promote them.
 
-Likely next Engineering campaign candidates after the current review batch:
-- Improve Weapon Package
-- whole-ship role build / Ship Architect campaign
+**Current roadmap decision:** after Improve Weapon Package, pause Engineering campaign expansion and return to full Pathway coverage. The whole-ship / Ship Architect Engineering campaign is intentionally deferred until the site is broader rather than deeper in Engineering alone.
 
 ---
 
@@ -732,13 +690,14 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win card and Undo behavior on phone;
 - Engineering Prep Tracker concept/styling;
 - initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
-- automated smoke suite through **run #54**, including all five Engineering campaigns, Community Goal Hauler Prep, and cross-path Trade/Mining Engineering Prep coverage.
+- automated smoke suite through **run #61**, covering all six Engineering campaigns, Community Goal Hauler Prep, cross-path Trade/Mining Engineering Prep, Assistant context, API imports, and page wiring.
 
 Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
 - Improve Jump Range;
 - Improve Speed & Mobility;
 - Improve Power Distributor;
-- **Improve Power & Heat**;
+- Improve Power & Heat;
+- **Improve Weapon Package**;
 - cross-path Engineering Prep on relevant Trade/Mining assignments;
 - Community Goal Hauler Prep full progression;
 - personalized Ask the Mongrels Pathway/campaign/specialty/cross-path context;
@@ -747,6 +706,7 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - full end-to-end Mobility in-game progression;
 - full end-to-end Power Distributor in-game progression;
 - full end-to-end Power & Heat in-game progression;
+- full end-to-end Weapon Package in-game progression;
 - fact-completed dependency propagation / later-access prerequisite supersession under real member state;
 - Campaign Planner ↔ Prep Tracker live synchronization under all campaign cases;
 - 1061–1280 compressed tablet/iPad navigation;
