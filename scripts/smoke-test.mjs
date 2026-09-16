@@ -18,6 +18,9 @@ import {
   buildShieldEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-shields.js';
 import {
+  buildJumpRangeEngineeringDependencyNodes,
+} from '../lib/engineering-campaign-jump-range.js';
+import {
   assistantPathwayIntent,
   buildAssistantPathwayContext,
 } from '../lib/assistant-pathway-context.js';
@@ -109,10 +112,41 @@ for (const nodeId of ['shields.dweller.black-markets', 'shields.dweller.unlock',
 }
 console.log('✓ Improve Shields honors existing Lei Cheung access');
 
+// Improve Jump Range must reuse permanent access already recorded by First
+// Engineering Win. This proves the second campaign actually benefits from prior
+// site progress instead of merely being another isolated checklist.
+let jumpState = createEmptyEngineeringCampaignState('jump-smoke-user');
+jumpState = startEngineeringCampaign(jumpState, {
+  goalId:'jump-range',
+  shipName:'Jump Smoke Ship',
+  targetNotes:'Reduce normal travel jumps.',
+}, '2026-09-16T12:10:00.000Z');
+jumpState = setEngineeringFact(jumpState, 'first-win.fsd.scout-ready', true, 'smoke', '2026-09-16T12:11:00.000Z');
+jumpState = setEngineeringFact(jumpState, 'first-win.fsd.engineer-access-ready', true, 'smoke', '2026-09-16T12:12:00.000Z');
+jumpState = setEngineeringFact(jumpState, 'first-win.fsd.g2-access-ready', true, 'smoke', '2026-09-16T12:13:00.000Z');
+const jumpCampaign = jumpState.campaigns[jumpState.activeCampaignId];
+const jumpNodes = buildJumpRangeEngineeringDependencyNodes({ campaign:jumpCampaign, facts:jumpState.facts });
+const jumpView = buildEngineeringCampaignView(jumpState, jumpNodes);
+for (const nodeId of [
+  'jump-range.felicity.scout',
+  'jump-range.felicity.meta-alloy',
+  'jump-range.felicity.deciat-safety',
+  'jump-range.felicity.unlock',
+  'jump-range.felicity.g2-access',
+]) {
+  const node = jumpView.nodes.find(item => item.id === nodeId);
+  assert.ok(node, `Improve Jump Range is missing expected node ${nodeId}`);
+  assert.equal(node.status, 'complete', `${nodeId} did not reuse First Engineering Win access`);
+}
+assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.test.g2' && node.meta?.readyToFinish), 'Improve Jump Range has no G2 stopping point');
+assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.experimental.test' && node.meta?.readyToFinish), 'Improve Jump Range has no experimental stopping point');
+console.log('✓ Improve Jump Range reuses First Engineering Win access and preserves stopping points');
+
 // The assistant should only receive personalized Pathway data when the member's
 // question actually refers to their assignment/progress. Exercise the selector
 // and a small in-memory PROJECTS binding so this bridge is covered by CI.
 assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
+assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
 const kvRecords = new Map([
   ['pathway-preferences-v1:smoke-user', {
@@ -177,6 +211,7 @@ for (const path of [
   'member/index.html',
   'operations/index.html',
   'carriers/index.html',
+  'lib/engineering-campaign-jump-range.js',
   'js/engineering-campaign-planner.js',
   'js/engineering-prep-tracker.js',
   'css/engineering-campaign-planner.css',
@@ -187,6 +222,8 @@ const pathwayHtml = readFileSync('pathway/index.html', 'utf8');
 assert.match(pathwayHtml, /data-engineering-campaign-planner/, 'My Pathway is missing the Engineering Campaign Planner mount');
 assert.match(pathwayHtml, /engineering-campaign-planner\.js/, 'My Pathway is not loading the Campaign Planner script');
 assert.match(pathwayHtml, /engineering-prep-tracker\.js/, 'My Pathway is not loading the Engineering Prep Tracker script');
+const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8');
+assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
 console.log('✓ critical pages and Engineering Pathway assets are wired');
 
 console.log('\nAll Mongrels site smoke checks passed.');
