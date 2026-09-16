@@ -2,6 +2,8 @@
   const root = document.querySelector('[data-bgs-pathway]');
   const loading = document.querySelector('[data-bgs-loading]');
   const content = document.querySelector('[data-bgs-content]');
+  const form = document.querySelector('[data-pathway-form]');
+  const previewRoot = document.querySelector('[data-pathway-preview]');
   if (!root || !content) return;
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -44,6 +46,13 @@
 
   function taskTypeLabel(task) {
     return taskTypeLabels[task?.type] || 'Assignment';
+  }
+
+  function suppressGenericBgsCard() {
+    if (root.hidden || !previewRoot) return;
+    previewRoot.querySelectorAll('.pathway-recommendation').forEach(card => {
+      if (card.querySelector('h3')?.textContent?.trim() === 'Background Simulation') card.remove();
+    });
   }
 
   function render() {
@@ -124,6 +133,7 @@
       runAction({ action:'set_task', taskId, status }, status === 'pending' ? 'Reopening assignment…' : 'Saving assignment progress…');
     }));
     if (loading) loading.hidden = true;
+    suppressGenericBgsCard();
   }
 
   async function runAction(body, workingText) {
@@ -166,6 +176,13 @@
     }
   }
 
+  if (previewRoot) {
+    new MutationObserver(suppressGenericBgsCard).observe(previewRoot, { childList:true, subtree:true });
+  }
+  form?.addEventListener('submit', () => {
+    window.setTimeout(load, 450);
+    window.setTimeout(load, 1100);
+  });
   window.addEventListener('mongrels:pathway-saved', load);
   load();
 })();
