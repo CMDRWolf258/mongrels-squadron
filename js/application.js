@@ -23,7 +23,7 @@
     submitted: 'Your website application has been sent to Mongrel leadership. Leadership will also verify your in-game Squadron application before approval.',
     under_review: 'Mongrel leadership is reviewing your application and confirming the matching in-game Squadron application.',
     accepted: 'Your website application has been accepted and your Discord Mongrel Member role has been granted. Activate Member Access below. To finish in-game membership, after leadership approves your Elite Squadron application, return to the Squadrons panel and choose Join Squadron / Confirm.',
-    declined: 'This application is closed. If leadership asked you to follow up, please contact them through Discord.',
+    declined: 'Leadership has completed its review and this application is closed. See the message from leadership below. If leadership later opens a reapplication, this page will return to an editable Draft.',
   }[status] || 'Your application has been saved.');
 
   const setVisible = target => {
@@ -98,15 +98,20 @@
     const display = Array.isArray(value) ? (value.length ? value.join(', ') : '—') : (value || '—');
     return `<div class="application-answer${wide ? ' wide' : ''}"><span>${esc(label)}</span><p>${esc(display)}</p></div>`;
   }
+
   function renderStatus(application) {
     const a = application?.answers || {};
     const status = application?.status || 'submitted';
     const acceptedActions = status === 'accepted'
       ? '<div class="actions" style="margin-top:18px"><a class="btn btn-primary" href="/api/auth/login?return=%2Fmember%2F">Activate Member Access</a><a class="btn btn-ghost" href="../member/">Member Portal</a></div>'
       : '';
-    statusCard.innerHTML = `<div class="application-status-head"><div><p class="eyebrow">Application Status</p><h2>${esc(a.commanderName || 'Mongrel Application')}</h2><p>${esc(statusCopy(status))}</p>${acceptedActions}</div><span class="application-status-badge ${esc(status)}">${esc(statusLabel(status))}</span></div>
+    const declineMessage = status === 'declined'
+      ? `<div class="application-expectations" style="margin-top:18px"><strong>Message from Leadership</strong><p>${esc(application.applicantMessage || 'Thank you for taking the time to apply. Your application was not accepted at this time. If leadership invited you to reapply later or you would like clarification, please contact us in Discord.')}</p><small>If leadership opens a reapplication later, your previous answers will be returned to an editable Draft so you can update and resubmit.</small></div>`
+      : '';
+
+    statusCard.innerHTML = `<div class="application-status-head"><div><p class="eyebrow">Application Status</p><h2>${esc(a.commanderName || 'Mongrel Application')}</h2><p>${esc(statusCopy(status))}</p>${acceptedActions}${declineMessage}</div><span class="application-status-badge ${esc(status)}">${esc(statusLabel(status))}</span></div>
       <div class="application-answer-grid">
-        ${answer('Discord', application.ownerName || '')}${answer('Submitted', dateLabel(application.submittedAt || application.updatedAt))}${status === 'accepted' ? answer('Accepted', dateLabel(application.acceptedAt || application.updatedAt)) : ''}
+        ${answer('Discord', application.ownerName || '')}${answer('Submitted', dateLabel(application.submittedAt || application.updatedAt))}${status === 'accepted' ? answer('Accepted', dateLabel(application.acceptedAt || application.updatedAt)) : ''}${status === 'declined' ? answer('Decision', dateLabel(application.declinedAt || application.updatedAt)) : ''}
         ${answer('In-game Squadron Application', a.inGameApplicationSubmitted ? 'Submitted to Regiment of Imperial Mongrels' : 'Not recorded')}
         ${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}
         ${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
@@ -217,7 +222,11 @@
       if (data.alreadyMember) { setVisible('member'); enableMemberPreview(); return; }
       if (data.mine && data.mine.status !== 'draft') { renderStatus(data.mine); return; }
       populate(data.mine?.answers || {});
-      showSaveStatus(data.mine ? `Draft last saved ${dateLabel(data.mine.updatedAt)}.` : 'Draft not yet saved.', data.mine ? 'success' : '');
+      if (data.mine?.reapplicationAllowedAt) {
+        showSaveStatus(`Leadership reopened your application on ${dateLabel(data.mine.reapplicationAllowedAt)}. Update any answers you want, submit a fresh in-game Squadron application, then resubmit this website application.`, 'success');
+      } else {
+        showSaveStatus(data.mine ? `Draft last saved ${dateLabel(data.mine.updatedAt)}.` : 'Draft not yet saved.', data.mine ? 'success' : '');
+      }
       setVisible('form');
     } catch (error) {
       console.error('Application load failed', error);
