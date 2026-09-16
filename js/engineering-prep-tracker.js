@@ -48,7 +48,8 @@
     return `<div class="engineering-prep-target${complete ? ' is-complete' : ''}">
       <div><span>${esc(counter.targetLabel || 'Tracked prerequisite')}</span><strong>${current.toLocaleString()} / ${target.toLocaleString()} ${esc(counter.unit || '')}</strong></div>
       <div class="engineering-prep-track"><i style="width:${percent}%"></i></div>
-      <small>${complete ? 'Tracked milestone reached' : `${percent}% tracked`}</small>
+      <small>${complete ? 'Prep milestone reached — verify the Engineer panel in-game.' : `${percent}% tracked`}</small>
+      ${counter.targetNote ? `<p class="engineering-prep-target-note">${esc(counter.targetNote)}</p>` : ''}
     </div>`;
   }
 
