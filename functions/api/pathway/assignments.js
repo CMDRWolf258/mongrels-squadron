@@ -11,7 +11,6 @@ export async function onRequestGet({ request, env }) {
   if (auth.response) return auth.response;
   const storageError = requireStorage(env, false);
   if (storageError) return storageError;
-
   const result = await buildState(env, auth.session);
   return reply({ ok:true, ...result });
 }
@@ -60,13 +59,16 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'another_route') {
-    const next = ensureRouteState(progress, currentRouteId);
+    let next = ensureRouteState(progress, currentRouteId);
     const index = Math.max(0, eligible.indexOf(currentRouteId));
     const nextRouteId = eligible[(index + 1) % eligible.length];
     next.selectedRoute = nextRouteId;
     next.routeGeneration = Number(next.routeGeneration || 0) + 1;
     next.updatedAt = new Date().toISOString();
-    ensureRouteState(next, nextRouteId);
+    next = ensureRouteState(next, nextRouteId);
+    next.selectedRoute = nextRouteId;
+    next.updatedAt = new Date().toISOString();
+    if (!next.routes[nextRouteId].startedAt) next.routes[nextRouteId].startedAt = next.updatedAt;
     await env.PROJECTS.put(key, JSON.stringify(next));
     return reply({ ok:true, routeChanged:true, ...(await buildState(env, auth.session, next)) });
   }
@@ -86,9 +88,7 @@ export async function onRequestPost({ request, env }) {
 async function buildState(env, session, suppliedProgress = null) {
   const prefs = await readJson(env.PROJECTS, `${PREFERENCES_PREFIX}${session.sub}`) || {};
   const selected = new Set([...(Array.isArray(prefs.interests) ? prefs.interests : []), ...(Array.isArray(prefs.improve) ? prefs.improve : [])]);
-  if (!selected.has(AX_ACTIVITY_ID)) {
-    return { activity:'ax', eligible:false, reason:'not_selected' };
-  }
+  if (!selected.has(AX_ACTIVITY_ID)) return { activity:'ax', eligible:false, reason:'not_selected' };
 
   const experience = normalizeExperience(prefs?.experience?.ax);
   const eligible = eligibleAxRoutes(experience);
@@ -96,6 +96,7 @@ async function buildState(env, session, suppliedProgress = null) {
   const progress = normalizeProgress(stored, session.sub);
   const selectedRoute = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(session.sub, experience, eligible);
   const route = getAxRoute(selectedRoute) || getAxRoute(eligible[0]);
+  if (!route) return { activity:'ax', eligible:false, reason:'no_route' };
   const routeState = progress.routes?.[route.id] || { taskStates:{} };
   const taskStates = routeState.taskStates || {};
   const tasks = route.tasks.map((task, index) => ({ ...task, index:index + 1, status:TASK_STATUSES.has(taskStates[task.id]) ? taskStates[task.id] : 'pending' }));
@@ -104,19 +105,8 @@ async function buildState(env, session, suppliedProgress = null) {
   const current = tasks.find(task => !doneStatuses.has(task.status)) || null;
 
   return {
-    activity:'ax',
-    eligible:true,
-    experience,
-    route:{
-      id:route.id,
-      title:route.title,
-      subtitle:route.subtitle,
-      audience:route.audience,
-      outcome:route.outcome,
-      sourceNote:route.sourceNote,
-      sources:route.sources,
-      tasks,
-    },
+    activity:'ax', eligible:true, experience,
+    route:{ id:route.id, title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
     routeOptions:eligible.map(id => {
       const option = getAxRoute(id);
       return option ? { id:option.id, title:option.title, subtitle:option.subtitle } : null;
@@ -137,7 +127,11 @@ function chooseInitialRoute(ownerId, experience, eligible) {
 
 function normalizeProgress(value, ownerId) {
   const source = value && typeof value === 'object' ? value : {};
-  const routes = source.routes && typeof source.routes === 'object' ? structuredClone(source.routes) : {};
+  let routes = {};
+  if (source.routes && typeof source.routes === 'object') {
+    try { routes = JSON.parse(JSON.stringify(source.routes)); }
+    catch { routes = {}; }
+  }
   for (const [routeId, state] of Object.entries(routes)) {
     if (!getAxRoute(routeId) || !state || typeof state !== 'object') {
       delete routes[routeId];
@@ -179,16 +173,12 @@ async function requireMember(request, env) {
 function validateSameOrigin(request) {
   const origin = request.headers.get('Origin');
   const expected = new URL(request.url).origin;
-  if (origin !== expected || request.headers.get('X-Mongrels-Request') !== 'pathway-assignments') {
-    return reply({ ok:false, error:'request_validation_failed' }, 403);
-  }
+  if (origin !== expected || request.headers.get('X-Mongrels-Request') !== 'pathway-assignments') return reply({ ok:false, error:'request_validation_failed' }, 403);
   return null;
 }
 
 function requireStorage(env, write) {
-  if (!env.PROJECTS || typeof env.PROJECTS.get !== 'function' || (write && typeof env.PROJECTS.put !== 'function')) {
-    return reply({ ok:false, error:'pathway_storage_not_configured' }, 503);
-  }
+  if (!env.PROJECTS || typeof env.PROJECTS.get !== 'function' || (write && typeof env.PROJECTS.put !== 'function')) return reply({ ok:false, error:'pathway_storage_not_configured' }, 503);
   return null;
 }
 
