@@ -3,6 +3,7 @@
   const loading = document.querySelector('[data-mining-loading]');
   const content = document.querySelector('[data-mining-content]');
   const pathwayForm = document.querySelector('[data-pathway-form]');
+  const previewRoot = document.querySelector('[data-pathway-preview]');
   if (!root || !content) return;
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -11,7 +12,6 @@
   const taskTypeLabels = { learn:'Learn', build:'Build', demonstrate:'Demonstrate', challenge:'Challenge', wing:'Wing / Team', mentor:'Teach / Mentor' };
   let assignments = null;
   let busy = false;
-  let reloadTimer = null;
 
   async function preferencesApi() {
     const response = await fetch(`/api/pathway/preferences?_=${Date.now()}`, {
@@ -46,6 +46,13 @@
 
   function taskTypeLabel(task) {
     return taskTypeLabels[task?.type] || 'Assignment';
+  }
+
+  function suppressGenericMiningCard() {
+    if (root.hidden || !previewRoot) return;
+    previewRoot.querySelectorAll('.pathway-recommendation').forEach(card => {
+      if (card.querySelector('h3')?.textContent?.trim() === 'Mining') card.remove();
+    });
   }
 
   function render() {
@@ -126,6 +133,7 @@
       runAction({ action:'set_task', taskId, status }, status === 'pending' ? 'Reopening assignment…' : 'Saving assignment progress…');
     }));
     if (loading) loading.hidden = true;
+    suppressGenericMiningCard();
   }
 
   async function runAction(body, workingText) {
@@ -168,12 +176,13 @@
     }
   }
 
-  function scheduleReloadAfterSave() {
-    window.clearTimeout(reloadTimer);
-    reloadTimer = window.setTimeout(load, 450);
+  if (previewRoot) {
+    new MutationObserver(suppressGenericMiningCard).observe(previewRoot, { childList:true, subtree:true });
   }
-
+  pathwayForm?.addEventListener('submit', () => {
+    window.setTimeout(load, 450);
+    window.setTimeout(load, 1100);
+  });
   window.addEventListener('mongrels:pathway-saved', load);
-  pathwayForm?.addEventListener('submit', scheduleReloadAfterSave);
   load();
 })();
