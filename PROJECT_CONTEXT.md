@@ -107,6 +107,41 @@ Rules:
 - challenges should feel useful, not like homework;
 - detailed guides remain available when the player wants depth.
 
+### Start Here — personalized daily tasks
+
+Start Here also owns the lightweight **“What Should I Do Today?”** system. This is intentionally separate from My Pathway progression:
+- **Start Here daily tasks = give me something to do today.**
+- **My Pathway = help me grow over time.**
+
+Primary files:
+- `start/index.html`
+- `js/start-tasks.js`
+- `css/start-tasks.css`
+- `functions/api/start/tasks.js`
+- `lib/start-tasks.js`
+
+API:
+- `/api/start/tasks`
+
+Storage:
+- `PROJECTS`
+- daily per-user prefix: `start-daily-v1:` followed by local-date key and Discord owner ID
+- daily state is short-lived and written with a seven-day KV expiration
+
+Behavior:
+- Start Here remains public; personalized task generation requires authenticated Member / Officer / Site Admin access.
+- Selected activity categories and experience come from the member's existing private My Pathway preferences, but daily tasks **never modify Pathway progress**.
+- Curated task pools exist for all current preference activities: PvE, PvP, AX, Surface Operations, Mining, Trade, Carrier Logistics, Engineering, Exploration, Exobiology, BGS, Colonization, Powerplay, and Squad Operations.
+- Tasks are filtered by experience; play style is a preference rather than an absolute blocker when an activity inherently requires other players.
+- Each activity allows a maximum of **three revealed task options per local calendar day**. The limit is enforced server-side, not only in JavaScript.
+- Revealed options remain visible for that day so members can choose among the options they already spent a reveal on.
+- Task kinds are **Activity Task**, **Challenge**, and **Squad Opportunity**.
+- The browser's IANA timezone is used to determine the member's local calendar day; invalid/missing zones fall back to UTC.
+- BGS and Squad Operations can currently inject a live **Squad Opportunity** derived from current Mission Control priority/watch objectives. The task always tells the member to check current Daily Orders/Mission Control before acting so it does not invent faction/method/stop conditions.
+- Future live-opportunity expansion can pull appropriately from carrier coordination, projects, trade/logistics, events, or other authoritative site state.
+
+The three-reveal limit is deliberate: this is meant to break indecision, not become an infinite reroll machine until the site tells someone exactly what they already wanted to do.
+
 ### Activities philosophy
 
 `/activities/` organizes information around user intent rather than internal site structure. A player should not need to know whether something technically lives under Guides, Ships, Projects, or Command before finding it.
@@ -160,6 +195,8 @@ Current behavior:
 - no content is locked;
 - members can change preferences whenever interests or confidence change;
 - full pathways can store per-task **Complete**, **Already Know / Have This**, **Skip for Now**, and reopen state;
+- only **Complete** and **Already Know / Have This** earn progress-bar/qualification credit;
+- **Skip for Now** defers an assignment without giving credit; untouched pending work is shown first, then skipped tasks resurface after other pending work is exhausted, so a route cannot be “completed” by skipping everything;
 - assignment types are **Learn**, **Build**, **Demonstrate**, **Challenge**, **Wing / Team**, and **Teach / Mentor**;
 - experience changes the nature of work, not merely difficulty: beginners acquire capability, developing pilots practice, experienced pilots demonstrate breadth/mastery, veterans receive advanced challenges plus leadership/teaching work.
 
@@ -231,7 +268,7 @@ Important environment values include:
 - `RECRUITMENT_CHANNEL_ID`
 
 Important KV bindings:
-- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences/progress, and other structured project data.
+- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, My Pathway preferences/progress, Start Here daily-task reveal state, and other structured project data.
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy and related configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
@@ -581,7 +618,8 @@ Prefer normal repository image files, efficient formats, GitHub/file workflows, 
 - Moderated Gallery and Ship Build submission/approval workflows remain deferred.
 - Site-wide grouped navigation has been implemented through `js/site.js` but still needs post-deploy browser validation across representative desktop/mobile pages.
 - Some early hub markup still contains its original prototype navigation/helper; `js/site.js` now owns the canonical site-wide navigation and the old helper can be cleaned up after validation.
-- My Pathway now has persistent AX task state and multi-experience AX routes. Live squad-opportunity merging is not built yet, and non-AX activities still use recommendation previews until their full route libraries are added.
+- My Pathway now has persistent AX task state and multi-experience AX routes. Pathway-specific live squad-opportunity merging is not built yet, and non-AX activities still use recommendation previews until their full route libraries are added.
+- Start Here daily tasks currently have live Mission Control injection for BGS/Squad Operations only; broader live project/carrier/trade/event injection is a future expansion.
 
 ---
 
@@ -608,11 +646,12 @@ The original two AX beginner routes were tested by Wolf and reported to work wel
 - decline DM/applicant message;
 - reapplication archive + reopen + DM;
 - new-member onboarding checklist;
-- Start Here hub;
+- Start Here personalized daily-task engine and three-reveal server-side daily limit;
 - Activities hub;
 - site-wide grouped desktop/mobile navigation through `js/site.js` including latest drawer scroll/spacing QoL fixes;
 - authenticated member dropdown with My Pathway / Member Portal / My Profile;
 - Pathway v2 experience-band labels and assignment-type UI;
+- Pathway skip semantics where Skip for Now defers without progress credit;
 - expanded AX routes for Basilisk, Guardian specialization, and Hellhound/veteran development.
 
 Do not label these latest items “validated” until Wolf tests them or a real applicant/member completes the relevant flow.
