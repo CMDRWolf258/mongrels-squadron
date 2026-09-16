@@ -30,14 +30,19 @@ Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records t
 
 Newer Commanders should be strongly encouraged toward Engineering without being forced into a full Engineering pathway before they are ready.
 
-The hidden/default onboarding goal is **First Engineering Win**:
+The default onboarding goal is **First Engineering Win**:
 - choose a ship the Commander already uses;
-- notice its current travel baseline;
-- plan only an FSD **G2 Increased Range** stopping point;
-- unlock/access the needed FSD engineer through bite-size audited steps;
+- record a simple travel baseline;
+- check whether Exploration rank is already Scout or higher;
+- if Scout is still needed, fold that progress into the Meta-Alloy trip by scanning systems and selling data rather than creating a separate rank grind;
+- find a **current** Meta-Alloy source and acquire exactly one;
+- plan only an FSD **G1 → G2 Increased Range** stopping point using current Inara blueprint/crafting information;
+- gather only the materials required for that planned stopping point;
 - before carrying the Meta-Alloy into **Deciat**, pause for a short Open-safety preparation step;
-- gather only the materials required for G1 → G2;
-- apply G2 Increased Range;
+- unlock Felicity Farseer;
+- use engineering and/or exploration-data sales at Farseer Inc only until G2 access is available;
+- apply G1 only far enough to open G2, then complete G2 Increased Range;
+- treat the experimental as a separate small job with another deliberate stopping point;
 - add the appropriate range-focused experimental (normally **Mass Manager**, with room for small-drive edge cases);
 - replot a familiar trip and experience the payoff directly.
 
@@ -50,24 +55,44 @@ Purpose:
 Rules:
 - optional, never mandatory;
 - can exist even if Engineering is not selected in My Pathway;
-- once completed or dismissed, it should stop nagging the Commander;
-- do not expose the public UI until the FSD engineer access chain has been audited and split into manageable steps;
-- do not immediately replace it with another automatic Engineering goal after completion. Deeper Engineering becomes player-directed.
+- once completed or dismissed, it stops appearing on Start Here;
+- do not immediately replace it with another automatic Engineering goal after completion. Deeper Engineering becomes player-directed;
+- show only the **current small step** on Start Here, not the entire roadmap at once;
+- a veteran who does not need it can dismiss it permanently.
+
+### Current First Engineering Win implementation
+
+Primary files:
+- `lib/engineering-campaign-data.js` — audited starter sequence and resource/safety metadata;
+- `functions/api/pathway/engineering-campaign.js` — persistent First Win state and member actions;
+- `js/first-engineering-win.js` — one-step-at-a-time Start Here client;
+- `css/first-engineering-win.css` — compact responsive card styling;
+- `start/index.html` — optional member-only starter surface.
+
+The Felicity starter chain is currently split into **17 small steps**. This is intentionally more cards than a normal route because each card should represent a manageable action instead of hiding a long prerequisite chain inside one assignment.
+
+The current audited Felicity facts used by the starter are:
+- meet Felicity at **Exploration rank Scout or higher**;
+- unlock Felicity by providing **1 Meta-Alloy**;
+- Felicity can engineer Frame Shift Drive Increased Range through G5, though the starter intentionally stops at G2;
+- current Increased Range base crafting cost per roll is 1 Atypical Disrupted Wake Echoes for G1 and 1 Atypical Disrupted Wake Echoes + 1 Chemical Processors for G2;
+- blueprint progression is deterministic after the 2024 Engineering rebalance, but a lower-reputation engineer can require more rolls than a G5-reputation engineer, so exact totals should come from the player’s current plan rather than one universal hard-coded number;
+- Mass Manager currently costs 5 Atypical Disrupted Wake Echoes, 3 Galvanising Alloys, and 1 Eccentric Hyperspace Trajectories.
+
+Meta-Alloy sourcing should use current market data rather than force one historical location. Darnielle’s Progress in Maia remains a useful/traditional reference point, but live supply should be checked before asking a new Commander to make a long trip.
 
 ### Deciat safety step
 
 Felicity Farseer’s location creates a useful early lesson in Open-survival awareness. Deciat has long been treated by the Elite community as a player-traffic/ganking hotspot because it concentrates newer Commanders travelling to an early engineer, often while carrying Meta-Alloy unlock cargo.
 
-The First Engineering Win should therefore include a dedicated **Prepare for Deciat** step immediately before the Meta-Alloy delivery rather than bury the warning in general text. Keep it concise and actionable:
+The First Engineering Win therefore includes a dedicated **Prepare for Deciat** step immediately before the Meta-Alloy delivery. Keep it concise and actionable:
 - make sure the Commander can afford the rebuy;
-- sell exploration data they do not want to risk losing before the trip;
+- sell exploration data they do not want to risk losing before the dangerous leg;
 - understand low wake vs. high wake and preselect a nearby escape system;
 - avoid unnecessary lingering with the Meta-Alloy aboard;
 - explicitly encourage asking a Mongrel for escort or an experienced wingmate if the Commander is uncomfortable making the run alone.
 
 This is a small safety lesson, not a full PvP-survival curriculum. The deeper hostile-logistics training remains appropriate for the queued Community Goal Hauler Prep specialty pathway.
-
-Framework implementation lives in `lib/engineering-campaign-data.js` and is returned by `/api/pathway/engineering-campaign` as `firstEngineeringWin`.
 
 ## Engineering Campaign Planner — framework in progress
 
@@ -98,7 +123,7 @@ The API supports:
 - **correct total** when the member knows the cumulative number should be changed;
 - normal fact provenance so manual tracking can later be replaced or supplemented by a trusted synced/imported source without changing campaign structure.
 
-Future UI should ask something like **“How many did you actually complete?”** rather than turning a five-market suggestion into a binary Complete button.
+Future cross-pathway prep UI should ask something like **“How many did you actually complete?”** rather than turning a five-market suggestion into a binary Complete button.
 
 Manual tracking is the practical v1. Automatic Frontier/telemetry synchronization may be investigated later, but it is not required for the planner to be useful. Any future sync should write the same fact IDs with server-owned provenance rather than create a parallel progress model.
 
@@ -119,20 +144,19 @@ Framework principles:
 - Dependency nodes can complete manually or from facts such as counters/boolean unlock state.
 - Counter nodes can expose a `chunkSize` and one or more `backgroundActivities` so large prerequisites can become bite-size optional prep.
 - Goal-specific engineer data is deliberately separated from the planner engine so unlock changes/corrections do not require migrating stored campaign state.
-- The first framework is intentionally **behind the current Engineering UI**. Do not replace the Engineering route users already like until the dependency database and campaign UX are mature enough.
+- The deeper campaign framework remains behind the current Engineering pathway UI until the dependency database and goal-selection UX are mature enough. First Engineering Win is the exception because it is a deliberately small onboarding layer.
 - No new global experience band has been added. Engineering gets extra breathing room through internal campaign layers rather than forcing AX/BGS/Mining/Trade/etc. to adopt another level unnecessarily.
 
 ### Engineering content/data work still required
 
-Before the campaign planner becomes the main user-facing Engineering experience:
-- audit current engineer unlock chains and grade capabilities;
-- encode prerequisites as small dependency nodes;
-- finish the FSD access chain used by First Engineering Win, including the Deciat safety step, then expose that gentle onboarding UI;
+Next Engineering work:
+- production/mobile validate First Engineering Win on Start Here;
+- build the numeric counter-entry UI for cumulative prep facts such as markets visited;
+- audit the remaining engineer unlock chains and grade capabilities;
+- encode those prerequisites as small dependency nodes;
 - identify which prerequisites are safe/natural to expose as background prep in Trade, Mining, Exploration, combat, missions, etc.;
-- add Inara/resource links for engineering planning and material requirements;
-- design the UI for entering actual progress on counters and correcting totals;
 - decide which state can later be imported/synced versus what remains manual;
-- add targeted material-planning steps so Commanders gather for a defined upgrade/stopping grade instead of generic stockpile grinds;
+- build **Improve Shields** as the first full goal-driven Engineering Campaign Planner test;
 - alternate prerequisite work with actual engineering/test flights whenever possible so the player regularly feels payoff.
 
 ## Queued core pathways
