@@ -11,6 +11,7 @@ import { PVE_ACTIVITY_ID, eligiblePveRoutes, getPveRoute } from '../../../lib/pa
 import { PVP_ACTIVITY_ID, eligiblePvpRoutes, getPvpRoute } from '../../../lib/pathway-pvp.js';
 import { OPERATIONS_ACTIVITY_ID, eligibleOperationsRoutes, getOperationsRoute } from '../../../lib/pathway-operations.js';
 import { COLONIZATION_ACTIVITY_ID, eligibleColonizationRoutes, getColonizationRoute } from '../../../lib/pathway-colonization.js';
+import { SQUADRON_COORDINATION_ACTIVITY_ID, eligibleSquadronCoordinationRoutes, getSquadronCoordinationRoute } from '../../../lib/pathway-squadron-coordination.js';
 import { engineeringPrepForTask } from '../../../lib/pathway-engineering-prep.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
@@ -104,7 +105,29 @@ const PROVIDERS = {
     eligibleRoutes:eligibleColonizationRoutes,
     seedVersion:'colonization-v1',
   },
+  [SQUADRON_COORDINATION_ACTIVITY_ID]: {
+    id:SQUADRON_COORDINATION_ACTIVITY_ID,
+    label:'Squadron Coordination',
+    getRoute:getSquadronCoordinationRoute,
+    eligibleRoutes:eligibleSquadronCoordinationRoutes,
+    seedVersion:'squadron-coordination-v1',
+  },
 };
+
+const COORDINATION_CAPABILITY_LANES = [
+  { id:PVE_ACTIVITY_ID, label:'PvE Combat' },
+  { id:PVP_ACTIVITY_ID, label:'PvP' },
+  { id:AX_ACTIVITY_ID, label:'Anti-Xeno' },
+  { id:OPERATIONS_ACTIVITY_ID, label:'Operations' },
+  { id:MINING_ACTIVITY_ID, label:'Mining' },
+  { id:TRADE_ACTIVITY_ID, label:'Trade & Hauling' },
+  { id:CARRIER_LOGISTICS_ACTIVITY_ID, label:'Carrier Logistics' },
+  { id:ENGINEERING_ACTIVITY_ID, label:'Engineering & Shipbuilding' },
+  { id:EXPLORATION_ACTIVITY_ID, label:'Exploration' },
+  { id:EXOBIOLOGY_ACTIVITY_ID, label:'Exobiology' },
+  { id:BGS_ACTIVITY_ID, label:'Background Simulation' },
+  { id:COLONIZATION_ACTIVITY_ID, label:'Colonization' },
+];
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -225,7 +248,7 @@ async function buildState(env, session, activity, suppliedProgress = null) {
   const skipped = tasks.filter(task => task.status === 'skipped').length;
   const current = tasks.find(task => task.status === 'pending') || tasks.find(task => task.status === 'skipped') || null;
 
-  return {
+  const state = {
     activity, eligible:true, experience,
     route:{ id:route.id, band:route.band || '', title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
     routeOptions:routeChoices.map(id => {
@@ -235,6 +258,38 @@ async function buildState(env, session, activity, suppliedProgress = null) {
     currentTaskId:current?.id || null,
     progress:{ completed, skipped, total:tasks.length, percent:tasks.length ? Math.round((completed / tasks.length) * 100) : 0 },
     canChooseAnother:routeChoices.length > 1,
+  };
+  if (activity === SQUADRON_COORDINATION_ACTIVITY_ID) {
+    state.capabilityMap = await buildCoordinationCapabilityMap(env.PROJECTS, session.sub, prefs);
+  }
+  return state;
+}
+
+async function buildCoordinationCapabilityMap(storage, ownerId, preferences) {
+  const selected = new Set([
+    ...(Array.isArray(preferences?.interests) ? preferences.interests : []),
+    ...(Array.isArray(preferences?.improve) ? preferences.improve : []),
+  ]);
+  const selectedOtherCount = COORDINATION_CAPABILITY_LANES.filter(lane => selected.has(lane.id)).length;
+  const laneResults = await Promise.all(COORDINATION_CAPABILITY_LANES.map(async lane => {
+    const saved = await readJson(storage, `${PROGRESS_PREFIX}${ownerId}:${lane.id}`) || {};
+    let creditedTasks = 0;
+    for (const routeState of Object.values(saved.routes || {})) {
+      if (!routeState || typeof routeState !== 'object') continue;
+      for (const status of Object.values(routeState.taskStates || {})) {
+        if (status === 'complete' || status === 'known') creditedTasks += 1;
+      }
+    }
+    if (creditedTasks > 0) return { ...lane, status:'demonstrated', creditedTasks };
+    if (selected.has(lane.id)) return { ...lane, status:'selected', creditedTasks:0 };
+    return null;
+  }));
+  const lanes = laneResults.filter(Boolean);
+  return {
+    mode:selectedOtherCount <= 1 ? 'guided_exposure' : 'use_existing_capabilities',
+    selectedOtherCount,
+    demonstratedCount:lanes.filter(lane => lane.status === 'demonstrated').length,
+    lanes,
   };
 }
 
