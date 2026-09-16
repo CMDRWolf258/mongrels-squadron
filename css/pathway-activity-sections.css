@@ -69,6 +69,56 @@
 .pathway-activity-section.engineering-pathway-group>summary{border-left:2px solid var(--accent)}
 .engineering-pathway-group .pathway-activity-body>[data-engineering-content]{margin:0}
 .engineering-pathway-group .pathway-activity-body>[data-engineering-prep-tracker]{margin-top:10px}
+
+/* Optional cross-path Engineering prep. This stays visually secondary to the
+   activity assignment because it must never hijack Trade, Mining, or other routes. */
+.pathway-cross-prep{
+  margin:14px 0 2px;
+  border:1px solid rgba(34,211,238,.16);
+  border-radius:10px;
+  background:rgba(34,211,238,.025);
+  overflow:hidden;
+}
+.pathway-cross-prep>summary{
+  list-style:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+}
+.pathway-cross-prep>summary::-webkit-details-marker{display:none}
+.pathway-cross-prep>summary span{display:flex;flex-direction:column;gap:2px}
+.pathway-cross-prep>summary small{
+  color:var(--accent);
+  font-size:.5rem;
+  font-weight:900;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.pathway-cross-prep>summary strong{color:#e8f5f7;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase}
+.pathway-cross-prep>summary em{color:#7f9198;font-size:.58rem;font-style:normal;text-align:right}
+.pathway-cross-prep[open]>summary{border-bottom:1px solid rgba(34,211,238,.12)}
+.pathway-cross-prep-body{padding:11px 12px 12px}
+.pathway-cross-prep-intro{margin:0 0 10px!important;color:#91a4aa!important;font-size:.68rem!important;line-height:1.5!important}
+.pathway-cross-prep-item{padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(0,0,0,.16)}
+.pathway-cross-prep-item+.pathway-cross-prep-item{margin-top:8px}
+.pathway-cross-prep-head>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pathway-cross-prep-head strong{color:#e8f5f7;font-size:.7rem}
+.pathway-cross-prep-head span{color:#8fa2a9;font-size:.58rem}
+.pathway-cross-prep-item>p{margin:7px 0 5px;color:#bdc9cd;font-size:.66rem;line-height:1.5}
+.pathway-cross-prep-note{display:block;color:#7f9299;font-size:.59rem;line-height:1.45}
+.pathway-cross-prep-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
+.pathway-cross-prep-actions .btn{min-height:32px;padding:0 9px;font-size:.58rem}
+.pathway-cross-prep-exact{display:flex;gap:6px;align-items:center}
+.pathway-cross-prep-exact input{width:112px;min-height:32px;padding:5px 8px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#080c0f;color:#edf8fa;font-size:.64rem}
+.pathway-cross-prep-status{min-height:0;margin-top:7px;color:#9eb0b6;font-size:.6rem;line-height:1.4}
+.pathway-cross-prep-status:empty{display:none}
+.pathway-cross-prep-status[data-state="success"]{color:#9fe7cc}
+.pathway-cross-prep-status[data-state="error"]{color:#ffb5b5}
+.pathway-cross-prep-status[data-state="working"]{color:#b5dbe3}
+
 @media(max-width:620px){
   .pathway-activity-section>summary{min-height:50px;padding:12px 13px;gap:10px}
   .pathway-activity-body{padding:8px}
@@ -76,4 +126,10 @@
   .pathway-activity-summary-badges{gap:4px}
   .pathway-activity-summary-badges .pathway-badge{font-size:.48rem;padding:3px 6px}
   .pathway-generic-body{padding:13px}
+  .pathway-cross-prep>summary{align-items:flex-start;flex-direction:column;gap:4px}
+  .pathway-cross-prep>summary em{text-align:left}
+  .pathway-cross-prep-actions{align-items:stretch}
+  .pathway-cross-prep-actions .btn{flex:1 1 auto}
+  .pathway-cross-prep-exact{flex:1 1 100%}
+  .pathway-cross-prep-exact input{flex:1;width:auto}
 }
