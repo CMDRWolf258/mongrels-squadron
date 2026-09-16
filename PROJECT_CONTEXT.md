@@ -393,25 +393,30 @@ Shared facts retain provenance so future trusted sync/import can write the same 
 
 Campaign dependency readiness must treat **fact-completed nodes exactly like manually completed nodes**. `lib/engineering-campaign.js` now builds a completion map before evaluating dependencies. This is critical for adaptive campaigns: if a Commander already has an Engineer unlocked or already completed a cumulative prerequisite, downstream work should unlock automatically without requiring a fake manual completion.
 
+Generic campaign setup deliberately stops at **assess current state → choose useful stopping point → map dependencies**. Material planning belongs inside each goal-specific graph after the actual module/blueprint choice is known.
+
 ### Improve Shields — first live goal-specific campaign
 
 `lib/engineering-campaign-shields.js` contains the first audited goal chain. It is intentionally a **G2/G3 Shield Generator phase through Lei Cheung**, not an automatic endgame G5 shield/booster grind.
 
 Current chain:
-1. generic campaign assessment / target / dependency / material-plan setup;
-2. use 5 distinct black markets for The Dweller meeting requirement;
-3. unlock The Dweller at Black Hide (500,000 Cr);
-4. engineer with The Dweller only until the Lei Cheung referral appears;
-5. accumulate the Lei Cheung distinct-market requirement using the existing market counter;
-6. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
-7. choose the Shield Generator blueprint around the ship's role rather than one universal recipe;
-8. open G2 shield access only as far as needed;
-9. engineer the selected Shield Generator through G2;
-10. **fly/test the G2 result before doing more**;
-11. optionally continue to G3 only if the G2 test says the ship still needs it;
-12. test G3 and end the phase.
+1. generic campaign assessment, target selection, and dependency mapping;
+2. choose the Shield Generator blueprint around the ship's role rather than one universal recipe;
+3. plan only the chosen blueprint's **G1 → G2** material job;
+4. use 5 distinct black markets for The Dweller meeting requirement;
+5. unlock The Dweller at Black Hide (500,000 Cr);
+6. engineer with The Dweller only until the Lei Cheung referral appears;
+7. accumulate the Lei Cheung distinct-market requirement using the existing market counter;
+8. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
+9. open G2 shield access only as far as needed;
+10. engineer the selected Shield Generator through G2;
+11. **fly/test the G2 result before doing more**;
+12. optionally continue to G3 only if the G2 test says the ship still needs it;
+13. test G3 and end the phase.
 
 Design rules:
+- **Define the job first, then gather for the job.** Blueprint choice comes before the material plan.
+- The initial material plan covers G1 → G2 only. Because exact roll count can depend on engineer reputation, the Commander can refresh the quantity after reaching Lei rather than farming G3–G5 preemptively.
 - G2 is an explicit legitimate stopping point.
 - After the G2 test, the UI exposes **Take the Win · Complete Campaign** even though optional G3 refinement remains.
 - G5 Shield Generator and G5 Shield Booster work are deliberately deferred to later campaign phases/goals.
