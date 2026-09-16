@@ -5,6 +5,7 @@
   const fullPathwayRoots = new Map([
     ['PvE Combat', document.querySelector('[data-pve-pathway]')],
     ['PvP', document.querySelector('[data-pvp-pathway]')],
+    ['Operations', document.querySelector('[data-operations-pathway]')],
     ['Background Simulation', document.querySelector('[data-bgs-pathway]')],
     ['Mining', document.querySelector('[data-mining-pathway]')],
     ['Trade & Hauling', document.querySelector('[data-trade-pathway]')],
