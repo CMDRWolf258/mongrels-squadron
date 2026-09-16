@@ -21,6 +21,9 @@ import {
   buildJumpRangeEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-jump-range.js';
 import {
+  buildMobilityEngineeringDependencyNodes,
+} from '../lib/engineering-campaign-mobility.js';
+import {
   assistantPathwayIntent,
   buildAssistantPathwayContext,
 } from '../lib/assistant-pathway-context.js';
@@ -142,11 +145,42 @@ assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.test.g2' && node.m
 assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.experimental.test' && node.meta?.readyToFinish), 'Improve Jump Range has no experimental stopping point');
 console.log('✓ Improve Jump Range reuses First Engineering Win access and preserves stopping points');
 
+// Improve Speed & Mobility should reuse the same Felicity access/reputation that
+// the FSD work already established. Engineer reputation is shared even though the
+// older stored fact names mention the FSD specifically.
+let mobilityState = createEmptyEngineeringCampaignState('mobility-smoke-user');
+mobilityState = startEngineeringCampaign(mobilityState, {
+  goalId:'mobility',
+  shipName:'Mobility Smoke Ship',
+  targetNotes:'Improve boost speed and handling.',
+}, '2026-09-16T12:20:00.000Z');
+mobilityState = setEngineeringFact(mobilityState, 'first-win.fsd.scout-ready', true, 'smoke', '2026-09-16T12:21:00.000Z');
+mobilityState = setEngineeringFact(mobilityState, 'first-win.fsd.engineer-access-ready', true, 'smoke', '2026-09-16T12:22:00.000Z');
+mobilityState = setEngineeringFact(mobilityState, 'first-win.fsd.g2-access-ready', true, 'smoke', '2026-09-16T12:23:00.000Z');
+const mobilityCampaign = mobilityState.campaigns[mobilityState.activeCampaignId];
+const mobilityNodes = buildMobilityEngineeringDependencyNodes({ campaign:mobilityCampaign, facts:mobilityState.facts });
+const mobilityView = buildEngineeringCampaignView(mobilityState, mobilityNodes);
+for (const nodeId of [
+  'mobility.felicity.scout',
+  'mobility.felicity.meta-alloy',
+  'mobility.felicity.deciat-safety',
+  'mobility.felicity.unlock',
+  'mobility.felicity.g2-access',
+]) {
+  const node = mobilityView.nodes.find(item => item.id === nodeId);
+  assert.ok(node, `Improve Speed & Mobility is missing expected node ${nodeId}`);
+  assert.equal(node.status, 'complete', `${nodeId} did not reuse existing Felicity access`);
+}
+assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.test.g2' && node.meta?.readyToFinish), 'Improve Speed & Mobility has no G2 stopping point');
+assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.experimental.test' && node.meta?.readyToFinish), 'Improve Speed & Mobility has no experimental stopping point');
+console.log('✓ Improve Speed & Mobility reuses Felicity access and preserves stopping points');
+
 // The assistant should only receive personalized Pathway data when the member's
 // question actually refers to their assignment/progress. Exercise the selector
 // and a small in-memory PROJECTS binding so this bridge is covered by CI.
 assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
+assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
 const kvRecords = new Map([
   ['pathway-preferences-v1:smoke-user', {
@@ -212,6 +246,7 @@ for (const path of [
   'operations/index.html',
   'carriers/index.html',
   'lib/engineering-campaign-jump-range.js',
+  'lib/engineering-campaign-mobility.js',
   'js/engineering-campaign-planner.js',
   'js/engineering-prep-tracker.js',
   'css/engineering-campaign-planner.css',
@@ -224,6 +259,7 @@ assert.match(pathwayHtml, /engineering-campaign-planner\.js/, 'My Pathway is not
 assert.match(pathwayHtml, /engineering-prep-tracker\.js/, 'My Pathway is not loading the Engineering Prep Tracker script');
 const plannerSource = readFileSync('js/engineering-campaign-planner.js', 'utf8');
 assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Improve Jump Range');
+assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
 console.log('✓ critical pages and Engineering Pathway assets are wired');
 
 console.log('\nAll Mongrels site smoke checks passed.');
