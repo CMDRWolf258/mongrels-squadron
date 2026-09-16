@@ -89,6 +89,8 @@ assert.match(pathwayHtml, /data-squadron-coordination-pathway/, 'My Pathway is m
 assert.match(pathwayHtml, /pathway-squadron-coordination\.js/, 'My Pathway is not loading the Squadron Coordination pathway client');
 const fullRoutesSource = readFileSync('js/pathway-full-routes.js', 'utf8');
 assert.match(fullRoutesSource, /\['Squadron Coordination'/, 'Generic-card suppression is not aware of Squadron Coordination');
+assert.match(fullRoutesSource, /function fullRouteExists\(/, 'Generic-card suppression is still waiting for full routes to become visible');
+assert.doesNotMatch(fullRoutesSource, /function fullRouteIsVisible\(/, 'Legacy card suppression still contains the visibility race that can leave duplicate cards behind');
 const preferencesSource = readFileSync('functions/api/pathway/preferences.js', 'utf8');
 assert.match(preferencesSource, /id:'operations', label:'Squadron Coordination'/, 'Preferences catalog is not exposing the new user-facing label');
 const assignmentsSource = readFileSync('functions/api/pathway/assignments.js', 'utf8');
@@ -98,6 +100,6 @@ assert.match(assignmentsSource, /creditedTasks/, 'Capability Map is not reading 
 const clientSource = readFileSync('js/pathway-squadron-coordination.js', 'utf8');
 assert.match(clientSource, /activity:'operations'/, 'Squadron Coordination client is not preserving the legacy activity ID');
 assert.match(clientSource, /Capability Map/, 'Squadron Coordination client is not rendering the Capability Map');
-console.log('✓ Provider, selector, UI mount, Capability Map, Assistant context, and naming compatibility are wired');
+console.log('✓ Provider, selector, UI mount, Capability Map, Assistant context, naming compatibility, and duplicate-card suppression are wired');
 
 console.log('\nAll Squadron Coordination smoke checks passed.');
