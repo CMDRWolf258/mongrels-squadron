@@ -1,0 +1,29 @@
+.engineering-prep-tracker{margin-top:20px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,rgba(12,18,22,.86),rgba(8,12,15,.92));overflow:hidden}
+.engineering-prep-tracker>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;color:var(--text);font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:.8rem}
+.engineering-prep-tracker>summary::-webkit-details-marker{display:none}
+.engineering-prep-tracker>summary::after{content:'+';color:var(--accent);font-size:1.2rem;line-height:1}
+.engineering-prep-tracker[open]>summary::after{content:'−'}
+.engineering-prep-body{border-top:1px solid var(--line);padding:18px}
+.engineering-prep-intro{margin:0 0 16px;color:var(--muted);line-height:1.65;font-size:.92rem}
+.engineering-prep-list{display:grid;gap:14px}
+.engineering-prep-card{border:1px solid var(--line);border-radius:10px;background:rgba(7,11,14,.74);padding:16px}
+.engineering-prep-card-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.engineering-prep-card h4{margin:0 0 7px;font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+.engineering-prep-card p{margin:0;color:var(--muted);line-height:1.55;font-size:.86rem}
+.engineering-prep-total{flex:0 0 auto;text-align:right;color:var(--accent);font-weight:900;font-size:1.45rem;line-height:1}
+.engineering-prep-total small{display:block;margin-top:5px;color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.engineering-prep-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.engineering-prep-quick button{min-height:34px;padding:0 11px;border:1px solid var(--line-accent);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:900;cursor:pointer}
+.engineering-prep-quick button:hover{border-color:var(--accent)}
+.engineering-prep-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:12px}
+.engineering-prep-entry input{width:100%;min-height:42px;border:1px solid var(--line);border-radius:8px;background:#080d10;color:var(--text);padding:0 12px}
+.engineering-prep-entry input:focus{outline:none;border-color:var(--accent)}
+.engineering-prep-entry button{min-height:42px}
+.engineering-prep-correct{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.engineering-prep-correct>summary{cursor:pointer;color:var(--muted);font-size:.76rem;font-weight:800;letter-spacing:.04em}
+.engineering-prep-meta{display:flex;justify-content:space-between;gap:12px;margin-top:12px;color:var(--muted);font-size:.7rem}
+.engineering-prep-status{min-height:20px;margin-top:12px;font-size:.78rem;color:var(--muted)}
+.engineering-prep-status[data-state='success']{color:var(--success)}
+.engineering-prep-status[data-state='error']{color:var(--danger)}
+.engineering-prep-card button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:620px){.engineering-prep-card-head{flex-direction:column}.engineering-prep-total{text-align:left}.engineering-prep-entry{grid-template-columns:1fr}.engineering-prep-entry .btn{width:100%}.engineering-prep-meta{flex-direction:column;gap:3px}}
