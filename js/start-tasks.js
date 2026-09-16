@@ -2,6 +2,14 @@
   const root = document.querySelector('[data-start-daily-tasks]');
   if (!root) return;
 
+  if (!document.querySelector('link[data-start-tasks-style]')) {
+    const style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = '../css/start-tasks.css?v=1';
+    style.dataset.startTasksStyle = 'true';
+    document.head.appendChild(style);
+  }
+
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const experienceLabels = { new:'Beginner', some:'Developing', comfortable:'Experienced', experienced:'Veteran / Mentor' };
   const kindLabels = { activity:'Activity Task', challenge:'Challenge', squad:'Squad Opportunity' };
@@ -11,7 +19,7 @@
 
   async function api(method = 'GET', body = null) {
     const options = { method, credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } };
-    let url = `/api/start/tasks?tz=${encodeURIComponent(timeZone)}&_=${Date.now()}`;
+    const url = `/api/start/tasks?tz=${encodeURIComponent(timeZone)}&_=${Date.now()}`;
     if (body) {
       options.headers['Content-Type'] = 'application/json';
       options.headers['X-Mongrels-Request'] = 'start-daily-tasks';
