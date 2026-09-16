@@ -124,7 +124,7 @@
       </article>
 
       <div class="member-command-grid">
-        <article class="member-command-card member-command-primary">
+        <article class="member-command-card member-command-primary" id="my-pathway">
           <div class="member-command-card-head">
             <div><p class="eyebrow">Personal</p><h3>My Pathway</h3></div>
             <span class="member-command-badge">Personalized</span>
@@ -133,7 +133,7 @@
           <a class="btn btn-primary" href="../pathway/">Open My Pathway</a>
         </article>
 
-        <article class="member-command-card member-command-primary" data-dashboard-orders>
+        <article class="member-command-card member-command-primary" id="daily-orders" data-dashboard-orders>
           <div class="member-command-card-head">
             <div><p class="eyebrow">Today</p><h3>Daily Orders</h3></div>
             <span class="member-command-badge" data-dashboard-orders-count>Checking…</span>
@@ -143,34 +143,34 @@
           <a class="btn btn-primary" href="../operations/#daily-orders">Open Daily Orders</a>
         </article>
 
-        <article class="member-command-card">
+        <article class="member-command-card" id="projects-events">
           <div class="member-command-card-head"><div><p class="eyebrow">Campaigns</p><h3>Projects & Events</h3></div><span class="member-command-badge" data-dashboard-projects-count>Projects</span></div>
           <p data-dashboard-projects-summary>Track active squad initiatives, colonization help requests, expeditions, campaigns, and scheduled events.</p>
           <div class="member-project-preview" data-dashboard-projects-preview></div>
-          <a class="btn btn-ghost" href="../projects/">Open Projects & Events</a>
+          <a class="btn btn-ghost" href="../projects/#project-list">Open Projects & Events</a>
         </article>
 
-        <article class="member-command-card" data-dashboard-carriers>
+        <article class="member-command-card" id="carrier-coordination" data-dashboard-carriers>
           <div class="member-command-card-head"><div><p class="eyebrow">Logistics</p><h3>Carrier Coordination</h3></div><span class="member-command-badge" data-dashboard-carriers-count>Fleet</span></div>
           <p data-dashboard-carriers-summary>Find squad carriers, current locations, planned jumps, and active loading or support requests.</p>
           <div class="member-project-preview" data-dashboard-carriers-preview></div>
-          <a class="btn btn-ghost" href="../carriers/">Open Carrier Board</a>
+          <a class="btn btn-ghost" href="../carriers/#carrier-coordination">Open Carrier Board</a>
         </article>
 
-        <article class="member-command-card" data-dashboard-trades>
+        <article class="member-command-card" id="traders-outpost" data-dashboard-trades>
           <div class="member-command-card-head"><div><p class="eyebrow">Trade Desk</p><h3>Trader's Outpost</h3></div><span class="member-command-badge" data-dashboard-trades-count>Trade</span></div>
           <p data-dashboard-trades-summary>See strategic hauling and the strongest current member-posted profit opportunities.</p>
           <div class="member-project-preview" data-dashboard-trades-preview></div>
           <a class="btn btn-ghost" href="../trading/">Open Trader's Outpost</a>
         </article>
 
-        <article class="member-command-card">
+        <article class="member-command-card" id="squadron-roster">
           <div class="member-command-card-head"><div><p class="eyebrow">People</p><h3>Squadron Roster</h3></div><span class="member-command-badge">Members</span></div>
           <p>Find Mongrels by specialty, preferred activity, carrier ownership, or squad role. Create and maintain your own member profile.</p>
           <a class="btn btn-ghost" href="../members/">Open Squadron Roster</a>
         </article>
 
-        <article class="member-command-card">
+        <article class="member-command-card" id="pvp-tools">
           <div class="member-command-card-head"><div><p class="eyebrow">Combat</p><h3>PvP Tools</h3></div><span class="member-command-badge" data-dashboard-bounty-count>Combat</span></div>
           <p data-dashboard-bounty-summary>Open the private in-game bounty board, PvP training resources, and organized combat tools.</p>
           <div class="member-project-preview" data-dashboard-bounty-preview></div>
@@ -196,7 +196,7 @@
           <p>Your account can manage approved squad tools. Daily Orders publishing is currently online; additional management controls will appear here as they are built.</p>
           <div class="member-officer-actions">
             <a class="btn btn-primary" href="../operations/#daily-orders">Manage Daily Orders</a>
-            <a class="btn btn-ghost" href="../applications/">Recruitment Applications</a><a class="btn btn-ghost" href="../projects/">Projects & Events</a><a class="btn btn-ghost" href="../carriers/">Carrier Coordination</a><a class="btn btn-ghost" href="../members/">Member Roster</a><a class="btn btn-ghost" href="../discord-onboarding/" data-dashboard-site-admin hidden>Site Admin Lab</a><a class="btn btn-ghost" href="../assistant-gaps/" data-dashboard-site-admin hidden>Assistant Knowledge Gaps</a>
+            <a class="btn btn-ghost" href="../applications/">Recruitment Applications</a><a class="btn btn-ghost" href="../projects/#project-list">Projects & Events</a><a class="btn btn-ghost" href="../carriers/#carrier-coordination">Carrier Coordination</a><a class="btn btn-ghost" href="../members/">Member Roster</a><a class="btn btn-ghost" href="../discord-onboarding/" data-dashboard-site-admin hidden>Site Admin Lab</a><a class="btn btn-ghost" href="../assistant-gaps/" data-dashboard-site-admin hidden>Assistant Knowledge Gaps</a>
           </div>
         </section>
 
