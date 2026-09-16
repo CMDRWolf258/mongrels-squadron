@@ -11,7 +11,7 @@
 .site-header-v2 .nav-group[open]>summary,
 .site-header-v2 .nav-group.is-current>summary{color:var(--accent);background:var(--accent-soft)}
 .site-header-v2 .nav-group{position:static}
-.site-header-v2 .nav-mega{position:absolute;z-index:70;top:68px;right:0;width:min(820px,calc(100vw - 32px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(7,11,14,.985);box-shadow:0 24px 70px rgba(0,0,0,.55);backdrop-filter:blur(20px)}
+.site-header-v2 .nav-mega{position:absolute;z-index:70;top:calc(100% + 8px);right:0;width:min(820px,calc(100vw - 32px));display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(7,11,14,.985);box-shadow:0 24px 70px rgba(0,0,0,.55);backdrop-filter:blur(20px)}
 .site-header-v2 .nav-mega-two{grid-template-columns:repeat(2,minmax(0,1fr));width:min(650px,calc(100vw - 32px))}
 .site-header-v2 .nav-mega-column{min-width:0;padding:6px}
 .site-header-v2 .nav-mega-label{display:block;margin:0 0 8px;padding:0 8px;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
