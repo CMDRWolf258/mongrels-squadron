@@ -10,11 +10,15 @@
   const goalPreview = document.querySelector('[data-pathway-goal-preview]');
   const playStyle = document.querySelector('[data-pathway-play-style]');
   const currentGoal = document.querySelector('[data-pathway-current-goal]');
+  const axRoot = document.querySelector('[data-ax-pathway]');
+  const axLoading = document.querySelector('[data-ax-loading]');
+  const axContent = document.querySelector('[data-ax-content]');
   if (!gate || !app || !form || !groupsRoot) return;
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const experienceLabels = { new:'New to it', some:'Some experience', comfortable:'Comfortable', experienced:'Experienced' };
   const styleLabels = { either:'Solo or group', solo:'Usually solo', group:'Prefer group play' };
+  const taskStatusLabels = { pending:'Next / Pending', complete:'Complete', known:'Already knew / had it', skipped:'Skipped for now' };
   const linkMap = {
     pve:'../activities/#combat', pvp:'../pvp/', ax:'../activities/#ax', surface:'../guides/operations/',
     mining:'../guides/mining/', trade:'../trading/', 'carrier-logistics':'../carriers/', engineering:'../guides/engineering/',
@@ -22,11 +26,11 @@
     powerplay:'../activities/#powerplay', operations:'../operations/#daily-orders',
   };
   const nextSteps = {
-    pve:{new:'Get comfortable with basic ship combat, pips, target selection, and a rebuy-safe combat ship.',some:'Refine one combat ship and practice positioning, module targeting, and tougher PvE fights.',comfortable:'Take on higher-intensity combat, wing roles, and specialized builds.',experienced:'Use your combat experience in squad tasking, mentoring, and advanced build refinement.'},
-    pvp:{new:'Start with survivability, pip management, fixed-weapon practice, and an Open-ready ship.',some:'Practice range control, reverski/boost timing, target pressure, and consistent damage application.',comfortable:'Refine matchup knowledge, wing coordination, and specialized PvP engineering.',experienced:'Focus on advanced matchups, wing leadership, training others, and competitive refinement.'},
-    ax:{new:'Do not rush the Thargoid fight. Learn the AX basics, choose a starter direction, and identify the modules and Engineering you need first.',some:'Finish a coherent AX build, practice heat/survival fundamentals, and join suitable training before pushing harder targets.',comfortable:'Develop Interceptor fundamentals, heart cycles, shutdown/swarms, and consistent survival under pressure.',experienced:'Refine advanced Interceptor work, wing roles, specialized builds, and current squad AX operations.'},
+    pve:{new:'Start with one rebuy-safe combat ship and a specific low-risk bounty assignment.',some:'Refine one combat ship and practice positioning, module targeting, and tougher PvE fights.',comfortable:'Take on higher-intensity combat, wing roles, and specialized builds.',experienced:'Use your combat experience in squad tasking, mentoring, and advanced build refinement.'},
+    pvp:{new:'Start with survivability, pip management, fixed-weapon practice, and an Open-ready ship.',some:'Practice range control, boost timing, target pressure, and consistent damage application.',comfortable:'Refine matchup knowledge, wing coordination, and specialized PvP engineering.',experienced:'Focus on advanced matchups, wing leadership, training others, and competitive refinement.'},
+    ax:{new:'Your live AX assignment chain will pick the first route for you.',some:'Your live AX assignment chain will pick a concrete preparation or combat route.',comfortable:'Use the live AX assignment chain, marking preparation you already know as complete.',experienced:'Use the live AX assignment chain as a structured qualification/refresher and skip known steps.'},
     surface:{new:'Learn suit/weapon basics, settlement access, threat awareness, and the Operation Runner workflow before chasing difficult missions.',some:'Improve equipment, movement, mission selection, and repeatable surface-combat routines.',comfortable:'Take on higher-risk operations and coordinate roles with other Commanders.',experienced:'Use advanced loadouts, operation planning, and mentoring to support organized surface activity.'},
-    mining:{new:'Pick one mining method, outfit one ship correctly, and complete a full locate → mine → sell loop.',some:'Improve site choice, collection efficiency, cargo workflow, and selling decisions.',comfortable:'Specialize in high-value methods, scouting, carrier workflows, or squad supply runs.',experienced:'Optimize routes, teach newer miners, and support strategic construction or commodity goals.'},
+    mining:{new:'My Pathway will eventually assign a specific starter mining ship, method, and first full mining run rather than making you choose.',some:'Improve site choice, collection efficiency, cargo workflow, and selling decisions.',comfortable:'Specialize in high-value methods, scouting, carrier workflows, or squad supply runs.',experienced:'Optimize routes, teach newer miners, and support strategic construction or commodity goals.'},
     trade:{new:'Learn pad size, cargo capacity, supply/demand, and complete a simple profitable haul safely.',some:'Compare routes, improve turnaround time, and understand demand-sensitive selling.',comfortable:'Run larger logistics chains, carrier loading, and squad-support hauling efficiently.',experienced:'Plan strategic logistics, coordinate haulers, and optimize large-volume operations.'},
     'carrier-logistics':{new:'Learn carrier services, jump planning, tritium needs, and basic loading/unloading coordination.',some:'Practice efficient carrier support runs and movement planning.',comfortable:'Coordinate larger logistics moves, construction support, and multi-Commander loading.',experienced:'Lead carrier logistics, route planning, and contingency support for squad operations.'},
     engineering:{new:'Choose one ship you actually fly and understand what one important module modification would improve.',some:'Build a coherent engineering plan instead of upgrading modules independently.',comfortable:'Refine experimentals, power/thermal tradeoffs, defenses, and role-specific build choices.',experienced:'Optimize edge cases, compare competing engineering philosophies, and help others troubleshoot builds.'},
@@ -40,6 +44,8 @@
 
   let data = null;
   let preferences = null;
+  let axAssignments = null;
+  let axBusy = false;
 
   async function api(method = 'GET', body = null) {
     const options = { method, credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } };
@@ -52,6 +58,19 @@
     const payload = await response.json().catch(() => ({}));
     if (response.status === 401 || response.status === 403) throw Object.assign(new Error(payload.error || 'auth'), { auth:true });
     if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+    return payload;
+  }
+
+  async function assignmentApi(method = 'GET', body = null) {
+    const options = { method, credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } };
+    if (body) {
+      options.headers['Content-Type'] = 'application/json';
+      options.headers['X-Mongrels-Request'] = 'pathway-assignments';
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch(`/api/pathway/assignments?_=${Date.now()}`, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || payload.error || `Assignment request failed (${response.status})`);
     return payload;
   }
 
@@ -116,7 +135,7 @@
 
   function renderPreview() {
     if (!data) return;
-    const { interests, improve, selected } = selectedIds();
+    const { improve, selected } = selectedIds();
     const catalog = Array.isArray(data.catalog.activities) ? data.catalog.activities : [];
     const improveSet = new Set(improve);
     const selectedItems = catalog.filter(item => selected.has(item.id)).sort((a,b) => Number(improveSet.has(b.id)) - Number(improveSet.has(a.id)));
@@ -125,10 +144,12 @@
       summary.innerHTML = `<span><strong>${selectedItems.length}</strong> selected</span><span><strong>${improve.length}</strong> improvement focus${improve.length === 1 ? '' : 'es'}</span><span>${esc(styleLabels[playStyle.value] || styleLabels.either)}</span>`;
     }
 
+    if (axRoot) axRoot.hidden = !selected.has('ax');
+
     if (!selectedItems.length) {
       preview.innerHTML = '<div class="pathway-empty"><strong>Choose a few interests to begin.</strong><br>You do not need to fill every category. Two or three activities are enough for My Pathway to start becoming useful.</div>';
     } else {
-      preview.innerHTML = `<div class="pathway-recommendations">${selectedItems.map(item => {
+      preview.innerHTML = `<div class="pathway-recommendations">${selectedItems.filter(item => item.id !== 'ax').map(item => {
         const level = experienceFor(item.id);
         const step = nextSteps[item.id]?.[level] || 'Explore the activity and choose one concrete goal to work toward.';
         const priority = improveSet.has(item.id);
@@ -141,10 +162,147 @@
       }).join('')}</div>`;
     }
 
+    if (selected.has('ax') && !axAssignments?.eligible && axContent) {
+      axContent.innerHTML = '<div class="pathway-empty"><strong>Save your pathway to receive an AX assignment.</strong><br>Once Anti-Xeno is part of your saved pathway, the site will pick a curated route for you.</div>';
+      if (axLoading) axLoading.hidden = true;
+    }
+
     const goal = currentGoal.value.trim();
     if (goalPreview) {
       goalPreview.hidden = !goal;
       goalPreview.innerHTML = goal ? `<span>Current Personal Goal</span><p>${esc(goal)}</p>` : '';
+    }
+  }
+
+  function currentAxTask() {
+    return axAssignments?.route?.tasks?.find(task => task.id === axAssignments.currentTaskId) || null;
+  }
+
+  function axTaskLink(task) {
+    if (!task?.link?.url) return '';
+    const external = task.link.external || /^https?:\/\//i.test(task.link.url);
+    return `<a class="btn btn-ghost" href="${esc(task.link.url)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${esc(task.link.label || 'Open Resource')}${external ? ' ↗' : ''}</a>`;
+  }
+
+  function renderAxAssignments() {
+    if (!axRoot || !axContent) return;
+    if (!axAssignments?.eligible) {
+      axContent.innerHTML = '<div class="pathway-empty"><strong>AX is not in your saved pathway yet.</strong><br>Select Anti-Xeno above and save your pathway to generate an assignment chain.</div>';
+      if (axLoading) axLoading.hidden = true;
+      return;
+    }
+
+    const route = axAssignments.route;
+    const current = currentAxTask();
+    const progress = axAssignments.progress || { completed:0, total:route.tasks.length, percent:0 };
+    const allDone = !current;
+    const sources = Array.isArray(route.sources) ? route.sources : [];
+
+    axContent.innerHTML = `
+      <article class="ax-route-card">
+        <div class="ax-route-head">
+          <div><span class="ax-route-kicker">We picked a route for you</span><h3>${esc(route.title)}</h3><p>${esc(route.subtitle)}</p></div>
+          <span class="pathway-badge is-improve">AX Route</span>
+        </div>
+        <div class="ax-progress"><div><strong>${progress.completed} / ${progress.total}</strong><span>assignments cleared</span></div><div class="ax-progress-track"><i style="width:${Math.max(0, Math.min(100, Number(progress.percent) || 0))}%"></i></div><span>${Number(progress.percent) || 0}%</span></div>
+        <p class="ax-route-audience">${esc(route.audience)}</p>
+        <div class="ax-route-actions">${axAssignments.canChooseAnother ? '<button class="btn btn-ghost" type="button" data-ax-another-route>Give Me Another Route</button>' : ''}<button class="ax-text-button" type="button" data-ax-reset-route>Reset this route</button></div>
+      </article>
+
+      ${allDone ? `
+        <article class="ax-current-assignment is-graduate">
+          <span class="ax-assignment-stage">Route Complete</span>
+          <h3>Qualification complete</h3>
+          <p>${esc(route.outcome)}</p>
+          <a class="btn btn-primary" href="../activities/#ax">Explore More AX</a>
+        </article>` : `
+        <article class="ax-current-assignment">
+          <div class="ax-assignment-number"><span>${String(current.index).padStart(2,'0')}</span><small>${esc(current.stage)}</small></div>
+          <div class="ax-current-copy">
+            <span class="ax-next-label">Your Next Assignment</span>
+            <h3>${esc(current.title)}</h3>
+            <p class="ax-objective">${esc(current.objective)}</p>
+            <div class="ax-why"><strong>Why this assignment</strong><p>${esc(current.why)}</p></div>
+            ${Array.isArray(current.checklist) && current.checklist.length ? `<div class="ax-checklist"><strong>Clear it when you have:</strong><ul>${current.checklist.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>` : ''}
+            <div class="ax-assignment-actions">
+              <button class="btn btn-primary" type="button" data-ax-task-status="complete" data-ax-task-id="${esc(current.id)}">Complete</button>
+              <button class="btn btn-ghost" type="button" data-ax-task-status="known" data-ax-task-id="${esc(current.id)}">Already Know / Have This</button>
+              <button class="btn btn-ghost" type="button" data-ax-task-status="skipped" data-ax-task-id="${esc(current.id)}">Skip for Now</button>
+              ${axTaskLink(current)}
+            </div>
+          </div>
+        </article>`}
+
+      <details class="ax-assignment-list">
+        <summary>View the full ${esc(route.title)} route</summary>
+        <div class="ax-assignment-list-body">
+          ${route.tasks.map(task => `<article class="ax-list-task${task.id === axAssignments.currentTaskId ? ' is-current' : ''}" data-ax-list-task="${esc(task.id)}">
+            <div class="ax-list-index">${String(task.index).padStart(2,'0')}</div>
+            <div><span>${esc(task.stage)}</span><strong>${esc(task.title)}</strong><small>${esc(task.objective)}</small></div>
+            <div class="ax-list-status status-${esc(task.status)}"><span>${esc(taskStatusLabels[task.status] || task.status)}</span>${task.status !== 'pending' ? `<button type="button" data-ax-task-status="pending" data-ax-task-id="${esc(task.id)}">Reopen</button>` : ''}</div>
+          </article>`).join('')}
+        </div>
+      </details>
+
+      <details class="ax-sources">
+        <summary>Why this route / references</summary>
+        <p>${esc(route.sourceNote || '')}</p>
+        <div>${sources.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label)} ↗</a>`).join('')}</div>
+      </details>
+      <div class="ax-action-status" data-ax-action-status></div>`;
+
+    axContent.querySelector('[data-ax-another-route]')?.addEventListener('click', async () => {
+      await runAxAction({ action:'another_route' }, 'Picking another approved AX route…');
+    });
+    axContent.querySelector('[data-ax-reset-route]')?.addEventListener('click', async () => {
+      if (!window.confirm(`Reset all progress on ${route.title}?\n\nThis only resets this AX route. Your pathway preferences are unchanged.`)) return;
+      await runAxAction({ action:'reset_route' }, 'Resetting this AX route…');
+    });
+    axContent.querySelectorAll('[data-ax-task-status]').forEach(button => button.addEventListener('click', async () => {
+      const status = button.dataset.axTaskStatus;
+      const taskId = button.dataset.axTaskId;
+      await runAxAction({ action:'set_task', taskId, status }, status === 'pending' ? 'Reopening assignment…' : 'Saving assignment progress…');
+    }));
+    if (axLoading) axLoading.hidden = true;
+  }
+
+  async function runAxAction(body, workingText) {
+    if (axBusy) return;
+    axBusy = true;
+    const status = axContent?.querySelector('[data-ax-action-status]');
+    if (status) { status.textContent = workingText; status.dataset.state = 'working'; }
+    axContent?.querySelectorAll('button').forEach(button => { button.disabled = true; });
+    try {
+      axAssignments = await assignmentApi('POST', body);
+      renderAxAssignments();
+      renderPreview();
+      const nextStatus = axContent?.querySelector('[data-ax-action-status]');
+      if (nextStatus) { nextStatus.textContent = 'Progress saved.'; nextStatus.dataset.state = 'success'; }
+    } catch (error) {
+      console.error('Could not update AX pathway assignment', error);
+      if (status) { status.textContent = error?.message || 'Could not update the AX assignment.'; status.dataset.state = 'error'; }
+      axContent?.querySelectorAll('button').forEach(button => { button.disabled = false; });
+    } finally {
+      axBusy = false;
+    }
+  }
+
+  async function loadAxAssignments() {
+    if (!axRoot) return;
+    const savedSelected = new Set([...(preferences?.interests || []), ...(preferences?.improve || [])]);
+    axRoot.hidden = !savedSelected.has('ax');
+    if (!savedSelected.has('ax')) {
+      axAssignments = null;
+      return;
+    }
+    if (axLoading) { axLoading.hidden = false; axLoading.textContent = 'Building your AX assignment…'; }
+    try {
+      axAssignments = await assignmentApi();
+      renderAxAssignments();
+    } catch (error) {
+      console.error('Could not load AX assignments', error);
+      if (axLoading) { axLoading.hidden = false; axLoading.textContent = 'AX assignments could not be loaded right now.'; }
+      if (axContent) axContent.innerHTML = '';
     }
   }
 
@@ -165,6 +323,7 @@
       preferences = result.preferences;
       saveStatus.textContent = 'Pathway preferences saved.';
       saveStatus.dataset.state = 'success';
+      await loadAxAssignments();
       renderPreview();
     } catch (error) {
       console.error('Could not save My Pathway preferences', error);
@@ -182,6 +341,8 @@
       gate.hidden = true;
       app.hidden = false;
       renderPreferences();
+      await loadAxAssignments();
+      renderPreview();
     } catch (error) {
       if (error.auth) {
         gate.hidden = false;
