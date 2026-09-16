@@ -38,14 +38,15 @@
 .member-access-menu-panel .member-access-pathway strong{color:var(--accent)}
 .member-access-menu-panel .member-access-signout{margin-top:6px;border-top:1px solid var(--line);border-radius:0;color:#aebbc1}
 
-/* The new six-item header intentionally replaces the old progressive nth-child collapse. */
-@media (min-width:1061px){
+/* Keep the full desktop header only when there is enough room for the brand,
+   authenticated member menu, and all six primary navigation items. */
+@media (min-width:1281px){
   .site-header-v2 .nav-links-v2{position:static!important;inset:auto!important;display:flex!important;flex:1!important;flex-direction:row!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;min-width:0}
   .site-header-v2 .nav-links-v2>a{display:flex!important}
   .site-header-v2 .menu-toggle{display:none!important}
 }
 
-@media(max-width:1060px){
+@media(max-width:1280px){
   .site-header-v2 .nav-links-v2{position:fixed!important;inset:87px 16px auto 16px!important;display:none!important;flex-direction:column!important;align-items:stretch!important;max-height:calc(100vh - 103px);max-height:calc(100dvh - 103px);overflow:auto;overscroll-behavior:contain;overflow-anchor:none;scroll-padding-top:18px;gap:3px;padding:16px 10px 10px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:rgba(8,11,14,.985)!important;box-shadow:var(--shadow)!important}
   .site-header-v2 .nav-links-v2.open{display:flex!important}
   .site-header-v2 .nav-links-v2>a,
