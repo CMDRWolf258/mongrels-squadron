@@ -34,3 +34,4 @@ jobs:
           node --experimental-default-type=module scripts/smoke-test.mjs
           node --experimental-default-type=module scripts/smoke-exobiology.mjs
           node --experimental-default-type=module scripts/smoke-pve.mjs
+          node --experimental-default-type=module scripts/smoke-pvp.mjs
