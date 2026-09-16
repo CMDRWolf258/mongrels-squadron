@@ -61,9 +61,8 @@
   .site-header-v2 .nav-mega-footer{display:block;padding:11px 9px}
   .site-header-v2 .menu-toggle{display:inline-flex!important;flex:0 0 auto;margin-left:0}
 
-  /* When a compact group is open, stop scrolling the outer drawer entirely.
-     The open group's content becomes the only scrollable region, so its heading
-     can never be pushed above the top of the menu by browser scroll anchoring. */
+  /* Compact focus mode: an expanded category owns the drawer. Sibling categories
+     temporarily disappear instead of reserving height beneath the open content. */
   .site-header-v2 .nav-links-v2:has(.nav-group[open]){
     height:calc(100vh - 103px);
     height:calc(100dvh - 103px);
@@ -72,10 +71,10 @@
     overflow:clip;
   }
   .site-header-v2 .nav-links-v2:has(.nav-group[open])>a,
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group:not([open]){flex:0 0 auto}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;overflow:hidden}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group:not([open]){display:none!important}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;overflow:hidden;border-top:0}
   .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>summary{flex:0 0 46px;position:relative;z-index:2;background:rgba(8,11,14,.99)}
-  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>.nav-mega{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+  .site-header-v2 .nav-links-v2:has(.nav-group[open])>.nav-group[open]>.nav-mega{flex:1 1 auto;min-height:0;max-height:none;margin-bottom:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 }
 @media(max-width:620px){
   .site-header-v2 .nav-wrap{gap:10px}
