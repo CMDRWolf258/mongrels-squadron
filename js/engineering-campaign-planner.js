@@ -7,7 +7,7 @@
   let plannerOpen = false;
   let flash = null;
 
-  const STARTABLE_GOALS = new Set(['shields','jump-range','mobility']);
+  const STARTABLE_GOALS = new Set(['shields','jump-range','mobility','distributor']);
   const startGoalDetails = {
     shields:{
       option:'Improve Shields · G2/G3 Shield Generator',
@@ -20,6 +20,10 @@
     mobility:{
       option:'Improve Speed & Mobility · G2 Thrusters + optional experimental/G3',
       summary:'Improve Thrusters through a useful G2 result, fly the ship before doing more, then treat the experimental and G3 as separate optional refinements.',
+    },
+    distributor:{
+      option:'Improve Power Distributor · G2 + optional experimental/G3',
+      summary:'Diagnose the actual SYS/ENG/WEP bottleneck, build a useful G2 distributor through The Dweller, stress-test the ship, then treat the experimental and G3 as separate optional refinements.',
     },
   };
 
@@ -173,7 +177,7 @@
     return `<details class="engineering-campaign-planner"${plannerOpen ? ' open' : ''}>
       <summary>
         <span class="engineering-campaign-summary-copy"><small>Engineering · Goal Planner</small><strong>Campaign Planner</strong></span>
-        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : `${available.length || 3} audited campaigns ready`}</span>
+        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : `${available.length || 4} audited campaigns ready`}</span>
       </summary>
       <div class="engineering-campaign-body">
         ${recentWin ? `<div class="engineering-campaign-last-win"><small>Last campaign win</small><strong>${esc(campaignName(recentWin))}${recentWin.shipName ? ` · ${esc(recentWin.shipName)}` : ''}</strong></div>` : ''}
@@ -186,7 +190,7 @@
           <label><span>Campaign</span><select required data-campaign-goal>${available.map(goal => `<option value="${esc(goal.id)}">${esc(startGoalDetails[goal.id]?.option || goal.label)}</option>`).join('')}</select></label>
           <div class="engineering-campaign-goal-hints">${available.map(goal => `<p><strong>${esc(goal.label)}</strong>${esc(startGoalDetails[goal.id]?.summary || goal.description || '')}</p>`).join('')}</div>
           <label><span>Ship</span><input type="text" maxlength="120" required data-campaign-ship placeholder="Ship name or hull — e.g. Triad / Corsair"></label>
-          <label><span>What do you want this ship to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: improve boost speed and handling without creating a heat or power problem."></textarea></label>
+          <label><span>What do you want this ship to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: keep WEP from running dry during normal combat without sacrificing the boost cadence I rely on."></textarea></label>
           <button class="btn btn-primary" type="submit">Start Engineering Campaign</button>
         </form>
         ${historyMarkup()}
@@ -202,6 +206,9 @@
     if (campaign?.goalId === 'mobility') {
       return 'If the ship now moves the way you wanted, complete the campaign here. The experimental and G3 are optional follow-on improvements.';
     }
+    if (campaign?.goalId === 'distributor') {
+      return 'If the distributor now keeps up with the ship’s real workload, complete the campaign here. The experimental and G3 are optional follow-on improvements.';
+    }
     return 'If the shield now solves the problem you started with, complete the campaign here. Continuing to G3 is optional refinement.';
   }
 
@@ -211,6 +218,9 @@
     }
     if (campaign?.goalId === 'mobility') {
       return 'Record the win and close this campaign phase. Future Thrusters work should start from what you learned here rather than automatically extending the grind into G4/G5 or another Engineer unlock.';
+    }
+    if (campaign?.goalId === 'distributor') {
+      return 'Record the win and close this campaign phase. Future distributor work should start from the measured SYS/ENG/WEP behavior rather than automatically extending the grind into G4/G5.';
     }
     return 'Record the win and close this campaign phase. Future shield work should start from what you learned here rather than automatically extending the grind.';
   }
