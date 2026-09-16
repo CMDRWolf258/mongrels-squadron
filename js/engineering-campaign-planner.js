@@ -70,7 +70,7 @@
     const meta = node?.meta || {};
     const rows = [];
     if (meta.requirement) rows.push(`<div><strong>Requirement</strong><p>${esc(meta.requirement)}</p></div>`);
-    if (meta.note) rows.push(`<div><strong>Why this is split out</strong><p>${esc(meta.note)}</p></div>`);
+    if (meta.note) rows.push(`<div><strong>Why this is a separate step</strong><p>${esc(meta.note)}</p></div>`);
     if (meta.stoppingPoint) rows.push(`<div class="is-stop"><strong>Stopping point</strong><p>${esc(meta.stoppingPoint)}</p></div>`);
     if (meta.payoff) rows.push(`<div class="is-payoff"><strong>Take the win</strong><p>${esc(meta.payoff)}</p></div>`);
     return rows.length ? `<div class="engineering-campaign-notes">${rows.join('')}</div>` : '';
@@ -131,13 +131,15 @@
   }
 
   function historyMarkup() {
-    const history = campaignsByRecent().filter(campaign => campaign.status !== 'active').slice(0, 4);
+    const history = campaignsByRecent().filter(campaign => campaign.status !== 'active' && campaign.status !== 'archived').slice(0, 4);
     if (!history.length) return '';
     return `<details class="engineering-campaign-history">
-      <summary>Previous / paused campaigns</summary>
+      <summary>Previous campaigns</summary>
       <div class="engineering-campaign-history-list">${history.map(campaign => `<article>
         <div><small>${esc(campaign.status)}</small><strong>${esc(campaignName(campaign))}${campaign.shipName ? ` · ${esc(campaign.shipName)}` : ''}</strong></div>
         ${campaign.status === 'paused' ? `<button class="btn btn-ghost" type="button" data-campaign-resume="${esc(campaign.id)}">Resume</button>` : ''}
+        ${campaign.status === 'complete' ? `<button class="btn btn-ghost" type="button" data-campaign-reopen-campaign="${esc(campaign.id)}">Reopen Campaign</button>` : ''}
+        <button class="engineering-campaign-text-button" type="button" data-campaign-archive="${esc(campaign.id)}">Remove from History</button>
       </article>`).join('')}</div>
     </details>`;
   }
@@ -256,6 +258,14 @@
     });
     root.querySelectorAll('[data-campaign-resume]').forEach(button => button.addEventListener('click', () => {
       run({ action:'set_campaign_status', campaignId:button.dataset.campaignResume, status:'active' }, 'Resuming campaign…');
+    }));
+    root.querySelectorAll('[data-campaign-reopen-campaign]').forEach(button => button.addEventListener('click', () => {
+      if (data?.planner?.active && !window.confirm('Reopen this completed campaign?\n\nYour currently active Engineering campaign will be paused.')) return;
+      run({ action:'set_campaign_status', campaignId:button.dataset.campaignReopenCampaign, status:'active' }, 'Reopening completed campaign…');
+    }));
+    root.querySelectorAll('[data-campaign-archive]').forEach(button => button.addEventListener('click', () => {
+      if (!window.confirm('Remove this campaign from visible history?\n\nThe campaign record will be archived rather than permanently deleted, and shared Engineer facts will stay intact.')) return;
+      run({ action:'set_campaign_status', campaignId:button.dataset.campaignArchive, status:'archived' }, 'Removing campaign from history…');
     }));
   }
 
