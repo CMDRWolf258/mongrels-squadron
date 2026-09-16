@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=3');
+    link.href = root('css/navigation-v2.css?v=4');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -144,6 +144,11 @@
   });
 
   document.addEventListener('click', event => {
+    if (nav?.classList.contains('open') && !event.target.closest('.site-header-v2 [data-nav]') && !event.target.closest('.site-header-v2 [data-menu-toggle]')) {
+      nav.classList.remove('open');
+      button?.setAttribute('aria-expanded', 'false');
+      closeGroups();
+    }
     if (!event.target.closest('.site-header-v2 .nav-group')) closeGroups();
     if (memberMenu && !event.target.closest('.member-access-menu')) memberMenu.open = false;
   });
@@ -197,7 +202,7 @@
 
     const fetchSession = () => fetch(`/api/auth/session?_=${Date.now()}`, {
       credentials: 'same-origin',
-      headers: { Accept: 'application/json' },
+      headers: { Accept:'application/json' },
       cache: 'no-store',
     }).then(response => response.ok ? response.json() : null);
 
