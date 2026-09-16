@@ -369,7 +369,10 @@ Carrier ownership is optional.
 Framework files:
 - `lib/engineering-campaign.js`
 - `lib/engineering-campaign-data.js`
+- `lib/engineering-campaign-shields.js`
 - `functions/api/pathway/engineering-campaign.js`
+- `js/engineering-campaign-planner.js`
+- `css/engineering-campaign-planner.css`
 
 Storage:
 - `PROJECTS`
@@ -385,6 +388,57 @@ Model:
 5. Optional Background Prep from other pathways
 
 Shared facts retain provenance so future trusted sync/import can write the same fact IDs instead of creating a parallel model.
+
+### Dependency evaluation rule
+
+Campaign dependency readiness must treat **fact-completed nodes exactly like manually completed nodes**. `lib/engineering-campaign.js` now builds a completion map before evaluating dependencies. This is critical for adaptive campaigns: if a Commander already has an Engineer unlocked or already completed a cumulative prerequisite, downstream work should unlock automatically without requiring a fake manual completion.
+
+### Improve Shields — first live goal-specific campaign
+
+`lib/engineering-campaign-shields.js` contains the first audited goal chain. It is intentionally a **G2/G3 Shield Generator phase through Lei Cheung**, not an automatic endgame G5 shield/booster grind.
+
+Current chain:
+1. generic campaign assessment / target / dependency / material-plan setup;
+2. use 5 distinct black markets for The Dweller meeting requirement;
+3. unlock The Dweller at Black Hide (500,000 Cr);
+4. engineer with The Dweller only until the Lei Cheung referral appears;
+5. accumulate the Lei Cheung distinct-market requirement using the existing market counter;
+6. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
+7. choose the Shield Generator blueprint around the ship's role rather than one universal recipe;
+8. open G2 shield access only as far as needed;
+9. engineer the selected Shield Generator through G2;
+10. **fly/test the G2 result before doing more**;
+11. optionally continue to G3 only if the G2 test says the ship still needs it;
+12. test G3 and end the phase.
+
+Design rules:
+- G2 is an explicit legitimate stopping point.
+- After the G2 test, the UI exposes **Take the Win · Complete Campaign** even though optional G3 refinement remains.
+- G5 Shield Generator and G5 Shield Booster work are deliberately deferred to later campaign phases/goals.
+- The 5-black-market and market-count steps use the existing cumulative facts, so prior progress can auto-clear them.
+- Permanent/access-like milestones (The Dweller unlocked, Lei referral, Lei unlocked, Lei G2/G3 access) are stored as shared Engineering facts.
+- Accidental fact marks can be corrected from the campaign step history; counter corrections belong in the Prep Tracker.
+
+### Campaign Planner UI
+
+My Pathway → Engineering now hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
+
+Inactive state:
+- exposes the audited **Improve Shields** campaign only;
+- asks for the ship and the specific shield problem/goal;
+- shows paused/completed campaign history and allows paused campaigns to resume.
+
+Active state:
+- shows one next campaign step at a time;
+- progress meter;
+- resource links from trusted campaign data;
+- permanent-access milestone button or normal Done action as appropriate;
+- counter steps link/scroll to the existing Prep Tracker;
+- full compact step history with Reopen / Undo Mark / Update Tracker corrections;
+- Pause Campaign;
+- explicit Take the Win completion at valid stopping points.
+
+`js/engineering-campaign-planner.js` and `js/engineering-prep-tracker.js` synchronize through the `mongrels:engineering-campaign-updated` browser event so counter edits immediately refresh the active campaign without a page reload.
 
 ### Engineering Prep Tracker
 
@@ -489,6 +543,9 @@ Validated / accepted by Wolf:
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
+- first live **Improve Shields** Engineering Campaign Planner UI and goal chain;
+- fact-completed dependency propagation in the Engineering campaign engine;
+- Campaign Planner ↔ Prep Tracker live browser synchronization;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
 - generalized Ask the Mongrels navigation paths and direct section buttons;
 - Mission Control assistant faction-presence selection / filtered-subset guardrail;
@@ -496,7 +553,6 @@ Implemented but **not yet production-validated unless Wolf confirms/live checks 
 - Trade v2 route rewrite;
 - Carrier Logistics full pathway;
 - Engineering & Shipbuilding full pathway;
-- Engineering Campaign Planner framework;
 - numeric Engineering prerequisite tracker latest Update Progress layout;
 - Engineering route filtering for Give Me Another Route;
 - latest collapsible My Pathway category UX;
