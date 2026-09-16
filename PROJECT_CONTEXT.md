@@ -60,12 +60,13 @@ Current checks include:
 - Engineering campaign fact-completed dependency propagation works;
 - Improve Shields honors existing Lei Cheung access instead of forcing old unlock counters;
 - **Improve Jump Range reuses permanent Felicity/Scout/G2 access recorded by First Engineering Win and preserves its deliberate stopping points;**
-- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step, recognizes Jump Range campaign wording, and does not activate on unrelated navigation questions;
+- **Improve Speed & Mobility reuses the same Felicity access/reputation and preserves G2 / experimental stopping points;**
+- the personalized Assistant/Pathway context selector can read a current Engineering assignment/campaign step, recognizes Jump Range and Mobility campaign wording, and does not activate on unrelated navigation questions;
 - critical Pathway/Assistant Cloudflare Function modules import cleanly;
 - critical APIs still contain their shared `headers()` / `reply()` response helpers;
 - high-value entry pages and Engineering Pathway assets are still present/wired.
 
-This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed** with the new cross-campaign reuse checks. Preserve and extend this suite when new shared platform behavior is added.
+This suite is a **regression safety net, not a browser/production test**. The first workflow run passed. A later run immediately caught an overly literal Assistant Pathway-intent phrase (`current engineering step`), that wording was fixed, and smoke-test run #5 passed. After Improve Jump Range was added, smoke-test run **#13 passed** with the new cross-campaign reuse checks. After Improve Speed & Mobility was added, smoke-test run **#20 passed** with the Felicity-reuse and stopping-point checks. Preserve and extend this suite when new shared platform behavior is added.
 
 ---
 
@@ -212,7 +213,7 @@ Pathway context is selected for natural phrases such as:
 - “How do I do my current task?”
 - “What is my current Engineering step?”
 - “Why am I doing this step?”
-- references to the Campaign Planner, Improve Shields, **Improve Jump Range**, Engineering Prep, or a specific full Pathway assignment.
+- references to the Campaign Planner, Improve Shields, **Improve Jump Range**, **Improve Speed & Mobility / Thrusters**, Engineering Prep, or a specific full Pathway assignment.
 
 When selected, `modules.pathway` can include:
 - saved selected activities, priority (`interested` / `want_to_improve`), experience, play style, and current personal goal;
@@ -416,6 +417,7 @@ Framework files:
 - `lib/engineering-campaign-data.js`
 - `lib/engineering-campaign-shields.js`
 - `lib/engineering-campaign-jump-range.js`
+- `lib/engineering-campaign-mobility.js`
 - `functions/api/pathway/engineering-campaign.js`
 - `js/engineering-campaign-planner.js`
 - `css/engineering-campaign-planner.css`
@@ -508,12 +510,42 @@ Cross-campaign rules:
 - The experimental is deliberately separate so the Commander understands the choice. Inara currently exposes Mass Manager and Deep Charge as range-focused options; use the ship/FSD-specific planner result instead of hard-coding one choice for every drive.
 - G4/G5 are deliberately deferred to a later goal rather than being appended by default.
 
+### Improve Speed & Mobility — third goal-specific campaign
+
+`lib/engineering-campaign-mobility.js` is the third audited campaign. It targets a useful **G2 Thrusters** result first, makes the Commander fly/test the ship, then treats the experimental and optional G3 as separate decisions.
+
+Current chain:
+1. generic campaign assessment, target selection, and dependency mapping;
+2. record a practical movement baseline such as boost/normal speed, handling, heat, power headroom, or behavior at normal operating mass;
+3. choose the Thrusters blueprint around the ship's role: Dirty, Clean, or Reinforced rather than assuming one universal recipe;
+4. plan and gather only the chosen **G1 → G2** material job;
+5. reuse permanent Felicity access from First Engineering Win / Improve Jump Range where already known;
+6. if Felicity is still locked, satisfy Scout, one Meta-Alloy, Deciat safety prep, and unlock her;
+7. open only enough Felicity reputation for G2 Thrusters work;
+8. refresh the exact G2 material shortfall once reputation is known;
+9. engineer the chosen Thrusters blueprint through G2;
+10. **fly/test G2 before deciding what comes next**;
+11. optionally compare experimentals as a separate job — especially Drag Drives vs Drive Distributors for the actual drive/ship mass curve;
+12. gather/apply only the chosen experimental and fly/test it;
+13. optionally continue to G3 only when the chosen blueprint/Engineer path supports it and the ship still needs more;
+14. plan/apply G3 and test the result;
+15. end the phase instead of silently appending G4/G5 or another Engineer unlock.
+
+Mobility-specific rules:
+- Felicity reputation is shared across modules she engineers. Existing First Engineering Win / Jump Range facts proving Felicity unlocked or G2/G3 access legitimately satisfy the corresponding Thrusters gates.
+- The older stored IDs `engineer.felicity-farseer.fsd-g2-ready` / `...fsd-g3-ready` are currently reused as Engineer-reputation proof even though their names are FSD-specific. Do not interpret them as ship/module completion; they only prove Felicity access level.
+- The campaign deliberately distinguishes **performance goals** from heat/durability goals. Dirty is the main speed/mobility comparison, but the site does not force a universal blueprint.
+- G2, G2 + experimental, and G3 are legitimate **Take the Win** points.
+- The experimental is kept separate because the best choice depends on thruster size, ship mass, role, and sometimes Enhanced Performance Thrusters; do not hard-code Drag Drives as universally correct.
+- Current Inara data shows Felicity offers G3 Dirty and Clean Thrusters, while Reinforced G3 is outside this Felicity path. A Reinforced build should normally finish this campaign at G2/experimental rather than silently opening another Engineer-unlock chain.
+- G4/G5 are deliberately deferred.
+
 ### Campaign Planner UI
 
 My Pathway → Engineering hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
 
 Inactive state:
-- exposes a compact selector for the two audited campaigns: **Improve Shields** and **Improve Jump Range**;
+- exposes a compact selector for the three audited campaigns: **Improve Shields**, **Improve Jump Range**, and **Improve Speed & Mobility**;
 - asks for the ship and the specific problem/goal rather than rendering a giant campaign catalog;
 - shows at most the 4 most recent visible paused/completed campaigns;
 - completed campaigns can be **Reopened** with their existing progress intact;
@@ -641,13 +673,15 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win Undo Previous Step on phone;
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass;
 - initial Improve Shields Campaign Planner review, including campaign-history Reopen / Remove from History wording and controls;
-- automated GitHub Actions smoke suite; **run #13 passes with Improve Jump Range cross-campaign reuse coverage**.
+- automated GitHub Actions smoke suite; **run #20 passes with Improve Jump Range and Improve Speed & Mobility cross-campaign reuse coverage**.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
 - second audited **Improve Jump Range** Engineering campaign, including campaign selector UI, First Engineering Win access reuse, G2/experimental/G3 stopping points, and Assistant awareness;
+- third audited **Improve Speed & Mobility** Engineering campaign, including Felicity reuse, blueprint/experimental tradeoff guidance, G2/experimental/G3 stopping points, and Assistant awareness;
 - personalized Ask the Mongrels → My Pathway/current assignment/Engineering campaign context;
 - full end-to-end **Improve Shields** Engineering campaign behavior through actual in-game progression;
 - full end-to-end **Improve Jump Range** behavior through actual in-game progression;
+- full end-to-end **Improve Speed & Mobility** behavior through actual in-game progression;
 - fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
 - Campaign Planner ↔ Prep Tracker live browser synchronization across all campaign steps;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
