@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=8');
+    link.href = root('css/navigation-v2.css?v=9');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -121,16 +121,9 @@
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
   const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
 
-  const pinActivitiesTop = (group, holdMs = 450) => {
+  const pinActivitiesTop = group => {
     if (!nav || !compactNav() || group?.dataset?.navKey !== 'activities') return;
-    const started = performance.now();
-    const pin = () => {
-      if (!group.open || !nav.classList.contains('open')) return;
-      if (nav.scrollTop !== 0) nav.scrollTop = 0;
-      if (performance.now() - started < holdMs) requestAnimationFrame(pin);
-    };
     nav.scrollTop = 0;
-    requestAnimationFrame(pin);
   };
 
   groups.forEach(group => {
