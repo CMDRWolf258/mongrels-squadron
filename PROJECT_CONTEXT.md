@@ -56,14 +56,16 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 Primary files:
 - `scripts/smoke-test.mjs`
 - `scripts/smoke-exobiology.mjs`
+- `scripts/smoke-pve.mjs`
 - `.github/workflows/site-smoke-tests.yml`
 
 The workflow runs on pull requests and normal pushes to `main`; commits that only refresh `data/live-bgs.json` are ignored. It can also be run manually.
 
 Current regression coverage includes:
-- all **eight** full Pathway providers remain structurally valid;
+- all shared full-Pathway provider catalogs covered by the main suite remain structurally valid;
 - Exploration provider, Assistant context, mount/client wiring, and generic-card suppression;
 - Exobiology’s five-route catalog, beginner first task, three-sample genetic loop, Assistant context, shared-provider registration, My Pathway mount/client, and duplicate-card suppression;
+- PvE Combat’s five-route catalog, beginner first task, legal WANTED-target lesson, measurable three-kill beginner capstone, Conflict Zone → Daily Orders handoff, Assistant context, shared-provider registration, My Pathway mount/client, and duplicate-card suppression;
 - cross-path Engineering Prep mappings point only to real current Trade/Mining tasks and tracked Engineering facts;
 - Engineering campaign fact-completed dependency propagation;
 - Improve Shields later/persistent Lei/Dweller access reuse;
@@ -89,6 +91,7 @@ Notable successful runs:
 - #69 — Exploration full provider and wiring
 - #80 — dedicated Exobiology full-Pathway regression suite
 - #81 — Exobiology public Activities-hub cleanup with the complete smoke workflow still green
+- **#91 — dedicated PvE Combat full-Pathway regression suite**
 
 Smoke tests are a regression safety net, **not** a browser or production test.
 
@@ -199,6 +202,7 @@ Faction-presence wording such as “what systems our faction is in,” “where 
 
 Recognized concepts include:
 - current Pathway assignment/task/step;
+- PvE Combat assignment/task/step, including PvE, NPC combat, bounty-hunting and Conflict Zone wording;
 - Exploration assignment/task/step, including survey/deep-space/neutron-route wording;
 - Exobiology assignment/task/step, including exobio, bio survey, Genetic Sampler, Vista Genomics, biological signal, and biological heatmap wording;
 - Engineering Campaign Planner and all six current Engineering campaign goals;
@@ -207,7 +211,7 @@ Recognized concepts include:
 
 When selected, `modules.pathway` can contain:
 - selected activities, priority, experience, play style, and current goal;
-- relevant full-route assignment progress/current task, including Exploration and Exobiology;
+- relevant full-route assignment progress/current task, including PvE Combat, Exploration, and Exobiology;
 - optional Engineering Prep attached to the current Trade/Mining task;
 - active Engineering campaign goal/ship/progress/next step/stopping-point state;
 - query-selected Community Goal Hauler Prep state.
@@ -289,6 +293,7 @@ Assignment types:
 ### Activity collapse UX
 
 The right-hand **Your Pathway** area uses compact `<details>` sections. Current full-route categories are:
+- PvE Combat
 - Anti-Xeno
 - Background Simulation
 - Mining
@@ -328,6 +333,7 @@ Current full providers:
 6. Engineering & Shipbuilding — `engineering-v1`
 7. Exploration — `exploration-v1`
 8. Exobiology — `exobiology-v1`
+9. **PvE Combat — `pve-v1`**
 
 ### Anti-Xeno
 - Scout School — Vulture
@@ -431,6 +437,34 @@ Important guardrails:
 - do not hard-code one universal colony spacing distance; it varies by organism/species, so use Genetic Sampler feedback;
 - Exobiology is its own full provider even though it naturally complements Exploration;
 - first-path teaching prioritizes a complete find/sample/sell loop over credits-per-hour optimization.
+
+### PvE Combat
+
+Primary files:
+- `lib/pathway-pve.js`
+- `js/pathway-pve.js`
+- shared provider registration in `functions/api/pathway/assignments.js`
+- mount in `pathway/index.html`
+- focused regression suite: `scripts/smoke-pve.mjs`
+
+Routes:
+- **Combat Foundations — Scan, Fight, Cash In**
+- **Bounty Hunter — Pips, Position, Pressure**
+- **Conflict Zone Specialist — Survive the Battle**
+- **Combat Specialist — Diagnose, Adapt, Sustain**
+- **Combat Lead — Coordinate, Recover, Teach**
+
+Progression intent:
+- Beginner uses a rebuy-safe ship, confirms legal WANTED targets before firing where local law applies, practices active pip management and fight selection, learns to disengage before destruction is inevitable, returns/cashes bounty vouchers, then completes a short independent three-kill bounty session.
+- Bounty Hunter measures an honest session, improves fire-group logic, proactive pip rhythm, useful time-on-target, purposeful subsystem targeting, and sustained-session resource management before testing one measured change.
+- Conflict Zone Specialist audits for sustained pressure, stays integrated with friendly pressure, prioritizes useful targets, maintains battlefield awareness, increases difficulty deliberately, practices wing focus/recovery, and checks **Daily Orders / Mission Control** before assuming a CZ result helps current BGS/squad strategy.
+- Combat Specialist uses a repeatable difficult benchmark to separate applied damage, defensive failure, resource limits, and technique problems; changes one measured issue and retests it.
+- Veteran/Mentor route focuses on objective/stop-condition planning, target calls, focus fire, recovery, mentoring, and debrief.
+
+Important guardrails:
+- no particular combat hull is mandatory; the Ship Catalogue provides Mongrel examples, not gates;
+- beginner progression prioritizes control, legality, pips, target choice, survival, and return before damage optimization;
+- PvE teaches NPC combat and squad combat operations. **PvP remains a separate Pathway** because human-opponent prediction, range control, matchup knowledge, Open survival, and organized PvP require their own progression.
 
 ---
 
@@ -610,9 +644,8 @@ Accepted/Declined are terminal in the normal workflow. Discord Member role assig
 
 ## Current roadmap
 
-Broader full-Pathway coverage remains the next major development priority. Exploration and Exobiology are now implemented, so the likely working order is:
-- **PvE Combat**
-- PvP
+Broader full-Pathway coverage remains the next major development priority. Exploration, Exobiology, and PvE Combat are now implemented, so the likely working order is:
+- **PvP**
 - Surface Operations
 - Colonization
 - Squadron Operations
@@ -634,11 +667,12 @@ Validated / accepted by Wolf or CI:
 - First Engineering Win card and Undo behavior on phone;
 - Engineering Prep Tracker concept/styling;
 - initial Improve Shields Campaign Planner review including Reopen / Remove from History wording;
-- automated workflow through **run #81**, covering the eight full Pathway providers plus the focused Exobiology regression suite, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Engineering Prep, personalized Assistant context, API imports, and key page wiring.
+- automated workflow through **run #91**, including the focused Exobiology and PvE Combat regression suites, all six Engineering campaigns, Community Goal Hauler Prep, cross-path Engineering Prep, personalized Assistant context, API imports, and key page wiring.
 
 Implemented but **not yet production-validated unless Wolf later confirms/live checks succeed**:
 - **Exploration full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, and Assistant context;
 - **Exobiology full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, Assistant context, and Activities-hub status;
+- **PvE Combat full Pathway** — all five routes, My Pathway UI, progress persistence, generic-card suppression, Assistant context, CZ → Daily Orders operational handoff, and Activities-hub status;
 - Improve Jump Range;
 - Improve Speed & Mobility;
 - Improve Power Distributor;
