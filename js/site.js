@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=6');
+    link.href = root('css/navigation-v2.css?v=7');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -44,7 +44,7 @@
         <span class="nav-mega-label">${column.label}</span>
         ${column.links.map(link => `<a href="${link.href}"${link.external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${link.title}<small>${link.note}</small></a>`).join('')}
       </div>`).join('');
-    return `<details class="nav-group${current}"><summary>${label}</summary><div class="nav-mega${columns.length === 2 ? ' nav-mega-two' : ''}">${columnHtml}${footer ? `<div class="nav-mega-footer">${footer}</div>` : ''}</div></details>`;
+    return `<details class="nav-group${current}" data-nav-key="${key}"><summary>${label}</summary><div class="nav-mega${columns.length === 2 ? ' nav-mega-two' : ''}">${columnHtml}${footer ? `<div class="nav-mega-footer">${footer}</div>` : ''}</div></details>`;
   }
 
   function installNavigation() {
@@ -120,26 +120,24 @@
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
   const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
-  const revealGroupTop = group => {
-    if (!nav || !compactNav()) return;
-    const summary = group.querySelector(':scope > summary');
-    if (!summary) return;
-    // Let native <details> finish its layout before setting the drawer scroll.
-    // Use the summary itself as the anchor and leave visible breathing room above it.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const navRect = nav.getBoundingClientRect();
-      const summaryRect = summary.getBoundingClientRect();
-      const inset = 18;
-      const top = nav.scrollTop + (summaryRect.top - navRect.top) - inset;
-      nav.scrollTop = Math.max(0, top);
-    }));
+  const pinActivitiesTop = group => {
+    if (!nav || !compactNav() || group?.dataset?.navKey !== 'activities') return;
+    const reset = () => {
+      if (group.open && nav.classList.contains('open')) nav.scrollTop = 0;
+    };
+    reset();
+    requestAnimationFrame(() => {
+      reset();
+      requestAnimationFrame(reset);
+    });
+    window.setTimeout(reset, 120);
   };
 
   groups.forEach(group => group.addEventListener('toggle', () => {
     if (group.open) {
       closeGroups(group);
       if (memberMenu) memberMenu.open = false;
-      revealGroupTop(group);
+      pinActivitiesTop(group);
     }
   }));
 
