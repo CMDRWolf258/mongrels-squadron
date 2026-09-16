@@ -12,6 +12,16 @@
 .engineering-prep-card p{margin:0;color:var(--muted);line-height:1.55;font-size:.86rem}
 .engineering-prep-total{flex:0 0 auto;text-align:right;color:var(--accent);font-weight:900;font-size:1.45rem;line-height:1}
 .engineering-prep-total small{display:block;margin-top:5px;color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.engineering-prep-target{margin-top:14px;padding:12px;border:1px solid rgba(34,211,238,.18);border-radius:8px;background:rgba(34,211,238,.045)}
+.engineering-prep-target>div:first-child{display:flex;justify-content:space-between;gap:16px;align-items:center}
+.engineering-prep-target span{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.engineering-prep-target strong{font-size:.8rem;color:var(--text)}
+.engineering-prep-track{height:6px;margin-top:9px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.engineering-prep-track i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.engineering-prep-target small{display:block;margin-top:7px;color:var(--muted);font-size:.68rem}
+.engineering-prep-target.is-complete{border-color:rgba(94,230,168,.34);background:rgba(94,230,168,.055)}
+.engineering-prep-target.is-complete .engineering-prep-track i{background:var(--success)}
+.engineering-prep-target.is-complete small{color:var(--success)}
 .engineering-prep-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .engineering-prep-quick button{min-height:34px;padding:0 11px;border:1px solid var(--line-accent);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:900;cursor:pointer}
 .engineering-prep-quick button:hover{border-color:var(--accent)}
@@ -26,4 +36,4 @@
 .engineering-prep-status[data-state='success']{color:var(--success)}
 .engineering-prep-status[data-state='error']{color:var(--danger)}
 .engineering-prep-card button:disabled{opacity:.55;cursor:not-allowed}
-@media(max-width:620px){.engineering-prep-card-head{flex-direction:column}.engineering-prep-total{text-align:left}.engineering-prep-entry{grid-template-columns:1fr}.engineering-prep-entry .btn{width:100%}.engineering-prep-meta{flex-direction:column;gap:3px}}
+@media(max-width:620px){.engineering-prep-card-head{flex-direction:column}.engineering-prep-total{text-align:left}.engineering-prep-target>div:first-child{align-items:flex-start;flex-direction:column;gap:4px}.engineering-prep-entry{grid-template-columns:1fr}.engineering-prep-entry .btn{width:100%}.engineering-prep-meta{flex-direction:column;gap:3px}}
