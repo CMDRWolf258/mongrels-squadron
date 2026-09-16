@@ -4,200 +4,160 @@ _Last updated: 2026-09-15_
 
 ## Read this first
 
-**AI / developer handoff:** Before making changes to this project, read this file and inspect the current repository state. The repository is the source of truth. If this document, a prior chat, memory, a screenshot, or an old release note conflicts with current code, **current code wins**.
+**AI / developer handoff:** Before making changes, read this file and inspect the current repository. The repository is the source of truth. If this document, memory, an old chat, a screenshot, or release notes conflict with current code, **current code wins**.
 
-Do not reuse remembered file SHAs. Fetch the current file before modifying it, then update using the current blob SHA.
+Never reuse remembered file SHAs. Fetch the current file before modifying it.
 
-This document is intentionally a handoff/architecture guide, not a duplicate of the codebase. Update it after meaningful architecture, permission, workflow, integration, or project-direction changes. Do not update it for every cosmetic edit.
+This is an architecture/handoff guide, not a changelog or duplicate of the codebase. Update it after meaningful workflow, permission, storage, integration, or project-direction changes.
 
 ---
 
 ## Project identity
 
-- **Site:** Regiment of Imperial Mongrels squadron website for Elite Dangerous.
+- **Squadron:** Regiment of Imperial Mongrels
+- **Commander / Site Admin:** CMDR Wolf258 (Wolf)
+- **Official home:** Diaba
 - **Repository:** `CMDRWolf258/mongrels-squadron`
 - **Production:** `https://mongrels-squadron.pages.dev/`
-- **Hosting:** Cloudflare Pages with Pages Functions and KV-backed server-side features.
-- **Owner / Site Admin:** CMDR Wolf258 (Wolf). Site Admin is intentionally a Wolf-only authority tier.
-- **Official squadron home:** Diaba.
+- **Hosting/runtime:** Cloudflare Pages + Pages Functions + KV-backed server features
+- **Theme:** black/charcoal with cyan/blue; restrained military/HUD styling
+- **Navigation convention:** use **CARRIERS**, not Fleet
 
-The site is both a public squadron presence and a private operational/member platform. Public content, authenticated member tools, officer management, recruitment, Discord integration, BGS tooling, projects, carriers, trade, PvP, member profiles, guides, and the Mongrel assistant all live in the same project.
+The site is both a public squadron presence and a private operational platform: recruitment, Discord integration, member auth, Mission Control/BGS, projects, carriers, trading, PvP, profiles/roster, guides, gallery, and Ask the Mongrels all live here.
 
 ---
 
-## Core product philosophy
+## Product architecture
 
 ### Website vs Discord
 
-Use the **website as the source of truth for structured data and workflows**. Use **Discord for communication, identity/community, notifications, and immediate coordination**.
+- **Website = structured source of truth** for applications, profiles, projects, tasking, status, and admin workflows.
+- **Discord = identity/community + communication + notifications + immediate coordination.**
 
-Examples:
-- Applications live on the website; Discord announces submissions.
-- Member/officer authority is resolved server-side from Discord identity/roles.
-- Discord onboarding routes prospects into the website application workflow.
-- Operational data and tools belong on the site; Discord can alert or point to them.
+Do not duplicate structured website workflows into Discord unless there is a clear reason.
 
-### Visibility states
+### Visibility behavior
 
-When an authenticated workflow is completed, prefer showing a clear completed/status state instead of making the feature disappear.
+Completed authenticated workflows should usually show a clear completed/status state rather than disappearing entirely.
 
-Examples:
-- Existing members visiting recruitment/application areas should see a member/preview state rather than a missing button.
-- Submitted applications remain visible to the applicant with their status.
+### Mobile/tablet
 
-### Mobile matters
-
-Wolf travels often and regularly uses the site from desktop, phone, and iPad. Admin/member workflows should remain usable on smaller screens and should not assume desktop-only interaction.
+Wolf travels often and uses desktop, phone, and iPad. Admin/member tools must remain practical on smaller screens.
 
 ---
 
-## Visual / UX baseline
+## Authentication / authority
 
-- Dark black/charcoal foundation.
-- Cyan/blue accent system.
-- Restrained military / tactical / HUD influence; avoid turning the interface into a noisy sci-fi dashboard.
-- Personal Elite Dangerous screenshots are used as hero imagery where appropriate.
-- Decorative motifs stay behind readable content and are reduced on phones.
-- Navigation label is **CARRIERS**, not Fleet.
-- Keep layouts responsive and avoid overlapping fixed-height card/grid assumptions.
+Authentication is Discord OAuth in `lib/auth.js` and `/api/auth/*`.
 
-Current visual identity work is described in the README release notes, but inspect `css/global.css` and the current page markup before extending it.
-
----
-
-## Authentication and authority model
-
-Authentication is Discord OAuth, implemented in `lib/auth.js` and the `/api/auth/*` Pages Functions.
-
-OAuth scope:
+OAuth scopes:
 - `identify`
 - `guilds.members.read`
 
-Website access levels:
-1. **Public** — no authenticated authority.
-2. **Member** — authenticated Mongrel member.
-3. **Officer** — member plus approved management capabilities.
-4. **Site Admin** — Wolf-only website authority.
+Access tiers:
+1. Public
+2. Member
+3. Officer
+4. Site Admin — intentionally Wolf-only
 
 Important behavior:
-- `ADMIN_USER_ID` resolves directly to `site_admin`.
-- Officer access is based on `OFFICER_ROLE_IDS`.
-- Member access is based on `MEMBER_ROLE_ID`.
-- A Discord server member who does not yet have the full Member role can still authenticate with `access: no_access` and `membershipVerified: true`. This is intentional so Applicants can use the website application system.
-- Sessions are signed server-side and stored in the `mongrels_session` cookie.
-
-Never replace server-side authorization with UI hiding alone. Buttons/links may be hidden for UX, but privileged API routes must enforce access themselves.
+- `ADMIN_USER_ID` resolves to `site_admin`.
+- `OFFICER_ROLE_IDS` drives Officer access.
+- `MEMBER_ROLE_ID` drives Member access.
+- Discord server members without Member role may still authenticate with `access: no_access` and `membershipVerified: true`; this is required for Applicants.
+- Sessions are signed server-side in `mongrels_session`.
+- UI hiding is never a substitute for server-side authorization.
 
 ---
 
-## Secrets, variables, and bindings
+## Secrets / environment / storage
 
-### Never commit or paste secret values
-
-Treat at least these as secrets:
+Never commit or paste secret values:
 - `DISCORD_BOT_TOKEN`
 - `DISCORD_CLIENT_SECRET`
 - `SESSION_SECRET`
 
-Do not place secret values in GitHub, public JavaScript, project documentation, screenshots, or chat messages.
-
-### Important environment configuration
-
-Common environment variables used by the current architecture include:
+Important environment values include:
 - `CLIENT_ID`
 - `REDIRECT_URI`
 - `GUILD_ID`
 - `MEMBER_ROLE_ID`
 - `OFFICER_ROLE_IDS`
 - `ADMIN_USER_ID`
-- `DISCORD_PUBLIC_KEY` (optional override; public/non-secret)
-- `APPLICANT_ROLE_ID` (optional override)
-- `GUEST_ROLE_ID` (optional override)
-- `WELCOME_CHANNEL_ID` (optional override)
-- `RECRUITMENT_CHANNEL_ID` (optional override)
+- `DISCORD_PUBLIC_KEY`
+- `APPLICANT_ROLE_ID`
+- `GUEST_ROLE_ID`
+- `WELCOME_CHANNEL_ID`
+- `RECRUITMENT_CHANNEL_ID`
 
-### KV bindings
+Important KV bindings:
+- **`PROJECTS`** — applications, member profiles, Discord onboarding state, recruitment DM/alert state, new-member onboarding state, and other structured project data.
+- **`DAILY_ORDERS`** — private Mission Control/BGS strategy and related configuration.
 
-Confirmed important bindings:
-- **`PROJECTS`** — reused by several current structured features, including applications, member profiles, Discord onboarding state, one-time Applicant DM state, onboarding bundle state, and recruitment alert idempotency state.
-- **`DAILY_ORDERS`** — includes private Mission Control/BGS strategy state and operating-band configuration.
-
-Do not add a new KV namespace casually. Reuse existing bindings when the data shape/scale is appropriate; split storage only when there is a clear operational reason.
+Do not create a new KV namespace casually when an existing binding is appropriate.
 
 ---
 
 ## Discord recruitment integration
 
-The project uses the existing Discord bot/application **Imperial Mongrels Website**. Do not introduce another general-purpose bot just to duplicate functionality.
+Use the existing Discord app/bot **Imperial Mongrels Website**. Do not add another general-purpose bot just to duplicate site functionality.
 
-### Safe-to-commit Discord identifiers
-
-These are IDs/public data, not secrets:
-
-- Discord application public key: `4d86ba25b2e8457730d568864182cbdf9b7057bd174b6201698f650ac5206064`
+Safe/public Discord identifiers:
+- Application public key: `4d86ba25b2e8457730d568864182cbdf9b7057bd174b6201698f650ac5206064`
 - Applicant role: `1012130660187656233`
 - Guest role: `1017264444553838622`
 - Welcome channel: `1012755466700460163`
-- Recruitment review channel — **The High Council**: `1426641891381739612`
+- Recruitment review channel / **The High Council**: `1426641891381739612`
 
-Defaults live in `lib/discord-onboarding.js` and `lib/discord-recruitment.js`, with environment-variable overrides supported.
+Bot permission principle: minimum required permissions only. No Administrator.
 
-### Bot permission philosophy
-
-Use minimum required permissions. Do **not** grant Administrator merely to make an integration easy.
-
-For the current recruitment flow the bot needs, as applicable:
-- View Channel
-- Send Messages
-- Embed Links
+Current role needs:
 - Manage Roles
-
-The bot role must sit above Applicant and Guest for role assignment/removal.
-
-### Current onboarding flow
-
-Public flow:
-
-**Join Discord → Welcome → choose Applicant or Guest**
-
-Applicant path:
-1. User clicks the custom `🐺 Applicant` button.
-2. Bot adds Applicant.
-3. Bot removes Guest if present.
-4. Bot sends an ephemeral confirmation.
-5. Bot sends a **one-time** Applicant welcome DM containing application/rules links.
-6. Applicant completes the website application.
-
-Guest path:
-1. User clicks `🤝 Guest`.
-2. Bot adds Guest.
-3. Bot removes Applicant if present.
-
-The selector custom IDs are:
-- `mongrels_onboarding_applicant`
-- `mongrels_onboarding_guest`
+- bot role above **Member**, **Applicant**, and **Guest** for roles it must add/remove
+- View Channel / Send Messages / Embed Links in channels it posts to
 
 Discord Interactions endpoint:
 - `/api/discord/interactions`
 
-The website can publish the bot-owned selector/Ready-to-Apply bundle to `#welcome` from the Site Admin tool.
+### Applicant/Guest onboarding
 
-### Applicant DM anti-spam behavior
+Applicant button:
+1. adds Applicant
+2. removes Guest
+3. sends ephemeral confirmation
+4. sends one-time Applicant DM
 
-`sendApplicantWelcomeOnce()` stores per-user state in `PROJECTS` under prefix:
+Guest button:
+1. adds Guest
+2. removes Applicant
+
+Custom IDs:
+- `mongrels_onboarding_applicant`
+- `mongrels_onboarding_guest`
+
+Applicant DM state prefix:
 - `discord-applicant-welcome-v1:`
 
-Behavior:
-- successful DM is sent once per user;
-- role switching does not resend it;
-- pending state reduces immediate click races;
-- failed sends enter a retry cooldown.
+Wolf has a deliberate Site Admin testing bypass in `isEstablishedMember()` so he can test Applicant/Guest buttons despite being an established member.
 
-Current limitation: the DM helper does **not** check the applicant's current website application status before sending. It relies on one-time DM state only.
+---
 
-### Wolf testing bypass
+## Recruitment requirements
 
-`isEstablishedMember()` deliberately treats the Site Admin user as testable before checking Member/Officer roles, so Wolf can exercise Applicant/Guest buttons while already being an established Mongrel. Do not remove this casually; it exists for admin testing.
+Joining requires **both**:
+1. the Mongrels website application; and
+2. an in-game Elite Dangerous Squadron application to **Regiment of Imperial Mongrels [R1MM]**.
+
+Beginner-facing in-game guidance currently uses:
+- Right-hand Panel / Internal Panel
+- Squadrons
+- search **Mongrels**
+- select **Regiment of Imperial Mongrels [R1MM]**
+- Apply
+
+Important post-overhaul behavior: after leadership accepts the in-game application, the applicant must return to Squadrons and **confirm the acceptance / choose Join Squadron** before in-game membership is complete.
+
+The website cannot accept that Elite Squadron application itself.
 
 ---
 
@@ -210,260 +170,288 @@ Primary files:
 - `applications/index.html`
 - `js/applications-admin.js`
 - `functions/api/applications/index.js`
+- `lib/discord-recruitment.js`
 
 Storage:
-- `PROJECTS` KV
-- key: `applications-v1`
+- `PROJECTS`
+- key `applications-v1`
 
-Application lifecycle:
+Statuses:
 - `draft`
 - `submitted`
 - `under_review`
 - `accepted`
 - `declined`
 
-Rules:
-- One application per Discord owner ID.
-- Drafts can be saved repeatedly.
-- Submission locks applicant editing.
-- Drafts are private and excluded from officer review lists.
-- Officers and Site Admin can review submitted/non-draft applications.
-- Officer notes are private.
-- Full members/officers/site admin cannot submit a new application; they receive a member/preview experience instead.
-- Acceptance does **not** automatically promote Discord roles in v1; final membership-role handling remains manual unless intentionally changed later.
+### Applicant rules
 
-Tone requirement: this is a squad application, not a job interview. Short answers and low-pressure language are intentional.
+- One current application record per Discord owner ID.
+- Drafts are editable/saveable.
+- Website submission requires the applicant to acknowledge that the in-game Squadron application has also been submitted.
+- Submitted applications lock applicant editing.
+- Drafts are not shown in the officer queue.
+- Full members/officers/site admin cannot submit another normal application; they get a member/preview state.
+- Tone stays low-pressure: this is a squad application, not a job interview.
+
+### Officer review / state safety
+
+- Officers/Site Admin review submitted/non-draft applications.
+- Private Officer Notes remain leadership-only.
+- Applicant-facing decline text is separate from private notes.
+- In-game Squadron application verification is explicitly tracked by leadership.
+- Normally an application should not be approved until the matching in-game application is verified; an explicit exception path exists and is audited.
+- **Accepted is terminal** in the normal review workflow.
+- **Declined is terminal** unless leadership explicitly chooses **Allow Reapplication**.
+- Normal review cannot casually move Accepted/Declined applications backward into Under Review.
+
+### Acceptance behavior
+
+On first transition to Accepted:
+1. assign `MEMBER_ROLE_ID` in Discord
+2. remove Applicant and Guest best-effort
+3. only then mark the website application Accepted
+4. record approver/time
+5. send one-time acceptance DM
+6. DM reminds applicant to re-authenticate for website access
+7. DM reminds applicant of the final in-game **Join Squadron / Confirm** step
+
+If Discord Member role assignment fails, the application must **not** be marked Accepted.
+
+Acceptance DM state prefix:
+- `discord-recruitment-acceptance-dm-v1:`
+
+### Decline behavior
+
+On Decline:
+- website decision is saved even if Discord DM fails;
+- applicant sees a leadership message on `/apply/`;
+- a one-time Discord decline DM is attempted;
+- private officer notes are not exposed to the applicant.
+
+Decline DM state prefix:
+- `discord-recruitment-decline-dm-v1:`
+
+### Reapplication behavior
+
+**Allow Reapplication** is only available from a Declined application.
+
+When used:
+- the declined cycle is archived into officer-visible decision history;
+- a new application ID/cycle is created as Draft;
+- previous answers are prefilled;
+- in-game application acknowledgement/verification is reset;
+- applicant can edit and resubmit;
+- a Discord DM with **Continue Application** is attempted;
+- the new ID allows normal submission-alert idempotency to work again.
+
+Reapplication DM state prefix:
+- `discord-recruitment-reapplication-dm-v1:`
 
 ---
 
-## Recruitment officer notifications
+## Recruitment notifications
 
-When an application is successfully submitted, the website attempts to post a Discord alert to **The High Council** using `lib/discord-recruitment.js`.
+New submission alerts go to **The High Council** through `lib/discord-recruitment.js`.
 
-The application save is authoritative. A Discord outage must **not** make an otherwise valid application submission fail.
+A valid application save/submission is authoritative; Discord notification failure must not invalidate it.
 
-Alert content includes:
-- CMDR name
-- Discord identity/mention
-- Submitted status/time
-- `Review Application` link to `/applications/`
-
-Alert idempotency state is stored per application in `PROJECTS` under:
+Submission alert idempotency prefix:
 - `discord-recruitment-alert-v1:`
 
-The helper uses pending/attempt state to reduce duplicate sends and a retry cooldown after failure. KV is eventually consistent, so this is strong practical duplicate protection rather than a transactional database guarantee.
+---
+
+## New-member onboarding
+
+Newly accepted members who came through the current application workflow receive a temporary checklist on `/member/` after they activate Member access.
+
+API:
+- `/api/member/onboarding`
+- file: `functions/api/member/onboarding.js`
+
+Checklist:
+- Website Member access active — automatic
+- Confirm final in-game Squadron acceptance / Join Squadron — member checkbox
+- Create Member Profile — automatic based on `profiles-v1`
+- Review current Daily Orders — member checkbox
+
+When all items are complete, the member can dismiss the checklist.
+
+State prefix:
+- `member-onboarding-v1:`
+
+Longtime members without a current Accepted application/accepted timestamp should not suddenly receive this checklist.
 
 ---
 
-## Site Admin Lab / onboarding controls
+## Site Admin Lab
 
-Wolf has a Site Admin-only link from the Member Portal to:
+Wolf-only launch point:
 - `/discord-onboarding/`
 
-This page began as recruitment onboarding controls but is intentionally becoming a **Site Admin Lab** for safe test buttons and diagnostics.
+Member Portal exposes **Site Admin Lab** only for `site_admin`; APIs still enforce Site Admin server-side.
 
-Current capabilities include:
-- Discord recruitment backend/config status
+Current controls include:
+- Discord integration/config status
 - publish replacement Applicant/Guest selector
 - test The High Council recruitment alert
+- **Send Test Acceptance DM to Me**
 
-Future admin-only test utilities can live here when they are useful and safe. Keep destructive actions clearly separated/labeled and require server-side Site Admin authorization plus same-origin/request markers.
+The acceptance-DM test must not:
+- assign/remove roles;
+- alter an application;
+- write the production one-time acceptance-DM state.
+
+Use this page as the preferred home for future safe diagnostics/test buttons.
 
 ---
 
-## Member Portal
+## Member Portal / profiles
 
-`/member/` is the authenticated dashboard and should remain the primary private launch point.
+`/member/` is the primary authenticated dashboard.
 
-Current dashboard areas include:
+Major private areas include:
 - Daily Orders
 - Projects & Events
 - Carrier Coordination
 - Trader's Outpost
-- Squadron Roster
+- Squadron Roster / Profiles
 - PvP tools
-- Member resources
-- Officer Tools for Officer+
-- Site Admin-only utilities such as Assistant Knowledge Gaps and Site Admin Lab
+- Officer Tools
+- Site Admin Lab / Assistant Knowledge Gaps for Site Admin
 
-Site Admin-only dashboard links use `data-dashboard-site-admin` and are revealed only when the session access is `site_admin`. Privileged destination APIs must still enforce Site Admin independently.
+Profiles use `PROJECTS` key:
+- `profiles-v1`
 
----
-
-## Mission Control / BGS principles
-
-Mission Control is member-only and uses live/refreshable faction/system data plus private officer strategy.
-
-Current strategy concepts include:
-- automatic operating bands for controlled vs non-controlled Mongrel presences;
-- per-system overrides;
-- watch/attention handling;
-- retreat warnings;
-- private officer strategy stored server-side;
-- live system/presence refresh with former presences retained.
-
-Important project convention: operational BGS guidance should be concrete and quantified where possible rather than vague. Examples include explicit bounty-credit targets, mission INF targets, which factions to support/avoid, and stop conditions.
-
-The user uses **INF** to mean mission Influence reward ticks/pips, not faction influence percentage points. Keep these distinct in BGS tools/content.
-
-If modifying BGS thresholds or defaults, inspect the current Mission Control code and stored-strategy migration/version logic first. Do not rely on an old chat value.
+Member profile creation is part of new-member onboarding.
 
 ---
 
-## Other major site modules
+## Mission Control / BGS conventions
 
-The project is large. Current major areas include:
+Mission Control is member-only with live/refreshable system/faction data and private officer strategy.
+
+Operational guidance should be concrete and quantified where possible: bounty-credit targets, mission INF targets, factions to support/avoid, and stop conditions.
+
+**INF** means mission Influence reward ticks/pips, not faction influence percentage points.
+
+Before changing BGS thresholds/defaults, inspect current code and strategy migration/version logic. Do not rely on old chat values.
+
+Known deferred BGS item: a previously discussed retreat-warning default change may still need implementation; inspect current code before acting.
+
+---
+
+## Other major modules
+
 - Home
-- About / history / rules
+- About / Rules
 - Mission Control / Operations
 - Projects & Events
 - Recruitment
-- Recruitment Applications / officer review
+- Recruitment Applications
 - Member Portal
-- Squadron Roster
-- Member Profiles
-- CARRIERS / Carrier Coordination
+- Squadron Roster / Profiles
+- CARRIERS
 - Trader's Outpost
 - Ship Catalogue
-- PvP tools / bounty board
+- PvP / Bounty Board
 - Gallery
 - Guides / Field Manual / Mining Manual
-- Ask the Mongrels assistant
+- Ask the Mongrels
 - Assistant Knowledge Gaps
-- Site Admin Lab / Discord onboarding controls
+- Site Admin Lab
 
-Do not assume a feature is unfinished because it is not described in this file. Search the repository first.
+Do not assume a feature is unfinished because it is not described here. Search the repo first.
 
 ---
 
 ## Ask the Mongrels
 
-The site includes an AI assistant with a modular knowledge base and knowledge-gap logging.
+The site includes an AI assistant with modular knowledge and knowledge-gap logging.
 
-Guiding principles:
-- Prefer curated squad/site knowledge and current structured site context.
-- Keep public/member context boundaries intact.
-- Member-only Mission Control context is only supplied after authentication.
-- Knowledge gaps should feed future content improvements rather than encouraging invented answers.
-
-When extending assistant knowledge, favor modular additions and current Elite Dangerous research over one giant monolithic prompt/file.
+Principles:
+- prefer curated squad/site knowledge and current structured context;
+- keep public/member boundaries intact;
+- only provide member-only Mission Control context after authentication;
+- use knowledge gaps to improve content instead of inventing answers;
+- prefer modular additions over one giant prompt/knowledge file.
 
 ---
 
-## Squadron rules/content conventions that affect the site
+## Squad rules that affect site content
 
-Important recruitment/squad expectations:
-- Mongrels operate primarily in **Open Play**.
-- Squad BGS activity must be performed in **Open**.
-- Teamwork is central to the squad culture.
+- Open Play is the squad standard.
+- Mongrel BGS activity must be performed in Open.
+- Teamwork matters.
 - Respectful conduct/fair play is expected.
 - Combat logging is prohibited.
-- Solo/Private Group use is limited to rare exceptions and is not a way to avoid player opposition during squad BGS work.
+- Solo/Private Group is for limited exceptions, not avoiding player opposition during squad BGS work.
 
-Do not silently weaken these rules in recruitment copy or application expectations.
-
----
-
-## Development workflow — important
-
-### Before editing
-
-1. Read this file when entering from a new chat/context.
-2. Inspect the current repository implementation relevant to the task.
-3. Fetch every existing file that will be modified and use its **current SHA**.
-4. Treat the repository as the source of truth.
-5. Check whether the requested behavior already exists before adding a duplicate feature.
-
-### While editing
-
-- Prefer direct GitHub implementation; Wolf generally does not want to manually replace whole files.
-- Keep changes scoped and understandable.
-- Preserve existing auth/permission boundaries.
-- Use server-side checks for privileged actions.
-- Reuse established patterns/helpers rather than creating parallel implementations.
-- Keep mobile/tablet behavior in mind.
-- For multi-step work, give short progress updates rather than disappearing into a long opaque process.
-
-### After editing
-
-- Do not claim production deployment is verified unless it was actually checked or Wolf confirms it.
-- GitHub commit success means the source changed; Cloudflare deployment is a separate step.
-- When adding integrations, test the narrowest safe operation first (for example, a harmless Discord test alert before relying on a live workflow).
+Do not silently weaken these expectations in recruitment copy.
 
 ---
 
-## Image / media workflow
+## Development workflow
 
-Avoid base64 image embedding/encoding as a normal workflow. It has been slow, fragile, and unpleasant for this project.
+Before editing:
+1. Read this file in a new chat/context.
+2. Inspect current repo implementation.
+3. Fetch every existing file to obtain the **current SHA**.
+4. Treat current code as source of truth.
+5. Check for existing implementation before adding duplicate functionality.
 
-Prefer:
-- normal repository image files;
-- efficient image formats (WebP/PNG/JPEG as appropriate);
-- direct GitHub/file workflows;
-- ZIP/batch workflows when many images need to be added.
+While editing:
+- Prefer direct GitHub implementation; Wolf usually does not want manual whole-file replacement.
+- Keep changes scoped.
+- Preserve auth boundaries.
+- Privileged actions require server-side checks.
+- Reuse established helpers/patterns.
+- Keep phone/iPad layouts in mind.
+- Give short progress updates during multi-step work.
 
-Do not reintroduce base64 blobs into HTML/CSS unless there is a very specific reason and Wolf explicitly accepts the tradeoff.
-
----
-
-## Discord / bot design rules
-
-- Prefer the existing **Imperial Mongrels Website** bot for site-specific Discord actions.
-- Prefer webhooks for simple one-way notifications when a bot interaction is not needed.
-- Avoid adding overlapping general-purpose bots.
-- Reverse/slash-command workflows are not a priority unless there is a clear use case.
-- Role assignment on recruitment acceptance is currently manual.
-- Keep bot permissions minimal.
-
-Existing unrelated/legacy bots may still be present in the server. Do not turn a focused website task into a whole-server bot cleanup unless Wolf explicitly asks.
+After editing:
+- GitHub commit success does **not** prove Cloudflare production deployment.
+- Do not claim live verification unless actually checked or Wolf confirms it.
+- Test the narrowest safe operation first.
 
 ---
 
-## Known technical debt / future hardening
+## Image/media workflow
 
-Items worth remembering, but not automatically changing without a reason:
+Avoid base64 image embedding as a normal workflow. It has been slow and fragile for this project.
 
-- Applicant welcome DM is one-time state-based and does not currently suppress itself based on submitted/accepted application status.
-- Discord interaction signature verification is implemented with Ed25519; current production verification has been proven by successful button usage.
-- Recruitment/onboarding idempotency is KV-based and therefore not fully transactional under simultaneous races.
-- Recruitment acceptance role promotion remains manual.
-- The Site Admin Lab can grow into a broader diagnostics/test console.
-- Moderated Gallery and Ship Build submission/approval workflows were intentionally deferred in earlier releases.
-- A future Discord/server cleanup may reduce redundant legacy bots, but it is not part of normal website feature work.
+Prefer normal repository image files, efficient formats, GitHub/file workflows, and ZIP/batch workflows for many images.
 
 ---
 
-## Current validated recruitment state
+## Known limitations / hardening
 
-As of this document update:
-- Custom Imperial Mongrels Website Applicant/Guest buttons are working in Discord.
-- Applicant ↔ Guest role switching works.
-- Applicant one-time DM anti-spam behavior has been tested successfully.
-- Discord Interactions endpoint is connected and operational.
-- The High Council test alert works.
-- Application submission alerts are wired to The High Council.
-- `/discord-onboarding/` works as a Site Admin-only control/test page.
-- Member Portal includes a Wolf-only **Site Admin Lab** link.
-
-Do not assume these are broken merely because an older MEE6/Appy flow still appears in historical notes. Inspect current Discord/site behavior and code.
+- Applicant welcome DM is one-time state-based and does not currently suppress itself based on application status.
+- Discord interaction verification uses Ed25519 and has been proven by successful live button tests.
+- KV idempotency is practical but not fully transactional under simultaneous races.
+- Acceptance/decline/reapplication Discord messages are best-effort after the authoritative website decision where appropriate.
+- Legacy MEE6/Appy pieces may remain installed until the replacement flow proves itself with real users.
+- Moderated Gallery and Ship Build submission/approval workflows remain deferred.
 
 ---
 
-## How to maintain this document
+## Validation status
 
-Update `PROJECT_CONTEXT.md` when any of these change materially:
-- hosting/runtime architecture;
-- auth/access model;
-- important Cloudflare bindings;
-- Discord bot/integration architecture;
-- recruitment/application workflow;
-- major site modules;
-- durable design/content conventions;
-- development workflow expectations;
-- major known limitations or deferred architecture decisions.
+Confirmed live before the latest hardening pass:
+- custom Applicant/Guest Discord buttons work;
+- Applicant ↔ Guest switching works;
+- Applicant one-time DM works;
+- Discord Interactions endpoint works;
+- The High Council test alert works;
+- application submission alerts are wired;
+- Site Admin Lab is accessible to Wolf.
 
-Do **not** turn this into a changelog. The README/repository history already serve that purpose.
+**Implemented but still awaiting live end-to-end validation after deployment:**
+- automatic Member-role provisioning on approval;
+- acceptance DM production path;
+- in-game application verification gate;
+- Accepted/Declined terminal state rules;
+- decline DM/applicant message;
+- reapplication archive + reopen + DM;
+- new-member onboarding checklist.
 
-When starting a new ChatGPT session, the ideal handoff prompt is simply:
-
-> We're continuing the Mongrels website. Read `PROJECT_CONTEXT.md` and inspect the current repo before making changes.
+Do not label these latest items “validated” until Wolf tests them or a real applicant completes the flow.
