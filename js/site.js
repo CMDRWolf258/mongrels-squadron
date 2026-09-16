@@ -21,7 +21,7 @@
     if (document.querySelector('link[data-navigation-v2]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = root('css/navigation-v2.css?v=4');
+    link.href = root('css/navigation-v2.css?v=5');
     link.dataset.navigationV2 = 'true';
     document.head.appendChild(link);
   }
@@ -119,17 +119,30 @@
 
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
+  const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
+  const revealGroupTop = group => {
+    if (!nav || !compactNav()) return;
+    requestAnimationFrame(() => {
+      const navRect = nav.getBoundingClientRect();
+      const groupRect = group.getBoundingClientRect();
+      const top = nav.scrollTop + (groupRect.top - navRect.top) - 8;
+      nav.scrollTo({ top:Math.max(0, top), behavior:'auto' });
+    });
+  };
+
   groups.forEach(group => group.addEventListener('toggle', () => {
     if (group.open) {
       closeGroups(group);
       if (memberMenu) memberMenu.open = false;
+      revealGroupTop(group);
     }
   }));
 
   if (button && nav) button.addEventListener('click', () => {
     const open = nav.classList.toggle('open');
     button.setAttribute('aria-expanded', String(open));
-    if (!open) closeGroups();
+    if (open) nav.scrollTop = 0;
+    else closeGroups();
     if (memberMenu) memberMenu.open = false;
   });
 
