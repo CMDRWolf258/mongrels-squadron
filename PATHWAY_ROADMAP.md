@@ -15,6 +15,7 @@ This file records current Pathway direction and specialty concepts that should s
 9. **PvE Combat** — Combat Foundations, Bounty Hunter, Conflict Zone Specialist, Combat Specialist, and Combat Lead/Mentor routes.
 10. **PvP** — PvP Foundations, Duelist, Precision Fighter, Wing Fighter, and PvP Lead/Mentor routes.
 11. **Operations** — Operations Foundations, Multi-Role Operator, Scenario Specialist, Hard Operations Specialist, and Operations Lead/Mentor routes.
+12. **Colonization** — Colonization Foundations, Construction Operator, System Architect, Colony Developer, and Colonization Lead/Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
@@ -390,6 +391,75 @@ Core Operations principles:
 - Easy and Hard are tools, not status labels;
 - leadership emphasizes role coverage, redundancy, recovery, and teaching rather than personal score.
 
+## Colonization — implemented full pathway
+
+Primary files:
+- `lib/pathway-colonization.js`
+- `js/pathway-colonization.js`
+- shared `functions/api/pathway/assignments.js`
+- personalized Assistant integration in `lib/assistant-pathway-context.js`
+- mount in `pathway/index.html`
+- dedicated regression check: `scripts/smoke-colonization.mjs`
+
+Current routes:
+
+### Colonization Foundations — Join a Build, Finish a Loop
+Beginner complete-loop route:
+- find one real active Colonization project before loading cargo;
+- understand the claim → primary port → construction → later-build loop;
+- use an existing ship that fits the delivery job rather than requiring a special hauler;
+- source only commodities the current build still needs;
+- make one real construction contribution and verify that it reduced the requirement;
+- observe the post-delivery state so hauling stops when the objective changes;
+- repeat the support loop independently and communicate the updated status.
+
+**Ownership is not required.** Beginners learn by supporting an existing build rather than being forced to claim a system first.
+
+### Construction Operator — Supply, Stage, Close
+Developing route:
+- take an accurate current requirement snapshot;
+- split sourcing into sensible loads without overbuying;
+- use carrier staging only when it genuinely improves the logistics chain;
+- keep the requirement live while multiple Commanders haul;
+- identify the actual construction bottleneck;
+- close or hand off the build cleanly when the requirement is met or the session ends.
+
+### System Architect — Claim With a Purpose
+Developing/Experienced route:
+- define why a candidate system should exist before choosing structures;
+- evaluate system location, bodies, resources, travel time, and strategic constraints;
+- perform the claim sequence when appropriate or shadow/analyze a real claim when not the owner;
+- compare primary-port choices instead of assuming the largest option is automatically best;
+- draft the first build sequence around must-have capability and purpose;
+- reality-check the plan against actual squad hauling and staffing capacity;
+- turn the design into an actionable squad brief.
+
+### Colony Developer — Build a System, Not a Pile of Sites
+Experienced route:
+- choose one measurable development goal rather than trying to optimize every stat at once;
+- record a before-state and choose a build/operational intervention that addresses the goal;
+- account for logistics, economy, population, BGS, and other relevant system context;
+- measure the result after activation instead of treating planned effects as guaranteed;
+- preserve useful evidence and uncertainty for the next development decision.
+
+### Colonization Lead — Plan, Coordinate, Teach
+Veteran/Mentor route:
+- choose a real colony objective and define success/stop conditions;
+- turn the objective into a staged project that other Commanders can understand;
+- assign hauling, carrier, scouting, construction, and reporting responsibilities with redundancy where useful;
+- keep the squad pointed at the current bottleneck as the project state changes;
+- adapt the plan when evidence, timing, or game behavior disagrees with assumptions;
+- make another Commander more independent in one Colonization skill;
+- preserve a debrief that separates confirmed observations from assumptions.
+
+Core Colonization principles:
+- ownership is never an artificial beginner gate;
+- construction support should always begin from the current real requirement, not yesterday's screenshot;
+- carriers are a logistics tool, not an automatic extra step;
+- system purpose should drive primary-port and build-sequence choices;
+- later development is evidence-driven because economy/stat interactions can be moving or partially opaque;
+- Projects & Events is the natural coordination surface for live colony work.
+
 ## Community Goal Hauler Prep — implemented Trade specialty
 
 Community Goal Hauler Prep is nested inside Trade & Hauling and uses its own saved specialty state. The 14-step progression teaches hostile-Open logistics around the doctrine:
@@ -400,15 +470,14 @@ It covers a real existing hauler, survivability, power/heat, pips/boost, high-wa
 
 ## Next core Pathways
 
-Broader coverage remains the priority. Working order can change after inspecting current authoritative content, but likely next candidates are:
-- **Colonization**
-- Squadron Operations
-- Powerplay only when squad doctrine is mature enough to support a stable pathway
+Broad core coverage is nearly complete. The remaining roadmap is:
+- **Squadron Operations** — the next definite full Pathway, centered on Mission Control, Daily Orders, Projects, carrier coordination, BGS execution, cross-activity support, reporting, and leadership.
+- **Powerplay** — conditional final Pathway; build it only when squad doctrine is mature enough to support stable teaching instead of immediate rewrites.
 
 Do not automatically build every item without inspecting current site content first. Reuse the shared assignment API and normal Pathway progress model unless a real domain requirement justifies a specialty or separate state model.
 
 ## Validation direction
 
-The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, PvP, and Operations additionally have focused regression scripts that protect their five-route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Operations additionally guards the Runner-to-extraction loop, mixed ship/on-foot preparation and phase transitions, and the visible Operations naming rule. Passing CI is a regression check, **not** production/browser validation.
+The main smoke suite protects shared provider/API/campaign/specialty behavior. Exobiology, PvE Combat, PvP, Operations, and Colonization additionally have focused regression scripts that protect their route catalogs, beginner flows, Assistant recognition, shared-provider registration, UI mounts, and generic-card suppression. PvE also guards the legal-target beginner lesson and the Conflict Zone → Daily Orders operational handoff. PvP additionally guards Open-play/no-combat-logging doctrine and legitimate escape training. Operations additionally guards the Runner-to-extraction loop, mixed ship/on-foot preparation and phase transitions, and the visible Operations naming rule. Colonization additionally guards the beginner no-ownership rule, real construction-delivery loop, System Architect claim/shadow and primary-port decisions, and public Activities-hub state. Passing CI is a regression check, **not** production/browser validation.
 
 Wolf prefers to review large batches of recent Pathway/Engineering work rather than interrupt development after every addition. Keep committed/CI-checked work clearly distinguished from production-validated work.
