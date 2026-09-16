@@ -22,6 +22,22 @@
 .site-header-v2 .nav-mega-footer strong{color:#dcecef}
 .site-header-v2 .member-access-link{flex:0 0 auto}
 
+/* Authenticated personal menu: pathway/profile access without adding public-nav clutter. */
+.member-access-menu{position:relative;flex:0 0 auto}
+.member-access-menu>summary{display:flex;align-items:center;gap:8px;max-width:230px;min-height:38px;padding:0 11px;border:1px solid rgba(34,211,238,.3);border-radius:9px;background:rgba(34,211,238,.05);color:#dff8fc;cursor:pointer;list-style:none;font-size:.68rem;font-weight:850;text-decoration:none}
+.member-access-menu>summary::-webkit-details-marker{display:none}
+.member-access-menu>summary::after{content:"⌄";color:var(--accent);font-size:.65rem;margin-left:2px}
+.member-access-menu[open]>summary,.member-access-menu>summary:hover{border-color:rgba(34,211,238,.58);background:rgba(34,211,238,.1)}
+.member-access-menu .member-access-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-access-menu-panel{position:absolute;z-index:90;right:0;top:calc(100% + 9px);width:260px;padding:9px;border:1px solid var(--line);border-radius:12px;background:rgba(7,11,14,.99);box-shadow:0 22px 60px rgba(0,0,0,.55);backdrop-filter:blur(18px)}
+.member-access-menu-panel a{display:block;padding:10px 11px;border-radius:8px;color:#dbe8ec;text-decoration:none;font-size:.72rem;font-weight:780}
+.member-access-menu-panel a:hover{background:rgba(34,211,238,.08);color:#f1feff}
+.member-access-menu-panel a strong{display:block;color:inherit;font-size:.73rem}
+.member-access-menu-panel a small{display:block;margin-top:2px;color:var(--muted);font-size:.6rem;font-weight:600;line-height:1.35}
+.member-access-menu-panel .member-access-pathway{border:1px solid rgba(34,211,238,.18);background:rgba(34,211,238,.035)}
+.member-access-menu-panel .member-access-pathway strong{color:var(--accent)}
+.member-access-menu-panel .member-access-signout{margin-top:6px;border-top:1px solid var(--line);border-radius:0;color:#aebbc1}
+
 /* The new six-item header intentionally replaces the old progressive nth-child collapse. */
 @media (min-width:1061px){
   .site-header-v2 .nav-links-v2{position:static!important;inset:auto!important;display:flex!important;flex:1!important;flex-direction:row!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;min-width:0}
@@ -48,5 +64,7 @@
   .site-header-v2 .nav-wrap{gap:10px}
   .site-header-v2 .member-access-link{max-width:150px;overflow:hidden}
   .site-header-v2 .member-access-link [data-member-access-label]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .member-access-menu>summary{max-width:150px}
+  .member-access-menu-panel{position:fixed;top:70px;right:11px;width:min(280px,calc(100vw - 22px))}
 }
 @media(max-width:520px){.site-header-v2 .nav-links-v2{top:69px!important}}
