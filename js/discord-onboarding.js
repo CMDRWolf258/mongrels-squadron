@@ -11,6 +11,8 @@
   const result = document.querySelector('[data-publish-result]');
   const testAlert = document.querySelector('[data-test-recruitment-alert]');
   const alertResult = document.querySelector('[data-alert-result]');
+  const testAcceptanceDm = document.querySelector('[data-test-acceptance-dm]');
+  const acceptanceDmResult = document.querySelector('[data-acceptance-dm-result]');
 
   if (!status || !publish) return;
 
@@ -25,6 +27,7 @@
         detail.innerHTML = 'Sign in through the <a href="/member/">Member Portal</a>, then return here.';
         result.textContent = 'Publishing is disabled until you are signed in.';
         if (alertResult) alertResult.textContent = 'Testing is disabled until you are signed in.';
+        if (acceptanceDmResult) acceptanceDmResult.textContent = 'Testing is disabled until you are signed in.';
         return;
       }
       if (response.status === 403) {
@@ -32,6 +35,7 @@
         detail.textContent = 'This control is restricted to the website Site Admin.';
         result.textContent = 'Publishing is disabled for this account.';
         if (alertResult) alertResult.textContent = 'Testing is disabled for this account.';
+        if (acceptanceDmResult) acceptanceDmResult.textContent = 'Testing is disabled for this account.';
         return;
       }
       if (!response.ok || !data.ok) throw new Error(data.error || `Configuration check failed (${response.status})`);
@@ -48,6 +52,7 @@
         detail.textContent = 'The code is deployed, but DISCORD_BOT_TOKEN still needs to be added as a Cloudflare secret.';
         result.textContent = 'Add the bot token in Cloudflare before publishing.';
         if (alertResult) alertResult.textContent = 'Add the bot token in Cloudflare before testing alerts.';
+        if (acceptanceDmResult) acceptanceDmResult.textContent = 'Add the bot token in Cloudflare before testing DMs.';
         return;
       }
       if (!data.guildConfigured) {
@@ -55,6 +60,7 @@
         detail.textContent = 'The existing GUILD_ID environment value is missing.';
         result.textContent = 'Publishing is disabled until the server ID is configured.';
         if (alertResult) alertResult.textContent = 'Testing is disabled until the server ID is configured.';
+        if (acceptanceDmResult) acceptanceDmResult.textContent = 'Testing is disabled until the server ID is configured.';
         return;
       }
 
@@ -62,13 +68,16 @@
       detail.textContent = 'Bot token, server configuration, onboarding IDs, and recruitment channel are available.';
       result.textContent = 'Onboarding selector controls are ready.';
       if (alertResult) alertResult.textContent = 'Ready to send a harmless test alert to The High Council.';
+      if (acceptanceDmResult) acceptanceDmResult.textContent = 'Ready to send the acceptance-message preview to your Discord DMs.';
       publish.disabled = false;
       if (testAlert) testAlert.disabled = false;
+      if (testAcceptanceDm) testAcceptanceDm.disabled = false;
     } catch (error) {
       status.textContent = 'Configuration check failed';
       detail.textContent = String(error?.message || error);
       result.textContent = 'Publishing is disabled until the backend responds.';
       if (alertResult) alertResult.textContent = 'Alert testing is disabled until the backend responds.';
+      if (acceptanceDmResult) acceptanceDmResult.textContent = 'DM testing is disabled until the backend responds.';
     }
   }
 
@@ -98,6 +107,22 @@
         alertResult.textContent = `Test failed: ${String(error?.message || error)}`;
       } finally {
         testAlert.disabled = false;
+      }
+    });
+  }
+
+  if (testAcceptanceDm) {
+    testAcceptanceDm.addEventListener('click', async () => {
+      testAcceptanceDm.disabled = true;
+      acceptanceDmResult.textContent = 'Sending the acceptance-message preview to your Discord DMs…';
+      try {
+        const data = await postAction('test_acceptance_dm');
+        if (!data.ok) throw new Error(data.message);
+        acceptanceDmResult.textContent = 'Test DM sent successfully. No application, roles, or one-time DM state were changed.';
+      } catch (error) {
+        acceptanceDmResult.textContent = `Test failed: ${String(error?.message || error)}`;
+      } finally {
+        testAcceptanceDm.disabled = false;
       }
     });
   }
