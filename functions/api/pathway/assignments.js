@@ -106,9 +106,13 @@ async function buildState(env, session, suppliedProgress = null) {
     index:index + 1,
     status:TASK_STATUSES.has(taskStates[task.id]) ? taskStates[task.id] : 'pending',
   }));
-  const doneStatuses = new Set(['complete','known','skipped']);
-  const completed = tasks.filter(task => doneStatuses.has(task.status)).length;
-  const current = tasks.find(task => !doneStatuses.has(task.status)) || null;
+  const creditedStatuses = new Set(['complete','known']);
+  const completed = tasks.filter(task => creditedStatuses.has(task.status)).length;
+  const skipped = tasks.filter(task => task.status === 'skipped').length;
+  // "Skip for Now" defers work; it does not grant progress or qualification.
+  // Work through untouched assignments first, then surface skipped work again once
+  // nothing else remains so a route can only truly finish at 100% credited progress.
+  const current = tasks.find(task => task.status === 'pending') || tasks.find(task => task.status === 'skipped') || null;
 
   return {
     activity:'ax', eligible:true, experience,
@@ -118,7 +122,7 @@ async function buildState(env, session, suppliedProgress = null) {
       return option ? { id:option.id, band:option.band || '', title:option.title, subtitle:option.subtitle } : null;
     }).filter(Boolean),
     currentTaskId:current?.id || null,
-    progress:{ completed, total:tasks.length, percent:tasks.length ? Math.round((completed / tasks.length) * 100) : 0 },
+    progress:{ completed, skipped, total:tasks.length, percent:tasks.length ? Math.round((completed / tasks.length) * 100) : 0 },
     canChooseAnother:eligible.length > 1,
   };
 }
