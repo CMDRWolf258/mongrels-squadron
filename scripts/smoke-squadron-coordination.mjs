@@ -80,6 +80,7 @@ for (const path of [
   'functions/api/pathway/assignments.js',
   'lib/assistant-pathway-context.js',
   'js/pathway-full-routes.js',
+  'js/pathway-saved-view.js',
 ]) {
   assert.ok(existsSync(path), `Squadron Coordination critical file is missing: ${path}`);
 }
@@ -87,10 +88,16 @@ for (const path of [
 const pathwayHtml = readFileSync('pathway/index.html', 'utf8');
 assert.match(pathwayHtml, /data-squadron-coordination-pathway/, 'My Pathway is missing the Squadron Coordination full-route mount');
 assert.match(pathwayHtml, /pathway-squadron-coordination\.js/, 'My Pathway is not loading the Squadron Coordination pathway client');
+assert.match(pathwayHtml, /pathway-saved-view\.js\?v=3/, 'My Pathway is not cache-busting the corrected saved-view renderer');
 const fullRoutesSource = readFileSync('js/pathway-full-routes.js', 'utf8');
 assert.match(fullRoutesSource, /\['Squadron Coordination'/, 'Generic-card suppression is not aware of Squadron Coordination');
 assert.match(fullRoutesSource, /function fullRouteExists\(/, 'Generic-card suppression is still waiting for full routes to become visible');
 assert.doesNotMatch(fullRoutesSource, /function fullRouteIsVisible\(/, 'Legacy card suppression still contains the visibility race that can leave duplicate cards behind');
+const savedViewSource = readFileSync('js/pathway-saved-view.js', 'utf8');
+for (const fullId of ['pve','pvp','ax','surface','bgs','mining','trade','carrier-logistics','engineering','exploration','exobiology','colonization','operations']) {
+  assert.match(savedViewSource, new RegExp(`['\"]${fullId}['\"]`), `Saved Pathway view is missing full-route ID ${fullId}`);
+}
+assert.match(savedViewSource, /selectedItems\.filter\(item => !fullRouteIds\.has\(item\.id\)\)/, 'Saved Pathway view no longer filters full-route activities before rendering fallback cards');
 const preferencesSource = readFileSync('functions/api/pathway/preferences.js', 'utf8');
 assert.match(preferencesSource, /id:'operations', label:'Squadron Coordination'/, 'Preferences catalog is not exposing the new user-facing label');
 const assignmentsSource = readFileSync('functions/api/pathway/assignments.js', 'utf8');
@@ -100,6 +107,6 @@ assert.match(assignmentsSource, /creditedTasks/, 'Capability Map is not reading 
 const clientSource = readFileSync('js/pathway-squadron-coordination.js', 'utf8');
 assert.match(clientSource, /activity:'operations'/, 'Squadron Coordination client is not preserving the legacy activity ID');
 assert.match(clientSource, /Capability Map/, 'Squadron Coordination client is not rendering the Capability Map');
-console.log('✓ Provider, selector, UI mount, Capability Map, Assistant context, naming compatibility, and duplicate-card suppression are wired');
+console.log('✓ Provider, selector, UI mount, Capability Map, Assistant context, naming compatibility, and both duplicate-card renderers are guarded');
 
 console.log('\nAll Squadron Coordination smoke checks passed.');
