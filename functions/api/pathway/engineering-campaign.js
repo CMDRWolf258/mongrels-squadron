@@ -16,6 +16,7 @@ import {
   buildEngineeringDependencyNodes,
   buildFirstEngineeringWinView,
 } from '../../../lib/engineering-campaign-data.js';
+import { buildShieldEngineeringDependencyNodes } from '../../../lib/engineering-campaign-shields.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
@@ -107,7 +108,10 @@ export async function onRequestPost({ request, env }) {
 function present(stateValue) {
   const state = normalizeEngineeringCampaignState(stateValue, stateValue?.ownerId || '');
   const active = state.activeCampaignId ? state.campaigns[state.activeCampaignId] : null;
-  const dependencyNodes = buildEngineeringDependencyNodes({ campaign:active, facts:state.facts });
+  const dependencyNodes = [
+    ...buildEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
+    ...buildShieldEngineeringDependencyNodes({ campaign:active, facts:state.facts }),
+  ];
   return {
     ok:true,
     frameworkVersion:1,
