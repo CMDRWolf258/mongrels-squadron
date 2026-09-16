@@ -2,6 +2,7 @@ import { json, readSession } from '../../../lib/auth.js';
 import { AX_ACTIVITY_ID, eligibleAxRoutes, getAxRoute } from '../../../lib/pathway-ax.js';
 import { BGS_ACTIVITY_ID, eligibleBgsRoutes, getBgsRoute } from '../../../lib/pathway-bgs.js';
 import { MINING_ACTIVITY_ID, eligibleMiningRoutes, getMiningRoute } from '../../../lib/pathway-mining.js';
+import { TRADE_ACTIVITY_ID, eligibleTradeRoutes, getTradeRoute } from '../../../lib/pathway-trade.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFERENCES_PREFIX = 'pathway-preferences-v1:';
@@ -30,6 +31,13 @@ const PROVIDERS = {
     getRoute:getMiningRoute,
     eligibleRoutes:eligibleMiningRoutes,
     seedVersion:'mining-v1',
+  },
+  [TRADE_ACTIVITY_ID]: {
+    id:TRADE_ACTIVITY_ID,
+    label:'Trade & Hauling',
+    getRoute:getTradeRoute,
+    eligibleRoutes:eligibleTradeRoutes,
+    seedVersion:'trade-v1',
   },
 };
 
@@ -209,9 +217,9 @@ function normalizeTaskType(task) {
   const stage = String(task?.stage || '').toLowerCase();
   if (/mentor|teach/.test(stage)) return 'mentor';
   if (/wing|operations|lead|campaign/.test(stage)) return 'wing';
-  if (/graduate|challenge|control|strategy|diagnosis|capstone|survey|benchmark/.test(stage)) return 'challenge';
+  if (/graduate|challenge|control|strategy|diagnosis|capstone|survey|benchmark|analysis|adapt|intel/.test(stage)) return 'challenge';
   if (/build|platform|engineering|guardian tech|internals|unlock/.test(stage)) return 'build';
-  if (/ready|cockpit|training|deploy|fight|interceptor|field test|first contact|technique|baseline|snapshot|operate|feedback|conflict|states|assets|expansion|retreat|influence|planning|attribution|levers|prepare|sell|core|subsurface|surface deposits|recovery|scouting|breadth|logistics/.test(stage)) return 'demonstrate';
+  if (/ready|cockpit|training|deploy|fight|interceptor|field test|first contact|technique|baseline|snapshot|operate|feedback|conflict|states|assets|expansion|retreat|influence|planning|attribution|levers|prepare|sell|core|subsurface|surface deposits|recovery|scouting|breadth|logistics|access|market|efficiency/.test(stage)) return 'demonstrate';
   return 'learn';
 }
 
