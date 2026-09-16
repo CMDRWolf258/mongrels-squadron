@@ -101,10 +101,31 @@ function present(stateValue) {
     frameworkVersion:1,
     goalCatalog:ENGINEERING_GOAL_CATALOG,
     trackedFacts:ENGINEERING_TRACKED_FACTS,
+    trackedCounters:presentTrackedCounters(state),
     firstEngineeringWin:buildFirstEngineeringWinView(state.facts),
     state,
     planner:buildEngineeringCampaignView(state, dependencyNodes),
   };
+}
+
+function presentTrackedCounters(state) {
+  return Object.values(ENGINEERING_TRACKED_FACTS)
+    .filter(definition => definition?.kind === 'counter')
+    .map(definition => {
+      const stored = state?.facts?.[definition.id];
+      const current = Number.isFinite(Number(stored?.value)) ? Number(stored.value) : Number(definition.minimum) || 0;
+      return {
+        id:definition.id,
+        label:definition.label,
+        unit:definition.unit,
+        description:definition.description || '',
+        minimum:Number(definition.minimum) || 0,
+        current,
+        quickAdd:Array.isArray(definition.quickAdd) ? definition.quickAdd.filter(value => Number.isInteger(value) && value > 0).slice(0, 5) : [],
+        source:stored?.source || 'manual',
+        updatedAt:stored?.updatedAt || null,
+      };
+    });
 }
 
 function recordCounter(stateValue, factIdValue, amountValue, now) {
@@ -112,7 +133,7 @@ function recordCounter(stateValue, factIdValue, amountValue, now) {
   const definition = ENGINEERING_TRACKED_FACTS[factId];
   if (!definition || definition.kind !== 'counter') throw new Error('invalid_counter');
   const amount = Number(amountValue);
-  if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 10000) throw new Error('invalid_counter_amount');
+  if (!Number.isInteger(amount) || amount <= 0 || amount > 10000) throw new Error('invalid_counter_amount');
   const currentRaw = stateValue?.facts?.[factId]?.value;
   const current = Number.isFinite(Number(currentRaw)) ? Number(currentRaw) : 0;
   const minimum = Number.isFinite(Number(definition.minimum)) ? Number(definition.minimum) : 0;
