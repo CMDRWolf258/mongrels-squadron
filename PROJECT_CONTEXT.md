@@ -66,12 +66,13 @@ Files:
 - `start/index.html`
 - `activities/index.html`
 - `css/hubs.css`
+- `js/navigation-v2.js`
 
 Current state:
 - `/start/` and `/activities/` use the grouped-navigation prototype.
 - Desktop uses compact top-level groups with click-open mega panels.
 - Mobile/tablet uses the same semantic groups as stacked accordions inside the existing menu drawer.
-- The pilot uses `<details>`/`<summary>` plus the existing `js/site.js`; no separate navigation JavaScript was added.
+- The pilot uses semantic `<details>`/`<summary>`, the existing `js/site.js` for the main menu/member access, and a small `js/navigation-v2.js` helper to close sibling groups, Escape/outside-click dismissals, and same-page mobile selections.
 - Existing site-wide headers have **not** been replaced yet.
 - Home exposes Start Here and Activities cards so the pilot can be reached naturally.
 
