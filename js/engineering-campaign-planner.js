@@ -76,9 +76,18 @@
     return rows.length ? `<div class="engineering-campaign-notes">${rows.join('')}</div>` : '';
   }
 
+  function alternateFactMarkup(node) {
+    const alternatives = Array.isArray(node?.meta?.alternateFacts) ? node.meta.alternateFacts : [];
+    return alternatives
+      .filter(item => item?.factId && item?.label)
+      .map(item => `<button class="btn btn-ghost" type="button" data-campaign-set-fact="${esc(item.factId)}" data-campaign-fact-value="true">${esc(item.label)}</button>`)
+      .join('');
+  }
+
   function currentActionMarkup(node, campaign) {
     if (!node || !campaign) return '';
     const rule = node.factCompletion;
+    const alternatives = alternateFactMarkup(node);
     if (rule?.operator === 'gte') {
       const progress = factProgress(node);
       return `<div class="engineering-campaign-counter">
@@ -86,12 +95,12 @@
         <div class="engineering-campaign-track"><i style="width:${progress.percent}%"></i></div>
         <small>${progress.remaining ? `${progress.remaining.toLocaleString()} remaining` : 'Tracked prerequisite reached'}</small>
         <button class="btn btn-primary" type="button" data-campaign-open-prep>Update Progress</button>
-      </div>`;
+      </div>${alternatives}`;
     }
     if (rule && (rule.operator === 'truthy' || rule.operator === 'eq')) {
-      return `<button class="btn btn-primary" type="button" data-campaign-set-fact="${esc(rule.factId)}" data-campaign-fact-value="${esc(rule.operator === 'eq' ? String(rule.target) : 'true')}">${esc(node.meta?.factActionLabel || 'Mark Requirement Met')}</button>`;
+      return `<button class="btn btn-primary" type="button" data-campaign-set-fact="${esc(rule.factId)}" data-campaign-fact-value="${esc(rule.operator === 'eq' ? String(rule.target) : 'true')}">${esc(node.meta?.factActionLabel || 'Mark Requirement Met')}</button>${alternatives}`;
     }
-    return `<button class="btn btn-primary" type="button" data-campaign-complete-node="${esc(node.id)}">Done / Already Have This</button>`;
+    return `<button class="btn btn-primary" type="button" data-campaign-complete-node="${esc(node.id)}">Done / Already Have This</button>${alternatives}`;
   }
 
   function stepListMarkup(planner) {
