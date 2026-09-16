@@ -339,12 +339,33 @@ Current tracked counters include:
 - `trade.markets-visited-distinct`
 - `trade.black-markets-used-distinct`
 
+Current UI lives in a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering:
+- `js/engineering-prep-tracker.js`
+- `css/engineering-prep-tracker.css`
+- host: `pathway/index.html`
+
+The tracker shows the running total plus the current preparation milestone:
+- **50 distinct commodity markets** for Lei Cheung preparation;
+- **5 distinct black markets** for The Dweller preparation.
+
+These targets are presentation/data metadata rather than baked into stored progress, so wording/threshold corrections can be made without migrating a member’s saved count.
+
+Tracker behavior:
+- quick-add buttons for common small increments;
+- custom **Record Actual Progress** field, so a suggested +5 task can truthfully record +3;
+- separate **Correct the stored total** control that replaces the cumulative number rather than adding to it;
+- progress bar against the tracked milestone;
+- manual/source and last-updated display;
+- responsive phone layout.
+
 API supports:
 - adding actual progress (`+3`, not pretending a suggested 5 was completed);
 - correcting the cumulative total;
 - provenance that leaves room for future sync/import.
 
-Manual precise tracking is the practical v1. Frontier/telemetry automation may be investigated later, but the campaign must remain useful without it.
+Manual precise tracking is the practical v1. Frontier/telemetry automation may be investigated later, but the campaign must remain useful without it. A future trusted sync should write the same fact IDs instead of creating a parallel progress system.
+
+Cross-pathway rule remains: Trade/Mining/etc. may expose an optional Engineering Prep opportunity, but completing or recording that prep **must not award or block progress in the other pathway**.
 
 ---
 
@@ -505,7 +526,7 @@ Implemented but **do not call production-validated unless Wolf confirms or live 
 - Carrier Logistics full pathway;
 - Engineering & Shipbuilding full pathway;
 - Engineering Campaign Planner framework;
-- numeric Engineering prerequisite-counter API;
+- numeric Engineering prerequisite-counter API and **Engineering Prep Tracker** UI;
 - full in-game/end-to-end completion of the First Engineering Win audited sequence;
 - assorted latest recruitment/onboarding hardening described by current code.
 
