@@ -5,6 +5,7 @@ import { MINING_ACTIVITY_ID, eligibleMiningRoutes, getMiningRoute } from '../../
 import { TRADE_ACTIVITY_ID, eligibleTradeRoutes, getTradeRoute } from '../../../lib/pathway-trade.js';
 import { CARRIER_LOGISTICS_ACTIVITY_ID, eligibleCarrierLogisticsRoutes, getCarrierLogisticsRoute } from '../../../lib/pathway-carrier-logistics.js';
 import { ENGINEERING_ACTIVITY_ID, eligibleEngineeringRoutes, getEngineeringRoute } from '../../../lib/pathway-engineering.js';
+import { engineeringPrepForTask } from '../../../lib/pathway-engineering-prep.js';
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFERENCES_PREFIX = 'pathway-preferences-v1:';
@@ -169,6 +170,7 @@ async function buildState(env, session, activity, suppliedProgress = null) {
     type:normalizeTaskType(task),
     index:index + 1,
     status:TASK_STATUSES.has(taskStates[task.id]) ? taskStates[task.id] : 'pending',
+    engineeringPrep:engineeringPrepForTask(activity, task.id),
   }));
   const creditedStatuses = new Set(['complete','known']);
   const completed = tasks.filter(task => creditedStatuses.has(task.status)).length;
