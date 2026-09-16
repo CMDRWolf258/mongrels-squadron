@@ -31,14 +31,14 @@ The site is both a public squadron presence and a private operational platform: 
 
 ### Website vs Discord
 
-- **Website = structured source of truth** for applications, profiles, projects, tasking, status, pathway preferences/progress, campaign state, and admin workflows.
+- **Website = structured source of truth** for applications, profiles, projects, tasking, status, Pathway preferences/progress, campaign state, and admin workflows.
 - **Discord = identity/community + communication + notifications + immediate coordination.**
 
 Do not duplicate structured website workflows into Discord unless there is a clear reason.
 
-### Mobile/tablet
+### Mobile / tablet
 
-Wolf travels often and uses desktop, phone, and iPad. Admin/member tools must remain practical on smaller screens.
+Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on all three.
 
 ### Development behavior
 
@@ -67,10 +67,7 @@ Important rules:
 - Sessions use signed `mongrels_session` cookies.
 - UI hiding is never a substitute for server authorization.
 
-Never expose secrets such as:
-- `DISCORD_BOT_TOKEN`
-- `DISCORD_CLIENT_SECRET`
-- `SESSION_SECRET`
+Never expose secrets such as `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, API keys, or hidden IDs.
 
 Important KV bindings:
 - **`PROJECTS`** — applications, profiles, Discord onboarding, member onboarding, My Pathway preferences/progress, Start Here daily tasks, Engineering campaigns/facts, and related structured state.
@@ -101,16 +98,83 @@ Authenticated member menu:
 - My Profile
 - Sign Out
 
-### Compact/mobile focus mode
+### Desktop / tablet / compact behavior
 
-The compact drawer had a persistent issue where opening Activities could appear already scrolled down. The accepted solution is **focus mode**: when one top-level group is open, other top-level links/groups disappear, the active group owns the drawer, the drawer scrolls as a whole, and the active summary remains sticky. Closing the group restores the root list.
+**>= 1281px:** normal full desktop navigation.
 
-Wolf reported this behavior was doing okay after the fix, so treat it as provisionally validated.
+**1061–1280px:** keep the **full visible navigation** rather than collapsing everything into `MENU`. This tablet-width mode deliberately compresses nonessential spacing: smaller logo, hidden brand subtitle, tighter nav padding/letter spacing, and a narrower authenticated member control. Wolf prefers having the main nav choices visible on iPad when they can reasonably fit.
+
+**<= 1060px:** use the compact `MENU` drawer.
+
+The compact drawer uses **focus mode**: when one top-level group is open, sibling top-level links/groups disappear, the active group owns the drawer, the drawer remains scrollable, and the active summary stays sticky. Closing the group restores the root list. Wolf previously reported this compact behavior was doing okay.
+
+The latest 1061–1280 tablet-compression layout is implemented but **not yet production-validated** by Wolf.
 
 Legacy cleanup:
-- `js/navigation-v2.js` is now only a compatibility shim; canonical behavior belongs to `js/site.js`.
+- `js/navigation-v2.js` is only a compatibility shim; canonical behavior belongs to `js/site.js`.
 - `css/hubs.css` no longer owns the old grouped-nav prototype CSS.
-- `activities/index.html` may still contain an obsolete legacy `navigation-v2.js` reference; removing remaining references is low-priority cleanup after stability is confirmed.
+
+---
+
+## Ask the Mongrels
+
+Primary files:
+- `functions/api/assistant/index.js`
+- `lib/assistant-context.js`
+- `js/mongrel-assistant.js`
+
+The assistant is read-only. It uses current squad/site data where available and curated Elite knowledge where appropriate. It must never claim it changed, posted, scheduled, registered, or edited anything.
+
+### Website-navigation help
+
+Navigation help is **not carrier-specific anymore**.
+
+`lib/assistant-context.js` contains a query-selective `NAVIGATION_DESTINATIONS` map and returns only the most relevant `modules.siteNavigation` entries for a question. This avoids injecting the whole site map into every AI request while giving the model authoritative visible click paths.
+
+Current mapped destinations include major operational/help surfaces such as:
+- Carrier Coordination / Carrier Registry
+- Projects & Events
+- Daily Orders / Mission Control
+- Member Portal / My Pathway / My Profile
+- PvP Bounty Board
+- Trader's Outpost
+- Squadron Roster
+- Rules & ROE
+- Ship Catalogue
+- Engineering / Mining / BGS guides
+- Reference Database / Field Manual / Glossary
+- Start Here
+- Recruitment
+
+When a user asks where to **find, open, create, post, or navigate to** something:
+- use `modules.siteNavigation` when present;
+- describe the exact visible desktop/tablet path;
+- give the compact `MENU` path when useful;
+- mention a Member Portal alternate when it materially helps;
+- never invent menu labels.
+
+Example for carrier loading:
+- desktop/tablet: **Command → Carrier Coordination**;
+- compact: **MENU → Command → Carrier Coordination**;
+- member alternate: **member button → Member Portal → Carrier Coordination → Open Carrier Board**;
+- create: **New Coordination Post → Activity: Loading**.
+
+### Direct navigation buttons / deep links
+
+The model does **not** invent arbitrary URLs in prose. The server returns trusted `{label, href}` navigation objects and `js/mongrel-assistant.js` renders them as clickable **Related** buttons.
+
+Prefer exact section anchors when available. Current useful anchors include:
+- `/operations/#daily-orders`
+- `/projects/#project-list`
+- `/carriers/#carrier-directory`
+- `/carriers/#carrier-coordination`
+- `/pvp/#bounty-board`
+- `/about/#squad-rules`
+- Member Portal card anchors such as `/member/#carrier-coordination`
+
+This means a question like “Where can I create a carrier loading event?” can provide a **Carrier Coordination** button that lands directly on that section rather than merely opening the top of the Carriers page.
+
+High-value future improvement: include current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
 
 ---
 
@@ -127,21 +191,19 @@ Primary files:
 - `functions/api/start/tasks.js`
 - `lib/start-tasks.js`
 
-API:
-- `/api/start/tasks`
-
 Storage:
 - `PROJECTS`
 - prefix `start-daily-v1:` + local date + Discord owner ID
 
 Rules:
-- public page, but personalized tasks require Member / Officer / Site Admin.
-- categories come from My Pathway preferences but daily tasks **never change Pathway progress**.
-- task kinds: Activity Task, Challenge, Squad Opportunity.
-- maximum **3 reveals per category per local calendar day**, server-authoritative.
-- all revealed options stay saved for that day and display in a carousel; one at a time with previous/next controls and `N / count`.
-- Wolf validated the daily-task cards/carousel visually.
-- BGS/Squad Operations may inject a live Mission Control opportunity; it always directs the user to authoritative Daily Orders before acting.
+- personalized tasks require Member / Officer / Site Admin;
+- categories come from My Pathway preferences but daily tasks **never change Pathway progress**;
+- task kinds: Activity Task, Challenge, Squad Opportunity;
+- maximum 3 reveals per category per local calendar day, server-authoritative;
+- all revealed choices remain saved for the day and display in a carousel;
+- BGS/Squad Operations may inject a live Mission Control opportunity, but authoritative Daily Orders must be checked before acting.
+
+Wolf validated the daily-task cards/carousel visually.
 
 ---
 
@@ -183,9 +245,11 @@ Assignment types:
 - Wing / Team
 - Teach / Mentor
 
-### My Pathway activity-collapse UX
+### Activity-collapse UX
 
-Full pathway activities in the right-hand **Your Pathway** panel are native expandable `<details>` groups rather than permanently expanded blocks. Current categories are:
+The right-hand **Your Pathway** area uses compact expandable categories. Full pathway activities are native `<details>` groups, and generic selected activities are also rendered as compact disclosures.
+
+Full-route categories:
 - Anti-Xeno
 - Background Simulation
 - Mining
@@ -194,89 +258,68 @@ Full pathway activities in the right-hand **Your Pathway** panel are native expa
 - Engineering & Shipbuilding
 
 Rules:
-- categories are collapsed by default to reduce page length and mobile clutter;
-- clicking the category title/header expands or collapses it;
-- do not add separate Open/Close buttons unless native disclosure proves insufficient;
-- multiple categories may remain open; this is not intentionally a forced single-open accordion;
-- existing `data-*` hooks remain on the disclosure root, so the activity renderers continue to own visibility and content.
+- collapsed by default;
+- click the category header to expand/collapse;
+- do not add separate Open/Close buttons unless needed;
+- multiple categories may remain open;
+- each full-route renderer owns its own loading/visibility/content. Do **not** add a second controller that forcibly shows route roots.
 
-### Lasting Pathway design rule
+A temporary collapse implementation exposed an API failure; the real root cause was an accidentally removed shared `reply()` helper in `functions/api/pathway/assignments.js`. That helper was restored, and Wolf confirmed the full Pathway loading was fixed. Preserve it.
 
-Beginner assignments should generally **teach through actions before analysis**.
+### Lasting design rule
 
-Preferred progression:
+Beginner assignments should generally **teach through actions before analysis**:
 
 > **Do → observe → compare → understand → optimize → lead/teach**
 
-Use one primary concept/capability per early assignment when practical. Avoid turning beginner tasks into multi-variable mini-textbooks. AX is the reference roadmap style: discrete concrete capabilities with visible progression.
+Avoid hiding several concepts or hours of prerequisite work inside one early assignment.
 
 ---
 
 ## Shared full-pathway engine
 
-`functions/api/pathway/assignments.js` hosts the provider registry and shared progress behavior.
+`functions/api/pathway/assignments.js` hosts provider/progress behavior.
 
-Current full pathway providers:
-1. Anti-Xeno — seed `ax-v2`
-2. BGS — seed `bgs-v1`
-3. Mining — seed `mining-v1`
-4. Trade & Hauling — seed `trade-v2`
-5. Carrier Logistics — seed `carrier-logistics-v1`
-6. Engineering & Shipbuilding — seed `engineering-v1`
+Current full providers:
+1. Anti-Xeno — `ax-v2`
+2. BGS — `bgs-v1`
+3. Mining — `mining-v1`
+4. Trade & Hauling — `trade-v2`
+5. Carrier Logistics — `carrier-logistics-v1`
+6. Engineering & Shipbuilding — `engineering-v1`
 
 Each provider keeps independent per-activity progress in `PROJECTS`.
 
-`js/pathway-full-routes.js` removes old generic recommendation cards for activities that now have full route engines.
+### Engineering Give Me Another Route
 
-The **Give Me Another Route** action should feel like “give me another appropriate challenge,” not “randomly change my difficulty.” Engineering now uses a filtered route-choice pool so normal cycling does not drop the Commander into lower-band material. Lower-band progress remains stored and can be revisited by changing the saved Engineering experience level.
-
-Engineering route-choice pool by saved experience:
+Engineering route cycling should stay at the Commander's selected experience level rather than dropping to lower-band material:
 - Beginner → Engineering Foundations only
 - Developing → Role Builder, Engineer Network
 - Experienced → Ship Architect, Combat Systems, Role Builder
 - Veteran / Mentor → Engineering Mentor, Ship Architect
 
-Other pathway providers still use their existing eligible-route behavior unless deliberately changed later.
+Lower-band progress remains stored and can be revisited by changing the saved Engineering experience level.
 
 ---
 
-## Anti-Xeno pathway
+## Pathway route references
 
-Reference-standard route families:
+### Anti-Xeno
 - Scout School — Vulture
 - Interceptor Academy — Chieftain
 - Interceptor Hunter — Basilisk
 - Guardian Systems — AX Specialist
 - Hellhound Development — Hunt, Lead, Teach
 
-Hellhound work includes Medusa, AXCZ/wing work, engagement leadership, helping a less-experienced Mongrel through a first Interceptor without carrying them, build review, Hydra wing contribution, diagnosis, and teach-back.
-
----
-
-## BGS pathway
-
-Primary route families:
+### BGS
 - Foundations — Read Before You Push
 - Operator — Execute With Precision
 - Strategist — Shape the Board
 - Lead/Mentor — Plan, Calibrate, Teach
 
-Critical doctrine:
-- mission **INF = mission influence reward ticks/pips, not faction influence percentage**.
-- read the whole faction board and issuer/target/destination/reward.
-- bounty vouchers ≠ combat bonds.
-- control ≠ asset ownership.
-- match the lever to the objective.
-- use quantified orders and stop conditions.
-- use post-tick feedback.
+Critical doctrine: mission **INF = mission influence reward ticks/pips, not faction influence percentage**. Mission Control remains authoritative for live squad BGS instructions.
 
-Mission Control is member-only and remains authoritative for live squad BGS instructions.
-
----
-
-## Mining pathway
-
-Route families:
+### Mining
 - Mining Foundations — First Full Loop
 - Efficient Miner — Find Bottleneck
 - Advanced Extraction — Core/Subsurface/Surface
@@ -284,15 +327,7 @@ Route families:
 - Mining Specialist — Scout/Compare/Support
 - Mining Lead — Survey/Coordinate/Teach
 
-Grounded in the Mining Field Manual and Rhino workflow, not a separate duplicated knowledge base.
-
----
-
-## Trade & Hauling pathway — v2
-
-Trade was rewritten after Wolf identified that early tasks were combining too many concepts.
-
-Current route families:
+### Trade & Hauling v2
 - Trade Foundations — Build, Haul, Discover
 - Route Runner — Learn What Makes a Route Good
 - Medium-Pad Specialist — Access Over Raw Capacity
@@ -300,30 +335,18 @@ Current route families:
 - Market Specialist — Verify, Benchmark, Adapt
 - Logistics Lead — Plan, Coordinate, Teach
 
-Beginner progression intentionally starts with a simple hauler, a cheap low-margin haul, finding/buying/selling Silver, comparing payouts, an outpost trade, choosing another commodity, then completing a profitable trade without instructions.
+Trade participates in carrier loading/unloading, but carrier ownership/movement/tritium/jump planning/staging belong to Carrier Logistics.
 
-Trade seed is `trade-v2`. Materially rewritten beginner/developing task IDs use `-v2` so stale completions do not falsely credit new lessons.
-
-Trade participates in carrier load/unload work, but **carrier ownership, movement, tritium, jump planning, staging, and carrier-operation leadership belong to Carrier Logistics**.
-
----
-
-## Carrier Logistics pathway
-
-Route families:
+### Carrier Logistics
 - Carrier Foundations — Join the Operation
 - Carrier Crew — Load, Move, Unload
 - Cargo Coordinator — Stage, Measure, Control
 - Movement Planner — Jumps, Tritium, Timing
 - Carrier Logistics Lead — Plan, Recover, Teach
 
-Carrier ownership is not required. Skills that can be demonstrated alongside another Mongrel carrier owner should not be gated by wealth/ownership.
+Carrier ownership is optional.
 
----
-
-## Engineering & Shipbuilding pathway
-
-Full route families:
+### Engineering & Shipbuilding
 - Engineering Foundations — Improve One Ship
 - Engineer Network — Unlock, Gather, Pin
 - Role Builder — Make the Whole Ship Agree
@@ -331,13 +354,9 @@ Full route families:
 - Ship Architect — Diagnose, Test, Refine
 - Engineering Mentor — Review, Explain, Teach
 
-### Engineering pacing rule
+---
 
-Engineering is unusually grind-heavy and dangerous for new-player retention. Never hide a multi-hour or multi-day prerequisite chain inside one innocent-looking assignment.
-
-Large goals should be decomposed into small milestones with frequent stopping points and visible payoff. Partial improvement is valid; G5 is not the only meaningful definition of success.
-
-### Engineering Campaign Planner
+## Engineering Campaign Planner
 
 Framework files:
 - `lib/engineering-campaign.js`
@@ -348,138 +367,74 @@ Storage:
 - `PROJECTS`
 - prefix `engineering-campaign-v1:<ownerId>`
 
+Engineering pacing rule: never hide a multi-hour/day prerequisite chain inside an ordinary-looking task. Partial improvement is valid; G2/G3 can be a legitimate stopping point.
+
 Model:
-1. **Goal** — what the Commander wants to improve.
-2. **Current/shared facts** — engineer access, cumulative prerequisites, etc.
-3. **Dependency plan** — data-driven chain between current state and next useful stopping point.
-4. **Next Engineering assignment** — one manageable step.
-5. **Background Prep** — optional Engineering progress that another pathway can expose without hijacking that pathway.
+1. Goal
+2. Current/shared facts
+3. Dependency plan
+4. Next manageable Engineering assignment
+5. Optional Background Prep from other pathways
 
-Campaign history can be paused/reused. Shared facts live separately from a single campaign so prior work can satisfy future goals. Facts keep provenance (`manual` today; future trusted import/sync can use server-owned provenance without replacing the model).
+Shared facts retain provenance so future trusted sync/import can write the same fact IDs instead of creating a parallel model.
 
-Current goal catalog includes shields, jump range, mobility, distributor, power/thermal, weapons, and whole-ship role build.
+### Engineering Prep Tracker
 
-### Cumulative prerequisite tracking
-
-Requirements such as “trade at 50 markets” are numeric facts, not binary Complete buttons.
-
-Current tracked counters include:
+Current tracked numeric facts:
 - `trade.markets-visited-distinct`
 - `trade.black-markets-used-distinct`
 
-Current UI lives in a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering:
-- `js/engineering-prep-tracker.js`
-- `css/engineering-prep-tracker.css`
-- host: `pathway/index.html`
+Current visible prep milestones:
+- 50 distinct commodity markets for Lei Cheung preparation
+- 5 distinct black markets for The Dweller preparation
 
-The tracker shows the running total plus the current preparation milestone:
-- **50 distinct commodity markets** for Lei Cheung preparation;
-- **5 distinct black markets** for The Dweller preparation.
+UI is a collapsed **Engineering Prep Tracker** inside My Pathway → Engineering. Each counter shows status/progress; **Update Progress** expands all manual write controls:
+- quick adds
+- exact amount completed
+- Set / Correct Total
 
-These targets are presentation/data metadata rather than baked into stored progress, so wording/threshold corrections can be made without migrating a member’s saved count.
+Exact add records only what the Commander actually did; Correct Total replaces the cumulative number.
 
-Tracker behavior:
-- each counter’s read-only status/progress remains visible while its editing controls stay collapsed;
-- a single **Update Progress** disclosure contains all manual write controls;
-- inside Update Progress: quick-add buttons, exact amount entry, and **Set / Correct Total**;
-- exact-add records only what the Commander actually completed;
-- Set / Correct Total replaces the cumulative number rather than adding to it;
-- progress bar against the tracked milestone;
-- manual/source and last-updated display;
-- responsive phone layout.
-
-API supports:
-- adding actual progress (`+3`, not pretending a suggested 5 was completed);
-- correcting the cumulative total;
-- provenance that leaves room for future sync/import.
-
-Manual precise tracking is the practical v1. Frontier/telemetry automation may be investigated later, but the campaign must remain useful without it. A future trusted sync should write the same fact IDs instead of creating a parallel progress system.
-
-Cross-pathway rule remains: Trade/Mining/etc. may expose an optional Engineering Prep opportunity, but completing or recording that prep **must not award or block progress in the other pathway**.
+Cross-path rule: optional Engineering Prep may accelerate Engineering but must never award/block completion in Trade, Mining, etc.
 
 ---
 
-## First Engineering Win — default gentle onboarding
+## First Engineering Win
 
-First Engineering Win is an optional automatic onboarding layer designed to open the door to Engineering even if a new member never selects Engineering as a Pathway interest.
+Optional default onboarding on Start Here. It can appear even if Engineering is not selected in Pathway preferences and stops nagging after completion/dismissal.
 
-Purpose:
-- reduce apprehension around Engineering;
-- deliver one obvious quality-of-life improvement that nearly every play style benefits from;
-- teach that partial engineering is useful;
-- create curiosity rather than force a grind.
-
-Default goal:
-- take an FSD to **G2 Increased Range**;
-- add the appropriate range-focused experimental (normally Mass Manager; small-drive edge cases can differ deliberately);
-- replot a familiar trip and feel the travel improvement.
+Default target:
+- FSD G2 Increased Range
+- then a range-focused experimental as a separate small job
+- test the payoff on a familiar trip
 
 Implementation:
-- `lib/engineering-campaign-data.js` defines the audited starter sequence.
-- `/api/pathway/engineering-campaign` returns `firstEngineeringWin` state.
-- `js/first-engineering-win.js` renders the Start Here card.
-- `css/first-engineering-win.css` styles it.
-- `start/index.html` hosts it.
+- `lib/engineering-campaign-data.js`
+- `/api/pathway/engineering-campaign`
+- `js/first-engineering-win.js`
+- `css/first-engineering-win.css`
+- `start/index.html`
+
+Current code contains **18 small steps**. Do not describe it as 17 unless current code changes.
 
 UX:
-- signed-in members see **one current step at a time**, not the full chain.
-- progress meter shows overall progress.
-- `Done / Already Did This` advances one step.
-- **Undo Previous Step** reopens only the most recently completed step; this is available during normal progression and immediately after the final completion screen.
-- `Hide this starter` dismisses the optional onboarding.
-- once completed or dismissed, it stops nagging the member.
+- one current step at a time;
+- progress meter;
+- Done / Already Did This;
+- **Undo Previous Step** reverses only the most recently completed step, including from the final completion card;
+- Hide this starter dismisses it.
 
-Current code contains **18 small steps** rather than a few hidden-grind tasks. It covers choosing a ship, baseline, Scout check/earn-if-needed, current Meta-Alloy sourcing, one Meta-Alloy, G1→G2 material planning, targeted gathering, Deciat safety, Felicity arrival/unlock/reputation, G1, complete G2 stopping point, experimental planning/materials, experimental application, and payoff test.
+The Felicity path includes a dedicated Deciat/Open safety step: rebuy, protect valuable exploration data, understand high vs low wake, preselect an escape system, avoid lingering with Meta-Alloy aboard, and ask Mongrels for escort/wing support if desired.
 
-### Felicity / Deciat safety
-
-Felicity Farseer path currently assumes:
-- Exploration rank Scout or higher to meet her;
-- 1 Meta-Alloy to unlock;
-- Increased Range FSD capability through the needed grades.
-
-Before the Meta-Alloy delivery, the starter has a dedicated **Prepare for Deciat** safety step. Deciat is treated as a known Open-player traffic/ganking hotspot because Felicity attracts newer Commanders carrying unlock cargo.
-
-The safety step covers:
-- rebuy;
-- selling exploration data the Commander does not want to risk;
-- high wake vs low wake;
-- preselecting an escape system;
-- avoiding unnecessary lingering with Meta-Alloy aboard;
-- explicitly asking a Mongrel for escort/experienced wingmate if desired.
-
-This is a small survival-awareness lesson, not full PvP training.
-
-Meta-Alloy source guidance uses current market data rather than blindly hard-coding Maia; Darnielle’s Progress is the traditional reference but supply should be checked.
-
-The G1/G2 plan uses current blueprint recipes and acknowledges deterministic engineering rolls since the 2024 rebalance while allowing engineer reputation to affect number of rolls. Mass Manager is deliberately a separate mini-project after the G2 stopping point.
+Wolf validated the First Engineering Win card and Undo behavior on phone, but not a full end-to-end in-game completion of all 18 steps.
 
 ---
 
-## Specialty / scenario pathways — future layer
+## Specialty / future pathways
 
-Specialty pathways intentionally combine several core competencies around a scenario instead of replacing core activity pathways.
+Queued specialty concept: **Community Goal Hauler Prep** — existing cargo ship, survivability, pips/boost, high wake vs low wake, controlled hostile delivery practice, escort coordination, and eventual hostile-logistics capstone. Win condition is survive/deliver, not kill the attacker.
 
-### Community Goal Hauler Prep — queued
-
-First planned cross-discipline scenario pathway.
-
-Concept:
-- start with the player’s **existing cargo ship**, not a required meta hull;
-- balance cargo, speed, shields/hull, utilities, power, engineering, and survival;
-- teach the hauler’s win condition: **survive and deliver**, not kill the attacker;
-- practice interdiction/escape decisions, pip/boost discipline, high wake vs low wake;
-- use controlled mock hostile deliveries with Mongrel PvPers;
-- include Mongrel escort request/rendezvous/comms/contingency planning;
-- capstone can be a real Community Goal or simulated hostile logistics operation.
-
-Likely prerequisites/signals: Trade plus some Engineering knowledge. PvP experience should help but should not be mandatory.
-
----
-
-## Other likely future core pathways
-
-Still likely candidates:
+Likely future core pathways:
 - Exploration
 - Exobiology
 - PvE Combat
@@ -489,19 +444,19 @@ Still likely candidates:
 - Squadron Operations
 - Powerplay when doctrine is mature enough
 
-Do not automatically build all of these. Inspect current authoritative site content first and continue applying the action-first philosophy.
+Do not automatically build all of these; inspect current authoritative site content first.
 
 ---
 
 ## Recruitment / Discord integration
 
-Use the existing Discord app/bot **Imperial Mongrels Website** rather than adding another general-purpose bot.
+Use the existing Discord app/bot **Imperial Mongrels Website**.
 
 Recruitment requires both:
-1. Mongrels website application; and
+1. website application; and
 2. Elite Dangerous Squadron application to **Regiment of Imperial Mongrels [R1MM]**.
 
-The website cannot accept the in-game application itself. After leadership accepts it in Elite, the applicant must return to Squadrons and confirm/join.
+The website cannot accept the in-game application. After leadership accepts it in Elite, the applicant must confirm/join in-game.
 
 Application statuses:
 - draft
@@ -510,67 +465,32 @@ Application statuses:
 - accepted
 - declined
 
-Important safety:
-- Accepted/Declined are terminal in normal review.
-- Reapplication is an explicit action from Declined.
-- Member Discord role assignment must succeed before the website marks an application Accepted.
-- private officer notes never become applicant-facing decline text.
-
-New accepted members may receive `/member/` onboarding. Site Admin Lab lives at `/discord-onboarding/` and is Wolf-only.
-
----
-
-## Mission Control / BGS conventions
-
-Mission Control is member-only with refreshable faction/system data and private strategy.
-
-Operational guidance should be quantified where possible: bounty-credit targets, mission INF targets, faction support/avoid, and stop conditions.
-
-**INF means mission Influence reward ticks/pips, not faction influence percentage points.**
-
-Before changing BGS thresholds/defaults, inspect current code and migration/version logic. Do not rely on old remembered values.
-
----
-
-## Ask the Mongrels
-
-The assistant uses curated site/squad knowledge and can provide stable general Elite knowledge when appropriate. It currently does not own Pathway progression state.
-
-Pathway should tell the Commander what to accomplish without explaining every hidden prerequisite; Ask the Mongrels is the help layer when they get stuck.
-
-For website-navigation questions, the assistant should prefer **explicit click paths that match the current UI**, not vague page-name directions. When a destination differs by layout, describe both desktop and compact navigation when useful. If the same tool is reachable through the Member Portal, mention that alternate route when it materially helps.
-
-Carrier coordination example now encoded in `lib/assistant-context.js`:
-- desktop: **Command → Carrier Coordination**;
-- compact/tablet/mobile: **MENU → Command → Carrier Coordination**;
-- member route: **member button → Member Portal → Carrier Coordination → Open Carrier Board**;
-- to create a loading event: **Carrier Coordination → New Coordination Post → Activity: Loading**.
-
-Carrier-related assistant responses should also surface both **Carrier Coordination** and **Member Portal** as relevant navigation buttons when available.
-
-High-value future improvement: include the member’s current Pathway assignment/progress in Assistant context so it can answer “how do I do this task?” without becoming the authority for completion.
+Accepted/Declined are terminal in normal review; reapplication is explicit. Discord Member role assignment must succeed before website acceptance is finalized. Private officer notes never become applicant-facing decline text.
 
 ---
 
 ## Validation status
 
-Validated/accepted by Wolf:
-- original AX beginner routes were useful;
-- Start Here random-task cards/carousel look good;
-- compact navigation focus-mode fix was doing okay after the final change;
-- First Engineering Win Start Here card looks good on Wolf’s phone;
-- First Engineering Win **Undo Previous Step** control works/looked good on Wolf’s phone. This validates the surface/reversal behavior, not a full in-game completion of all 18 Engineering steps;
-- Engineering Prep Tracker’s integrated Engineering styling and visible correction capability looked good before the latest decluttering pass.
+Validated / accepted by Wolf:
+- original AX beginner route direction;
+- Start Here random-task cards/carousel;
+- compact navigation focus mode;
+- full My Pathway assignment loading after restoring the shared assignments API response helper;
+- First Engineering Win card on phone;
+- First Engineering Win Undo Previous Step on phone;
+- Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass.
 
-Implemented but **do not call production-validated unless Wolf confirms or live checks succeed**:
+Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
+- 1061–1280px compressed full-navigation tablet/iPad layout;
+- generalized Ask the Mongrels navigation paths and direct section buttons;
+- latest direct Carrier Coordination / Member Portal anchors;
 - Trade v2 route rewrite;
 - Carrier Logistics full pathway;
 - Engineering & Shipbuilding full pathway;
 - Engineering Campaign Planner framework;
-- numeric Engineering prerequisite-counter API and latest **Update Progress** tracker disclosure;
-- Engineering route filtering that keeps Give Me Another Route at the selected experience band;
-- collapsible My Pathway activity-category disclosures;
-- full in-game/end-to-end completion of the First Engineering Win audited sequence;
-- assorted latest recruitment/onboarding hardening described by current code.
+- numeric Engineering prerequisite tracker latest Update Progress layout;
+- Engineering route filtering for Give Me Another Route;
+- latest collapsible My Pathway category UX;
+- full end-to-end First Engineering Win in-game sequence.
 
-Production deployment can lag GitHub commits. Always distinguish “committed” from “confirmed live.”
+Production deployment can lag GitHub commits. Always distinguish **committed** from **confirmed live**.
