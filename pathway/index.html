@@ -9,7 +9,7 @@
   <title>My Pathway | The Mongrels</title>
   <meta name="description" content="Private personalized activity and development pathway for Mongrel members.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/pathway.css?v=1">
+  <link rel="stylesheet" href="../css/pathway.css?v=2">
 </head>
 <body class="visual-page page-members page-pathway">
 <header class="site-header">
@@ -26,7 +26,7 @@
       <div>
         <p class="eyebrow">Personal Commander Development</p>
         <h1>My Pathway</h1>
-        <p>Tell us what you enjoy, what you want to improve, and what you already know. My Pathway turns those choices into a smaller, more useful view of the enormous amount of Elite content available to you.</p>
+        <p>Tell us what you enjoy, what you want to improve, and what you already know. My Pathway turns those choices into specific assignments instead of handing you the entire Elite encyclopedia at once.</p>
         <div class="actions"><a class="btn btn-ghost" href="../activities/">Browse All Activities</a><a class="btn btn-ghost" href="../member/">Member Portal</a></div>
       </div>
       <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
@@ -75,12 +75,18 @@
 
       <aside class="pathway-panel is-accent">
         <div class="pathway-panel-head">
-          <div><p class="eyebrow">Your Pathway</p><h2>What should I work on next?</h2><p>This first version gives deterministic recommendations from your selections. As our activity content grows, these recommendations will become real milestone chains and live squad opportunities.</p></div>
+          <div><p class="eyebrow">Your Pathway</p><h2>What should I work on next?</h2><p>When a full activity pathway is available, the site picks a useful route and gives you a concrete assignment. You can follow it, mark things you already know, skip something for now, or ask for another approved route.</p></div>
         </div>
         <div class="pathway-summary" data-pathway-summary></div>
+
+        <section class="ax-pathway" data-ax-pathway hidden>
+          <div class="ax-pathway-loading" data-ax-loading>Building your AX assignment…</div>
+          <div data-ax-content></div>
+        </section>
+
         <div data-pathway-preview></div>
         <div class="pathway-goal-card" data-pathway-goal-preview hidden></div>
-        <p class="pathway-footnote">Nothing here locks the rest of the site. You can always browse every activity, skip a recommendation, or change your experience level whenever your interests change.</p>
+        <p class="pathway-footnote">Nothing here locks the rest of the site. The pathway makes decisions for you when it reasonably can, but every assignment remains optional and every activity remains available to browse.</p>
       </aside>
     </div>
   </section>
@@ -88,7 +94,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=72"></script>
-<script src="../js/pathway.js?v=1"></script>
+<script src="../js/pathway.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=69"></script>
 </body>
 </html>
