@@ -45,6 +45,10 @@
     return bits.join('');
   }
 
+  function wrap(markup) {
+    return `<div class="container first-engineering-win-shell">${markup}</div>`;
+  }
+
   function render(data) {
     const first = data?.firstEngineeringWin;
     if (data?.unavailable || !first || first.readyForPublicUI !== true || first.dismissed) {
@@ -60,12 +64,12 @@
         return;
       }
       root.hidden = false;
-      root.innerHTML = `<article class="first-win-card is-complete">
+      root.innerHTML = wrap(`<article class="first-win-card is-complete">
         <div class="first-win-kicker">First Engineering Win</div>
         <h3>You opened the door.</h3>
         <p>You have taken a ship you already use, made a real Engineering improvement, and tested the payoff. From here, deeper Engineering is your choice.</p>
         <div class="first-win-actions"><a class="btn btn-primary" href="../pathway/">Explore My Pathway</a><a class="btn btn-ghost" href="../guides/engineering/">Engineering Guide</a></div>
-      </article>`;
+      </article>`);
       return;
     }
 
@@ -81,7 +85,7 @@
     const percent = Math.max(0, Math.min(100, Math.round((completed / total) * 100)));
 
     root.hidden = false;
-    root.innerHTML = `<article class="first-win-card">
+    root.innerHTML = wrap(`<article class="first-win-card">
       <div class="first-win-head">
         <div><span class="first-win-kicker">Optional Engineering Nudge</span><h3>${esc(first.title)}</h3><p>${esc(first.subtitle)}</p></div>
         <span class="first-win-progress-label">${completed} / ${total}</span>
@@ -101,7 +105,7 @@
       </div>
       <p class="first-win-foot">One small step at a time. This starter is optional, and finishing it does not force you into a larger Engineering campaign.</p>
       <div class="first-win-status" data-first-win-status aria-live="polite"></div>
-    </article>`;
+    </article>`);
 
     root.querySelector('[data-first-win-done]')?.addEventListener('click', completeStep);
     root.querySelector('[data-first-win-dismiss]')?.addEventListener('click', dismiss);
