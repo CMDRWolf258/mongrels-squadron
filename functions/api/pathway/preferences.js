@@ -9,7 +9,7 @@ const ACTIVITIES = [
   { id:'pve', label:'PvE Combat', group:'Combat' },
   { id:'pvp', label:'PvP', group:'Combat' },
   { id:'ax', label:'Anti-Xeno', group:'Combat' },
-  { id:'surface', label:'Surface Operations', group:'Combat' },
+  { id:'surface', label:'Operations', group:'Combat' },
   { id:'mining', label:'Mining', group:'Industry & Logistics' },
   { id:'trade', label:'Trade & Hauling', group:'Industry & Logistics' },
   { id:'carrier-logistics', label:'Carrier Logistics', group:'Industry & Logistics' },
