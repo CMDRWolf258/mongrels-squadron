@@ -44,7 +44,7 @@
           <strong>In-Game Squadron Application</strong>
           <p>${inGameAudit}</p>
           <label class="application-choice"><input type="checkbox" data-in-game-verified ${app.inGameApplicationVerified ? 'checked' : ''}><span>I confirmed this Commander appears in Elite's Squadron applicant list.</span></label>
-          <small>Normally verify the in-game application before approval. Website approval grants Discord/site access but cannot accept the Elite Dangerous Squadron application for you; accept that application in-game before or immediately after website approval.</small>
+          <small>Normally verify the in-game application before approval. Website approval grants Discord/site access but cannot accept the Elite Dangerous Squadron application for you. After leadership accepts it in-game, the applicant must return to Squadrons and confirm the acceptance / choose Join Squadron before they actually enter the in-game squad.</small>
         </div>
         <label class="application-note"><span>Private Officer Notes</span><textarea rows="3" maxlength="4000" data-officer-notes placeholder="Visible only to Officers and Site Admin.">${esc(app.officerNotes || '')}</textarea></label>
         <div class="application-review-actions"><button class="btn btn-ghost" type="button" data-review-action="${esc(app.status)}">Save Note / Verification</button>${app.status !== 'under_review' ? '<button class="btn btn-ghost" type="button" data-review-action="under_review">Mark Under Review</button>' : ''}${app.status !== 'accepted' ? '<button class="btn btn-primary" type="button" data-review-action="accepted">Approve & Grant Member Access</button>' : ''}${app.status !== 'declined' ? '<button class="btn btn-ghost" type="button" data-review-action="declined">Decline</button>' : ''}<span class="application-save-status" data-card-status></span></div>
@@ -70,7 +70,7 @@
 
     if (newlyAccepted) {
       const approved = window.confirm(
-        `Approve ${commander}?\n\nThis will grant the Mongrel Member role in Discord, remove Applicant/Guest onboarding roles, and send the Commander a welcome message with a Member Portal activation link.\n\nElite's in-game Squadron application must still be accepted manually in Elite Dangerous.`,
+        `Approve ${commander}?\n\nThis will grant the Mongrel Member role in Discord, remove Applicant/Guest onboarding roles, and send the Commander a welcome message with a Member Portal activation link.\n\nElite's in-game Squadron application must still be accepted manually in Elite Dangerous. After leadership accepts it, the Commander must confirm that acceptance / choose Join Squadron on their side to complete in-game membership.`,
       );
       if (!approved) return;
     }
@@ -101,7 +101,7 @@
       if (index >= 0) applications[index] = data.application;
 
       if (newlyAccepted) {
-        const notices = ['Remember to accept the Commander\'s in-game Squadron application in Elite Dangerous if you have not already done so.'];
+        const notices = ['Accept the Commander\'s in-game Squadron application in Elite Dangerous if you have not already done so. The Commander must then confirm that acceptance / choose Join Squadron on their side before in-game membership is complete.'];
         if (data.provisioning?.inGameRequirementOverridden) notices.unshift('This approval was recorded as an exception because the in-game application was not verified.');
         if (data.provisioning?.cleanupWarnings) notices.push('One or more Applicant/Guest roles could not be removed automatically; check the member in Discord.');
         if (['failed','cooldown','storage_unavailable'].includes(data.provisioning?.dmStatus)) notices.push('Member access was granted, but the acceptance DM was not delivered automatically.');
