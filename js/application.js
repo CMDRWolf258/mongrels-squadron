@@ -20,8 +20,8 @@
   };
   const statusLabel = status => ({ draft:'Draft', submitted:'Submitted', under_review:'Under Review', accepted:'Accepted', declined:'Declined' }[status] || status || 'Unknown');
   const statusCopy = status => ({
-    submitted: 'Your application has been sent to Mongrel leadership for review. You do not need to submit another application.',
-    under_review: 'Mongrel leadership is currently reviewing your application.',
+    submitted: 'Your website application has been sent to Mongrel leadership. Leadership will also verify your in-game Squadron application before approval.',
+    under_review: 'Mongrel leadership is reviewing your application and confirming the matching in-game Squadron application.',
     accepted: 'Your application has been accepted and your Discord Mongrel Member role has been granted. Activate Member Access below once to refresh your website permissions.',
     declined: 'This application is closed. If leadership asked you to follow up, please contact them through Discord.',
   }[status] || 'Your application has been saved.');
@@ -65,6 +65,7 @@
       bgsOpenAcknowledged: checked('bgsOpenAcknowledged'),
       squadGoals: text('squadGoals'),
       additionalInfo: text('additionalInfo'),
+      inGameApplicationSubmitted: checked('inGameApplicationSubmitted'),
       rulesAcknowledged: checked('rulesAcknowledged'),
     };
   }
@@ -83,7 +84,7 @@
     document.querySelectorAll(`[data-radio-group="${group}"] input[type="radio"]`).forEach(input => { input.checked = input.value === value; });
   }
   function populate(answers = {}) {
-    ['commanderName','experience','timezone','discoverySource','discoveryDetail','interestReason','squadGoals','additionalInfo','bgsOpenAcknowledged','rulesAcknowledged'].forEach(field => setField(field, answers[field]));
+    ['commanderName','experience','timezone','discoverySource','discoveryDetail','interestReason','squadGoals','additionalInfo','bgsOpenAcknowledged','inGameApplicationSubmitted','rulesAcknowledged'].forEach(field => setField(field, answers[field]));
     setChecks('activeTimes', answers.activeTimes);
     setChecks('currentActivities', answers.currentActivities);
     setChecks('learnActivities', answers.learnActivities);
@@ -106,6 +107,7 @@
     statusCard.innerHTML = `<div class="application-status-head"><div><p class="eyebrow">Application Status</p><h2>${esc(a.commanderName || 'Mongrel Application')}</h2><p>${esc(statusCopy(status))}</p>${acceptedActions}</div><span class="application-status-badge ${esc(status)}">${esc(statusLabel(status))}</span></div>
       <div class="application-answer-grid">
         ${answer('Discord', application.ownerName || '')}${answer('Submitted', dateLabel(application.submittedAt || application.updatedAt))}${status === 'accepted' ? answer('Accepted', dateLabel(application.acceptedAt || application.updatedAt)) : ''}
+        ${answer('In-game Squadron Application', a.inGameApplicationSubmitted ? 'Submitted to Regiment of Imperial Mongrels' : 'Not recorded')}
         ${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}
         ${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
         ${answer('Current Activities', a.currentActivities, true)}${answer('Want to Learn / Do More', a.learnActivities, true)}
@@ -136,7 +138,7 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         if (data.error === 'application_incomplete') {
-          showSaveStatus('A few required fields still need an answer before you can submit.', 'error');
+          showSaveStatus('A few required fields still need an answer before you can submit. Be sure you have also submitted the in-game Squadron application.', 'error');
           focusMissing(data.fields || []);
           return;
         }
