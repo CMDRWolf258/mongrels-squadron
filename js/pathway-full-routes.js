@@ -9,6 +9,7 @@
     ['Carrier Logistics', document.querySelector('[data-carrier-logistics-pathway]')],
     ['Engineering & Shipbuilding', document.querySelector('[data-engineering-pathway]')],
     ['Exploration', document.querySelector('[data-exploration-pathway]')],
+    ['Exobiology', document.querySelector('[data-exobiology-pathway]')],
   ]);
 
   function fullRouteIsVisible(label) {
