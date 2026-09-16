@@ -9,6 +9,7 @@ This file records current Pathway direction and specialty concepts that should s
 3. **Mining** — laser foundations, efficiency, advanced extraction, Rhino surface operations, specialist work, and lead/mentor routes.
 4. **Trade & Hauling** — action-first beginner progression, Route Runner, Medium-Pad Specialist, Strategic Hauler, Market Specialist, and Logistics Lead.
 5. **Carrier Logistics** — Carrier Foundations, Carrier Crew, Cargo Coordinator, Movement Planner, and Carrier Logistics Lead.
+6. **Engineering & Shipbuilding** — action-first Engineering Foundations, Engineer Network, Role Builder, Combat Systems, Ship Architect, and Engineering Mentor routes.
 
 Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records through the shared assignment API.
 
@@ -22,11 +23,11 @@ Full pathways use independent `pathway-progress-v1:<owner>:<activity>` records t
 - `Already Know / Have This` earns credit; `Skip for Now` does not.
 - Veterans should receive diagnosis, leadership, wing/team responsibility, and teaching—not just larger numbers.
 - Ownership or wealth should not be an artificial gate when the same skill can be demonstrated by working with another Mongrel. Carrier Movement Planner, for example, does not require owning a fleet carrier.
+- Engineering beginners should improve **one ship they already use**, one problem at a time, before full-build optimization or theory-heavy tradeoff work is introduced.
 
 ## Queued core pathways
 
 Likely next candidates include:
-- Engineering & Shipbuilding
 - Exploration
 - Exobiology
 - PvE Combat
