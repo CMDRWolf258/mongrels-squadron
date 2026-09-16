@@ -47,6 +47,10 @@
     return taskTypeLabels[task?.type] || 'Assignment';
   }
 
+  function engineeringPrepMarkup(task) {
+    return window.MongrelEngineeringPrep?.markup(task) || '';
+  }
+
   function render() {
     if (!assignments?.eligible) {
       content.innerHTML = '<div class="pathway-empty"><strong>Trade & Hauling is not in your saved pathway yet.</strong><br>Select Trade & Hauling above and save your pathway to generate a Trade assignment chain.</div>';
@@ -87,6 +91,7 @@
             <p class="ax-objective">${esc(current.objective)}</p>
             <div class="ax-why"><strong>Why this assignment</strong><p>${esc(current.why)}</p></div>
             ${Array.isArray(current.checklist) && current.checklist.length ? `<div class="ax-checklist"><strong>Clear it when you have:</strong><ul>${current.checklist.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>` : ''}
+            ${engineeringPrepMarkup(current)}
             <div class="ax-assignment-actions">
               <button class="btn btn-primary" type="button" data-trade-task-status="complete" data-trade-task-id="${esc(current.id)}">Complete</button>
               <button class="btn btn-ghost" type="button" data-trade-task-status="known" data-trade-task-id="${esc(current.id)}">Already Know / Have This</button>
@@ -124,6 +129,7 @@
       const taskId = button.dataset.tradeTaskId;
       runAction({ action:'set_task', taskId, status }, status === 'pending' ? 'Reopening assignment…' : 'Saving assignment progress…');
     }));
+    window.MongrelEngineeringPrep?.bind(content);
     if (loading) loading.hidden = true;
   }
 
