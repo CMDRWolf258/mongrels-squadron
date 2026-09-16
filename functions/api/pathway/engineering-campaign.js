@@ -20,8 +20,16 @@ import {
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
 const TRACKED_COUNTER_TARGETS = {
-  'trade.markets-visited-distinct': { target:50, targetLabel:'Lei Cheung preparation' },
-  'trade.black-markets-used-distinct': { target:5, targetLabel:'The Dweller preparation' },
+  'trade.markets-visited-distinct': {
+    target:50,
+    targetLabel:'Lei Cheung preparation',
+    targetNote:'At 50 unique markets, check your Engineer panel. Current references vary between “at least 50” and “over 50”; if the invitation has not registered, make one more unique-market trade.',
+  },
+  'trade.black-markets-used-distinct': {
+    target:5,
+    targetLabel:'The Dweller preparation',
+    targetNote:'At 5 distinct black markets, check your Engineer panel to confirm the meeting requirement registered.',
+  },
 };
 
 export async function onRequestGet({ request, env }) {
@@ -128,6 +136,7 @@ function presentTrackedCounters(state) {
         current,
         target:Number.isFinite(Number(targetMeta.target)) ? Number(targetMeta.target) : null,
         targetLabel:targetMeta.targetLabel || '',
+        targetNote:targetMeta.targetNote || '',
         quickAdd:Array.isArray(definition.quickAdd) ? definition.quickAdd.filter(value => Number.isInteger(value) && value > 0).slice(0, 5) : [],
         source:stored?.source || 'manual',
         updatedAt:stored?.updatedAt || null,
