@@ -59,6 +59,7 @@ for (const path of [
   'pathway/index.html',
   'functions/api/pathway/assignments.js',
   'lib/assistant-pathway-context.js',
+  'activities/index.html',
 ]) {
   assert.ok(existsSync(path), `Colonization critical file is missing: ${path}`);
 }
@@ -71,6 +72,9 @@ assert.match(fullRoutesSource, /\['Colonization'/, 'Generic-card suppression is 
 const assignmentsSource = readFileSync('functions/api/pathway/assignments.js', 'utf8');
 assert.match(assignmentsSource, /pathway-colonization/, 'Shared assignment API is not importing Colonization');
 assert.match(assignmentsSource, /seedVersion:'colonization-v1'/, 'Shared assignment API is missing the Colonization provider');
-console.log('✓ Colonization provider, UI mount, client, Assistant context, and duplicate-card handling are wired');
+const activitiesHtml = readFileSync('activities/index.html', 'utf8');
+assert.match(activitiesHtml, /<h3>Colonization<\/h3>[\s\S]{0,700}Pathway Available/, 'Activities hub does not mark Colonization as Pathway Available');
+assert.match(activitiesHtml, /<h3>Colonization<\/h3>[\s\S]{0,900}Open My Pathway/, 'Activities hub Colonization card is missing the My Pathway link');
+console.log('✓ Colonization provider, UI mount, public hub, client, Assistant context, and duplicate-card handling are wired');
 
 console.log('\nAll Colonization smoke checks passed.');
