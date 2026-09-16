@@ -391,7 +391,9 @@ Shared facts retain provenance so future trusted sync/import can write the same 
 
 ### Dependency evaluation rule
 
-Campaign dependency readiness must treat **fact-completed nodes exactly like manually completed nodes**. `lib/engineering-campaign.js` now builds a completion map before evaluating dependencies. This is critical for adaptive campaigns: if a Commander already has an Engineer unlocked or already completed a cumulative prerequisite, downstream work should unlock automatically without requiring a fake manual completion.
+Campaign dependency readiness must treat **fact-completed nodes exactly like manually completed nodes**. `lib/engineering-campaign.js` builds a completion map before evaluating dependencies. This is critical for adaptive campaigns: if a Commander already has an Engineer unlocked or already completed a cumulative prerequisite, downstream work should unlock automatically without requiring a fake manual completion.
+
+A later access fact can also prove earlier prerequisites were already satisfied. For example, recording **Lei Cheung already unlocked** should clear the older Dweller/market unlock gates instead of forcing a veteran Commander to reconstruct or falsify historical market counts. Relevant steps expose explicit **I Already Unlocked…** shortcuts, and the campaign data changes its completion proof accordingly on the next render.
 
 Generic campaign setup deliberately stops at **assess current state → choose useful stopping point → map dependencies**. Material planning belongs inside each goal-specific graph after the actual module/blueprint choice is known.
 
@@ -403,20 +405,25 @@ Current chain:
 1. generic campaign assessment, target selection, and dependency mapping;
 2. choose the Shield Generator blueprint around the ship's role rather than one universal recipe;
 3. plan only the chosen blueprint's **G1 → G2** material job;
-4. use 5 distinct black markets for The Dweller meeting requirement;
-5. unlock The Dweller at Black Hide (500,000 Cr);
-6. engineer with The Dweller only until the Lei Cheung referral appears;
-7. accumulate the Lei Cheung distinct-market requirement using the existing market counter;
-8. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
-9. open G2 shield access only as far as needed;
-10. engineer the selected Shield Generator through G2;
-11. **fly/test the G2 result before doing more**;
-12. optionally continue to G3 only if the G2 test says the ship still needs it;
-13. test G3 and end the phase.
+4. gather only the materials in that small plan, then stop;
+5. use 5 distinct black markets for The Dweller meeting requirement, unless existing engineer access already proves this was done;
+6. unlock The Dweller at Black Hide (500,000 Cr);
+7. engineer with The Dweller only until the Lei Cheung referral appears;
+8. accumulate the Lei Cheung distinct-market requirement using the existing market counter, unless Lei is already unlocked;
+9. unlock Lei Cheung at Trader's Rest with 200 units of Gold;
+10. open G2 shield access only as far as needed;
+11. refresh the exact G1 → G2 material shortfall once Lei's current access/reputation is known and cover only any missing amount;
+12. engineer the selected Shield Generator through G2;
+13. **fly/test the G2 result before doing more**;
+14. optionally continue to G3 only if the G2 test says the ship still needs it;
+15. engineer to G3;
+16. test G3 and end the phase.
 
 Design rules:
 - **Define the job first, then gather for the job.** Blueprint choice comes before the material plan.
-- The initial material plan covers G1 → G2 only. Because exact roll count can depend on engineer reputation, the Commander can refresh the quantity after reaching Lei rather than farming G3–G5 preemptively.
+- The initial gather is targeted to the intended G1 → G2 job, not a general material-cap grind.
+- Because exact roll count can depend on engineer reputation, a small post-access shortage check catches any difference instead of asking the Commander to farm G3–G5 preemptively.
+- Never make a veteran fake old counter totals to prove an Engineer they already have. Later access facts can supersede earlier unlock prerequisites.
 - G2 is an explicit legitimate stopping point.
 - After the G2 test, the UI exposes **Take the Win · Complete Campaign** even though optional G3 refinement remains.
 - G5 Shield Generator and G5 Shield Booster work are deliberately deferred to later campaign phases/goals.
@@ -426,7 +433,7 @@ Design rules:
 
 ### Campaign Planner UI
 
-My Pathway → Engineering now hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
+My Pathway → Engineering hosts a collapsed **Campaign Planner** subsection above the Prep Tracker.
 
 Inactive state:
 - exposes the audited **Improve Shields** campaign only;
@@ -438,6 +445,7 @@ Active state:
 - progress meter;
 - resource links from trusted campaign data;
 - permanent-access milestone button or normal Done action as appropriate;
+- relevant prerequisite steps can expose **I Already Unlocked… / I Already Have G3+ Access** shortcuts so existing progress skips old gates cleanly;
 - counter steps link/scroll to the existing Prep Tracker;
 - full compact step history with Reopen / Undo Mark / Update Tracker corrections;
 - Pause Campaign;
@@ -548,8 +556,8 @@ Validated / accepted by Wolf:
 - Engineering Prep Tracker integrated styling/correction concept before latest decluttering pass.
 
 Implemented but **not yet production-validated unless Wolf confirms/live checks succeed**:
-- first live **Improve Shields** Engineering Campaign Planner UI and goal chain;
-- fact-completed dependency propagation in the Engineering campaign engine;
+- first live **Improve Shields** Engineering Campaign Planner UI and adaptive goal chain;
+- fact-completed dependency propagation and later-access prerequisite supersession in the Engineering campaign engine/data;
 - Campaign Planner ↔ Prep Tracker live browser synchronization;
 - 1061–1280px compressed full-navigation tablet/iPad layout;
 - generalized Ask the Mongrels navigation paths and direct section buttons;
