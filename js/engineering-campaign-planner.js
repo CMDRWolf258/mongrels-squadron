@@ -7,6 +7,18 @@
   let plannerOpen = false;
   let flash = null;
 
+  const STARTABLE_GOALS = new Set(['shields','jump-range']);
+  const startGoalDetails = {
+    shields:{
+      option:'Improve Shields · G2/G3 Shield Generator',
+      summary:'Build toward a useful G2/G3 Shield Generator improvement through Lei Cheung, then fly the result before deciding whether more Engineering is worth it.',
+    },
+    'jump-range':{
+      option:'Improve Jump Range · G2 FSD + optional experimental/G3',
+      summary:'Improve an FSD through a useful G2 Increased Range result, test the travel payoff, then treat the experimental and G3 as separate optional jobs.',
+    },
+  };
+
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const kindLabels = {
     assess:'Assess', plan:'Plan', prepare:'Prepare', unlock:'Engineer Access', engineer:'Engineer', demonstrate:'Test the Result', task:'Task',
@@ -103,6 +115,13 @@
     return `<button class="btn btn-primary" type="button" data-campaign-complete-node="${esc(node.id)}">Done / Already Have This</button>${alternatives}`;
   }
 
+  function canCorrectFact(node) {
+    const factId = node?.factCompletion?.factId || '';
+    if (!factId || factId.startsWith('first-win.')) return false;
+    const alternateIds = new Set((Array.isArray(node?.meta?.alternateFacts) ? node.meta.alternateFacts : []).map(item => item?.factId).filter(Boolean));
+    return !alternateIds.has(factId);
+  }
+
   function stepListMarkup(planner) {
     const currentId = planner?.nextMain?.id || '';
     return `<details class="engineering-campaign-step-list">
@@ -117,7 +136,7 @@
             correction = `<button type="button" data-campaign-reopen-node="${esc(node.id)}">Reopen</button>`;
           } else if (complete && node.completionSource === 'fact' && node.factCompletion?.operator === 'gte') {
             correction = `<button type="button" data-campaign-open-prep>Update Tracker</button>`;
-          } else if (complete && node.completionSource === 'fact' && node.factCompletion?.factId) {
+          } else if (complete && node.completionSource === 'fact' && canCorrectFact(node)) {
             correction = `<button type="button" data-campaign-clear-fact="${esc(node.factCompletion.factId)}">Undo Mark</button>`;
           }
           return `<article class="engineering-campaign-step${complete ? ' is-complete' : ''}${current ? ' is-current' : ''}${locked ? ' is-locked' : ''}">
@@ -146,27 +165,44 @@
 
   function inactiveMarkup() {
     const recentWin = campaignsByRecent().find(campaign => campaign.status === 'complete');
+    const available = (data?.goalCatalog || []).filter(goal => STARTABLE_GOALS.has(goal.id));
     return `<details class="engineering-campaign-planner"${plannerOpen ? ' open' : ''}>
       <summary>
         <span class="engineering-campaign-summary-copy"><small>Engineering · Goal Planner</small><strong>Campaign Planner</strong></span>
-        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : '1 audited campaign ready'}</span>
+        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : `${available.length || 2} audited campaigns ready`}</span>
       </summary>
       <div class="engineering-campaign-body">
         ${recentWin ? `<div class="engineering-campaign-last-win"><small>Last campaign win</small><strong>${esc(campaignName(recentWin))}${recentWin.shipName ? ` · ${esc(recentWin.shipName)}` : ''}</strong></div>` : ''}
         <div class="engineering-campaign-intro">
-          <span class="engineering-campaign-live-badge">Live Campaign</span>
-          <h4>Improve Shields</h4>
-          <p>This first goal-driven campaign works backward toward a useful G2/G3 Shield Generator improvement through Lei Cheung. It deliberately does not append G5 boosters or another multi-hour grind after the first useful win.</p>
+          <span class="engineering-campaign-live-badge">Live Campaigns</span>
+          <h4>Choose the next useful improvement</h4>
+          <p>Each audited campaign works toward a useful partial upgrade, makes you fly the result, and lets saved Engineer progress satisfy old prerequisites instead of sending you backward through work you already completed.</p>
         </div>
         <form class="engineering-campaign-start" data-campaign-start-form>
+          <label><span>Campaign</span><select required data-campaign-goal>${available.map(goal => `<option value="${esc(goal.id)}">${esc(startGoalDetails[goal.id]?.option || goal.label)}</option>`).join('')}</select></label>
+          <div class="engineering-campaign-goal-hints">${available.map(goal => `<p><strong>${esc(goal.label)}</strong>${esc(startGoalDetails[goal.id]?.summary || goal.description || '')}</p>`).join('')}</div>
           <label><span>Ship</span><input type="text" maxlength="120" required data-campaign-ship placeholder="Ship name or hull — e.g. Triad / Corsair"></label>
-          <label><span>What do you want the shields to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: survive longer under thermal pressure without ruining recharge behavior."></textarea></label>
-          <button class="btn btn-primary" type="submit">Start Improve Shields</button>
+          <label><span>What do you want this ship to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: reduce the number of jumps on normal trips without compromising the ship’s primary role."></textarea></label>
+          <button class="btn btn-primary" type="submit">Start Engineering Campaign</button>
         </form>
         ${historyMarkup()}
         <div class="engineering-campaign-status" data-campaign-status${flash ? ` data-state="${esc(flash.state)}"` : ''}>${esc(flash?.message || '')}</div>
       </div>
     </details>`;
+  }
+
+  function takeWinCopy(campaign) {
+    if (campaign?.goalId === 'jump-range') {
+      return 'If the travel improvement now solves the problem you started with, complete the campaign here. The experimental and G3 are optional follow-on improvements.';
+    }
+    return 'If the shield now solves the problem you started with, complete the campaign here. Continuing to G3 is optional refinement.';
+  }
+
+  function finishedCopy(campaign) {
+    if (campaign?.goalId === 'jump-range') {
+      return 'Record the win and close this campaign phase. Future FSD work should start from what you learned here rather than automatically extending the grind into G4/G5.';
+    }
+    return 'Record the win and close this campaign phase. Future shield work should start from what you learned here rather than automatically extending the grind.';
   }
 
   function activeMarkup(planner) {
@@ -196,9 +232,9 @@
           ${noteMarkup(current)}
           ${factProgress(current) ? '' : resourceMarkup(current)}
           <div class="engineering-campaign-actions">${currentActionMarkup(current, campaign)}${factProgress(current) ? resourceMarkup(current) : ''}</div>
-        </article>` : `<article class="engineering-campaign-current is-finished"><span class="engineering-campaign-stage">Campaign Chain Cleared</span><h4>Every planned step is complete.</h4><p>Record the win and close this campaign phase. Future shield work should start from what you learned here rather than automatically extending the grind.</p></article>`}
+        </article>` : `<article class="engineering-campaign-current is-finished"><span class="engineering-campaign-stage">Campaign Chain Cleared</span><h4>Every planned step is complete.</h4><p>${esc(finishedCopy(campaign))}</p></article>`}
 
-        ${canTakeWin ? `<aside class="engineering-campaign-take-win"><div><small>Stopping point reached</small><strong>You are allowed to be done.</strong><p>If the shield now solves the problem you started with, complete the campaign here. Continuing to G3 is optional refinement.</p></div><button class="btn btn-primary" type="button" data-campaign-finish>Take the Win · Complete Campaign</button></aside>` : ''}
+        ${canTakeWin ? `<aside class="engineering-campaign-take-win"><div><small>Stopping point reached</small><strong>You are allowed to be done.</strong><p>${esc(takeWinCopy(campaign))}</p></div><button class="btn btn-primary" type="button" data-campaign-finish>Take the Win · Complete Campaign</button></aside>` : ''}
         ${!current && !canTakeWin ? `<div class="engineering-campaign-finish-row"><button class="btn btn-primary" type="button" data-campaign-finish>Complete Campaign</button></div>` : ''}
         ${stepListMarkup(planner)}
         ${historyMarkup()}
@@ -227,10 +263,12 @@
     root.querySelector('[data-campaign-start-form]')?.addEventListener('submit', event => {
       event.preventDefault();
       const form = event.currentTarget;
+      const goalId = form.querySelector('[data-campaign-goal]')?.value || '';
       const shipName = form.querySelector('[data-campaign-ship]')?.value?.trim() || '';
       const targetNotes = form.querySelector('[data-campaign-notes]')?.value?.trim() || '';
-      if (!shipName || !targetNotes) return;
-      run({ action:'start_campaign', goalId:'shields', shipName, targetNotes }, 'Starting Improve Shields campaign…');
+      if (!STARTABLE_GOALS.has(goalId) || !shipName || !targetNotes) return;
+      const label = (data?.goalCatalog || []).find(goal => goal.id === goalId)?.label || 'Engineering';
+      run({ action:'start_campaign', goalId, shipName, targetNotes }, `Starting ${label} campaign…`);
     });
 
     root.querySelectorAll('[data-campaign-complete-node]').forEach(button => button.addEventListener('click', () => {
@@ -277,7 +315,7 @@
   }
 
   function setBusy(message) {
-    root.querySelectorAll('button,input,textarea').forEach(control => { control.disabled = true; });
+    root.querySelectorAll('button,input,textarea,select').forEach(control => { control.disabled = true; });
     const status = root.querySelector('[data-campaign-status]');
     if (status) { status.textContent = message; status.dataset.state = 'working'; }
   }
@@ -297,7 +335,7 @@
       try { render(await api()); } catch { /* leave current surface if reload also fails */ }
     } finally {
       busy = false;
-      root.querySelectorAll('button,input,textarea').forEach(control => { control.disabled = false; });
+      root.querySelectorAll('button,input,textarea,select').forEach(control => { control.disabled = false; });
     }
   }
 
