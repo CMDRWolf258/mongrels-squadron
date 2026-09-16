@@ -19,6 +19,10 @@ import {
 
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const FIRST_WIN_FACTS = new Set(FIRST_ENGINEERING_WIN.steps.map(step => step.factId));
+const TRACKED_COUNTER_TARGETS = {
+  'trade.markets-visited-distinct': { target:50, targetLabel:'Lei Cheung preparation' },
+  'trade.black-markets-used-distinct': { target:5, targetLabel:'The Dweller preparation' },
+};
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -114,6 +118,7 @@ function presentTrackedCounters(state) {
     .map(definition => {
       const stored = state?.facts?.[definition.id];
       const current = Number.isFinite(Number(stored?.value)) ? Number(stored.value) : Number(definition.minimum) || 0;
+      const targetMeta = TRACKED_COUNTER_TARGETS[definition.id] || {};
       return {
         id:definition.id,
         label:definition.label,
@@ -121,6 +126,8 @@ function presentTrackedCounters(state) {
         description:definition.description || '',
         minimum:Number(definition.minimum) || 0,
         current,
+        target:Number.isFinite(Number(targetMeta.target)) ? Number(targetMeta.target) : null,
+        targetLabel:targetMeta.targetLabel || '',
         quickAdd:Array.isArray(definition.quickAdd) ? definition.quickAdd.filter(value => Number.isInteger(value) && value > 0).slice(0, 5) : [],
         source:stored?.source || 'manual',
         updatedAt:stored?.updatedAt || null,
