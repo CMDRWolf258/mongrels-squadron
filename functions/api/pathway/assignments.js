@@ -92,10 +92,11 @@ export async function onRequestPost({ request, env }) {
   const experience = normalizeExperience(prefs?.experience?.[activity]);
   const eligible = provider.eligibleRoutes(experience);
   if (!eligible.length) return reply({ ok:false, error:'no_eligible_route' }, 409);
+  const routeChoices = routeChoicesFor(activity, experience, eligible);
   const key = `${PROGRESS_PREFIX}${auth.session.sub}:${activity}`;
   const existing = await readJson(env.PROJECTS, key) || {};
   const progress = normalizeProgress(existing, auth.session.sub, provider);
-  const currentRouteId = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(auth.session.sub, experience, eligible, provider);
+  const currentRouteId = routeChoices.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(auth.session.sub, experience, routeChoices, provider);
   const action = String(body?.action || '');
 
   if (action === 'set_task') {
@@ -119,8 +120,8 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'another_route') {
     let next = ensureRouteState(progress, currentRouteId, provider);
-    const index = Math.max(0, eligible.indexOf(currentRouteId));
-    const nextRouteId = eligible[(index + 1) % eligible.length];
+    const index = Math.max(0, routeChoices.indexOf(currentRouteId));
+    const nextRouteId = routeChoices[(index + 1) % routeChoices.length];
     next.selectedRoute = nextRouteId;
     next.routeGeneration = Number(next.routeGeneration || 0) + 1;
     next.updatedAt = new Date().toISOString();
@@ -155,10 +156,11 @@ async function buildState(env, session, activity, suppliedProgress = null) {
   const experience = normalizeExperience(prefs?.experience?.[activity]);
   const eligible = provider.eligibleRoutes(experience);
   if (!eligible.length) return { activity, eligible:false, reason:'no_route' };
+  const routeChoices = routeChoicesFor(activity, experience, eligible);
   const stored = suppliedProgress || await readJson(env.PROJECTS, `${PROGRESS_PREFIX}${session.sub}:${activity}`) || {};
   const progress = normalizeProgress(stored, session.sub, provider);
-  const selectedRoute = eligible.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(session.sub, experience, eligible, provider);
-  const route = provider.getRoute(selectedRoute) || provider.getRoute(eligible[0]);
+  const selectedRoute = routeChoices.includes(progress.selectedRoute) ? progress.selectedRoute : chooseInitialRoute(session.sub, experience, routeChoices, provider);
+  const route = provider.getRoute(selectedRoute) || provider.getRoute(routeChoices[0]);
   if (!route) return { activity, eligible:false, reason:'no_route' };
   const routeState = progress.routes?.[route.id] || { taskStates:{} };
   const taskStates = routeState.taskStates || {};
@@ -176,14 +178,31 @@ async function buildState(env, session, activity, suppliedProgress = null) {
   return {
     activity, eligible:true, experience,
     route:{ id:route.id, band:route.band || '', title:route.title, subtitle:route.subtitle, audience:route.audience, outcome:route.outcome, sourceNote:route.sourceNote, sources:route.sources, tasks },
-    routeOptions:eligible.map(id => {
+    routeOptions:routeChoices.map(id => {
       const option = provider.getRoute(id);
       return option ? { id:option.id, band:option.band || '', title:option.title, subtitle:option.subtitle } : null;
     }).filter(Boolean),
     currentTaskId:current?.id || null,
     progress:{ completed, skipped, total:tasks.length, percent:tasks.length ? Math.round((completed / tasks.length) * 100) : 0 },
-    canChooseAnother:eligible.length > 1,
+    canChooseAnother:routeChoices.length > 1,
   };
+}
+
+function routeChoicesFor(activity, experience, eligible) {
+  if (activity !== ENGINEERING_ACTIVITY_ID) return eligible;
+  if (experience === 'some') {
+    const routes = ['engineering-role-builder','engineering-network'];
+    return routes.filter(id => eligible.includes(id));
+  }
+  if (experience === 'comfortable') {
+    const routes = ['engineering-ship-architect','engineering-combat-systems','engineering-role-builder'];
+    return routes.filter(id => eligible.includes(id));
+  }
+  if (experience === 'experienced') {
+    const routes = ['engineering-mentor','engineering-ship-architect'];
+    return routes.filter(id => eligible.includes(id));
+  }
+  return eligible;
 }
 
 function chooseInitialRoute(ownerId, experience, eligible, provider) {
@@ -278,8 +297,3 @@ async function readJson(namespace, key) {
     return value && typeof value === 'object' ? value : null;
   } catch { return null; }
 }
-
-function headers() {
-  return { 'Cache-Control':'private, no-store, no-cache, must-revalidate', Pragma:'no-cache', Vary:'Cookie', 'X-Content-Type-Options':'nosniff' };
-}
-function reply(data, status = 200) { return json(data, { status, headers:headers() }); }
