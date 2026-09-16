@@ -29,15 +29,25 @@
     }
     list.innerHTML = rows.map(app => {
       const a = app.answers || {};
+      const inGameReport = a.inGameApplicationSubmitted ? 'Applicant reports submitted' : 'Not recorded (legacy or exception)';
+      const inGameAudit = app.inGameApplicationVerified
+        ? `Verified${app.inGameApplicationVerifiedBy ? ` by ${esc(app.inGameApplicationVerifiedBy)}` : ''}${app.inGameApplicationVerifiedAt ? ` · ${esc(dateLabel(app.inGameApplicationVerifiedAt))}` : ''}`
+        : (app.inGameRequirementOverridden ? 'Approved as an exception without verification' : 'Not yet verified');
       return `<article class="application-review-card" data-application-id="${esc(app.id)}">
         <div class="application-review-head"><div><p class="eyebrow">${esc(statusLabel(app.status))}</p><h2>${esc(a.commanderName || 'Unnamed Commander')}</h2><div class="application-review-meta"><span>Discord: ${esc(app.ownerName || 'Unknown')}${app.discordUsername ? ` · @${esc(app.discordUsername)}` : ''}</span><span>Submitted: ${esc(dateLabel(app.submittedAt))}</span>${app.reviewedBy ? `<span>Reviewed by: ${esc(app.reviewedBy)}</span>` : ''}${app.status === 'accepted' && app.acceptedAt ? `<span>Accepted: ${esc(dateLabel(app.acceptedAt))}</span>` : ''}</div></div><span class="application-status-badge ${esc(app.status)}">${esc(statusLabel(app.status))}</span></div>
         <details><summary>View application answers</summary><div class="application-answer-grid">
-          ${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
+          ${answer('In-game Squadron Application', inGameReport)}${answer('Experience', a.experience)}${answer('Time Zone', a.timezone)}${answer('Usually Active', a.activeTimes)}${answer('Found Us Through', [a.discoverySource, a.discoveryDetail].filter(Boolean).join(' — '))}
           ${answer('Current Activities', a.currentActivities, true)}${answer('Want to Learn / Do More', a.learnActivities, true)}${answer('PvP Experience', a.pvpExperience)}${answer('Discord Voice', a.voiceComfort)}
           ${answer('Open Play', a.openPlay)}${answer('BGS in Open Acknowledged', a.bgsOpenAcknowledged ? 'Yes' : 'No')}${answer('Why the Mongrels?', a.interestReason, true)}${answer('Looking for from a Squadron', a.squadGoals, true)}${answer('Anything Else', a.additionalInfo, true)}${answer('Final Rules Acknowledgement', a.rulesAcknowledged ? 'Yes' : 'No')}
         </div></details>
+        <div class="application-expectations">
+          <strong>In-Game Squadron Application</strong>
+          <p>${inGameAudit}</p>
+          <label class="application-choice"><input type="checkbox" data-in-game-verified ${app.inGameApplicationVerified ? 'checked' : ''}><span>I confirmed this Commander appears in Elite's Squadron applicant list.</span></label>
+          <small>Normally verify the in-game application before approval. Website approval grants Discord/site access but cannot accept the Elite Dangerous Squadron application for you; accept that application in-game before or immediately after website approval.</small>
+        </div>
         <label class="application-note"><span>Private Officer Notes</span><textarea rows="3" maxlength="4000" data-officer-notes placeholder="Visible only to Officers and Site Admin.">${esc(app.officerNotes || '')}</textarea></label>
-        <div class="application-review-actions"><button class="btn btn-ghost" type="button" data-review-action="${esc(app.status)}">Save Note</button>${app.status !== 'under_review' ? '<button class="btn btn-ghost" type="button" data-review-action="under_review">Mark Under Review</button>' : ''}${app.status !== 'accepted' ? '<button class="btn btn-primary" type="button" data-review-action="accepted">Approve & Grant Member Access</button>' : ''}${app.status !== 'declined' ? '<button class="btn btn-ghost" type="button" data-review-action="declined">Decline</button>' : ''}<span class="application-save-status" data-card-status></span></div>
+        <div class="application-review-actions"><button class="btn btn-ghost" type="button" data-review-action="${esc(app.status)}">Save Note / Verification</button>${app.status !== 'under_review' ? '<button class="btn btn-ghost" type="button" data-review-action="under_review">Mark Under Review</button>' : ''}${app.status !== 'accepted' ? '<button class="btn btn-primary" type="button" data-review-action="accepted">Approve & Grant Member Access</button>' : ''}${app.status !== 'declined' ? '<button class="btn btn-ghost" type="button" data-review-action="declined">Decline</button>' : ''}<span class="application-save-status" data-card-status></span></div>
       </article>`;
     }).join('');
   }
@@ -47,10 +57,20 @@
     const current = applications.find(app => app.id === id);
     const commander = current?.answers?.commanderName || 'this Commander';
     const newlyAccepted = status === 'accepted' && current?.status !== 'accepted';
+    const inGameVerified = Boolean(card.querySelector('[data-in-game-verified]')?.checked || current?.inGameApplicationVerified);
+    let overrideInGameRequirement = false;
+
+    if (newlyAccepted && !inGameVerified) {
+      const exceptionApproved = window.confirm(
+        `IN-GAME APPLICATION NOT VERIFIED\n\n${commander} has not been marked as verified in Elite's Squadron applicant list. Mongrel applications should normally not be approved until the in-game application is present.\n\nApprove anyway as an exception?`,
+      );
+      if (!exceptionApproved) return;
+      overrideInGameRequirement = true;
+    }
 
     if (newlyAccepted) {
       const approved = window.confirm(
-        `Approve ${commander}?\n\nThis will grant the Mongrel Member role in Discord, remove Applicant/Guest onboarding roles, and send the Commander a welcome message with a Member Portal activation link.`,
+        `Approve ${commander}?\n\nThis will grant the Mongrel Member role in Discord, remove Applicant/Guest onboarding roles, and send the Commander a welcome message with a Member Portal activation link.\n\nElite's in-game Squadron application must still be accepted manually in Elite Dangerous.`,
       );
       if (!approved) return;
     }
@@ -64,10 +84,13 @@
       const response = await fetch('/api/applications', {
         method:'PUT', credentials:'same-origin', cache:'no-store',
         headers:{ Accept:'application/json', 'Content-Type':'application/json', 'X-Mongrels-Request':'application-review' },
-        body:JSON.stringify({ id, status, officerNotes:notes }),
+        body:JSON.stringify({ id, status, officerNotes:notes, inGameApplicationVerified:inGameVerified, overrideInGameRequirement }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (data.error === 'ingame_application_not_verified') {
+          throw new Error('The in-game Squadron application has not been verified. Confirm it in Elite or explicitly approve as an exception.');
+        }
         if (data.error === 'member_role_assignment_failed') {
           const detail = data.detail ? `\n\nDiscord: ${data.detail}` : '';
           throw new Error(`Member role could not be granted. The application was NOT marked Accepted. Check the Imperial Mongrels Website bot role hierarchy and Manage Roles permission.${detail}`);
@@ -78,10 +101,11 @@
       if (index >= 0) applications[index] = data.application;
 
       if (newlyAccepted) {
-        const notes = [];
-        if (data.provisioning?.cleanupWarnings) notes.push('One or more Applicant/Guest roles could not be removed automatically; check the member in Discord.');
-        if (['failed','cooldown','storage_unavailable'].includes(data.provisioning?.dmStatus)) notes.push('Member access was granted, but the acceptance DM was not delivered automatically.');
-        window.alert(`Approved ${commander}.\n\nThe Discord Member role was granted successfully.${notes.length ? `\n\n${notes.join('\n')}` : ''}`);
+        const notices = ['Remember to accept the Commander\'s in-game Squadron application in Elite Dangerous if you have not already done so.'];
+        if (data.provisioning?.inGameRequirementOverridden) notices.unshift('This approval was recorded as an exception because the in-game application was not verified.');
+        if (data.provisioning?.cleanupWarnings) notices.push('One or more Applicant/Guest roles could not be removed automatically; check the member in Discord.');
+        if (['failed','cooldown','storage_unavailable'].includes(data.provisioning?.dmStatus)) notices.push('Member access was granted, but the acceptance DM was not delivered automatically.');
+        window.alert(`Approved ${commander}.\n\nThe Discord Member role was granted successfully.\n\n${notices.join('\n')}`);
       }
       render();
     } catch (error) {
