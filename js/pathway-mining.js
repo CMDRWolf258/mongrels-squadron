@@ -48,6 +48,10 @@
     return taskTypeLabels[task?.type] || 'Assignment';
   }
 
+  function engineeringPrepMarkup(task) {
+    return window.MongrelEngineeringPrep?.markup(task) || '';
+  }
+
   function suppressGenericMiningCard() {
     if (root.hidden || !previewRoot) return;
     previewRoot.querySelectorAll('.pathway-recommendation').forEach(card => {
@@ -95,6 +99,7 @@
             <p class="ax-objective">${esc(current.objective)}</p>
             <div class="ax-why"><strong>Why this assignment</strong><p>${esc(current.why)}</p></div>
             ${Array.isArray(current.checklist) && current.checklist.length ? `<div class="ax-checklist"><strong>Clear it when you have:</strong><ul>${current.checklist.map(item => `<li>${esc(item)}</li>`).join('')}</ul></div>` : ''}
+            ${engineeringPrepMarkup(current)}
             <div class="ax-assignment-actions">
               <button class="btn btn-primary" type="button" data-mining-task-status="complete" data-mining-task-id="${esc(current.id)}">Complete</button>
               <button class="btn btn-ghost" type="button" data-mining-task-status="known" data-mining-task-id="${esc(current.id)}">Already Know / Have This</button>
@@ -132,6 +137,7 @@
       const taskId = button.dataset.miningTaskId;
       runAction({ action:'set_task', taskId, status }, status === 'pending' ? 'Reopening assignment…' : 'Saving assignment progress…');
     }));
+    window.MongrelEngineeringPrep?.bind(content);
     if (loading) loading.hidden = true;
     suppressGenericMiningCard();
   }
