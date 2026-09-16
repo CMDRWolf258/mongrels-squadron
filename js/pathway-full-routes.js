@@ -7,6 +7,7 @@
     'Mining',
     'Trade & Hauling',
     'Carrier Logistics',
+    'Engineering & Shipbuilding',
   ]);
 
   function removeGenericFullPathwayCards() {
