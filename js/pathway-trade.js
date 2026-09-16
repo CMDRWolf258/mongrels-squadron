@@ -11,7 +11,6 @@
   const taskTypeLabels = { learn:'Learn', build:'Build', demonstrate:'Demonstrate', challenge:'Challenge', wing:'Wing / Team', mentor:'Teach / Mentor' };
   let assignments = null;
   let busy = false;
-  let reloadTimer = null;
 
   async function preferencesApi() {
     const response = await fetch(`/api/pathway/preferences?_=${Date.now()}`, {
@@ -168,12 +167,10 @@
     }
   }
 
-  function scheduleReloadAfterSave() {
-    window.clearTimeout(reloadTimer);
-    reloadTimer = window.setTimeout(load, 450);
-  }
-
+  pathwayForm?.addEventListener('submit', () => {
+    window.setTimeout(load, 450);
+    window.setTimeout(load, 1100);
+  });
   window.addEventListener('mongrels:pathway-saved', load);
-  pathwayForm?.addEventListener('submit', scheduleReloadAfterSave);
   load();
 })();
