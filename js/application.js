@@ -22,7 +22,7 @@
   const statusCopy = status => ({
     submitted: 'Your website application has been sent to Mongrel leadership. Leadership will also verify your in-game Squadron application before approval.',
     under_review: 'Mongrel leadership is reviewing your application and confirming the matching in-game Squadron application.',
-    accepted: 'Your application has been accepted and your Discord Mongrel Member role has been granted. Activate Member Access below once to refresh your website permissions.',
+    accepted: 'Your website application has been accepted and your Discord Mongrel Member role has been granted. Activate Member Access below. To finish in-game membership, after leadership approves your Elite Squadron application, return to the Squadrons panel and choose Join Squadron / Confirm.',
     declined: 'This application is closed. If leadership asked you to follow up, please contact them through Discord.',
   }[status] || 'Your application has been saved.');
 
