@@ -7,7 +7,7 @@
   let plannerOpen = false;
   let flash = null;
 
-  const STARTABLE_GOALS = new Set(['shields','jump-range','mobility','distributor','power-thermal']);
+  const STARTABLE_GOALS = new Set(['shields','jump-range','mobility','distributor','power-thermal','weapons']);
   const startGoalDetails = {
     shields:{
       option:'Improve Shields · G2/G3 Shield Generator',
@@ -28,6 +28,10 @@
     'power-thermal':{
       option:'Improve Power & Heat · priorities/G1 first + optional G2/G3',
       summary:'Diagnose the real power or thermal problem, test module priorities first, make a small G1 Power Plant change when useful, then escalate to G2/G3 only if the measured problem remains.',
+    },
+    weapons:{
+      option:'Improve Weapon Package · test one slice first + optional rollout/G3',
+      summary:'Treat the hardpoints as one package: audit weapon roles and WEP/heat/ammo/range behavior, test a small G2 weapon slice first, then roll out only the changes that prove useful.',
     },
   };
 
@@ -181,7 +185,7 @@
     return `<details class="engineering-campaign-planner"${plannerOpen ? ' open' : ''}>
       <summary>
         <span class="engineering-campaign-summary-copy"><small>Engineering · Goal Planner</small><strong>Campaign Planner</strong></span>
-        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : `${available.length || 5} audited campaigns ready`}</span>
+        <span class="engineering-campaign-summary-state">${recentWin ? 'Ready for another goal' : `${available.length || 6} audited campaigns ready`}</span>
       </summary>
       <div class="engineering-campaign-body">
         ${recentWin ? `<div class="engineering-campaign-last-win"><small>Last campaign win</small><strong>${esc(campaignName(recentWin))}${recentWin.shipName ? ` · ${esc(recentWin.shipName)}` : ''}</strong></div>` : ''}
@@ -194,7 +198,7 @@
           <label><span>Campaign</span><select required data-campaign-goal>${available.map(goal => `<option value="${esc(goal.id)}">${esc(startGoalDetails[goal.id]?.option || goal.label)}</option>`).join('')}</select></label>
           <div class="engineering-campaign-goal-hints">${available.map(goal => `<p><strong>${esc(goal.label)}</strong>${esc(startGoalDetails[goal.id]?.summary || goal.description || '')}</p>`).join('')}</div>
           <label><span>Ship</span><input type="text" maxlength="120" required data-campaign-ship placeholder="Ship name or hull — e.g. Triad / Corsair"></label>
-          <label><span>What do you want this ship to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: fix a real heat or deployed-power problem without adding more Power Plant engineering than the ship actually needs."></textarea></label>
+          <label><span>What do you want this ship to do better?</span><textarea maxlength="500" required rows="3" data-campaign-notes placeholder="Example: describe the specific ship behavior you want to improve and the tradeoffs you want to preserve."></textarea></label>
           <button class="btn btn-primary" type="submit">Start Engineering Campaign</button>
         </form>
         ${historyMarkup()}
@@ -216,6 +220,9 @@
     if (campaign?.goalId === 'power-thermal') {
       return 'If the measured power/heat problem is now solved, complete the campaign here. More Power Plant engineering is optional and should be driven by a remaining measured need.';
     }
+    if (campaign?.goalId === 'weapons') {
+      return 'If the weapon package now does its assigned jobs cleanly, complete the campaign here. Full rollout or higher grades are optional and should answer a specific remaining combat problem.';
+    }
     return 'If the shield now solves the problem you started with, complete the campaign here. Continuing to G3 is optional refinement.';
   }
 
@@ -231,6 +238,9 @@
     }
     if (campaign?.goalId === 'power-thermal') {
       return 'Record the win and close this campaign phase. Future Power Plant work should start from a new power-budget or thermal measurement rather than automatically extending into G4/G5.';
+    }
+    if (campaign?.goalId === 'weapons') {
+      return 'Record the package win and close this phase. Future weapon work should begin from a measured package limitation rather than automatically pushing every hardpoint to the same blueprint or maximum grade.';
     }
     return 'Record the win and close this campaign phase. Future shield work should start from what you learned here rather than automatically extending the grind.';
   }
