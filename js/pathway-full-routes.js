@@ -13,6 +13,7 @@
     ['Engineering & Shipbuilding', document.querySelector('[data-engineering-pathway]')],
     ['Exploration', document.querySelector('[data-exploration-pathway]')],
     ['Exobiology', document.querySelector('[data-exobiology-pathway]')],
+    ['Colonization', document.querySelector('[data-colonization-pathway]')],
   ]);
 
   function fullRouteIsVisible(label) {
