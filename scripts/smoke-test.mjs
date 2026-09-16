@@ -32,6 +32,9 @@ import {
   buildPowerThermalEngineeringDependencyNodes,
 } from '../lib/engineering-campaign-power-thermal.js';
 import {
+  buildWeaponEngineeringDependencyNodes,
+} from '../lib/engineering-campaign-weapons.js';
+import {
   CROSS_PATH_ENGINEERING_PREP,
   engineeringPrepForTask,
 } from '../lib/pathway-engineering-prep.js';
@@ -81,9 +84,6 @@ function checkRouteCatalog(label, routes) {
 for (const [label, routes] of providers) checkRouteCatalog(label, routes);
 console.log(`✓ validated ${providers.length} Pathway provider catalogs`);
 
-// Cross-path Engineering prep must only point at real current Pathway tasks and
-// counters the Engineering API knows how to store. This prevents a route rewrite
-// from leaving behind a dead prep button or a silently invalid fact ID.
 const prepTaskIds = {
   trade:new Set(TRADE_ROUTES.flatMap(route => route.tasks.map(task => task.id))),
   mining:new Set(MINING_ROUTES.flatMap(route => route.tasks.map(task => task.id))),
@@ -108,9 +108,6 @@ assert.equal(engineeringPrepForTask('mining', 'mining-efficient-baseline')[0]?.f
 assert.equal(CROSS_PATH_ENGINEERING_TRACKED_FACTS['mining.ore-mined-total-tonnes']?.kind, 'counter', 'Selene Jean mining prep is not a tracked counter');
 console.log('✓ cross-path Engineering prep maps real Trade/Mining work to tracked facts');
 
-// Exercise the campaign engine's fact-completed dependency behavior. This guards
-// against a regression where a shared fact could mark its own node complete but
-// fail to unlock downstream work.
 let state = createEmptyEngineeringCampaignState('smoke-user');
 state = startEngineeringCampaign(state, {
   goalId:'shields',
@@ -142,9 +139,6 @@ assert.equal(factNode?.status, 'complete', 'fact-completed campaign node did not
 assert.equal(downstreamNode?.dependenciesMet, true, 'fact-completed node did not unlock its downstream dependency');
 console.log('✓ Engineering campaign fact dependency propagation works');
 
-// A later permanent-access fact should supersede old unlock counters in the
-// Improve Shields campaign. Veteran Commanders must not need to invent old
-// market totals merely to prove an Engineer they already have.
 state = setEngineeringFact(
   state,
   SHIELD_CAMPAIGN_FACTS.leiUnlocked,
@@ -161,9 +155,6 @@ for (const nodeId of ['shields.dweller.black-markets', 'shields.dweller.unlock',
 }
 console.log('✓ Improve Shields honors existing Lei Cheung access');
 
-// Improve Jump Range must reuse permanent access already recorded by First
-// Engineering Win. This proves the second campaign actually benefits from prior
-// site progress instead of merely being another isolated checklist.
 let jumpState = createEmptyEngineeringCampaignState('jump-smoke-user');
 jumpState = startEngineeringCampaign(jumpState, {
   goalId:'jump-range',
@@ -191,9 +182,6 @@ assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.test.g2' && node.m
 assert.ok(jumpView.nodes.some(node => node.id === 'jump-range.experimental.test' && node.meta?.readyToFinish), 'Improve Jump Range has no experimental stopping point');
 console.log('✓ Improve Jump Range reuses First Engineering Win access and preserves stopping points');
 
-// Improve Speed & Mobility should reuse the same Felicity access/reputation that
-// the FSD work already established. Engineer reputation is shared even though the
-// older stored fact names mention the FSD specifically.
 let mobilityState = createEmptyEngineeringCampaignState('mobility-smoke-user');
 mobilityState = startEngineeringCampaign(mobilityState, {
   goalId:'mobility',
@@ -221,9 +209,6 @@ assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.test.g2' && node
 assert.ok(mobilityView.nodes.some(node => node.id === 'mobility.experimental.test' && node.meta?.readyToFinish), 'Improve Speed & Mobility has no experimental stopping point');
 console.log('✓ Improve Speed & Mobility reuses Felicity access and preserves stopping points');
 
-// Improve Power Distributor should reuse The Dweller reputation established by
-// Improve Shields. A recorded Lei referral means The Dweller was already in the
-// G3–G4 band, so the black-market, unlock, G2 and G3 gates must all clear.
 let distributorState = createEmptyEngineeringCampaignState('distributor-smoke-user');
 distributorState = startEngineeringCampaign(distributorState, {
   goalId:'distributor',
@@ -249,9 +234,6 @@ assert.ok(distributorView.nodes.some(node => node.id === 'distributor.experiment
 assert.ok(distributorView.nodes.some(node => node.id === 'distributor.test.g3' && node.meta?.readyToFinish), 'Improve Power Distributor has no G3 stopping point');
 console.log('✓ Improve Power Distributor reuses The Dweller progress and preserves stopping points');
 
-// Improve Power & Heat must reuse Felicity access for its small G1 phase and let
-// a known higher-grade Power Plant capability supersede both Felicity and later
-// G2/G3 access gates. The priority audit is also a legitimate no-engineering win.
 let powerThermalState = createEmptyEngineeringCampaignState('power-thermal-smoke-user');
 powerThermalState = startEngineeringCampaign(powerThermalState, {
   goalId:'power-thermal',
@@ -281,29 +263,47 @@ for (const nodeId of ['power-thermal.priority-test','power-thermal.test.g1','pow
 }
 console.log('✓ Improve Power & Heat reuses Engineer access and preserves no-engineering/G1/G2/experimental/G3 stopping points');
 
-// Community Goal Hauler Prep is an independent Trade specialty, not another full
-// Pathway provider. Keep the sequence compact, unique, and status semantics aligned
-// with the main Pathway model: complete/known earn credit; skip does not.
+// Weapon Package is deliberately family-aware rather than pretending one saved
+// Engineer fact proves access for every hardpoint type. It also supports several
+// legitimate exits: layout-only, test-slice G2, experimental, full G2 rollout, G3.
+let weaponState = createEmptyEngineeringCampaignState('weapon-smoke-user');
+weaponState = startEngineeringCampaign(weaponState, {
+  goalId:'weapons',
+  shipName:'Weapon Smoke Ship',
+  targetNotes:'Improve the hardpoint package without breaking WEP sustain or heat.',
+}, '2026-09-16T12:31:00.000Z');
+const weaponCampaign = weaponState.campaigns[weaponState.activeCampaignId];
+const weaponNodes = buildWeaponEngineeringDependencyNodes({ campaign:weaponCampaign, facts:weaponState.facts });
+const weaponView = buildEngineeringCampaignView(weaponState, weaponNodes);
+for (const nodeId of ['weapons.package-layout-test','weapons.test.g2','weapons.experimental.test','weapons.package.full-test','weapons.test.g3']) {
+  assert.ok(weaponView.nodes.some(node => node.id === nodeId && node.meta?.readyToFinish), `Improve Weapon Package lost stopping point ${nodeId}`);
+}
+const weaponG2Access = weaponView.nodes.find(node => node.id === 'weapons.engineer.g2-access');
+const weaponG3Access = weaponView.nodes.find(node => node.id === 'weapons.g3-access');
+assert.ok(weaponG2Access && weaponG3Access, 'Improve Weapon Package is missing Engineer capability gates');
+assert.equal(Boolean(weaponG2Access.factCompletion), false, 'Weapon G2 access must not auto-clear from a generic Engineer fact');
+assert.equal(Boolean(weaponG3Access.factCompletion), false, 'Weapon G3 access must remain weapon-family-specific');
+assert.match(weaponG2Access.objective, /weapon family/i, 'Weapon Engineer access no longer warns about weapon-family capability');
+console.log('✓ Improve Weapon Package preserves package-first testing and family-specific Engineer access');
+
 assert.equal(CG_HAULER_PREP.steps.length, 14, 'Community Goal Hauler Prep should contain 14 training steps');
 assert.equal(new Set(CG_HAULER_PREP.steps.map(step => step.id)).size, CG_HAULER_PREP.steps.length, 'Community Goal Hauler Prep contains duplicate task IDs');
 let cgState = createCgHaulerPrepState('cg-smoke-user');
-cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.choose-ship', 'complete', '2026-09-16T12:30:00.000Z');
-cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.baseline', 'known', '2026-09-16T12:31:00.000Z');
-cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.win-condition', 'skipped', '2026-09-16T12:32:00.000Z');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.choose-ship', 'complete', '2026-09-16T12:32:00.000Z');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.baseline', 'known', '2026-09-16T12:33:00.000Z');
+cgState = setCgHaulerTaskStatus(cgState, 'cg-hauler.win-condition', 'skipped', '2026-09-16T12:34:00.000Z');
 const cgView = buildCgHaulerPrepView(cgState);
 assert.equal(cgView.progress.completed, 2, 'Community Goal Hauler Prep credited a skipped task');
 assert.equal(cgView.current?.id, 'cg-hauler.survivability-pass', 'Community Goal Hauler Prep did not continue to untouched pending work before revisiting skipped work');
 assert.match(cgView.doctrine, /survive and deliver/i, 'Community Goal Hauler Prep lost its logistics-first win condition');
 console.log('✓ Community Goal Hauler Prep specialty progression is structurally sound');
 
-// The assistant should only receive personalized Pathway data when the member's
-// question actually refers to their assignment/progress. Exercise the selector
-// and a small in-memory PROJECTS binding so this bridge is covered by CI.
 assert.equal(assistantPathwayIntent('How do I do my current task?'), true, 'assistant missed Pathway intent');
 assert.equal(assistantPathwayIntent('What is my jump range campaign step?'), true, 'assistant missed Jump Range campaign intent');
 assert.equal(assistantPathwayIntent('What is my mobility campaign step?'), true, 'assistant missed Mobility campaign intent');
 assert.equal(assistantPathwayIntent('What is my power distributor campaign step?'), true, 'assistant missed Power Distributor campaign intent');
 assert.equal(assistantPathwayIntent('What is my power and heat campaign step?'), true, 'assistant missed Power and Heat campaign intent');
+assert.equal(assistantPathwayIntent('What is my weapon package campaign step?'), true, 'assistant missed Weapon Package campaign intent');
 assert.equal(assistantPathwayIntent('What is my CG hauler prep task?'), true, 'assistant missed CG Hauler Prep intent');
 assert.equal(assistantPathwayIntent('Does my current trade task help engineering?'), true, 'assistant missed cross-path Engineering prep intent');
 assert.equal(assistantPathwayIntent('Where is the carrier registry?'), false, 'assistant Pathway intent is too broad');
@@ -367,6 +367,24 @@ const powerThermalAssistant = await buildAssistantPathwayContext(
 assert.equal(powerThermalAssistant?.engineeringCampaign?.goal, 'Improve Power & Heat', 'assistant missed the Power & Heat campaign goal');
 assert.ok(powerThermalAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Power & Heat context has no next step');
 
+const weaponKvRecords = new Map([
+  ['pathway-preferences-v1:weapon-smoke-user', {
+    interests:['engineering'],
+    improve:['engineering'],
+    experience:{ engineering:'comfortable' },
+    playStyle:'either',
+    currentGoal:'Make the hardpoints work as one package.',
+  }],
+  ['engineering-campaign-v1:weapon-smoke-user', weaponState],
+]);
+const weaponAssistant = await buildAssistantPathwayContext(
+  { PROJECTS:{ async get(key) { return weaponKvRecords.get(key) ?? null; } } },
+  { sub:'weapon-smoke-user', access:'member', displayName:'Weapon Smoke Commander' },
+  'What is my weapon package campaign step?',
+);
+assert.equal(weaponAssistant?.engineeringCampaign?.goal, 'Improve Weapon Package', 'assistant missed the Weapon Package campaign goal');
+assert.ok(weaponAssistant?.engineeringCampaign?.nextStep?.title, 'assistant Weapon Package context has no next step');
+
 const prepKvRecords = new Map([
   ['pathway-preferences-v1:prep-smoke-user', {
     interests:['trade'],
@@ -414,8 +432,6 @@ assert.ok(cgAssistant?.specialties?.communityGoalHaulerPrep, 'assistant missed C
 assert.equal(cgAssistant.specialties.communityGoalHaulerPrep.currentTask?.id, 'cg-hauler.survivability-pass', 'assistant returned the wrong CG Hauler Prep current task');
 console.log('✓ Ask the Mongrels can read Pathway, campaign, specialty, and cross-path prep context');
 
-// Import the critical Cloudflare Pages Function modules. This catches syntax and
-// broken-import failures before Cloudflare sees the commit.
 const apiModules = [
   '../functions/api/pathway/preferences.js',
   '../functions/api/pathway/assignments.js',
@@ -430,8 +446,6 @@ for (const path of apiModules) {
 }
 console.log('✓ critical API modules import cleanly');
 
-// Guard the shared response helpers that were accidentally removed once and
-// caused every full-route assignment request to fail.
 for (const path of [
   'functions/api/pathway/preferences.js',
   'functions/api/pathway/assignments.js',
@@ -445,8 +459,6 @@ for (const path of [
 }
 console.log('✓ critical API response helpers are present');
 
-// Verify a few high-value entry pages and Pathway assets are still present and
-// wired. These are intentionally shallow smoke checks, not browser tests.
 for (const path of [
   'index.html',
   'start/index.html',
@@ -458,6 +470,7 @@ for (const path of [
   'lib/engineering-campaign-mobility.js',
   'lib/engineering-campaign-distributor.js',
   'lib/engineering-campaign-power-thermal.js',
+  'lib/engineering-campaign-weapons.js',
   'lib/pathway-engineering-prep.js',
   'lib/pathway-engineering-prep-facts.js',
   'lib/pathway-cg-hauler-prep.js',
@@ -483,6 +496,7 @@ assert.match(plannerSource, /jump-range/, 'Campaign Planner is not exposing Impr
 assert.match(plannerSource, /mobility/, 'Campaign Planner is not exposing Improve Speed & Mobility');
 assert.match(plannerSource, /distributor/, 'Campaign Planner is not exposing Improve Power Distributor');
 assert.match(plannerSource, /power-thermal/, 'Campaign Planner is not exposing Improve Power & Heat');
+assert.match(plannerSource, /weapons/, 'Campaign Planner is not exposing Improve Weapon Package');
 const tradeSource = readFileSync('js/pathway-trade.js', 'utf8');
 const miningSource = readFileSync('js/pathway-mining.js', 'utf8');
 assert.match(tradeSource, /MongrelEngineeringPrep/, 'Trade Pathway is not rendering cross-path Engineering prep');
