@@ -56,25 +56,31 @@
   function cardMarkup(counter) {
     const quick = Array.isArray(counter.quickAdd) ? counter.quickAdd : [];
     const current = Number.isFinite(Number(counter.current)) ? Number(counter.current) : 0;
+    const unit = esc(counter.unit || 'items');
     return `<article class="engineering-prep-card" data-prep-counter="${esc(counter.id)}">
       <div class="engineering-prep-card-head">
         <div><h4>${esc(counter.label)}</h4><p>${esc(counter.description || '')}</p></div>
-        <div class="engineering-prep-total">${current.toLocaleString()}<small>${esc(counter.unit || 'tracked')}</small></div>
+        <div class="engineering-prep-total">${current.toLocaleString()}<small>${unit}</small></div>
       </div>
       ${targetMarkup(counter, current)}
-      ${quick.length ? `<div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${esc(counter.unit || 'items')}">+${Number(amount)}</button>`).join('')}</div>` : ''}
-      <div class="engineering-prep-entry">
-        <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="How many did you actually do?" aria-label="Actual additional ${esc(counter.unit || 'items')}" data-prep-actual>
-        <button class="btn btn-ghost" type="button" data-prep-record>Record Actual Progress</button>
-      </div>
-      <details class="engineering-prep-correct">
-        <summary>Correct the stored total</summary>
+
+      <div class="engineering-prep-action-block is-add">
+        <div class="engineering-prep-action-head"><strong>Add progress</strong><span>Record only what you actually completed.</span></div>
+        ${quick.length ? `<div class="engineering-prep-quick" aria-label="Quick add actual progress">${quick.map(amount => `<button type="button" data-prep-add="${Number(amount)}" title="Record ${Number(amount)} additional ${unit}">+${Number(amount)}</button>`).join('')}</div>` : ''}
         <div class="engineering-prep-entry">
-          <input type="number" min="${Number(counter.minimum) || 0}" max="1000000" step="1" inputmode="numeric" value="${current}" aria-label="Correct total ${esc(counter.unit || 'items')}" data-prep-total>
+          <input type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Actual amount completed" aria-label="Actual additional ${unit}" data-prep-actual>
+          <button class="btn btn-ghost" type="button" data-prep-record>Add to Total</button>
+        </div>
+      </div>
+
+      <div class="engineering-prep-action-block is-correct">
+        <div class="engineering-prep-action-head"><strong>Set / correct total</strong><span>Use this if the stored number is wrong. This replaces the total instead of adding to it.</span></div>
+        <div class="engineering-prep-entry">
+          <input type="number" min="${Number(counter.minimum) || 0}" max="1000000" step="1" inputmode="numeric" value="${current}" aria-label="Correct total ${unit}" data-prep-total>
           <button class="btn btn-ghost" type="button" data-prep-correct-total>Save Correct Total</button>
         </div>
-        <p style="margin-top:8px">Use this only when you know the cumulative total is wrong. It replaces the stored number rather than adding to it.</p>
-      </details>
+      </div>
+
       <div class="engineering-prep-meta"><span>${esc(sourceLabel(counter.source))}</span><span>${esc(formattedUpdated(counter.updatedAt))}</span></div>
       ${statusMarkup(counter)}
     </article>`;
@@ -93,9 +99,12 @@
 
     root.hidden = false;
     root.innerHTML = `<details class="engineering-prep-tracker"${trackerOpen ? ' open' : ''}>
-      <summary><span>Engineering Prep Tracker</span><small>${counters.length} cumulative ${counters.length === 1 ? 'counter' : 'counters'}</small></summary>
+      <summary>
+        <span class="engineering-prep-summary-copy"><small>Engineering · Optional Background Prep</small><strong>Prep Tracker</strong></span>
+        <span class="engineering-prep-summary-count">${counters.length} cumulative ${counters.length === 1 ? 'counter' : 'counters'}</span>
+      </summary>
       <div class="engineering-prep-body">
-        <p class="engineering-prep-intro">Use this for prerequisites that build gradually across normal play. Record only what you actually completed. If a future prep task suggests five new markets and you only reach three, record three. These totals belong to Engineering preparation and do not award progress in Trade or another pathway.</p>
+        <p class="engineering-prep-intro">Use this for prerequisites that build gradually across normal play. If a future prep task suggests five new markets and you only reach three, record three. These totals support Engineering preparation only; they do not award progress in Trade or another pathway.</p>
         <div class="engineering-prep-list">${counters.map(cardMarkup).join('')}</div>
       </div>
     </details>`;
