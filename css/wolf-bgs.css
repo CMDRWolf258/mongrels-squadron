@@ -25,10 +25,13 @@
 .wolf-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
 .wolf-form-grid label,.wolf-field,.wolf-status-field{display:flex;flex-direction:column;gap:.35rem;min-width:0}
 .wolf-form-grid label>span,.wolf-field>span,.wolf-status-field>span{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.wolf-bgs-page input,.wolf-bgs-page select,.wolf-bgs-page textarea{width:100%;min-width:0;box-sizing:border-box;background:#080b0d;border:1px solid rgba(120,220,255,.2);color:#eefcff;border-radius:3px;padding:.65rem .7rem;font:inherit}
+.wolf-bgs-page input,.wolf-bgs-page select,.wolf-bgs-page textarea{width:100%;min-width:0;max-width:100%;box-sizing:border-box;background:#080b0d;border:1px solid rgba(120,220,255,.2);color:#eefcff;border-radius:3px;padding:.65rem .7rem;font:inherit}
 .wolf-bgs-page textarea{resize:vertical}
-.input-unit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.5rem;min-width:0}
+.input-unit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.5rem;min-width:0;max-width:100%;width:100%;box-sizing:border-box}
 .input-unit em{font-style:normal;color:var(--muted);font-size:.8rem;white-space:nowrap}
+.wolf-global-panel .wolf-form-grid>label{min-width:0;max-width:100%;overflow:hidden}
+.wolf-global-panel .wolf-form-grid>label>.input-unit{min-width:0;max-width:100%}
+.wolf-global-panel input,.wolf-global-panel select{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
 .wolf-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin-top:1rem}
 .wolf-check-grid label,.wolf-inline-check{display:flex;align-items:center;gap:.55rem;color:#d8e9ed;min-width:0}
 .wolf-check-grid input,.wolf-inline-check input{width:auto;flex:0 0 auto}
@@ -109,6 +112,8 @@
   .wolf-source-note{grid-column:1/-1}
   .wolf-custom-filter{grid-template-columns:repeat(3,minmax(0,1fr))}
   .wolf-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wolf-global-panel .wolf-form-grid{grid-template-columns:calc(50% - .6rem) calc(50% - .6rem);column-gap:1.2rem}
+  .wolf-global-panel .wolf-form-grid>label,.wolf-global-panel .input-unit{width:100%;max-width:100%}
   .wolf-system-card>summary{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(90px,.6fr)) auto 32px}
   .wolf-system-card>summary .hide-tablet{display:none}
   .wolf-subgrid{grid-template-columns:1fr}
@@ -124,7 +129,7 @@
 @media(max-width:720px){
   .wolf-gate-card{grid-template-columns:1fr}
   .wolf-summary-grid{grid-template-columns:repeat(2,1fr)}
-  .wolf-form-grid,.wolf-system-settings-grid,.wolf-custom-filter{grid-template-columns:1fr}
+  .wolf-form-grid,.wolf-system-settings-grid,.wolf-custom-filter,.wolf-global-panel .wolf-form-grid{grid-template-columns:1fr}
   .wolf-toolbar{grid-template-columns:1fr}
   .wolf-system-card>summary{grid-template-columns:minmax(0,1fr) 90px auto 28px}
   .wolf-system-card>summary .hide-mobile{display:none}
