@@ -1,0 +1,47 @@
+/* Wolf BGS Control — screenshot interpretation importer */
+.wolf-screenshot-import{border-color:rgba(92,210,255,.16)}
+.wolf-screenshot-drop{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem;border:1px dashed rgba(92,210,255,.34);background:rgba(8,14,18,.48);cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.wolf-screenshot-drop:hover,.wolf-screenshot-drop:focus,.wolf-screenshot-drop.dragging{outline:none;border-color:rgba(92,210,255,.72);background:rgba(16,30,38,.7)}
+.wolf-screenshot-drop-copy{display:flex;flex-direction:column;gap:.16rem;min-width:0}
+.wolf-screenshot-drop-copy strong{color:#e6eef1;font-size:.9rem}
+.wolf-screenshot-drop-copy span{color:#b9c7cc;font-size:.8rem}
+.wolf-screenshot-drop-copy small{color:var(--muted);font-size:.7rem}
+.wolf-screenshot-selection{display:grid;grid-template-columns:120px minmax(0,1fr);gap:.9rem;align-items:center;margin-top:.8rem;padding:.7rem;border:1px solid rgba(92,210,255,.12);background:rgba(7,12,15,.62)}
+.wolf-screenshot-selection img{width:120px;height:72px;object-fit:cover;border:1px solid rgba(255,255,255,.08);background:#030506}
+.wolf-screenshot-selection>div{display:flex;flex-direction:column;gap:.2rem;min-width:0}
+.wolf-screenshot-selection strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e6eef1}
+.wolf-screenshot-selection span{font-size:.75rem;color:var(--muted)}
+.wolf-screenshot-selection-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.42rem}
+.wolf-screenshot-review-card{margin-top:.9rem;padding:.85rem;border:1px solid rgba(92,210,255,.16);background:rgba(7,12,15,.68)}
+.wolf-screenshot-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.7rem}
+.wolf-screenshot-review-head>div{display:flex;flex-direction:column;gap:.12rem}
+.wolf-screenshot-review-head strong{color:#e8f0f3}
+.wolf-screenshot-review-head span{color:var(--muted);font-size:.75rem}
+.wolf-screenshot-warnings,.wolf-screenshot-ok{margin:.65rem 0;padding:.65rem .75rem;font-size:.77rem;line-height:1.4}
+.wolf-screenshot-warnings{border-left:3px solid rgba(239,196,126,.7);background:rgba(76,54,20,.2);color:#d9c7a8}
+.wolf-screenshot-warnings strong{display:block;margin-bottom:.22rem;color:#ecd8b3}
+.wolf-screenshot-warnings ul{margin:.25rem 0 0 1.05rem;padding:0}
+.wolf-screenshot-ok{border-left:3px solid rgba(118,208,180,.62);background:rgba(24,68,56,.18);color:#bcd9cf}
+.wolf-screenshot-table{width:100%;border-collapse:collapse;min-width:690px}
+.wolf-screenshot-table th,.wolf-screenshot-table td{padding:.48rem .4rem;border-bottom:1px solid rgba(92,210,255,.08);text-align:left;vertical-align:middle}
+.wolf-screenshot-table th{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.wolf-screenshot-table td{font-size:.79rem;color:#c9d4d8}
+.wolf-screenshot-table td:first-child strong{display:block;color:#e6eef1}
+.wolf-screenshot-table td:first-child small{display:block;margin-top:.12rem;color:#7f979f;font-size:.67rem}
+.wolf-screenshot-table td:first-child small.warn{color:#d5ad72}
+.wolf-confidence{display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:.17rem .36rem;border:1px solid rgba(255,255,255,.1);font-size:.68rem;font-weight:700}
+.wolf-confidence.high{color:#a9d9ca;border-color:rgba(118,208,180,.35);background:rgba(35,92,74,.18)}
+.wolf-confidence.medium{color:#e0c394;border-color:rgba(239,196,126,.35);background:rgba(86,62,24,.18)}
+.wolf-confidence.low{color:#dda2a2;border-color:rgba(226,118,118,.34);background:rgba(86,25,25,.18)}
+.wolf-screenshot-review-actions{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:.75rem}
+.wolf-screenshot-review-actions>span{color:var(--muted);font-size:.74rem;line-height:1.4}
+.wolf-faction-table tr.wolf-screenshot-applied{animation:wolfScreenshotApplied 1.6s ease}
+@keyframes wolfScreenshotApplied{0%{background:rgba(92,210,255,.22)}100%{background:transparent}}
+@media(max-width:720px){
+  .wolf-screenshot-drop{align-items:stretch;flex-direction:column}
+  .wolf-screenshot-drop .btn{width:100%}
+  .wolf-screenshot-selection{grid-template-columns:88px minmax(0,1fr)}
+  .wolf-screenshot-selection img{width:88px;height:58px}
+  .wolf-screenshot-review-actions{align-items:stretch;flex-direction:column}
+  .wolf-screenshot-review-actions .btn{width:100%}
+}
