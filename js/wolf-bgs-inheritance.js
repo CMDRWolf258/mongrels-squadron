@@ -51,31 +51,39 @@
 
   function restoreCard(card) {
     const record = parkedBodies.get(card);
-    if (!record) return false;
+    if (!record) {
+      if (directBody(card)) card.dataset.healthHydrated = 'true';
+      return false;
+    }
+
     if (record.marker.parentNode === card) record.marker.replaceWith(record.body);
     else card.appendChild(record.body);
     parkedBodies.delete(card);
     delete card.dataset.healthParked;
+    card.dataset.healthHydrated = 'true';
 
-    // The rules module may have marked a body-less collapsed card as enhanced.
-    // Clear only the enhancement-complete flag on first hydration so the restored
-    // controls are actually built. Existing card-level event wiring can remain.
+    // A cold card can be marked enhanced by a module before its body is restored.
+    // Clear only the completion flag so the first open can build the advanced stack.
     if (!record.hydrated) delete card.dataset.rulesEnhanced;
     requestMountPing();
     return true;
   }
 
-  function parkCard(card) {
+  function parkColdCard(card) {
+    // Once a card has been opened, it remains mounted for the rest of the page
+    // session. This preserves the fast first load without making controls vanish
+    // and rebuild during an active workflow.
+    if (card.dataset.healthHydrated === 'true') return;
     if (card.open) {
       restoreCard(card);
       return;
     }
     if (parkedBodies.has(card)) return;
+
     const body = directBody(card);
     if (!body) return;
-
     const hydrated = Boolean(body.querySelector('[data-faction-strategy-section],[data-slider-objectives-section],[data-conflict-section],[data-order-preview-section]'));
-    const marker = document.createComment('wolf-bgs-body-parked');
+    const marker = document.createComment('wolf-bgs-body-deferred');
     body.replaceWith(marker);
     parkedBodies.set(card, { body, marker, hydrated });
     card.dataset.healthParked = 'true';
@@ -87,7 +95,7 @@
     card.addEventListener('toggle', () => {
       const started = performance.now();
       if (card.open) restoreCard(card);
-      else parkCard(card);
+      else if (card.dataset.healthHydrated !== 'true') parkColdCard(card);
       lastGuardMs = performance.now() - started;
       window.setTimeout(updateHealth, 60);
       window.setTimeout(updateHealth, 300);
@@ -99,7 +107,7 @@
     for (const card of cards()) {
       wireCard(card);
       if (card.open) restoreCard(card);
-      else parkCard(card);
+      else if (card.dataset.healthHydrated !== 'true') parkColdCard(card);
     }
     lastGuardMs = performance.now() - started;
     updateHealth();
@@ -116,7 +124,7 @@
     const section = document.createElement('section');
     section.className = 'section-sm wolf-health-section';
     section.dataset.wolfHealthSection = '';
-    section.innerHTML = `<div class="container"><details class="wolf-panel wolf-health-panel" data-wolf-health-panel><summary><span><b>Control Room Health</b><small>iPad / DOM diagnostics and lazy-card performance status</small></span><strong>+</strong></summary><div class="wolf-panel-body"><p class="wolf-section-intro">Collapsed live-system cards are parked outside the active DOM so Faction Strategy, slider controls, conflict logic, and Order Preview only build when you expand a system.</p><div class="wolf-summary-grid"><article><span>Status</span><strong data-health-status>Checking…</strong><small>Lazy-card guard</small></article><article><span>Cards on page</span><strong data-health-cards>—</strong><small>Current paginated view</small></article><article><span>Expanded</span><strong data-health-open>—</strong><small>Full controls attached</small></article><article><span>Parked</span><strong data-health-parked>—</strong><small>Collapsed bodies off-DOM</small></article><article><span>Advanced previews</span><strong data-health-previews>—</strong><small>Mounted Order Previews</small></article><article><span>DOM elements</span><strong data-health-dom>—</strong><small>Current document</small></article></div><div class="wolf-save-row"><span data-health-note>Sampling Control Room…</span><button type="button" class="btn btn-secondary btn-compact" data-refresh-health>Refresh Health Check</button></div></div></details></div>`;
+    section.innerHTML = `<div class="container"><details class="wolf-panel wolf-health-panel" data-wolf-health-panel><summary><span><b>Control Room Health</b><small>iPad / DOM diagnostics and lazy-card performance status</small></span><strong>+</strong></summary><div class="wolf-panel-body"><p class="wolf-section-intro">Collapsed systems start deferred for a fast page load. After you open a system once, its full controls stay mounted for the rest of the page session so sections never disappear and rebuild while you work.</p><div class="wolf-summary-grid"><article><span>Status</span><strong data-health-status>Checking…</strong><small>Lazy-card guard</small></article><article><span>Cards on page</span><strong data-health-cards>—</strong><small>Current paginated view</small></article><article><span>Expanded</span><strong data-health-open>—</strong><small>Currently open</small></article><article><span>Deferred</span><strong data-health-parked>—</strong><small>Never opened this session</small></article><article><span>Advanced previews</span><strong data-health-previews>—</strong><small>Mounted Order Previews</small></article><article><span>DOM elements</span><strong data-health-dom>—</strong><small>Current document</small></article></div><div class="wolf-save-row"><span data-health-note>Sampling Control Room…</span><button type="button" class="btn btn-secondary btn-compact" data-refresh-health>Refresh Health Check</button></div></div></details></div>`;
     summary.insertAdjacentElement('afterend', section);
     section.querySelector('[data-refresh-health]')?.addEventListener('click', updateHealth);
     section.querySelector('[data-wolf-health-panel]')?.addEventListener('toggle', updateHealth);
@@ -128,32 +136,29 @@
     if (!section) return;
     const liveCards = cards();
     const open = liveCards.filter(card => card.open).length;
-    const attached = liveCards.filter(card => Boolean(directBody(card))).length;
-    const parked = liveCards.length - attached;
+    const deferred = liveCards.filter(card => card.dataset.healthParked === 'true').length;
+    const warmed = liveCards.filter(card => card.dataset.healthHydrated === 'true').length;
     const previews = liveCards.reduce((count, card) => count + (card.querySelector('[data-order-preview-section]') ? 1 : 0), 0);
     const domElements = document.getElementsByTagName('*').length;
 
     let status = 'Healthy';
-    let note = 'Lazy-card mode is active. Collapsed systems should not build or paint their advanced control stack.';
+    let note = `${deferred} cold card${deferred===1?' is':'s are'} deferred; ${warmed} opened card${warmed===1?' is':'s are'} kept mounted for stable workflow.`;
     if (!liveCards.length) {
       status = 'Waiting';
       note = 'Waiting for the current system page to render.';
-    } else if (attached < open) {
+    } else if (liveCards.some(card => card.open && !directBody(card))) {
       status = 'Mounting';
       note = 'An expanded card is still restoring its controls. Refresh this check after it finishes.';
-    } else if (attached > open) {
-      status = 'Heavy';
-      note = `${attached - open} collapsed card body/bodies are still attached; this is more DOM work than expected.`;
     }
 
     const set = (selector, value) => { const el = section.querySelector(selector); if (el) el.textContent = value; };
     set('[data-health-status]', status);
     set('[data-health-cards]', String(liveCards.length));
     set('[data-health-open]', String(open));
-    set('[data-health-parked]', String(parked));
+    set('[data-health-parked]', String(deferred));
     set('[data-health-previews]', String(previews));
     set('[data-health-dom]', domElements.toLocaleString());
-    set('[data-health-note]', `${note} Last park/restore pass: ${lastGuardMs.toFixed(1)} ms.`);
+    set('[data-health-note]', `${note} Last defer/first-mount pass: ${lastGuardMs.toFixed(1)} ms.`);
   }
 
   const observer = new MutationObserver(() => syncCards());
@@ -165,6 +170,6 @@
   window.WolfBgsHealth = {
     refresh: updateHealth,
     sync: syncCards,
-    version: 1,
+    version: 2,
   };
 })();
