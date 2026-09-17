@@ -21,18 +21,23 @@ No current preview publishes Daily Orders automatically.
 - `css/wolf-bgs-rules.css`
 - `css/wolf-bgs-sliders.css`
 - `css/wolf-bgs-order-preview.css`
+- `css/wolf-bgs-conflicts.css`
+- `css/wolf-bgs-lab.css`
 - `css/wolf-bgs-screenshot.css`
 - `js/wolf-bgs-inheritance.js`
 - `js/wolf-bgs.js`
 - `js/wolf-bgs-rules.js`
 - `js/wolf-bgs-sliders.js`
 - `js/wolf-bgs-order-preview.js`
+- `js/wolf-bgs-conflicts.js`
+- `js/wolf-bgs-lab.js`
 - `js/wolf-bgs-screenshot.js`
 - `functions/api/operations/wolf-bgs.js`
 - `functions/api/operations/wolf-bgs-write.js`
 - `functions/api/operations/wolf-bgs-rules.js`
 - `functions/api/operations/wolf-bgs-sliders.js`
 - `functions/api/operations/wolf-bgs-economy-rules.js`
+- `functions/api/operations/wolf-bgs-conflicts.js`
 - `functions/api/operations/wolf-bgs-screenshot.js`
 - `scripts/enrich_bgs_boards.py`
 - `data/live-bgs-boards.json`
@@ -49,10 +54,13 @@ All current BGS Control state uses the existing `DAILY_ORDERS` KV binding.
 - Automation Rules / faction strategy / balancing calibration: `wolf-bgs-rules-v1`
 - Economy/Security objectives: `wolf-bgs-slider-objectives-v1`
 - Economy bucket / exploration workload doctrine: `wolf-bgs-economy-rules-v1`
+- Explicit live-system conflict pairing/objective config: `wolf-bgs-conflicts-v1`
+
+The **Mandalore BGS Lab is intentionally not stored in `DAILY_ORDERS`**. Its synthetic board/strategy/slider/calibration values and conflict pairing live only in browser `localStorage`, so the test system cannot become part of the live Mongrel footprint or Daily Orders.
 
 Core system settings use sparse overrides. Blank/default-valued per-system fields inherit current System Defaults dynamically instead of storing copied defaults.
 
-`Reset to Defaults` removes the system-configuration override layer but preserves favorites, notes, manual faction/status snapshots, faction strategy, Economy/Security objectives, balancing calibration, and reporting/history data.
+`Reset to Defaults` removes the system-configuration override layer but preserves favorites, notes, manual faction/status snapshots, faction strategy, Economy/Security objectives, balancing calibration, conflict setup, and reporting/history data.
 
 ## Full faction-board ingestion
 
@@ -63,6 +71,8 @@ Complete faction boards are enriched separately into `data/live-bgs-boards.json`
 Keeping full boards separate is deliberate: a temporary board-enrichment failure must not wipe out Mongrel-presence discovery. The two-hour updater retains prior good board data where possible and uses safe pacing/retry behavior for EliteHub rate limits.
 
 Manual snapshots remain a fallback and are timestamped. The newest complete trusted snapshot wins; the UI must never pretend a Mongrel-only fallback row is a complete faction board.
+
+The current board source does **not** expose a reliable conflict-opponent identifier. Conflict pairing therefore follows conservative rules rather than guessing from influence alone.
 
 ## System list and target UX
 
@@ -220,9 +230,59 @@ If Security and Economy create overlapping counterweight requirements for the sa
 
 If no safe counterweight exists, the preview raises a warning rather than inventing a recipient.
 
+## Conflict logic v1
+
+Conflict handling now has its own configuration/pairing layer in `js/wolf-bgs-conflicts.js` and `wolf-bgs-conflicts-v1`.
+
+### Participant lock
+
+Any faction whose **active** state contains War, Civil War, or Election is treated as an active conflict participant.
+
+- Active participants remain excluded from ordinary counterweight selection by the base Order Preview.
+- The conflict layer additionally removes ordinary generated mission/trade/bounty/exploration work that references an active participant.
+- Normal balancing math sourced from an active participant is removed from the rendered preview.
+- This participant lock applies even when opponent pairing is unresolved. Safety does not depend on successful pairing.
+- Pending conflict states are displayed for awareness but are not treated as active participant locks yet.
+
+### Pair resolver
+
+The live faction-board source does not currently identify opponents, so pairing is intentionally conservative:
+
+- exactly **two** active factions of the same conflict type → auto-pair;
+- two War factions plus two Election factions → each two-faction type group resolves independently;
+- four factions all showing War, Civil War, or Election → **do not pair by influence or proximity**; Wolf must select the pairs explicitly;
+- one unmatched active participant → unresolved warning;
+- explicit saved pairings are validated against current active state/type;
+- a faction cannot be assigned to two conflict pairs;
+- up to three simultaneous pairs are supported because a seven-faction board can contain at most three disjoint two-faction conflicts.
+
+This specifically prevents the earlier failure mode where two simultaneous same-type conflicts could be silently paired incorrectly.
+
+### Conflict objective and generated work
+
+Each resolved pair can be set to:
+
+- **Monitor / no winner** — participant lock remains, but no winner-specific task is generated;
+- **Win for faction A**;
+- **Win for faction B**.
+
+For War/Civil War winner objectives, the preview generates Conflict Zone + Combat Bond guidance for the selected winner. **Exact CZ-win workload per CMDR is intentionally not yet quantified**; Mandalore is intended to calibrate that operational target before it becomes publishable doctrine.
+
+For Election winner objectives, the preview uses the existing normal mission-INF workload as an operational target and directs non-combat/economic mission work for the intended winner, with trade/exploration as supplementary options where useful.
+
+Conflict-specific tasks are injected into the preview after the ordinary deterministic plan is rendered. Order Preview remains preview-only and publishing remains disabled.
+
+Future conflict work still needed:
+
+- conflict day/score tracking;
+- validated per-CMDR CZ workload targets and stretch thresholds;
+- explicit post-conflict asset-transfer handling;
+- pending-conflict pre-stage doctrine;
+- historical calibration from issued conflict work → following conflict score/tick.
+
 ## Order Preview / Generator
 
-Each expanded system can mount a dedicated **Order Preview / Generator** below the faction/slider configuration.
+Each expanded system can mount a dedicated **Order Preview / Generator** below the faction/slider/conflict configuration.
 
 It is deterministic and preview-only. It reads current on-screen values, including unsaved edits, so Wolf can test scenarios before committing configuration.
 
@@ -236,6 +296,7 @@ The preview can produce:
 - Security work via bounty-voucher workload plus mission-type preference where useful;
 - Economy work via aligned economic mission INF, profitable trade and exploration diversification;
 - balancing mission INF for eligible counterweight factions;
+- conflict participant locking plus winner-specific War/Civil War/Election tasks when a pair/objective is resolved;
 - manual asset-verification notes for trade/exploration;
 - stop/review conditions;
 - safety/candidate explanations;
@@ -245,9 +306,31 @@ Overlapping mission-INF needs for the same faction are merged using the higher r
 
 The preview clearly shows `PREVIEW ONLY` and `Publish disabled`. It does not write Daily Orders.
 
-## Conflict boundary for current preview
+## Mandalore BGS Lab
 
-Conflict-specific order generation is deliberately deferred to its own logic pass. Current behavior only detects conflict, marks the system for attention, keeps active conflict participants out of ordinary counterweight selection, and retains the existing member War/Election doctrine. The dedicated conflict engine will later identify participants, intended winner, conflict type/day/score and replace ordinary influence work with conflict-valid tasks.
+A dedicated synthetic system named **Mandalore** sits at the bottom of Wolf BGS Control.
+
+Purpose:
+
+- test target bands, influence geometry, faction intent, Economy/Security objectives, balancing calibration and conflict behavior without touching a real system;
+- compare how different control settings change the generated preview;
+- deliberately create malformed/ambiguous boards to test safety behavior.
+
+Isolation rules:
+
+- Mandalore is not present in `data/live-bgs.json` or `data/live-bgs-boards.json`;
+- it is not part of the live system list, presence count, ranking, Lowest-five watch, favorites, or Daily Orders eligibility;
+- lab data auto-saves only in local browser storage;
+- generated faction-strategy, slider and calibration Save actions are intercepted so they do not write Mandalore into production KV settings;
+- Conflict Configuration recognizes the lab marker and stores pairing locally rather than through the live conflict API;
+- screenshot import is suppressed inside the lab.
+
+Built-in scenario presets:
+
+- **Balanced Board** — ordinary seven-faction baseline;
+- **Slider Pressure** — Mongrels near the configured ceiling for Economy/Security balancing tests;
+- **Two Conflicts** — one War pair plus one Election pair, allowing automatic independent pairing;
+- **4-Way Pairing Test** — four War factions, intentionally forcing the manual-pairing safety path.
 
 ## Screenshot import
 
@@ -288,9 +371,9 @@ Graphical Economy/Security slider estimation is intentionally deferred until eno
 
 ## Next product stages
 
-The next major stages after validating Order Preview behavior are:
+The next major stages after validating the Mandalore lab and conflict-pair behavior are:
 
-- dedicated conflict-management logic;
+- conflict score/day tracking and CZ workload calibration;
 - ranked Daily Orders queue;
 - explicit approve/edit/publish flow;
 - member task/reporting controls generated from structured orders;
