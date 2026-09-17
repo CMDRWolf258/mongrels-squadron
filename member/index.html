@@ -18,6 +18,7 @@
     .member-onboarding-complete{border-color:rgba(98,220,255,.34);background:rgba(98,220,255,.045)}
     .member-onboarding-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .member-onboarding-actions small{color:var(--muted,#aab5bf)}
+    .member-admin-shortcut{margin-top:14px}
     @media(max-width:700px){.member-onboarding-step{grid-template-columns:auto minmax(0,1fr)}.member-onboarding-step .btn{grid-column:2;justify-self:start}}
   </style>
 </head>
@@ -82,6 +83,9 @@
           <p class="eyebrow">Authenticated Squadron Access</p>
           <h2>Welcome back, <span data-member-name>Mongrel</span></h2>
           <p>Start with today's tasking, then move into whichever squad activity you need.</p>
+          <div class="member-onboarding-actions member-admin-shortcut" data-dashboard-site-admin hidden>
+            <a class="btn btn-primary" href="../wolf-bgs/">Open Wolf BGS Control</a>
+          </div>
         </div>
         <div class="member-dashboard-identity">
           <span>Access</span>
