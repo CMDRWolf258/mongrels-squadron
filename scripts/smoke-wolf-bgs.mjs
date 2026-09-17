@@ -5,9 +5,11 @@ for (const path of [
   'wolf-bgs/index.html',
   'css/wolf-bgs.css',
   'css/wolf-bgs-rules.css',
+  'js/wolf-bgs-inheritance.js',
   'js/wolf-bgs.js',
   'js/wolf-bgs-rules.js',
   'functions/api/operations/wolf-bgs.js',
+  'functions/api/operations/wolf-bgs-write.js',
   'functions/api/operations/wolf-bgs-rules.js',
   'scripts/enrich_bgs_boards.py',
   'data/live-bgs-boards.json',
@@ -36,6 +38,8 @@ assert.match(page, /js\/wolf-bgs\.js/, 'Control Room client is not loaded');
 assert.match(page, /css\/wolf-bgs\.css/, 'Control Room stylesheet is not loaded');
 assert.match(page, /js\/wolf-bgs-rules\.js/, 'Automation Rules client is not loaded');
 assert.match(page, /css\/wolf-bgs-rules\.css/, 'Automation Rules stylesheet is not loaded');
+assert.match(page, /js\/wolf-bgs-inheritance\.js/, 'Sparse override inheritance shim is not loaded');
+assert.ok(page.indexOf('wolf-bgs-inheritance.js') < page.indexOf('wolf-bgs.js'), 'Inheritance shim must load before the main Wolf BGS client');
 
 const client = readFileSync('js/wolf-bgs.js', 'utf8');
 assert.match(client, /submit-status/, 'Manual status submission is not wired');
@@ -51,6 +55,11 @@ assert.match(client, /settings\?\.priority/, 'Collapsed/header Priority is not u
 assert.match(client, /Programmed Automation/, 'Programmed automation explanation area is missing');
 assert.match(client, /Advanced Intelligence Suggestion/, 'Advisory intelligence area is missing');
 assert.match(client, /data-faction-row/, 'Editable faction-board rows are missing');
+
+const inheritanceClient = readFileSync('js/wolf-bgs-inheritance.js', 'utf8');
+assert.match(inheritanceClient, /wolf-bgs-write/, 'Wolf BGS writes are not routed through the sparse override endpoint');
+assert.match(inheritanceClient, /method !== 'PUT'/, 'Inheritance shim should only reroute Wolf BGS writes');
+assert.match(inheritanceClient, /\/api\/operations\/wolf-bgs\?_=/, 'Inheritance shim does not refresh the authoritative Control Room payload after a write');
 
 const rulesClient = readFileSync('js/wolf-bgs-rules.js', 'utf8');
 assert.match(rulesClient, /Automation Rules Library/, 'Automation Rules Library UI is missing');
@@ -80,6 +89,17 @@ assert.match(apiSource, /externalBoardComplete/, 'Full-board completeness is not
 assert.match(apiSource, /controlPolicy: 'maintain-existing'/, 'Default control policy should preserve existing control state');
 assert.match(apiSource, /defaultTick: '19:00'/, 'Prototype default tick should begin at 19:00 Central/local UI time');
 assert.match(apiSource, /maxDailySystems: 6/, 'Daily Orders system-cap default should begin at six');
+
+const writeApi = readFileSync('functions/api/operations/wolf-bgs-write.js', 'utf8');
+assert.match(writeApi, /normalizeSparseSettingsMap/, 'Sparse system-setting migration is missing');
+assert.match(writeApi, /normalizeSystemOverrides/, 'Per-system sparse override normalization is missing');
+assert.match(writeApi, /Values equal to the old System Defaults are inheritance/, 'Legacy flattened settings are not explicitly migrated as inherited values');
+assert.match(writeApi, /desiredStates\.length/, 'Cleared preferred-state fields should fall back to System Defaults');
+assert.match(writeApi, /avoidStates\.length/, 'Cleared avoid-state fields should fall back to System Defaults');
+assert.match(writeApi, /value\[key\] !== base\[key\]/, 'Boolean settings equal to defaults should not be stored as overrides');
+assert.match(writeApi, /raw\.version = 3/, 'Sparse override storage version was not advanced');
+assert.match(writeApi, /session\.access !== 'site_admin'/, 'Sparse override write API is not site-admin restricted');
+assert.match(writeApi, /X-Mongrels-Request/, 'Sparse override write API lacks same-origin validation');
 
 const rulesApi = readFileSync('functions/api/operations/wolf-bgs-rules.js', 'utf8');
 assert.match(rulesApi, /session\.access !== 'site_admin'/, 'Automation Rules API is not site-admin restricted');
@@ -112,8 +132,11 @@ assert.match(rulesCss, /\.wolf-influence-meter/, 'Influence target-bar styling i
 const module = await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof module.onRequestGet, 'function', 'Wolf BGS API GET handler did not import');
 assert.equal(typeof module.onRequestPut, 'function', 'Wolf BGS API PUT handler did not import');
+const writeModule = await import('../functions/api/operations/wolf-bgs-write.js');
+assert.equal(typeof writeModule.onRequestGet, 'function', 'Wolf BGS sparse-write API GET handler did not import');
+assert.equal(typeof writeModule.onRequestPut, 'function', 'Wolf BGS sparse-write API PUT handler did not import');
 const rulesModule = await import('../functions/api/operations/wolf-bgs-rules.js');
 assert.equal(typeof rulesModule.onRequestGet, 'function', 'Wolf BGS Rules API GET handler did not import');
 assert.equal(typeof rulesModule.onRequestPut, 'function', 'Wolf BGS Rules API PUT handler did not import');
 
-console.log('✓ Wolf BGS Control full-board ingestion, whole-board faction strategy, automation rules, workload guardrails, reset controls, target indicators, filters, System Defaults, private APIs, faction board, and responsive shell are structurally sound');
+console.log('✓ Wolf BGS Control full-board ingestion, sparse inherited overrides, whole-board faction strategy, automation rules, workload guardrails, reset controls, target indicators, filters, System Defaults, private APIs, faction board, and responsive shell are structurally sound');
