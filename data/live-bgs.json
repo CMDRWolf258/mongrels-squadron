@@ -1,15 +1,20 @@
 {
-  "generatedAt": "2026-09-17T14:29:46Z",
+  "generatedAt": "2026-09-17T16:28:33Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
   "refreshInterval": "Every 2 hours",
-  "syncOk": true,
-  "successfulSystems": 242,
+  "syncOk": false,
+  "successfulSystems": 0,
   "requestedSystems": 242,
   "activePresenceSystems": 242,
   "formerPresenceSystems": 0,
   "vaultPresenceRows": 242,
-  "errors": [],
+  "errors": [
+    {
+      "name": "vault",
+      "error": "<urlopen error [Errno 104] Connection reset by peer>"
+    }
+  ],
   "systems": [
     {
       "name": "2MASS J21392957+5733417",
