@@ -1,0 +1,238 @@
+{
+  "version": "1",
+  "reviewedAt": "2026-09-16",
+  "scope": "Expert Background Simulation reference knowledge for the Mongrels Field Manual, Ask the Mongrels, and future Mission Control intelligence. Entries distinguish stable doctrine from community-tested mechanics, observations, and legacy claims that require retesting.",
+  "confidenceScale": {
+    "confirmed": "Directly observable in-game behavior or authoritative data model with little meaningful dispute.",
+    "strong-community-evidence": "Repeatedly tested or explained by experienced BGS operators, but Frontier does not publish the underlying formula in full.",
+    "mongrels-doctrine": "Operational convention used by the Regiment of Imperial Mongrels to keep tasking and reporting consistent.",
+    "experimental": "Plausible or observed behavior that should be tested before being used for critical planning.",
+    "legacy-retest": "Historical BGS advice that may have changed and must not be treated as current doctrine without new evidence."
+  },
+  "entries": [
+    {
+      "id": "bgs-influence-shared-pool",
+      "category": "BGS — Influence Mechanics",
+      "topic": "Influence Is a Shared 100% Pool",
+      "keywords": ["influence pool", "100 percent", "zero sum", "normalization", "redistribution", "raise faction", "lower faction"],
+      "ruleOfThumb": "Treat system influence as a shared pool, not a pile of percentage points you add directly. If one influence-unlocked faction gains displayed share, that share has to come from other participating factions when the results are normalized at the tick.",
+      "details": [
+        "System faction influence is displayed as percentages totaling approximately 100%.",
+        "A mission reward showing several INF marks is therefore not a promise of the same number of displayed percentage points.",
+        "Experienced BGS operators model influence effects as inputs that are normalized against the total influence-effect pool at the tick; Frontier does not publish the complete production formula.",
+        "This is why identical-looking workloads can produce different displayed movement when the rest of the system receives different amounts of activity."
+      ],
+      "operations": "When planning a push, name both the faction that should gain and the factions that can safely surrender share. Do not judge workload from the beneficiary alone.",
+      "automationSignals": [
+        "Track every faction's before/after influence, not only the priority faction.",
+        "Flag cases where the priority faction rose but an unintended faction absorbed most of the opposing loss."
+      ],
+      "sources": [
+        {"name": "Elite BGS — Guide", "url": "https://elitebgs.app/guide"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "stable"
+    },
+    {
+      "id": "bgs-mission-inf-is-weight-not-percent",
+      "category": "BGS — Influence Mechanics",
+      "topic": "Mission INF Pips Are Reward Weight, Not Influence Percentage",
+      "keywords": ["mission inf", "inf pips", "inf ticks", "influence reward", "inf+++++", "5 inf", "mission influence"],
+      "ruleOfThumb": "Mongrel reporting counts mission INF marks/pips as workload units. They are relative mission influence rewards, not percentage points of system influence.",
+      "details": [
+        "A mission with INF +++++ is recorded by the squad as 5 mission-INF units for workload tracking.",
+        "Completing 20 mission INF therefore means twenty reward marks were completed, not that the faction should gain 20 percentage points.",
+        "The displayed influence result still depends on normalization, population, current influence, other player activity, state/conflict rules, and diminishing-return behavior.",
+        "Keeping workload units separate from displayed influence percentage is essential for meaningful post-tick calibration."
+      ],
+      "operations": "Daily Orders may specify a mission-INF target, but after the tick compare that workload with the actual percentage movement before changing the next target.",
+      "commonMistakes": [
+        "Writing '20 INF' and later interpreting it as +20% influence.",
+        "Comparing mission-INF workloads between two systems as though population and opposition were identical."
+      ],
+      "sources": [
+        {"name": "Mongrels — BGS Field Manual", "url": "https://mongrels-squadron.pages.dev/guides/bgs/"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "mongrels-doctrine",
+      "stability": "stable"
+    },
+    {
+      "id": "bgs-no-universal-workload-conversion",
+      "category": "BGS — Influence Mechanics",
+      "topic": "There Is No Reliable Universal Workload-to-Percent Formula",
+      "keywords": ["how much inf", "how much influence", "inf formula", "influence formula", "daily cap", "daily target", "workload", "population", "calibration"],
+      "ruleOfThumb": "Do not use a universal conversion such as 'X mission INF always equals Y%'. Experienced BGS testing finds that population, current faction influence, other activity and diminishing-return factors make the result system-specific.",
+      "details": [
+        "A 2025 Frontier forum discussion by experienced BGS operators explicitly notes that attempts to derive a generally accurate formula break down because the answer depends on population, current influence and other BGS activity.",
+        "There is no well-supported general hard daily or weekly percentage cap; practical movement instead approaches limits through normalization, throttles and diminishing-return behavior.",
+        "Trade and other activity types may have their own internal scaling or throttles that are not publicly documented.",
+        "The fastest operational method is usually empirical: apply a measured workload, observe the next tick, then adjust."
+      ],
+      "operations": "Build per-system calibration bands from actual Mongrel work. Store workload, pre-tick state, post-tick delta and known opposition instead of importing a universal calculator.",
+      "automationSignals": [
+        "Maintain a rolling per-system response history rather than one global conversion factor.",
+        "Reduce confidence in a calibration sample when there was heavy traffic, a state transition, conflict lock, or incomplete data.",
+        "Warn when an order is being generated from insufficient local history."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "stable"
+    },
+    {
+      "id": "bgs-low-influence-factions-move-more",
+      "category": "BGS — Influence Mechanics",
+      "topic": "Equivalent Effort Can Move a Low-Influence Faction More",
+      "keywords": ["low influence", "high influence", "same transaction", "outsized movement", "raise low faction", "equalize factions"],
+      "ruleOfThumb": "The same nominal positive action can produce more displayed movement for a low-influence faction than for a faction already high in the system. Treat current influence as part of workload planning.",
+      "details": [
+        "Long-running community testing reports that equivalent mission reward weight does not translate to equal displayed percentage movement at different starting influence levels.",
+        "This helps explain why indiscriminately doing similar mission work for every faction can slowly compress the influence spread and create unwanted conflict opportunities.",
+        "The exact response curve is not published, so this should guide relative planning rather than be turned into an exact multiplier."
+      ],
+      "operations": "When raising a low faction, start with a smaller measured workload than you would use for a high controller and check the next tick before escalating.",
+      "watchFor": "A low faction can overshoot a planned conflict or retreat-rescue band faster than expected, especially in a quiet system.",
+      "sources": [
+        {"name": "Frontier Forums — BGS and massacre missions", "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-diminishing-returns-practical-saturation",
+      "category": "BGS — Transaction Efficiency",
+      "topic": "Diminishing Returns and Practical Saturation",
+      "keywords": ["diminishing returns", "saturation", "transactional limits", "daily cap", "hard cap", "too much work", "efficiency"],
+      "ruleOfThumb": "More BGS work can continue to help, but the marginal displayed gain becomes less efficient. Do not confuse practical saturation with a simple universal hard cap.",
+      "details": [
+        "A 2025 community explanation describes influence effects as being normalized into an ever-larger total pool, so each additional unit has progressively less effect on the final percentage.",
+        "Experienced operators also report activity-specific throttles or transactional limits, but the exact internal thresholds are not fully public.",
+        "A 2024 discussion about very large combat-bond holdings similarly warns that diminishing returns and transactional limits prevent enormous redemptions from translating into enormous BGS movement.",
+        "Once an operation is deep into diminishing returns, spreading commander time to another needed system or another relevant lever can be strategically better than continuing the same grind."
+      ],
+      "operations": "Use a planned workload band and a stop condition. If recent samples show little additional movement from substantially more effort, treat that as a local efficiency warning rather than assuming the work did nothing.",
+      "automationSignals": [
+        "Compare marginal influence delta against workload growth over several ticks.",
+        "Flag declining influence-per-workload response as possible saturation, but do not claim a hard cap without controlled evidence."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"},
+        {"name": "Frontier Forums — Where to spend Pilot Federation bonds best?", "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-labelled-vs-asset-owner-attribution",
+      "category": "BGS — Transaction Efficiency",
+      "topic": "Labelled Effects vs Asset-Owner Effects",
+      "keywords": ["station owner", "asset owner", "trade influence", "exploration data influence", "missions influence", "bounties influence", "combat bonds influence", "attribution"],
+      "ruleOfThumb": "For ordinary influence attribution, activities explicitly associated with a faction follow that faction, while unlabelled station services such as commodity sales and exploration-data hand-ins generally benefit the faction owning the receiving asset.",
+      "details": [
+        "Community BGS shorthand is: labelled influence follows the labelled faction; unlabelled influence follows the station or asset owner.",
+        "Trade and exploration data are not inherently labelled to a mission-giver faction, so the ownership of the market or Universal Cartographics receiving asset matters.",
+        "Missions, bounty vouchers and combat bonds are faction-associated rather than simply benefiting whichever faction owns the station where the interface is opened.",
+        "Conflict victory has additional activity restrictions. A lever that normally affects influence may not be a valid way to win the current War, Civil War or Election; use the conflict doctrine for that case."
+      ],
+      "operations": "Before spending stored exploration data or running a trade push, verify the current owner of the receiving asset. Before missions or voucher work, verify the faction attribution and the operation's state/conflict rules.",
+      "commonMistakes": [
+        "Selling exploration data at a convenient port without checking its owner.",
+        "Assuming every action performed at a faction-owned station automatically benefits that owner.",
+        "Using ordinary influence rules as a substitute for conflict-victory rules."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — Submitting exploration data has the influence during the elections?", "url": "https://forums.frontier.co.uk/threads/submitting-exploration-data-has-the-influence-during-the-elections.621554/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-tick-as-calibration-boundary",
+      "category": "BGS — Operational Science",
+      "topic": "Use Each Tick as a Calibration Boundary",
+      "keywords": ["tick", "post tick", "before and after", "calibrate", "history", "historical influence", "measure bgs", "response model"],
+      "ruleOfThumb": "Treat each daily BGS tick as an experiment boundary: record the board before the tick, record what the squad did, capture the board after the tick, then change the next order from evidence rather than intuition.",
+      "details": [
+        "Elite BGS exposes historical influence plus active, pending and recovering states, demonstrating the type of time-series record useful for operational analysis.",
+        "A single tick is not enough to infer a universal coefficient because opposition and random traffic are often unknown.",
+        "Repeated samples from the same system under similar conditions are far more useful than borrowing a number from another system.",
+        "State changes, conflicts, ownership changes, population changes and unusual traffic should be stored alongside the influence delta because they can invalidate an otherwise clean comparison."
+      ],
+      "operations": "For important systems, preserve at least pre-tick influence, post-tick influence, states, conflicts, ownership, population, known squad workload and a confidence note for outside traffic.",
+      "automationSignals": [
+        "Archive one canonical post-tick snapshot per monitored system.",
+        "Calculate faction deltas and flag threshold crossings automatically.",
+        "Attach known Daily Orders/workload metadata to the tick record when available.",
+        "Keep samples comparable by tagging conflict/state/population changes."
+      ],
+      "sources": [
+        {"name": "Elite BGS — Guide", "url": "https://elitebgs.app/guide"},
+        {"name": "Elite BGS API — Factions", "url": "https://elitebgs.app/ebgs/docs/V5/paths/factions"},
+        {"name": "Elite BGS API — Systems", "url": "https://elitebgs.app/ebgs/docs/V5/paths/systems"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "stable"
+    },
+    {
+      "id": "bgs-external-traffic-is-opposition",
+      "category": "BGS — Operational Science",
+      "topic": "Uncoordinated Traffic Is Part of the BGS Equation",
+      "keywords": ["random traffic", "outside traffic", "opposition", "traffic report", "bounty report", "mission farmers", "unexplained influence", "background traffic"],
+      "ruleOfThumb": "Your squad's work is only one input. Uncoordinated commanders, mission farmers and opposing groups can create enough activity to flatten, reverse or distort the result you expected from your own workload.",
+      "details": [
+        "Community operators repeatedly recommend checking local traffic and bounty reports when influence behavior does not match planned activity.",
+        "Routine mission farming can unintentionally raise low factions and compress the influence spread toward conflict thresholds.",
+        "Because outside work is usually not fully observable, post-tick analysis should distinguish measured squad workload from inferred opposition rather than treating the difference as a broken formula."
+      ],
+      "operations": "When a calibrated system suddenly behaves differently, investigate traffic, new mission-farming patterns, Powerplay activity, conflicts and ownership/state changes before simply doubling the next day's work.",
+      "automationSignals": [
+        "Flag a large residual between expected and observed movement as possible outside traffic rather than automatically escalating workload.",
+        "Surface traffic-report or other available activity indicators next to the tick delta when practical."
+      ],
+      "sources": [
+        {"name": "Frontier Forums — BGS and massacre missions", "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "strong-community-evidence",
+      "stability": "stable"
+    },
+    {
+      "id": "bgs-transaction-splitting-legacy-claim",
+      "category": "BGS — Myths & Retest Queue",
+      "topic": "Do Not Assume Many Tiny Hand-Ins Beat One Large Hand-In",
+      "keywords": ["split transactions", "many small transactions", "transaction count", "tiny hand ins", "one big hand in", "bounty splitting", "trade splitting", "transactional limits"],
+      "ruleOfThumb": "Historical BGS guides often recommend splitting activity into many small transactions, but the evidence reviewed for the current knowledge pack does not establish a universal modern rule. Do not build automation around transaction count until we retest the specific activity.",
+      "details": [
+        "Modern community discussion still refers to transactional limits and activity-specific throttles.",
+        "That does not prove that deliberately creating many tiny hand-ins is always superior, nor that the same transaction behavior applies to trade, bounties, bonds, exploration data and missions.",
+        "BGS mechanics have changed repeatedly, so old optimization recipes should be separated from current doctrine unless reproduced under present game conditions.",
+        "This is exactly the type of mechanic the Mongrels should test with controlled A/B tick experiments before operationalizing it."
+      ],
+      "operations": "Until retested, optimize for the known objective and stop condition rather than manufacturing transaction count. Record any controlled split-vs-bulk test as an experimental result, not a universal rule.",
+      "experiment": {
+        "status": "retest-needed",
+        "suggestedMethod": "Use comparable quiet-system days with the same faction, similar starting influence and one activity type. Hold total value/work approximately constant, vary only transaction pattern, then compare post-tick movement across multiple samples."
+      },
+      "sources": [
+        {"name": "Frontier Forums — Where to spend Pilot Federation bonds best?", "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"},
+        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+      ],
+      "reviewedAt": "2026-09-16",
+      "confidence": "legacy-retest",
+      "stability": "evolving"
+    }
+  ]
+}
