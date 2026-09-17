@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <title>Wolf BGS Control | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/wolf-bgs.css?v=1">
+</head>
+<body class="visual-page page-command wolf-bgs-page">
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav>
+  </div>
+</header>
+<main>
+  <section class="page-hero wolf-control-hero hero-flare">
+    <div class="container page-hero-grid">
+      <div><p class="eyebrow">Site Admin · BGS Command Deck</p><h1>Wolf BGS Control</h1><p>Private strategy, automation parameters, system status overrides, tick schedules, and order-generation controls for the Regiment of Imperial Mongrels.</p></div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section" data-wolf-gate>
+    <div class="container"><div class="wolf-gate-card"><div><p class="eyebrow">Wolf Only</p><h2>Site Admin Authorization Required</h2><p>This control room can change private BGS automation parameters and manual system snapshots. It is intentionally restricted to the site-admin account.</p></div><a class="btn btn-primary" href="/api/auth/login?return=%2Fwolf-bgs%2F">Sign In with Discord →</a><small data-wolf-gate-status>Checking secure session…</small></div></div>
+  </section>
+
+  <div data-wolf-private hidden>
+    <section class="section-sm wolf-summary-section">
+      <div class="container">
+        <div class="wolf-banner"><div><span>Authenticated BGS Command</span><strong data-wolf-viewer>CMDR Wolf258</strong></div><a class="btn btn-secondary btn-compact" href="../operations/#daily-orders">Open Mission Control →</a></div>
+        <div class="wolf-summary-grid">
+          <article><span>Mongrel Presence</span><strong data-summary-presence>—</strong><small>Active systems</small></article>
+          <article><span>Controlled</span><strong data-summary-controlled>—</strong><small>Mongrel control</small></article>
+          <article><span>Needs Attention</span><strong data-summary-attention>—</strong><small>Risk / stale indicators</small></article>
+          <article><span>Stale Data</span><strong data-summary-stale>—</strong><small>Outside freshness policy</small></article>
+          <article><span>Daily Order Slots</span><strong data-summary-slots>—</strong><small>Global maximum</small></article>
+          <article><span>Source Snapshot</span><strong data-summary-updated>—</strong><small data-summary-source>EliteHub Vault / EDDN</small></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <details class="wolf-panel wolf-global-panel">
+          <summary><span><b>Global Automation Defaults</b><small>Inherited values for systems without custom overrides</small></span><strong>+</strong></summary>
+          <form data-global-form class="wolf-panel-body">
+            <div class="wolf-form-grid">
+              <label><span>Default system tick</span><input type="time" data-global="defaultTick"></label>
+              <label><span>Maximum data age</span><div class="input-unit"><input type="number" min="1" max="72" step="1" data-global="freshnessHours"><em>hours</em></div></label>
+              <label><span>Tick-watch buffer</span><div class="input-unit"><input type="number" min="0" max="360" step="15" data-global="transitionMinutes"><em>min</em></div></label>
+              <label><span>Late-report grace</span><div class="input-unit"><input type="number" min="0" max="24" step="1" data-global="lateGraceHours"><em>hours</em></div></label>
+              <label><span>Max Daily Order systems</span><input type="number" min="1" max="12" step="1" data-global="maxDailySystems"></label>
+              <label><span>Default rollover policy</span><select data-global="rolloverPolicy"><option value="strict">Strict</option><option value="safety">Safety Only</option><option value="carry">Carry Forward</option></select></label>
+            </div>
+            <div class="wolf-check-grid"><label><input type="checkbox" data-global="requirePostTickForNormalOrders"> Require post-tick data for normal orders</label><label><input type="checkbox" data-global="allowEmergencyWithStaleData"> Allow emergency orders with stale data</label></div>
+            <div class="wolf-save-row"><span data-global-meta>No global changes saved yet.</span><button class="btn btn-primary" type="submit">Save Global Defaults</button></div>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <section class="section wolf-systems-section">
+      <div class="container">
+        <div class="section-heading"><div><p class="eyebrow">All Mongrel Systems</p><h2>System Control Deck</h2></div><p>Expand only the system you need. Manual status and system settings are saved independently so unfinished configuration edits never change a status submission.</p></div>
+        <div class="wolf-toolbar">
+          <label><span>Search</span><input type="search" data-system-search placeholder="System name…"></label>
+          <label><span>View</span><select data-system-filter><option value="all">All systems</option><option value="attention">Needs attention</option><option value="stale">Stale</option><option value="controlled">Controlled</option><option value="custom">Custom settings</option></select></label>
+          <div class="wolf-source-note"><span data-source-coverage>Source coverage</span><small data-source-note>Loading source details…</small></div>
+        </div>
+        <div class="wolf-system-count"><strong data-system-count>—</strong><span>systems shown</span></div>
+        <div data-system-list class="wolf-system-list"><div class="wolf-loading">Loading Wolf BGS Control…</div></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=66"></script>
+<script src="../js/wolf-bgs.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=66"></script>
+</body>
+</html>
