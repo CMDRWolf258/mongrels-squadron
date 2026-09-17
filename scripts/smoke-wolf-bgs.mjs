@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const critical = [
-  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css',
-  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js',
-  'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js',
+  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-lab.css',
+  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-lab.js',
+  'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js', 'functions/api/operations/wolf-bgs-conflicts.js',
   'scripts/enrich_bgs_boards.py', 'data/live-bgs-boards.json',
 ];
 for (const path of critical) assert.ok(existsSync(path), `Wolf BGS Control critical file is missing: ${path}`);
@@ -15,8 +15,17 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=3/,'Order Preview cache version should be v3');
+assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
+assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
+assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
+assert.match(page,/data-lab-scenario="dual"/,'Dual-conflict lab scenario is missing');
+assert.match(page,/data-lab-scenario="ambiguous"/,'Ambiguous four-way conflict lab scenario is missing');
+assert.match(page,/wolf-bgs-conflicts\.js/,'Conflict client is not loaded');
+assert.match(page,/wolf-bgs-lab\.js/,'Lab client is not loaded');
 assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'),'Slider client must load after rules');
 assert.ok(page.indexOf('wolf-bgs-sliders.js') < page.indexOf('wolf-bgs-order-preview.js'),'Order Preview must load after slider controls');
+assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-conflicts.js'),'Conflict layer must post-process the deterministic Order Preview');
+assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-lab.js'),'Lab interception must load after conflict controls');
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
 for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
@@ -59,10 +68,28 @@ for (const pattern of [
 ]) assert.match(orderClient,pattern);
 assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be generated as a BGS task');
 
+const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
+for(const pattern of [
+  /wolf-bgs-conflicts/,/Conflict Configuration/,/conflictType/,/civil-war/,/election/,/war/,
+  /names\.length===2/,/Opponents cannot be inferred safely/,/Unpaired active participants/,
+  /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/dataset\.bgsLab/,
+]) assert.match(conflictClient,pattern);
+assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
+
+const labClient=readFileSync('js/wolf-bgs-lab.js','utf8');
+for(const pattern of [
+  /wolf-bgs-lab-mandalore-v1/,/balanced:/,/dual:/,/ambiguous:/,/pressure:/,
+  /localStorage/,/data-save-faction-strategy/,/data-save-slider-objectives/,/data-save-calibration/,
+  /Mandalore sandbox values saved locally only/,
+]) assert.match(labClient,pattern);
+
 // Parse browser clients without executing DOM-dependent code.
 new Function(rulesClient);
 new Function(slidersClient);
 new Function(orderClient);
+new Function(conflictClient);
+new Function(labClient);
 
 const rulesApi=readFileSync('functions/api/operations/wolf-bgs-rules.js','utf8');
 for (const pattern of [
@@ -79,6 +106,12 @@ for(const pattern of [
 ]) assert.match(economyApi,pattern);
 assert.match(economyApi,/clampNumber\(value\.explorationEmergencyMillionsPerCmdr, 0, 10/,'Exploration emergency tier must be hard-capped at 10M');
 
+const conflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
+for(const pattern of [
+  /wolf-bgs-conflicts-v1/,/save-system-conflicts/,/reset-system-conflicts/,/MAX_PAIRS = 3/,
+  /win-a/,/win-b/,/monitor/,/session\.access !== 'site_admin'/,/X-Mongrels-Request/,
+]) assert.match(conflictApi,pattern);
+
 const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','utf8');
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
@@ -93,6 +126,10 @@ for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-
 
 const orderCss=readFileSync('css/wolf-bgs-order-preview.css','utf8');
 for (const pattern of [/\.wolf-calibration-grid/,/\.wolf-order-task/,/\.wolf-order-math/,/\.wolf-order-warnings/,/\.wolf-slider-guard\.balance-required/]) assert.match(orderCss,pattern);
+const conflictCss=readFileSync('css/wolf-bgs-conflicts.css','utf8');
+for(const pattern of [/\.wolf-conflict-pair/,/\.wolf-conflict-preview-banner/,/\.wolf-conflict-preview-task/]) assert.match(conflictCss,pattern);
+const labCss=readFileSync('css/wolf-bgs-lab.css','utf8');
+for(const pattern of [/\.wolf-bgs-lab-section/,/\.wolf-lab-card/,/\.wolf-lab-scenarios/]) assert.match(labCss,pattern);
 
 const rulesModule=await import('../functions/api/operations/wolf-bgs-rules.js');
 assert.equal(typeof rulesModule.onRequestGet,'function');
@@ -100,6 +137,9 @@ assert.equal(typeof rulesModule.onRequestPut,'function');
 const economyModule=await import('../functions/api/operations/wolf-bgs-economy-rules.js');
 assert.equal(typeof economyModule.onRequestGet,'function');
 assert.equal(typeof economyModule.onRequestPut,'function');
+const conflictModule=await import('../functions/api/operations/wolf-bgs-conflicts.js');
+assert.equal(typeof conflictModule.onRequestGet,'function');
+assert.equal(typeof conflictModule.onRequestPut,'function');
 const slidersModule=await import('../functions/api/operations/wolf-bgs-sliders.js');
 assert.equal(typeof slidersModule.onRequestGet,'function');
 assert.equal(typeof slidersModule.onRequestPut,'function');
@@ -107,4 +147,4 @@ const mainModule=await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof mainModule.onRequestGet,'function');
 assert.equal(typeof mainModule.onRequestPut,'function');
 
-console.log('✓ Wolf BGS Control exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, balance-dont-block logic, per-system calibration, and private APIs are structurally sound');
+console.log('✓ Wolf BGS Control Mandalore lab, conservative multi-conflict pairing, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
