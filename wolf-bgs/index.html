@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="../css/wolf-bgs-rules.css?v=2">
   <link rel="stylesheet" href="../css/wolf-bgs-sliders.css?v=2">
   <link rel="stylesheet" href="../css/wolf-bgs-order-preview.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-conflicts.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-lab.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-screenshot.css?v=2">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
@@ -117,6 +119,29 @@
         </details>
       </div>
     </section>
+
+    <section class="section wolf-bgs-lab-section" data-bgs-lab-section>
+      <div class="container">
+        <div class="wolf-lab-heading"><div><span class="wolf-lab-badge">Isolated Sandbox · Never Published</span><h2>BGS Lab — Mandalore</h2><p>Use Mandalore to create artificial faction boards, slider goals, target bands, balancing calibration, and conflict combinations. Lab changes stay in this browser and are never added to the live Mongrel footprint or Daily Orders.</p></div><div class="wolf-lab-actions"><button type="button" class="btn btn-secondary btn-compact" data-lab-reset>Reset Mandalore</button></div></div>
+        <article class="wolf-system-card wolf-lab-card" data-system="Mandalore" data-bgs-lab="true">
+          <div class="wolf-lab-card-head"><div><h3>Mandalore</h3><small>Test system · synthetic board · local-only state</small></div><div class="wolf-lab-actions"><span class="wolf-chip">LAB</span><span class="wolf-chip">NO DAILY ORDERS</span></div></div>
+          <div class="wolf-lab-scenarios"><button type="button" class="btn btn-secondary btn-compact" data-lab-scenario="balanced">Balanced Board</button><button type="button" class="btn btn-secondary btn-compact" data-lab-scenario="pressure">Slider Pressure</button><button type="button" class="btn btn-secondary btn-compact" data-lab-scenario="dual">Two Conflicts</button><button type="button" class="btn btn-secondary btn-compact" data-lab-scenario="ambiguous">4-Way Pairing Test</button></div>
+          <small class="wolf-lab-save-status" data-lab-save-status>Sandbox changes auto-save locally.</small>
+
+          <section class="wolf-section"><h3>Strategy</h3><p class="wolf-section-intro">System-level inputs used by the same Order Preview logic as live cards.</p><div class="wolf-lab-settings"><label><span>Priority</span><select data-setting="priority"><option value="critical">Critical</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select></label><label><span>Mongrel target min %</span><input type="number" min="0" max="100" step="0.1" value="40" data-setting="targetMin"></label><label><span>Mongrel target max %</span><input type="number" min="0" max="100" step="0.1" value="55" data-setting="targetMax"></label><label><span>Controller</span><select data-status="controller"><option>Regiment of Imperial Mongrels</option><option>Mandalore Alpha</option><option>Mandalore Beta</option><option>Mandalore Gamma</option><option>Mandalore Delta</option><option>Mandalore Epsilon</option><option>Mandalore Zeta</option></select></label></div></section>
+
+          <section class="wolf-section"><h3>System Status & Faction Board</h3><p class="wolf-section-intro">Set influence and active/pending/recovering states. Influence does not need to sum to 100 while you are intentionally testing malformed or transitional conditions.</p><div class="wolf-table-scroll"><table class="wolf-lab-table"><thead><tr><th>Faction</th><th>Influence %</th><th>Active state</th><th>Pending</th><th>Recovering</th></tr></thead><tbody data-faction-body>
+            <tr data-faction-row data-lab-id="mongrels"><td><input data-faction="name" value="Regiment of Imperial Mongrels" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="45"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="alpha"><td><input data-faction="name" value="Mandalore Alpha" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="20"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="beta"><td><input data-faction="name" value="Mandalore Beta" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="12"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="gamma"><td><input data-faction="name" value="Mandalore Gamma" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="9"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="delta"><td><input data-faction="name" value="Mandalore Delta" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="6"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="epsilon"><td><input data-faction="name" value="Mandalore Epsilon" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="5"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+            <tr data-faction-row data-lab-id="zeta"><td><input data-faction="name" value="Mandalore Zeta" readonly></td><td><input data-faction="influence" type="number" min="0" max="100" step="0.1" value="3"></td><td><select data-faction="state"><option value="">None</option><option>Boom</option><option>Civil Liberty</option><option>War</option><option>Civil War</option><option>Election</option><option>Expansion</option><option>Retreat</option><option>Bust</option><option>Famine</option></select></td><td><input data-faction="pending" placeholder="None"></td><td><input data-faction="recovering" placeholder="None"></td></tr>
+          </tbody></table></div><p class="wolf-lab-note">Faction Strategy, Economy/Security Objectives, Conflict Configuration, calibration, and Order Preview are added below by the same control modules used on live system cards. Lab saves are intercepted and kept local.</p></section>
+        </article>
+      </div>
+    </section>
   </div>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
@@ -126,7 +151,9 @@
 <script src="../js/wolf-bgs-rules.js?v=2"></script>
 <script src="../js/wolf-bgs-sliders.js?v=2"></script>
 <script src="../js/wolf-bgs-order-preview.js?v=3"></script>
+<script src="../js/wolf-bgs-conflicts.js?v=1"></script>
 <script src="../js/wolf-bgs-screenshot.js?v=2"></script>
+<script src="../js/wolf-bgs-lab.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
