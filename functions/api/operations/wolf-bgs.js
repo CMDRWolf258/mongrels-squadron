@@ -79,7 +79,7 @@ export async function onRequestPut({ request, env }) {
     const existing = control.systemSettings[name] || {};
     control.systemSettings[name] = {
       ...normalizeSystemSettings(body.settings, control.systemDefaults),
-      favorite: Boolean(existing.favorite || body?.settings?.favorite),
+      favorite: body?.settings?.favorite === undefined ? Boolean(existing.favorite) : Boolean(body.settings.favorite),
       updatedAt: now,
       updatedBy: actor,
     };
@@ -157,15 +157,16 @@ async function readControl(env) {
   try {
     const stored = await env.DAILY_ORDERS.get(CONTROL_KV_KEY, { type: 'json' });
     if (!stored || typeof stored !== 'object') return empty;
+    const normalizedSystemDefaults = normalizeSystemDefaults(stored.systemDefaults);
     return {
       version: 2,
       defaults: normalizeDefaults(stored.defaults),
       globalUpdatedAt: stored.globalUpdatedAt || null,
       globalUpdatedBy: stored.globalUpdatedBy || null,
-      systemDefaults: normalizeSystemDefaults(stored.systemDefaults),
+      systemDefaults: normalizedSystemDefaults,
       systemDefaultsUpdatedAt: stored.systemDefaultsUpdatedAt || null,
       systemDefaultsUpdatedBy: stored.systemDefaultsUpdatedBy || null,
-      systemSettings: normalizeSettingsMap(stored.systemSettings, normalizeSystemDefaults(stored.systemDefaults)),
+      systemSettings: normalizeSettingsMap(stored.systemSettings, normalizedSystemDefaults),
       manualSnapshots: normalizeSnapshotMap(stored.manualSnapshots),
     };
   } catch (error) {
@@ -443,7 +444,7 @@ function ageHours(value) {
 
 function liveFallbackTimestamp(row) { return row?.lastSeen || row?.firstSeen || null; }
 function norm(value) { return String(value || '').trim().toLowerCase(); }
-function finiteOrNull(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
+function finiteOrNull(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
 function percentOrNull(value) { const n = finiteOrNull(value); return n === null ? null : Math.max(0, Math.min(100, Math.round(n * 100) / 100)); }
 function clampNumber(value, min, max, fallback) { const n = finiteOrNull(value); return n === null ? fallback : Math.max(min, Math.min(max, n)); }
 function validTime(value) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || '')); }
