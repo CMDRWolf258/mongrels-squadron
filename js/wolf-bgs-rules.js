@@ -152,7 +152,7 @@
       el.dispatchEvent(new Event(eventName, { bubbles:true }));
     };
     set('[data-system-search]', '', 'input'); set('[data-system-filter]', 'all'); set('[data-system-sort]', 'influence-desc'); set('[data-page-size]', '20');
-    set('[data-favorites-first]', false); set('[data-lowest-five-watch]', false); set('[data-custom-priority]', ''); set('[data-custom-state]', '', 'input');
+    set('[data-favorites-first]', true); set('[data-lowest-five-watch]', false); set('[data-custom-priority]', ''); set('[data-custom-state]', '', 'input');
     set('[data-custom-pending]', '', 'input'); set('[data-custom-control]', ''); set('[data-custom-flag]', '');
   }
 
