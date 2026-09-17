@@ -15,7 +15,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     steps:
       - name: Check out site
         uses: actions/checkout@v4
@@ -25,20 +25,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Refresh EliteHub Vault snapshot
+      - name: Refresh EliteHub Vault presence snapshot
         env:
           ELITEHUB_VAULT_API_KEY: ${{ secrets.ELITEHUB_VAULT_API_KEY }}
         run: python scripts/update_bgs.py
 
-      - name: Commit updated snapshot
+      - name: Refresh EliteHub Vault full faction boards
+        env:
+          ELITEHUB_VAULT_API_KEY: ${{ secrets.ELITEHUB_VAULT_API_KEY }}
+        run: python scripts/enrich_bgs_boards.py
+
+      - name: Commit updated snapshots
         shell: bash
         run: |
-          if git diff --quiet -- data/live-bgs.json; then
+          if git diff --quiet -- data/live-bgs.json data/live-bgs-boards.json; then
             echo "No BGS snapshot changes to commit."
             exit 0
           fi
           git config user.name "mongrels-bgs-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/live-bgs.json
+          git add data/live-bgs.json data/live-bgs-boards.json
           git commit -m "chore: refresh BGS data"
           git push
