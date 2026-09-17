@@ -1,0 +1,16 @@
+{
+  "generatedAt": null,
+  "source": "EliteHub Vault / EDDN",
+  "faction": "Regiment of Imperial Mongrels",
+  "sourcePresenceGeneratedAt": null,
+  "syncOk": false,
+  "successfulSystems": 0,
+  "requestedSystems": 0,
+  "errors": [
+    {
+      "name": "initialization",
+      "error": "Awaiting first full faction-board refresh."
+    }
+  ],
+  "systems": {}
+}
