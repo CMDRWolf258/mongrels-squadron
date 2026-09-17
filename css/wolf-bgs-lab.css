@@ -1,0 +1,21 @@
+.wolf-bgs-lab-section{border-top:1px solid rgba(102,211,255,.18);background:linear-gradient(180deg,rgba(4,12,18,.42),rgba(2,6,9,.72))}
+.wolf-lab-heading{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:16px}
+.wolf-lab-heading p{max-width:760px;color:var(--muted);margin:4px 0 0}
+.wolf-lab-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid rgba(102,211,255,.28);background:rgba(102,211,255,.06);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:#bcecff}
+.wolf-lab-card{border:1px solid rgba(102,211,255,.24);background:rgba(2,8,12,.82);padding:16px}
+.wolf-lab-card-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.wolf-lab-card-head h3{margin:0;font-size:1.25rem}
+.wolf-lab-card-head small{display:block;margin-top:3px;color:var(--muted)}
+.wolf-lab-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.wolf-lab-scenarios{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+.wolf-lab-scenarios .btn{font-size:.76rem}
+.wolf-lab-save-status{display:block;margin-top:8px;color:var(--muted);font-size:.78rem}
+.wolf-lab-settings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.wolf-lab-settings label>span{display:block;margin-bottom:5px;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.05em}
+.wolf-lab-settings input,.wolf-lab-settings select{width:100%}
+.wolf-lab-table input,.wolf-lab-table select{width:100%;min-width:0}
+.wolf-lab-table input[readonly]{opacity:.8;background:rgba(255,255,255,.025)}
+.wolf-lab-card .wolf-screenshot-import,.wolf-lab-card [data-screenshot-import],.wolf-lab-card [data-wolf-screenshot]{display:none!important}
+.wolf-lab-note{margin:10px 0 0;padding:9px 11px;border-left:3px solid rgba(102,211,255,.45);background:rgba(102,211,255,.04);color:var(--muted);font-size:.84rem}
+@media(max-width:900px){.wolf-lab-heading,.wolf-lab-card-head{align-items:flex-start;flex-direction:column}.wolf-lab-actions{justify-content:flex-start}.wolf-lab-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.wolf-lab-settings{grid-template-columns:1fr}.wolf-lab-card{padding:12px}}
