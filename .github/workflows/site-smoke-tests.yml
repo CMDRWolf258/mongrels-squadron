@@ -40,4 +40,5 @@ jobs:
           node --experimental-default-type=module scripts/smoke-squadron-coordination.mjs
           node --experimental-default-type=module scripts/smoke-resources.mjs
           node --experimental-default-type=module scripts/smoke-wolf-bgs.mjs
+          node --experimental-default-type=module scripts/smoke-wolf-bgs-contribution-options.mjs
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
