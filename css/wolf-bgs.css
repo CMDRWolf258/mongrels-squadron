@@ -61,7 +61,7 @@
 .wolf-system-list{display:grid;gap:.65rem}
 .wolf-system-card{overflow:hidden}
 .wolf-system-card.low-watch{border-color:rgba(255,177,74,.36);box-shadow:inset 3px 0 0 rgba(255,177,74,.45),0 18px 40px rgba(0,0,0,.18)}
-.wolf-system-card>summary{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(5,minmax(100px,.65fr)) auto 32px;gap:.65rem;align-items:center;padding:.85rem 1rem}
+.wolf-system-card>summary{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(5,minmax(100px,.65fr)) 112px 32px;gap:.65rem;align-items:center;padding:.85rem 1rem}
 .wolf-system-name-row{display:flex;align-items:center;gap:.55rem;min-width:0}
 .wolf-system-name{display:flex;flex-direction:column;gap:.18rem;min-width:0}
 .wolf-system-name strong{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -71,7 +71,7 @@
 .wolf-system-stat{display:flex;flex-direction:column;gap:.1rem;min-width:0}
 .wolf-system-stat span{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 .wolf-system-stat b{font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wolf-status-pill{justify-self:start;padding:.25rem .45rem;border:1px solid rgba(92,210,255,.18);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.wolf-status-pill{display:inline-flex;align-items:center;justify-content:center;justify-self:stretch;width:100%;box-sizing:border-box;padding:.25rem .4rem;border:1px solid rgba(92,210,255,.18);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;text-align:center}
 .wolf-status-pill.stale{border-color:rgba(255,177,74,.45);color:#ffd49a}
 .wolf-status-pill.risk{border-color:rgba(255,88,88,.48);color:#ffb0b0}
 .wolf-expand{font-size:1.25rem;color:#78dfff;transition:transform .18s ease}
@@ -81,7 +81,8 @@
 .wolf-chip b{color:#fff}
 .wolf-chip.custom{border-color:rgba(255,224,138,.28);color:#ffe6a3}
 .wolf-chip.low-watch{border-color:rgba(255,177,74,.4);color:#ffd49a;background:rgba(64,42,12,.2);font-weight:700;letter-spacing:.06em}
-.wolf-subgrid{display:grid;grid-template-columns:1.25fr .75fr;gap:1rem}
+.wolf-subgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,340px);gap:1rem;align-items:start}
+.wolf-subgrid>div{min-width:0}
 .wolf-section{border:1px solid rgba(92,210,255,.12);background:rgba(6,10,12,.64);padding:1rem;margin-bottom:1rem;min-width:0}
 .wolf-section h3{margin:0 0 .2rem;font-size:1rem}
 .wolf-section-intro{margin:0 0 .9rem;color:var(--muted);font-size:.85rem}
@@ -116,6 +117,19 @@
 .wolf-status-message.error{color:#ffabab}
 .wolf-status-message.working{color:#a6e7ff}
 
+.wolf-subgrid>div:last-child .wolf-section{padding:1.05rem}
+.wolf-subgrid>div:last-child .wolf-section h3{font-size:1.02rem;margin-bottom:.35rem}
+.wolf-subgrid>div:last-child .wolf-section-intro{line-height:1.45;margin-bottom:1rem}
+.wolf-subgrid>div:last-child .wolf-toggle-list{grid-template-columns:1fr;gap:.5rem;margin-top:.8rem}
+.wolf-subgrid>div:last-child .wolf-toggle-list label{padding:.55rem .6rem;border:1px solid rgba(92,210,255,.1);background:rgba(10,15,18,.55);border-radius:3px;line-height:1.35}
+.wolf-subgrid>div:last-child .wolf-system-settings-grid{grid-template-columns:1fr;gap:.75rem}
+.wolf-subgrid>div:last-child .wolf-grid-span{grid-column:auto}
+.wolf-subgrid>div:last-child .wolf-field small{color:var(--muted);line-height:1.35}
+.wolf-subgrid>div:last-child .wolf-automation-preview{padding:.85rem .9rem}
+.wolf-subgrid>div:last-child .wolf-automation-preview strong{line-height:1.3}
+.wolf-subgrid>div:last-child .wolf-automation-preview p{margin:.4rem 0 .7rem;line-height:1.5}
+.wolf-subgrid>div:last-child .wolf-automation-preview .wolf-mini-button{width:100%;text-align:center}
+
 @media(max-width:1280px){
   .wolf-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .wolf-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -125,7 +139,7 @@
   .wolf-global-panel .wolf-form-grid{grid-template-columns:calc(50% - .6rem) calc(50% - .6rem);column-gap:1.2rem}
   .wolf-global-panel .wolf-form-grid>label,.wolf-global-panel .input-unit{width:100%;max-width:100%}
   .wolf-global-panel .wolf-time-input{width:calc(100% - 6px)!important;max-width:calc(100% - 6px)!important;margin-right:6px}
-  .wolf-system-card>summary{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(90px,.6fr)) auto 32px}
+  .wolf-system-card>summary{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(90px,.6fr)) 110px 32px}
   .wolf-system-card>summary .hide-tablet{display:none}
   .wolf-subgrid{grid-template-columns:1fr}
 }
@@ -143,7 +157,7 @@
   .wolf-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wolf-form-grid,.wolf-system-settings-grid,.wolf-custom-filter,.wolf-global-panel .wolf-form-grid{grid-template-columns:1fr}
   .wolf-toolbar{grid-template-columns:1fr}
-  .wolf-system-card>summary{grid-template-columns:minmax(0,1fr) 90px auto 28px}
+  .wolf-system-card>summary{grid-template-columns:minmax(0,1fr) 90px 100px 28px}
   .wolf-system-card>summary .hide-mobile{display:none}
   .wolf-system-body{padding:.75rem}
   .wolf-faction-actions,.wolf-save-row,.wolf-system-actions,.wolf-banner{align-items:stretch;flex-direction:column}
