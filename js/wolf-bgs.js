@@ -8,6 +8,8 @@
   const filter = document.querySelector('[data-system-filter]');
   const sort = document.querySelector('[data-system-sort]');
   const pageSizeEl = document.querySelector('[data-page-size]');
+  const favoritesFirst = document.querySelector('[data-favorites-first]');
+  const lowestFiveWatch = document.querySelector('[data-lowest-five-watch]');
   const prevPage = document.querySelector('[data-page-prev]');
   const nextPage = document.querySelector('[data-page-next]');
   const pageStatus = document.querySelector('[data-page-status]');
@@ -32,6 +34,7 @@
   const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
   const influence = value => num(value) === null ? '—' : `${Number(value).toFixed(1)}%`;
   const listFromText = value => String(value || '').split(',').map(v => v.trim()).filter(Boolean);
+  const systemKey = system => String(system?.name || '').toLowerCase();
 
   function setAccess(ok) {
     if (gate) gate.hidden = ok;
@@ -137,15 +140,15 @@
     return `<tr data-faction-row>
       <td><input class="faction-name" data-faction="name" maxlength="120" value="${html(faction?.name || '')}" placeholder="Faction name"></td>
       <td><input data-faction="influence" type="number" min="0" max="100" step="0.01" value="${faction?.influence ?? ''}" placeholder="0.0"></td>
-      <td><input data-faction="state" maxlength="80" value="${html(faction?.state || 'None')}" placeholder="None"></td>
-      <td><input data-faction="pending" maxlength="120" value="${html(faction?.pending || '')}" placeholder="None"></td>
-      <td><input data-faction="recovering" maxlength="120" value="${html(faction?.recovering || '')}" placeholder="None"></td>
+      <td><input data-faction="state" maxlength="120" value="${html(faction?.state || 'None')}" placeholder="None"></td>
+      <td><input data-faction="pending" maxlength="240" value="${html(faction?.pending || '')}" placeholder="None"></td>
+      <td><input data-faction="recovering" maxlength="240" value="${html(faction?.recovering || '')}" placeholder="None"></td>
       <td><span class="wolf-row-source">${html(faction?.source || (index === 0 ? 'External source' : 'Manual'))}</span></td>
       <td><button type="button" class="wolf-mini-button" data-remove-faction aria-label="Remove faction">×</button></td>
     </tr>`;
   }
 
-  function systemCard(system) {
+  function systemCard(system, lowWatch = false) {
     const status = systemStatus(system);
     const settings = system.settings || {};
     const factions = Array.isArray(system.factions) && system.factions.length ? system.factions : [{
@@ -156,9 +159,13 @@
     const freshHours = settings.freshnessHours ?? payload.defaults?.freshnessHours ?? 8;
     const manualNewer = system.activeSnapshotSource === 'manual';
     const favorite = Boolean(settings.favorite);
-    const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">External ingestion currently supplies the Mongrel presence row, not the complete faction board. Add/edit all system factions here and submit a manual snapshot until full-board ingestion is added.</div>`;
+    const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">A complete external faction board is not available for this system yet. The Mongrel presence row remains available, and a manual full-board snapshot can be submitted as a fallback.</div>`;
+    const boardChip = system.externalBoardComplete
+      ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
+      : '<span class="wolf-chip">External board <b>awaiting data</b></span>';
+    const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
 
-    return `<details class="wolf-system-card" data-system="${html(system.name)}" data-favorite="${favorite}">
+    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}">
       <summary>
         <div class="wolf-system-name-row">
           <button type="button" class="wolf-favorite-button ${favorite ? 'active' : ''}" data-favorite-toggle aria-label="${favorite ? 'Remove' : 'Add'} ${html(system.name)} ${favorite ? 'from' : 'to'} favorites" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}">${favorite ? '★' : '☆'}</button>
@@ -174,11 +181,13 @@
       </summary>
       <div class="wolf-system-body">
         <div class="wolf-system-topline">
+          ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
           <span class="wolf-chip">External source update <b>${html(fmt(system.sourceUpdated))}</b></span>
           <span class="wolf-chip">Manual update <b>${html(fmt(system.manualUpdatedAt))}</b></span>
           <span class="wolf-chip">Active snapshot <b>${manualNewer ? 'Manual' : 'External'} · ${html(fmt(system.activeSnapshotTime))}</b></span>
           <span class="wolf-chip">Freshness limit <b>${html(freshHours)}h</b></span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
+          ${boardChip}
           ${system.hasCustomSettings ? '<span class="wolf-chip custom">Custom settings</span>' : '<span class="wolf-chip">System defaults</span>'}
         </div>
         <div class="wolf-subgrid">
@@ -189,7 +198,7 @@
               ${boardWarning}
               <div class="wolf-table-scroll"><table class="wolf-faction-table"><thead><tr><th>Faction</th><th>Influence %</th><th>State</th><th>Pending</th><th>Recovering</th><th>Origin</th><th></th></tr></thead><tbody data-faction-body>${factions.map(rowTemplate).join('')}</tbody></table></div>
               <div class="wolf-faction-actions"><button type="button" class="wolf-mini-button" data-add-faction>+ Add Faction</button><span class="wolf-status-message" data-status-message></span></div>
-              <div class="wolf-form-grid wolf-status-meta-grid"><label><span>Controller</span><input data-status="controller" maxlength="120" value="${html(system.manualController || system.control || '')}"></label><label class="wolf-wide-field"><span>Status notes</span><input data-status="notes" maxlength="1200" value="${html(system.manualNotes || '')}" placeholder="Optional notes about this snapshot"></label></div>
+              <div class="wolf-form-grid wolf-status-meta-grid"><label><span>Controller</span><input data-status="controller" maxlength="120" value="${html(controllerValue)}"></label><label class="wolf-wide-field"><span>Status notes</span><input data-status="notes" maxlength="1200" value="${html(system.manualNotes || '')}" placeholder="Optional notes about this snapshot"></label></div>
               <div class="wolf-save-row"><span>Manual status last submitted: ${html(system.manualUpdatedAt ? `${fmt(system.manualUpdatedAt)} by ${system.manualUpdatedBy || 'Wolf'}` : 'never')}</span><button type="button" class="btn btn-primary" data-submit-status>Submit Status</button></div>
             </section>
 
@@ -226,7 +235,7 @@
             <section class="wolf-section">
               <h3>Tick & Freshness</h3>
               <div class="wolf-system-settings-grid">
-                <label class="wolf-field"><span>Custom tick</span><input type="time" data-setting="customTick" value="${html(settings.customTick || '')}"><small>Blank = global ${html(payload.defaults?.defaultTick || '19:00')}</small></label>
+                <label class="wolf-field"><span>Custom tick</span><input class="wolf-time-input" type="time" data-setting="customTick" value="${html(settings.customTick || '')}"><small>Blank = global ${html(payload.defaults?.defaultTick || '19:00')}</small></label>
                 <label class="wolf-field"><span>Custom freshness hours</span><input type="number" min="1" max="72" data-setting="freshnessHours" value="${settings.freshnessHours ?? ''}" placeholder="Global ${html(payload.defaults?.freshnessHours ?? 8)}"></label>
                 <label class="wolf-field wolf-grid-span"><span>Rollover policy</span><select data-setting="rolloverPolicy"><option value="" ${!settings.rolloverPolicy?'selected':''}>Use global (${html(payload.defaults?.rolloverPolicy || 'safety')})</option><option value="strict" ${settings.rolloverPolicy==='strict'?'selected':''}>Strict</option><option value="safety" ${settings.rolloverPolicy==='safety'?'selected':''}>Safety Only</option><option value="carry" ${settings.rolloverPolicy==='carry'?'selected':''}>Carry Forward</option></select></label>
               </div>
@@ -289,7 +298,7 @@
   }
 
   function sortedSystems(rows) {
-    const mode = sort?.value || 'name';
+    const mode = sort?.value || 'influence-desc';
     return [...rows].sort((a, b) => {
       if (mode === 'influence-desc') return (num(b.influence) ?? -Infinity) - (num(a.influence) ?? -Infinity) || a.name.localeCompare(b.name);
       if (mode === 'influence-asc') return (num(a.influence) ?? Infinity) - (num(b.influence) ?? Infinity) || a.name.localeCompare(b.name);
@@ -299,21 +308,59 @@
     });
   }
 
+  function withFavoritesFirst(rows) {
+    if (!favoritesFirst?.checked || !payload?.systems) return rows;
+    const favoriteRows = sortedSystems((payload.systems || []).filter(system => system.settings?.favorite));
+    const favoriteKeys = new Set(favoriteRows.map(systemKey));
+    const remainder = rows.filter(system => !favoriteKeys.has(systemKey(system)));
+    return [...favoriteRows, ...remainder];
+  }
+
+  function lowestFiveSystems() {
+    return [...(payload?.systems || [])]
+      .filter(system => num(system.influence) !== null)
+      .sort((a, b) => (num(a.influence) ?? Infinity) - (num(b.influence) ?? Infinity) || a.name.localeCompare(b.name))
+      .slice(0, 5);
+  }
+
   function renderSystems(reopenSystem = '') {
     if (!list || !payload) return;
     if (customPanel) customPanel.hidden = (filter?.value || 'all') !== 'custom-filter';
-    const rows = sortedSystems(filteredSystems());
+
+    const matchingRows = filteredSystems();
+    const sortedMatches = sortedSystems(matchingRows);
+    const rows = withFavoritesFirst(sortedMatches);
     const total = rows.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    currentPage = Math.min(Math.max(1, currentPage), totalPages);
-    const start = (currentPage - 1) * pageSize;
-    const pageRows = rows.slice(start, start + pageSize);
+    const watchRows = lowestFiveWatch?.checked ? lowestFiveSystems() : [];
+    const watchKeys = new Set(watchRows.map(systemKey));
+
+    let pageRows = [];
+    let totalPages = 1;
+    let pageText = '';
+
+    if (watchRows.length) {
+      const normalRows = rows.filter(system => !watchKeys.has(systemKey(system)));
+      const normalSlots = Math.max(1, pageSize - watchRows.length);
+      totalPages = Math.max(1, Math.ceil(normalRows.length / normalSlots));
+      currentPage = Math.min(Math.max(1, currentPage), totalPages);
+      const start = (currentPage - 1) * normalSlots;
+      const normalPageRows = normalRows.slice(start, start + normalSlots);
+      pageRows = [...normalPageRows.map(system => ({ system, lowWatch:false })), ...watchRows.map(system => ({ system, lowWatch:true }))];
+      pageText = `Page ${currentPage} of ${totalPages} · ${normalPageRows.length} list + ${watchRows.length} low watch · ${total} systems in view`;
+    } else {
+      totalPages = Math.max(1, Math.ceil(total / pageSize));
+      currentPage = Math.min(Math.max(1, currentPage), totalPages);
+      const start = (currentPage - 1) * pageSize;
+      const normalPageRows = rows.slice(start, start + pageSize);
+      pageRows = normalPageRows.map(system => ({ system, lowWatch:false }));
+      pageText = total ? `Page ${currentPage} of ${totalPages} · ${start + 1}–${Math.min(start + pageSize, total)} of ${total}` : 'Page 1 of 1 · 0 systems';
+    }
 
     if (count) count.textContent = total.toLocaleString();
-    if (pageStatus) pageStatus.textContent = total ? `Page ${currentPage} of ${totalPages} · ${start + 1}–${Math.min(start + pageSize, total)} of ${total}` : 'Page 1 of 1 · 0 systems';
+    if (pageStatus) pageStatus.textContent = pageText;
     if (prevPage) prevPage.disabled = currentPage <= 1;
     if (nextPage) nextPage.disabled = currentPage >= totalPages;
-    list.innerHTML = pageRows.length ? pageRows.map(systemCard).join('') : '<div class="wolf-empty">No systems match this view.</div>';
+    list.innerHTML = pageRows.length ? pageRows.map(row => systemCard(row.system, row.lowWatch)).join('') : '<div class="wolf-empty">No systems match this view.</div>';
 
     if (reopenSystem) {
       const card = [...list.querySelectorAll('[data-system]')].find(el => el.dataset.system === reopenSystem);
@@ -452,6 +499,8 @@
   search?.addEventListener('input', resetPage);
   filter?.addEventListener('change', resetPage);
   sort?.addEventListener('change', resetPage);
+  favoritesFirst?.addEventListener('change', resetPage);
+  lowestFiveWatch?.addEventListener('change', resetPage);
   pageSizeEl?.addEventListener('change', () => {
     pageSize = Math.max(1, Number(pageSizeEl.value) || 20);
     currentPage = 1;
@@ -475,6 +524,7 @@
       payload = await response.json();
       if (viewer) viewer.textContent = `${payload.viewer?.displayName || 'CMDR Wolf258'} · site admin`;
       if (pageSizeEl) { pageSizeEl.value = '20'; pageSize = 20; }
+      if (sort) sort.value = 'influence-desc';
       populateSummary(payload);
       populateGlobal(payload);
       populateSystemDefaults(payload);
