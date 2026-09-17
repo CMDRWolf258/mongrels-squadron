@@ -1,0 +1,28 @@
+/* Wolf BGS Control — Economy/Security slider objectives */
+.wolf-slider-objectives{border-color:rgba(92,210,255,.16)}
+.wolf-slider-callout{display:flex;gap:.7rem;align-items:flex-start;margin:.15rem 0 .85rem;padding:.72rem .82rem;border-left:3px solid rgba(92,210,255,.35);background:rgba(10,17,21,.58)}
+.wolf-slider-callout strong{white-space:nowrap;color:#d9e7eb}
+.wolf-slider-callout span{color:var(--muted);font-size:.8rem;line-height:1.45}
+.wolf-slider-table{width:100%;border-collapse:collapse;min-width:960px}
+.wolf-slider-table th,.wolf-slider-table td{padding:.48rem .35rem;border-bottom:1px solid rgba(92,210,255,.08);text-align:left;vertical-align:middle}
+.wolf-slider-table th{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.wolf-slider-table td:first-child{min-width:220px}
+.wolf-slider-table td:first-child strong{display:block;color:#e6eef1;font-size:.84rem}
+.wolf-slider-table td:first-child small{display:block;color:var(--muted);margin-top:.12rem}
+.wolf-slider-table select{min-width:132px}
+.wolf-slider-guard{display:block;min-width:320px;max-width:520px;color:#aebdc2;font-size:.72rem;line-height:1.4}
+.wolf-slider-guard.ceiling,.wolf-slider-guard.avoid-positive{color:#e8c28c}
+.wolf-slider-guard.support-compatible{color:#9fd4c3}
+.wolf-slider-guard.minimize{color:#b7c4c9}
+.wolf-slider-footnote{margin:.65rem 0 0;color:var(--muted);font-size:.72rem;line-height:1.45}
+.wolf-slider-preview{margin-top:.75rem;padding-top:.7rem;border-top:1px solid rgba(92,210,255,.12)}
+.wolf-slider-preview-inner>b{display:block;margin-bottom:.35rem;color:#c9d8dd;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.wolf-slider-preview-inner ul{margin:.25rem 0 .35rem;padding-left:1.1rem;color:#bac7cb;font-size:.78rem;line-height:1.5}
+.wolf-slider-preview-inner li.guard{color:#9daeb4}
+.wolf-slider-preview-inner small,.wolf-slider-preview-inner.muted span{color:var(--muted);font-size:.72rem;line-height:1.4}
+.wolf-slider-preview-inner.muted{display:flex;gap:.55rem;align-items:baseline;flex-wrap:wrap}
+
+@media(max-width:900px){
+  .wolf-slider-callout{flex-direction:column;gap:.25rem}
+  .wolf-slider-callout strong{white-space:normal}
+}
