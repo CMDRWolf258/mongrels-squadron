@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
   <title>Wolf BGS Control | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/wolf-bgs.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs.css?v=2">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -47,7 +47,7 @@
     <section class="section-sm">
       <div class="container">
         <details class="wolf-panel wolf-global-panel">
-          <summary><span><b>Global Automation Defaults</b><small>Inherited values for systems without custom overrides</small></span><strong>+</strong></summary>
+          <summary><span><b>Global Automation Defaults</b><small>Cycle timing, freshness, reporting, and order-queue limits</small></span><strong>+</strong></summary>
           <form data-global-form class="wolf-panel-body">
             <div class="wolf-form-grid">
               <label><span>Default system tick</span><input type="time" data-global="defaultTick"></label>
@@ -67,20 +67,77 @@
     <section class="section wolf-systems-section">
       <div class="container">
         <div class="section-heading"><div><p class="eyebrow">All Mongrel Systems</p><h2>System Control Deck</h2></div><p>Expand only the system you need. Manual status and system settings are saved independently so unfinished configuration edits never change a status submission.</p></div>
+
         <div class="wolf-toolbar">
           <label><span>Search</span><input type="search" data-system-search placeholder="System name…"></label>
-          <label><span>View</span><select data-system-filter><option value="all">All systems</option><option value="attention">Needs attention</option><option value="stale">Stale</option><option value="controlled">Controlled</option><option value="custom">Custom settings</option></select></label>
-          <div class="wolf-source-note"><span data-source-coverage>Source coverage</span><small data-source-note>Loading source details…</small></div>
+          <label><span>View</span><select data-system-filter>
+            <option value="all">All systems</option>
+            <option value="favorites">Favorites</option>
+            <option value="attention">Needs attention</option>
+            <option value="stale">Stale</option>
+            <option value="controlled">Controlled</option>
+            <option value="not-controlled">Not controlled</option>
+            <option value="custom-filter">Custom filter…</option>
+          </select></label>
+          <label><span>Sort</span><select data-system-sort>
+            <option value="name">System name</option>
+            <option value="influence-desc">Influence high → low</option>
+            <option value="influence-asc">Influence low → high</option>
+            <option value="priority">Priority</option>
+            <option value="freshness">Data freshness</option>
+          </select></label>
+          <label><span>Results per page</span><select data-page-size><option value="20" selected>20</option><option value="40">40</option><option value="60">60</option><option value="100">100</option></select></label>
+          <div class="wolf-source-note"><span>External Source Data</span><small data-source-note>Loading source details…</small></div>
         </div>
-        <div class="wolf-system-count"><strong data-system-count>—</strong><span>systems shown</span></div>
+
+        <div class="wolf-custom-filter" data-custom-filter-panel hidden>
+          <label><span>Priority</span><select data-custom-priority><option value="">Any</option><option value="critical">Critical</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></label>
+          <label><span>State contains</span><input type="text" data-custom-state placeholder="Boom, War, Retreat…"></label>
+          <label><span>Pending contains</span><input type="text" data-custom-pending placeholder="Expansion, Boom…"></label>
+          <label><span>Control</span><select data-custom-control><option value="">Any</option><option value="controlled">Mongrel controlled</option><option value="not-controlled">Not Mongrel controlled</option></select></label>
+          <label><span>Status / flag</span><select data-custom-flag><option value="">Any</option><option value="favorite">Favorite</option><option value="retreat">Retreat risk</option><option value="conflict">Conflict</option><option value="stale">Stale data</option><option value="custom-settings">Custom settings</option><option value="automation-off">Automation off</option></select></label>
+        </div>
+
+        <div class="wolf-system-list-meta">
+          <div class="wolf-system-count"><strong data-system-count>—</strong><span>systems match</span></div>
+          <div class="wolf-pagination"><button class="btn btn-secondary btn-compact" type="button" data-page-prev>← Previous</button><span data-page-status>Page 1 of 1</span><button class="btn btn-secondary btn-compact" type="button" data-page-next>Next →</button></div>
+        </div>
         <div data-system-list class="wolf-system-list"><div class="wolf-loading">Loading Wolf BGS Control…</div></div>
+
+        <details class="wolf-panel wolf-system-defaults-panel">
+          <summary><span><b>System Defaults</b><small>Inherited strategy and automation behavior for systems without a custom override</small></span><strong>+</strong></summary>
+          <form data-system-defaults-form class="wolf-panel-body">
+            <p class="wolf-section-intro">These values are the normal baseline. Per-system settings can override them. The default control policy preserves systems the Mongrels already control without automatically trying to take control of systems we do not.</p>
+            <div class="wolf-form-grid">
+              <label><span>Default priority</span><select data-system-default="priority"><option value="critical">Critical</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select></label>
+              <label><span>Default control policy</span><select data-system-default="controlPolicy"><option value="maintain-existing">Maintain existing control state</option><option value="gain">Gain Mongrel control</option><option value="allow-transfer">Allow intentional transfer</option><option value="none">No control objective</option></select></label>
+              <label><span>Target minimum %</span><input type="number" min="0" max="100" step="0.1" data-system-default="targetMin" placeholder="No default"></label>
+              <label><span>Target maximum %</span><input type="number" min="0" max="100" step="0.1" data-system-default="targetMax" placeholder="No default"></label>
+              <label><span>Preferred states</span><input data-system-default="desiredStates" placeholder="Boom, Civil Liberty"></label>
+              <label><span>Avoid states</span><input data-system-default="avoidStates" placeholder="Expansion, Civil Unrest"></label>
+            </div>
+            <div class="wolf-check-grid">
+              <label><input type="checkbox" data-system-default="protectRetreat"> Protect Mongrels from Retreat</label>
+              <label><input type="checkbox" data-system-default="avoidExpansion"> Avoid unwanted Expansion</label>
+              <label><input type="checkbox" data-system-default="allowDailyOrders"> Allow into Daily Orders</label>
+              <label><input type="checkbox" data-system-default="autoGenerateOrders"> Generate orders automatically</label>
+              <label><input type="checkbox" data-system-default="emergencyOverride"> Emergency priority override</label>
+              <label><input type="checkbox" data-system-default="reactRetreat"> React to Retreat risk</label>
+              <label><input type="checkbox" data-system-default="reactConflict"> React to conflict</label>
+              <label><input type="checkbox" data-system-default="reactExpansion"> React to Expansion risk</label>
+              <label><input type="checkbox" data-system-default="reactInfluence"> React outside target band</label>
+              <label><input type="checkbox" data-system-default="reactStates"> React to state changes</label>
+            </div>
+            <div class="wolf-save-row"><span data-system-defaults-meta>Using prototype system defaults.</span><button class="btn btn-primary" type="submit">Save System Defaults</button></div>
+          </form>
+        </details>
       </div>
     </section>
   </div>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
-<script src="../js/wolf-bgs.js?v=1"></script>
+<script src="../js/wolf-bgs.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
