@@ -2,6 +2,11 @@ name: Refresh BGS data
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/update_bgs.py'
+      - 'scripts/enrich_bgs_boards.py'
+      - '.github/workflows/update-bgs.yml'
   schedule:
     - cron: '17 */2 * * *'
 
