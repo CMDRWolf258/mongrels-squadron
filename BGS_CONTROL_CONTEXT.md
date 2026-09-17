@@ -30,6 +30,7 @@ No current preview publishes Daily Orders automatically.
 - `js/wolf-bgs-sliders.js`
 - `js/wolf-bgs-order-preview.js`
 - `js/wolf-bgs-conflicts.js`
+- `js/wolf-bgs-contribution-options.js`
 - `js/wolf-bgs-lab.js`
 - `js/wolf-bgs-screenshot.js`
 - `functions/api/operations/wolf-bgs.js`
@@ -42,6 +43,7 @@ No current preview publishes Daily Orders automatically.
 - `scripts/enrich_bgs_boards.py`
 - `data/live-bgs-boards.json`
 - `scripts/smoke-wolf-bgs.mjs`
+- `scripts/smoke-wolf-bgs-contribution-options.mjs`
 - `scripts/smoke-wolf-bgs-screenshot.mjs`
 
 All private APIs require `session.access === 'site_admin'`; hiding UI is never treated as authorization.
@@ -148,6 +150,38 @@ Exploration and trade remain asset-dependent actions. Automated asset ownership/
 ### Security action selection
 
 Bounty vouchers remain the primary measurable Security Raise workload. If the faction already has mission-INF work, the preview prefers security/combat-aligned mission choices where practical so one task can serve both objectives.
+
+## Influence / control-push contribution variety
+
+`js/wolf-bgs-contribution-options.js` post-processes the deterministic preview to give members useful **activity choice** when a faction is intentionally being raised. Mission INF remains the primary, calibrated influence workload; alternate buckets are not blindly added as if their effects were perfectly additive.
+
+Trigger conditions:
+
+- the faction is below its configured target floor; or
+- the faction has `Support / raise` intent and is still below its ceiling;
+- active War / Civil War / Election participants are excluded and remain governed by conflict logic.
+
+Control intent can come from either:
+
+- faction-level `Prefer control`; or
+- the Mongrel system policy `Gain Mongrel control`.
+
+When the desired faction is not the current controller, the preview compares its influence to the controller:
+
+- a **comfortable influence raise** keeps secondary contribution routes optional;
+- a **control push** is considered strong when the controller gap is at least about 3 percentage points or the system is High/Critical priority;
+- an **urgent control push** is the Critical case or roughly a 7-point-or-larger controller gap.
+
+Contribution doctrine:
+
+- **Mission INF** remains the primary target and existing same-faction INF requirements still use the max-not-sum rule.
+- **Profitable trade** is offered even when Economy is not explicitly set to Raise. It is optional during a comfortable raise and recommended during a strong control push. Use a target-faction-owned market and useful supply/demand; keep the trade profitable.
+- **Exploration data** is offered as another route using the configured 2M / 5M / 10M urgency tiers. Routine raises keep it optional; urgent control pushes can recommend it as an additional bucket. Sell at a target-faction-owned asset with Universal Cartographics.
+- **Bounty vouchers** may be offered as an optional combat route only when Security is `Ignore` or `Raise`; do not present this alternate when Security is intended to Hold/Lower or when conflict logic applies.
+- **Mining** is offered through target-faction mining/source-and-return missions. Mine the requested mission commodity and choose the Influence reward; this work counts toward the existing mission-INF target rather than creating a second stacked INF quota.
+- **Direct sales of mined commodities are not treated as BGS influence/economy work.** Current community-tested BGS guidance reports that mined-commodity sales themselves do not move trade influence or the Economy slider. Mining therefore appears as a mission route, not as a local-market-sale contribution recipe.
+
+The purpose of these alternate routes is not to maximize the number of mandatory tasks. It is to let members contribute through game loops they enjoy while preserving a clear distinction between **primary required work**, **recommended extra pressure**, and **optional alternate contribution**.
 
 ## Automation Rules Library and CMDR workload doctrine
 
@@ -293,6 +327,8 @@ The preview can produce:
 
 - Mongrel support when below target floor;
 - positive work for explicitly supported non-Mongrel factions;
+- contribution-variety alternatives for deliberate influence raises, including optional/recommended trade, exploration, bounty work, and mining missions where safe;
+- explicit control-push escalation when a preferred-control faction is behind the current controller;
 - positive-redistribution work to suppress/lower a faction without automatic hostile actions;
 - Retreat rescue workloads;
 - redistribution/counter-support when Mongrels or another maintained faction is above target;
@@ -327,6 +363,8 @@ Isolation rules:
 - generated faction-strategy, slider and calibration Save actions are intercepted so they do not write Mandalore into production KV settings;
 - Conflict Configuration recognizes the lab marker and stores pairing locally rather than through the live conflict API;
 - switching built-in lab scenarios clears prior lab conflict pairing so stale manual choices cannot make a scenario appear to auto-resolve;
+- System Status influence values, System Strategy values, and normal Faction Strategy controls remain editable without the lab hydration layer snapping them back;
+- the System Status board displays a live total and tells Wolf exactly how much influence to add or remove to reach 100%;
 - screenshot import is suppressed inside the lab.
 
 Built-in scenario presets:
