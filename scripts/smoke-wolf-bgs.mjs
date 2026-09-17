@@ -73,7 +73,7 @@ for(const pattern of [
   /wolf-bgs-conflicts/,/Conflict Configuration/,/conflictType/,/civil-war/,/election/,/war/,
   /names\.length===2/,/Opponents cannot be inferred safely/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
-  /wolf-conflict-preview-task/,/Conflict lock active/,/data-bgs-lab/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
 
