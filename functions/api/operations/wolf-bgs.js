@@ -37,12 +37,13 @@ export async function onRequestGet({ request, env }) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
 
-  const [live, control] = await Promise.all([
+  const [live, boards, control] = await Promise.all([
     fetchLive(request),
+    fetchBoards(request),
     readControl(env),
   ]);
 
-  return json(buildPayload(live, control, auth.session), { headers: privateHeaders() });
+  return json(buildPayload(live, boards, control, auth.session), { headers: privateHeaders() });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -104,8 +105,8 @@ export async function onRequestPut({ request, env }) {
   control.version = 2;
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
 
-  const live = await fetchLive(request);
-  return json(buildPayload(live, control, auth.session), { headers: privateHeaders() });
+  const [live, boards] = await Promise.all([fetchLive(request), fetchBoards(request)]);
+  return json(buildPayload(live, boards, control, auth.session), { headers: privateHeaders() });
 }
 
 async function requireSiteAdmin(request, env) {
@@ -138,6 +139,18 @@ async function fetchLive(request) {
   } catch (error) {
     console.error('Wolf BGS Control could not read live BGS snapshot', error);
     return { systems: [], errors: ['Live BGS snapshot unavailable'], source: 'EliteHub Vault / EDDN' };
+  }
+}
+
+async function fetchBoards(request) {
+  try {
+    const url = new URL('/data/live-bgs-boards.json', request.url);
+    const response = await fetch(url.toString(), { headers: { Accept: 'application/json' }, cf: { cacheTtl: 0 } });
+    if (!response.ok) throw new Error(`live-bgs-boards ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Wolf BGS Control could not read full BGS boards', error);
+    return { systems: {}, syncOk: false, successfulSystems: 0, requestedSystems: 0, errors: ['Full BGS board snapshot unavailable'] };
   }
 }
 
@@ -175,14 +188,23 @@ async function readControl(env) {
   }
 }
 
-function buildPayload(live, control, session) {
+function buildPayload(live, boards, control, session) {
   const rows = Array.isArray(live?.systems) ? live.systems : [];
+  const boardsBySystem = boardMap(boards?.systems);
   const systems = rows
     .filter(row => row && row.present !== false && row.formerPresence !== true && row.name)
-    .map(row => buildSystem(row, control))
+    .map(row => buildSystem(row, boardsBySystem.get(norm(row.name)) || null, control))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const sourceAges = systems.map(s => ageHours(s.sourceUpdated)).filter(Number.isFinite);
+  const boardSuccessful = Number(boards?.successfulSystems || 0);
+  const boardRequested = Number(boards?.requestedSystems || systems.length || 0);
+  const fullBoardCount = systems.filter(system => system.externalBoardComplete).length;
+  const boardReady = fullBoardCount > 0;
+  const boardNote = boardReady
+    ? `Full EliteHub faction boards available for ${fullBoardCount}/${systems.length} active Mongrel systems. ${boards?.syncOk ? 'Latest board refresh completed successfully.' : 'Any failed refreshes retain the last good board when available.'}`
+    : 'Full faction-board ingestion is configured and awaiting its first successful refresh; the Mongrel presence feed remains available in the meantime.';
+
   return {
     ok: true,
     viewer: { displayName: session.displayName || session.username || 'CMDR Wolf258', access: session.access },
@@ -196,8 +218,12 @@ function buildPayload(live, control, session) {
       staleCount: systems.filter(s => s.dataCondition === 'stale').length,
       attentionCount: systems.filter(s => s.retreatRisk || s.conflict || s.dataCondition === 'stale').length,
       newestSourceAgeHours: sourceAges.length ? Math.min(...sourceAges) : null,
-      sourceBoardCoverage: 'mongrel-presence-only',
-      sourceBoardNote: 'EliteHub Vault / EDDN currently supplies the Mongrel presence row plus system metadata. Full faction boards can be entered manually until complete-board ingestion is added.',
+      sourceBoardCoverage: fullBoardCount === systems.length && systems.length ? 'full-faction-boards' : (boardReady ? 'partial-full-boards' : 'mongrel-presence-only'),
+      sourceBoardNote: boardNote,
+      boardGeneratedAt: boards?.generatedAt || null,
+      boardSyncOk: Boolean(boards?.syncOk),
+      boardSuccessfulSystems: boardSuccessful,
+      boardRequestedSystems: boardRequested,
     },
     defaults: control.defaults,
     globalUpdatedAt: control.globalUpdatedAt,
@@ -209,49 +235,79 @@ function buildPayload(live, control, session) {
   };
 }
 
-function buildSystem(row, control) {
+function buildSystem(row, externalBoard, control) {
   const name = String(row.name);
   const storedSettings = control.systemSettings[name] || null;
   const settings = resolveSystemSettings(control.systemDefaults, storedSettings);
   const manual = control.manualSnapshots[name] || null;
-  const sourceFaction = {
+  const sourceFallbackFaction = {
     name: MONGREL,
     influence: finiteOrNull(row.influence),
-    state: cleanText(row.state, 'None', 80),
-    pending: Array.isArray(row.pendingStates) ? row.pendingStates.map(String).join(', ') : '',
-    recovering: Array.isArray(row.recoveringStates) ? row.recoveringStates.map(String).join(', ') : '',
+    state: prettyStateText(cleanText(row.state, 'None', 120)),
+    pending: prettyStateList(row.pendingStates).join(', '),
+    recovering: prettyStateList(row.recoveringStates).join(', '),
+    activeStates: prettyStateList(row.activeStates),
+    pendingStates: prettyStateList(row.pendingStates),
+    recoveringStates: prettyStateList(row.recoveringStates),
+    updatedAt: row.sourceUpdated || null,
     source: 'External source',
   };
-  const factions = mergeFactionBoard(sourceFaction, manual?.factions || [], row.sourceUpdated, manual?.updatedAt);
-  const newest = newestTimestamp(row.sourceUpdated, manual?.updatedAt);
-  const conflictWords = [row.state, ...(row.activeStates || []), ...(row.pendingStates || [])].join(' ').toLowerCase();
+  const externalFactions = normalizeExternalFactions(externalBoard?.factions);
+  const externalUpdated = newestTimestamp(row.sourceUpdated, externalBoard?.updatedAt);
+  const manualIsNewer = Boolean(manual?.updatedAt) && compareTime(manual.updatedAt, externalUpdated) > 0;
+
+  let factions;
+  if (manualIsNewer && manual?.factions?.length) {
+    factions = manual.factions.map(faction => ({ ...faction, source: 'Manual' }));
+  } else if (externalFactions.length) {
+    factions = externalFactions;
+  } else {
+    factions = mergeFactionBoard(sourceFallbackFaction, manual?.factions || [], row.sourceUpdated, manual?.updatedAt);
+  }
+
+  factions = sortFactions(factions);
+  const mongrel = factions.find(faction => norm(faction.name) === norm(MONGREL)) || sourceFallbackFaction;
+  const influence = finiteOrNull(mongrel.influence) ?? finiteOrNull(row.influence);
+  const state = prettyStateText(mongrel.state || row.state || 'None');
+  const activeStates = factionStateArray(mongrel, 'activeStates', 'state');
+  const pendingStates = factionStateArray(mongrel, 'pendingStates', 'pending');
+  const recoveringStates = factionStateArray(mongrel, 'recoveringStates', 'recovering');
+  const activeController = manualIsNewer && manual?.controller ? manual.controller : (row.control || '');
+  const newest = manualIsNewer ? manual.updatedAt : externalUpdated;
+  const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
+  const boardComplete = manualIsNewer ? Boolean(manual?.factions?.length) : Boolean(externalFactions.length);
 
   return {
     name,
-    controlled: Boolean(row.controlled),
-    control: row.control || '',
-    influence: finiteOrNull(row.influence),
-    state: row.state || 'None',
-    pendingStates: Array.isArray(row.pendingStates) ? row.pendingStates : [],
-    recoveringStates: Array.isArray(row.recoveringStates) ? row.recoveringStates : [],
+    controlled: norm(activeController) === norm(MONGREL),
+    control: activeController,
+    influence,
+    state,
+    activeStates,
+    pendingStates,
+    recoveringStates,
     security: row.security || '',
     population: row.population || null,
-    sourceUpdated: row.sourceUpdated || null,
-    sourceFetchedAt: row.fetchedAt || liveFallbackTimestamp(row),
+    sourceUpdated: externalUpdated || null,
+    sourceFetchedAt: externalBoard?.fetchedAt || row.fetchedAt || liveFallbackTimestamp(row),
+    externalBoardUpdatedAt: externalBoard?.updatedAt || null,
+    externalBoardComplete: Boolean(externalFactions.length),
+    externalBoardOk: externalBoard ? externalBoard.ok !== false : false,
+    factionCount: factions.length,
     manualUpdatedAt: manual?.updatedAt || null,
     manualUpdatedBy: manual?.updatedBy || null,
     activeSnapshotTime: newest,
-    activeSnapshotSource: newest === manual?.updatedAt ? 'manual' : 'external',
-    boardComplete: Boolean(manual?.factions?.length),
+    activeSnapshotSource: manualIsNewer ? 'manual' : 'external',
+    boardComplete,
     factions,
     manualController: manual?.controller || '',
     manualNotes: manual?.notes || '',
     settings,
     hasCustomSettings: Boolean(storedSettings?.updatedAt),
     conflict: /\bwar\b|civil war|election/.test(conflictWords),
-    retreatRisk: finiteOrNull(row.influence) !== null && Number(row.influence) < 5,
-    dataCondition: dataCondition({ sourceUpdated: row.sourceUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
+    retreatRisk: influence !== null && Number(influence) < 5,
+    dataCondition: dataCondition({ sourceUpdated: externalUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
   };
 }
 
@@ -278,17 +334,79 @@ function resolveSystemSettings(systemDefaults, stored) {
   };
 }
 
+function boardMap(value) {
+  const map = new Map();
+  if (Array.isArray(value)) {
+    for (const board of value) if (board?.name) map.set(norm(board.name), board);
+    return map;
+  }
+  if (!value || typeof value !== 'object') return map;
+  for (const [name, board] of Object.entries(value)) {
+    if (board && typeof board === 'object') map.set(norm(board.name || name), board);
+  }
+  return map;
+}
+
+function normalizeExternalFactions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 12).map(row => {
+    const activeStates = prettyStateList(row?.activeStates);
+    const pendingStates = prettyStateList(row?.pendingStates);
+    const recoveringStates = prettyStateList(row?.recoveringStates);
+    return {
+      name: cleanText(row?.name, '', 120),
+      influence: percentOrNull(row?.influence),
+      state: activeStates.length ? activeStates.join(', ') : prettyStateText(cleanText(row?.state, 'None', 120)),
+      pending: pendingStates.join(', '),
+      recovering: recoveringStates.join(', '),
+      activeStates,
+      pendingStates,
+      recoveringStates,
+      updatedAt: row?.updatedAt || null,
+      source: 'External source',
+    };
+  }).filter(row => row.name);
+}
+
 function mergeFactionBoard(sourceFaction, manualFactions, sourceUpdated, manualUpdated) {
   const map = new Map();
   for (const faction of manualFactions) map.set(norm(faction.name), { ...faction, source: 'Manual' });
   const sourceIsNewer = compareTime(sourceUpdated, manualUpdated) >= 0;
   const key = norm(sourceFaction.name);
   if (!map.has(key) || sourceIsNewer) map.set(key, sourceFaction);
-  return [...map.values()].filter(f => f.name).sort((a, b) => {
+  return sortFactions([...map.values()].filter(f => f.name));
+}
+
+function sortFactions(factions) {
+  return [...factions].filter(faction => faction?.name).sort((a, b) => {
     if (norm(a.name) === norm(MONGREL)) return -1;
     if (norm(b.name) === norm(MONGREL)) return 1;
-    return a.name.localeCompare(b.name);
+    return String(a.name).localeCompare(String(b.name));
   });
+}
+
+function factionStateArray(faction, arrayKey, textKey) {
+  if (Array.isArray(faction?.[arrayKey])) return prettyStateList(faction[arrayKey]);
+  const value = cleanText(faction?.[textKey], '', 240);
+  if (!value || norm(value) === 'none') return [];
+  return value.split(',').map(part => prettyStateText(part.trim())).filter(Boolean).filter(state => norm(state) !== 'none');
+}
+
+function prettyStateList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map(item => prettyStateText(String(item || '').trim())).filter(Boolean).filter(state => norm(state) !== 'none');
+}
+
+function prettyStateText(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text.replaceAll("'", '"'));
+      if (Array.isArray(parsed)) return parsed.map(prettyStateText).filter(Boolean).join(', ') || 'None';
+    } catch {}
+  }
+  return text.replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 function normalizeDefaults(value = {}) {
@@ -358,9 +476,9 @@ function normalizeManualSnapshot(value = {}, now, actor) {
   const factions = Array.isArray(value.factions) ? value.factions.slice(0, 12).map((row, index) => ({
     name: cleanText(row?.name, index === 0 ? MONGREL : '', 120),
     influence: percentOrNull(row?.influence),
-    state: cleanText(row?.state, 'None', 80),
-    pending: cleanText(row?.pending, '', 120),
-    recovering: cleanText(row?.recovering, '', 120),
+    state: cleanText(row?.state, 'None', 120),
+    pending: cleanText(row?.pending, '', 240),
+    recovering: cleanText(row?.recovering, '', 240),
   })).filter(row => row.name) : [];
   return {
     updatedAt: now,
@@ -401,9 +519,9 @@ function normalizeSnapshotMap(value) {
       factions: Array.isArray(snapshot.factions) ? snapshot.factions.slice(0, 12).map(row => ({
         name: cleanText(row?.name, '', 120),
         influence: percentOrNull(row?.influence),
-        state: cleanText(row?.state, 'None', 80),
-        pending: cleanText(row?.pending, '', 120),
-        recovering: cleanText(row?.recovering, '', 120),
+        state: cleanText(row?.state, 'None', 120),
+        pending: cleanText(row?.pending, '', 240),
+        recovering: cleanText(row?.recovering, '', 240),
       })).filter(row => row.name) : [],
     };
   }
