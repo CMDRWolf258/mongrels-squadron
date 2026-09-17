@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 for (const path of [
   'wolf-bgs/index.html',
+  'js/wolf-bgs.js',
   'js/wolf-bgs-screenshot.js',
   'css/wolf-bgs-screenshot.css',
   'functions/api/operations/wolf-bgs-screenshot.js',
@@ -14,6 +15,10 @@ const page = readFileSync('wolf-bgs/index.html', 'utf8');
 assert.match(page, /wolf-bgs-screenshot\.css/, 'Screenshot importer stylesheet is not loaded');
 assert.match(page, /wolf-bgs-screenshot\.js/, 'Screenshot importer client is not loaded');
 
+const baseClient = readFileSync('js/wolf-bgs.js', 'utf8');
+assert.match(baseClient, /data-submit-status/, 'Existing Submit Status workflow is missing');
+assert.match(baseClient, /submit-status/, 'Submit Status is not wired to the authoritative manual-snapshot API');
+
 const client = readFileSync('js/wolf-bgs-screenshot.js', 'utf8');
 assert.match(client, /Screenshot Import/, 'Screenshot Import panel is missing');
 assert.match(client, /Drop screenshot here/, 'Screenshot drag-and-drop control is missing');
@@ -22,7 +27,7 @@ assert.match(client, /Interpret Screenshot/, 'Explicit screenshot interpretation
 assert.match(client, /Apply Matched Influence to Form/, 'Review-first Apply action is missing');
 assert.match(client, /does not submit or save the snapshot/i, 'Importer must clearly state that applying does not save BGS data');
 assert.match(client, /matchedKnownFaction/, 'Importer is not limiting automatic application to matched known factions');
-assert.match(client, /data-submit-status/, 'Smoke guard expects the existing Submit Status workflow to remain authoritative');
+assert.doesNotMatch(client, /submit-status/, 'Screenshot importer must not directly submit BGS status');
 
 const api = readFileSync('functions/api/operations/wolf-bgs-screenshot.js', 'utf8');
 assert.match(api, /session\.access !== 'site_admin'/, 'Screenshot interpretation API is not site-admin restricted');
