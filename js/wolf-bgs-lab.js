@@ -1,4 +1,11 @@
 (() => {
+  if (!document.querySelector('script[data-wolf-contribution-options]')) {
+    const script=document.createElement('script');
+    script.src='../js/wolf-bgs-contribution-options.js?v=1';
+    script.dataset.wolfContributionOptions='true';
+    document.head.appendChild(script);
+  }
+
   const KEY = 'wolf-bgs-lab-mandalore-v1';
   const CONFLICT_KEY = 'wolf-bgs-lab-mandalore-conflicts-v1';
   const MONGREL = 'Regiment of Imperial Mongrels';
