@@ -8,8 +8,9 @@
   <title>Wolf BGS Control | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
   <link rel="stylesheet" href="../css/wolf-bgs.css?v=5">
-  <link rel="stylesheet" href="../css/wolf-bgs-rules.css?v=1">
-  <link rel="stylesheet" href="../css/wolf-bgs-sliders.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-rules.css?v=2">
+  <link rel="stylesheet" href="../css/wolf-bgs-sliders.css?v=2">
+  <link rel="stylesheet" href="../css/wolf-bgs-order-preview.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-screenshot.css?v=2">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
@@ -73,22 +74,8 @@
 
         <div class="wolf-toolbar">
           <label><span>Search</span><input type="search" data-system-search placeholder="System name…"></label>
-          <label><span>View</span><select data-system-filter>
-            <option value="all">All systems</option>
-            <option value="favorites">Favorites</option>
-            <option value="attention">Needs attention</option>
-            <option value="stale">Stale</option>
-            <option value="controlled">Controlled</option>
-            <option value="not-controlled">Not controlled</option>
-            <option value="custom-filter">Custom filter…</option>
-          </select></label>
-          <label><span>Sort</span><select data-system-sort>
-            <option value="influence-desc" selected>Influence high → low</option>
-            <option value="influence-asc">Influence low → high</option>
-            <option value="name">System name</option>
-            <option value="priority">Priority</option>
-            <option value="freshness">Data freshness</option>
-          </select></label>
+          <label><span>View</span><select data-system-filter><option value="all">All systems</option><option value="favorites">Favorites</option><option value="attention">Needs attention</option><option value="stale">Stale</option><option value="controlled">Controlled</option><option value="not-controlled">Not controlled</option><option value="custom-filter">Custom filter…</option></select></label>
+          <label><span>Sort</span><select data-system-sort><option value="influence-desc" selected>Influence high → low</option><option value="influence-asc">Influence low → high</option><option value="name">System name</option><option value="priority">Priority</option><option value="freshness">Data freshness</option></select></label>
           <label><span>Results per page</span><select data-page-size><option value="20" selected>20</option><option value="40">40</option><option value="60">60</option><option value="100">100</option></select></label>
           <div class="wolf-source-note"><span>External Source Data</span><small data-source-note>Loading source details…</small></div>
         </div>
@@ -124,18 +111,7 @@
               <label><span>Preferred states</span><input data-system-default="desiredStates" placeholder="Boom, Civil Liberty"></label>
               <label><span>Avoid states</span><input data-system-default="avoidStates" placeholder="Expansion, Civil Unrest"></label>
             </div>
-            <div class="wolf-check-grid">
-              <label><input type="checkbox" data-system-default="protectRetreat"> Protect Mongrels from Retreat</label>
-              <label><input type="checkbox" data-system-default="avoidExpansion"> Avoid unwanted Expansion</label>
-              <label><input type="checkbox" data-system-default="allowDailyOrders"> Allow into Daily Orders</label>
-              <label><input type="checkbox" data-system-default="autoGenerateOrders"> Generate orders automatically</label>
-              <label><input type="checkbox" data-system-default="emergencyOverride"> Emergency priority override</label>
-              <label><input type="checkbox" data-system-default="reactRetreat"> React to Retreat risk</label>
-              <label><input type="checkbox" data-system-default="reactConflict"> React to conflict</label>
-              <label><input type="checkbox" data-system-default="reactExpansion"> React to Expansion risk</label>
-              <label><input type="checkbox" data-system-default="reactInfluence"> React outside target band</label>
-              <label><input type="checkbox" data-system-default="reactStates"> React to state changes</label>
-            </div>
+            <div class="wolf-check-grid"><label><input type="checkbox" data-system-default="protectRetreat"> Protect Mongrels from Retreat</label><label><input type="checkbox" data-system-default="avoidExpansion"> Avoid unwanted Expansion</label><label><input type="checkbox" data-system-default="allowDailyOrders"> Allow into Daily Orders</label><label><input type="checkbox" data-system-default="autoGenerateOrders"> Generate orders automatically</label><label><input type="checkbox" data-system-default="emergencyOverride"> Emergency priority override</label><label><input type="checkbox" data-system-default="reactRetreat"> React to Retreat risk</label><label><input type="checkbox" data-system-default="reactConflict"> React to conflict</label><label><input type="checkbox" data-system-default="reactExpansion"> React to Expansion risk</label><label><input type="checkbox" data-system-default="reactInfluence"> React outside target band</label><label><input type="checkbox" data-system-default="reactStates"> React to state changes</label></div>
             <div class="wolf-save-row"><span data-system-defaults-meta>Using prototype system defaults.</span><button class="btn btn-primary" type="submit">Save System Defaults</button></div>
           </form>
         </details>
@@ -147,8 +123,9 @@
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=1"></script>
 <script src="../js/wolf-bgs.js?v=3"></script>
-<script src="../js/wolf-bgs-rules.js?v=1"></script>
-<script src="../js/wolf-bgs-sliders.js?v=1"></script>
+<script src="../js/wolf-bgs-rules.js?v=2"></script>
+<script src="../js/wolf-bgs-sliders.js?v=2"></script>
+<script src="../js/wolf-bgs-order-preview.js?v=1"></script>
 <script src="../js/wolf-bgs-screenshot.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>

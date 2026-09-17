@@ -4,7 +4,7 @@ const RULES_KV_KEY = 'wolf-bgs-rules-v1';
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 
 const DEFAULT_RULES = {
-  version: 1,
+  version: 2,
   workload: {
     missionInfPerCmdr: 25,
     missionInfStretchPerCmdr: 40,
@@ -14,6 +14,14 @@ const DEFAULT_RULES = {
     preferredOperators: 3,
     diversifyBuckets: true,
     soloDoNotMultiply: true,
+  },
+  balancing: {
+    bountyBaselineMillions: 20,
+    bountyCounterInf: 15,
+    tradeBaselineMillions: 20,
+    tradeCounterInf: null,
+    triggerHeadroomPct: 2,
+    maxCounterweightFactions: 2,
   },
   safety: {
     retreatWarning: 5,
@@ -55,6 +63,7 @@ export async function onRequestPut({ request, env }) {
     const current = await readRules(env);
     const next = {
       ...current,
+      version: 2,
       rules: normalizeRules(body?.rules),
       updatedAt: now,
       updatedBy: actor,
@@ -89,6 +98,32 @@ export async function onRequestPut({ request, env }) {
     return json({ ok: true, ...current }, { headers: privateHeaders() });
   }
 
+  if (action === 'save-system-calibration') {
+    const system = cleanText(body?.system, '', 140);
+    if (!system) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    const current = await readRules(env);
+    current.systemCalibrations[system] = normalizeCalibration(body?.calibration);
+    current.calibrationUpdatedAt[system] = now;
+    current.calibrationUpdatedBy[system] = actor;
+    current.updatedAt = now;
+    current.updatedBy = actor;
+    await env.DAILY_ORDERS.put(RULES_KV_KEY, JSON.stringify(current));
+    return json({ ok: true, ...current }, { headers: privateHeaders() });
+  }
+
+  if (action === 'reset-system-calibration') {
+    const system = cleanText(body?.system, '', 140);
+    if (!system) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    const current = await readRules(env);
+    delete current.systemCalibrations[system];
+    delete current.calibrationUpdatedAt[system];
+    delete current.calibrationUpdatedBy[system];
+    current.updatedAt = now;
+    current.updatedBy = actor;
+    await env.DAILY_ORDERS.put(RULES_KV_KEY, JSON.stringify(current));
+    return json({ ok: true, ...current }, { headers: privateHeaders() });
+  }
+
   if (action === 'reset-system-settings') {
     const system = cleanText(body?.system, '', 140);
     if (!system) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
@@ -112,11 +147,14 @@ export async function onRequestPut({ request, env }) {
 
 async function readRules(env) {
   const empty = {
-    version: 1,
+    version: 2,
     rules: normalizeRules(DEFAULT_RULES),
     systemFactionStrategies: {},
     factionStrategyUpdatedAt: {},
     factionStrategyUpdatedBy: {},
+    systemCalibrations: {},
+    calibrationUpdatedAt: {},
+    calibrationUpdatedBy: {},
     updatedAt: null,
     updatedBy: null,
   };
@@ -125,11 +163,14 @@ async function readRules(env) {
     const stored = await env.DAILY_ORDERS.get(RULES_KV_KEY, { type: 'json' });
     if (!stored || typeof stored !== 'object') return empty;
     return {
-      version: 1,
+      version: 2,
       rules: normalizeRules(stored.rules),
       systemFactionStrategies: normalizeSystemStrategyMap(stored.systemFactionStrategies),
       factionStrategyUpdatedAt: normalizeTextMap(stored.factionStrategyUpdatedAt, 60),
       factionStrategyUpdatedBy: normalizeTextMap(stored.factionStrategyUpdatedBy, 120),
+      systemCalibrations: normalizeSystemCalibrationMap(stored.systemCalibrations),
+      calibrationUpdatedAt: normalizeTextMap(stored.calibrationUpdatedAt, 60),
+      calibrationUpdatedBy: normalizeTextMap(stored.calibrationUpdatedBy, 120),
       updatedAt: stored.updatedAt || null,
       updatedBy: cleanText(stored.updatedBy, '', 120) || null,
     };
@@ -141,10 +182,11 @@ async function readRules(env) {
 
 function normalizeRules(value = {}) {
   const workload = value?.workload || {};
+  const balancing = value?.balancing || {};
   const safety = value?.safety || {};
   const doctrine = value?.doctrine || {};
   return {
-    version: 1,
+    version: 2,
     workload: {
       missionInfPerCmdr: clampNumber(workload.missionInfPerCmdr, 1, 100, DEFAULT_RULES.workload.missionInfPerCmdr),
       missionInfStretchPerCmdr: clampNumber(workload.missionInfStretchPerCmdr, 1, 150, DEFAULT_RULES.workload.missionInfStretchPerCmdr),
@@ -154,6 +196,14 @@ function normalizeRules(value = {}) {
       preferredOperators: Math.round(clampNumber(workload.preferredOperators, 1, 12, DEFAULT_RULES.workload.preferredOperators)),
       diversifyBuckets: workload.diversifyBuckets !== false,
       soloDoNotMultiply: workload.soloDoNotMultiply !== false,
+    },
+    balancing: {
+      bountyBaselineMillions: clampNumber(balancing.bountyBaselineMillions, 1, 250, DEFAULT_RULES.balancing.bountyBaselineMillions),
+      bountyCounterInf: clampNumber(balancing.bountyCounterInf, 0, 150, DEFAULT_RULES.balancing.bountyCounterInf),
+      tradeBaselineMillions: clampNumber(balancing.tradeBaselineMillions, 1, 250, DEFAULT_RULES.balancing.tradeBaselineMillions),
+      tradeCounterInf: nullableClampNumber(balancing.tradeCounterInf, 0, 150),
+      triggerHeadroomPct: clampNumber(balancing.triggerHeadroomPct, 0, 20, DEFAULT_RULES.balancing.triggerHeadroomPct),
+      maxCounterweightFactions: Math.round(clampNumber(balancing.maxCounterweightFactions, 1, 2, DEFAULT_RULES.balancing.maxCounterweightFactions)),
     },
     safety: {
       retreatWarning: clampNumber(safety.retreatWarning, 0, 20, DEFAULT_RULES.safety.retreatWarning),
@@ -176,9 +226,10 @@ function normalizeFactionStrategies(value) {
     const key = faction.toLowerCase();
     if (!faction || seen.has(key)) continue;
     seen.add(key);
+    const legacyIntent = row?.intent === 'no-action' ? 'flexible' : row?.intent;
     out.push({
       faction,
-      intent: ['no-action', 'support', 'suppress', 'maintain', 'protect-retreat', 'allow-retreat'].includes(row?.intent) ? row.intent : 'no-action',
+      intent: ['flexible', 'avoid-interaction', 'support', 'suppress', 'maintain', 'protect-retreat', 'allow-retreat'].includes(legacyIntent) ? legacyIntent : 'flexible',
       targetMin: percentOrNull(row?.targetMin),
       targetMax: percentOrNull(row?.targetMax),
       controlObjective: ['none', 'prefer-control', 'avoid-control', 'allow-control'].includes(row?.controlObjective) ? row.controlObjective : 'none',
@@ -188,12 +239,31 @@ function normalizeFactionStrategies(value) {
   return out;
 }
 
+function normalizeCalibration(value = {}) {
+  return {
+    bountyPercentAdjustment: clampNumber(value?.bountyPercentAdjustment, -100, 300, 0),
+    bountyFlatInfAdjustment: clampNumber(value?.bountyFlatInfAdjustment, -100, 100, 0),
+    tradePercentAdjustment: clampNumber(value?.tradePercentAdjustment, -100, 300, 0),
+    tradeFlatInfAdjustment: clampNumber(value?.tradeFlatInfAdjustment, -100, 100, 0),
+  };
+}
+
 function normalizeSystemStrategyMap(value) {
   const out = {};
   if (!value || typeof value !== 'object') return out;
   for (const [system, rows] of Object.entries(value)) {
     const key = cleanText(system, '', 140);
     if (key) out[key] = normalizeFactionStrategies(rows);
+  }
+  return out;
+}
+
+function normalizeSystemCalibrationMap(value) {
+  const out = {};
+  if (!value || typeof value !== 'object') return out;
+  for (const [system, calibration] of Object.entries(value)) {
+    const key = cleanText(system, '', 140);
+    if (key) out[key] = normalizeCalibration(calibration);
   }
   return out;
 }
@@ -234,6 +304,10 @@ function finiteOrNull(value) {
 function clampNumber(value, min, max, fallback) {
   const n = finiteOrNull(value);
   return n === null ? fallback : Math.max(min, Math.min(max, n));
+}
+function nullableClampNumber(value, min, max) {
+  const n = finiteOrNull(value);
+  return n === null ? null : Math.max(min, Math.min(max, n));
 }
 function percentOrNull(value) {
   const n = finiteOrNull(value);
