@@ -12,26 +12,31 @@ Core principle:
 
 > Programmed BGS logic performs monitoring, prioritization and clerical work; Wolf retains strategic authority; members receive simple orders and low-friction reporting.
 
-## Current prototype
+## Current implementation
 
 Primary files:
 - `/wolf-bgs/index.html`
 - `css/wolf-bgs.css`
+- `css/wolf-bgs-rules.css`
 - `js/wolf-bgs.js`
+- `js/wolf-bgs-rules.js`
 - `functions/api/operations/wolf-bgs.js`
+- `functions/api/operations/wolf-bgs-rules.js`
 - `scripts/enrich_bgs_boards.py`
 - `data/live-bgs-boards.json`
 - `scripts/smoke-wolf-bgs.mjs`
 - `.github/workflows/update-bgs.yml`
 
 Access:
-- Server API requires `session.access === 'site_admin'`.
+- Server APIs require `session.access === 'site_admin'`.
 - UI hiding is not treated as authorization.
 
 Storage:
 - Existing `DAILY_ORDERS` KV binding.
-- Key: `wolf-bgs-control-v1`.
-- Stores global automation defaults, System Defaults, per-system settings/favorites, and manual system/faction snapshots.
+- Core Control Room key: `wolf-bgs-control-v1`.
+- Automation Rules key: `wolf-bgs-rules-v1`.
+- Core key stores global automation defaults, System Defaults, per-system settings/favorites, and manual system/faction snapshots.
+- Rules key stores programmed workload/safety rules and per-system whole-board faction strategy.
 
 ## Control-deck list UX
 
@@ -45,11 +50,22 @@ List controls:
 - quick views for Favorites, attention, stale, controlled, and not controlled;
 - **Custom filter** exposes Priority, State text, Pending text, control status, and flags such as Favorite, Retreat risk, Conflict, Stale, Custom Settings, and Automation Off;
 - optional **Favorites first** checkbox pins all favorite systems above the normal sorted/filtered list without changing the selected sort inside each group;
-- optional **Keep lowest 5 on page** checkbox reserves the final five page slots for the five lowest Mongrel influences across the entire active footprint. These cards receive a LOW 5 WATCH marker.
+- optional **Keep lowest 5 on page** checkbox reserves the final five page slots for the five lowest Mongrel influences across the entire active footprint. These cards receive a LOW 5 WATCH marker;
+- **Reset Filters** restores the baseline list view: blank search, All systems, Influence high→low, 20/page, watch toggles off, and cleared custom-filter fields. It does not remove saved favorites.
 
 Each system has a Wolf-only clickable favorite star. Favorites are navigation/visibility aids and do not by themselves change Daily Orders or BGS automation priority.
 
 The collapsed system header shows the same unified **Priority** field edited inside the Strategy section. The previous separate `Strategic Importance` concept was removed as redundant.
+
+Faction rows inside the expanded System Status & Faction Board are displayed by influence high→low, using faction name as a stable alphabetical tie-breaker.
+
+## Influence target visualization
+
+When a Mongrel target band exists:
+- collapsed system cards show a very subtle influence marker with the target window shaded behind it;
+- expanded Strategy shows a larger Mission-Control-style 0–100% influence bar with current position and target min/max.
+
+No target meter is shown when no target band exists, avoiding extra visual clutter.
 
 ## Prototype global automation defaults
 
@@ -63,9 +79,9 @@ Global Automation Defaults govern cycle/reporting mechanics rather than individu
 - Require post-tick data for normal orders: true.
 - Emergency orders with stale data: false by default.
 
-All are configurable from Wolf Control. Tablet/iPad layout reflows these controls to two columns. Time inputs have extra sizing/padding protection because iPad Safari's native time field can otherwise clip its right edge.
+All are configurable from Wolf Control. Tablet/iPad layout keeps the global form in two columns where practical while explicitly constraining grid children and unit fields so Safari-native inputs cannot overlap the neighboring column.
 
-## System Defaults
+## System Defaults and reset behavior
 
 A clearly separate expandable **System Defaults** card lives below the system list.
 
@@ -84,6 +100,14 @@ These defaults govern normal strategy/automation behavior for systems without a 
 - reactions to Retreat, conflict, Expansion, influence-band and state changes.
 
 Per-system settings can override these defaults. System Defaults and Global Automation Defaults are intentionally separate concepts.
+
+**Reset to Defaults** removes that system's custom configuration overrides and returns it to inherited System Defaults. The reset intentionally preserves:
+- favorite status;
+- manual faction/status snapshots;
+- faction-board strategy stored in the Automation Rules layer;
+- reporting/history data.
+
+The reset requires explicit confirmation.
 
 ## Per-system control model
 
@@ -110,7 +134,7 @@ Settings are changed only after **Save System Settings**, except the favorite st
 
 The original `data/live-bgs.json` remains the authoritative Mongrel-presence discovery feed. It tracks the Regiment of Imperial Mongrels presence plus useful system metadata.
 
-Complete faction boards are now enriched independently into:
+Complete faction boards are enriched independently into:
 - `data/live-bgs-boards.json`
 - generated by `scripts/enrich_bgs_boards.py`
 
@@ -123,7 +147,7 @@ The enrichment flow:
 
 The BGS refresh workflow runs the normal presence updater first, then the board enrichment. The board snapshot is separate deliberately: a temporary full-board failure must not make the existing Mongrel presence feed disappear or falsely retire systems. The enrichment file also preserves prior good board rows on incomplete/failed refreshes where possible.
 
-The workflow continues on the existing two-hour schedule and can also run manually. It now also runs when the BGS updater/workflow code itself changes so new ingestion logic can be exercised immediately.
+The workflow continues on the existing two-hour schedule and can also run manually. It also runs when BGS updater/workflow code changes so new ingestion logic can be exercised immediately.
 
 ## Source/manual freshness behavior
 
@@ -150,7 +174,58 @@ Trust model:
 
 The Control Room must never imply a board is complete when only the Mongrel presence row is available.
 
-## Automation architecture direction
+## Automation Rules Library v1
+
+The first programmed-rules layer is now separate from the cycle/freshness defaults. It is explicitly a configurable operational doctrine layer rather than a claim to know Frontier's hidden BGS formula.
+
+Initial workload controls:
+- Mission INF per participating CMDR — normal goal;
+- Mission INF per participating CMDR — stretch guidance;
+- bounty voucher MCr per CMDR;
+- profitable trade MCr per CMDR;
+- exploration-data MCr per CMDR;
+- preferred number of participating CMDRs for an objective;
+- diversify useful BGS buckets when practical;
+- do not multiply a solo CMDR's workload to replace missing operators.
+
+Initial safety controls:
+- Retreat warning influence;
+- Retreat emergency influence;
+- Expansion early-warning influence.
+
+### Diminishing-return doctrine
+
+The Rules Library encodes the following as operational doctrine, not a confirmed hidden game formula:
+- several participating CMDRs doing useful moderate work is preferred to one CMDR grinding one bucket far beyond its useful range;
+- useful work should be spread across available positive/negative BGS levers where appropriate;
+- a single CMDR should not automatically receive three times the work merely because the preferred operator count is three;
+- exact independent per-CMDR soft-cap behavior remains **unconfirmed** and must not be presented as a known Frontier mechanic.
+
+This distinction is important for future empirical calibration: commander contribution counts, issued workloads, completed reports, and following-tick outcomes can be compared without pretending a hidden cap is already known.
+
+## Whole-board faction strategy
+
+Automation is intentionally **not Mongrel-only**.
+
+Every faction on a system board can receive a programmed intent:
+- No action;
+- Support / raise;
+- Suppress / lower;
+- Maintain / hold;
+- Protect from Retreat;
+- Allow Retreat.
+
+Non-Mongrel factions can also receive:
+- target influence min/max;
+- control objective: no objective / prefer control / avoid control / allow either.
+
+For the Regiment of Imperial Mongrels, the authoritative influence band remains the existing System Strategy target min/max to avoid duplicate sources of truth. The whole-board strategy layer can still carry the Mongrel intent/control objective.
+
+This model allows a future generated order to say, for example, “complete 25 INF for Wolf 258 Dynasty” when that is the configured board objective instead of assuming all positive BGS work must support Mongrels.
+
+Faction Strategy is saved separately from manual faction-board status. Resetting faction strategy does not edit the factual board snapshot; resetting System Settings does not erase faction strategy.
+
+## Automation architecture
 
 Three visibly separated layers:
 
@@ -158,6 +233,7 @@ Three visibly separated layers:
    - Explicit configurable rules and workloads.
    - Must expose where amounts such as bounty targets come from.
    - Expected levers include mission INF, bounty vouchers, trade profit, exploration data, conflict work and deliberate negative work.
+   - Whole-board faction intent determines which faction should receive support/suppression when needed.
    - Explanation panel should show rule fired, base amount, modifiers, final task, priority and stop condition.
 
 2. **Advanced Intelligence Suggestion — advisory**
@@ -170,13 +246,12 @@ Three visibly separated layers:
    - Create custom order amounts/logic.
    - Force include/exclude/hold systems and tasks.
 
-The prototype currently stores controls and placeholders; automated Daily Orders generation is **not yet active**.
+The current Programmed Automation card now gives a **preview-only** deterministic explanation from the target band and saved faction intent. It does **not** publish Daily Orders yet.
 
 ## Planned Control Room sections beyond the current shell
 
 Planned additions include:
-- Automation Rules Library;
-- Order Preview / Generator with “Why did automation do this?” explanation;
+- full Order Preview / Generator with “Why did automation do this?” explanation;
 - separate Advanced Intelligence Suggestions;
 - ranked Daily Orders Queue;
 - current-cycle Reporting Dashboard;
