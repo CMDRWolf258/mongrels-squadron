@@ -140,7 +140,7 @@
       }
 
       if (push.controlPush) {
-        result.unshift(`<div class="wolf-contribution-push-banner"><strong>${push.urgent ? 'Urgent control push' : push.strong ? 'Control push' : 'Influence push toward control'} · ${esc(row.name)}</strong><span>Mission INF remains the primary target. ${push.strong ? 'Trade is recommended as a second bucket; other activities give members useful alternatives without forcing one repetitive game loop.' : 'Secondary buckets remain optional so members can contribute through the activity they enjoy.'}</span></div>`);
+        result.unshift(`<div class="wolf-rules-callout subtle wolf-contribution-push-banner"><strong>${push.urgent ? 'Urgent control push' : push.strong ? 'Control push' : 'Influence push toward control'} · ${esc(row.name)}</strong><span>Mission INF remains the primary target. ${push.strong ? 'Trade is recommended as a second bucket; other activities give members useful alternatives without forcing one repetitive game loop.' : 'Secondary buckets remain optional so members can contribute through the activity they enjoy.'}</span></div>`);
       }
     }
     return result;
@@ -153,7 +153,6 @@
     if (entry?.observer) entry.observer.disconnect();
     try {
       host.querySelectorAll('.wolf-contribution-option-task,.wolf-contribution-push-banner').forEach(el => el.remove());
-      if (host.querySelector('.wolf-conflict-preview-banner')) return;
       const additions = contributionTasks(card,host);
       if (!additions.length) return;
       const list = host.querySelector('.wolf-order-task-list');
