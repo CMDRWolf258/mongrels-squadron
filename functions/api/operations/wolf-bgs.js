@@ -14,6 +14,25 @@ const DEFAULTS = {
   allowEmergencyWithStaleData: false,
 };
 
+const SYSTEM_DEFAULTS = {
+  priority: 'normal',
+  controlPolicy: 'maintain-existing',
+  targetMin: null,
+  targetMax: null,
+  desiredStates: [],
+  avoidStates: [],
+  protectRetreat: true,
+  avoidExpansion: false,
+  allowDailyOrders: true,
+  autoGenerateOrders: true,
+  emergencyOverride: true,
+  reactRetreat: true,
+  reactConflict: true,
+  reactExpansion: true,
+  reactInfluence: true,
+  reactStates: true,
+};
+
 export async function onRequestGet({ request, env }) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
@@ -50,12 +69,30 @@ export async function onRequestPut({ request, env }) {
     control.defaults = normalizeDefaults(body.defaults);
     control.globalUpdatedAt = now;
     control.globalUpdatedBy = actor;
+  } else if (action === 'save-system-defaults') {
+    control.systemDefaults = normalizeSystemDefaults(body.systemDefaults);
+    control.systemDefaultsUpdatedAt = now;
+    control.systemDefaultsUpdatedBy = actor;
   } else if (action === 'save-system') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
-    control.systemSettings[name] = normalizeSystemSettings(body.settings);
-    control.systemSettings[name].updatedAt = now;
-    control.systemSettings[name].updatedBy = actor;
+    const existing = control.systemSettings[name] || {};
+    control.systemSettings[name] = {
+      ...normalizeSystemSettings(body.settings, control.systemDefaults),
+      favorite: Boolean(existing.favorite || body?.settings?.favorite),
+      updatedAt: now,
+      updatedBy: actor,
+    };
+  } else if (action === 'toggle-favorite') {
+    const name = cleanText(body?.system, '', 140);
+    if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    const existing = control.systemSettings[name] || {};
+    control.systemSettings[name] = {
+      ...normalizeSystemSettings(existing, control.systemDefaults),
+      favorite: Boolean(body.favorite),
+      updatedAt: now,
+      updatedBy: actor,
+    };
   } else if (action === 'submit-status') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
@@ -64,7 +101,7 @@ export async function onRequestPut({ request, env }) {
     return json({ ok: false, error: 'unsupported_action' }, { status: 400, headers: privateHeaders() });
   }
 
-  control.version = 1;
+  control.version = 2;
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
 
   const live = await fetchLive(request);
@@ -106,10 +143,13 @@ async function fetchLive(request) {
 
 async function readControl(env) {
   const empty = {
-    version: 1,
+    version: 2,
     defaults: { ...DEFAULTS },
     globalUpdatedAt: null,
     globalUpdatedBy: null,
+    systemDefaults: { ...SYSTEM_DEFAULTS },
+    systemDefaultsUpdatedAt: null,
+    systemDefaultsUpdatedBy: null,
     systemSettings: {},
     manualSnapshots: {},
   };
@@ -118,11 +158,14 @@ async function readControl(env) {
     const stored = await env.DAILY_ORDERS.get(CONTROL_KV_KEY, { type: 'json' });
     if (!stored || typeof stored !== 'object') return empty;
     return {
-      version: 1,
+      version: 2,
       defaults: normalizeDefaults(stored.defaults),
       globalUpdatedAt: stored.globalUpdatedAt || null,
       globalUpdatedBy: stored.globalUpdatedBy || null,
-      systemSettings: normalizeSettingsMap(stored.systemSettings),
+      systemDefaults: normalizeSystemDefaults(stored.systemDefaults),
+      systemDefaultsUpdatedAt: stored.systemDefaultsUpdatedAt || null,
+      systemDefaultsUpdatedBy: stored.systemDefaultsUpdatedBy || null,
+      systemSettings: normalizeSettingsMap(stored.systemSettings, normalizeSystemDefaults(stored.systemDefaults)),
       manualSnapshots: normalizeSnapshotMap(stored.manualSnapshots),
     };
   } catch (error) {
@@ -148,22 +191,27 @@ function buildPayload(live, control, session) {
       refreshInterval: live?.refreshInterval || 'Every 2 hours',
       presenceCount: systems.length,
       controlledCount: systems.filter(s => s.controlled).length,
-      staleCount: systems.filter(s => dataCondition(s, control.defaults) === 'stale').length,
-      attentionCount: systems.filter(s => s.retreatRisk || s.conflict || dataCondition(s, control.defaults) === 'stale').length,
+      favoriteCount: systems.filter(s => s.settings?.favorite).length,
+      staleCount: systems.filter(s => s.dataCondition === 'stale').length,
+      attentionCount: systems.filter(s => s.retreatRisk || s.conflict || s.dataCondition === 'stale').length,
       newestSourceAgeHours: sourceAges.length ? Math.min(...sourceAges) : null,
       sourceBoardCoverage: 'mongrel-presence-only',
-      sourceBoardNote: 'The automated source currently supplies the Mongrel presence row and system metadata. Full faction boards can be entered manually in this prototype until full-board ingestion is added.',
+      sourceBoardNote: 'EliteHub Vault / EDDN currently supplies the Mongrel presence row plus system metadata. Full faction boards can be entered manually until complete-board ingestion is added.',
     },
     defaults: control.defaults,
     globalUpdatedAt: control.globalUpdatedAt,
     globalUpdatedBy: control.globalUpdatedBy,
+    systemDefaults: control.systemDefaults,
+    systemDefaultsUpdatedAt: control.systemDefaultsUpdatedAt,
+    systemDefaultsUpdatedBy: control.systemDefaultsUpdatedBy,
     systems,
   };
 }
 
 function buildSystem(row, control) {
   const name = String(row.name);
-  const settings = control.systemSettings[name] || defaultSystemSettings();
+  const storedSettings = control.systemSettings[name] || null;
+  const settings = resolveSystemSettings(control.systemDefaults, storedSettings);
   const manual = control.manualSnapshots[name] || null;
   const sourceFaction = {
     name: MONGREL,
@@ -171,11 +219,12 @@ function buildSystem(row, control) {
     state: cleanText(row.state, 'None', 80),
     pending: Array.isArray(row.pendingStates) ? row.pendingStates.map(String).join(', ') : '',
     recovering: Array.isArray(row.recoveringStates) ? row.recoveringStates.map(String).join(', ') : '',
-    source: 'third-party',
+    source: 'External source',
   };
   const factions = mergeFactionBoard(sourceFaction, manual?.factions || [], row.sourceUpdated, manual?.updatedAt);
   const newest = newestTimestamp(row.sourceUpdated, manual?.updatedAt);
   const conflictWords = [row.state, ...(row.activeStates || []), ...(row.pendingStates || [])].join(' ').toLowerCase();
+  const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
 
   return {
     name,
@@ -192,21 +241,45 @@ function buildSystem(row, control) {
     manualUpdatedAt: manual?.updatedAt || null,
     manualUpdatedBy: manual?.updatedBy || null,
     activeSnapshotTime: newest,
-    activeSnapshotSource: newest === manual?.updatedAt ? 'manual' : 'third-party',
+    activeSnapshotSource: newest === manual?.updatedAt ? 'manual' : 'external',
     boardComplete: Boolean(manual?.factions?.length),
     factions,
     manualController: manual?.controller || '',
     manualNotes: manual?.notes || '',
     settings,
+    hasCustomSettings: Boolean(storedSettings?.updatedAt),
     conflict: /\bwar\b|civil war|election/.test(conflictWords),
     retreatRisk: finiteOrNull(row.influence) !== null && Number(row.influence) < 5,
-    dataCondition: dataCondition({ sourceUpdated: row.sourceUpdated, manualUpdatedAt: manual?.updatedAt }, control.defaults),
+    dataCondition: dataCondition({ sourceUpdated: row.sourceUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
+  };
+}
+
+function resolveSystemSettings(systemDefaults, stored) {
+  const base = normalizeSystemDefaults(systemDefaults);
+  if (!stored) {
+    return {
+      ...base,
+      favorite: false,
+      customTick: '',
+      freshnessHours: null,
+      rolloverPolicy: '',
+      notes: '',
+      updatedAt: null,
+      updatedBy: null,
+    };
+  }
+  return {
+    ...base,
+    ...normalizeSystemSettings(stored, base),
+    favorite: Boolean(stored.favorite),
+    updatedAt: stored.updatedAt || null,
+    updatedBy: stored.updatedBy || null,
   };
 }
 
 function mergeFactionBoard(sourceFaction, manualFactions, sourceUpdated, manualUpdated) {
   const map = new Map();
-  for (const faction of manualFactions) map.set(norm(faction.name), { ...faction, source: 'manual' });
+  for (const faction of manualFactions) map.set(norm(faction.name), { ...faction, source: 'Manual' });
   const sourceIsNewer = compareTime(sourceUpdated, manualUpdated) >= 0;
   const key = norm(sourceFaction.name);
   if (!map.has(key) || sourceIsNewer) map.set(key, sourceFaction);
@@ -230,41 +303,13 @@ function normalizeDefaults(value = {}) {
   };
 }
 
-function defaultSystemSettings() {
+function normalizeSystemDefaults(value = {}) {
+  const legacyControl = value.desiredControl === 'maintain' ? 'maintain-existing' : value.desiredControl;
   return {
-    strategicPriority: 'normal',
-    targetMin: null,
-    targetMax: null,
-    desiredControl: 'maintain',
-    desiredStates: [],
-    avoidStates: [],
-    protectRetreat: true,
-    avoidExpansion: false,
-    allowDailyOrders: true,
-    autoGenerateOrders: true,
-    emergencyOverride: true,
-    reactRetreat: true,
-    reactConflict: true,
-    reactExpansion: true,
-    reactInfluence: true,
-    reactStates: true,
-    customTick: '',
-    freshnessHours: null,
-    rolloverPolicy: '',
-    notes: '',
-    updatedAt: null,
-    updatedBy: null,
-  };
-}
-
-function normalizeSystemSettings(value = {}) {
-  const base = defaultSystemSettings();
-  const priority = ['critical', 'high', 'normal', 'low'].includes(value.strategicPriority) ? value.strategicPriority : base.strategicPriority;
-  return {
-    strategicPriority: priority,
+    priority: normalizePriority(value.priority || value.strategicPriority),
+    controlPolicy: normalizeControlPolicy(value.controlPolicy || legacyControl),
     targetMin: percentOrNull(value.targetMin),
     targetMax: percentOrNull(value.targetMax),
-    desiredControl: ['maintain', 'gain', 'allow-transfer', 'none'].includes(value.desiredControl) ? value.desiredControl : base.desiredControl,
     desiredStates: stringList(value.desiredStates, 8, 60),
     avoidStates: stringList(value.avoidStates, 8, 60),
     protectRetreat: value.protectRetreat !== false,
@@ -277,10 +322,34 @@ function normalizeSystemSettings(value = {}) {
     reactExpansion: value.reactExpansion !== false,
     reactInfluence: value.reactInfluence !== false,
     reactStates: value.reactStates !== false,
+  };
+}
+
+function normalizeSystemSettings(value = {}, baseDefaults = SYSTEM_DEFAULTS) {
+  const base = normalizeSystemDefaults(baseDefaults);
+  const legacyControl = value.desiredControl === 'maintain' ? 'maintain-existing' : value.desiredControl;
+  return {
+    priority: normalizePriority(value.priority || value.strategicPriority || base.priority),
+    controlPolicy: normalizeControlPolicy(value.controlPolicy || legacyControl || base.controlPolicy),
+    targetMin: value.targetMin === '' || value.targetMin === undefined ? base.targetMin : percentOrNull(value.targetMin),
+    targetMax: value.targetMax === '' || value.targetMax === undefined ? base.targetMax : percentOrNull(value.targetMax),
+    desiredStates: Array.isArray(value.desiredStates) ? stringList(value.desiredStates, 8, 60) : [...base.desiredStates],
+    avoidStates: Array.isArray(value.avoidStates) ? stringList(value.avoidStates, 8, 60) : [...base.avoidStates],
+    protectRetreat: value.protectRetreat === undefined ? base.protectRetreat : value.protectRetreat !== false,
+    avoidExpansion: value.avoidExpansion === undefined ? base.avoidExpansion : Boolean(value.avoidExpansion),
+    allowDailyOrders: value.allowDailyOrders === undefined ? base.allowDailyOrders : value.allowDailyOrders !== false,
+    autoGenerateOrders: value.autoGenerateOrders === undefined ? base.autoGenerateOrders : value.autoGenerateOrders !== false,
+    emergencyOverride: value.emergencyOverride === undefined ? base.emergencyOverride : value.emergencyOverride !== false,
+    reactRetreat: value.reactRetreat === undefined ? base.reactRetreat : value.reactRetreat !== false,
+    reactConflict: value.reactConflict === undefined ? base.reactConflict : value.reactConflict !== false,
+    reactExpansion: value.reactExpansion === undefined ? base.reactExpansion : value.reactExpansion !== false,
+    reactInfluence: value.reactInfluence === undefined ? base.reactInfluence : value.reactInfluence !== false,
+    reactStates: value.reactStates === undefined ? base.reactStates : value.reactStates !== false,
     customTick: validTime(value.customTick) ? value.customTick : '',
     freshnessHours: value.freshnessHours === '' || value.freshnessHours === null || value.freshnessHours === undefined ? null : clampNumber(value.freshnessHours, 1, 72, null),
     rolloverPolicy: ['', 'strict', 'safety', 'carry'].includes(value.rolloverPolicy) ? value.rolloverPolicy : '',
     notes: cleanText(value.notes, '', 1200),
+    favorite: Boolean(value.favorite),
   };
 }
 
@@ -301,13 +370,18 @@ function normalizeManualSnapshot(value = {}, now, actor) {
   };
 }
 
-function normalizeSettingsMap(value) {
+function normalizeSettingsMap(value, systemDefaults) {
   const out = {};
   if (!value || typeof value !== 'object') return out;
   for (const [name, settings] of Object.entries(value)) {
     const key = cleanText(name, '', 140);
     if (!key) continue;
-    out[key] = { ...normalizeSystemSettings(settings), updatedAt: settings?.updatedAt || null, updatedBy: settings?.updatedBy || null };
+    out[key] = {
+      ...normalizeSystemSettings(settings, systemDefaults),
+      favorite: Boolean(settings?.favorite),
+      updatedAt: settings?.updatedAt || null,
+      updatedBy: settings?.updatedBy || null,
+    };
   }
   return out;
 }
@@ -335,11 +409,19 @@ function normalizeSnapshotMap(value) {
   return out;
 }
 
-function dataCondition(system, defaults) {
+function dataCondition(system, freshnessHours) {
   const newest = newestTimestamp(system.sourceUpdated, system.manualUpdatedAt);
   const hours = ageHours(newest);
-  if (hours === null || hours > Number(defaults?.freshnessHours || DEFAULTS.freshnessHours)) return 'stale';
+  if (hours === null || hours > Number(freshnessHours || DEFAULTS.freshnessHours)) return 'stale';
   return 'current';
+}
+
+function normalizePriority(value) {
+  return ['critical', 'high', 'normal', 'low'].includes(value) ? value : SYSTEM_DEFAULTS.priority;
+}
+
+function normalizeControlPolicy(value) {
+  return ['maintain-existing', 'gain', 'allow-transfer', 'none'].includes(value) ? value : SYSTEM_DEFAULTS.controlPolicy;
 }
 
 function newestTimestamp(a, b) {
