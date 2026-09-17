@@ -1,4 +1,5 @@
 (() => {
+  document.currentScript?.setAttribute('data-wolf-contribution-options','true');
   const MONGREL = 'Regiment of Imperial Mongrels';
   const CONFLICT_RE = /\b(civil\s+war|war|election)\b/i;
   const previewObservers = new WeakMap();
