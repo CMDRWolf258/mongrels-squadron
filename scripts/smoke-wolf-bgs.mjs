@@ -4,8 +4,11 @@ import { existsSync, readFileSync } from 'node:fs';
 for (const path of [
   'wolf-bgs/index.html',
   'css/wolf-bgs.css',
+  'css/wolf-bgs-rules.css',
   'js/wolf-bgs.js',
+  'js/wolf-bgs-rules.js',
   'functions/api/operations/wolf-bgs.js',
+  'functions/api/operations/wolf-bgs-rules.js',
   'scripts/enrich_bgs_boards.py',
   'data/live-bgs-boards.json',
 ]) {
@@ -31,6 +34,8 @@ assert.match(page, /External Source Data/, 'External source panel is not clearly
 assert.match(page, /wolf-time-input/, 'Tablet-safe time-input class is missing');
 assert.match(page, /js\/wolf-bgs\.js/, 'Control Room client is not loaded');
 assert.match(page, /css\/wolf-bgs\.css/, 'Control Room stylesheet is not loaded');
+assert.match(page, /js\/wolf-bgs-rules\.js/, 'Automation Rules client is not loaded');
+assert.match(page, /css\/wolf-bgs-rules\.css/, 'Automation Rules stylesheet is not loaded');
 
 const client = readFileSync('js/wolf-bgs.js', 'utf8');
 assert.match(client, /submit-status/, 'Manual status submission is not wired');
@@ -47,6 +52,22 @@ assert.match(client, /Programmed Automation/, 'Programmed automation explanation
 assert.match(client, /Advanced Intelligence Suggestion/, 'Advisory intelligence area is missing');
 assert.match(client, /data-faction-row/, 'Editable faction-board rows are missing');
 
+const rulesClient = readFileSync('js/wolf-bgs-rules.js', 'utf8');
+assert.match(rulesClient, /Automation Rules Library/, 'Automation Rules Library UI is missing');
+assert.match(rulesClient, /Exact independent per-CMDR caps are not treated as confirmed/i, 'Per-CMDR cap uncertainty is not documented in the UI');
+assert.match(rulesClient, /soloDoNotMultiply/, 'Solo-CMDR workload guardrail is missing');
+assert.match(rulesClient, /preferredOperators/, 'Preferred multi-CMDR operator target is missing');
+assert.match(rulesClient, /save-system-faction-strategies/, 'Whole-board faction strategy save is not wired');
+assert.match(rulesClient, /Support \/ raise/, 'Support-other-faction intent is missing');
+assert.match(rulesClient, /Suppress \/ lower/, 'Suppress-faction intent is missing');
+assert.match(rulesClient, /Protect from Retreat/, 'Faction Retreat protection intent is missing');
+assert.match(rulesClient, /Reset Filters/, 'Reset Filters action is missing');
+assert.match(rulesClient, /Reset to Defaults/, 'Per-system Reset to Defaults action is missing');
+assert.match(rulesClient, /sortFactionRows/, 'Faction board influence sorting is missing');
+assert.match(rulesClient, /wolf-influence-micro/, 'Collapsed influence target indicator is missing');
+assert.match(rulesClient, /wolf-influence-meter/, 'Expanded influence target bar is missing');
+assert.match(rulesClient, /Preview only:/, 'Automation preview is not clearly non-publishing');
+
 const apiSource = readFileSync('functions/api/operations/wolf-bgs.js', 'utf8');
 assert.match(apiSource, /session\.access !== 'site_admin'/, 'Wolf BGS API is not site-admin restricted');
 assert.match(apiSource, /wolf-bgs-control-v1/, 'Wolf BGS private KV key is missing');
@@ -59,6 +80,15 @@ assert.match(apiSource, /externalBoardComplete/, 'Full-board completeness is not
 assert.match(apiSource, /controlPolicy: 'maintain-existing'/, 'Default control policy should preserve existing control state');
 assert.match(apiSource, /defaultTick: '19:00'/, 'Prototype default tick should begin at 19:00 Central/local UI time');
 assert.match(apiSource, /maxDailySystems: 6/, 'Daily Orders system-cap default should begin at six');
+
+const rulesApi = readFileSync('functions/api/operations/wolf-bgs-rules.js', 'utf8');
+assert.match(rulesApi, /session\.access !== 'site_admin'/, 'Automation Rules API is not site-admin restricted');
+assert.match(rulesApi, /wolf-bgs-rules-v1/, 'Automation Rules KV key is missing');
+assert.match(rulesApi, /save-system-faction-strategies/, 'Automation Rules API does not persist whole-board faction strategies');
+assert.match(rulesApi, /reset-system-settings/, 'Reset-to-defaults API action is missing');
+assert.match(rulesApi, /favoritePreserved/, 'Reset-to-defaults does not explicitly preserve favorite state');
+assert.match(rulesApi, /exactPerCmdrCapConfirmed: false/, 'Automation Rules must not claim an exact per-CMDR cap is confirmed');
+assert.match(rulesApi, /soloDoNotMultiply: true/, 'Default solo workload guardrail is missing');
 
 const boardUpdater = readFileSync('scripts/enrich_bgs_boards.py', 'utf8');
 assert.match(boardUpdater, /factionStates/, 'Full-board updater does not query faction states');
@@ -73,8 +103,17 @@ assert.match(css, /\.wolf-time-input/, 'Time input does not have tablet clipping
 assert.match(css, /\.wolf-list-options/, 'Watch-option styling is missing');
 assert.match(css, /\.wolf-system-card\.low-watch/, 'Lowest-five watch styling is missing');
 
+const rulesCss = readFileSync('css/wolf-bgs-rules.css', 'utf8');
+assert.match(rulesCss, /color:#7f8b90/, 'Large display headings were not darkened');
+assert.match(rulesCss, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/, 'iPad global-form two-column overlap guard is missing');
+assert.match(rulesCss, /\.wolf-faction-strategy-table/, 'Faction strategy table styling is missing');
+assert.match(rulesCss, /\.wolf-influence-meter/, 'Influence target-bar styling is missing');
+
 const module = await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof module.onRequestGet, 'function', 'Wolf BGS API GET handler did not import');
 assert.equal(typeof module.onRequestPut, 'function', 'Wolf BGS API PUT handler did not import');
+const rulesModule = await import('../functions/api/operations/wolf-bgs-rules.js');
+assert.equal(typeof rulesModule.onRequestGet, 'function', 'Wolf BGS Rules API GET handler did not import');
+assert.equal(typeof rulesModule.onRequestPut, 'function', 'Wolf BGS Rules API PUT handler did not import');
 
-console.log('✓ Wolf BGS Control full-board ingestion hooks, watch modes, pagination, favorites, filters, System Defaults, private API, faction board, and responsive shell are structurally sound');
+console.log('✓ Wolf BGS Control full-board ingestion, whole-board faction strategy, automation rules, workload guardrails, reset controls, target indicators, filters, System Defaults, private APIs, faction board, and responsive shell are structurally sound');
