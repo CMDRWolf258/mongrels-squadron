@@ -32,6 +32,7 @@ No current preview publishes Daily Orders automatically.
 - `functions/api/operations/wolf-bgs-write.js`
 - `functions/api/operations/wolf-bgs-rules.js`
 - `functions/api/operations/wolf-bgs-sliders.js`
+- `functions/api/operations/wolf-bgs-economy-rules.js`
 - `functions/api/operations/wolf-bgs-screenshot.js`
 - `scripts/enrich_bgs_boards.py`
 - `data/live-bgs-boards.json`
@@ -47,6 +48,7 @@ All current BGS Control state uses the existing `DAILY_ORDERS` KV binding.
 - Core Control Room key: `wolf-bgs-control-v1`
 - Automation Rules / faction strategy / balancing calibration: `wolf-bgs-rules-v1`
 - Economy/Security objectives: `wolf-bgs-slider-objectives-v1`
+- Economy bucket / exploration workload doctrine: `wolf-bgs-economy-rules-v1`
 
 Core system settings use sparse overrides. Blank/default-valued per-system fields inherit current System Defaults dynamically instead of storing copied defaults.
 
@@ -82,7 +84,7 @@ Current terms:
 - **Flexible / available** — automation may use the faction when strategically safe. This replaces the ambiguous old `No action` meaning.
 - **Avoid interaction** — do not intentionally support or suppress this faction.
 - **Support / raise** — positive work is desired until any configured ceiling/goal is satisfied.
-- **Suppress / lower** — the faction should lose relative influence; positive work for it requires compensating logic.
+- **Suppress / lower** — the faction should lose relative influence. The current safe automation method is positive redistribution to another eligible faction; automatic direct negative work is disabled.
 - **Maintain / hold** — this is an actual stability objective, not “whatever”.
 - **Protect from Retreat** — prioritize support when Retreat risk is relevant.
 - **Allow Retreat** — avoid positive work that would rescue the faction unless Wolf changes the objective.
@@ -98,7 +100,7 @@ Economy and Security are first-class faction objectives, separate from influence
 - Economy: Ignore / Raise / Hold / Lower.
 - Security: Ignore / Raise / Hold / Lower / Locked / not actionable.
 
-The important doctrine is now **balance, do not automatically block**:
+The important doctrine is **balance, do not automatically block**:
 
 - Being near an influence ceiling does not by itself stop desired Economy/Security work.
 - Positive slider work may proceed while the Order Preview generates compensating support for eligible other factions.
@@ -106,8 +108,36 @@ The important doctrine is now **balance, do not automatically block**:
 - `Allow Retreat` also blocks positive slider work unless explicitly changed.
 - `Maintain / hold` or `Suppress / lower` can coexist with positive slider work only if counter-support is generated.
 - Security `Locked / not actionable` never generates Security work.
+- Economy/Security `Hold` produces no deliberate large slider workload unless a higher-priority objective requires one.
+- Economy/Security `Lower` does not automatically generate hostile/negative work; the preview warns that manual planning is required.
 
-Lowering Economy/Security remains advisory until validated negative-slider recipes are encoded.
+### Economy action selection
+
+Economy Raise is a decision tree, not a synonym for trade:
+
+1. If the faction already needs positive mission INF for an influence objective, prefer **economic missions** so one workload serves Influence + Economy.
+2. If there is no aligned positive mission-INF task, **profitable trade** is the primary measurable Economy workload.
+3. High/Critical priority may add trade even when economic mission-INF is already present, because stronger Economy pressure is intentional.
+4. When diversification is enabled and more than one operator is preferred, add an exploration-data bucket at the configured urgency tier.
+5. Exploration is supplementary; it does not receive an invented INF conversion and does not replace the calibrated trade counterweight formula.
+
+### Exploration workload doctrine
+
+Exploration data is intentionally smaller than trade because acquiring fresh valuable scans becomes progressively less convenient as nearby bodies are exhausted.
+
+Default per-CMDR tiers:
+
+- **Routine:** 2M Cr exploration data.
+- **Strong:** 5M Cr exploration data.
+- **Emergency ceiling:** 10M Cr exploration data.
+
+Normal/Low systems use Routine; High uses Strong; Critical may use the Emergency ceiling. Normal automation never exceeds the configured 5M Strong tier unless the system is Critical. Exobiology is not treated as this BGS bucket.
+
+Exploration and trade remain asset-dependent actions. Automated asset ownership/service discovery is deliberately deferred. The preview therefore marks a manual asset check: trade should use an appropriate market owned by the target faction, and exploration data should be sold at a target-faction-owned asset with Universal Cartographics.
+
+### Security action selection
+
+Bounty vouchers remain the primary measurable Security Raise workload. If the faction already has mission-INF work, the preview prefers security/combat-aligned mission choices where practical so one task can serve both objectives.
 
 ## Automation Rules Library and CMDR workload doctrine
 
@@ -119,7 +149,7 @@ Current workload controls include:
 - stretch mission INF per participating CMDR;
 - bounty MCr per CMDR;
 - trade-profit MCr per CMDR;
-- exploration-data MCr per CMDR;
+- exploration routine / strong / emergency MCr per CMDR;
 - preferred participating CMDR count;
 - diversification preference;
 - solo-CMDR guard against multiplying one pilot's workload to replace missing operators.
@@ -128,7 +158,8 @@ Operational doctrine:
 
 - several CMDRs doing moderate useful work is preferred to one CMDR grinding far beyond a useful range;
 - exact independent per-CMDR soft-cap behavior is treated as unconfirmed;
-- mission `INF` always means mission influence reward pips/ticks, never faction percentage points.
+- mission `INF` always means mission influence reward pips/ticks, never faction percentage points;
+- direct negative work is disabled in programmed automation until Wolf explicitly approves validated recipes.
 
 Safety controls include Retreat warning/emergency and Expansion early warning.
 
@@ -183,6 +214,10 @@ Candidate logic currently:
 
 The engine prefers one counterweight faction. It may split across two when the top candidate is itself very close to its configured ceiling. This split is a conservative operational heuristic, not a claim to predict exact percentage movement from mission INF.
 
+Counterweight remains calibrated in mission INF. If the selected counterweight faction also has Economy Raise, the mission task prefers economic missions; if it has Security Raise, it prefers security/combat-aligned missions. This lets one mission workload help two configured goals without inventing a trade/exploration/bounty-to-INF formula.
+
+If Security and Economy create overlapping counterweight requirements for the same recipient, the engine keeps the **higher** mission-INF requirement instead of adding them blindly. This deliberately avoids assuming the side effects are perfectly additive.
+
 If no safe counterweight exists, the preview raises a warning rather than inventing a recipient.
 
 ## Order Preview / Generator
@@ -195,11 +230,13 @@ The preview can produce:
 
 - Mongrel support when below target floor;
 - positive work for explicitly supported non-Mongrel factions;
+- positive-redistribution work to suppress/lower a faction without automatic hostile actions;
 - Retreat rescue workloads;
 - redistribution/counter-support when Mongrels or another maintained faction is above target;
-- Security work via bounty-voucher workload;
-- Economy work via profitable-trade workload;
+- Security work via bounty-voucher workload plus mission-type preference where useful;
+- Economy work via aligned economic mission INF, profitable trade and exploration diversification;
 - balancing mission INF for eligible counterweight factions;
+- manual asset-verification notes for trade/exploration;
 - stop/review conditions;
 - safety/candidate explanations;
 - visible balancing arithmetic.
@@ -207,6 +244,10 @@ The preview can produce:
 Overlapping mission-INF needs for the same faction are merged using the higher required workload rather than blindly summed. Example: if a faction already needs 25 INF for its own Support objective and the Security counterweight calculation asks for 15 INF, the preview keeps a 25-INF task because that work also satisfies the smaller counterweight need.
 
 The preview clearly shows `PREVIEW ONLY` and `Publish disabled`. It does not write Daily Orders.
+
+## Conflict boundary for current preview
+
+Conflict-specific order generation is deliberately deferred to its own logic pass. Current behavior only detects conflict, marks the system for attention, keeps active conflict participants out of ordinary counterweight selection, and retains the existing member War/Election doctrine. The dedicated conflict engine will later identify participants, intended winner, conflict type/day/score and replace ordinary influence work with conflict-valid tasks.
 
 ## Screenshot import
 
@@ -249,6 +290,7 @@ Graphical Economy/Security slider estimation is intentionally deferred until eno
 
 The next major stages after validating Order Preview behavior are:
 
+- dedicated conflict-management logic;
 - ranked Daily Orders queue;
 - explicit approve/edit/publish flow;
 - member task/reporting controls generated from structured orders;
