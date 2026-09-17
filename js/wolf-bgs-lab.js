@@ -1,5 +1,6 @@
 (() => {
   const KEY = 'wolf-bgs-lab-mandalore-v1';
+  const CONFLICT_KEY = 'wolf-bgs-lab-mandalore-conflicts-v1';
   const MONGREL = 'Regiment of Imperial Mongrels';
   const card = document.querySelector('[data-bgs-lab="true"]');
   if (!card) return;
@@ -10,7 +11,8 @@
   const presets = {
     balanced:{ influence:[45,20,12,9,6,5,3], state:['','','','','','',''], priority:'normal', min:40, max:55, controller:MONGREL },
     dual:{ influence:[40,40,8,8,2,1,1], state:['War','War','Election','Election','','',''], priority:'high', min:35, max:50, controller:MONGREL },
-    ambiguous:{ influence:[25,25,15,15,10,5,5], state:['War','War','War','War','','',''], priority:'high', min:20, max:40, controller:MONGREL },
+    fourway:{ influence:[30,28.5,18,16.5,3,2,2], state:['War','War','War','War','','',''], priority:'high', min:20, max:40, controller:MONGREL },
+    ambiguous:{ influence:[24,24,24,24,2,1,1], state:['War','War','War','War','','',''], priority:'high', min:20, max:40, controller:MONGREL },
     pressure:{ influence:[54.5,18,10,7,5,3,2.5], state:['','','','','','',''], priority:'normal', min:40, max:55, controller:MONGREL },
   };
 
@@ -101,6 +103,16 @@
     for(const key of ['bountyPercentAdjustment','bountyFlatInfAdjustment','tradePercentAdjustment','tradeFlatInfAdjustment'])setValue(card.querySelector(`[data-calibration="${key}"]`),'0',fire);
   }
 
+  function resetConflictPairing(){
+    localStorage.removeItem(CONFLICT_KEY);
+    card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
+      delete row.dataset.autoPair;
+      setValue(row.querySelector('[data-conflict="factionA"]'),'',false);
+      setValue(row.querySelector('[data-conflict="factionB"]'),'',false);
+      setValue(row.querySelector('[data-conflict="objective"]'),'monitor',false);
+    });
+  }
+
   function applyPreset(name){
     const preset=presets[name]||presets.balanced;
     factionRows().forEach((row,index)=>{
@@ -114,6 +126,7 @@
     setValue(card.querySelector('[data-setting="targetMax"]'),preset.max,true);
     setValue(card.querySelector('[data-status="controller"]'),preset.controller,true);
     resetGeneratedControls({fire:true});
+    resetConflictPairing();
     if(name==='pressure'){
       const mongrelSlider=[...card.querySelectorAll('[data-slider-objective-row]')].find(row=>norm(row.dataset.factionName)===norm(MONGREL));
       if(mongrelSlider){setValue(mongrelSlider.querySelector('[data-slider-objective="economyObjective"]'),'raise',true);setValue(mongrelSlider.querySelector('[data-slider-objective="securityObjective"]'),'raise',true);}
@@ -121,6 +134,7 @@
       if(alpha){setValue(alpha.querySelector('[data-faction-strategy="intent"]'),'support',true);setValue(alpha.querySelector('[data-faction-strategy="targetMin"]'),'15',true);setValue(alpha.querySelector('[data-faction-strategy="targetMax"]'),'25',true);}
     }
     save();
+    setTimeout(()=>card.querySelector('[data-faction="influence"]')?.dispatchEvent(new Event('change',{bubbles:true})),0);
   }
 
   function intercept(event){
@@ -143,7 +157,7 @@
 
   card.addEventListener('click',intercept,true);
   card.addEventListener('change',()=>setTimeout(save,0));
-  document.querySelector('[data-lab-reset]')?.addEventListener('click',()=>{localStorage.removeItem(KEY);applyPreset('balanced');});
+  document.querySelector('[data-lab-reset]')?.addEventListener('click',()=>{localStorage.removeItem(KEY);localStorage.removeItem(CONFLICT_KEY);applyPreset('balanced');});
   document.querySelectorAll('[data-lab-scenario]').forEach(button=>button.addEventListener('click',()=>applyPreset(button.dataset.labScenario)));
 
   const saved=readSaved();
