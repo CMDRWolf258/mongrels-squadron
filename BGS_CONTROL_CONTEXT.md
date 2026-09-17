@@ -18,13 +18,22 @@ Primary files:
 - `/wolf-bgs/index.html`
 - `css/wolf-bgs.css`
 - `css/wolf-bgs-rules.css`
+- `css/wolf-bgs-sliders.css`
+- `css/wolf-bgs-screenshot.css`
 - `js/wolf-bgs.js`
+- `js/wolf-bgs-inheritance.js`
 - `js/wolf-bgs-rules.js`
+- `js/wolf-bgs-sliders.js`
+- `js/wolf-bgs-screenshot.js`
 - `functions/api/operations/wolf-bgs.js`
+- `functions/api/operations/wolf-bgs-write.js`
 - `functions/api/operations/wolf-bgs-rules.js`
+- `functions/api/operations/wolf-bgs-sliders.js`
+- `functions/api/operations/wolf-bgs-screenshot.js`
 - `scripts/enrich_bgs_boards.py`
 - `data/live-bgs-boards.json`
 - `scripts/smoke-wolf-bgs.mjs`
+- `scripts/smoke-wolf-bgs-screenshot.mjs`
 - `.github/workflows/update-bgs.yml`
 
 Access:
@@ -35,8 +44,11 @@ Storage:
 - Existing `DAILY_ORDERS` KV binding.
 - Core Control Room key: `wolf-bgs-control-v1`.
 - Automation Rules key: `wolf-bgs-rules-v1`.
-- Core key stores global automation defaults, System Defaults, per-system settings/favorites, and manual system/faction snapshots.
+- Economy/Security objective key: `wolf-bgs-slider-objectives-v1`.
+- Core key stores global automation defaults, System Defaults, sparse per-system settings/favorites, and manual system/faction snapshots.
 - Rules key stores programmed workload/safety rules and per-system whole-board faction strategy.
+- Economy/Security objective storage is separate from factual board snapshots and influence strategy.
+- Screenshot images are not persisted by Wolf Control; they are interpreted for the current request and only extracted review data is returned to the browser.
 
 ## Control-deck list UX
 
@@ -99,12 +111,14 @@ These defaults govern normal strategy/automation behavior for systems without a 
 - emergency priority override.
 - reactions to Retreat, conflict, Expansion, influence-band and state changes.
 
-Per-system settings can override these defaults. System Defaults and Global Automation Defaults are intentionally separate concepts.
+Per-system settings use sparse overrides. A value that is blank or explicitly returned to the active System Default does not remain frozen as a copied value; it inherits the current default dynamically. Changing System Defaults therefore affects only fields/systems still inheriting those defaults.
 
 **Reset to Defaults** removes that system's custom configuration overrides and returns it to inherited System Defaults. The reset intentionally preserves:
 - favorite status;
+- system notes;
 - manual faction/status snapshots;
 - faction-board strategy stored in the Automation Rules layer;
+- Economy/Security objectives stored in their own layer;
 - reporting/history data.
 
 The reset requires explicit confirmation.
@@ -174,6 +188,31 @@ Trust model:
 
 The Control Room must never imply a board is complete when only the Mongrel presence row is available.
 
+## Screenshot import — review-first manual-data accelerator
+
+Each expanded system card can mount a Wolf-only **Screenshot Import** panel immediately after the factual faction board.
+
+Phase-one workflow:
+1. Wolf drops, pastes, or chooses a PNG/JPEG/WebP screenshot up to 8 MB.
+2. The browser sends it to `functions/api/operations/wolf-bgs-screenshot.js` with the current system name and current editable faction names/influences for reference.
+3. The server uses the existing OpenAI API key and Responses API image input to extract visible faction names and influence percentages. Image text is treated as untrusted data, not instructions.
+4. Returned rows are matched against known current factions where possible and carry a confidence score.
+5. The review panel shows current influence, detected influence, delta, confidence, total detected influence, unmatched names, and warnings.
+6. If two or more readable rows do not total approximately 100%, the importer warns rather than pretending the extraction is trustworthy.
+7. **Apply Matched Influence to Form** changes only matched influence inputs in the editable faction board.
+8. The importer never invokes `submit-status`; Wolf still reviews the resulting form and explicitly presses **Submit Status** before the manual snapshot becomes authoritative.
+
+Additional safety rules:
+- unmatched faction names are not auto-applied;
+- low-confidence rows are visibly flagged;
+- a reported different system name is warned about;
+- file type/size are validated on both client and server;
+- the endpoint is site-admin-only and uses the same same-origin request marker as Wolf Control;
+- screenshot API usage is counted against the existing AI usage budgets;
+- screenshot bytes are not persisted in Control Room storage.
+
+Phase one intentionally does **not** estimate graphical Economy/Security slider marker positions. That is a later vision-calibration feature and should be stored as approximate observations rather than fabricated exact game percentages.
+
 ## Automation Rules Library v1
 
 The first programmed-rules layer is now separate from the cycle/freshness defaults. It is explicitly a configurable operational doctrine layer rather than a claim to know Frontier's hidden BGS formula.
@@ -225,6 +264,28 @@ This model allows a future generated order to say, for example, “complete 25 I
 
 Faction Strategy is saved separately from manual faction-board status. Resetting faction strategy does not edit the factual board snapshot; resetting System Settings does not erase faction strategy.
 
+## Economy and Security objectives
+
+Economy and Security are first-class faction objectives rather than being inferred from influence intent.
+
+For every faction on a current board, Wolf can independently configure:
+- **Economy:** Ignore / Raise / Hold / Lower.
+- **Security:** Ignore / Raise / Hold / Lower / Locked / not actionable.
+
+These objectives live in their own storage layer and are intentionally separate from factual faction status and influence strategy.
+
+Influence guardrails coordinate the two layers:
+- if a faction is at/above its configured influence ceiling, positive slider work is paused rather than silently pushing influence higher;
+- if a faction is below its influence floor, positive Economy/Security work can also serve the influence objective;
+- if a faction is configured for suppression, positive slider work is blocked until Wolf changes the influence plan;
+- when influence is being held, the automation prefers modest workloads and low-INF reward choices rather than assuming Economy/Security can move with zero influence effect.
+
+Current workload references reuse the Automation Rules Library's per-CMDR trade-profit and bounty guidance. Lowering Economy/Security is recorded as an objective but remains advisory until validated negative-slider recipes are encoded.
+
+Security can be marked **Locked / not actionable** for cases such as factions whose Security slider cannot be meaningfully manipulated. Automatic government/ethos detection is not assumed until the ingestion layer has reliable government data.
+
+The Programmed Automation preview displays this slider layer alongside influence strategy. It remains preview-only and does not publish Daily Orders.
+
 ## Automation architecture
 
 Three visibly separated layers:
@@ -234,6 +295,7 @@ Three visibly separated layers:
    - Must expose where amounts such as bounty targets come from.
    - Expected levers include mission INF, bounty vouchers, trade profit, exploration data, conflict work and deliberate negative work.
    - Whole-board faction intent determines which faction should receive support/suppression when needed.
+   - Economy/Security objectives are evaluated separately from influence and are constrained by the faction's influence guardrail.
    - Explanation panel should show rule fired, base amount, modifiers, final task, priority and stop condition.
 
 2. **Advanced Intelligence Suggestion — advisory**
@@ -246,7 +308,7 @@ Three visibly separated layers:
    - Create custom order amounts/logic.
    - Force include/exclude/hold systems and tasks.
 
-The current Programmed Automation card now gives a **preview-only** deterministic explanation from the target band and saved faction intent. It does **not** publish Daily Orders yet.
+The current Programmed Automation card gives a **preview-only** deterministic explanation from the target band, saved faction intent, and Economy/Security objectives. It does **not** publish Daily Orders yet.
 
 ## Planned Control Room sections beyond the current shell
 
@@ -259,7 +321,8 @@ Planned additions include:
 - Tick & Data Monitor;
 - Exceptions / Overrides summary;
 - command-level Health / Attention summary;
-- “What changed since last cycle?” change digest.
+- “What changed since last cycle?” change digest;
+- optional graphical Economy/Security screenshot interpretation after enough examples exist to calibrate the visual positions safely.
 
 ## Daily Orders direction
 
