@@ -2,28 +2,31 @@
 
 _Last updated: 2026-09-17_
 
-This file records the architecture and product direction for the Wolf-only BGS Control Room. Read `PROJECT_CONTEXT.md` first; repository code remains authoritative.
+Read `PROJECT_CONTEXT.md` first. Repository code is authoritative if this file, memory, old chats, or screenshots disagree.
 
-## Purpose
+## Purpose and authority
 
-Wolf BGS Control is a site-admin-only command deck for CMDR Wolf258, the squad's primary BGS strategist. It is intentionally distinct from member-facing Mission Control and officer Daily Orders editing.
+Wolf BGS Control is a site-admin-only command deck for CMDR Wolf258. It is intentionally separate from member-facing Mission Control.
 
-Core principle:
+Core model:
 
-> Programmed BGS logic performs monitoring, prioritization and clerical work; Wolf retains strategic authority; members receive simple orders and low-friction reporting.
+> Programmed logic handles monitoring, prioritization, balancing and clerical reasoning; Advanced Intelligence may suggest changes; Wolf remains the final authority; members eventually receive simple structured Daily Orders.
 
-## Current implementation
+No current preview publishes Daily Orders automatically.
 
-Primary files:
+## Primary files
+
 - `/wolf-bgs/index.html`
 - `css/wolf-bgs.css`
 - `css/wolf-bgs-rules.css`
 - `css/wolf-bgs-sliders.css`
+- `css/wolf-bgs-order-preview.css`
 - `css/wolf-bgs-screenshot.css`
-- `js/wolf-bgs.js`
 - `js/wolf-bgs-inheritance.js`
+- `js/wolf-bgs.js`
 - `js/wolf-bgs-rules.js`
 - `js/wolf-bgs-sliders.js`
+- `js/wolf-bgs-order-preview.js`
 - `js/wolf-bgs-screenshot.js`
 - `functions/api/operations/wolf-bgs.js`
 - `functions/api/operations/wolf-bgs-write.js`
@@ -34,348 +37,228 @@ Primary files:
 - `data/live-bgs-boards.json`
 - `scripts/smoke-wolf-bgs.mjs`
 - `scripts/smoke-wolf-bgs-screenshot.mjs`
-- `.github/workflows/update-bgs.yml`
 
-Access:
-- Server APIs require `session.access === 'site_admin'`.
-- UI hiding is not treated as authorization.
+All private APIs require `session.access === 'site_admin'`; hiding UI is never treated as authorization.
 
-Storage:
-- Existing `DAILY_ORDERS` KV binding.
-- Core Control Room key: `wolf-bgs-control-v1`.
-- Automation Rules key: `wolf-bgs-rules-v1`.
-- Economy/Security objective key: `wolf-bgs-slider-objectives-v1`.
-- Core key stores global automation defaults, System Defaults, sparse per-system settings/favorites, and manual system/faction snapshots.
-- Rules key stores programmed workload/safety rules and per-system whole-board faction strategy.
-- Economy/Security objective storage is separate from factual board snapshots and influence strategy.
-- Screenshot images are not persisted by Wolf Control; they are interpreted for the current request and only extracted review data is returned to the browser.
+## Storage
 
-## Control-deck list UX
+All current BGS Control state uses the existing `DAILY_ORDERS` KV binding.
 
-The current Mongrel footprint is shown as compact expandable system cards.
+- Core Control Room key: `wolf-bgs-control-v1`
+- Automation Rules / faction strategy / balancing calibration: `wolf-bgs-rules-v1`
+- Economy/Security objectives: `wolf-bgs-slider-objectives-v1`
 
-List controls:
-- default **20 results per page** with selectable page size;
-- default sorting is **Mongrel influence high → low**;
-- search by system name;
-- alternate sort by influence low→high, system name, priority, or data freshness;
-- quick views for Favorites, attention, stale, controlled, and not controlled;
-- **Custom filter** exposes Priority, State text, Pending text, control status, and flags such as Favorite, Retreat risk, Conflict, Stale, Custom Settings, and Automation Off;
-- optional **Favorites first** checkbox pins all favorite systems above the normal sorted/filtered list without changing the selected sort inside each group;
-- optional **Keep lowest 5 on page** checkbox reserves the final five page slots for the five lowest Mongrel influences across the entire active footprint. These cards receive a LOW 5 WATCH marker;
-- **Reset Filters** restores the baseline list view: blank search, All systems, Influence high→low, 20/page, watch toggles off, and cleared custom-filter fields. It does not remove saved favorites.
+Core system settings use sparse overrides. Blank/default-valued per-system fields inherit current System Defaults dynamically instead of storing copied defaults.
 
-Each system has a Wolf-only clickable favorite star. Favorites are navigation/visibility aids and do not by themselves change Daily Orders or BGS automation priority.
-
-The collapsed system header shows the same unified **Priority** field edited inside the Strategy section. The previous separate `Strategic Importance` concept was removed as redundant.
-
-Faction rows inside the expanded System Status & Faction Board are displayed by influence high→low, using faction name as a stable alphabetical tie-breaker.
-
-## Influence target visualization
-
-When a Mongrel target band exists:
-- collapsed system cards show a very subtle influence marker with the target window shaded behind it;
-- expanded Strategy shows a larger Mission-Control-style 0–100% influence bar with current position and target min/max.
-
-No target meter is shown when no target band exists, avoiding extra visual clutter.
-
-## Prototype global automation defaults
-
-Global Automation Defaults govern cycle/reporting mechanics rather than individual strategic objectives:
-- Default scheduled system tick: 19:00 local browser/Control Room display time (intended starting point: 7:00 PM Central for Wolf).
-- Maximum data age: 8 hours.
-- Tick-watch buffer: 90 minutes.
-- Late-report grace: 3 hours.
-- Maximum Daily Orders systems: 6.
-- Default rollover policy: Safety Only.
-- Require post-tick data for normal orders: true.
-- Emergency orders with stale data: false by default.
-
-All are configurable from Wolf Control. Tablet/iPad layout keeps the global form in two columns where practical while explicitly constraining grid children and unit fields so Safari-native inputs cannot overlap the neighboring column.
-
-## System Defaults and reset behavior
-
-A clearly separate expandable **System Defaults** card lives below the system list.
-
-These defaults govern normal strategy/automation behavior for systems without a custom system setting:
-- Priority: Normal.
-- Control Policy: **Maintain existing control state**.
-  - If Mongrels already control the system, future automation should preserve that control unless overridden.
-  - If Mongrels do not control the system, this default does not instruct automation to take control.
-- Optional target influence min/max.
-- Preferred/avoided states.
-- Retreat protection.
-- Expansion avoidance.
-- Daily Orders eligibility.
-- automatic order generation.
-- emergency priority override.
-- reactions to Retreat, conflict, Expansion, influence-band and state changes.
-
-Per-system settings use sparse overrides. A value that is blank or explicitly returned to the active System Default does not remain frozen as a copied value; it inherits the current default dynamically. Changing System Defaults therefore affects only fields/systems still inheriting those defaults.
-
-**Reset to Defaults** removes that system's custom configuration overrides and returns it to inherited System Defaults. The reset intentionally preserves:
-- favorite status;
-- system notes;
-- manual faction/status snapshots;
-- faction-board strategy stored in the Automation Rules layer;
-- Economy/Security objectives stored in their own layer;
-- reporting/history data.
-
-The reset requires explicit confirmation.
-
-## Per-system control model
-
-Every current Mongrel-presence system appears as a compact expandable card. Controls include:
-- unified Priority: Critical / High / Normal / Low;
-- control policy: Maintain Existing / Gain Control / Allow Intentional Transfer / No Control Objective;
-- target influence min/max;
-- preferred/avoided states;
-- Retreat protection;
-- Expansion avoidance;
-- Daily Orders eligibility;
-- automatic order generation;
-- emergency priority override;
-- response toggles for Retreat, conflict, Expansion, target-band and state changes;
-- custom tick time;
-- custom freshness threshold;
-- rollover policy;
-- notes;
-- favorite star for quick filtering/pinning.
-
-Settings are changed only after **Save System Settings**, except the favorite star which is an intentional quick-control action and saves immediately with a fresh system-settings timestamp. A full edit history is not required.
+`Reset to Defaults` removes the system-configuration override layer but preserves favorites, notes, manual faction/status snapshots, faction strategy, Economy/Security objectives, balancing calibration, and reporting/history data.
 
 ## Full faction-board ingestion
 
-The original `data/live-bgs.json` remains the authoritative Mongrel-presence discovery feed. It tracks the Regiment of Imperial Mongrels presence plus useful system metadata.
+`data/live-bgs.json` remains the authoritative Mongrel-presence discovery feed.
 
-Complete faction boards are enriched independently into:
-- `data/live-bgs-boards.json`
-- generated by `scripts/enrich_bgs_boards.py`
+Complete faction boards are enriched separately into `data/live-bgs-boards.json` by `scripts/enrich_bgs_boards.py` using EliteHub Vault / EDDN. The board snapshot retains faction name, influence, active/current state, pending state, recovering state and source update time.
 
-The enrichment flow:
-1. resolves the Mongrel faction in EliteHub Vault;
-2. obtains current Mongrel system IDs from Vault faction-state rows;
-3. fetches every faction-state row for each active Mongrel system;
-4. retains faction name, influence, active/current states, pending states, recovering states, and source update timestamp;
-5. writes complete boards separately from the presence feed.
+Keeping full boards separate is deliberate: a temporary board-enrichment failure must not wipe out Mongrel-presence discovery. The two-hour updater retains prior good board data where possible and uses safe pacing/retry behavior for EliteHub rate limits.
 
-The BGS refresh workflow runs the normal presence updater first, then the board enrichment. The board snapshot is separate deliberately: a temporary full-board failure must not make the existing Mongrel presence feed disappear or falsely retire systems. The enrichment file also preserves prior good board rows on incomplete/failed refreshes where possible.
+Manual snapshots remain a fallback and are timestamped. The newest complete trusted snapshot wins; the UI must never pretend a Mongrel-only fallback row is a complete faction board.
 
-The workflow continues on the existing two-hour schedule and can also run manually. It also runs when BGS updater/workflow code changes so new ingestion logic can be exercised immediately.
+## System list and target UX
 
-## Source/manual freshness behavior
+- 20 systems/page by default.
+- Default sort: Mongrel influence high → low.
+- Search, quick views, custom filters, Favorites-first and Lowest-five watch.
+- `Reset Filters` clears view state only; it never clears saved Favorites or system data.
+- Faction board rows sort influence high → low, name alphabetical for ties.
+- Collapsed cards show a subtle target-band marker; expanded Strategy shows a fuller 0–100% influence target bar.
+- Global Automation Defaults and System Defaults are separate concepts.
+- Tablet/iPad layout must keep native form controls inside their grid columns.
 
-The expanded card contains an editable faction board with rows for:
-- faction name;
-- influence;
-- current/active state;
-- pending state;
-- recovering state;
-- data origin.
+## Whole-board faction intent
 
-Wolf can add/remove faction rows, set the controller and notes, then use **Submit Status**. Manual status submission is intentionally separate from saving system automation/strategy settings.
+Automation is deliberately not Mongrel-only. Every faction can be given an intent.
 
-Manual status gets a fresh server timestamp and actor identity. The UI shows:
-- External Source Update Time;
-- Manual Update Time;
-- Active Snapshot time/source;
-- whether a complete external board is available and how many factions it contains.
+Current terms:
 
-Trust model:
-- newest complete manual snapshot wins when it is newer than the external board;
-- a newer complete external board supersedes the older manual snapshot;
-- when full-board ingestion is unavailable, the Mongrel presence row still supplies a source fallback and Wolf can submit a complete manual board.
+- **Flexible / available** — automation may use the faction when strategically safe. This replaces the ambiguous old `No action` meaning.
+- **Avoid interaction** — do not intentionally support or suppress this faction.
+- **Support / raise** — positive work is desired until any configured ceiling/goal is satisfied.
+- **Suppress / lower** — the faction should lose relative influence; positive work for it requires compensating logic.
+- **Maintain / hold** — this is an actual stability objective, not “whatever”.
+- **Protect from Retreat** — prioritize support when Retreat risk is relevant.
+- **Allow Retreat** — avoid positive work that would rescue the faction unless Wolf changes the objective.
 
-The Control Room must never imply a board is complete when only the Mongrel presence row is available.
+Non-Mongrel factions may also have target min/max and a control objective: none / prefer control / avoid control / allow either.
 
-## Screenshot import — review-first manual-data accelerator
-
-Each expanded system card can mount a Wolf-only **Screenshot Import** panel immediately after the factual faction board.
-
-Phase-one workflow:
-1. Wolf drops, pastes, or chooses a PNG/JPEG/WebP screenshot up to 8 MB.
-2. The browser sends it to `functions/api/operations/wolf-bgs-screenshot.js` with the current system name and current editable faction names/influences for reference.
-3. The server uses the existing OpenAI API key and Responses API image input to extract visible faction names and influence percentages. Image text is treated as untrusted data, not instructions.
-4. Returned rows are matched against known current factions where possible and carry a confidence score.
-5. The review panel shows current influence, detected influence, delta, confidence, total detected influence, unmatched names, and warnings.
-6. If two or more readable rows do not total approximately 100%, the importer warns rather than pretending the extraction is trustworthy.
-7. **Apply Matched Influence to Form** changes only matched influence inputs in the editable faction board.
-8. The importer never invokes `submit-status`; Wolf still reviews the resulting form and explicitly presses **Submit Status** before the manual snapshot becomes authoritative.
-
-Additional safety rules:
-- unmatched faction names are not auto-applied;
-- low-confidence rows are visibly flagged;
-- a reported different system name is warned about;
-- file type/size are validated on both client and server;
-- the endpoint is site-admin-only and uses the same same-origin request marker as Wolf Control;
-- screenshot API usage is counted against the existing AI usage budgets;
-- screenshot bytes are not persisted in Control Room storage.
-
-Phase one intentionally does **not** estimate graphical Economy/Security slider marker positions. That is a later vision-calibration feature and should be stored as approximate observations rather than fabricated exact game percentages.
-
-## Automation Rules Library v1
-
-The first programmed-rules layer is now separate from the cycle/freshness defaults. It is explicitly a configurable operational doctrine layer rather than a claim to know Frontier's hidden BGS formula.
-
-Initial workload controls:
-- Mission INF per participating CMDR — normal goal;
-- Mission INF per participating CMDR — stretch guidance;
-- bounty voucher MCr per CMDR;
-- profitable trade MCr per CMDR;
-- exploration-data MCr per CMDR;
-- preferred number of participating CMDRs for an objective;
-- diversify useful BGS buckets when practical;
-- do not multiply a solo CMDR's workload to replace missing operators.
-
-Initial safety controls:
-- Retreat warning influence;
-- Retreat emergency influence;
-- Expansion early-warning influence.
-
-### Diminishing-return doctrine
-
-The Rules Library encodes the following as operational doctrine, not a confirmed hidden game formula:
-- several participating CMDRs doing useful moderate work is preferred to one CMDR grinding one bucket far beyond its useful range;
-- useful work should be spread across available positive/negative BGS levers where appropriate;
-- a single CMDR should not automatically receive three times the work merely because the preferred operator count is three;
-- exact independent per-CMDR soft-cap behavior remains **unconfirmed** and must not be presented as a known Frontier mechanic.
-
-This distinction is important for future empirical calibration: commander contribution counts, issued workloads, completed reports, and following-tick outcomes can be compared without pretending a hidden cap is already known.
-
-## Whole-board faction strategy
-
-Automation is intentionally **not Mongrel-only**.
-
-Every faction on a system board can receive a programmed intent:
-- No action;
-- Support / raise;
-- Suppress / lower;
-- Maintain / hold;
-- Protect from Retreat;
-- Allow Retreat.
-
-Non-Mongrel factions can also receive:
-- target influence min/max;
-- control objective: no objective / prefer control / avoid control / allow either.
-
-For the Regiment of Imperial Mongrels, the authoritative influence band remains the existing System Strategy target min/max to avoid duplicate sources of truth. The whole-board strategy layer can still carry the Mongrel intent/control objective.
-
-This model allows a future generated order to say, for example, “complete 25 INF for Wolf 258 Dynasty” when that is the configured board objective instead of assuming all positive BGS work must support Mongrels.
-
-Faction Strategy is saved separately from manual faction-board status. Resetting faction strategy does not edit the factual board snapshot; resetting System Settings does not erase faction strategy.
+For Mongrels, System Strategy remains the authoritative target band so the site does not create duplicate sources of truth.
 
 ## Economy and Security objectives
 
-Economy and Security are first-class faction objectives rather than being inferred from influence intent.
+Economy and Security are first-class faction objectives, separate from influence intent.
 
-For every faction on a current board, Wolf can independently configure:
-- **Economy:** Ignore / Raise / Hold / Lower.
-- **Security:** Ignore / Raise / Hold / Lower / Locked / not actionable.
+- Economy: Ignore / Raise / Hold / Lower.
+- Security: Ignore / Raise / Hold / Lower / Locked / not actionable.
 
-These objectives live in their own storage layer and are intentionally separate from factual faction status and influence strategy.
+The important doctrine is now **balance, do not automatically block**:
 
-Influence guardrails coordinate the two layers:
-- if a faction is at/above its configured influence ceiling, positive slider work is paused rather than silently pushing influence higher;
-- if a faction is below its influence floor, positive Economy/Security work can also serve the influence objective;
-- if a faction is configured for suppression, positive slider work is blocked until Wolf changes the influence plan;
-- when influence is being held, the automation prefers modest workloads and low-INF reward choices rather than assuming Economy/Security can move with zero influence effect.
+- Being near an influence ceiling does not by itself stop desired Economy/Security work.
+- Positive slider work may proceed while the Order Preview generates compensating support for eligible other factions.
+- `Avoid interaction` remains a real blocking conflict.
+- `Allow Retreat` also blocks positive slider work unless explicitly changed.
+- `Maintain / hold` or `Suppress / lower` can coexist with positive slider work only if counter-support is generated.
+- Security `Locked / not actionable` never generates Security work.
 
-Current workload references reuse the Automation Rules Library's per-CMDR trade-profit and bounty guidance. Lowering Economy/Security is recorded as an objective but remains advisory until validated negative-slider recipes are encoded.
+Lowering Economy/Security remains advisory until validated negative-slider recipes are encoded.
 
-Security can be marked **Locked / not actionable** for cases such as factions whose Security slider cannot be meaningfully manipulated. Automatic government/ethos detection is not assumed until the ingestion layer has reliable government data.
+## Automation Rules Library and CMDR workload doctrine
 
-The Programmed Automation preview displays this slider layer alongside influence strategy. It remains preview-only and does not publish Daily Orders.
+The rules layer is operational doctrine, not a claim to know Frontier's hidden formula.
 
-## Automation architecture
+Current workload controls include:
 
-Three visibly separated layers:
+- normal mission INF per participating CMDR;
+- stretch mission INF per participating CMDR;
+- bounty MCr per CMDR;
+- trade-profit MCr per CMDR;
+- exploration-data MCr per CMDR;
+- preferred participating CMDR count;
+- diversification preference;
+- solo-CMDR guard against multiplying one pilot's workload to replace missing operators.
+
+Operational doctrine:
+
+- several CMDRs doing moderate useful work is preferred to one CMDR grinding far beyond a useful range;
+- exact independent per-CMDR soft-cap behavior is treated as unconfirmed;
+- mission `INF` always means mission influence reward pips/ticks, never faction percentage points.
+
+Safety controls include Retreat warning/emergency and Expansion early warning.
+
+## Influence-balancing calibration
+
+The first global Security balancing baseline is intentionally explicit and editable:
+
+> **20M bounty vouchers → 15 mission INF of counter-support**
+
+This is a chosen operational starting recipe, not a Frontier conversion formula.
+
+Rules also store:
+
+- bounty baseline workload MCr;
+- bounty counterweight INF;
+- trade baseline workload MCr;
+- trade counterweight INF (initially uncalibrated / null rather than invented);
+- balance-trigger headroom in percentage points;
+- maximum counterweight factions (1 or 2).
+
+Each system can store independent calibration adjustments for both bounty/Security and trade/Economy balancing:
+
+- percentage adjustment;
+- flat INF adjustment.
+
+Formula concept:
+
+1. Scale global counterweight by requested workload / baseline workload.
+2. Apply system percentage adjustment.
+3. Apply system flat-INF adjustment.
+4. Clamp final mission INF to zero or higher.
+
+Example: global 20M → 15 INF, Diaba `-10 INF` flat adjustment produces a 5-INF starting counterweight for a 20M bounty order. A `-66.7%` adjustment can express approximately the same calibration proportionally and scale with larger workloads.
+
+Calibration is stored separately from ordinary System Settings because it represents learned system behavior and should survive `Reset to Defaults`. It has its own Reset Calibration action.
+
+## Whole-board counterweight selection
+
+When positive slider work needs balancing, the Order Preview searches the rest of the board rather than automatically stopping the primary objective.
+
+Candidate logic currently:
+
+- exclude the source faction;
+- exclude `Avoid interaction`, `Suppress / lower`, and `Allow Retreat` candidates;
+- exclude active War / Civil War / Election candidates from normal counter-support because conflict participants are not treated as ordinary influence recipients;
+- exclude candidates at/above their configured ceiling;
+- without a configured ceiling, avoid candidates at/above the Expansion early-warning threshold;
+- `Maintain / hold` candidates are only eligible when they are below their own target floor;
+- avoid using an `Avoid control` candidate when it is already close to a controller crossover;
+- rank Retreat rescue and explicit Support needs above Flexible candidates;
+- Flexible / available remains a legitimate fallback counterweight when it has safe headroom.
+
+The engine prefers one counterweight faction. It may split across two when the top candidate is itself very close to its configured ceiling. This split is a conservative operational heuristic, not a claim to predict exact percentage movement from mission INF.
+
+If no safe counterweight exists, the preview raises a warning rather than inventing a recipient.
+
+## Order Preview / Generator
+
+Each expanded system can mount a dedicated **Order Preview / Generator** below the faction/slider configuration.
+
+It is deterministic and preview-only. It reads current on-screen values, including unsaved edits, so Wolf can test scenarios before committing configuration.
+
+The preview can produce:
+
+- Mongrel support when below target floor;
+- positive work for explicitly supported non-Mongrel factions;
+- Retreat rescue workloads;
+- redistribution/counter-support when Mongrels or another maintained faction is above target;
+- Security work via bounty-voucher workload;
+- Economy work via profitable-trade workload;
+- balancing mission INF for eligible counterweight factions;
+- stop/review conditions;
+- safety/candidate explanations;
+- visible balancing arithmetic.
+
+Overlapping mission-INF needs for the same faction are merged using the higher required workload rather than blindly summed. Example: if a faction already needs 25 INF for its own Support objective and the Security counterweight calculation asks for 15 INF, the preview keeps a 25-INF task because that work also satisfies the smaller counterweight need.
+
+The preview clearly shows `PREVIEW ONLY` and `Publish disabled`. It does not write Daily Orders.
+
+## Screenshot import
+
+Screenshot Import is review-first and does not make an image authoritative by itself.
+
+Current workflow supports a **set of up to three screenshots**:
+
+- repeated Ctrl+V / paste adds another screenshot;
+- repeated drag/drop adds another screenshot;
+- multi-file picker is optional;
+- thumbnails can be removed individually;
+- all selected screenshots are interpreted together as one system observation;
+- overlapping faction rows are merged;
+- conflicting repeated readings are flagged instead of guessed;
+- partial sets cannot be applied until all known board factions are covered and combined influence is approximately 100%;
+- Apply only populates matched influence form fields;
+- Wolf must still press `Submit Status` to create the authoritative manual snapshot.
+
+This supports the old ship-status-panel workflow where multiple screenshots are required and the newer Squadron faction screen where one screenshot may contain the full board.
+
+Graphical Economy/Security slider estimation is intentionally deferred until enough real screenshots exist to calibrate that feature safely.
+
+## Automation authority layers
 
 1. **Programmed BGS Logic — authoritative automation**
-   - Explicit configurable rules and workloads.
-   - Must expose where amounts such as bounty targets come from.
-   - Expected levers include mission INF, bounty vouchers, trade profit, exploration data, conflict work and deliberate negative work.
-   - Whole-board faction intent determines which faction should receive support/suppression when needed.
-   - Economy/Security objectives are evaluated separately from influence and are constrained by the faction's influence guardrail.
-   - Explanation panel should show rule fired, base amount, modifiers, final task, priority and stop condition.
+   - explicit rules, objectives, target bands, balancing and workload calculations;
+   - every workload should be explainable;
+   - no hidden AI changes.
 
 2. **Advanced Intelligence Suggestion — advisory**
-   - Historical calibration, anomaly detection and AI suggestions.
-   - Never silently replaces programmed logic.
-   - Wolf may apply or ignore suggestions.
+   - historical calibration, anomaly detection and suggested parameter changes;
+   - may propose, never silently replace programmed rules.
 
-3. **Wolf Override — ultimate authority**
-   - Approve/edit/reject generated work.
-   - Create custom order amounts/logic.
-   - Force include/exclude/hold systems and tasks.
+3. **Wolf Override — final authority**
+   - approve/edit/reject generated work;
+   - force include/exclude systems/tasks;
+   - create custom workloads or exceptions.
 
-The current Programmed Automation card gives a **preview-only** deterministic explanation from the target band, saved faction intent, and Economy/Security objectives. It does **not** publish Daily Orders yet.
+## Next product stages
 
-## Planned Control Room sections beyond the current shell
+The next major stages after validating Order Preview behavior are:
 
-Planned additions include:
-- full Order Preview / Generator with “Why did automation do this?” explanation;
-- separate Advanced Intelligence Suggestions;
-- ranked Daily Orders Queue;
-- current-cycle Reporting Dashboard;
-- recent ~14-cycle history;
+- ranked Daily Orders queue;
+- explicit approve/edit/publish flow;
+- member task/reporting controls generated from structured orders;
+- current-cycle reporting dashboard;
+- ~14-cycle operator/history view;
 - Tick & Data Monitor;
-- Exceptions / Overrides summary;
-- command-level Health / Attention summary;
-- “What changed since last cycle?” change digest;
-- optional graphical Economy/Security screenshot interpretation after enough examples exist to calibrate the visual positions safely.
+- exceptions/override summary;
+- change digest;
+- historical calibration suggestions using starting board → issued orders → CMDR reports → following board.
 
-## Daily Orders direction
+Daily Orders should eventually rank unmet work above met work, and met work above systems with no current orders. Emergency operational priority may temporarily outrank long-term strategic priority.
 
-Daily Orders should become a live priority queue rather than static prose.
-
-Sorting groups:
-1. systems with unmet active orders;
-2. systems whose orders are met;
-3. systems with zero orders for the cycle.
-
-Within groups, emergency/operational priority can supersede long-term strategic priority. 10-16 can remain the highest normal strategic priority while still dropping below systems with actual work when it has no orders.
-
-When an order target is met, the system should visibly mark **ORDERS MET** and move below every system with unmet work while staying above systems with no orders.
-
-Maximum initial Daily Orders systems: 6. They are operational priorities, not necessarily the six standing strategic-priority systems. Emergencies such as unwanted Retreat can displace normal priorities.
-
-## Member reporting direction
-
-Reporting UI should be generated from structured order data so members see only relevant controls.
-
-Example:
-- Order: 15–20M trade profit for Mongrels in 10-16.
-- Member sees an amount field and quick +/- buttons appropriate to that order, then Submit.
-- Identity comes from authenticated session; no Commander-name field.
-
-Reports should retain individual commander contributions, not just a mutable squad total. This supports accountability and future empirical calibration/diminishing-return research.
-
-Daily Orders should show live squad progress and stop guidance. Previous-cycle totals should be available in an expandable read-only snapshot at the bottom of the member section, including Commander names.
-
-Wolf Control should provide easy access to at least the last 14 operational cycles while retaining underlying history longer for analysis.
-
-## Tick/cycle direction
-
-Do not assume one authoritative galaxy-wide tick resets every system simultaneously.
-
-- EDCD TickDetector (`tick.edcd.io`) can be treated as a global informational signal, not a per-system authoritative boundary.
-- Each system inherits the global default tick unless Wolf sets a custom time.
-- Scheduled tick creates the next operational cycle.
-- Data freshness is tracked independently from cycle timing.
-- Status may be CURRENT / PRE-TICK / STALE as cycle logic is implemented.
-- Rollover policies: Strict, Safety Only, Carry Forward.
-- Manual confirmation/override can be added later.
-
-A system with data older than its configured threshold should normally issue no automated orders. Safety exceptions may be configurable for Retreat/conflict/emergency situations.
-
-## Future history/calibration model
-
-Operational cycles should eventually connect:
-- starting board snapshot;
-- Daily Orders issued;
-- individual Commander reports;
-- whether task targets were met;
-- ending/following-tick board snapshot;
-- resulting influence/state/conflict changes.
-
-This history is intended to build a Mongrel-specific empirical calibration layer without pretending to reverse-engineer Frontier's hidden BGS formula.
+History is intended to build Mongrel-specific empirical calibration without pretending to reverse-engineer Frontier's hidden formula.
