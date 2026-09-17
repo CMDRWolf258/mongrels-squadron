@@ -5,12 +5,15 @@ for (const path of [
   'wolf-bgs/index.html',
   'css/wolf-bgs.css',
   'css/wolf-bgs-rules.css',
+  'css/wolf-bgs-sliders.css',
   'js/wolf-bgs-inheritance.js',
   'js/wolf-bgs.js',
   'js/wolf-bgs-rules.js',
+  'js/wolf-bgs-sliders.js',
   'functions/api/operations/wolf-bgs.js',
   'functions/api/operations/wolf-bgs-write.js',
   'functions/api/operations/wolf-bgs-rules.js',
+  'functions/api/operations/wolf-bgs-sliders.js',
   'scripts/enrich_bgs_boards.py',
   'data/live-bgs-boards.json',
 ]) {
@@ -38,8 +41,11 @@ assert.match(page, /js\/wolf-bgs\.js/, 'Control Room client is not loaded');
 assert.match(page, /css\/wolf-bgs\.css/, 'Control Room stylesheet is not loaded');
 assert.match(page, /js\/wolf-bgs-rules\.js/, 'Automation Rules client is not loaded');
 assert.match(page, /css\/wolf-bgs-rules\.css/, 'Automation Rules stylesheet is not loaded');
+assert.match(page, /js\/wolf-bgs-sliders\.js/, 'Economy/Security automation client is not loaded');
+assert.match(page, /css\/wolf-bgs-sliders\.css/, 'Economy/Security automation stylesheet is not loaded');
 assert.match(page, /js\/wolf-bgs-inheritance\.js/, 'Sparse override inheritance shim is not loaded');
 assert.ok(page.indexOf('wolf-bgs-inheritance.js') < page.indexOf('wolf-bgs.js'), 'Inheritance shim must load before the main Wolf BGS client');
+assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'), 'Slider automation must load after the core Automation Rules client');
 
 const client = readFileSync('js/wolf-bgs.js', 'utf8');
 assert.match(client, /submit-status/, 'Manual status submission is not wired');
@@ -77,6 +83,20 @@ assert.match(rulesClient, /wolf-influence-micro/, 'Collapsed influence target in
 assert.match(rulesClient, /wolf-influence-meter/, 'Expanded influence target bar is missing');
 assert.match(rulesClient, /Preview only:/, 'Automation preview is not clearly non-publishing');
 
+const slidersClient = readFileSync('js/wolf-bgs-sliders.js', 'utf8');
+assert.match(slidersClient, /Economy & Security Objectives/, 'Economy/Security objective UI is missing');
+assert.match(slidersClient, /Slider-first doctrine/, 'Slider-first doctrine is not explained');
+assert.match(slidersClient, /economyObjective/, 'Economy objective is not persisted from the UI');
+assert.match(slidersClient, /securityObjective/, 'Security objective is not persisted from the UI');
+assert.match(slidersClient, /Locked \/ not actionable/, 'Security locked/not-actionable option is missing');
+assert.match(slidersClient, /zero-INF slider movement is not assumed/, 'Slider automation must not promise zero-influence movement');
+assert.match(slidersClient, /tradeProfitMillionsPerCmdr/, 'Economy Raise preview is not tied to the configured trade workload reference');
+assert.match(slidersClient, /bountyMillionsPerCmdr/, 'Security Raise preview is not tied to the configured bounty workload reference');
+assert.match(slidersClient, /positive Economy work is blocked by the current influence guardrail/, 'Economy objective does not respect the influence ceiling/suppression guardrail');
+assert.match(slidersClient, /positive Security work is blocked by the current influence guardrail/, 'Security objective does not respect the influence ceiling/suppression guardrail');
+assert.match(slidersClient, /No automatic negative-Economy workload|no automatic negative-Economy workload/i, 'Economy Lower should remain advisory until a validated recipe exists');
+assert.match(slidersClient, /no automatic negative-Security workload/i, 'Security Lower should remain advisory until a validated recipe exists');
+
 const apiSource = readFileSync('functions/api/operations/wolf-bgs.js', 'utf8');
 assert.match(apiSource, /session\.access !== 'site_admin'/, 'Wolf BGS API is not site-admin restricted');
 assert.match(apiSource, /wolf-bgs-control-v1/, 'Wolf BGS private KV key is missing');
@@ -110,6 +130,16 @@ assert.match(rulesApi, /favoritePreserved/, 'Reset-to-defaults does not explicit
 assert.match(rulesApi, /exactPerCmdrCapConfirmed: false/, 'Automation Rules must not claim an exact per-CMDR cap is confirmed');
 assert.match(rulesApi, /soloDoNotMultiply: true/, 'Default solo workload guardrail is missing');
 
+const slidersApi = readFileSync('functions/api/operations/wolf-bgs-sliders.js', 'utf8');
+assert.match(slidersApi, /session\.access !== 'site_admin'/, 'Economy/Security API is not site-admin restricted');
+assert.match(slidersApi, /wolf-bgs-slider-objectives-v1/, 'Economy/Security KV key is missing');
+assert.match(slidersApi, /save-system-slider-objectives/, 'Economy/Security objective save action is missing');
+assert.match(slidersApi, /reset-system-slider-objectives/, 'Economy/Security objective reset action is missing');
+assert.match(slidersApi, /economyObjective/, 'Economy objective is not normalized server-side');
+assert.match(slidersApi, /securityObjective/, 'Security objective is not normalized server-side');
+assert.match(slidersApi, /'locked'/, 'Security locked/not-actionable state is not normalized server-side');
+assert.match(slidersApi, /X-Mongrels-Request/, 'Economy/Security API lacks same-origin validation');
+
 const boardUpdater = readFileSync('scripts/enrich_bgs_boards.py', 'utf8');
 assert.match(boardUpdater, /factionStates/, 'Full-board updater does not query faction states');
 assert.match(boardUpdater, /pendingStates/, 'Full-board updater does not retain pending states');
@@ -129,6 +159,11 @@ assert.match(rulesCss, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!import
 assert.match(rulesCss, /\.wolf-faction-strategy-table/, 'Faction strategy table styling is missing');
 assert.match(rulesCss, /\.wolf-influence-meter/, 'Influence target-bar styling is missing');
 
+const slidersCss = readFileSync('css/wolf-bgs-sliders.css', 'utf8');
+assert.match(slidersCss, /\.wolf-slider-table/, 'Economy/Security objective table styling is missing');
+assert.match(slidersCss, /\.wolf-slider-preview/, 'Economy/Security preview styling is missing');
+assert.match(slidersCss, /\.wolf-slider-guard\.ceiling/, 'Influence-ceiling guardrail styling is missing');
+
 const module = await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof module.onRequestGet, 'function', 'Wolf BGS API GET handler did not import');
 assert.equal(typeof module.onRequestPut, 'function', 'Wolf BGS API PUT handler did not import');
@@ -138,5 +173,8 @@ assert.equal(typeof writeModule.onRequestPut, 'function', 'Wolf BGS sparse-write
 const rulesModule = await import('../functions/api/operations/wolf-bgs-rules.js');
 assert.equal(typeof rulesModule.onRequestGet, 'function', 'Wolf BGS Rules API GET handler did not import');
 assert.equal(typeof rulesModule.onRequestPut, 'function', 'Wolf BGS Rules API PUT handler did not import');
+const slidersModule = await import('../functions/api/operations/wolf-bgs-sliders.js');
+assert.equal(typeof slidersModule.onRequestGet, 'function', 'Wolf BGS Economy/Security API GET handler did not import');
+assert.equal(typeof slidersModule.onRequestPut, 'function', 'Wolf BGS Economy/Security API PUT handler did not import');
 
-console.log('✓ Wolf BGS Control full-board ingestion, sparse inherited overrides, whole-board faction strategy, automation rules, workload guardrails, reset controls, target indicators, filters, System Defaults, private APIs, faction board, and responsive shell are structurally sound');
+console.log('✓ Wolf BGS Control full-board ingestion, sparse inherited overrides, whole-board faction strategy, Economy/Security objectives, influence guardrails, automation rules, workload guardrails, reset controls, target indicators, filters, System Defaults, private APIs, faction board, and responsive shell are structurally sound');
