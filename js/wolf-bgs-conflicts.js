@@ -3,11 +3,13 @@
   const LAB_KEY = 'wolf-bgs-lab-mandalore-conflicts-v1';
   const MONGREL = 'Regiment of Imperial Mongrels';
   const MAX_PAIRS = 3;
+  const INFLUENCE_PAIR_TOLERANCE = 3;
   const previewObservers = new WeakMap();
   let remote = { systemConflicts:{}, updatedAt:{}, updatedBy:{} };
 
   const esc = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
+  const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
   const systemName = card => card.dataset.system || '';
   const isLab = card => card.dataset.bgsLab === 'true';
 
@@ -20,6 +22,10 @@
   }
   function typeLabel(value) {
     return value === 'civil-war' ? 'Civil War' : value === 'election' ? 'Election' : value === 'war' ? 'War' : '—';
+  }
+  function influenceGap(a,b) {
+    if (a?.influence === null || a?.influence === undefined || b?.influence === null || b?.influence === undefined) return null;
+    return Math.abs(Number(a.influence) - Number(b.influence));
   }
 
   async function load() {
@@ -43,6 +49,7 @@
   function board(card) {
     return [...card.querySelectorAll('[data-faction-row]')].map(row => ({
       name:row.querySelector('[data-faction="name"]')?.value?.trim() || '',
+      influence:num(row.querySelector('[data-faction="influence"]')?.value),
       state:row.querySelector('[data-faction="state"]')?.value?.trim() || '',
       pending:row.querySelector('[data-faction="pending"]')?.value?.trim() || '',
     })).filter(row=>row.name);
@@ -55,15 +62,53 @@
     return { rows, active, pending };
   }
 
-  function autoPairs(card) {
-    const {active}=detected(card), groups=new Map(), pairs=[], ambiguous=[];
-    for(const row of active){if(!groups.has(row.type))groups.set(row.type,[]);groups.get(row.type).push(row.name);}
-    for(const [type,names] of groups){
-      if(names.length===2)pairs.push({factionA:names[0],factionB:names[1],objective:'monitor',type,auto:true});
-      else if(names.length>0)ambiguous.push({type,names});
+  function findInfluenceMatchings(rows, limit=2) {
+    if (limit <= 0) return [];
+    if (!rows.length) return [[]];
+    if (rows.length % 2) return [];
+    const first=rows[0], solutions=[];
+    for(let i=1;i<rows.length;i++){
+      const other=rows[i], gap=influenceGap(first,other);
+      if(gap === null || gap > INFLUENCE_PAIR_TOLERANCE) continue;
+      const rest=rows.slice(1,i).concat(rows.slice(i+1));
+      const tails=findInfluenceMatchings(rest,limit-solutions.length);
+      for(const tail of tails){
+        solutions.push([[first,other],...tail]);
+        if(solutions.length>=limit)return solutions;
+      }
+    }
+    return solutions;
+  }
+
+  function autoPairsFromActive(active) {
+    const groups=new Map(), pairs=[], ambiguous=[];
+    for(const row of active){if(!groups.has(row.type))groups.set(row.type,[]);groups.get(row.type).push(row);}
+    for(const [type,rows] of groups){
+      if(rows.length===2){
+        pairs.push({factionA:rows[0].name,factionB:rows[1].name,objective:'monitor',type,auto:true,gap:influenceGap(rows[0],rows[1])});
+        continue;
+      }
+      if(rows.length>2 && rows.length%2===0){
+        const matchings=findInfluenceMatchings(rows,2);
+        if(matchings.length===1){
+          for(const [a,b] of matchings[0])pairs.push({factionA:a.name,factionB:b.name,objective:'monitor',type,auto:true,gap:influenceGap(a,b)});
+          continue;
+        }
+        ambiguous.push({
+          type,
+          names:rows.map(row=>row.name),
+          reason:matchings.length>1
+            ? `multiple influence-compatible pairings fit the ±${INFLUENCE_PAIR_TOLERANCE} point tolerance`
+            : `no complete pairing falls within the ±${INFLUENCE_PAIR_TOLERANCE} point tolerance`,
+        });
+        continue;
+      }
+      if(rows.length)ambiguous.push({type,names:rows.map(row=>row.name),reason:'an odd number of active participants cannot form complete pairs'});
     }
     return {pairs:pairs.slice(0,MAX_PAIRS),ambiguous};
   }
+
+  function autoPairs(card) { return autoPairsFromActive(detected(card).active); }
 
   function labSavedPairs() {
     try { const value=JSON.parse(localStorage.getItem(LAB_KEY)||'null'); return Array.isArray(value)?value:[]; }
@@ -76,8 +121,7 @@
   }
 
   function pairRowsMarkup(card) {
-    const names=board(card).map(row=>row.name), saved=storedPairs(card), automatic=saved.length?[]:autoPairs(card).pairs;
-    const initial=saved.length?saved:automatic;
+    const names=board(card).map(row=>row.name), saved=storedPairs(card), initial=saved;
     let html='';
     for(let i=0;i<MAX_PAIRS;i++){
       const pair=initial[i]||{};
@@ -97,7 +141,7 @@
     const system=systemName(card), savedAt=isLab(card)?null:remote.updatedAt?.[system], savedBy=isLab(card)?null:remote.updatedBy?.[system];
     return `<section class="wolf-section wolf-conflict-section" data-conflict-section>
       <h3>Conflict Configuration</h3>
-      <p class="wolf-section-intro">Active War, Civil War, and Election participants are locked out of ordinary influence/counterweight work. Pairing is automatic only when the board makes the opponent relationship unambiguous; otherwise Wolf must pair the factions here.</p>
+      <p class="wolf-section-intro">Active War, Civil War, and Election participants are locked out of ordinary influence/counterweight work. Two-faction groups pair automatically. For multiple same-type conflicts, influence within ±${INFLUENCE_PAIR_TOLERANCE} percentage points is used only when it produces one unique pairing; otherwise Wolf must confirm the pairs here.</p>
       <div class="wolf-conflict-detection" data-conflict-detection></div>
       <div class="wolf-conflict-pairs">${pairRowsMarkup(card)}</div>
       <div class="wolf-rules-callout subtle"><strong>Conflict action boundary</strong><span>War/Civil War winners use Conflict Zones + Combat Bonds. Election winners use non-combat/economic mission work. Exact CZ-win workload calibration is intentionally not invented yet; Mandalore is where we can tune that next.</span></div>
@@ -110,43 +154,76 @@
       factionA:row.querySelector('[data-conflict="factionA"]')?.value||'',
       factionB:row.querySelector('[data-conflict="factionB"]')?.value||'',
       objective:row.querySelector('[data-conflict="objective"]')?.value||'monitor',
+      auto:row.dataset.autoPair==='true',
     })).filter(row=>row.factionA&&row.factionB&&norm(row.factionA)!==norm(row.factionB));
   }
 
+  function clearAutoPairControls(card) {
+    card.querySelectorAll('[data-conflict-pair-row][data-auto-pair="true"]').forEach(row=>{
+      const a=row.querySelector('[data-conflict="factionA"]'), b=row.querySelector('[data-conflict="factionB"]'), objective=row.querySelector('[data-conflict="objective"]');
+      if(a)a.value=''; if(b)b.value=''; if(objective)objective.value='monitor';
+      delete row.dataset.autoPair;
+    });
+  }
+
+  function syncAutoPairControls(card) {
+    clearAutoPairControls(card);
+    const active=detected(card).active, configured=collectPairs(card), used=new Set(configured.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)]));
+    const automatic=autoPairsFromActive(active.filter(row=>!used.has(norm(row.name))));
+    const blanks=[...card.querySelectorAll('[data-conflict-pair-row]')].filter(row=>!row.querySelector('[data-conflict="factionA"]')?.value&&!row.querySelector('[data-conflict="factionB"]')?.value);
+    for(const pair of automatic.pairs){
+      const row=blanks.shift(); if(!row)break;
+      row.querySelector('[data-conflict="factionA"]').value=pair.factionA;
+      row.querySelector('[data-conflict="factionB"]').value=pair.factionB;
+      row.querySelector('[data-conflict="objective"]').value='monitor';
+      row.dataset.autoPair='true';
+    }
+  }
+
   function resolve(card) {
-    const {active,pending}=detected(card), activeMap=new Map(active.map(row=>[norm(row.name),row])), configured=collectPairs(card), used=new Set(), resolved=[], invalid=[];
+    const {active,pending}=detected(card), activeMap=new Map(active.map(row=>[norm(row.name),row])), configured=collectPairs(card), used=new Set(), resolved=[], invalid=[], manualNotes=[];
     for(const pair of configured){
       const a=activeMap.get(norm(pair.factionA)), b=activeMap.get(norm(pair.factionB));
       const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
       if(used.has(keyA)||used.has(keyB)){invalid.push(`${pair.factionA} / ${pair.factionB}: a faction is already assigned to another pair.`);continue;}
       if(!a||!b){invalid.push(`${pair.factionA} / ${pair.factionB}: both factions are not currently in an active conflict state.`);continue;}
       if(a.type!==b.type){invalid.push(`${pair.factionA} / ${pair.factionB}: conflict types do not match (${typeLabel(a.type)} vs ${typeLabel(b.type)}).`);continue;}
-      used.add(keyA);used.add(keyB);resolved.push({...pair,type:a.type});
+      const gap=influenceGap(a,b);
+      if(!pair.auto && gap!==null && gap>INFLUENCE_PAIR_TOLERANCE)manualNotes.push(`${pair.factionA} / ${pair.factionB} are ${gap.toFixed(1)} points apart; manual confirmation overrides the ±${INFLUENCE_PAIR_TOLERANCE} auto-pair tolerance.`);
+      used.add(keyA);used.add(keyB);resolved.push({...pair,type:a.type,gap});
+    }
+    const remaining=active.filter(row=>!used.has(norm(row.name))), automatic=autoPairsFromActive(remaining);
+    for(const pair of automatic.pairs){
+      if(resolved.length>=MAX_PAIRS)break;
+      const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
+      if(used.has(keyA)||used.has(keyB))continue;
+      used.add(keyA);used.add(keyB);resolved.push(pair);
     }
     const participants=active.map(row=>row.name), covered=new Set(resolved.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)])), unresolved=participants.filter(name=>!covered.has(norm(name)));
-    return {active,pending,participants,resolved,unresolved,invalid,auto:autoPairs(card)};
+    return {active,pending,participants,resolved,unresolved,invalid,manualNotes,auto:automatic};
   }
 
   function refreshDetection(card) {
+    syncAutoPairControls(card);
     const host=card.querySelector('[data-conflict-detection]'); if(!host)return;
     const result=resolve(card);
-    const activeText=result.active.length?result.active.map(row=>`${row.name} (${typeLabel(row.type)})`).join(' · '):'None';
+    const activeText=result.active.length?result.active.map(row=>`${row.name} (${typeLabel(row.type)}${row.influence===null?'':`, ${row.influence.toFixed(1)}%`})`).join(' · '):'None';
     const pendingText=result.pending.length?result.pending.map(row=>`${row.name} (${typeLabel(row.type)})`).join(' · '):'None';
     const warnings=[];
     if(result.unresolved.length)warnings.push(`Unpaired active participants: ${result.unresolved.join(', ')}. Ordinary BGS work is still locked for them, but no conflict winner order will be generated.`);
-    warnings.push(...result.invalid);
-    if(result.auto.ambiguous.length)warnings.push(...result.auto.ambiguous.map(group=>`${group.names.length} factions show ${typeLabel(group.type)}. Opponents cannot be inferred safely; pair them manually.`));
+    warnings.push(...result.invalid,...result.manualNotes);
+    if(result.auto.ambiguous.length)warnings.push(...result.auto.ambiguous.map(group=>`${group.names.length} factions show ${typeLabel(group.type)}; ${group.reason}. Manual confirmation is required.`));
     host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
     card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
       const a=row.querySelector('[data-conflict="factionA"]')?.value||'', b=row.querySelector('[data-conflict="factionB"]')?.value||'', typeHost=row.querySelector('[data-conflict-type]');
-      const aa=result.active.find(item=>norm(item.name)===norm(a)), bb=result.active.find(item=>norm(item.name)===norm(b));
-      if(typeHost)typeHost.textContent=aa&&bb&&aa.type===bb.type?typeLabel(aa.type):(a&&b?'Mismatch / inactive':'—');
+      const aa=result.active.find(item=>norm(item.name)===norm(a)), bb=result.active.find(item=>norm(item.name)===norm(b)), gap=influenceGap(aa,bb);
+      if(typeHost)typeHost.textContent=aa&&bb&&aa.type===bb.type?`${typeLabel(aa.type)}${gap===null?'':` · Δ${gap.toFixed(1)}%`}`:(a&&b?'Mismatch / inactive':'—');
     });
     processPreview(card);
   }
 
   async function save(card) {
-    const pairs=collectPairs(card), message=card.querySelector('[data-conflict-message]'), button=card.querySelector('[data-save-conflicts]');
+    const pairs=collectPairs(card).map(({factionA,factionB,objective})=>({factionA,factionB,objective})), message=card.querySelector('[data-conflict-message]'), button=card.querySelector('[data-save-conflicts]');
     if(button)button.disabled=true;
     try{
       if(isLab(card)){
@@ -156,6 +233,7 @@
         const data=await request('save-system-conflicts',{system:systemName(card),pairs});
         if(message)message.textContent=`Saved ${new Date(data.updatedAt?.[systemName(card)]||Date.now()).toLocaleString()} by ${data.updatedBy?.[systemName(card)]||'Wolf'}.`;
       }
+      card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>delete row.dataset.autoPair);
       refreshDetection(card);
     }catch(error){console.error(error);if(message)message.textContent='Could not save conflict pairing.';}finally{if(button)button.disabled=false;}
   }
@@ -166,7 +244,7 @@
       if(isLab(card)){localStorage.removeItem(LAB_KEY);}
       else await request('reset-system-conflicts',{system:systemName(card)});
       const section=card.querySelector('[data-conflict-section]');
-      if(section){section.outerHTML=sectionMarkup(card);wire(card);placeSection(card);}
+      if(section){section.outerHTML=sectionMarkup(card);card.dataset.conflictWired='';wire(card);placeSection(card);}
       if(message)message.textContent='Conflict pairing reset.';
       refreshDetection(card);
     }catch(error){console.error(error);if(message)message.textContent='Could not reset conflict pairing.';}
@@ -226,7 +304,13 @@
   function wire(card){
     if(card.dataset.conflictWired==='true')return;card.dataset.conflictWired='true';
     card.addEventListener('click',event=>{if(event.target.closest('[data-save-conflicts]')){save(card);return;}if(event.target.closest('[data-reset-conflicts]'))reset(card);});
-    card.addEventListener('change',event=>{if(event.target.matches('[data-conflict],[data-faction="state"],[data-faction="pending"],[data-faction="name"]'))setTimeout(()=>refreshDetection(card),0);});
+    card.addEventListener('change',event=>{
+      if(event.target.matches('[data-conflict]')){
+        const row=event.target.closest('[data-conflict-pair-row]'); if(row)delete row.dataset.autoPair;
+        setTimeout(()=>refreshDetection(card),0); return;
+      }
+      if(event.target.matches('[data-faction="state"],[data-faction="pending"],[data-faction="name"],[data-faction="influence"]'))setTimeout(()=>refreshDetection(card),0);
+    });
   }
 
   function ensure(card){
