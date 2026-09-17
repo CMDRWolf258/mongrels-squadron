@@ -148,6 +148,7 @@
   .wolf-system-card>summary{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(90px,.6fr)) 110px 32px}
   .wolf-system-card>summary .hide-tablet{display:none}
   .wolf-subgrid{grid-template-columns:1fr}
+  .wolf-subgrid>div:last-child .wolf-toggle-list{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media(max-width:900px){
@@ -172,4 +173,5 @@
   .wolf-wide-field,.wolf-grid-span{grid-column:auto}
   .wolf-pagination{flex-wrap:wrap}
   .wolf-pagination span{order:-1;width:100%;min-width:0;text-align:left}
+  .wolf-subgrid>div:last-child .wolf-toggle-list{grid-template-columns:1fr}
 }
