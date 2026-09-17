@@ -19,7 +19,7 @@ assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
 assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
 assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
 assert.match(page,/data-lab-scenario="dual"/,'Dual-conflict lab scenario is missing');
-assert.match(page,/data-lab-scenario="ambiguous"/,'Ambiguous four-way conflict lab scenario is missing');
+assert.match(page,/data-lab-scenario="ambiguous"/,'Ambiguous four-way conflict lab scenario anchor is missing');
 assert.match(page,/wolf-bgs-conflicts\.js/,'Conflict client is not loaded');
 assert.match(page,/wolf-bgs-lab\.js/,'Lab client is not loaded');
 assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'),'Slider client must load after rules');
@@ -71,16 +71,19 @@ assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be gene
 const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
 for(const pattern of [
   /wolf-bgs-conflicts/,/Conflict Configuration/,/conflictType/,/civil-war/,/election/,/war/,
-  /names\.length===2/,/Opponents cannot be inferred safely/,/Unpaired active participants/,
+  /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
+  /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
   /wolf-conflict-preview-task/,/Conflict lock active/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
+assert.match(conflictClient,/\[data-faction="influence"\]/,'Influence changes must trigger conflict re-pairing');
 
 const labClient=readFileSync('js/wolf-bgs-lab.js','utf8');
 for(const pattern of [
-  /wolf-bgs-lab-mandalore-v1/,/balanced:/,/dual:/,/ambiguous:/,/pressure:/,
-  /localStorage/,/data-save-faction-strategy/,/data-save-slider-objectives/,/data-save-calibration/,
+  /wolf-bgs-lab-mandalore-v1/,/wolf-bgs-lab-mandalore-conflicts-v1/,/balanced:/,/dual:/,/fourway:/,/ambiguous:/,/pressure:/,
+  /30,28\.5,18,16\.5/,/24,24,24,24/,/4-Way Auto Pair/,/4-Way Ambiguous/,
+  /resetConflictPairing/,/localStorage/,/data-save-faction-strategy/,/data-save-slider-objectives/,/data-save-calibration/,
   /Mandalore sandbox values saved locally only/,
 ]) assert.match(labClient,pattern);
 
@@ -147,4 +150,4 @@ const mainModule=await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof mainModule.onRequestGet,'function');
 assert.equal(typeof mainModule.onRequestPut,'function');
 
-console.log('✓ Wolf BGS Control Mandalore lab, conservative multi-conflict pairing, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
+console.log('✓ Wolf BGS Control Mandalore lab, ±3-point influence-assisted multi-conflict pairing with manual ambiguity fallback, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
