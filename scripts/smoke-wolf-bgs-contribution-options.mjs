@@ -10,6 +10,8 @@ for(const pattern of [
   /controlObjective === 'prefer-control'/,
   /systemControlPolicy\(card\) === 'gain'/,
   /gap >= 3/,
+  /gap >= 7/,
+  /CONFLICT_RE\.test\(row\.state\)/,
   /INFLUENCE \/ TRADE/,
   /INFLUENCE \/ EXPLORATION/,
   /INFLUENCE \/ MINING MISSIONS/,
@@ -18,7 +20,6 @@ for(const pattern of [
   /RECOMMENDED/,
   /mission-INF target, not extra INF/,
   /Direct sale of mined commodities is not counted here as BGS influence\/economy work/,
-  /wolf-conflict-preview-banner/,
 ]) assert.match(source,pattern);
 
 assert.doesNotMatch(source,/sell mined commodities.*BGS influence/i,'Direct mined-commodity sales must not be presented as BGS influence work');
