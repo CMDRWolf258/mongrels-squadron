@@ -94,12 +94,17 @@ export async function onRequestPut({ request, env }) {
     if (!system) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
     const raw = await env.DAILY_ORDERS.get(CONTROL_KV_KEY, { type: 'json' }) || {};
     const map = raw.systemSettings && typeof raw.systemSettings === 'object' ? raw.systemSettings : {};
-    const favorite = Boolean(map?.[system]?.favorite);
-    if (favorite) map[system] = { favorite: true };
+    const existing = map?.[system] && typeof map[system] === 'object' ? map[system] : {};
+    const favorite = Boolean(existing.favorite);
+    const notes = cleanText(existing.notes, '', 1200);
+    const preserved = {};
+    if (favorite) preserved.favorite = true;
+    if (notes) preserved.notes = notes;
+    if (Object.keys(preserved).length) map[system] = preserved;
     else delete map[system];
     raw.systemSettings = map;
     await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(raw));
-    return json({ ok: true, system, favoritePreserved: favorite, resetAt: now, resetBy: actor }, { headers: privateHeaders() });
+    return json({ ok: true, system, favoritePreserved: favorite, notesPreserved: Boolean(notes), resetAt: now, resetBy: actor }, { headers: privateHeaders() });
   }
 
   return json({ ok: false, error: 'unsupported_action' }, { status: 400, headers: privateHeaders() });
