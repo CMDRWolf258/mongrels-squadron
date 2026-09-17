@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Check out site
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -47,8 +49,28 @@ jobs:
             echo "No BGS snapshot changes to commit."
             exit 0
           fi
+
           git config user.name "mongrels-bgs-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/live-bgs.json data/live-bgs-boards.json
           git commit -m "chore: refresh BGS data"
-          git push
+
+          # A refresh can take long enough for an unrelated site commit to land on
+          # main. Rebase the data-only commit onto the newest main before pushing
+          # instead of failing with a non-fast-forward rejection.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "BGS data rebase conflicted; refusing to overwrite newer data."
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced another main update; retrying ($attempt/3)..."
+            sleep 2
+          done
+
+          echo "Could not push refreshed BGS data after three safe rebase attempts."
+          exit 1
