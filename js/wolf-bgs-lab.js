@@ -153,12 +153,17 @@
     card.querySelectorAll('[data-save-faction-strategy],[data-save-slider-objectives],[data-save-calibration]').forEach(button=>{button.textContent=button.matches('[data-save-calibration]')?'Save Lab Calibration':'Save Lab Settings';});
     card.querySelectorAll('[data-faction-strategy-message],[data-slider-objectives-message],[data-calibration-message]').forEach(message=>{if(!/locally/i.test(message.textContent||''))message.textContent='Mandalore sandbox · changes auto-save locally and never update live BGS settings.';});
     card.querySelectorAll('.wolf-screenshot-import,[data-screenshot-import],[data-wolf-screenshot]').forEach(el=>el.remove());
+    const ambiguousButton=document.querySelector('[data-lab-scenario="ambiguous"]');
+    if(ambiguousButton){
+      ambiguousButton.textContent='4-Way Ambiguous';
+      if(!document.querySelector('[data-lab-scenario="fourway"]'))ambiguousButton.insertAdjacentHTML('beforebegin','<button type="button" class="btn btn-secondary btn-compact" data-lab-scenario="fourway">4-Way Auto Pair</button>');
+    }
   }
 
   card.addEventListener('click',intercept,true);
   card.addEventListener('change',()=>setTimeout(save,0));
   document.querySelector('[data-lab-reset]')?.addEventListener('click',()=>{localStorage.removeItem(KEY);localStorage.removeItem(CONFLICT_KEY);applyPreset('balanced');});
-  document.querySelectorAll('[data-lab-scenario]').forEach(button=>button.addEventListener('click',()=>applyPreset(button.dataset.labScenario)));
+  document.addEventListener('click',event=>{const button=event.target.closest('[data-lab-scenario]');if(button)applyPreset(button.dataset.labScenario);});
 
   const saved=readSaved();
   if(saved)applySaved(saved,{fire:false});
@@ -170,6 +175,7 @@
     setTimeout(()=>{applySaved(readSaved(),{fire:false});decorate();applying=false;},0);
   });
   observer.observe(card,{childList:true,subtree:true});
+  decorate();
   setTimeout(()=>{applySaved(readSaved(),{fire:true});decorate();},250);
   setTimeout(()=>{applySaved(readSaved(),{fire:true});decorate();},700);
 })();
