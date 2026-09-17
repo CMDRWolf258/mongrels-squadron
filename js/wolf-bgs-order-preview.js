@@ -139,6 +139,7 @@
     if (faction.intent==='avoid-interaction') return { blocked:true, reason:'Faction is set to Avoid interaction.' };
     if (faction.intent==='allow-retreat') return { blocked:true, reason:'Faction is set to Allow Retreat; positive slider work would oppose that objective.' };
     if (faction.intent==='suppress') return { needed:true, reason:'Positive slider work conflicts with the Suppress / lower objective.' };
+    if (faction.influence!==null && faction.targetMin!==null && faction.influence < faction.targetMin) return { needed:false, reason:`${faction.name} is below its ${faction.targetMin}% target floor, so positive slider work also helps the influence objective.` };
     if (faction.intent==='maintain') return { needed:true, reason:'Maintain / hold requires counter-support against expected positive influence pressure.' };
     if (faction.influence!==null && faction.targetMax!==null && faction.influence >= faction.targetMax-trigger) return { needed:true, reason:`Only ${Math.max(0,faction.targetMax-faction.influence).toFixed(2)} percentage points of target headroom remain.` };
     return { needed:false, reason:'Influence headroom does not currently require automatic counter-support.' };
