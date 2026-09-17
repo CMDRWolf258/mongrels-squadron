@@ -29,6 +29,9 @@
   const list = document.querySelector('[data-system-list]');
   if (!list) return;
 
+  const favoritesFirst = document.querySelector('[data-favorites-first]');
+  if (favoritesFirst) favoritesFirst.checked = true;
+
   const MAX_WARM_CARDS = 2;
   const parkedBodies = new WeakMap();
   let warmLru = [];
