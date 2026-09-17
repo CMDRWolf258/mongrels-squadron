@@ -17,5 +17,9 @@
 .wolf-lab-table input[readonly]{opacity:.8;background:rgba(255,255,255,.025)}
 .wolf-lab-card .wolf-screenshot-import,.wolf-lab-card [data-screenshot-import],.wolf-lab-card [data-wolf-screenshot]{display:none!important}
 .wolf-lab-note{margin:10px 0 0;padding:9px 11px;border-left:3px solid rgba(102,211,255,.45);background:rgba(102,211,255,.04);color:var(--muted);font-size:.84rem}
+.wolf-lab-board-total{margin:10px 0 0;padding:10px 12px;border:1px solid rgba(102,211,255,.22);background:rgba(102,211,255,.05);font-size:.86rem;font-weight:700;letter-spacing:.01em}
+.wolf-lab-board-total[data-total-state="balanced"]{border-color:rgba(119,224,161,.38);background:rgba(119,224,161,.07);color:#c8f5d9}
+.wolf-lab-board-total[data-total-state="under"]{border-color:rgba(102,211,255,.3);color:#bcecff}
+.wolf-lab-board-total[data-total-state="over"]{border-color:rgba(255,181,92,.42);background:rgba(255,181,92,.07);color:#ffd7a6}
 @media(max-width:900px){.wolf-lab-heading,.wolf-lab-card-head{align-items:flex-start;flex-direction:column}.wolf-lab-actions{justify-content:flex-start}.wolf-lab-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.wolf-lab-settings{grid-template-columns:1fr}.wolf-lab-card{padding:12px}}
