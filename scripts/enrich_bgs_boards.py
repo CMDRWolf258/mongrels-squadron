@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -22,11 +23,17 @@ LIVE_PATH = ROOT / "data" / "live-bgs.json"
 BOARD_PATH = ROOT / "data" / "live-bgs-boards.json"
 FACTION_NAME = "Regiment of Imperial Mongrels"
 API_URL = "https://vault.elitehub.eu/graphql"
-USER_AGENT = "MongrelsSquadronSite-BGS-Boards/1.0 (+Cloudflare Pages)"
+USER_AGENT = "MongrelsSquadronSite-BGS-Boards/1.1 (+Cloudflare Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
 PRESENCE_PAGE_SIZE = 40
 BOARD_BATCH_SIZE = 8
 MAX_FACTIONS_PER_SYSTEM = 12
+BOARD_REQUEST_PAUSE_SECONDS = 1.5
+RATE_LIMIT_BACKOFF_SECONDS = (20, 40, 60)
+
+
+class VaultRateLimitError(RuntimeError):
+    """Raised only after Vault 429 retry/backoff has been exhausted."""
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -99,6 +106,15 @@ def newest_time(values: list[Any]) -> str | None:
     return max(candidates, key=lambda item: item[0])[1] if candidates else None
 
 
+def retry_after_seconds(exc: urllib.error.HTTPError, fallback: int) -> int:
+    raw = exc.headers.get("Retry-After") if exc.headers else None
+    try:
+        parsed = int(str(raw).strip()) if raw is not None else 0
+    except (TypeError, ValueError):
+        parsed = 0
+    return max(fallback, parsed)
+
+
 def gql(query: str, variables: dict[str, Any] | None = None, timeout: int = 25) -> dict[str, Any]:
     body = json.dumps({"query": query, "variables": variables or {}}).encode("utf-8")
     headers = {
@@ -108,21 +124,35 @@ def gql(query: str, variables: dict[str, Any] | None = None, timeout: int = 25) 
     }
     if API_KEY:
         headers["X-API-Key"] = API_KEY
-    request = urllib.request.Request(API_URL, data=body, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = ""
+
+    for attempt in range(len(RATE_LIMIT_BACKOFF_SECONDS) + 1):
+        request = urllib.request.Request(API_URL, data=body, headers=headers, method="POST")
         try:
-            detail = exc.read().decode("utf-8")[:500]
-        except Exception:
-            pass
-        raise RuntimeError(f"Vault HTTP {exc.code}: {detail or exc.reason}") from exc
-    if payload.get("errors"):
-        message = "; ".join(str(item.get("message", item)) for item in payload["errors"])
-        raise RuntimeError(f"GraphQL error: {message}")
-    return payload.get("data") or {}
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if payload.get("errors"):
+                message = "; ".join(str(item.get("message", item)) for item in payload["errors"])
+                raise RuntimeError(f"GraphQL error: {message}")
+            return payload.get("data") or {}
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read().decode("utf-8")[:500]
+            except Exception:
+                pass
+            if exc.code == 429:
+                if attempt < len(RATE_LIMIT_BACKOFF_SECONDS):
+                    delay = retry_after_seconds(exc, RATE_LIMIT_BACKOFF_SECONDS[attempt])
+                    print(
+                        f"VAULT RATE LIMIT: waiting {delay}s before retry {attempt + 2}/{len(RATE_LIMIT_BACKOFF_SECONDS) + 1}",
+                        flush=True,
+                    )
+                    time.sleep(delay)
+                    continue
+                raise VaultRateLimitError(f"Vault HTTP 429 after retries: {detail or exc.reason}") from exc
+            raise RuntimeError(f"Vault HTTP {exc.code}: {detail or exc.reason}") from exc
+
+    raise RuntimeError("Vault request retry loop exited unexpectedly")
 
 
 FACTION_ID_QUERY = r"""
@@ -282,6 +312,14 @@ def fetch_boards_adaptive(
     try:
         output.update(fetch_board_batch(batch))
         print(f"BOARD BATCH: {len(batch)} systems", flush=True)
+        time.sleep(BOARD_REQUEST_PAUSE_SECONDS)
+    except VaultRateLimitError as exc:
+        # Splitting a batch cannot cure an exhausted request-window limit; preserve
+        # prior rows and allow the next scheduled cycle to fill any remaining gap.
+        for item in batch:
+            name = str(item.get("name") or "unknown")
+            errors.append({"name": name, "error": str(exc)[:500]})
+        print(f"BOARD RATE-LIMIT ERR: {len(batch)} systems deferred after retries", flush=True)
     except Exception as exc:
         if len(batch) == 1:
             name = str(batch[0].get("name") or "unknown")
