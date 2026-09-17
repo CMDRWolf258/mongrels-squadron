@@ -1,4 +1,5 @@
 (() => {
+  document.currentScript?.setAttribute('data-wolf-contribution-options','true');
   const MONGREL = 'Regiment of Imperial Mongrels';
   const CONFLICT_RE = /\b(civil\s+war|war|election)\b/i;
   const previewObservers = new WeakMap();
@@ -121,18 +122,10 @@
         }));
       }
 
-      result.push(taskMarkup({
-        label:'INFLUENCE / MINING MISSIONS',
-        instruction:`Use mining or source-and-return missions for ${row.name} toward the mission-INF goal`,
-        detail:`Mine requested mission commodities when suitable missions are available and choose the Influence reward. This is an alternate way to satisfy the existing mission-INF target, not extra INF that must be stacked on top.`,
-        note:`Direct sale of mined commodities is not counted here as BGS influence/economy work; the mined goods need to be used for faction missions.`,
-        optional:true,
-      }));
-
       if ((row.security === 'ignore' || row.security === 'raise') && !existingTask(host,row.name,['bount'])) {
         result.push(taskMarkup({
           label:'INFLUENCE / BOUNTIES',
-          instruction:`Optional: turn in about ${bountyGoal()}M Cr of bounty vouchers for ${row.name}`,
+          instruction:`Turn in about ${bountyGoal()}M Cr of bounty vouchers for ${row.name}`,
           detail:`Another positive contribution route for members who prefer combat${row.security === 'raise' ? '; this also aligns with the configured Security raise objective' : ''}.${controlText}`,
           note:`Skip this option when Security should be held/lowered or when conflict-specific logic applies.`,
           optional:true,
@@ -140,7 +133,7 @@
       }
 
       if (push.controlPush) {
-        result.unshift(`<div class="wolf-rules-callout subtle wolf-contribution-push-banner"><strong>${push.urgent ? 'Urgent control push' : push.strong ? 'Control push' : 'Influence push toward control'} · ${esc(row.name)}</strong><span>Mission INF remains the primary target. ${push.strong ? 'Trade is recommended as a second bucket; other activities give members useful alternatives without forcing one repetitive game loop.' : 'Secondary buckets remain optional so members can contribute through the activity they enjoy.'}</span></div>`);
+        result.unshift(`<div class="wolf-rules-callout subtle wolf-contribution-push-banner"><strong>${push.urgent ? 'Urgent control push' : push.strong ? 'Control push' : 'Influence push toward control'} · ${esc(row.name)}</strong><span>Mission INF remains the primary target. ${push.strong ? 'Trade is recommended as a second bucket; exploration data and bounties remain alternate ways for members to contribute without forcing one repetitive game loop.' : 'Secondary buckets remain optional so members can contribute through the activity they enjoy.'}</span></div>`);
       }
     }
     return result;

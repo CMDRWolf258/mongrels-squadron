@@ -14,24 +14,23 @@ for(const pattern of [
   /CONFLICT_RE\.test\(row\.state\)/,
   /INFLUENCE \/ TRADE/,
   /INFLUENCE \/ EXPLORATION/,
-  /INFLUENCE \/ MINING MISSIONS/,
   /INFLUENCE \/ BOUNTIES/,
   /OPTIONAL/,
   /RECOMMENDED/,
-  /mission-INF target, not extra INF/,
-  /Direct sale of mined commodities is not counted here as BGS influence\/economy work/,
+  /data-wolf-contribution-options/,
 ]) assert.match(source,pattern);
 
+assert.doesNotMatch(source,/INFLUENCE \/ MINING MISSIONS/,'Mining mission options should not clutter the generated contribution list');
+assert.doesNotMatch(source,/Direct sale of mined commodities is not counted here/,'Removed mining guidance should not remain in generated contribution options');
 assert.doesNotMatch(source,/sell mined commodities.*BGS influence/i,'Direct mined-commodity sales must not be presented as BGS influence work');
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
-assert.match(page,/wolf-bgs-contribution-options\.js\?v=1/,'Wolf BGS page must load the contribution variety layer directly');
-assert.match(page,/wolf-bgs-lab\.js\?v=2/,'Lab cache version should be bumped after bootstrap changes');
+assert.match(page,/wolf-bgs-contribution-options\.js\?v=2/,'Wolf BGS page must load the current contribution variety layer directly');
+assert.match(page,/wolf-bgs-lab\.js\?v=2/,'Lab cache version should remain current');
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-contribution-options.js'),'Contribution options must load after conflict logic');
 assert.ok(page.indexOf('wolf-bgs-contribution-options.js') < page.indexOf('wolf-bgs-lab.js'),'Contribution options must load before lab interception');
 
 const lab=readFileSync('js/wolf-bgs-lab.js','utf8');
-assert.match(lab,/wolf-bgs-contribution-options\.js\?v=1/,'Lab bootstrap fallback must also know the contribution layer URL');
 assert.match(lab,/data-wolf-contribution-options|wolfContributionOptions/,'Contribution layer loader marker is missing');
 
-console.log('✓ Wolf BGS contribution variety, control-push escalation, optional activity choices, and mining-mission safety are structurally sound');
+console.log('✓ Wolf BGS contribution variety, control-push escalation, optional exploration/bounty choices, and mining-option removal are structurally sound');
