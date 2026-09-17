@@ -28,10 +28,26 @@ Access:
 Storage:
 - Existing `DAILY_ORDERS` KV binding.
 - Key: `wolf-bgs-control-v1`.
-- Stores global defaults, per-system settings, and manual system/faction snapshots.
+- Stores global automation defaults, System Defaults, per-system settings/favorites, and manual system/faction snapshots.
 
-## Prototype global defaults
+## Control-deck list UX
 
+The current Mongrel footprint is shown as compact expandable system cards.
+
+List controls:
+- default **20 results per page** with selectable page size;
+- search by system name;
+- sort by system name, influence high→low, influence low→high, priority, or data freshness;
+- quick views for Favorites, attention, stale, controlled, and not controlled;
+- **Custom filter** exposes Priority, State text, Pending text, control status, and flags such as Favorite, Retreat risk, Conflict, Stale, Custom Settings, and Automation Off.
+
+Each system has a Wolf-only clickable favorite star. Favorites are navigation/visibility aids and do not by themselves change Daily Orders or BGS automation priority.
+
+The collapsed system header shows the same unified **Priority** field edited inside the Strategy section. The previous separate `Strategic Importance` concept was removed as redundant.
+
+## Prototype global automation defaults
+
+Global Automation Defaults govern cycle/reporting mechanics rather than individual strategic objectives:
 - Default scheduled system tick: 19:00 local browser/Control Room display time (intended starting point: 7:00 PM Central for Wolf).
 - Maximum data age: 8 hours.
 - Tick-watch buffer: 90 minutes.
@@ -41,13 +57,33 @@ Storage:
 - Require post-tick data for normal orders: true.
 - Emergency orders with stale data: false by default.
 
-All are intended to be configurable from Wolf Control.
+All are configurable from Wolf Control. Tablet/iPad layout reflows these controls to two columns before the phone breakpoint so text fields do not overlap.
+
+## System Defaults
+
+A clearly separate expandable **System Defaults** card lives below the system list.
+
+These defaults govern normal strategy/automation behavior for systems without a custom system setting:
+- Priority: Normal.
+- Control Policy: **Maintain existing control state**.
+  - If Mongrels already control the system, future automation should preserve that control unless overridden.
+  - If Mongrels do not control the system, this default does not instruct automation to take control.
+- Optional target influence min/max.
+- Preferred/avoided states.
+- Retreat protection.
+- Expansion avoidance.
+- Daily Orders eligibility.
+- automatic order generation.
+- emergency priority override.
+- reactions to Retreat, conflict, Expansion, influence-band and state changes.
+
+Per-system settings can override these defaults. System Defaults and Global Automation Defaults are intentionally separate concepts.
 
 ## Per-system control model
 
 Every current Mongrel-presence system appears as a compact expandable card. Controls include:
-- strategic importance;
-- desired control policy;
+- unified Priority: Critical / High / Normal / Low;
+- control policy: Maintain Existing / Gain Control / Allow Intentional Transfer / No Control Objective;
 - target influence min/max;
 - preferred/avoided states;
 - Retreat protection;
@@ -59,9 +95,10 @@ Every current Mongrel-presence system appears as a compact expandable card. Cont
 - custom tick time;
 - custom freshness threshold;
 - rollover policy;
-- notes.
+- notes;
+- favorite star for quick filtering.
 
-Settings are changed only after **Save System Settings**. The latest system-settings timestamp is retained; a full edit history is not required.
+Settings are changed only after **Save System Settings**, except the favorite star which is an intentional quick-control action and saves immediately with a fresh system-settings timestamp. A full edit history is not required.
 
 ## Manual status / faction board
 
@@ -76,7 +113,7 @@ The expanded card contains an editable faction board with rows for:
 Wolf can add/remove faction rows, set the controller and notes, then use **Submit Status**. Manual status submission is intentionally separate from saving system automation/strategy settings.
 
 Manual status gets a fresh server timestamp and actor identity. The UI shows:
-- Source Update Time;
+- External Source Update Time;
 - Manual Update Time;
 - Active Snapshot time/source.
 
@@ -87,9 +124,10 @@ Newest timestamp is the current trust rule, with one important prototype limitat
 `data/live-bgs.json` currently tracks the Regiment of Imperial Mongrels presence row and system-level metadata; it does **not** contain the complete faction board for every system.
 
 Therefore the prototype:
-- automatically fills the Mongrel faction row from the third-party source;
+- automatically fills the Mongrel faction row from EliteHub Vault / EDDN;
 - preserves manually entered non-Mongrel rows;
-- clearly labels the automated source as a partial board source;
+- labels this area **External Source Data** rather than the vague “Third Party” wording;
+- clearly states that the automated source is currently a partial board source;
 - does not pretend the full board is automatically ingested.
 
 A future ingestion upgrade should fetch complete faction boards and then apply the same source/manual freshness rules field-by-field or snapshot-by-snapshot.
@@ -113,6 +151,22 @@ Three visibly separated layers:
    - Approve/edit/reject generated work.
    - Create custom order amounts/logic.
    - Force include/exclude/hold systems and tasks.
+
+The prototype currently stores controls and placeholders; automated Daily Orders generation is **not yet active**.
+
+## Planned Control Room sections beyond the current shell
+
+Planned additions include:
+- Automation Rules Library;
+- Order Preview / Generator with “Why did automation do this?” explanation;
+- separate Advanced Intelligence Suggestions;
+- ranked Daily Orders Queue;
+- current-cycle Reporting Dashboard;
+- recent ~14-cycle history;
+- Tick & Data Monitor;
+- Exceptions / Overrides summary;
+- command-level Health / Attention summary;
+- “What changed since last cycle?” change digest.
 
 ## Daily Orders direction
 
