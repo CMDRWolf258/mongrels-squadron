@@ -72,7 +72,7 @@ Keeping full boards separate is deliberate: a temporary board-enrichment failure
 
 Manual snapshots remain a fallback and are timestamped. The newest complete trusted snapshot wins; the UI must never pretend a Mongrel-only fallback row is a complete faction board.
 
-The current board source does **not** expose a reliable conflict-opponent identifier. Conflict pairing therefore follows conservative rules rather than guessing from influence alone.
+The current board source does **not** expose a reliable conflict-opponent identifier. Conflict pairing therefore uses conflict type plus influence geometry conservatively and falls back to manual confirmation whenever more than one pairing remains plausible.
 
 ## System list and target UX
 
@@ -248,15 +248,18 @@ Any faction whose **active** state contains War, Civil War, or Election is treat
 
 The live faction-board source does not currently identify opponents, so pairing is intentionally conservative:
 
-- exactly **two** active factions of the same conflict type → auto-pair;
+- exactly **two** active factions of the same conflict type → auto-pair because the opponent relationship is unambiguous;
 - two War factions plus two Election factions → each two-faction type group resolves independently;
-- four factions all showing War, Civil War, or Election → **do not pair by influence or proximity**; Wolf must select the pairs explicitly;
+- when **four or six factions share the same conflict type**, the resolver tests influence pairings using a **±3 percentage-point tolerance**;
+- a multi-pair same-type group auto-resolves only when exactly **one complete pairing** satisfies that tolerance;
+- if zero complete pairings fit, or more than one pairing fits, the resolver refuses to guess and requires manual confirmation;
+- manual pairing is allowed outside the ±3-point auto-pair tolerance, but the UI warns about the larger influence gap so the exception is explicit;
 - one unmatched active participant → unresolved warning;
 - explicit saved pairings are validated against current active state/type;
 - a faction cannot be assigned to two conflict pairs;
 - up to three simultaneous pairs are supported because a seven-faction board can contain at most three disjoint two-faction conflicts.
 
-This specifically prevents the earlier failure mode where two simultaneous same-type conflicts could be silently paired incorrectly.
+This allows realistic rare same-type multi-conflict boards to pair automatically when influence geometry clearly identifies the opponents while preserving a hard manual fallback for ambiguous four-way cases.
 
 ### Conflict objective and generated work
 
@@ -323,6 +326,7 @@ Isolation rules:
 - lab data auto-saves only in local browser storage;
 - generated faction-strategy, slider and calibration Save actions are intercepted so they do not write Mandalore into production KV settings;
 - Conflict Configuration recognizes the lab marker and stores pairing locally rather than through the live conflict API;
+- switching built-in lab scenarios clears prior lab conflict pairing so stale manual choices cannot make a scenario appear to auto-resolve;
 - screenshot import is suppressed inside the lab.
 
 Built-in scenario presets:
@@ -330,7 +334,8 @@ Built-in scenario presets:
 - **Balanced Board** — ordinary seven-faction baseline;
 - **Slider Pressure** — Mongrels near the configured ceiling for Economy/Security balancing tests;
 - **Two Conflicts** — one War pair plus one Election pair, allowing automatic independent pairing;
-- **4-Way Pairing Test** — four War factions, intentionally forcing the manual-pairing safety path.
+- **4-Way Auto Pair** — four War factions arranged as two unique influence-compatible pairs inside the ±3-point tolerance;
+- **4-Way Ambiguous** — four War factions at matching influence, deliberately creating multiple valid pairings and forcing manual confirmation.
 
 ## Screenshot import
 
