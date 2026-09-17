@@ -29,7 +29,9 @@
   const list = document.querySelector('[data-system-list]');
   if (!list) return;
 
+  const MAX_WARM_CARDS = 2;
   const parkedBodies = new WeakMap();
+  let warmLru = [];
   let lastGuardMs = 0;
   let mountPingQueued = false;
   let healthSection = null;
@@ -49,6 +51,16 @@
     });
   }
 
+  function pruneWarmLru() {
+    warmLru = warmLru.filter(card => card.isConnected && card.parentNode === list && card.dataset.healthHydrated === 'true' && Boolean(directBody(card)));
+  }
+
+  function touchWarm(card) {
+    pruneWarmLru();
+    warmLru = warmLru.filter(item => item !== card);
+    warmLru.push(card);
+  }
+
   function restoreCard(card) {
     const record = parkedBodies.get(card);
     if (!record) {
@@ -60,33 +72,60 @@
     else card.appendChild(record.body);
     parkedBodies.delete(card);
     delete card.dataset.healthParked;
+    delete card.dataset.healthEvicted;
     card.dataset.healthHydrated = 'true';
 
-    // A cold card can be marked enhanced by a module before its body is restored.
-    // Clear only the completion flag so the first open can build the advanced stack.
+    // A never-opened cold card can be marked enhanced by a module before its
+    // body is restored. Only that cold first-open case needs a fresh enhancement
+    // pass. Re-opened LRU cards already contain their complete generated controls.
     if (!record.hydrated) delete card.dataset.rulesEnhanced;
     requestMountPing();
     return true;
   }
 
-  function parkColdCard(card) {
-    // Once a card has been opened, it remains mounted for the rest of the page
-    // session. This preserves the fast first load without making controls vanish
-    // and rebuild during an active workflow.
-    if (card.dataset.healthHydrated === 'true') return;
-    if (card.open) {
-      restoreCard(card);
+  function parkCard(card, { evicted = false } = {}) {
+    if (parkedBodies.has(card)) {
+      if (evicted) card.dataset.healthEvicted = 'true';
       return;
     }
-    if (parkedBodies.has(card)) return;
 
     const body = directBody(card);
     if (!body) return;
-    const hydrated = Boolean(body.querySelector('[data-faction-strategy-section],[data-slider-objectives-section],[data-conflict-section],[data-order-preview-section]'));
-    const marker = document.createComment('wolf-bgs-body-deferred');
+    const hydrated = card.dataset.healthHydrated === 'true' || Boolean(body.querySelector('[data-faction-strategy-section],[data-slider-objectives-section],[data-conflict-section],[data-order-preview-section]'));
+    const marker = document.createComment(evicted ? 'wolf-bgs-body-lru-evicted' : 'wolf-bgs-body-deferred');
     body.replaceWith(marker);
     parkedBodies.set(card, { body, marker, hydrated });
     card.dataset.healthParked = 'true';
+    if (evicted) card.dataset.healthEvicted = 'true';
+    warmLru = warmLru.filter(item => item !== card);
+  }
+
+  function parkColdCard(card) {
+    if (card.dataset.healthHydrated === 'true') return;
+    if (card.open) return;
+    parkCard(card);
+  }
+
+  function evictWarmCard(card) {
+    if (!card || !directBody(card)) return;
+    if (card.open) card.open = false;
+    parkCard(card, { evicted:true });
+  }
+
+  function enforceWarmLimit(activeCard) {
+    pruneWarmLru();
+    while (warmLru.length > MAX_WARM_CARDS) {
+      const victimIndex = warmLru.findIndex(card => card !== activeCard);
+      if (victimIndex < 0) break;
+      const [victim] = warmLru.splice(victimIndex, 1);
+      evictWarmCard(victim);
+    }
+  }
+
+  function activateCard(card) {
+    restoreCard(card);
+    touchWarm(card);
+    enforceWarmLimit(card);
   }
 
   function wireCard(card) {
@@ -94,8 +133,11 @@
     card.dataset.healthToggleWired = 'true';
     card.addEventListener('toggle', () => {
       const started = performance.now();
-      if (card.open) restoreCard(card);
+      if (card.open) activateCard(card);
       else if (card.dataset.healthHydrated !== 'true') parkColdCard(card);
+      // Warm cards deliberately remain attached when manually collapsed. They
+      // leave the active DOM only when a third system is opened and the LRU
+      // cache explicitly evicts the least-recently-used card.
       lastGuardMs = performance.now() - started;
       window.setTimeout(updateHealth, 60);
       window.setTimeout(updateHealth, 300);
@@ -104,11 +146,13 @@
 
   function syncCards() {
     const started = performance.now();
+    pruneWarmLru();
     for (const card of cards()) {
       wireCard(card);
-      if (card.open) restoreCard(card);
-      else if (card.dataset.healthHydrated !== 'true') parkColdCard(card);
+      if (card.open) activateCard(card);
+      else if (card.dataset.healthHydrated !== 'true' && !parkedBodies.has(card)) parkColdCard(card);
     }
+    enforceWarmLimit(null);
     lastGuardMs = performance.now() - started;
     updateHealth();
   }
@@ -124,7 +168,7 @@
     const section = document.createElement('section');
     section.className = 'section-sm wolf-health-section';
     section.dataset.wolfHealthSection = '';
-    section.innerHTML = `<div class="container"><details class="wolf-panel wolf-health-panel" data-wolf-health-panel><summary><span><b>Control Room Health</b><small>iPad / DOM diagnostics and lazy-card performance status</small></span><strong>+</strong></summary><div class="wolf-panel-body"><p class="wolf-section-intro">Collapsed systems start deferred for a fast page load. After you open a system once, its full controls stay mounted for the rest of the page session so sections never disappear and rebuild while you work.</p><div class="wolf-summary-grid"><article><span>Status</span><strong data-health-status>Checking…</strong><small>Lazy-card guard</small></article><article><span>Cards on page</span><strong data-health-cards>—</strong><small>Current paginated view</small></article><article><span>Expanded</span><strong data-health-open>—</strong><small>Currently open</small></article><article><span>Deferred</span><strong data-health-parked>—</strong><small>Never opened this session</small></article><article><span>Advanced previews</span><strong data-health-previews>—</strong><small>Mounted Order Previews</small></article><article><span>DOM elements</span><strong data-health-dom>—</strong><small>Current document</small></article></div><div class="wolf-save-row"><span data-health-note>Sampling Control Room…</span><button type="button" class="btn btn-secondary btn-compact" data-refresh-health>Refresh Health Check</button></div></div></details></div>`;
+    section.innerHTML = `<div class="container"><details class="wolf-panel wolf-health-panel" data-wolf-health-panel><summary><span><b>Control Room Health</b><small>iPad / DOM diagnostics and two-card warm cache</small></span><strong>+</strong></summary><div class="wolf-panel-body"><p class="wolf-section-intro">Live systems start deferred for a fast page load. The two most recently used systems stay fully mounted for instant reuse. Opening a third system automatically collapses and parks the least-recently-used warm card; its generated controls and unsaved form values remain cached off-DOM for a quick reopen.</p><div class="wolf-summary-grid"><article><span>Status</span><strong data-health-status>Checking…</strong><small>Lazy-card guard</small></article><article><span>Cards on page</span><strong data-health-cards>—</strong><small>Current paginated view</small></article><article><span>Expanded</span><strong data-health-open>—</strong><small>Currently open</small></article><article><span>Warm cache</span><strong data-health-warm>—</strong><small>Maximum ${MAX_WARM_CARDS} mounted</small></article><article><span>Deferred</span><strong data-health-parked>—</strong><small>Cold / LRU parked off-DOM</small></article><article><span>Advanced previews</span><strong data-health-previews>—</strong><small>Mounted Order Previews</small></article><article><span>DOM elements</span><strong data-health-dom>—</strong><small>Current document</small></article></div><div class="wolf-save-row"><span data-health-note>Sampling Control Room…</span><button type="button" class="btn btn-secondary btn-compact" data-refresh-health>Refresh Health Check</button></div></div></details></div>`;
     summary.insertAdjacentElement('afterend', section);
     section.querySelector('[data-refresh-health]')?.addEventListener('click', updateHealth);
     section.querySelector('[data-wolf-health-panel]')?.addEventListener('toggle', updateHealth);
@@ -137,28 +181,32 @@
     const liveCards = cards();
     const open = liveCards.filter(card => card.open).length;
     const deferred = liveCards.filter(card => card.dataset.healthParked === 'true').length;
-    const warmed = liveCards.filter(card => card.dataset.healthHydrated === 'true').length;
+    const warm = liveCards.filter(card => card.dataset.healthHydrated === 'true' && Boolean(directBody(card))).length;
     const previews = liveCards.reduce((count, card) => count + (card.querySelector('[data-order-preview-section]') ? 1 : 0), 0);
     const domElements = document.getElementsByTagName('*').length;
 
     let status = 'Healthy';
-    let note = `${deferred} cold card${deferred===1?' is':'s are'} deferred; ${warmed} opened card${warmed===1?' is':'s are'} kept mounted for stable workflow.`;
+    let note = `${warm}/${MAX_WARM_CARDS} warm cache slot${MAX_WARM_CARDS===1?'':'s'} in use; ${deferred} card${deferred===1?' is':'s are'} parked off-DOM.`;
     if (!liveCards.length) {
       status = 'Waiting';
       note = 'Waiting for the current system page to render.';
     } else if (liveCards.some(card => card.open && !directBody(card))) {
       status = 'Mounting';
       note = 'An expanded card is still restoring its controls. Refresh this check after it finishes.';
+    } else if (warm > MAX_WARM_CARDS) {
+      status = 'Heavy';
+      note = `${warm} warm cards are mounted, above the ${MAX_WARM_CARDS}-card cache target.`;
     }
 
     const set = (selector, value) => { const el = section.querySelector(selector); if (el) el.textContent = value; };
     set('[data-health-status]', status);
     set('[data-health-cards]', String(liveCards.length));
     set('[data-health-open]', String(open));
+    set('[data-health-warm]', `${warm} / ${MAX_WARM_CARDS}`);
     set('[data-health-parked]', String(deferred));
     set('[data-health-previews]', String(previews));
     set('[data-health-dom]', domElements.toLocaleString());
-    set('[data-health-note]', `${note} Last defer/first-mount pass: ${lastGuardMs.toFixed(1)} ms.`);
+    set('[data-health-note]', `${note} Last defer/cache pass: ${lastGuardMs.toFixed(1)} ms.`);
   }
 
   const observer = new MutationObserver(() => syncCards());
@@ -170,6 +218,7 @@
   window.WolfBgsHealth = {
     refresh: updateHealth,
     sync: syncCards,
-    version: 2,
+    warmLimit: MAX_WARM_CARDS,
+    version: 3,
   };
 })();
