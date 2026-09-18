@@ -4,6 +4,8 @@ const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
 const CURRENT_KEY = 'current';
 const REPORT_PREFIX = 'order-report:';
 const CZ_WEIGHTS = { low: 1, medium: 1.3, high: 1.6 };
+const REPORT_TYPES = new Set(['cz', 'inf', 'bounties', 'trade', 'exploration']);
+const CREDIT_TYPES = new Set(['bounties', 'trade', 'exploration']);
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -37,8 +39,8 @@ export async function onRequestPost({ request, env }) {
   const existing = await env.DAILY_ORDERS.get(key, { type:'json' }) || emptyRecord(order, auth.session, spec);
   const mode = body?.mode === 'wing' ? 'wing' : 'solo';
 
-  const incoming = spec.type === 'cz' ? normalizeCz(body?.cz) : normalizeInf(body?.inf);
-  const hasWork = Object.values(incoming).some(value => value > 0);
+  const incoming = normalizeIncoming(spec.type, body);
+  const hasWork = Object.values(incoming).some(value => Number(value) > 0);
   const bonds = spec.type === 'cz' && Boolean(body?.bondsRedeemed);
   if (!hasWork && !bonds) return reply({ok:false,error:'empty_report'},400);
 
@@ -52,7 +54,7 @@ export async function onRequestPost({ request, env }) {
     mode,
     displayName: auth.session.displayName || auth.session.username || 'Mongrel CMDR',
     ownerId: auth.session.sub,
-    counts: addCounts(existing.counts || {}, incoming),
+    counts: addContribution(spec.type, existing.counts || {}, incoming),
     bondsRedeemed: Boolean(existing.bondsRedeemed || bonds),
     submissions: Math.min(9999, Number(existing.submissions || 0) + 1),
     updatedAt: new Date().toISOString(),
@@ -122,11 +124,11 @@ async function summarizeCurrent(env, current, viewerId) {
 }
 
 function summarize(order,spec,records,viewerId) {
-  const squadCounts = spec.type === 'cz' ? normalizeCz({}) : normalizeInf({});
-  const viewerCounts = spec.type === 'cz' ? normalizeCz({}) : normalizeInf({});
+  const squadCounts = blankCounts(spec.type);
+  const viewerCounts = blankCounts(spec.type);
   let reportCount=0,bondsRedeemedBy=0,viewerBonds=false,updatedAt=null;
   for (const record of records) {
-    const normalized=spec.type==='cz'?normalizeCz(record.counts):normalizeInf(record.counts);
+    const normalized=normalizeCounts(spec.type, record.counts);
     mergeInto(squadCounts,normalized);
     reportCount += Number(record.submissions || 0);
     if (record.bondsRedeemed) bondsRedeemedBy += 1;
@@ -136,8 +138,8 @@ function summarize(order,spec,records,viewerId) {
     }
     if (record.updatedAt && (!updatedAt || record.updatedAt>updatedAt)) updatedAt=record.updatedAt;
   }
-  const squadScore=spec.type==='cz'?czScore(squadCounts):infScore(squadCounts);
-  const viewerScore=spec.type==='cz'?czScore(viewerCounts):infScore(viewerCounts);
+  const squadScore=scoreFor(spec.type,squadCounts);
+  const viewerScore=scoreFor(spec.type,viewerCounts);
   return {
     orderId:order.id, type:spec.type, target:spec.target, blitz:spec.blitz,
     squad:{ counts:squadCounts, score:round(squadScore), reporterCount:records.length, reportCount, bondsRedeemedBy, updatedAt },
@@ -147,20 +149,60 @@ function summarize(order,spec,records,viewerId) {
 
 function reportSpec(order) {
   const explicit=order?.reporting && typeof order.reporting==='object' ? order.reporting : {};
-  let type=['cz','inf'].includes(explicit.type)?explicit.type:'';
+  let type=REPORT_TYPES.has(explicit.type)?explicit.type:'';
   const text=[order?.task,order?.detail].filter(Boolean).join(' ');
   if (!type && /\b(?:CZ|Conflict Zones?)\b/i.test(text)) type='cz';
   if (!type && /\bINF\b/i.test(text)) type='inf';
+  if (!type && /\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text)) type='bounties';
+  if (!type && /\bexploration data\b/i.test(text)) type='exploration';
+  if (!type && /\bprofitable trade\b|\btrade profit\b/i.test(text)) type='trade';
   let target=numberOrNull(explicit.target);
   if (target===null && type==='cz') target=matchTarget(text,/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);
   if (target===null && type==='inf') target=matchTarget(text,/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);
+  if (target===null && CREDIT_TYPES.has(type)) target=matchTarget(text,/([0-9]+(?:\.[0-9]+)?)\s*M\s*Cr\b/i);
   return { type, target, blitz:Boolean(explicit.blitz || /\bBLITZ\b/i.test(text)) };
+}
+
+function normalizeIncoming(type, body) {
+  if (type==='cz') return normalizeCz(body?.cz);
+  if (type==='inf') return normalizeInf(body?.inf);
+  if (CREDIT_TYPES.has(type)) return normalizeCredits({ millions:body?.millions ?? body?.credits?.millions });
+  return {};
+}
+
+function blankCounts(type) {
+  if (type==='cz') return normalizeCz({});
+  if (type==='inf') return normalizeInf({});
+  if (CREDIT_TYPES.has(type)) return normalizeCredits({});
+  return {};
+}
+
+function normalizeCounts(type,value) {
+  if (type==='cz') return normalizeCz(value);
+  if (type==='inf') return normalizeInf(value);
+  if (CREDIT_TYPES.has(type)) return normalizeCredits(value);
+  return {};
+}
+
+function addContribution(type,existing,incoming) {
+  if (CREDIT_TYPES.has(type)) return { millions:safeMillions(Number(existing?.millions||0)+Number(incoming?.millions||0)) };
+  const out={};
+  for(const key of Object.keys(incoming)) out[key]=safeCount(Number(existing?.[key]||0)+Number(incoming[key]||0));
+  return out;
+}
+
+function scoreFor(type,counts) {
+  if (type==='cz') return czScore(counts);
+  if (type==='inf') return infScore(counts);
+  if (CREDIT_TYPES.has(type)) return Number(counts.millions)||0;
+  return 0;
 }
 
 function matchTarget(text,re){const match=String(text||'').match(re);return match?numberOrNull(match[1]):null}
 function numberOrNull(value){const n=Number(value);return Number.isFinite(n)&&n>=0?n:null}
 function clean(value){return typeof value==='string'?value.trim():''}
 function safeCount(value){const n=Math.floor(Number(value)||0);return Math.max(0,Math.min(99,n))}
+function safeMillions(value){const n=Number(value)||0;return Math.round(Math.max(0,Math.min(100000,n))*100)/100}
 function normalizeCz(value={}) {
   return {
     low:safeCount(value.low), medium:safeCount(value.medium), high:safeCount(value.high),
@@ -169,12 +211,12 @@ function normalizeCz(value={}) {
   };
 }
 function normalizeInf(value={}) { return { inf2:safeCount(value.inf2),inf3:safeCount(value.inf3),inf4:safeCount(value.inf4),inf5:safeCount(value.inf5) }; }
-function addCounts(existing,incoming){const out={};for(const key of Object.keys(incoming))out[key]=safeCount(Number(existing?.[key]||0)+Number(incoming[key]||0));return out}
+function normalizeCredits(value={}) { return { millions:safeMillions(value.millions) }; }
 function mergeInto(target,source){for(const [key,value] of Object.entries(source))target[key]=(target[key]||0)+Number(value||0)}
 function czScore(c){return (c.low-c.lossLow-c.disconnectLow)*CZ_WEIGHTS.low+(c.medium-c.lossMedium-c.disconnectMedium)*CZ_WEIGHTS.medium+(c.high-c.lossHigh-c.disconnectHigh)*CZ_WEIGHTS.high}
 function infScore(c){return c.inf2*2+c.inf3*3+c.inf4*4+c.inf5*5}
 function round(value){return Math.round((Number(value)||0)*10)/10}
-function emptyRecord(order,session,spec){return{cycleId:null,orderId:order.id,system:order.system||'',reportType:spec.type,target:spec.target,mode:'solo',displayName:session.displayName||'',ownerId:session.sub,counts:spec.type==='cz'?normalizeCz({}):normalizeInf({}),bondsRedeemed:false,submissions:0,updatedAt:null}}
+function emptyRecord(order,session,spec){return{cycleId:null,orderId:order.id,system:order.system||'',reportType:spec.type,target:spec.target,mode:'solo',displayName:session.displayName||'',ownerId:session.sub,counts:blankCounts(spec.type),bondsRedeemed:false,submissions:0,updatedAt:null}}
 
 function privateHeaders(){return{'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache',Vary:'Cookie','X-Content-Type-Options':'nosniff'}}
 function reply(body,status=200){return json(body,{status,headers:privateHeaders()})}
