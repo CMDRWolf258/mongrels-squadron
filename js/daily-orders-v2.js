@@ -23,9 +23,6 @@
     return order?.task||'Operational task';
   }
 
-  function summaryTitle(order){
-    return shortTitle(order)+(order?.faction?' · '+order.faction:'');
-  }
 
   function factionDisplay(name){
     const value=String(name||'').trim();
@@ -92,7 +89,6 @@
       card.open=openSystems.has(system);
       const priorities=items.map(x=>x.priority).filter(Boolean);
       const priority=priorities[0]||'Active';
-      const reportable=items.filter(x=>spec(x).type);
       card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
       const pairs=card.querySelector('.mc-order-pairs');
       const copyButton=card.querySelector('.mc-copy-system');
@@ -112,15 +108,6 @@
       });
       list.append(card);
     }
-  }
-
-  function collapsedProgress(orders,summaries){
-    if(!orders.length)return '<small>Briefing only</small>';
-    if(orders.length>1)return '<small>'+orders.length+' tracked tasks</small>';
-    const order=orders[0],s=spec(order),sum=summaries[order.id],score=sum?.squad?.score||0;
-    if(s.target===null)return '<strong>'+fmt(score)+'</strong><small>'+label(s.type)+' reported</small>';
-    const met=score>=s.target;
-    return '<strong>'+fmt(score)+' / '+fmt(s.target)+'</strong><small>'+(s.blitz?'BLITZ · keep pushing':met?'Target met':label(s.type)+' squad progress')+'</small>';
   }
 
   function orderBrief(order,index){
