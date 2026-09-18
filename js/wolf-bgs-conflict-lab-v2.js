@@ -1,7 +1,8 @@
 (() => {
 const KEY='wolf-bgs-lab-conflict-v2', q=()=>document.querySelector('[data-bgs-lab="true"]');
 const D={objective:'tie',pressure:'auto',throughDay:0,days:Array.from({length:7},()=>({winner:''})),cz:{routine:3,contested:6,heavy:15,blitz:25,low:1,medium:1.3,high:1.6},election:{routine:6,contested:15,heavy:40,blitz:60}};
-let s;try{s={...D,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{s=structuredClone(D)}\nif(!Array.isArray(s.days)||s.days.length!==7||s.days.some(x=>!('winner' in x)))s.days=Array.from({length:7},()=>({winner:''}));
+let s;try{s={...D,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{s=structuredClone(D)}
+if(!Array.isArray(s.days)||s.days.length!==7||s.days.some(x=>!('winner' in x)))s.days=Array.from({length:7},()=>({winner:''}));
 const save=()=>localStorage.setItem(KEY,JSON.stringify(s)), esc=v=>String(v??'').replace(/[&<>"']/g,ch=>ch==='&'?'&amp;':ch==='<'?'&lt;':ch==='>'?'&gt;':ch==='"'?'&quot;':'&#39;'), clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v)||0));
 function pair(){const c=q(),r=[...(c?.querySelectorAll('[data-conflict-pair-row]')||[])].find(x=>x.querySelector('[data-conflict="factionA"]')?.value&&x.querySelector('[data-conflict="factionB"]')?.value);if(!r)return null;const t=(r.querySelector('[data-conflict-type]')?.textContent||'').toLowerCase();return{a:r.querySelector('[data-conflict="factionA"]').value,b:r.querySelector('[data-conflict="factionB"]').value,type:t.includes('election')?'election':t.includes('civil')?'civil-war':'war',row:r}}
 function scoresThrough(n){let a=0,b=0;for(let i=0;i<n;i++){if(s.days[i]?.winner==='a')a++;else if(s.days[i]?.winner==='b')b++;}return{a,b}}
