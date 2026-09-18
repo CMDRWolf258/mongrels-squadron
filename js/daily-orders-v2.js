@@ -27,8 +27,14 @@
     return shortTitle(order)+(order?.faction?' · '+order.faction:'');
   }
 
-  function shortDetail(order){
-    const s=spec(order), faction=order?.faction||'the ordered faction', detail=String(order?.detail||'');
+  function factionDisplay(name){
+    const value=String(name||'').trim();
+    if(/^Regiment of Imperial Mongrels$/i.test(value))return'MONGRELS';
+    return value||'SQUAD-WIDE';
+  }
+
+  function briefingCopy(order){
+    const s=spec(order), faction=factionDisplay(order?.faction), detail=String(order?.detail||'');
     let lead='';
     if(s.type==='inf')lead='Complete missions for '+faction+' and choose Influence rewards.';
     else if(s.type==='bounties')lead='Redeem bounty vouchers for '+faction+'.';
@@ -38,7 +44,7 @@
     else lead=order?.task||'Execute the order as briefed.';
     const stop=(detail.match(/(?:Stop\s*\/\s*review|Stop\/review|Stop|Review)\s*:\s*([^\n]+?)(?=(?:\s+(?:Stop\s*\/\s*review|Stop\/review|Asset check|Support\s*\/\s*raise|Counterweight|Primary|Optional|$)))/i)||[])[1];
     const cleanStop=stop?stop.replace(/\s+/g,' ').trim().replace(/^(?:stop\s*\/\s*review|stop\/review|stop|review)\s*(?:when|before|if)?\s*/i,match=>/\b(?:when|before|if)\b/i.test(match)?match.match(/\b(?:when|before|if)\b/i)[0]+' ':'').replace(/[.;]+$/,''):'';
-    return cleanStop?lead+' Stop/review: '+cleanStop+'.':lead;
+    return{lead,stop:cleanStop};
   }
 
   function spec(order){
@@ -125,7 +131,8 @@
   function orderBrief(order,index){
     const el=document.createElement('article');el.className='mc-order-brief';
     const status=order.status&&String(order.status).toLowerCase()!=='active'?'<b>'+esc(order.status)+'</b>':'';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(shortTitle(order))+'</h3><p>'+esc(shortDetail(order))+'</p>';
+    const copy=briefingCopy(order);
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy.lead)+'</p>'+(copy.stop?'<small><b>STOP / REVIEW</b> '+esc(copy.stop)+'</small>':'')+'</div></div>';
     return el;
   }
 
@@ -135,7 +142,7 @@
     if(s.blitz)host.classList.add('is-blitz');
     const progress=target&&target>0?Math.max(0,Math.min(100,(score/target)*100)):0;
     const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
-    host.innerHTML='<div class="mc-report-head"><span>SQUAD</span><strong>'+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
+    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
     const form=host.querySelector('.mc-report-form');
     if(s.type==='cz')form.append(czForm(order));
     else if(s.type==='inf')form.append(infForm(order));
@@ -174,7 +181,7 @@
 
   function infForm(order){
     const wrap=document.createElement('div');wrap.className='mc-inf-form';
-    wrap.innerHTML='<div class="mc-form-label mc-form-label-compact"><strong>Mission INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div><div class="mc-inf-hint">Use − only to correct this report before submitting.</div><div class="mc-draft-score">This report: <strong data-draft>0 INF</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
+    wrap.innerHTML='<div class="mc-form-label mc-form-label-compact"><strong>REPORT INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div><div class="mc-report-action-row"><div class="mc-draft-score">This report: <strong data-draft>0 INF</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></div>';
     const rewards=wrap.querySelector('.mc-inf-rewards');
     [['inf2','+2 INF'],['inf3','+3 INF'],['inf4','+4 INF'],['inf5','+5 INF']].forEach(([k,l])=>rewards.append(counter(k,l)));
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'inf'));
@@ -188,7 +195,7 @@
       exploration:{title:'Exploration data',note:'Report the Universal Cartographics sale value delivered to the ordered faction.'},
     }[type];
     const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
-    wrap.innerHTML='<div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><label class="mc-credit-entry"><span>Amount this report</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div><div class="mc-draft-score">This report: <strong data-draft>0 M Cr</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
+    wrap.innerHTML='<div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><label class="mc-credit-entry"><span>Amount this report</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div><div class="mc-report-action-row"><div class="mc-draft-score">This report: <strong data-draft>0 M Cr</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></div>';
     const input=wrap.querySelector('[data-credit-amount]');
     input.addEventListener('input',()=>updateDraft(wrap));
     wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap);});
