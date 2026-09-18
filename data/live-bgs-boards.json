@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-18T20:28:34Z",
+  "generatedAt": "2026-09-18T22:27:50Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
-  "sourcePresenceGeneratedAt": "2026-09-18T20:27:03Z",
+  "sourcePresenceGeneratedAt": "2026-09-18T22:26:15Z",
   "syncOk": true,
   "successfulSystems": 242,
   "requestedSystems": 242,
@@ -48,8 +48,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Ahmeti": {
@@ -132,8 +132,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Arietis Sector JW-W b1-2": {
@@ -188,8 +188,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Baldur": {
@@ -278,8 +278,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Chingpho": {
@@ -369,8 +369,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector AG-N d7-50": {
@@ -425,8 +425,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector GH-O b22-3": {
@@ -483,8 +483,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector IJ-I b26-4": {
@@ -539,8 +539,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector JE-I b26-6": {
@@ -595,8 +595,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector JR-K c9-15": {
@@ -653,8 +653,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector JR-K c9-6": {
@@ -711,8 +711,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector JS-Z b30-6": {
@@ -769,8 +769,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector LW-C b29-4": {
@@ -827,8 +827,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector MW-C b29-1": {
@@ -885,8 +885,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector NK-G b27-0": {
@@ -943,8 +943,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector ON-Z b30-0": {
@@ -1001,8 +1001,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector QN-V b18-0": {
@@ -1059,8 +1059,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector QT-X b31-2": {
@@ -1117,8 +1117,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector RR-C b29-1": {
@@ -1171,8 +1171,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector RT-X b31-1": {
@@ -1219,8 +1219,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector SI-Z b30-2": {
@@ -1277,8 +1277,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector UE-P d6-14": {
@@ -1335,8 +1335,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector UF-C c14-1": {
@@ -1393,8 +1393,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector UF-C c14-15": {
@@ -1449,8 +1449,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector UL-A c15-15": {
@@ -1505,8 +1505,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector VJ-F c12-10": {
@@ -1565,8 +1565,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector VK-N d7-103": {
@@ -1617,8 +1617,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector VO-Q d5-3": {
@@ -1675,8 +1675,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector VW-Y c15-3": {
@@ -1733,8 +1733,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector WZ-O d6-59": {
@@ -1791,8 +1791,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YF-N d7-9": {
@@ -1849,8 +1849,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YK-N d7-10": {
@@ -1905,8 +1905,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YQ-A c15-14": {
@@ -1961,8 +1961,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YQ-A c15-30": {
@@ -2017,8 +2017,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YQ-A c15-31": {
@@ -2073,8 +2073,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 173 Sector YS-Z b30-6": {
@@ -2129,8 +2129,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-0": {
@@ -2183,8 +2183,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-1": {
@@ -2249,8 +2249,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-3": {
@@ -2313,8 +2313,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-4": {
@@ -2379,8 +2379,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-5": {
@@ -2431,8 +2431,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector AU-X b15-6": {
@@ -2485,8 +2485,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector BU-X b15-6": {
@@ -2541,8 +2541,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector CA-W b16-6": {
@@ -2585,8 +2585,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector CA-W b16-7": {
@@ -2627,8 +2627,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector CP-X b15-3": {
@@ -2689,8 +2689,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector CP-X b15-4": {
@@ -2743,8 +2743,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector CP-X b15-7": {
@@ -2805,8 +2805,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DA-W b16-5": {
@@ -2857,8 +2857,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DA-W b16-6": {
@@ -2903,8 +2903,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DF-W b16-0": {
@@ -2957,8 +2957,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DF-W b16-1": {
@@ -3015,8 +3015,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DF-W b16-4": {
@@ -3069,8 +3069,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector DF-W b16-7": {
@@ -3123,8 +3123,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EA-W b16-0": {
@@ -3177,8 +3177,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EA-W b16-1": {
@@ -3219,8 +3219,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EA-W b16-2": {
@@ -3261,8 +3261,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EA-W b16-3": {
@@ -3313,8 +3313,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EF-W b16-0": {
@@ -3367,8 +3367,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector EF-W b16-6": {
@@ -3419,8 +3419,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector FA-W b16-5": {
@@ -3473,8 +3473,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector FA-W b16-6": {
@@ -3519,8 +3519,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector GL-U b17-2": {
@@ -3571,8 +3571,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector GL-U b17-7": {
@@ -3617,8 +3617,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector HL-U b17-5": {
@@ -3675,8 +3675,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector HL-U b17-7": {
@@ -3729,8 +3729,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector II-A c14-20": {
@@ -3787,8 +3787,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector IL-U b17-2": {
@@ -3839,8 +3839,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector JG-U b17-0": {
@@ -3895,8 +3895,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector JG-U b17-6": {
@@ -3961,8 +3961,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector KB-U b17-4": {
@@ -4015,8 +4015,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector LB-U b17-4": {
@@ -4069,8 +4069,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-10": {
@@ -4113,8 +4113,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-16": {
@@ -4167,8 +4167,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-28": {
@@ -4219,8 +4219,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-3": {
@@ -4271,8 +4271,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-30": {
@@ -4317,8 +4317,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-8": {
@@ -4361,8 +4361,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector OC-L c8-9": {
@@ -4403,8 +4403,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector QA-C b27-4": {
@@ -4457,8 +4457,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector RI-J c9-24": {
@@ -4501,8 +4501,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector TK-D c13-13": {
@@ -4555,8 +4555,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-112": {
@@ -4609,8 +4609,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-115": {
@@ -4665,8 +4665,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-117": {
@@ -4717,8 +4717,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-124": {
@@ -4777,8 +4777,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-69": {
@@ -4841,8 +4841,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-78": {
@@ -4895,8 +4895,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector VT-R d4-79": {
@@ -4957,8 +4957,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector WN-Z b14-4": {
@@ -5029,8 +5029,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector XO-R d4-51": {
@@ -5085,8 +5085,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector YY-X b15-0": {
@@ -5141,8 +5141,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector YY-X b15-1": {
@@ -5193,8 +5193,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 285 Sector YY-X b15-8": {
@@ -5235,8 +5235,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 359 Sector CT-N b22-8": {
@@ -5291,8 +5291,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 359 Sector CU-G c11-3": {
@@ -5362,8 +5362,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 359 Sector CU-G c11-36": {
@@ -5420,8 +5420,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Col 359 Sector EO-N b22-1": {
@@ -5474,8 +5474,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Diaba": {
@@ -5556,8 +5556,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Duulngari": {
@@ -5640,8 +5640,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae AG-X c17-0": {
@@ -5696,8 +5696,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae CH-U b35-0": {
@@ -5752,8 +5752,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae VU-X b33-2": {
@@ -5808,8 +5808,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae XF-W b34-0": {
@@ -5866,8 +5866,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae YQ-U b35-1": {
@@ -5922,8 +5922,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyeia Dryoae YU-Y c16-5": {
@@ -5978,8 +5978,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae DW-K d9-63": {
@@ -6034,8 +6034,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae DW-K d9-66": {
@@ -6090,8 +6090,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae JT-U b35-2": {
@@ -6148,8 +6148,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae KE-T b36-1": {
@@ -6206,8 +6206,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae NK-R b37-3": {
@@ -6260,8 +6260,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Flyua Dryoae OK-R b37-2": {
@@ -6316,8 +6316,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Gaudu": {
@@ -6394,8 +6394,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HD 66253": {
@@ -6452,8 +6452,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HD 71364": {
@@ -6500,8 +6500,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HD 76425": {
@@ -6556,8 +6556,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 25231": {
@@ -6642,8 +6642,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 29724": {
@@ -6684,8 +6684,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 29783": {
@@ -6736,8 +6736,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 31207": {
@@ -6788,8 +6788,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 32011": {
@@ -6844,8 +6844,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 33388": {
@@ -6888,8 +6888,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 34365": {
@@ -6932,8 +6932,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HIP 37810": {
@@ -6984,8 +6984,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "HR 3326": {
@@ -7042,8 +7042,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "IC 2395 Sector BQ-Y d28": {
@@ -7100,8 +7100,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "IC 2395 Sector BQ-Y d95": {
@@ -7158,8 +7158,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "IC 2395 Sector JH-V c2-19": {
@@ -7216,8 +7216,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "IC 2395 Sector SO-Q b5-5": {
@@ -7274,8 +7274,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "IC 2395 Sector TZ-O b6-6": {
@@ -7332,8 +7332,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "ICZ HL-X b1-0": {
@@ -7380,8 +7380,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Karakmo": {
@@ -7464,8 +7464,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Miwae": {
@@ -7538,8 +7538,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Modgud": {
@@ -7626,8 +7626,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region HR-W d1-19": {
@@ -7680,8 +7680,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region IM-V c2-32": {
@@ -7734,8 +7734,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region IM-V c2-33": {
@@ -7792,8 +7792,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region OY-Q b5-13": {
@@ -7834,8 +7834,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region PY-Q b5-2": {
@@ -7876,8 +7876,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region PY-Q b5-3": {
@@ -7930,8 +7930,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region PY-Q b5-7": {
@@ -7986,8 +7986,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Musca Dark Region TE-P b6-8": {
@@ -8052,8 +8052,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector HD-Q c19-2": {
@@ -8110,8 +8110,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector HD-Q c19-4": {
@@ -8164,8 +8164,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector JY-P c19-2": {
@@ -8220,8 +8220,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector JZ-M c21-0": {
@@ -8278,8 +8278,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector KJ-O c20-2": {
@@ -8338,8 +8338,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector KJ-O c20-4": {
@@ -8396,8 +8396,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector KS-B b42-1": {
@@ -8454,8 +8454,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector KY-P c19-3": {
@@ -8510,8 +8510,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector LJ-O c20-0": {
@@ -8568,8 +8568,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector LU-M c21-1": {
@@ -8624,8 +8624,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector MS-B b42-1": {
@@ -8684,8 +8684,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector NB-I c24-9": {
@@ -8742,8 +8742,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector OB-I c24-9": {
@@ -8790,8 +8790,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector OM-E b40-0": {
@@ -8850,8 +8850,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector OQ-H b38-0": {
@@ -8906,8 +8906,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector OY-Z b42-1": {
@@ -8964,8 +8964,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector PB-G b39-0": {
@@ -9022,64 +9022,66 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector QL-H b38-0": {
       "name": "NGC 2546 Sector QL-H b38-0",
       "systemId": "926635cf-a48e-4b3e-ba74-e10998ba982d",
-      "updatedAt": "2026-09-03T05:47:06.134000",
+      "updatedAt": "2026-09-18T22:15:24.465000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 54.15,
+          "influence": 53.64,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-09-03T05:47:06.134000",
+          "updatedAt": "2026-09-18T22:15:24.465000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Daily Routine Incorporated",
-          "influence": 13.69,
+          "influence": 13.76,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
+          "recoveringStates": [],
+          "updatedAt": "2026-09-18T22:15:24.465000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Perez Ring Brewery",
+          "influence": 24.63,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [
             "Expansion"
           ],
-          "updatedAt": "2026-09-03T05:47:06.134000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Perez Ring Brewery",
-          "influence": 25.47,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-03T05:47:06.134000",
+          "updatedAt": "2026-09-18T22:15:24.465000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 6.69,
+          "influence": 7.98,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-03T05:47:06.134000",
+          "updatedAt": "2026-09-18T22:15:24.465000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector QW-H c24-5": {
@@ -9136,8 +9138,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector RI-B b42-0": {
@@ -9194,8 +9196,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector RI-B b42-1": {
@@ -9252,8 +9254,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector RW-F b39-0": {
@@ -9310,8 +9312,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SE-H d10-22": {
@@ -9364,8 +9366,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SE-H d10-23": {
@@ -9420,8 +9422,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SE-Y b43-0": {
@@ -9478,8 +9480,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SP-F d11-15": {
@@ -9536,8 +9538,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SP-F d11-8": {
@@ -9594,8 +9596,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector SS-C b41-0": {
@@ -9652,8 +9654,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector TA-E d12-13": {
@@ -9706,8 +9708,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector TA-E d12-41": {
@@ -9762,8 +9764,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector TP-F d11-1": {
@@ -9822,8 +9824,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector TR-F b39-0": {
@@ -9880,8 +9882,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector TS-C b41-1": {
@@ -9940,8 +9942,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector UA-E d12-51": {
@@ -9988,8 +9990,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector UA-V b45-1": {
@@ -10046,8 +10048,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector UZ-G d10-15": {
@@ -10102,14 +10104,14 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector UZ-G d10-16": {
       "name": "NGC 2546 Sector UZ-G d10-16",
       "systemId": "d3968b7c-f626-44be-a4dc-a1448a78e35b",
-      "updatedAt": "2026-09-18T06:32:15.492000",
+      "updatedAt": "2026-09-18T22:18:15.280000",
       "factionCount": 4,
       "factions": [
         {
@@ -10143,14 +10145,15 @@
         {
           "name": "Perez Ring Brewery",
           "influence": 11.71,
-          "state": "Expansion, Election",
+          "state": "Election",
           "activeStates": [
-            "Expansion",
             "Election"
           ],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-13T17:56:56.441000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-09-18T22:18:15.280000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -10165,8 +10168,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector UZ-G d10-9": {
@@ -10221,8 +10224,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector VK-W b44-0": {
@@ -10281,8 +10284,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector VL-T b46-0": {
@@ -10339,8 +10342,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector VL-T b46-2": {
@@ -10393,8 +10396,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector VS-C b41-0": {
@@ -10453,8 +10456,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector WV-D d12-11": {
@@ -10511,8 +10514,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector WV-D d12-25": {
@@ -10569,8 +10572,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector WV-D d12-7": {
@@ -10623,8 +10626,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector XG-T b46-0": {
@@ -10681,8 +10684,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector XG-T b46-1": {
@@ -10737,8 +10740,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector YG-T b46-0": {
@@ -10795,8 +10798,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector YR-R b47-2": {
@@ -10841,8 +10844,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector ZC-Q b48-3": {
@@ -10897,8 +10900,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2546 Sector ZQ-U b45-0": {
@@ -10957,8 +10960,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d28": {
@@ -11003,8 +11006,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d4": {
@@ -11061,8 +11064,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d53": {
@@ -11119,8 +11122,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d54": {
@@ -11167,8 +11170,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d7": {
@@ -11213,8 +11216,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector CQ-Y d77": {
@@ -11271,8 +11274,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector EG-X c1-12": {
@@ -11325,8 +11328,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector EG-X c1-6": {
@@ -11379,8 +11382,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector ES-J b9-1": {
@@ -11437,8 +11440,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector ES-J b9-2": {
@@ -11495,8 +11498,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector GR-V c2-21": {
@@ -11541,8 +11544,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector GR-V c2-22": {
@@ -11600,8 +11603,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector GW-W d1-59": {
@@ -11658,8 +11661,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector HN-J b9-1": {
@@ -11716,8 +11719,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector IX-T c3-14": {
@@ -11774,8 +11777,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector IY-H b10-4": {
@@ -11832,8 +11835,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector JS-T c3-6": {
@@ -11890,8 +11893,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector KT-H b10-4": {
@@ -11948,8 +11951,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector MI-R b5-0": {
@@ -12009,8 +12012,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector NI-R b5-1": {
@@ -12057,8 +12060,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector NI-R b5-5": {
@@ -12115,8 +12118,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector OD-R b5-2": {
@@ -12173,8 +12176,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector OD-R b5-6": {
@@ -12231,8 +12234,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector OY-R c4-0": {
@@ -12289,8 +12292,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector PD-R b5-3": {
@@ -12345,8 +12348,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector QO-P b6-4": {
@@ -12403,8 +12406,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector QU-N b7-0": {
@@ -12461,8 +12464,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector RU-N b7-0": {
@@ -12519,8 +12522,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector SJ-P b6-4": {
@@ -12577,8 +12580,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector TP-N b7-2": {
@@ -12635,8 +12638,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector UA-M b8-5": {
@@ -12691,8 +12694,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector WV-L b8-1": {
@@ -12749,8 +12752,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "NGC 2547 Sector YQ-L b8-5": {
@@ -12807,8 +12810,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Oloku": {
@@ -12891,8 +12894,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Plaa Eurk KI-B d13-73": {
@@ -12947,8 +12950,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Shenufo": {
@@ -13033,8 +13036,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Sui Ren": {
@@ -13115,8 +13118,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe AY-F d12-75": {
@@ -13171,8 +13174,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe EN-H d11-15": {
@@ -13225,8 +13228,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe HX-J c25-18": {
@@ -13281,8 +13284,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe KP-S b51-4": {
@@ -13335,8 +13338,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe NA-C d14-36": {
@@ -13387,8 +13390,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe ZV-L c24-24": {
@@ -13445,8 +13448,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Synuefe ZV-L c24-25": {
@@ -13499,8 +13502,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Tascheter Sector ZZ-Y b4": {
@@ -13565,8 +13568,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Tjeraringu": {
@@ -13647,8 +13650,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Vela Dark Region OI-T c3-13": {
@@ -13707,8 +13710,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Wregoe XJ-I d9-74": {
@@ -13761,8 +13764,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     },
     "Wregoe ZK-C b40-9": {
@@ -13815,8 +13818,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-18T20:28:34Z",
-      "lastAttemptAt": "2026-09-18T20:28:34Z",
+      "fetchedAt": "2026-09-18T22:27:50Z",
+      "lastAttemptAt": "2026-09-18T22:27:50Z",
       "stale": false
     }
   }
