@@ -35,6 +35,7 @@
   }
 
   function render(payload,reportPayload){
+    const openSystems=new Set([...list.querySelectorAll('.mc-system-order-card[open]')].map(card=>card.dataset.system));
     const orders=(Array.isArray(payload.orders)?payload.orders:[]).filter(active);
     if(!orders.length)return;
     const groups=new Map();
@@ -50,6 +51,8 @@
       index+=1;
       const card=document.createElement('details');
       card.className='mc-system-order-card';
+      card.dataset.system=system;
+      card.open=openSystems.has(system);
       const priorities=items.map(x=>x.priority).filter(Boolean);
       const priority=priorities[0]||'Active';
       const reportable=items.filter(x=>spec(x).type);
