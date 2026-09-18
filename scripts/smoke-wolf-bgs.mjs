@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const critical = [
-  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-conflict-lab-v2.css', 'css/wolf-bgs-publish.css', 'css/wolf-bgs-lab.css',
-  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-contribution-options.js', 'js/wolf-bgs-conflict-lab-v2.js', 'js/wolf-bgs-publish.js', 'js/wolf-bgs-lab.js',
+  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-conflict-lab-v2.css', 'css/wolf-bgs-publish.css', 'css/wolf-bgs-reports.css', 'css/wolf-bgs-lab.css',
+  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-contribution-options.js', 'js/wolf-bgs-conflict-lab-v2.js', 'js/wolf-bgs-publish.js', 'js/wolf-bgs-reports.js', 'js/wolf-bgs-lab.js',
   'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js', 'functions/api/operations/wolf-bgs-conflicts.js',
   'scripts/enrich_bgs_boards.py', 'data/live-bgs-boards.json',
 ];
@@ -26,6 +26,8 @@ assert.match(page,/wolf-bgs-conflict-lab-v2\.js/,'Conflict v2 lab client is not 
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css/,'Conflict v2 lab stylesheet is not loaded');
 assert.match(page,/wolf-bgs-publish\.css/,'Daily Orders publisher stylesheet is not loaded');
 assert.match(page,/wolf-bgs-publish\.js/,'Daily Orders publisher client is not loaded');
+assert.match(page,/wolf-bgs-reports\.css/,'Report manager stylesheet is not loaded');
+assert.match(page,/wolf-bgs-reports\.js/,'Report manager client is not loaded');
 assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'),'Slider client must load after rules');
 assert.ok(page.indexOf('wolf-bgs-sliders.js') < page.indexOf('wolf-bgs-order-preview.js'),'Order Preview must load after slider controls');
 assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-conflicts.js'),'Conflict layer must post-process the deterministic Order Preview');
@@ -161,3 +163,7 @@ assert.equal(typeof mainModule.onRequestGet,'function');
 assert.equal(typeof mainModule.onRequestPut,'function');
 
 console.log('✓ Wolf BGS Control Mandalore lab, ±3-point influence-assisted multi-conflict pairing with manual ambiguity fallback, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
+
+const reportsClient=readFileSync('js/wolf-bgs-reports.js','utf8');
+for(const pattern of [/CURRENT CYCLE REPORTS/,/admin=1/,/data-admin-edit/,/data-admin-delete/,/method:'PATCH'/,/method:'DELETE'/,/Save Changes/]) assert.match(reportsClient,pattern);
+new Function(reportsClient);
