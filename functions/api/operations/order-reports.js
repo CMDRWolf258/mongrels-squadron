@@ -49,6 +49,9 @@ export async function onRequestPost({ request, env }) {
     cycleId: cycle,
     orderId: order.id,
     system: order.system || '',
+    faction: order.faction || '',
+    kind: order.kind || '',
+    source: order.source || '',
     reportType: spec.type,
     target: spec.target,
     mode,
@@ -216,7 +219,7 @@ function mergeInto(target,source){for(const [key,value] of Object.entries(source
 function czScore(c){return (c.low-c.lossLow-c.disconnectLow)*CZ_WEIGHTS.low+(c.medium-c.lossMedium-c.disconnectMedium)*CZ_WEIGHTS.medium+(c.high-c.lossHigh-c.disconnectHigh)*CZ_WEIGHTS.high}
 function infScore(c){return c.inf2*2+c.inf3*3+c.inf4*4+c.inf5*5}
 function round(value){return Math.round((Number(value)||0)*10)/10}
-function emptyRecord(order,session,spec){return{cycleId:null,orderId:order.id,system:order.system||'',reportType:spec.type,target:spec.target,mode:'solo',displayName:session.displayName||'',ownerId:session.sub,counts:blankCounts(spec.type),bondsRedeemed:false,submissions:0,updatedAt:null}}
+function emptyRecord(order,session,spec){return{cycleId:null,orderId:order.id,system:order.system||'',faction:order.faction||'',kind:order.kind||'',source:order.source||'',reportType:spec.type,target:spec.target,mode:'solo',displayName:session.displayName||'',ownerId:session.sub,counts:blankCounts(spec.type),bondsRedeemed:false,submissions:0,updatedAt:null}}
 
 function privateHeaders(){return{'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache',Vary:'Cookie','X-Content-Type-Options':'nosniff'}}
 function reply(body,status=200){return json(body,{status,headers:privateHeaders()})}
