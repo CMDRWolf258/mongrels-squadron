@@ -3,6 +3,7 @@
   const queue=new Map();
   let panel=null;
   let publishBusy=false;
+  let lastPublishMessage='';
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clean=value=>String(value||'').trim().replace(/\s+/g,' ');
@@ -118,19 +119,21 @@
     button.disabled=!ok;
     button.classList.toggle('is-queued',Boolean(existing&&existing.signature===sig));
     button.classList.toggle('is-stale',Boolean(existing&&existing.signature!==sig));
+    let nextText='';
     if(!ok){
-      button.textContent=card.querySelector('[data-setting="allowDailyOrders"]')?.checked===false?'Daily Orders disabled':'No tasks to queue';
+      nextText=card.querySelector('[data-setting="allowDailyOrders"]')?.checked===false?'Daily Orders disabled':'No tasks to queue';
       button.title='Enable Allow into Daily Orders and generate at least one task.';
     }else if(existing&&existing.signature!==sig){
-      button.textContent='Refresh Queued Preview';
+      nextText='Refresh Queued Preview';
       button.title='The preview changed after it was queued. Click to replace the queued snapshot.';
     }else if(existing){
-      button.textContent='✓ Queued for Daily Orders';
+      nextText='✓ Queued for Daily Orders';
       button.title='Click to remove this system from the publish queue.';
     }else{
-      button.textContent='Add to Publish Queue';
+      nextText='Add to Publish Queue';
       button.title='Queue this reviewed preview for the next Daily Orders publish.';
     }
+    if(button.textContent!==nextText)button.textContent=nextText;
   }
 
   function syncPanel(){
@@ -156,9 +159,11 @@
     }
     const status=p.querySelector('[data-publish-status]');
     if(status&&!publishBusy){
+      if(systems.length)lastPublishMessage='';
       if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
       else if(overTasks)status.textContent='Queue has '+taskCount+' tasks; the Daily Orders API supports at most 24 per cycle.';
       else if(systems.length)status.textContent='Ready to publish a new reporting cycle. Review warnings before continuing.';
+      else if(lastPublishMessage){status.innerHTML=lastPublishMessage;status.dataset.state='success';}
       else status.textContent='Nothing published from BGS Control yet.';
     }
   }
@@ -194,12 +199,9 @@
       });
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
+      lastPublishMessage='Published '+orders.length+' task'+(orders.length===1?'':'s')+' in a new Daily Orders cycle. <a href="../operations/#daily-orders">Open Mission Control →</a>';
       queue.clear();
       syncAll();
-      if(status){
-        status.innerHTML='Published '+orders.length+' task'+(orders.length===1?'':'s')+' in a new Daily Orders cycle. <a href="../operations/#daily-orders">Open Mission Control →</a>';
-        status.dataset.state='success';
-      }
     }catch(error){
       console.error('Could not publish BGS Daily Orders',error);
       if(status){status.textContent='Could not publish Daily Orders. Current member orders were not intentionally replaced by this failed request.';status.dataset.state='error';}
@@ -210,7 +212,7 @@
 
   function observe(){
     ensurePanel();
-    const root=document.querySelector('[data-wolf-private]')||document.body;
+    const root=document.querySelector('[data-system-list]')||document.querySelector('[data-wolf-private]')||document.body;
     let queued=false;
     new MutationObserver(()=>{
       if(queued)return;queued=true;
