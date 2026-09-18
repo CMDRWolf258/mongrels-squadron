@@ -31,7 +31,8 @@ jobs:
 
       - name: Run smoke checks
         run: |
-          node --experimental-default-type=module scripts/smoke-test.mjs\n          node --experimental-default-type=module scripts/smoke-daily-orders.mjs
+          node --experimental-default-type=module scripts/smoke-test.mjs
+          node --experimental-default-type=module scripts/smoke-daily-orders.mjs
           node --experimental-default-type=module scripts/smoke-exobiology.mjs
           node --experimental-default-type=module scripts/smoke-pve.mjs
           node --experimental-default-type=module scripts/smoke-pvp.mjs
