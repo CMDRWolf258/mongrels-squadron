@@ -14,14 +14,17 @@
   const active=order=>!['complete','completed','closed','cancelled','canceled','inactive'].includes(String(order?.status||'').toLowerCase());
 
   function shortTitle(order){
-    const s=spec(order), faction=order?.faction||'';
-    const amount=s.target!==null?fmt(s.target):'';
-    if(s.type==='inf')return [amount&&amount+' INF',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Mission INF';
-    if(s.type==='bounties')return [amount&&amount+'M Cr bounties',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Bounty vouchers';
-    if(s.type==='trade')return [amount&&amount+'M Cr trade profit',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Profitable trade';
-    if(s.type==='exploration')return [amount&&amount+'M Cr exploration data',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Exploration data';
-    if(s.type==='cz')return [amount&&amount+' CZ pts',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Conflict Zones';
+    const s=spec(order), amount=s.target!==null?fmt(s.target):'';
+    if(s.type==='inf')return amount?amount+' INF':'Mission INF';
+    if(s.type==='bounties')return amount?amount+'M Cr Bounties':'Bounty Vouchers';
+    if(s.type==='trade')return amount?amount+'M Cr Trade Profit':'Profitable Trade';
+    if(s.type==='exploration')return amount?amount+'M Cr Exploration Data':'Exploration Data';
+    if(s.type==='cz')return amount?amount+' CZ pts':'Conflict Zones';
     return order?.task||'Operational task';
+  }
+
+  function summaryTitle(order){
+    return shortTitle(order)+(order?.faction?' · '+order.faction:'');
   }
 
   function shortDetail(order){
@@ -89,9 +92,16 @@
       const priority=priorities[0]||'Active';
       const reportable=items.filter(x=>spec(x).type);
       const progress=collapsedProgress(reportable,reportPayload.summaries||{});
-      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><strong>'+esc(system)+'</strong><small>'+esc(shortTitle(items[0]))+'</small></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-system-progress">'+progress+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-system-tools"></div><div class="mc-order-pairs"></div></div>';
-      const toolsRow=card.querySelector('.mc-system-tools'),pairs=card.querySelector('.mc-order-pairs');
-      if(system!=='Squad-wide')toolsRow.append(copySystem(system));
+      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span><small>'+esc(summaryTitle(items[0]))+'</small></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-system-progress">'+progress+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
+      const pairs=card.querySelector('.mc-order-pairs');
+      const copyButton=card.querySelector('.mc-copy-system');
+      if(copyButton)copyButton.addEventListener('click',async event=>{
+        event.preventDefault();event.stopPropagation();
+        const out=card.querySelector('.mc-system-name-line em');
+        try{await navigator.clipboard.writeText(system);out.textContent='Copied';}
+        catch{out.textContent='Copy failed';}
+        setTimeout(()=>out.textContent='',1200);
+      });
       items.forEach((order,i)=>{
         const pair=document.createElement('div');pair.className='mc-order-pair';
         pair.append(orderBrief(order,i));
@@ -112,16 +122,10 @@
     return '<strong>'+fmt(score)+' / '+fmt(s.target)+'</strong><small>'+(s.blitz?'BLITZ · keep pushing':met?'Target met':label(s.type)+' squad progress')+'</small>';
   }
 
-  function copySystem(system){
-    const row=document.createElement('div');row.className='mc-system-copy-row';
-    row.innerHTML='<span>System</span><strong>'+esc(system)+'</strong><button type="button" title="Copy system name">⧉</button><small aria-live="polite"></small>';
-    row.querySelector('button').addEventListener('click',async e=>{e.preventDefault();const out=row.querySelector('small');try{await navigator.clipboard.writeText(system);out.textContent='Copied';}catch{out.textContent='Copy failed';}setTimeout(()=>out.textContent='',1200);});
-    return row;
-  }
-
   function orderBrief(order,index){
     const el=document.createElement('article');el.className='mc-order-brief';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(shortTitle(order))+'</h3><p>'+esc(shortDetail(order))+'</p>';
+    const status=order.status&&String(order.status).toLowerCase()!=='active'?'<b>'+esc(order.status)+'</b>':'';
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(shortTitle(order))+'</h3><p>'+esc(shortDetail(order))+'</p>';
     return el;
   }
 
@@ -131,7 +135,7 @@
     if(s.blitz)host.classList.add('is-blitz');
     const progress=target&&target>0?Math.max(0,Math.min(100,(score/target)*100)):0;
     const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
-    host.innerHTML='<div class="mc-report-head"><div><span>SQUAD PROGRESS</span><strong>'+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong></div><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You: <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' reporting · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
+    host.innerHTML='<div class="mc-report-head"><span>SQUAD</span><strong>'+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
     const form=host.querySelector('.mc-report-form');
     if(s.type==='cz')form.append(czForm(order));
     else if(s.type==='inf')form.append(infForm(order));
@@ -170,9 +174,9 @@
 
   function infForm(order){
     const wrap=document.createElement('div');wrap.className='mc-inf-form';
-    wrap.innerHTML='<div class="mc-form-label"><strong>Mission INF</strong><small>Tap the reward once as you turn it in. Use − to correct before submitting.</small></div><div class="mc-inf-rewards"></div><div class="mc-draft-score">This report: <strong data-draft>0 INF</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
+    wrap.innerHTML='<div class="mc-form-label mc-form-label-compact"><strong>Mission INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div><div class="mc-inf-hint">Use − only to correct this report before submitting.</div><div class="mc-draft-score">This report: <strong data-draft>0 INF</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
     const rewards=wrap.querySelector('.mc-inf-rewards');
-    [['inf2','+2'],['inf3','+3'],['inf4','+4'],['inf5','+5']].forEach(([k,l])=>rewards.append(counter(k,l)));
+    [['inf2','+2 INF'],['inf3','+3 INF'],['inf4','+4 INF'],['inf5','+5 INF']].forEach(([k,l])=>rewards.append(counter(k,l)));
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'inf'));
     return wrap;
   }
