@@ -8,7 +8,7 @@ assert.match(page,/mission-control-orders-v2\.css/);
 assert.match(page,/daily-orders-v2\.js/);
 
 const client=readFileSync('js/daily-orders-v2.js','utf8');
-for(const pattern of [/mc-system-order-card/,/SQUAD PROGRESS/,/CZ victories/,/Losses \/ disconnects/,/Full-instance disconnect/,/Combat Bonds not redeemed/,/Mission INF/,/inf2/,/inf3/,/inf4/,/inf5/,/Bounty vouchers/,/Profitable trade/,/Exploration data/,/data-credit-amount/,/trade profit, not gross cargo sale value/,/M Cr/,/one shared wing instance/i,/daily-order-report/,/score>=s\.target/,/BLITZ · keep pushing/]) assert.match(client,pattern);
+for(const pattern of [/mc-system-order-card/,/mc-report-head/,/CZ victories/,/Losses \/ disconnects/,/Full-instance disconnect/,/Combat Bonds not redeemed/,/Mission INF/,/inf2/,/inf3/,/inf4/,/inf5/,/Bounty vouchers/,/Profitable trade/,/Exploration data/,/data-credit-amount/,/trade profit, not gross cargo sale value/,/M Cr/,/one shared wing instance/i,/daily-order-report/,/score>=s\.target/,/BLITZ · keep pushing/]) assert.match(client,pattern);
 new Function(client);
 
 const apiSource=readFileSync('functions/api/operations/order-reports.js','utf8');
