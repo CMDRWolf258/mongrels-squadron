@@ -228,9 +228,13 @@ function normalizeOrder(order, index) {
 function normalizeReporting(value, task, detail) {
   const source = value && typeof value === 'object' ? value : {};
   const text = [task, detail].filter(Boolean).join(' ');
-  let type = source.type === 'cz' || source.type === 'inf' ? source.type : '';
+  const allowedTypes = new Set(['cz', 'inf', 'bounties', 'trade', 'exploration']);
+  let type = allowedTypes.has(source.type) ? source.type : '';
   if (!type && /\b(?:CZ|Conflict Zones?)\b/i.test(text)) type = 'cz';
   if (!type && /\bINF\b/i.test(text)) type = 'inf';
+  if (!type && /\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text)) type = 'bounties';
+  if (!type && /\bexploration data\b/i.test(text)) type = 'exploration';
+  if (!type && /\bprofitable trade\b|\btrade profit\b/i.test(text)) type = 'trade';
   let target = Number.isFinite(Number(source.target)) && Number(source.target) >= 0 ? Number(source.target) : null;
   if (target === null && type === 'cz') {
     const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);
@@ -238,6 +242,10 @@ function normalizeReporting(value, task, detail) {
   }
   if (target === null && type === 'inf') {
     const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);
+    if (match) target = Number(match[1]);
+  }
+  if (target === null && ['bounties', 'trade', 'exploration'].includes(type)) {
+    const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*M\s*Cr\b/i);
     if (match) target = Number(match[1]);
   }
   return type ? { type, target, blitz: Boolean(source.blitz || /\bBLITZ\b/i.test(text)) } : null;

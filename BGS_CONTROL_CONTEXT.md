@@ -178,8 +178,7 @@ Contribution doctrine:
 - **Profitable trade** is offered even when Economy is not explicitly set to Raise. It is optional during a comfortable raise and recommended during a strong control push. Use a target-faction-owned market and useful supply/demand; keep the trade profitable.
 - **Exploration data** is offered as another route using the configured 2M / 5M / 10M urgency tiers. Routine raises keep it optional; urgent control pushes can recommend it as an additional bucket. Sell at a target-faction-owned asset with Universal Cartographics.
 - **Bounty vouchers** may be offered as an optional combat route only when Security is `Ignore` or `Raise`; do not present this alternate when Security is intended to Hold/Lower or when conflict logic applies.
-- **Mining** is offered through target-faction mining/source-and-return missions. Mine the requested mission commodity and choose the Influence reward; this work counts toward the existing mission-INF target rather than creating a second stacked INF quota.
-- **Direct sales of mined commodities are not treated as BGS influence/economy work.** Current community-tested BGS guidance reports that mined-commodity sales themselves do not move trade influence or the Economy slider. Mining therefore appears as a mission route, not as a local-market-sale contribution recipe.
+- **Mining is not generated as an alternate contribution card.** It was removed from the current contribution layer so published/reportable work stays focused on the established mission-INF, trade, exploration, bounty, and conflict routes.
 
 The purpose of these alternate routes is not to maximize the number of mandatory tasks. It is to let members contribute through game loops they enjoy while preserving a clear distinction between **primary required work**, **recommended extra pressure**, and **optional alternate contribution**.
 
@@ -421,6 +420,10 @@ Member Daily Orders are grouped by **system** into compact expandable cards. The
 
 Current report types:
 - **Mission INF:** +2 / +3 / +4 / +5 reward counters; the member taps the reward received while turning missions in and may correct the draft with minus controls before Submit.
+- **Bounty vouchers:** report M Cr actually redeemed for the ordered faction.
+- **Profitable trade:** report M Cr of qualifying **profit**, not gross cargo sale value.
+- **Exploration data:** report M Cr of Universal Cartographics sale value delivered to the ordered faction's appropriate asset.
+- Credit-based reporters share a compact direct-entry + quick-adjust UI (−5M / −1M / +1M / +5M / +10M) so the member can report exact-ish totals without excessive tapping.
 - **War/Civil War CZ work:** Low / Medium / High victory counters; failed/abandoned and full-instance-disconnect results are available in a normally collapsed failure section; Combat Bonds use a simple redeemed toggle.
 - **Wing rule:** one shared CZ instance is one BGS result. Only one wing member reports that instance. A wingmate dropping/leaving is not a failure if at least one Mongrel remains and the shared CZ is won.
 - **Net progress:** successful CZs add their point weight; failed/abandoned or full-instance-disconnected CZs subtract the same starting difficulty weight. Current starting weights are Low 1.0, Medium 1.3, High 1.6. These are Mongrel operational weights, not claimed Frontier formulas.

@@ -4,6 +4,8 @@
   if(!section||!list)return;
 
   const WEIGHTS={low:1,medium:1.3,high:1.6};
+  const REPORT_TYPES=new Set(['cz','inf','bounties','trade','exploration']);
+  const CREDIT_TYPES=new Set(['bounties','trade','exploration']);
   let refreshTimer=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,13 +15,17 @@
 
   function spec(order){
     const explicit=order?.reporting||{};
-    let type=['cz','inf'].includes(explicit.type)?explicit.type:'';
+    let type=REPORT_TYPES.has(explicit.type)?explicit.type:'';
     const text=[order?.task,order?.detail].filter(Boolean).join(' ');
     if(!type&&/\b(?:CZ|Conflict Zones?)\b/i.test(text))type='cz';
     if(!type&&/\bINF\b/i.test(text))type='inf';
+    if(!type&&/\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text))type='bounties';
+    if(!type&&/\bexploration data\b/i.test(text))type='exploration';
+    if(!type&&/\bprofitable trade\b|\btrade profit\b/i.test(text))type='trade';
     let target=Number.isFinite(Number(explicit.target))?Number(explicit.target):null;
     if(target===null&&type==='cz'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);if(m)target=Number(m[1]);}
     if(target===null&&type==='inf'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);if(m)target=Number(m[1]);}
+    if(target===null&&CREDIT_TYPES.has(type)){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*M\s*Cr\b/i);if(m)target=Number(m[1]);}
     return{type,target,blitz:Boolean(explicit.blitz||/\bBLITZ\b/i.test(text))};
   }
 
@@ -96,16 +102,24 @@
     const s=spec(order),squad=summary?.squad||{},viewer=summary?.viewer||{},score=n(squad.score),mine=n(viewer.score),target=s.target;
     const host=document.createElement('section');host.className='mc-report-block';host.dataset.orderId=order.id;
     if(s.blitz)host.classList.add('is-blitz');
-    const progress=target===null?0:Math.max(0,Math.min(100,(score/target)*100));
+    const progress=target&&target>0?Math.max(0,Math.min(100,(score/target)*100)):0;
     const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
     host.innerHTML='<div class="mc-report-head"><div><span>SQUAD PROGRESS</span><strong>'+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong></div><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You: <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' reporting · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
     const form=host.querySelector('.mc-report-form');
-    if(s.type==='cz')form.append(czForm(order,summary));
-    if(s.type==='inf')form.append(infForm(order,summary));
+    if(s.type==='cz')form.append(czForm(order));
+    else if(s.type==='inf')form.append(infForm(order));
+    else if(CREDIT_TYPES.has(s.type))form.append(creditForm(order,s.type));
     return host;
   }
 
-  function label(type){return type==='cz'?'CZ pts':'INF';}
+  function label(type){
+    if(type==='cz')return'CZ pts';
+    if(type==='inf')return'INF';
+    if(type==='bounties')return'M Cr bounties';
+    if(type==='trade')return'M Cr profit';
+    if(type==='exploration')return'M Cr exploration';
+    return'units';
+  }
 
   function counter(name,labelText){
     const el=document.createElement('div');el.className='mc-counter';el.dataset.counter=name;
@@ -114,7 +128,7 @@
     return el;
   }
 
-  function czForm(order,summary){
+  function czForm(order){
     const wrap=document.createElement('div');wrap.className='mc-cz-form';
     wrap.innerHTML='<div class="mc-report-mode"><button type="button" data-mode="solo" class="is-active">Solo</button><button type="button" data-mode="wing">Wing</button></div><div class="mc-form-label"><strong>CZ victories</strong><small>One shared wing instance = one result.</small></div><div class="mc-counters mc-cz-wins"></div><details class="mc-failures"><summary>Losses / disconnects <span data-failure-total>0</span></summary><div class="mc-failure-grid"><div><strong>Lost / abandoned</strong><div data-loss></div></div><div><strong>Full-instance disconnect</strong><div data-disconnect></div></div></div><small>If one wingmate drops but another Mongrel remains and wins, report the CZ as a win — not a failure.</small></details><button type="button" class="mc-bonds" aria-pressed="false">Combat Bonds not redeemed</button><div class="mc-draft-score">This report: <strong data-draft>0.0 net CZ pts</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
     const wins=wrap.querySelector('.mc-cz-wins'),loss=wrap.querySelector('[data-loss]'),disc=wrap.querySelector('[data-disconnect]');
@@ -136,9 +150,25 @@
     return wrap;
   }
 
+  function creditForm(order,type){
+    const copy={
+      bounties:{title:'Bounty vouchers',note:'Report voucher value actually redeemed for the ordered faction.'},
+      trade:{title:'Profitable trade',note:'Report qualifying trade profit, not gross cargo sale value.'},
+      exploration:{title:'Exploration data',note:'Report the Universal Cartographics sale value delivered to the ordered faction.'},
+    }[type];
+    const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
+    wrap.innerHTML='<div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><label class="mc-credit-entry"><span>Amount this report</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div><div class="mc-draft-score">This report: <strong data-draft>0 M Cr</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
+    const input=wrap.querySelector('[data-credit-amount]');
+    input.addEventListener('input',()=>updateDraft(wrap.closest('.mc-report-form')));
+    wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap.closest('.mc-report-form'));});
+    wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,type));
+    return wrap;
+  }
+
   function collect(form,type){
     const value=name=>n(form.querySelector('[data-counter="'+name+'"] [data-count]')?.textContent);
     if(type==='inf')return{inf:{inf2:value('inf2'),inf3:value('inf3'),inf4:value('inf4'),inf5:value('inf5')}};
+    if(CREDIT_TYPES.has(type))return{millions:Math.max(0,n(form.querySelector('[data-credit-amount]')?.value))};
     return{mode:form.querySelector('[data-mode].is-active')?.dataset.mode||'solo',bondsRedeemed:form.querySelector('.mc-bonds')?.getAttribute('aria-pressed')==='true',cz:{low:value('low'),medium:value('medium'),high:value('high'),lossLow:value('lossLow'),lossMedium:value('lossMedium'),lossHigh:value('lossHigh'),disconnectLow:value('disconnectLow'),disconnectMedium:value('disconnectMedium'),disconnectHigh:value('disconnectHigh')}};
   }
 
@@ -147,6 +177,10 @@
     const failureBadge=form.querySelector('[data-failure-total]');
     if(form.classList.contains('mc-inf-form')){
       const x=collect(form,'inf').inf;draft.textContent=(x.inf2*2+x.inf3*3+x.inf4*4+x.inf5*5)+' INF';return;
+    }
+    if(form.classList.contains('mc-credit-form')){
+      const type=form.dataset.reportType, amount=collect(form,type).millions;
+      draft.textContent=fmt(amount)+' M Cr';return;
     }
     const c=collect(form,'cz').cz;
     const score=(c.low-c.lossLow-c.disconnectLow)*WEIGHTS.low+(c.medium-c.lossMedium-c.disconnectMedium)*WEIGHTS.medium+(c.high-c.lossHigh-c.disconnectHigh)*WEIGHTS.high;
