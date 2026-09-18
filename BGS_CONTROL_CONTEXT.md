@@ -412,6 +412,22 @@ Graphical Economy/Security slider estimation is intentionally deferred until eno
    - force include/exclude systems/tasks;
    - create custom workloads or exceptions.
 
+
+## Member Daily Orders reporting — first implementation
+
+Mission Control now has the first structured member-reporting layer while Wolf BGS Order Preview remains preview-only.
+
+Member Daily Orders are grouped by **system** into compact expandable cards. The collapsed view is intended for rapid scanning; the expanded view keeps the briefing/orders beside reporting controls on desktop and directly above/below each other on tablet/phone.
+
+Current report types:
+- **Mission INF:** +2 / +3 / +4 / +5 reward counters; the member taps the reward received while turning missions in and may correct the draft with minus controls before Submit.
+- **War/Civil War CZ work:** Low / Medium / High victory counters; failed/abandoned and full-instance-disconnect results are available in a normally collapsed failure section; Combat Bonds use a simple redeemed toggle.
+- **Wing rule:** one shared CZ instance is one BGS result. Only one wing member reports that instance. A wingmate dropping/leaving is not a failure if at least one Mongrel remains and the shared CZ is won.
+- **Net progress:** successful CZs add their point weight; failed/abandoned or full-instance-disconnected CZs subtract the same starting difficulty weight. Current starting weights are Low 1.0, Medium 1.3, High 1.6. These are Mongrel operational weights, not claimed Frontier formulas.
+- **Blitz:** its configured benchmark is displayed but reaching it does not close the order; the member view remains OPEN / continue pushing.
+
+The current private order document now carries a `cycleId` and optional normalized reporting metadata. Member records are stored in `DAILY_ORDERS` per **cycle + order + CMDR**, then aggregated for squad progress. This avoids cross-CMDR overwrite races and keeps ordered workload distinct from actual reported workload for later calibration/history.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
@@ -419,7 +435,7 @@ The next major stages after validating the Mandalore lab and conflict-pair behav
 - conflict score/day tracking and CZ workload calibration;
 - ranked Daily Orders queue;
 - explicit approve/edit/publish flow;
-- member task/reporting controls generated from structured orders;
+- richer member activity/history views and admin report correction tools;
 - current-cycle reporting dashboard;
 - ~14-cycle operator/history view;
 - Tick & Data Monitor;

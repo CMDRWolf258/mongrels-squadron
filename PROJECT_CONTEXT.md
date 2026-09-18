@@ -1,6 +1,6 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-09-16_
+_Last updated: 2026-09-18_
 
 ## Read this first
 
@@ -130,6 +130,32 @@ Important KV bindings:
 - **`DAILY_ORDERS`** — private Mission Control/BGS strategy/configuration.
 
 Do not create a new KV namespace casually when an existing binding is appropriate.
+
+
+### Mission Control Daily Orders and reporting
+
+Member-facing Daily Orders live under `/operations/#daily-orders`.
+
+Primary files:
+- `js/daily-orders.js` — authenticated order loading and Officer/Site Admin editor.
+- `js/daily-orders-v2.js` — compact member rendering grouped into expandable system cards.
+- `css/mission-control-orders-v2.css` — member card/reporting layout.
+- `functions/api/operations/orders.js` — private current-order document.
+- `functions/api/operations/order-reports.js` — member structured reporting and squad aggregation.
+- `scripts/smoke-daily-orders.mjs` — focused regression coverage.
+
+Current member UX:
+- collapsed system cards show system, priority/basic task context and squad progress;
+- expanded cards keep full briefing/orders beside the relevant report block on desktop and stack reporting immediately below on narrower layouts;
+- INF reporting uses +2/+3/+4/+5 reward counters;
+- War/Civil War reporting uses Low/Medium/High CZ wins, optional failure details, Solo/Wing mode and Combat Bonds redeemed;
+- one shared wing CZ instance is one result regardless of participant count;
+- an individual wingmate disconnecting/leaving is not a failed CZ if at least one Mongrel remains and the shared instance is won;
+- failed/abandoned or full-instance-disconnected CZs subtract their difficulty weight from net squad CZ progress;
+- current starting CZ weights are Low 1.0, Medium 1.3, High 1.6;
+- Blitz can exceed its nominal benchmark and remains visibly open rather than becoming a stop condition.
+
+Report storage uses the existing `DAILY_ORDERS` binding. The current order document has a `cycleId`; member reports are stored per cycle + order + Discord user so simultaneous CMDR reports do not overwrite one another. Officer edits preserve the current cycle; a publisher that omits the current cycle ID begins a new progress bucket. Old report keys remain available for later history/calibration work.
 
 ---
 

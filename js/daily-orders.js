@@ -196,6 +196,8 @@
   const createOrderEditor = order => {
     const card = document.createElement('div');
     card.className = 'orders-editor-item';
+    card.dataset.orderId = order?.id || '';
+    card.dataset.orderReporting = JSON.stringify(order?.reporting || {});
 
     const system = makeField('System', 'text', order?.system || '', 120, 'NGC 2546 Sector UZ-G d10-16');
     system.classList.add('orders-editor-field-wide');
@@ -267,7 +269,8 @@
       .map((card, index) => {
         const value = field => card.querySelector(`[data-order-field="${field}"]`)?.value?.trim() || '';
         return {
-          id: `order-${index + 1}`,
+          id: card.dataset.orderId || `order-${index + 1}`,
+          reporting: (() => { try { return JSON.parse(card.dataset.orderReporting || '{}'); } catch { return {}; } })(),
           system: value('system'),
           priority: value('priority'),
           task: value('task'),
@@ -278,6 +281,7 @@
       .filter(order => order.task);
 
     return {
+      cycleId: currentPayload?.cycleId || '',
       title: editTitle?.value?.trim() || 'Squadron Daily Orders',
       briefing: editBriefing?.value?.trim() || '',
       officerNote: editNote?.value?.trim() || '',
