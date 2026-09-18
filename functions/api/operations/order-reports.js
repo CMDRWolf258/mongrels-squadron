@@ -202,7 +202,7 @@ function scoreFor(type,counts) {
 }
 
 function matchTarget(text,re){const match=String(text||'').match(re);return match?numberOrNull(match[1]):null}
-function numberOrNull(value){const n=Number(value);return Number.isFinite(n)&&n>=0?n:null}
+function numberOrNull(value){if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?n:null}
 function clean(value){return typeof value==='string'?value.trim():''}
 function safeCount(value){const n=Math.floor(Number(value)||0);return Math.max(0,Math.min(99,n))}
 function safeMillions(value){const n=Number(value)||0;return Math.round(Math.max(0,Math.min(100000,n))*100)/100}
