@@ -363,7 +363,7 @@
     if(task.kind==='exploration'){label=`ECONOMY / EXPLORATION${task.optional?' · OPTIONAL':''}`;instruction=`Sell about ${task.amount}M Cr of exploration data for ${task.faction}`;}
     const preference=task.preferences?.length?`<small><b>Mission preference:</b> ${task.preferences.map(esc).join(' ')}</small>`:'';
     const asset=task.assetNote?`<small><b>Asset check:</b> ${esc(task.assetNote)}</small>`:'';
-    return `<article class="wolf-order-task"><div class="wolf-order-task-number">${String(index+1).padStart(2,'0')}</div><div><span class="wolf-order-task-type">${esc(label)}</span><strong>${esc(instruction)}</strong><p>${task.reason.map(esc).join(' ')}</p>${preference}${asset}${task.stop.length?`<small><b>Stop / review:</b> ${task.stop.map(esc).join(' ')}</small>`:''}</div></article>`;
+    return `<article class="wolf-order-task" data-order-kind="${esc(task.kind)}" data-order-faction="${esc(task.faction)}" data-order-amount="${esc(task.amount)}" data-order-optional="${task.optional?'true':'false'}"><div class="wolf-order-task-number">${String(index+1).padStart(2,'0')}</div><div><span class="wolf-order-task-type">${esc(label)}</span><strong>${esc(instruction)}</strong><p>${task.reason.map(esc).join(' ')}</p>${preference}${asset}${task.stop.length?`<small><b>Stop / review:</b> ${task.stop.map(esc).join(' ')}</small>`:''}</div></article>`;
   }
 
   function mathMarkup(item) {
