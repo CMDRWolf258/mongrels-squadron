@@ -198,6 +198,9 @@
     card.className = 'orders-editor-item';
     card.dataset.orderId = order?.id || '';
     card.dataset.orderReporting = JSON.stringify(order?.reporting || {});
+    card.dataset.orderFaction = order?.faction || '';
+    card.dataset.orderKind = order?.kind || '';
+    card.dataset.orderSource = order?.source || '';
 
     const system = makeField('System', 'text', order?.system || '', 120, 'NGC 2546 Sector UZ-G d10-16');
     system.classList.add('orders-editor-field-wide');
@@ -271,6 +274,9 @@
         return {
           id: card.dataset.orderId || `order-${index + 1}`,
           reporting: (() => { try { return JSON.parse(card.dataset.orderReporting || '{}'); } catch { return {}; } })(),
+          faction: card.dataset.orderFaction || '',
+          kind: card.dataset.orderKind || '',
+          source: card.dataset.orderSource || '',
           system: value('system'),
           priority: value('priority'),
           task: value('task'),
