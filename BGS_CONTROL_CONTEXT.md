@@ -440,9 +440,9 @@ Graphical Economy/Security slider estimation is intentionally deferred until eno
 
 ## Member Daily Orders reporting — first implementation
 
-Mission Control now has the first structured member-reporting layer while Wolf BGS Order Preview remains preview-only.
+Mission Control now has the structured member-reporting layer fed by the explicit Wolf BGS publish bridge.
 
-Member Daily Orders are grouped by **system** into compact expandable cards. The collapsed view is intended for rapid scanning; the expanded view keeps the briefing/orders beside reporting controls on desktop and directly above/below each other on tablet/phone.
+Member Daily Orders are grouped by **system** into compact expandable cards. Inside each system, every published order is rendered as one unified task/report console: a concise CMDR-facing briefing is paired directly with its matching reporting controls, with the faction carried by a badge rather than repeated in the workload title. Desktop and iPad-landscape views keep the briefing and report side-by-side; narrower layouts stack each matching pair together. System copy moved into the system header, progress headers were compressed, redundant ACTIVE badges were removed, and reporting controls use larger touch-friendly targets with positive actions visually emphasized.
 
 Current report types:
 - **Mission INF:** +2 / +3 / +4 / +5 reward counters; the member taps the reward received while turning missions in and may correct the draft with minus controls before Submit.
