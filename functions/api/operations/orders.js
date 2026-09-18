@@ -238,7 +238,8 @@ function normalizeReporting(value, task, detail) {
   if (!type && /\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text)) type = 'bounties';
   if (!type && /\bexploration data\b/i.test(text)) type = 'exploration';
   if (!type && /\bprofitable trade\b|\btrade profit\b/i.test(text)) type = 'trade';
-  let target = Number.isFinite(Number(source.target)) && Number(source.target) >= 0 ? Number(source.target) : null;
+  const explicitTarget = source.target === null || source.target === undefined || source.target === '' ? null : Number(source.target);
+  let target = Number.isFinite(explicitTarget) && explicitTarget >= 0 ? explicitTarget : null;
   if (target === null && type === 'cz') {
     const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);
     if (match) target = Number(match[1]);
