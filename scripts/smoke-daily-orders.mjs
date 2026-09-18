@@ -20,6 +20,6 @@ assert.equal(typeof api.onRequestPost,'function');
 const orders=readFileSync('functions/api/operations/orders.js','utf8');
 assert.match(orders,/cycleId/);
 assert.match(orders,/reporting/);
-for(const pattern of [/bounties/,/trade/,/exploration/,/M\\s\\*Cr/]) assert.match(orders,pattern);
+for(const pattern of [/bounties/,/trade/,/exploration/,/M\\s\*Cr/]) assert.match(orders,pattern);
 
 console.log('✓ Mission Control expandable system cards and structured squad reporting are wired');
