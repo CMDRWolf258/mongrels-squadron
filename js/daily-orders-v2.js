@@ -135,7 +135,7 @@
       items.forEach((order,i)=>{
         const pair=document.createElement('div');pair.className='mc-order-pair';
         pair.append(orderBrief(order,i));
-        if(spec(order).type)pair.append(reportBlock(order,reportPayload.summaries?.[order.id]));
+        if(spec(order).type)pair.append(reportBlock(order,reportPayload.summaries?.[order.id],reportPayload.reports||[]));
         else{const empty=document.createElement('div');empty.className='mc-no-report';empty.innerHTML='<span>REPORTING</span><strong>No report requested</strong><p>Complete this order as briefed.</p>';pair.append(empty);}
         pairs.append(pair);
       });
@@ -151,7 +151,7 @@
     return el;
   }
 
-  function reportBlock(order,summary){
+  function reportBlock(order,summary,reports=[]){
     const s=spec(order),squad=summary?.squad||{},viewer=summary?.viewer||{},score=n(squad.score),mine=n(viewer.score),target=s.target;
     const host=document.createElement('section');host.className='mc-report-block';host.dataset.orderId=order.id;
     if(s.blitz)host.classList.add('is-blitz');
@@ -159,9 +159,13 @@
     const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
     host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
     const form=host.querySelector('.mc-report-form');
-    if(s.type==='cz')form.append(czForm(order));
-    else if(s.type==='inf')form.append(infForm(order));
-    else if(CREDIT_TYPES.has(s.type))form.append(creditForm(order,s.type));
+    let editor=null;
+    if(s.type==='cz')editor=czForm(order);
+    else if(s.type==='inf')editor=infForm(order);
+    else if(CREDIT_TYPES.has(s.type))editor=creditForm(order,s.type);
+    if(editor)form.append(editor);
+    const mineReports=reports.filter(report=>String(report.orderId)===String(order.id));
+    if(editor&&mineReports.length)form.append(reportHistory(order,editor,s.type,mineReports));
     return host;
   }
 
@@ -183,23 +187,25 @@
 
   function czForm(order){
     const wrap=document.createElement('div');wrap.className='mc-cz-form';
-    wrap.innerHTML='<div class="mc-report-mode"><button type="button" data-mode="solo" class="is-active">Solo</button><button type="button" data-mode="wing">Wing</button></div><div class="mc-form-label"><strong>CZ victories</strong><small>One shared wing instance = one result.</small></div><div class="mc-counters mc-cz-wins"></div><details class="mc-failures"><summary>Losses / disconnects <span data-failure-total>0</span></summary><div class="mc-failure-grid"><div><strong>Lost / abandoned</strong><div data-loss></div></div><div><strong>Full-instance disconnect</strong><div data-disconnect></div></div></div><small>If one wingmate drops but another Mongrel remains and wins, report the CZ as a win — not a failure.</small></details><button type="button" class="mc-bonds" aria-pressed="false">Combat Bonds not redeemed</button><div class="mc-draft-score">This report: <strong data-draft>0.0 net CZ pts</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
+    wrap.innerHTML='<div class="mc-report-mode"><button type="button" data-mode="solo" class="is-active">Solo</button><button type="button" data-mode="wing">Wing</button></div><div class="mc-form-label"><strong>CZ victories</strong><small>One shared wing instance = one result.</small></div><div class="mc-counters mc-cz-wins"></div><details class="mc-failures"><summary>Losses / disconnects <span data-failure-total>0</span></summary><div class="mc-failure-grid"><div><strong>Lost / abandoned</strong><div data-loss></div></div><div><strong>Full-instance disconnect</strong><div data-disconnect></div></div></div><small>If one wingmate drops but another Mongrel remains and wins, report the CZ as a win — not a failure.</small></details><button type="button" class="mc-bonds" aria-pressed="false">Combat Bonds not redeemed</button><div class="mc-draft-score">This report: <strong data-draft>0.0 net CZ pts</strong></div><div class="mc-cz-submit-row"><button type="button" class="mc-cancel-edit" hidden>Cancel edit</button><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></div>';
     const wins=wrap.querySelector('.mc-cz-wins'),loss=wrap.querySelector('[data-loss]'),disc=wrap.querySelector('[data-disconnect]');
     [['low','Low'],['medium','Medium'],['high','High']].forEach(([k,l])=>wins.append(counter(k,l)));
     [['lossLow','Low'],['lossMedium','Medium'],['lossHigh','High']].forEach(([k,l])=>loss.append(counter(k,l)));
     [['disconnectLow','Low'],['disconnectMedium','Medium'],['disconnectHigh','High']].forEach(([k,l])=>disc.append(counter(k,l)));
     wrap.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{wrap.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('is-active',x===btn));}));
     const bonds=wrap.querySelector('.mc-bonds');bonds.addEventListener('click',()=>{const on=bonds.getAttribute('aria-pressed')!=='true';bonds.setAttribute('aria-pressed',String(on));bonds.textContent=on?'✓ Combat Bonds redeemed':'Combat Bonds not redeemed';});
+    wrap.querySelector('.mc-cancel-edit').addEventListener('click',()=>cancelEdit(wrap));
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'cz'));
     return wrap;
   }
 
   function infForm(order){
     const wrap=document.createElement('div');wrap.className='mc-inf-form';
-    wrap.innerHTML='<div class="mc-report-entry-layout"><div class="mc-entry-controls"><div class="mc-form-label mc-form-label-compact"><strong>REPORT INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 INF</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
+    wrap.innerHTML='<div class="mc-report-entry-layout"><div class="mc-entry-controls"><div class="mc-form-label mc-form-label-compact"><strong>REPORT INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 INF</strong><button type="button" class="mc-cancel-edit" hidden>Cancel edit</button><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
     const rewards=wrap.querySelector('.mc-inf-rewards');
     [['inf2','+2 INF'],['inf3','+3 INF'],['inf4','+4 INF'],['inf5','+5 INF']].forEach(([k,l])=>rewards.append(counter(k,l)));
     wrap.querySelector('.mc-reset-report').addEventListener('click',()=>resetReport(wrap));
+    wrap.querySelector('.mc-cancel-edit').addEventListener('click',()=>cancelEdit(wrap));
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'inf'));
     return wrap;
   }
@@ -211,19 +217,107 @@
       exploration:{title:'REPORT EXPLORATION',note:'Universal Cartographics sale value.'},
     }[type];
     const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
-    wrap.innerHTML='<div class="mc-report-entry-layout mc-credit-layout"><div class="mc-entry-controls"><div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><div class="mc-credit-controls"><label class="mc-credit-entry"><span>Amount</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 M Cr</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
+    wrap.innerHTML='<div class="mc-report-entry-layout mc-credit-layout"><div class="mc-entry-controls"><div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><div class="mc-credit-controls"><label class="mc-credit-entry"><span>Amount</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 M Cr</strong><button type="button" class="mc-cancel-edit" hidden>Cancel edit</button><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
     const input=wrap.querySelector('[data-credit-amount]');
     wrap.querySelector('.mc-reset-report').addEventListener('click',()=>resetReport(wrap));
+    wrap.querySelector('.mc-cancel-edit').addEventListener('click',()=>cancelEdit(wrap));
     input.addEventListener('input',()=>updateDraft(wrap));
     wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap);});
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,type));
     return wrap;
   }
 
+  function reportHistory(order,editor,type,reports){
+    const details=document.createElement('details');details.className='mc-my-reports';
+    details.innerHTML='<summary><span>MY SUBMITTED REPORTS</span><b>'+reports.length+'</b></summary><div class="mc-my-report-list"></div>';
+    const list=details.querySelector('.mc-my-report-list');
+    reports.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).forEach(report=>{
+      const row=document.createElement('div');row.className='mc-my-report-row';
+      const legacyNote=report.legacy&&Number(report.submissions||1)>1?' · combined prior total':'';
+      row.innerHTML='<div><strong>'+esc(reportAmount(report))+'</strong><small>'+esc(reportStamp(report.updatedAt||report.createdAt))+esc(legacyNote)+'</small></div><div class="mc-my-report-actions">'+(report.canEdit?'<button type="button" data-edit-report>Edit</button>':'')+(report.canDelete?'<button type="button" data-delete-report>Delete</button>':'')+'</div>';
+      row.querySelector('[data-edit-report]')?.addEventListener('click',()=>beginEdit(editor,type,report));
+      row.querySelector('[data-delete-report]')?.addEventListener('click',()=>deleteSubmittedReport(report,editor.closest('.mc-report-block')));
+      list.append(row);
+    });
+    return details;
+  }
+
+  function reportAmount(report){
+    if(report.reportType==='inf')return fmt(report.score)+' INF';
+    if(CREDIT_TYPES.has(report.reportType))return fmt(report.score)+' M Cr';
+    if(report.reportType==='cz')return fmt(report.score)+' CZ pts';
+    return fmt(report.score)+' units';
+  }
+
+  function reportStamp(value){
+    if(!value)return'Report submitted';
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime()))return'Report submitted';
+    return date.toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  }
+
+  function beginEdit(form,type,report){
+    resetReport(form);
+    form.dataset.editReportId=report.id;
+    if(type==='inf'){
+      for(const key of ['inf2','inf3','inf4','inf5']){
+        const value=form.querySelector('[data-counter="'+key+'"] [data-count]');
+        if(value)value.textContent=String(n(report.counts?.[key]));
+      }
+    }else if(CREDIT_TYPES.has(type)){
+      const input=form.querySelector('[data-credit-amount]');
+      if(input)input.value=String(n(report.counts?.millions));
+    }else if(type==='cz'){
+      for(const key of ['low','medium','high','lossLow','lossMedium','lossHigh','disconnectLow','disconnectMedium','disconnectHigh']){
+        const value=form.querySelector('[data-counter="'+key+'"] [data-count]');
+        if(value)value.textContent=String(n(report.counts?.[key]));
+      }
+      form.querySelectorAll('[data-mode]').forEach(btn=>btn.classList.toggle('is-active',btn.dataset.mode===(report.mode==='wing'?'wing':'solo')));
+      const bonds=form.querySelector('.mc-bonds');
+      if(bonds){bonds.setAttribute('aria-pressed',String(Boolean(report.bondsRedeemed)));bonds.textContent=report.bondsRedeemed?'✓ Combat Bonds redeemed':'Combat Bonds not redeemed';}
+    }
+    setEditUi(form,true);
+    updateDraft(form);
+    form.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
+  function setEditUi(form,editing){
+    const submitButton=form.querySelector('.mc-submit-report');
+    const cancel=form.querySelector('.mc-cancel-edit');
+    const labelNode=form.querySelector('.mc-action-panel-head>span');
+    if(submitButton)submitButton.textContent=editing?'Save Changes':'Submit Report';
+    if(cancel)cancel.hidden=!editing;
+    if(labelNode)labelNode.textContent=editing?'EDITING REPORT':'THIS REPORT';
+    if(!editing)delete form.dataset.editReportId;
+  }
+
+  function cancelEdit(form){
+    setEditUi(form,false);
+    resetReport(form);
+  }
+
+  async function deleteSubmittedReport(report,block){
+    if(!window.confirm('Delete this submitted report? Squad progress will be recalculated immediately.'))return;
+    const status=block.querySelector('.mc-report-status');
+    status.textContent='Deleting report…';status.dataset.state='working';
+    try{
+      const response=await fetch('/api/operations/order-reports',{method:'DELETE',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'daily-order-report'},body:JSON.stringify({reportId:report.id})});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||'report_delete_failed');
+      status.textContent='Report deleted. Squad progress updated.';status.dataset.state='success';
+      setTimeout(load,180);
+    }catch(error){
+      console.error(error);status.textContent='Could not delete report. Please try again.';status.dataset.state='error';
+    }
+  }
+
   function resetReport(form){
     form.querySelectorAll('[data-count]').forEach(value=>{value.textContent='0';});
     const input=form.querySelector('[data-credit-amount]');
     if(input)input.value='0';
+    form.querySelectorAll('[data-mode]').forEach(btn=>btn.classList.toggle('is-active',btn.dataset.mode==='solo'));
+    const bonds=form.querySelector('.mc-bonds');
+    if(bonds){bonds.setAttribute('aria-pressed','false');bonds.textContent='Combat Bonds not redeemed';}
     updateDraft(form);
   }
 
@@ -252,15 +346,18 @@
 
   async function submit(order,form,type){
     const block=form.closest('.mc-report-block'),status=block.querySelector('.mc-report-status'),button=form.querySelector('.mc-submit-report');
-    button.disabled=true;status.textContent='Submitting report…';status.dataset.state='working';
+    const reportId=form.dataset.editReportId||'';
+    const editing=Boolean(reportId);
+    button.disabled=true;status.textContent=editing?'Saving changes…':'Submitting report…';status.dataset.state='working';
     try{
-      const body={orderId:order.id,...collect(form,type)};
-      const response=await fetch('/api/operations/order-reports',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'daily-order-report'},body:JSON.stringify(body)});
+      const body={orderId:order.id,...collect(form,type),...(editing?{reportId}:{})};
+      const response=await fetch('/api/operations/order-reports',{method:editing?'PATCH':'POST',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'daily-order-report'},body:JSON.stringify(body)});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'report_failed');
-      status.textContent='Report added to squad progress.';status.dataset.state='success';
-      setTimeout(load,250);
-    }catch(error){console.error(error);status.textContent=error.message==='empty_report'?'Add a result before submitting.':'Could not submit report. Please try again.';status.dataset.state='error';button.disabled=false;}
+      status.textContent=editing?'Report updated. Squad progress recalculated.':'Report added to squad progress.';status.dataset.state='success';
+      setEditUi(form,false);resetReport(form);
+      setTimeout(load,180);
+    }catch(error){console.error(error);status.textContent=error.message==='empty_report'?'Add a result before saving.':'Could not save report. Please try again.';status.dataset.state='error';button.disabled=false;}
   }
 
   function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(load,80);}
