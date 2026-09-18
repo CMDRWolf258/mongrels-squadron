@@ -1,8 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
+const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
 const CURRENT_KEY = 'current';
-const REPORT_PREFIX = 'order-report:';
+const LEGACY_PREFIX = 'order-report:';
+const SUBMISSION_PREFIX = 'order-submission:';
 const CZ_WEIGHTS = { low: 1, medium: 1.3, high: 1.6 };
 const REPORT_TYPES = new Set(['cz', 'inf', 'bounties', 'trade', 'exploration']);
 const CREDIT_TYPES = new Set(['bounties', 'trade', 'exploration']);
@@ -11,61 +13,156 @@ export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
   if (auth.response) return auth.response;
   const current = await readCurrent(env);
-  if (!current) return reply({ ok:true, cycleId:null, summaries:{} });
-  const summaries = await summarizeCurrent(env, current, auth.session.sub);
-  return reply({ ok:true, cycleId:cycleId(current), summaries });
+  const canManage = MANAGER_ACCESS.has(auth.session.access);
+  if (!current) return reply({ ok:true, cycleId:null, summaries:{}, reports:[], canManageReports:canManage });
+
+  const records = await listCurrentRecords(env, current);
+  const summaries = summarizeCurrent(current, records, auth.session.sub);
+  const wantsAdmin = new URL(request.url).searchParams.get('admin') === '1';
+  const visible = wantsAdmin && canManage
+    ? records
+    : records.filter(record => String(record.ownerId) === String(auth.session.sub));
+
+  return reply({
+    ok:true,
+    cycleId:cycleId(current),
+    summaries,
+    reports:visible.map(record => reportView(record, canManage || String(record.ownerId) === String(auth.session.sub))),
+    canManageReports:canManage,
+  });
 }
 
 export async function onRequestPost({ request, env }) {
   const auth = await requireMember(request, env);
   if (auth.response) return auth.response;
-  const originError = validateSameOrigin(request);
-  if (originError) return originError;
+  const validation = validateMutation(request);
+  if (validation) return validation;
   if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.put !== 'function') return reply({ok:false,error:'orders_storage_not_configured'},503);
 
-  let body;
-  try { body = await request.json(); } catch { return reply({ok:false,error:'invalid_json'},400); }
+  const body = await readBody(request);
+  if (body.error) return body.error;
 
   const current = await readCurrent(env);
   if (!current) return reply({ok:false,error:'no_active_order_cycle'},409);
-  const order = (Array.isArray(current.orders) ? current.orders : []).find(item => String(item?.id||'') === String(body?.orderId||''));
+  const order = findOrder(current, body.value?.orderId);
   if (!order) return reply({ok:false,error:'order_not_found'},404);
-
   const spec = reportSpec(order);
   if (!spec.type) return reply({ok:false,error:'order_reporting_not_configured'},400);
 
-  const cycle = cycleId(current);
-  const key = reportKey(cycle, order.id, auth.session.sub);
-  const existing = await env.DAILY_ORDERS.get(key, { type:'json' }) || emptyRecord(order, auth.session, spec);
-  const mode = body?.mode === 'wing' ? 'wing' : 'solo';
+  const incoming = normalizeIncoming(spec.type, body.value);
+  const bonds = spec.type === 'cz' && Boolean(body.value?.bondsRedeemed);
+  if (!hasContribution(incoming, bonds)) return reply({ok:false,error:'empty_report'},400);
 
-  const incoming = normalizeIncoming(spec.type, body);
-  const hasWork = Object.values(incoming).some(value => Number(value) > 0);
-  const bonds = spec.type === 'cz' && Boolean(body?.bondsRedeemed);
-  if (!hasWork && !bonds) return reply({ok:false,error:'empty_report'},400);
+  const now = new Date().toISOString();
+  const reportId = crypto.randomUUID();
+  const record = {
+    reportId,
+    storageKind:'submission',
+    cycleId:cycleId(current),
+    orderId:order.id,
+    system:order.system || '',
+    faction:order.faction || '',
+    kind:order.kind || '',
+    source:order.source || '',
+    reportType:spec.type,
+    target:spec.target,
+    mode:body.value?.mode === 'wing' ? 'wing' : 'solo',
+    displayName:auth.session.displayName || auth.session.username || 'Mongrel CMDR',
+    ownerId:auth.session.sub,
+    counts:incoming,
+    bondsRedeemed:bonds,
+    submissions:1,
+    createdAt:now,
+    updatedAt:now,
+  };
+
+  await env.DAILY_ORDERS.put(submissionKey(record.cycleId, reportId), JSON.stringify(record));
+  return mutationReply(env, current, auth.session, record, 'created');
+}
+
+export async function onRequestPatch({ request, env }) {
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth.response;
+  const validation = validateMutation(request);
+  if (validation) return validation;
+  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.put !== 'function') return reply({ok:false,error:'orders_storage_not_configured'},503);
+
+  const body = await readBody(request);
+  if (body.error) return body.error;
+  const current = await readCurrent(env);
+  if (!current) return reply({ok:false,error:'no_active_order_cycle'},409);
+
+  const found = await readReportById(env, current, body.value?.reportId);
+  if (!found) return reply({ok:false,error:'report_not_found'},404);
+  if (!canModify(auth.session, found.record)) return reply({ok:false,error:'report_edit_forbidden'},403);
+
+  const order = findOrder(current, found.record.orderId);
+  if (!order) return reply({ok:false,error:'order_not_found'},404);
+  const spec = reportSpec(order);
+  const incoming = normalizeIncoming(spec.type, body.value);
+  const bonds = spec.type === 'cz' && Boolean(body.value?.bondsRedeemed);
+  if (!hasContribution(incoming, bonds)) return reply({ok:false,error:'empty_report'},400);
 
   const record = {
-    ...existing,
-    cycleId: cycle,
-    orderId: order.id,
-    system: order.system || '',
-    faction: order.faction || '',
-    kind: order.kind || '',
-    source: order.source || '',
-    reportType: spec.type,
-    target: spec.target,
-    mode,
-    displayName: auth.session.displayName || auth.session.username || 'Mongrel CMDR',
-    ownerId: auth.session.sub,
-    counts: addContribution(spec.type, existing.counts || {}, incoming),
-    bondsRedeemed: Boolean(existing.bondsRedeemed || bonds),
-    submissions: Math.min(9999, Number(existing.submissions || 0) + 1),
-    updatedAt: new Date().toISOString(),
+    ...found.record,
+    system:order.system || '',
+    faction:order.faction || '',
+    kind:order.kind || '',
+    source:order.source || '',
+    reportType:spec.type,
+    target:spec.target,
+    mode:body.value?.mode === 'wing' ? 'wing' : 'solo',
+    counts:incoming,
+    bondsRedeemed:bonds,
+    updatedAt:new Date().toISOString(),
   };
-  await env.DAILY_ORDERS.put(key, JSON.stringify(record));
+  await env.DAILY_ORDERS.put(found.key, JSON.stringify(stripStorageMeta(record)));
+  return mutationReply(env, current, auth.session, {...record, reportId:found.reportId, storageKind:found.storageKind}, 'updated');
+}
 
-  const summaries = await summarizeCurrent(env, current, auth.session.sub);
-  return reply({ ok:true, cycleId:cycle, summaries });
+export async function onRequestDelete({ request, env }) {
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth.response;
+  const validation = validateMutation(request);
+  if (validation) return validation;
+  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.delete !== 'function') return reply({ok:false,error:'orders_storage_not_configured'},503);
+
+  const body = await readBody(request);
+  if (body.error) return body.error;
+  const current = await readCurrent(env);
+  if (!current) return reply({ok:false,error:'no_active_order_cycle'},409);
+
+  const found = await readReportById(env, current, body.value?.reportId);
+  if (!found) return reply({ok:false,error:'report_not_found'},404);
+  if (!canModify(auth.session, found.record)) return reply({ok:false,error:'report_delete_forbidden'},403);
+
+  await env.DAILY_ORDERS.delete(found.key);
+  const records = await listCurrentRecords(env, current);
+  return reply({
+    ok:true,
+    action:'deleted',
+    cycleId:cycleId(current),
+    summaries:summarizeCurrent(current, records, auth.session.sub),
+    reports:records
+      .filter(record => String(record.ownerId) === String(auth.session.sub))
+      .map(record => reportView(record, true)),
+    canManageReports:MANAGER_ACCESS.has(auth.session.access),
+  });
+}
+
+async function mutationReply(env, current, session, record, action) {
+  const records = await listCurrentRecords(env, current);
+  return reply({
+    ok:true,
+    action,
+    cycleId:cycleId(current),
+    report:reportView(record, true),
+    summaries:summarizeCurrent(current, records, session.sub),
+    reports:records
+      .filter(item => String(item.ownerId) === String(session.sub))
+      .map(item => reportView(item, true)),
+    canManageReports:MANAGER_ACCESS.has(session.access),
+  });
 }
 
 async function requireMember(request, env) {
@@ -75,7 +172,11 @@ async function requireMember(request, env) {
   return { session };
 }
 
-function validateSameOrigin(request) {
+function canModify(session, record) {
+  return MANAGER_ACCESS.has(session.access) || String(record.ownerId) === String(session.sub);
+}
+
+function validateMutation(request) {
   const origin = request.headers.get('Origin');
   const expected = new URL(request.url).origin;
   const marker = request.headers.get('X-Mongrels-Request');
@@ -83,9 +184,18 @@ function validateSameOrigin(request) {
   return null;
 }
 
+async function readBody(request) {
+  try { return { value:await request.json() }; }
+  catch { return { error:reply({ok:false,error:'invalid_json'},400) }; }
+}
+
 async function readCurrent(env) {
   if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return null;
   return env.DAILY_ORDERS.get(CURRENT_KEY, { type:'json' });
+}
+
+function findOrder(current, id) {
+  return (Array.isArray(current?.orders) ? current.orders : []).find(item => String(item?.id||'') === String(id||''));
 }
 
 function cycleId(current) {
@@ -95,12 +205,75 @@ function cycleId(current) {
   return 'legacy-' + stamp.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,72);
 }
 
-function reportKey(cycle, orderId, ownerId) {
-  return REPORT_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(orderId) + ':' + encodeURIComponent(ownerId);
+function submissionKey(cycle, reportId) {
+  return SUBMISSION_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(reportId);
 }
 
-function reportPrefix(cycle, orderId) {
-  return REPORT_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(orderId) + ':';
+function submissionPrefix(cycle) {
+  return SUBMISSION_PREFIX + encodeURIComponent(cycle) + ':';
+}
+
+function legacyKey(cycle, orderId, ownerId) {
+  return LEGACY_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(orderId) + ':' + encodeURIComponent(ownerId);
+}
+
+function legacyPrefix(cycle, orderId) {
+  return LEGACY_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(orderId) + ':';
+}
+
+function legacyId(orderId, ownerId) {
+  return 'legacy:' + encodeURIComponent(orderId) + ':' + encodeURIComponent(ownerId);
+}
+
+function parseLegacyId(value) {
+  const parts = String(value||'').split(':');
+  if (parts.length !== 3 || parts[0] !== 'legacy') return null;
+  try { return { orderId:decodeURIComponent(parts[1]), ownerId:decodeURIComponent(parts[2]) }; }
+  catch { return null; }
+}
+
+async function readReportById(env, current, reportId) {
+  const legacy = parseLegacyId(reportId);
+  if (legacy) {
+    const key = legacyKey(cycleId(current), legacy.orderId, legacy.ownerId);
+    const value = await env.DAILY_ORDERS.get(key, { type:'json' });
+    if (!value) return null;
+    return {
+      key,
+      reportId:legacyId(value.orderId || legacy.orderId, value.ownerId || legacy.ownerId),
+      storageKind:'legacy',
+      record:{...value, reportId:legacyId(value.orderId || legacy.orderId, value.ownerId || legacy.ownerId), storageKind:'legacy'},
+    };
+  }
+
+  const id = clean(reportId);
+  if (!id) return null;
+  const key = submissionKey(cycleId(current), id);
+  const value = await env.DAILY_ORDERS.get(key, { type:'json' });
+  if (!value) return null;
+  return { key, reportId:id, storageKind:'submission', record:{...value, reportId:id, storageKind:'submission'} };
+}
+
+async function listCurrentRecords(env, current) {
+  const cycle = cycleId(current);
+  const submissions = await listRecords(env, submissionPrefix(cycle));
+  const newRecords = submissions.map(record => ({
+    ...record,
+    reportId:clean(record.reportId),
+    storageKind:'submission',
+    submissions:1,
+  })).filter(record => record.reportId);
+
+  const orders = Array.isArray(current.orders) ? current.orders : [];
+  const legacyPages = await Promise.all(orders.map(order => listRecords(env, legacyPrefix(cycle, order.id))));
+  const legacyRecords = legacyPages.flat().map(record => ({
+    ...record,
+    reportId:legacyId(record.orderId, record.ownerId),
+    storageKind:'legacy',
+    createdAt:record.createdAt || record.updatedAt || null,
+  }));
+
+  return [...legacyRecords, ...newRecords];
 }
 
 async function listRecords(env, prefix) {
@@ -115,39 +288,69 @@ async function listRecords(env, prefix) {
   return records.filter(Boolean);
 }
 
-async function summarizeCurrent(env, current, viewerId) {
+function summarizeCurrent(current, records, viewerId) {
   const out={};
   for (const order of Array.isArray(current.orders) ? current.orders : []) {
     const spec=reportSpec(order);
     if (!spec.type) continue;
-    const records=await listRecords(env, reportPrefix(cycleId(current), order.id));
-    out[order.id]=summarize(order,spec,records,viewerId);
+    out[order.id]=summarize(order, spec, records.filter(record => String(record.orderId) === String(order.id)), viewerId);
   }
   return out;
 }
 
-function summarize(order,spec,records,viewerId) {
+function summarize(order, spec, records, viewerId) {
   const squadCounts = blankCounts(spec.type);
   const viewerCounts = blankCounts(spec.type);
+  const reporters = new Set();
   let reportCount=0,bondsRedeemedBy=0,viewerBonds=false,updatedAt=null;
   for (const record of records) {
     const normalized=normalizeCounts(spec.type, record.counts);
     mergeInto(squadCounts,normalized);
-    reportCount += Number(record.submissions || 0);
+    if (record.ownerId) reporters.add(String(record.ownerId));
+    reportCount += Math.max(1, Number(record.submissions || 1));
     if (record.bondsRedeemed) bondsRedeemedBy += 1;
     if (String(record.ownerId)===String(viewerId)) {
       mergeInto(viewerCounts,normalized);
-      viewerBonds=Boolean(record.bondsRedeemed);
+      viewerBonds=Boolean(viewerBonds || record.bondsRedeemed);
     }
     if (record.updatedAt && (!updatedAt || record.updatedAt>updatedAt)) updatedAt=record.updatedAt;
   }
-  const squadScore=scoreFor(spec.type,squadCounts);
-  const viewerScore=scoreFor(spec.type,viewerCounts);
   return {
     orderId:order.id, type:spec.type, target:spec.target, blitz:spec.blitz,
-    squad:{ counts:squadCounts, score:round(squadScore), reporterCount:records.length, reportCount, bondsRedeemedBy, updatedAt },
-    viewer:{ counts:viewerCounts, score:round(viewerScore), bondsRedeemed:viewerBonds },
+    squad:{ counts:squadCounts, score:round(scoreFor(spec.type,squadCounts)), reporterCount:reporters.size, reportCount, bondsRedeemedBy, updatedAt },
+    viewer:{ counts:viewerCounts, score:round(scoreFor(spec.type,viewerCounts)), bondsRedeemed:viewerBonds },
   };
+}
+
+function reportView(record, canEdit) {
+  const type = record.reportType;
+  const counts = normalizeCounts(type, record.counts);
+  return {
+    id:record.reportId,
+    orderId:record.orderId || '',
+    system:record.system || '',
+    faction:record.faction || '',
+    reportType:type || '',
+    target:numberOrNull(record.target),
+    mode:record.mode === 'wing' ? 'wing' : 'solo',
+    displayName:record.displayName || 'Mongrel CMDR',
+    ownerId:record.ownerId || '',
+    counts,
+    score:round(scoreFor(type,counts)),
+    bondsRedeemed:Boolean(record.bondsRedeemed),
+    submissions:Math.max(1,Number(record.submissions||1)),
+    createdAt:record.createdAt || record.updatedAt || null,
+    updatedAt:record.updatedAt || null,
+    legacy:record.storageKind === 'legacy',
+    canEdit:Boolean(canEdit),
+    canDelete:Boolean(canEdit),
+  };
+}
+
+function stripStorageMeta(record) {
+  const out={...record};
+  delete out.storageKind;
+  return out;
 }
 
 function reportSpec(order) {
@@ -173,6 +376,10 @@ function normalizeIncoming(type, body) {
   return {};
 }
 
+function hasContribution(incoming, bonds) {
+  return Object.values(incoming).some(value => Number(value) > 0) || bonds;
+}
+
 function blankCounts(type) {
   if (type==='cz') return normalizeCz({});
   if (type==='inf') return normalizeInf({});
@@ -185,13 +392,6 @@ function normalizeCounts(type,value) {
   if (type==='inf') return normalizeInf(value);
   if (CREDIT_TYPES.has(type)) return normalizeCredits(value);
   return {};
-}
-
-function addContribution(type,existing,incoming) {
-  if (CREDIT_TYPES.has(type)) return { millions:safeMillions(Number(existing?.millions||0)+Number(incoming?.millions||0)) };
-  const out={};
-  for(const key of Object.keys(incoming)) out[key]=safeCount(Number(existing?.[key]||0)+Number(incoming[key]||0));
-  return out;
 }
 
 function scoreFor(type,counts) {
@@ -219,7 +419,6 @@ function mergeInto(target,source){for(const [key,value] of Object.entries(source
 function czScore(c){return (c.low-c.lossLow-c.disconnectLow)*CZ_WEIGHTS.low+(c.medium-c.lossMedium-c.disconnectMedium)*CZ_WEIGHTS.medium+(c.high-c.lossHigh-c.disconnectHigh)*CZ_WEIGHTS.high}
 function infScore(c){return c.inf2*2+c.inf3*3+c.inf4*4+c.inf5*5}
 function round(value){return Math.round((Number(value)||0)*10)/10}
-function emptyRecord(order,session,spec){return{cycleId:null,orderId:order.id,system:order.system||'',faction:order.faction||'',kind:order.kind||'',source:order.source||'',reportType:spec.type,target:spec.target,mode:'solo',displayName:session.displayName||'',ownerId:session.sub,counts:blankCounts(spec.type),bondsRedeemed:false,submissions:0,updatedAt:null}}
 
 function privateHeaders(){return{'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache',Vary:'Cookie','X-Content-Type-Options':'nosniff'}}
 function reply(body,status=200){return json(body,{status,headers:privateHeaders()})}
