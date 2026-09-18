@@ -14,7 +14,7 @@ for (const pattern of [/Wolf BGS Control/,/data-global-form/,/data-system-list/,
 assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page default should be 20');
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
-assert.match(page,/wolf-bgs-order-preview\.js\?v=3/,'Order Preview cache version should be v3');
+assert.match(page,/wolf-bgs-order-preview\.js\?v=4/,'Order Preview cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
 assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
 assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
@@ -57,7 +57,7 @@ assert.doesNotMatch(slidersClient,/positive Security work is blocked by the curr
 
 const orderClient=readFileSync('js/wolf-bgs-order-preview.js','utf8');
 for (const pattern of [
-  /Order Preview \/ Generator/,/PREVIEW ONLY/,/Publish disabled/,/Generate \/ Refresh Preview/,
+  /Order Preview \/ Generator/,/REVIEW/,/Generate \/ Refresh Preview/,/explicitly queued and published/,
   /System balancing calibration/,/bountyPercentAdjustment/,/bountyFlatInfAdjustment/,/tradePercentAdjustment/,/tradeFlatInfAdjustment/,
   /balanceMath/,/candidateList/,/allocateCounterweight/,/maxCounterweightFactions/,/triggerHeadroomPct/,
   /Flexible \/ available/,/Avoid interaction/,/Maintain \/ hold/,/Allow Retreat/,
@@ -68,7 +68,7 @@ for (const pattern of [
   /Prefer economic missions where practical/,/Prefer security\/combat-aligned missions where practical/,
   /automated negative-work actions are disabled/,/Suppress \/ lower .*positive redistribution/,
   /Manual asset check: sell at a station\/asset owned by/,/asset ownership is not yet verified by automation/,
-  /Overlapping same-faction counterweight needs keep the higher INF workload/,
+  /Overlapping same-faction counterweight needs keep the higher INF workload/,/data-order-kind/,/data-order-faction/,/data-order-amount/,
 ]) assert.match(orderClient,pattern);
 assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be generated as a BGS task');
 
@@ -101,7 +101,7 @@ const conflictLabV2=readFileSync('js/wolf-bgs-conflict-lab-v2.js','utf8');
 for(const pattern of [/7-Day Progression/,/BLITZ/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
 new Function(conflictLabV2);
 const publishClient=readFileSync('js/wolf-bgs-publish.js','utf8');
-for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/data-order-kind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/]) assert.match(publishClient,pattern);
+for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/data-order-kind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/,/source:'wolf-bgs'/,/cycleId/i,/reportingFor/]) assert.match(publishClient,pattern);
 new Function(publishClient);
 
 const rulesApi=readFileSync('functions/api/operations/wolf-bgs-rules.js','utf8');
