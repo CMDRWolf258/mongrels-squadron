@@ -21,9 +21,9 @@ assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot pu
 assert.match(page,/data-lab-scenario="dual"/,'Dual-conflict lab scenario is missing');
 assert.match(page,/data-lab-scenario="ambiguous"/,'Ambiguous four-way conflict lab scenario anchor is missing');
 assert.match(page,/wolf-bgs-conflicts\.js/,'Conflict client is not loaded');
-assert.match(page,/wolf-bgs-lab\\.js/,'Lab client is not loaded');
-assert.match(page,/wolf-bgs-conflict-lab-v2\\.js/,'Conflict v2 lab client is not loaded');
-assert.match(page,/wolf-bgs-conflict-lab-v2\\.css/,'Conflict v2 lab stylesheet is not loaded');
+assert.match(page,/wolf-bgs-lab\.js/,'Lab client is not loaded');
+assert.match(page,/wolf-bgs-conflict-lab-v2\.js/,'Conflict v2 lab client is not loaded');
+assert.match(page,/wolf-bgs-conflict-lab-v2\.css/,'Conflict v2 lab stylesheet is not loaded');
 assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'),'Slider client must load after rules');
 assert.ok(page.indexOf('wolf-bgs-sliders.js') < page.indexOf('wolf-bgs-order-preview.js'),'Order Preview must load after slider controls');
 assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-conflicts.js'),'Conflict layer must post-process the deterministic Order Preview');
