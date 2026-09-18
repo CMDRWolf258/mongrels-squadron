@@ -52,6 +52,7 @@ export async function onRequestPut({ request, env }) {
     configured: true,
     updatedAt: new Date().toISOString(),
     updatedBy: auth.session.displayName || auth.session.username || 'Mongrel Officer',
+    cycleId: cleanText(body?.cycleId, '', 100) || crypto.randomUUID(),
   });
 
   await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
@@ -189,6 +190,7 @@ function emptyOrders() {
     briefing: 'Your Mongrel member access is verified. No private operational orders have been published for this cycle yet.',
     updatedAt: null,
     updatedBy: null,
+    cycleId: null,
     orders: [],
     officerNote: null,
   };
@@ -204,6 +206,7 @@ function normalizeOrders(value, overrides = {}) {
     briefing: cleanText(source.briefing, '', 1200),
     updatedAt: overrides.updatedAt ?? (cleanText(source.updatedAt, '', 80) || null),
     updatedBy: overrides.updatedBy ?? (cleanText(source.updatedBy, '', 120) || null),
+    cycleId: overrides.cycleId ?? (cleanText(source.cycleId, '', 100) || null),
     orders: list.map((order, index) => normalizeOrder(order, index)),
     officerNote: cleanText(source.officerNote, '', 1200) || null,
   };
@@ -218,7 +221,26 @@ function normalizeOrder(order, index) {
     task: cleanText(source.task, 'Operational task', 220),
     detail: cleanText(source.detail, '', 900),
     status: cleanText(source.status, '', 60),
+    reporting: normalizeReporting(source.reporting, source.task, source.detail),
   };
+}
+
+function normalizeReporting(value, task, detail) {
+  const source = value && typeof value === 'object' ? value : {};
+  const text = [task, detail].filter(Boolean).join(' ');
+  let type = source.type === 'cz' || source.type === 'inf' ? source.type : '';
+  if (!type && /\\b(?:CZ|Conflict Zones?)\\b/i.test(text)) type = 'cz';
+  if (!type && /\\bINF\\b/i.test(text)) type = 'inf';
+  let target = Number.isFinite(Number(source.target)) && Number(source.target) >= 0 ? Number(source.target) : null;
+  if (target === null && type === 'cz') {
+    const match = text.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:CZ\\s*)?(?:points?|pts?)\\b/i);
+    if (match) target = Number(match[1]);
+  }
+  if (target === null && type === 'inf') {
+    const match = text.match(/([0-9]+(?:\\.[0-9]+)?)\\s*INF\\b/i);
+    if (match) target = Number(match[1]);
+  }
+  return type ? { type, target, blitz: Boolean(source.blitz || /\\bBLITZ\\b/i.test(text)) } : null;
 }
 
 function cleanText(value, fallback, maxLength) {
