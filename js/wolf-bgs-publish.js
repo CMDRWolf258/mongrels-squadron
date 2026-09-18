@@ -198,7 +198,7 @@
         body:JSON.stringify({
           title:'Squadron Daily Orders',
           briefing:'Generated from reviewed Wolf BGS Control previews. Open the system card for the full briefing, execute the ordered work, and report results beside the orders.',
-          officerNote:'Published from Wolf BGS Control.',
+          officerNote:'',
           orders,
         }),
       });
