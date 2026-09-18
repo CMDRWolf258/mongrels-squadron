@@ -148,6 +148,8 @@ Current member UX:
 - collapsed system cards show system, priority/basic task context and squad progress;
 - expanded cards keep full briefing/orders beside the relevant report block on desktop and stack reporting immediately below on narrower layouts;
 - INF reporting uses +2/+3/+4/+5 reward counters;
+- bounty-voucher, profitable-trade and exploration-data orders use a shared M Cr reporter with direct numeric entry plus quick −5/−1/+1/+5/+10 controls;
+- trade reporting records **profit**, not gross cargo sale value; exploration reporting records the Universal Cartographics sale value; bounty reporting records vouchers actually redeemed for the ordered faction;
 - War/Civil War reporting uses Low/Medium/High CZ wins, optional failure details, Solo/Wing mode and Combat Bonds redeemed;
 - one shared wing CZ instance is one result regardless of participant count;
 - an individual wingmate disconnecting/leaving is not a failed CZ if at least one Mongrel remains and the shared instance is won;
