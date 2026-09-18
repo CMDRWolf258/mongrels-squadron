@@ -40,6 +40,35 @@
     return order?.task||'Execute the order as briefed.';
   }
 
+  function systemFocus(items){
+    const required=items.filter(order=>String(order?.status||'').toLowerCase()!=='optional');
+    const source=required.length?required:items;
+    const groups=new Map();
+    for(const order of source){
+      const faction=factionDisplay(order?.faction);
+      if(!groups.has(faction))groups.set(faction,[]);
+      const title=shortTitle(order);
+      if(title&&!groups.get(faction).includes(title))groups.get(faction).push(title);
+    }
+    return [...groups.entries()].slice(0,2).map(([faction,tasks],index)=>{
+      const shown=tasks.slice(0,2);
+      const more=tasks.length>2?' +'+(tasks.length-2)+' more':'';
+      return '<span class="mc-focus-line"><b>'+(index?'SUPPORT':'FOCUS')+'</b><strong>'+esc(faction)+'</strong><small>'+esc(shown.join(' · ')+more)+'</small></span>';
+    }).join('');
+  }
+
+  function priorityClass(value){
+    return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  }
+
+  function priorityLabel(value){
+    const key=String(value||'').trim().toLowerCase();
+    if(key==='high')return'HIGH PRIORITY';
+    if(key==='medium')return'MEDIUM PRIORITY';
+    if(key==='low')return'LOW PRIORITY';
+    return String(value||'ACTIVE').toUpperCase();
+  }
+
   function spec(order){
     const explicit=order?.reporting||{};
     let type=REPORT_TYPES.has(explicit.type)?explicit.type:'';
@@ -80,6 +109,9 @@
     }
     list.classList.add('mc-orders-v2');
     list.replaceChildren();
+    const noteCard=section.querySelector('[data-orders-officer-note]');
+    const noteText=section.querySelector('[data-orders-officer-note-text]');
+    if(noteCard&&noteText&&/^Published from Wolf BGS Control\.?$/i.test(noteText.textContent.trim()))noteCard.hidden=true;
     let index=0;
     for(const [system,items] of groups){
       index+=1;
@@ -89,7 +121,8 @@
       card.open=openSystems.has(system);
       const priorities=items.map(x=>x.priority).filter(Boolean);
       const priority=priorities[0]||'Active';
-      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
+      const priorityKey=priorityClass(priority);
+      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-focus">'+systemFocus(items)+'</span><span class="mc-system-tags"><b class="mc-priority-pill is-'+esc(priorityKey)+'">'+esc(priorityLabel(priority))+'</b><b class="mc-order-count">'+items.length+' ORDER'+(items.length===1?'':'S')+'</b></span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
       const pairs=card.querySelector('.mc-order-pairs');
       const copyButton=card.querySelector('.mc-copy-system');
       if(copyButton)copyButton.addEventListener('click',async event=>{
@@ -163,9 +196,10 @@
 
   function infForm(order){
     const wrap=document.createElement('div');wrap.className='mc-inf-form';
-    wrap.innerHTML='<div class="mc-report-entry-layout"><div class="mc-entry-controls"><div class="mc-form-label mc-form-label-compact"><strong>REPORT INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div></div><aside class="mc-report-action-panel"><span>THIS REPORT</span><strong data-draft>0 INF</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
+    wrap.innerHTML='<div class="mc-report-entry-layout"><div class="mc-entry-controls"><div class="mc-form-label mc-form-label-compact"><strong>REPORT INF</strong><small>Tap the reward received.</small></div><div class="mc-inf-rewards"></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 INF</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
     const rewards=wrap.querySelector('.mc-inf-rewards');
     [['inf2','+2 INF'],['inf3','+3 INF'],['inf4','+4 INF'],['inf5','+5 INF']].forEach(([k,l])=>rewards.append(counter(k,l)));
+    wrap.querySelector('.mc-reset-report').addEventListener('click',()=>resetReport(wrap));
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'inf'));
     return wrap;
   }
@@ -177,12 +211,20 @@
       exploration:{title:'REPORT EXPLORATION',note:'Universal Cartographics sale value.'},
     }[type];
     const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
-    wrap.innerHTML='<div class="mc-report-entry-layout mc-credit-layout"><div class="mc-entry-controls"><div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><div class="mc-credit-controls"><label class="mc-credit-entry"><span>Amount</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div></div></div><aside class="mc-report-action-panel"><span>THIS REPORT</span><strong data-draft>0 M Cr</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
+    wrap.innerHTML='<div class="mc-report-entry-layout mc-credit-layout"><div class="mc-entry-controls"><div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><div class="mc-credit-controls"><label class="mc-credit-entry"><span>Amount</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div></div></div><aside class="mc-report-action-panel"><div class="mc-action-panel-head"><span>THIS REPORT</span><button type="button" class="mc-reset-report">Reset</button></div><strong data-draft>0 M Cr</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
     const input=wrap.querySelector('[data-credit-amount]');
+    wrap.querySelector('.mc-reset-report').addEventListener('click',()=>resetReport(wrap));
     input.addEventListener('input',()=>updateDraft(wrap));
     wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap);});
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,type));
     return wrap;
+  }
+
+  function resetReport(form){
+    form.querySelectorAll('[data-count]').forEach(value=>{value.textContent='0';});
+    const input=form.querySelector('[data-credit-amount]');
+    if(input)input.value='0';
+    updateDraft(form);
   }
 
   function collect(form,type){
