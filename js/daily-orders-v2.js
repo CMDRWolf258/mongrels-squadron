@@ -34,7 +34,7 @@
     else if(s.type==='cz')lead='Fight the configured conflict for '+faction+' and report completed CZ results.';
     else lead=order?.task||'Execute the order as briefed.';
     const stop=(detail.match(/(?:Stop\s*\/\s*review|Stop\/review|Stop|Review)\s*:\s*([^\n]+?)(?=(?:\s+(?:Stop\s*\/\s*review|Stop\/review|Asset check|Support\s*\/\s*raise|Counterweight|Primary|Optional|$)))/i)||[])[1];
-    const cleanStop=stop?stop.replace(/\s+/g,' ').trim().replace(/[.;]+$/,''):'';
+    const cleanStop=stop?stop.replace(/\s+/g,' ').trim().replace(/^(?:stop\s*\/\s*review|stop\/review|stop|review)\s*(?:when|before|if)?\s*/i,match=>/\b(?:when|before|if)\b/i.test(match)?match.match(/\b(?:when|before|if)\b/i)[0]+' ':'').replace(/[.;]+$/,''):'';
     return cleanStop?lead+' Stop/review: '+cleanStop+'.':lead;
   }
 
