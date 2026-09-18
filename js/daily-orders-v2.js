@@ -34,17 +34,13 @@
   }
 
   function briefingCopy(order){
-    const s=spec(order), faction=factionDisplay(order?.faction), detail=String(order?.detail||'');
-    let lead='';
-    if(s.type==='inf')lead='Complete missions for '+faction+' and choose Influence rewards.';
-    else if(s.type==='bounties')lead='Redeem bounty vouchers for '+faction+'.';
-    else if(s.type==='trade')lead='Run profitable trade through a '+faction+'-owned market; report profit, not gross sales.';
-    else if(s.type==='exploration')lead='Sell exploration data at a '+faction+'-owned asset with Universal Cartographics.';
-    else if(s.type==='cz')lead='Fight the configured conflict for '+faction+' and report completed CZ results.';
-    else lead=order?.task||'Execute the order as briefed.';
-    const stop=(detail.match(/(?:Stop\s*\/\s*review|Stop\/review|Stop|Review)\s*:\s*([^\n]+?)(?=(?:\s+(?:Stop\s*\/\s*review|Stop\/review|Asset check|Support\s*\/\s*raise|Counterweight|Primary|Optional|$)))/i)||[])[1];
-    const cleanStop=stop?stop.replace(/\s+/g,' ').trim().replace(/^(?:stop\s*\/\s*review|stop\/review|stop|review)\s*(?:when|before|if)?\s*/i,match=>/\b(?:when|before|if)\b/i.test(match)?match.match(/\b(?:when|before|if)\b/i)[0]+' ':'').replace(/[.;]+$/,''):'';
-    return{lead,stop:cleanStop};
+    const s=spec(order);
+    if(s.type==='inf')return'Complete missions and choose Influence rewards.';
+    if(s.type==='bounties')return'Redeem bounty vouchers.';
+    if(s.type==='trade')return'Run profitable trade; report profit, not gross sales.';
+    if(s.type==='exploration')return'Sell exploration data through Universal Cartographics.';
+    if(s.type==='cz')return'Fight the configured conflict and report completed CZ results.';
+    return order?.task||'Execute the order as briefed.';
   }
 
   function spec(order){
@@ -97,8 +93,7 @@
       const priorities=items.map(x=>x.priority).filter(Boolean);
       const priority=priorities[0]||'Active';
       const reportable=items.filter(x=>spec(x).type);
-      const progress=collapsedProgress(reportable,reportPayload.summaries||{});
-      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span><small>'+esc(summaryTitle(items[0]))+'</small></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-system-progress">'+progress+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
+      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
       const pairs=card.querySelector('.mc-order-pairs');
       const copyButton=card.querySelector('.mc-copy-system');
       if(copyButton)copyButton.addEventListener('click',async event=>{
@@ -132,7 +127,7 @@
     const el=document.createElement('article');el.className='mc-order-brief';
     const status=order.status&&String(order.status).toLowerCase()!=='active'?'<b>'+esc(order.status)+'</b>':'';
     const copy=briefingCopy(order);
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy.lead)+'</p>'+(copy.stop?'<small><b>STOP / REVIEW</b> '+esc(copy.stop)+'</small>':'')+'</div></div>';
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
     return el;
   }
 
@@ -190,9 +185,9 @@
 
   function creditForm(order,type){
     const copy={
-      bounties:{title:'Bounty vouchers',note:'Report voucher value actually redeemed for the ordered faction.'},
-      trade:{title:'Profitable trade',note:'Report qualifying trade profit, not gross cargo sale value.'},
-      exploration:{title:'Exploration data',note:'Report the Universal Cartographics sale value delivered to the ordered faction.'},
+      bounties:{title:'REPORT BOUNTIES',note:'Redeemed voucher value.'},
+      trade:{title:'REPORT TRADE',note:'Profit, not gross sales.'},
+      exploration:{title:'REPORT EXPLORATION',note:'Universal Cartographics sale value.'},
     }[type];
     const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
     wrap.innerHTML='<div class="mc-report-entry-layout mc-credit-layout"><div class="mc-entry-controls"><div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><div class="mc-credit-controls"><label class="mc-credit-entry"><span>Amount</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div></div></div><aside class="mc-report-action-panel"><span>THIS REPORT</span><strong data-draft>0 M Cr</strong><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></aside></div>';
