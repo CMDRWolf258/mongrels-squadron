@@ -16,11 +16,12 @@ for(const pattern of [/ALLOWED_ACCESS/,/order-report:/,/daily-order-report/,/CZ_
 const api=await import('../functions/api/operations/order-reports.js');
 assert.equal(typeof api.onRequestGet,'function');
 assert.equal(typeof api.onRequestPost,'function');
+assert.match(apiSource,/value===null\|\|value===undefined\|\|value===''/,'Null workload targets must remain unquantified');
 
 const orders=readFileSync('functions/api/operations/orders.js','utf8');
 assert.match(orders,/cycleId/);
 assert.match(orders,/reporting/);
-for(const pattern of [/faction/,/kind/,/source/]) assert.match(orders,pattern);
+for(const pattern of [/faction/,/kind/,/source/,/explicitTarget/,/source\.target === null/]) assert.match(orders,pattern);
 for(const pattern of [/bounties/,/trade/,/exploration/,/M\\s\*Cr/]) assert.match(orders,pattern);
 
 console.log('✓ Mission Control expandable system cards and structured squad reporting are wired');
