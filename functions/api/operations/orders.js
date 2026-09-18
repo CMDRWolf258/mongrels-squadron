@@ -229,18 +229,18 @@ function normalizeReporting(value, task, detail) {
   const source = value && typeof value === 'object' ? value : {};
   const text = [task, detail].filter(Boolean).join(' ');
   let type = source.type === 'cz' || source.type === 'inf' ? source.type : '';
-  if (!type && /\\b(?:CZ|Conflict Zones?)\\b/i.test(text)) type = 'cz';
-  if (!type && /\\bINF\\b/i.test(text)) type = 'inf';
+  if (!type && /\b(?:CZ|Conflict Zones?)\b/i.test(text)) type = 'cz';
+  if (!type && /\bINF\b/i.test(text)) type = 'inf';
   let target = Number.isFinite(Number(source.target)) && Number(source.target) >= 0 ? Number(source.target) : null;
   if (target === null && type === 'cz') {
-    const match = text.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:CZ\\s*)?(?:points?|pts?)\\b/i);
+    const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);
     if (match) target = Number(match[1]);
   }
   if (target === null && type === 'inf') {
-    const match = text.match(/([0-9]+(?:\\.[0-9]+)?)\\s*INF\\b/i);
+    const match = text.match(/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);
     if (match) target = Number(match[1]);
   }
-  return type ? { type, target, blitz: Boolean(source.blitz || /\\bBLITZ\\b/i.test(text)) } : null;
+  return type ? { type, target, blitz: Boolean(source.blitz || /\bBLITZ\b/i.test(text)) } : null;
 }
 
 function cleanText(value, fallback, maxLength) {
