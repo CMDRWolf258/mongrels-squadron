@@ -476,3 +476,5 @@ The next major stages after validating the Mandalore lab and conflict-pair behav
 Daily Orders should eventually rank unmet work above met work, and met work above systems with no current orders. Emergency operational priority may temporarily outrank long-term strategic priority.
 
 History is intended to build Mongrel-specific empirical calibration without pretending to reverse-engineer Frontier's hidden formula.
+
+Mission Control visual hierarchy note: workload titles/amounts (for example `25 INF` and `20M Cr Bounties`) use a muted sea-glass teal-green with a very subtle glow so they read as the main event without competing with cyan actions or amber priority states.
