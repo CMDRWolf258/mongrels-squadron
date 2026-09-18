@@ -455,7 +455,7 @@ Current report types:
 - **Net progress:** successful CZs add their point weight; failed/abandoned or full-instance-disconnected CZs subtract the same starting difficulty weight. Current starting weights are Low 1.0, Medium 1.3, High 1.6. These are Mongrel operational weights, not claimed Frontier formulas.
 - **Blitz:** its configured benchmark is displayed but reaching it does not close the order; the member view remains OPEN / continue pushing.
 
-The current private order document now carries a `cycleId` and optional normalized reporting metadata. Member records are stored in `DAILY_ORDERS` per **cycle + order + CMDR**, then aggregated for squad progress. This avoids cross-CMDR overwrite races and keeps ordered workload distinct from actual reported workload for later calibration/history.
+The current private order document carries a `cycleId` and optional normalized reporting metadata. Reporting now stores **individual submissions** in `DAILY_ORDERS` under the active cycle instead of folding every submission into one ever-growing CMDR/order record. Squad and personal totals are recomputed from those submissions. Members can expand **MY SUBMITTED REPORTS** under an order, load one of their own reports back into the same controls, **Save Changes**, or delete it; totals recalculate immediately. Older aggregate records remain readable as a combined prior total and can still be corrected/deleted. Wolf BGS Control now includes a **CURRENT CYCLE REPORTS** manager that lists every CMDR's reports and allows officer/site-admin edit or delete across the active cycle, including exact INF reward counts, credit values, and detailed CZ fields.
 
 ## Next product stages
 
@@ -464,6 +464,7 @@ The next major stages after validating the Mandalore lab and conflict-pair behav
 - conflict score/day tracking and CZ workload calibration;
 - ranked Daily Orders queue;
 - richer ranked queue/review controls beyond the first explicit live-system publish bridge;
+- change Wolf BGS Daily Orders publishing from full replacement to **append/merge behavior by default**: publishing System B/C after System A should leave A in Mission Control unless Wolf explicitly removes/replaces it; a deliberate "start new cycle / replace all" action should remain separate;
 - richer member activity/history views and admin report correction tools;
 - current-cycle reporting dashboard;
 - ~14-cycle operator/history view;
