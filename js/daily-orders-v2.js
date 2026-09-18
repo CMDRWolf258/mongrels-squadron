@@ -22,7 +22,8 @@
     if(!type&&/\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text))type='bounties';
     if(!type&&/\bexploration data\b/i.test(text))type='exploration';
     if(!type&&/\bprofitable trade\b|\btrade profit\b/i.test(text))type='trade';
-    let target=Number.isFinite(Number(explicit.target))?Number(explicit.target):null;
+    const explicitTarget=explicit.target===null||explicit.target===undefined||explicit.target===''?null:Number(explicit.target);
+    let target=Number.isFinite(explicitTarget)?explicitTarget:null;
     if(target===null&&type==='cz'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);if(m)target=Number(m[1]);}
     if(target===null&&type==='inf'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);if(m)target=Number(m[1]);}
     if(target===null&&CREDIT_TYPES.has(type)){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*M\s*Cr\b/i);if(m)target=Number(m[1]);}
