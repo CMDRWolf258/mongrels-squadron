@@ -143,6 +143,7 @@ Primary files:
 - `functions/api/operations/orders.js` — private current-order document.
 - `functions/api/operations/order-reports.js` — member structured reporting and squad aggregation.
 - `scripts/smoke-daily-orders.mjs` — focused regression coverage.
+- `js/wolf-bgs-publish.js` + `css/wolf-bgs-publish.css` — site-admin reviewed-preview queue and explicit BGS Control → Daily Orders publisher.
 
 Current member UX:
 - collapsed system cards show system, priority/basic task context and squad progress;
@@ -156,6 +157,16 @@ Current member UX:
 - failed/abandoned or full-instance-disconnected CZs subtract their difficulty weight from net squad CZ progress;
 - current starting CZ weights are Low 1.0, Medium 1.3, High 1.6;
 - Blitz can exceed its nominal benchmark and remains visibly open rather than becoming a stop condition.
+
+
+BGS Control publishing:
+- generated live-system tasks carry explicit kind/faction/amount metadata through the base preview, conflict layer and contribution-options layer;
+- Wolf explicitly queues reviewed system previews; generating or changing a preview never publishes by itself;
+- queued snapshots show when the underlying preview changed and can be refreshed before publishing;
+- one confirmed publish replaces the current Daily Orders set and deliberately starts a new `cycleId`;
+- published orders carry `source:"wolf-bgs"`, faction, kind and reporting metadata into Mission Control;
+- Mandalore is always excluded from the publish queue;
+- the existing Officer/Site Admin Daily Orders editor remains a manual fallback and preserves the structured metadata on edits.
 
 Report storage uses the existing `DAILY_ORDERS` binding. The current order document has a `cycleId`; member reports are stored per cycle + order + Discord user so simultaneous CMDR reports do not overwrite one another. Officer edits preserve the current cycle; a publisher that omits the current cycle ID begins a new progress bucket. Old report keys remain available for later history/calibration work.
 
