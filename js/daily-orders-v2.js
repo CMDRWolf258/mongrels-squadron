@@ -13,6 +13,31 @@
   const fmt=value=>Number.isInteger(n(value))?String(n(value)):n(value).toFixed(1);
   const active=order=>!['complete','completed','closed','cancelled','canceled','inactive'].includes(String(order?.status||'').toLowerCase());
 
+  function shortTitle(order){
+    const s=spec(order), faction=order?.faction||'';
+    const amount=s.target!==null?fmt(s.target):'';
+    if(s.type==='inf')return [amount&&amount+' INF',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Mission INF';
+    if(s.type==='bounties')return [amount&&amount+'M Cr bounties',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Bounty vouchers';
+    if(s.type==='trade')return [amount&&amount+'M Cr trade profit',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Profitable trade';
+    if(s.type==='exploration')return [amount&&amount+'M Cr exploration data',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Exploration data';
+    if(s.type==='cz')return [amount&&amount+' CZ pts',faction&&'for '+faction].filter(Boolean).join(' ')||order?.task||'Conflict Zones';
+    return order?.task||'Operational task';
+  }
+
+  function shortDetail(order){
+    const s=spec(order), faction=order?.faction||'the ordered faction', detail=String(order?.detail||'');
+    let lead='';
+    if(s.type==='inf')lead='Complete missions for '+faction+' and choose Influence rewards.';
+    else if(s.type==='bounties')lead='Redeem bounty vouchers for '+faction+'.';
+    else if(s.type==='trade')lead='Run profitable trade through a '+faction+'-owned market; report profit, not gross sales.';
+    else if(s.type==='exploration')lead='Sell exploration data at a '+faction+'-owned asset with Universal Cartographics.';
+    else if(s.type==='cz')lead='Fight the configured conflict for '+faction+' and report completed CZ results.';
+    else lead=order?.task||'Execute the order as briefed.';
+    const stop=(detail.match(/(?:Stop\s*\/\s*review|Stop\/review|Stop|Review)\s*:\s*([^\n]+?)(?=(?:\s+(?:Stop\s*\/\s*review|Stop\/review|Asset check|Support\s*\/\s*raise|Counterweight|Primary|Optional|$)))/i)||[])[1];
+    const cleanStop=stop?stop.replace(/\s+/g,' ').trim().replace(/[.;]+$/,''):'';
+    return cleanStop?lead+' Stop/review: '+cleanStop+'.':lead;
+  }
+
   function spec(order){
     const explicit=order?.reporting||{};
     let type=REPORT_TYPES.has(explicit.type)?explicit.type:'';
@@ -64,15 +89,16 @@
       const priority=priorities[0]||'Active';
       const reportable=items.filter(x=>spec(x).type);
       const progress=collapsedProgress(reportable,reportPayload.summaries||{});
-      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><strong>'+esc(system)+'</strong><small>'+esc(items[0]?.task||'Operational task')+'</small></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-system-progress">'+progress+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-briefing-column"></div><aside class="mc-report-column"></aside></div>';
-      const brief=card.querySelector('.mc-briefing-column'),reports=card.querySelector('.mc-report-column');
-      if(system!=='Squad-wide')brief.append(copySystem(system));
-      items.forEach((order,i)=>brief.append(orderBrief(order,i)));
-      if(reportable.length){
-        reportable.forEach(order=>reports.append(reportBlock(order,reportPayload.summaries?.[order.id])));
-      }else{
-        reports.innerHTML='<div class="mc-no-report"><span>REPORTING</span><strong>No structured report requested</strong><p>Execute the briefing as written. A report block appears here when the order has a measurable squad target.</p></div>';
-      }
+      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><strong>'+esc(system)+'</strong><small>'+esc(shortTitle(items[0]))+'</small></span><span class="mc-system-tags"><b>'+esc(priority)+'</b>'+(items.length>1?'<b>'+items.length+' orders</b>':'')+'</span><span class="mc-system-progress">'+progress+'</span><span class="mc-expand-mark" aria-hidden="true">+</span></summary><div class="mc-system-order-body"><div class="mc-system-tools"></div><div class="mc-order-pairs"></div></div>';
+      const toolsRow=card.querySelector('.mc-system-tools'),pairs=card.querySelector('.mc-order-pairs');
+      if(system!=='Squad-wide')toolsRow.append(copySystem(system));
+      items.forEach((order,i)=>{
+        const pair=document.createElement('div');pair.className='mc-order-pair';
+        pair.append(orderBrief(order,i));
+        if(spec(order).type)pair.append(reportBlock(order,reportPayload.summaries?.[order.id]));
+        else{const empty=document.createElement('div');empty.className='mc-no-report';empty.innerHTML='<span>REPORTING</span><strong>No report requested</strong><p>Complete this order as briefed.</p>';pair.append(empty);}
+        pairs.append(pair);
+      });
       list.append(card);
     }
   }
@@ -95,7 +121,7 @@
 
   function orderBrief(order,index){
     const el=document.createElement('article');el.className='mc-order-brief';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(order.task||'Operational task')+'</h3>'+(order.detail?'<p>'+esc(order.detail)+'</p>':'');
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(shortTitle(order))+'</h3><p>'+esc(shortDetail(order))+'</p>';
     return el;
   }
 
@@ -125,7 +151,7 @@
   function counter(name,labelText){
     const el=document.createElement('div');el.className='mc-counter';el.dataset.counter=name;
     el.innerHTML='<span>'+esc(labelText)+'</span><div><button type="button" data-delta="-1" aria-label="Subtract one '+esc(labelText)+'">−</button><b data-count>0</b><button type="button" data-delta="1" aria-label="Add one '+esc(labelText)+'">+</button></div>';
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-delta]');if(!b)return;const v=el.querySelector('[data-count]');v.textContent=String(Math.max(0,n(v.textContent)+n(b.dataset.delta)));updateDraft(el.closest('.mc-report-form'));});
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-delta]');if(!b)return;const v=el.querySelector('[data-count]');v.textContent=String(Math.max(0,n(v.textContent)+n(b.dataset.delta)));updateDraft(el.closest('.mc-inf-form,.mc-cz-form,.mc-credit-form'));});
     return el;
   }
 
@@ -160,8 +186,8 @@
     const wrap=document.createElement('div');wrap.className='mc-credit-form';wrap.dataset.reportType=type;
     wrap.innerHTML='<div class="mc-form-label"><strong>'+esc(copy.title)+'</strong><small>'+esc(copy.note)+'</small></div><label class="mc-credit-entry"><span>Amount this report</span><div><input type="number" min="0" max="100000" step="0.1" value="0" inputmode="decimal" data-credit-amount><b>M Cr</b></div></label><div class="mc-credit-quick"><button type="button" data-credit-delta="-5">−5M</button><button type="button" data-credit-delta="-1">−1M</button><button type="button" data-credit-delta="1">+1M</button><button type="button" data-credit-delta="5">+5M</button><button type="button" data-credit-delta="10">+10M</button></div><div class="mc-draft-score">This report: <strong data-draft>0 M Cr</strong></div><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button>';
     const input=wrap.querySelector('[data-credit-amount]');
-    input.addEventListener('input',()=>updateDraft(wrap.closest('.mc-report-form')));
-    wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap.closest('.mc-report-form'));});
+    input.addEventListener('input',()=>updateDraft(wrap));
+    wrap.querySelector('.mc-credit-quick').addEventListener('click',e=>{const btn=e.target.closest('[data-credit-delta]');if(!btn)return;input.value=String(Math.max(0,Math.round((n(input.value)+n(btn.dataset.creditDelta))*10)/10));updateDraft(wrap);});
     wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,type));
     return wrap;
   }
