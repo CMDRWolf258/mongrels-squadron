@@ -178,8 +178,7 @@ Contribution doctrine:
 - **Profitable trade** is offered even when Economy is not explicitly set to Raise. It is optional during a comfortable raise and recommended during a strong control push. Use a target-faction-owned market and useful supply/demand; keep the trade profitable.
 - **Exploration data** is offered as another route using the configured 2M / 5M / 10M urgency tiers. Routine raises keep it optional; urgent control pushes can recommend it as an additional bucket. Sell at a target-faction-owned asset with Universal Cartographics.
 - **Bounty vouchers** may be offered as an optional combat route only when Security is `Ignore` or `Raise`; do not present this alternate when Security is intended to Hold/Lower or when conflict logic applies.
-- **Mining** is offered through target-faction mining/source-and-return missions. Mine the requested mission commodity and choose the Influence reward; this work counts toward the existing mission-INF target rather than creating a second stacked INF quota.
-- **Direct sales of mined commodities are not treated as BGS influence/economy work.** Current community-tested BGS guidance reports that mined-commodity sales themselves do not move trade influence or the Economy slider. Mining therefore appears as a mission route, not as a local-market-sale contribution recipe.
+- **Mining is not generated as an alternate contribution card.** It was removed from the current contribution layer so published/reportable work stays focused on the established mission-INF, trade, exploration, bounty, and conflict routes.
 
 The purpose of these alternate routes is not to maximize the number of mandatory tasks. It is to let members contribute through game loops they enjoy while preserving a clear distinction between **primary required work**, **recommended extra pressure**, and **optional alternate contribution**.
 
