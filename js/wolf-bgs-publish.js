@@ -32,6 +32,7 @@
     const optional=task.dataset.orderOptional==='true'||/\bOPTIONAL\b/i.test(label);
     const recommended=task.dataset.orderRecommended==='true'||/\bRECOMMENDED\b/i.test(label);
     const reporting=reportingFor(kind,amount);
+    if(reporting)reporting.blitz=/\bBLITZ\b/i.test(task.textContent||'');
     return {
       id:'bgs-'+slug(system)+'-'+String(index+1).padStart(2,'0')+'-'+Date.now().toString(36),
       system,
@@ -159,7 +160,7 @@
     }
     const status=p.querySelector('[data-publish-status]');
     if(status&&!publishBusy){
-      if(systems.length)lastPublishMessage='';
+      if(systems.length){lastPublishMessage='';status.dataset.state='';}
       if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
       else if(overTasks)status.textContent='Queue has '+taskCount+' tasks; the Daily Orders API supports at most 24 per cycle.';
       else if(systems.length)status.textContent='Ready to publish a new reporting cycle. Review warnings before continuing.';
