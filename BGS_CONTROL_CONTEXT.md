@@ -10,9 +10,9 @@ Wolf BGS Control is a site-admin-only command deck for CMDR Wolf258. It is inten
 
 Core model:
 
-> Programmed logic handles monitoring, prioritization, balancing and clerical reasoning; Advanced Intelligence may suggest changes; Wolf remains the final authority; members eventually receive simple structured Daily Orders.
+> Programmed logic handles monitoring, prioritization, balancing and clerical reasoning; Advanced Intelligence may suggest changes; Wolf remains the final authority; members receive simple structured Daily Orders only after Wolf explicitly queues and publishes reviewed live-system previews.
 
-No current preview publishes Daily Orders automatically.
+Live-system previews can now be explicitly added to a **Publish Queue** and published by Wolf. Nothing auto-publishes, and Mandalore is hard-blocked from the queue.
 
 ## Primary files
 
@@ -22,6 +22,7 @@ No current preview publishes Daily Orders automatically.
 - `css/wolf-bgs-sliders.css`
 - `css/wolf-bgs-order-preview.css`
 - `css/wolf-bgs-conflicts.css`
+- `css/wolf-bgs-publish.css`
 - `css/wolf-bgs-lab.css`
 - `css/wolf-bgs-screenshot.css`
 - `js/wolf-bgs-inheritance.js`
@@ -31,6 +32,7 @@ No current preview publishes Daily Orders automatically.
 - `js/wolf-bgs-order-preview.js`
 - `js/wolf-bgs-conflicts.js`
 - `js/wolf-bgs-contribution-options.js`
+- `js/wolf-bgs-publish.js`
 - `js/wolf-bgs-lab.js`
 - `js/wolf-bgs-screenshot.js`
 - `functions/api/operations/wolf-bgs.js`
@@ -306,7 +308,7 @@ For War/Civil War winner objectives, the preview generates Conflict Zone + Comba
 
 For Election winner objectives, the preview uses the existing normal mission-INF workload as an operational target and directs non-combat/economic mission work for the intended winner, with trade/exploration as supplementary options where useful.
 
-Conflict-specific tasks are injected into the preview after the ordinary deterministic plan is rendered. Order Preview remains preview-only and publishing remains disabled.
+Conflict-specific tasks are injected into the preview after the ordinary deterministic plan is rendered. A reviewed live-system conflict task can enter the Publish Queue; current live Conflict Logic v1 may still publish a CZ reporter without a quantified target until Conflict v2 doctrine is promoted from Mandalore.
 
 Future conflict work still needed:
 
@@ -320,7 +322,7 @@ Future conflict work still needed:
 
 Each expanded system can mount a dedicated **Order Preview / Generator** below the faction/slider/conflict configuration.
 
-It is deterministic and preview-only. It reads current on-screen values, including unsaved edits, so Wolf can test scenarios before committing configuration.
+It is deterministic and reads current on-screen values, including unsaved edits, so Wolf can test scenarios before committing configuration. The preview itself does not publish on generation; Wolf must explicitly add a live-system preview to the Publish Queue and then confirm a whole Daily Orders publish.
 
 The preview can produce:
 
@@ -342,7 +344,31 @@ The preview can produce:
 
 Overlapping mission-INF needs for the same faction are merged using the higher required workload rather than blindly summed. Example: if a faction already needs 25 INF for its own Support objective and the Security counterweight calculation asks for 15 INF, the preview keeps a 25-INF task because that work also satisfies the smaller counterweight need.
 
-The preview clearly shows `PREVIEW ONLY` and `Publish disabled`. It does not write Daily Orders.
+The preview remains a review surface. Live systems with **Allow into Daily Orders** enabled and at least one generated task receive an **Add to Publish Queue** control. Queued previews are snapshots; if the live preview changes afterward the control becomes **Refresh Queued Preview** so stale queued work is visible before publication.
+
+
+## Daily Orders publish bridge
+
+`js/wolf-bgs-publish.js` connects reviewed Wolf BGS Control output to member-facing Mission Control without creating a second order store.
+
+Workflow:
+
+1. Generate/review a live-system Order Preview.
+2. The generator, conflict layer and contribution-options layer expose structured task metadata on each rendered task: kind, faction, amount, optional/recommended state and conflict type where relevant.
+3. Wolf presses **Add to Publish Queue** on the systems intended for the next cycle.
+4. The queue shows system/task/warning counts and enforces the configured maximum Daily Order systems plus the current 24-order API ceiling.
+5. **Publish Daily Orders** requires an explicit confirmation and writes one complete replacement order set through the existing authenticated `/api/operations/orders` endpoint.
+6. The publish intentionally omits the old `cycleId`, so the server creates a **new reporting cycle**. Existing historical report records remain stored, but members start at zero progress for the new set.
+7. Mission Control receives explicit `faction`, `kind`, `source:"wolf-bgs"` and reporting metadata rather than relying on text inference.
+
+Safety boundaries:
+
+- Nothing auto-publishes merely because settings change or a preview regenerates.
+- `Allow into Daily Orders` must be enabled for a live system to enter the queue.
+- Mandalore / `data-bgs-lab="true"` is excluded from the publisher regardless of its generated preview.
+- Preview warnings do not silently block Wolf's authority, but the final confirmation states how many warnings remain.
+- Failed publish requests leave the previous member Daily Orders set in place.
+- Officer/Site Admin manual Daily Orders editing remains available and preserves structured BGS metadata and the current cycle when editing an already-published set.
 
 ## Mandalore BGS Lab
 
@@ -437,7 +463,7 @@ The next major stages after validating the Mandalore lab and conflict-pair behav
 
 - conflict score/day tracking and CZ workload calibration;
 - ranked Daily Orders queue;
-- explicit approve/edit/publish flow;
+- richer ranked queue/review controls beyond the first explicit live-system publish bridge;
 - richer member activity/history views and admin report correction tools;
 - current-cycle reporting dashboard;
 - ~14-cycle operator/history view;

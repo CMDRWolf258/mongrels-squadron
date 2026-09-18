@@ -86,9 +86,9 @@
     });
   }
 
-  function taskMarkup({label,instruction,detail,note='',optional=false,recommended=false}) {
+  function taskMarkup({kind,faction,amount,label,instruction,detail,note='',optional=false,recommended=false}) {
     const status = optional ? ' · OPTIONAL' : recommended ? ' · RECOMMENDED' : '';
-    return `<article class="wolf-order-task wolf-contribution-option-task"><div class="wolf-order-task-number">+</div><div><span class="wolf-order-task-type">${esc(label + status)}</span><strong>${esc(instruction)}</strong><p>${esc(detail)}</p>${note ? `<small>${esc(note)}</small>` : ''}</div></article>`;
+    return `<article class="wolf-order-task wolf-contribution-option-task" data-order-kind="${esc(kind)}" data-order-faction="${esc(faction)}" data-order-amount="${esc(amount)}" data-order-optional="${optional?'true':'false'}" data-order-recommended="${recommended?'true':'false'}"><div class="wolf-order-task-number">+</div><div><span class="wolf-order-task-type">${esc(label + status)}</span><strong>${esc(instruction)}</strong><p>${esc(detail)}</p>${note ? `<small>${esc(note)}</small>` : ''}</div></article>`;
   }
 
   function contributionTasks(card, host) {
@@ -102,6 +102,7 @@
 
       if (!existingTask(host,row.name,['trade'])) {
         result.push(taskMarkup({
+          kind:'trade', faction:row.name, amount:tradeGoal(),
           label:'INFLUENCE / TRADE',
           instruction:`Generate about ${tradeGoal()}M Cr of profitable trade for ${row.name}`,
           detail:`${routine ? 'Alternate contribution route for a comfortable influence raise.' : 'Use profitable trade as an additional positive-influence bucket during the control push.'}${controlText}`,
@@ -113,6 +114,7 @@
 
       if (!existingTask(host,row.name,['exploration'])) {
         result.push(taskMarkup({
+          kind:'exploration', faction:row.name, amount:explorationGoal(card),
           label:'INFLUENCE / EXPLORATION',
           instruction:`Sell about ${explorationGoal(card)}M Cr of exploration data for ${row.name}`,
           detail:`${routine ? 'Optional alternative for members who prefer exploration.' : push.urgent ? 'Useful additional bucket for an urgent control push.' : 'Alternative contribution bucket for the control push.'}${controlText}`,
@@ -124,6 +126,7 @@
 
       if ((row.security === 'ignore' || row.security === 'raise') && !existingTask(host,row.name,['bount'])) {
         result.push(taskMarkup({
+          kind:'bounties', faction:row.name, amount:bountyGoal(),
           label:'INFLUENCE / BOUNTIES',
           instruction:`Turn in about ${bountyGoal()}M Cr of bounty vouchers for ${row.name}`,
           detail:`Another positive contribution route for members who prefer combat${row.security === 'raise' ? '; this also aligns with the configured Security raise objective' : ''}.${controlText}`,

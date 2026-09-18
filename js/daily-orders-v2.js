@@ -22,7 +22,8 @@
     if(!type&&/\bbount(?:y|ies)\b[^.]{0,80}\bvouchers?\b|\bbounty vouchers?\b/i.test(text))type='bounties';
     if(!type&&/\bexploration data\b/i.test(text))type='exploration';
     if(!type&&/\bprofitable trade\b|\btrade profit\b/i.test(text))type='trade';
-    let target=Number.isFinite(Number(explicit.target))?Number(explicit.target):null;
+    const explicitTarget=explicit.target===null||explicit.target===undefined||explicit.target===''?null:Number(explicit.target);
+    let target=Number.isFinite(explicitTarget)?explicitTarget:null;
     if(target===null&&type==='cz'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:CZ\s*)?(?:points?|pts?)\b/i);if(m)target=Number(m[1]);}
     if(target===null&&type==='inf'){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*INF\b/i);if(m)target=Number(m[1]);}
     if(target===null&&CREDIT_TYPES.has(type)){const m=text.match(/([0-9]+(?:\.[0-9]+)?)\s*M\s*Cr\b/i);if(m)target=Number(m[1]);}
@@ -94,7 +95,7 @@
 
   function orderBrief(order,index){
     const el=document.createElement('article');el.className='mc-order-brief';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+'</div><h3>'+esc(order.task||'Operational task')+'</h3>'+(order.detail?'<p>'+esc(order.detail)+'</p>':'');
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(order.task||'Operational task')+'</h3>'+(order.detail?'<p>'+esc(order.detail)+'</p>':'');
     return el;
   }
 

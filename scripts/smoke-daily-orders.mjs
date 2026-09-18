@@ -12,14 +12,16 @@ for(const pattern of [/mc-system-order-card/,/SQUAD PROGRESS/,/CZ victories/,/Lo
 new Function(client);
 
 const apiSource=readFileSync('functions/api/operations/order-reports.js','utf8');
-for(const pattern of [/ALLOWED_ACCESS/,/order-report:/,/daily-order-report/,/CZ_WEIGHTS/,/CREDIT_TYPES/,/bounties/,/trade/,/exploration/,/normalizeCredits/,/safeMillions/,/lossLow/,/disconnectLow/,/czScore/,/infScore/,/reporterCount/,/submissions/]) assert.match(apiSource,pattern);
+for(const pattern of [/ALLOWED_ACCESS/,/order-report:/,/daily-order-report/,/CZ_WEIGHTS/,/CREDIT_TYPES/,/bounties/,/trade/,/exploration/,/normalizeCredits/,/safeMillions/,/faction: order\.faction/,/kind: order\.kind/,/source: order\.source/,/lossLow/,/disconnectLow/,/czScore/,/infScore/,/reporterCount/,/submissions/]) assert.match(apiSource,pattern);
 const api=await import('../functions/api/operations/order-reports.js');
 assert.equal(typeof api.onRequestGet,'function');
 assert.equal(typeof api.onRequestPost,'function');
+assert.match(apiSource,/value===null\|\|value===undefined\|\|value===''/,'Null workload targets must remain unquantified');
 
 const orders=readFileSync('functions/api/operations/orders.js','utf8');
 assert.match(orders,/cycleId/);
 assert.match(orders,/reporting/);
+for(const pattern of [/faction/,/kind/,/source/,/explicitTarget/,/source\.target === null/]) assert.match(orders,pattern);
 for(const pattern of [/bounties/,/trade/,/exploration/,/M\\s\*Cr/]) assert.match(orders,pattern);
 
 console.log('✓ Mission Control expandable system cards and structured squad reporting are wired');
