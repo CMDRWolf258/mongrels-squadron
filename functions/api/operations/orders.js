@@ -217,6 +217,9 @@ function normalizeOrder(order, index) {
   return {
     id: cleanText(source.id, `order-${index + 1}`, 80),
     system: cleanText(source.system, '', 120),
+    faction: cleanText(source.faction, '', 120),
+    kind: cleanText(source.kind, '', 60),
+    source: cleanText(source.source, '', 60),
     priority: cleanText(source.priority, '', 40),
     task: cleanText(source.task, 'Operational task', 220),
     detail: cleanText(source.detail, '', 900),
