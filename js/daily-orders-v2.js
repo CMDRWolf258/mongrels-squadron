@@ -94,7 +94,7 @@
 
   function orderBrief(order,index){
     const el=document.createElement('article');el.className='mc-order-brief';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+'</div><h3>'+esc(order.task||'Operational task')+'</h3>'+(order.detail?'<p>'+esc(order.detail)+'</p>':'');
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+(order.status?'<b>'+esc(order.status)+'</b>':'')+(order.faction?'<b>'+esc(order.faction)+'</b>':'')+'</div><h3>'+esc(order.task||'Operational task')+'</h3>'+(order.detail?'<p>'+esc(order.detail)+'</p>':'');
     return el;
   }
 
