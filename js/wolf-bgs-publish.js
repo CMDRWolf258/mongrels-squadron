@@ -4,6 +4,7 @@
   let panel=null;
   let publishBusy=false;
   let lastPublishMessage='';
+  let lastPublishError='';
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clean=value=>String(value||'').trim().replace(/\s+/g,' ');
@@ -81,8 +82,8 @@
     panel=section;
     panel.addEventListener('click',event=>{
       const remove=event.target.closest('[data-remove-queued-system]');
-      if(remove){queue.delete(remove.dataset.removeQueuedSystem);syncAll();return;}
-      if(event.target.closest('[data-clear-publish-queue]')){queue.clear();syncAll();return;}
+      if(remove){lastPublishError='';queue.delete(remove.dataset.removeQueuedSystem);syncAll();return;}
+      if(event.target.closest('[data-clear-publish-queue]')){lastPublishError='';queue.clear();syncAll();return;}
       if(event.target.closest('[data-publish-daily-orders]'))publish();
     });
     syncPanel();
@@ -108,6 +109,7 @@
         if(!eligible(card))return;
         const existing=queue.get(system);
         const sig=currentSignature(card);
+        lastPublishError='';
         if(existing&&existing.signature===sig){queue.delete(system);}
         else{queue.set(system,snapshot(card));}
         syncAll();
@@ -160,8 +162,10 @@
     }
     const status=p.querySelector('[data-publish-status]');
     if(status&&!publishBusy){
-      if(systems.length){lastPublishMessage='';status.dataset.state='';}
-      if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
+      if(systems.length&&lastPublishError){status.textContent=lastPublishError;status.dataset.state='error';}
+      else if(systems.length){lastPublishMessage='';status.dataset.state='';}
+      if(lastPublishError&&systems.length){}
+      else if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
       else if(overTasks)status.textContent='Queue has '+taskCount+' tasks; the Daily Orders API supports at most 24 per cycle.';
       else if(systems.length)status.textContent='Ready to publish a new reporting cycle. Review warnings before continuing.';
       else if(lastPublishMessage){status.innerHTML=lastPublishMessage;status.dataset.state='success';}
@@ -200,12 +204,14 @@
       });
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
+      lastPublishError='';
       lastPublishMessage='Published '+orders.length+' task'+(orders.length===1?'':'s')+' in a new Daily Orders cycle. <a href="../operations/#daily-orders">Open Mission Control →</a>';
       queue.clear();
       syncAll();
     }catch(error){
       console.error('Could not publish BGS Daily Orders',error);
-      if(status){status.textContent='Could not publish Daily Orders. Current member orders were not intentionally replaced by this failed request.';status.dataset.state='error';}
+      lastPublishError='Could not publish Daily Orders. The existing member order set remains in place.';
+      if(status){status.textContent=lastPublishError;status.dataset.state='error';}
     }finally{
       publishBusy=false;syncPanel();
     }
