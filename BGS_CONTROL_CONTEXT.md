@@ -1,6 +1,6 @@
 # Wolf BGS Control — Architecture Context
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-18_
 
 Read `PROJECT_CONTEXT.md` first. Repository code is authoritative if this file, memory, old chats, or screenshots disagree.
 

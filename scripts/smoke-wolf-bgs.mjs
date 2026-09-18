@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const critical = [
-  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-lab.css',
-  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-lab.js',
+  'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-conflict-lab-v2.css', 'css/wolf-bgs-lab.css',
+  'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-conflict-lab-v2.js', 'js/wolf-bgs-lab.js',
   'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js', 'functions/api/operations/wolf-bgs-conflicts.js',
   'scripts/enrich_bgs_boards.py', 'data/live-bgs-boards.json',
 ];
@@ -21,7 +21,7 @@ assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot pu
 assert.match(page,/data-lab-scenario="dual"/,'Dual-conflict lab scenario is missing');
 assert.match(page,/data-lab-scenario="ambiguous"/,'Ambiguous four-way conflict lab scenario anchor is missing');
 assert.match(page,/wolf-bgs-conflicts\.js/,'Conflict client is not loaded');
-assert.match(page,/wolf-bgs-lab\.js/,'Lab client is not loaded');
+assert.match(page,/wolf-bgs-lab\\.js/,'Lab client is not loaded');\nassert.match(page,/wolf-bgs-conflict-lab-v2\\.js/,'Conflict v2 lab client is not loaded');\nassert.match(page,/wolf-bgs-conflict-lab-v2\\.css/,'Conflict v2 lab stylesheet is not loaded');
 assert.ok(page.indexOf('wolf-bgs-rules.js') < page.indexOf('wolf-bgs-sliders.js'),'Slider client must load after rules');
 assert.ok(page.indexOf('wolf-bgs-sliders.js') < page.indexOf('wolf-bgs-order-preview.js'),'Order Preview must load after slider controls');
 assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-conflicts.js'),'Conflict layer must post-process the deterministic Order Preview');
@@ -92,7 +92,7 @@ new Function(rulesClient);
 new Function(slidersClient);
 new Function(orderClient);
 new Function(conflictClient);
-new Function(labClient);
+new Function(labClient);\nconst conflictLabV2=readFileSync('js/wolf-bgs-conflict-lab-v2.js','utf8');\nfor(const pattern of [/7-Day Progression/,/BLITZ/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Low = /,/Medium = /,/High = /,/Combat Bonds redeemed/,/\\+2 INF/,/\\+3 INF/,/\\+4 INF/,/\\+5 INF/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \\/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);\nnew Function(conflictLabV2);
 
 const rulesApi=readFileSync('functions/api/operations/wolf-bgs-rules.js','utf8');
 for (const pattern of [
