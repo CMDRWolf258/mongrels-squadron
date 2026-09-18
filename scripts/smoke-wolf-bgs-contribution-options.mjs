@@ -18,6 +18,9 @@ for(const pattern of [
   /OPTIONAL/,
   /RECOMMENDED/,
   /data-wolf-contribution-options/,
+  /data-order-kind/,
+  /data-order-faction/,
+  /data-order-amount/,
 ]) assert.match(source,pattern);
 
 assert.doesNotMatch(source,/INFLUENCE \/ MINING MISSIONS/,'Mining mission options should not clutter the generated contribution list');
@@ -25,7 +28,7 @@ assert.doesNotMatch(source,/Direct sale of mined commodities is not counted here
 assert.doesNotMatch(source,/sell mined commodities.*BGS influence/i,'Direct mined-commodity sales must not be presented as BGS influence work');
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
-assert.match(page,/wolf-bgs-contribution-options\.js\?v=2/,'Wolf BGS page must load the current contribution variety layer directly');
+assert.match(page,/wolf-bgs-contribution-options\.js\?v=3/,'Wolf BGS page must load the current contribution variety layer directly');
 assert.match(page,/wolf-bgs-lab\.js\?v=2/,'Lab cache version should remain current');
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-contribution-options.js'),'Contribution options must load after conflict logic');
 assert.ok(page.indexOf('wolf-bgs-contribution-options.js') < page.indexOf('wolf-bgs-lab.js'),'Contribution options must load before lab interception');
