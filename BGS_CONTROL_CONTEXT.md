@@ -421,6 +421,10 @@ Member Daily Orders are grouped by **system** into compact expandable cards. The
 
 Current report types:
 - **Mission INF:** +2 / +3 / +4 / +5 reward counters; the member taps the reward received while turning missions in and may correct the draft with minus controls before Submit.
+- **Bounty vouchers:** report M Cr actually redeemed for the ordered faction.
+- **Profitable trade:** report M Cr of qualifying **profit**, not gross cargo sale value.
+- **Exploration data:** report M Cr of Universal Cartographics sale value delivered to the ordered faction's appropriate asset.
+- Credit-based reporters share a compact direct-entry + quick-adjust UI (−5M / −1M / +1M / +5M / +10M) so the member can report exact-ish totals without excessive tapping.
 - **War/Civil War CZ work:** Low / Medium / High victory counters; failed/abandoned and full-instance-disconnect results are available in a normally collapsed failure section; Combat Bonds use a simple redeemed toggle.
 - **Wing rule:** one shared CZ instance is one BGS result. Only one wing member reports that instance. A wingmate dropping/leaving is not a failure if at least one Mongrel remains and the shared CZ is won.
 - **Net progress:** successful CZs add their point weight; failed/abandoned or full-instance-disconnected CZs subtract the same starting difficulty weight. Current starting weights are Low 1.0, Medium 1.3, High 1.6. These are Mongrel operational weights, not claimed Frontier formulas.
