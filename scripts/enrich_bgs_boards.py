@@ -26,6 +26,7 @@ API_URL = "https://vault.elitehub.eu/graphql"
 USER_AGENT = "MongrelsSquadronSite-BGS-Boards/1.1 (+Cloudflare Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
 PRESENCE_PAGE_SIZE = 40
+CONFLICT_PAGE_SIZE = 50
 BOARD_BATCH_SIZE = 8
 MAX_FACTIONS_PER_SYSTEM = 12
 BOARD_REQUEST_PAUSE_SECONDS = 1.5
@@ -186,6 +187,32 @@ query MongrelSystemIds($factionId: UUID!, $first: Int!, $after: Cursor) {
 """
 
 
+MONGREL_CONFLICTS_QUERY = r"""
+query MongrelConflicts($name: String!, $first: Int!, $after: Cursor) {
+  factionByName(name: $name) {
+    factionConflicts(first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          id
+          type
+          status
+          factionWonDays
+          opponentWonDays
+          factionStake
+          opponentStake
+          updatedAt
+          opponentFaction { id name }
+          system { id name }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}
+"""
+
+
 def fetch_faction_id() -> str:
     data = gql(FACTION_ID_QUERY, {"name": FACTION_NAME})
     faction = data.get("factionByName")
@@ -232,6 +259,65 @@ def fetch_mongrel_states(faction_id: str) -> dict[str, dict[str, Any]]:
         page += 1
         if page > 100:
             raise RuntimeError("Vault Mongrel-state pagination exceeded 100 pages")
+    return rows
+
+
+def fetch_mongrel_conflicts() -> dict[str, dict[str, Any]]:
+    """Return current Vault conflict records keyed by normalized system name.
+
+    The relation is paged because the Mongrels can accumulate conflict records across
+    many systems. System-state data remains authoritative for whether a conflict is
+    currently relevant; this record supplies the opponent and daily-win score.
+    """
+    rows: dict[str, dict[str, Any]] = {}
+    after: str | None = None
+    page = 1
+    while True:
+        data = gql(
+            MONGREL_CONFLICTS_QUERY,
+            {"name": FACTION_NAME, "first": CONFLICT_PAGE_SIZE, "after": after},
+        )
+        faction = data.get("factionByName")
+        connection = faction.get("factionConflicts") if isinstance(faction, dict) else {}
+        edges = connection.get("edges") if isinstance(connection, dict) else []
+        batch = 0
+        for edge in edges or []:
+            node = edge.get("node") if isinstance(edge, dict) else None
+            system = node.get("system") if isinstance(node, dict) else None
+            opponent = node.get("opponentFaction") if isinstance(node, dict) else None
+            if not isinstance(system, dict) or not system.get("name"):
+                continue
+            faction_won = node.get("factionWonDays")
+            opponent_won = node.get("opponentWonDays")
+            try:
+                faction_won = int(faction_won)
+                opponent_won = int(opponent_won)
+            except (TypeError, ValueError):
+                continue
+            rows[norm(system["name"])] = {
+                "id": str(node.get("id") or ""),
+                "type": str(node.get("type") or ""),
+                "status": str(node.get("status") or ""),
+                "factionWonDays": max(0, faction_won),
+                "opponentWonDays": max(0, opponent_won),
+                "opponentFaction": str(opponent.get("name") or "") if isinstance(opponent, dict) else "",
+                "factionStake": str(node.get("factionStake") or ""),
+                "opponentStake": str(node.get("opponentStake") or ""),
+                "updatedAt": node.get("updatedAt"),
+                "source": "EliteHub Vault / EDDN",
+            }
+            batch += 1
+        print(f"CONFLICT PAGE {page}: {batch} records (total {len(rows)})", flush=True)
+        info = connection.get("pageInfo") if isinstance(connection, dict) else {}
+        if not isinstance(info, dict) or not info.get("hasNextPage"):
+            break
+        next_cursor = info.get("endCursor")
+        if not next_cursor or next_cursor == after:
+            raise RuntimeError("Vault conflict pagination returned no usable next cursor")
+        after = str(next_cursor)
+        page += 1
+        if page > 100:
+            raise RuntimeError("Vault conflict pagination exceeded 100 pages")
     return rows
 
 
@@ -365,6 +451,16 @@ def main() -> int:
         print(f"BOARD DISCOVERY ERR: {exc}", flush=True)
         return write_failure(existing, str(exc), live.get("generatedAt"))
 
+    conflict_rows: dict[str, dict[str, Any]] = {}
+    conflict_sync_ok = True
+    conflict_error = ""
+    try:
+        conflict_rows = fetch_mongrel_conflicts()
+    except Exception as exc:
+        conflict_sync_ok = False
+        conflict_error = str(exc)
+        print(f"CONFLICT SCORE ERR: {exc}", flush=True)
+
     targets: list[dict[str, Any]] = []
     discovery_errors: list[dict[str, str]] = []
     for key, display_name in active_names.items():
@@ -392,6 +488,15 @@ def main() -> int:
             board["fetchedAt"] = now_iso
             board["lastAttemptAt"] = now_iso
             board["stale"] = False
+            if conflict_sync_ok:
+                board["conflict"] = conflict_rows.get(key)
+                board["conflictStale"] = False
+            else:
+                previous = previous_systems.get(display_name)
+                if not previous:
+                    previous = next((value for name, value in previous_systems.items() if norm(name) == key), None)
+                board["conflict"] = previous.get("conflict") if isinstance(previous, dict) else None
+                board["conflictStale"] = bool(board.get("conflict"))
             merged[display_name] = board
             successful += 1
             continue
@@ -415,6 +520,8 @@ def main() -> int:
                 "stale": True,
                 "fetchedAt": None,
                 "lastAttemptAt": now_iso,
+                "conflict": conflict_rows.get(key) if conflict_sync_ok else None,
+                "conflictStale": not conflict_sync_ok,
             }
 
     output = {
@@ -425,6 +532,9 @@ def main() -> int:
         "syncOk": successful == len(active_names),
         "successfulSystems": successful,
         "requestedSystems": len(active_names),
+        "conflictSyncOk": conflict_sync_ok,
+        "conflictError": conflict_error[:500] if conflict_error else "",
+        "conflictRecords": len(conflict_rows),
         "errors": errors[:50],
         "systems": merged,
     }
