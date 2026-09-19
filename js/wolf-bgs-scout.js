@@ -11,6 +11,7 @@
   const reveal=host.querySelector('[data-scout-token-reveal]');
   const revealValue=host.querySelector('[data-scout-token-value]');
   const copyButton=host.querySelector('[data-copy-scout-token]');
+  let networkFingerprint='';
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const fmt=value=>{
@@ -66,7 +67,12 @@
       const response=await fetch(`${API}?_=${Date.now()}`,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'load_failed');
+      const rows=Array.isArray(data?.tokens)?data.tokens:[];
+      const nextFingerprint=rows.map(row=>`${row.id}:${row.lastSeenAt||''}:${row.lastEventAt||''}:${row.lastSystem||''}`).sort().join('|');
+      const changed=Boolean(networkFingerprint)&&nextFingerprint!==networkFingerprint;
+      networkFingerprint=nextFingerprint;
       render(data);
+      if(changed&&typeof window.WolfBgsRefresh==='function')window.WolfBgsRefresh();
     }catch(error){
       console.error(error);
       setMessage('Could not load Scout Network.','error');
@@ -122,5 +128,5 @@
     }
   });
   load();
-  window.setInterval(load,60000);
+  window.setInterval(load,30000);
 })();
