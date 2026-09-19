@@ -273,6 +273,10 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
                 detail = ""
             if response.status_code == 401:
                 _set_status("Token rejected")
+            elif response.status_code == 403 and detail == "system_not_authorized":
+                _set_status(f"Not assigned: {payload['system']}")
+            elif response.status_code == 429 and detail == "scout_rate_limit_reached":
+                _set_status("Scout rate limit reached")
             elif response.status_code == 422 and detail == "mongrels_not_present":
                 _set_status("Skipped — Mongrels absent")
             else:
