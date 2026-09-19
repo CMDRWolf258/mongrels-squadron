@@ -198,6 +198,14 @@ const client=readFileSync('js/wolf-bgs-scout.js','utf8');
 for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/EDIT ACCESS/,/REVOKE/,/PATCH/,/restricted/,/trusted/,/allowedSystems/,/WolfBgsRefresh/,/setInterval\(\(\)=>load\(\),30000\)/])assert.match(client,pattern);
 new Function(client);
 
+const scoutCss=readFileSync('css/wolf-bgs.css','utf8');
+for(const pattern of [
+  /\.wolf-bgs-page \.wolf-scout-system-checks input\[type="checkbox"\]/,
+  /overflow-x:hidden/,
+  /text-transform:none/,
+  /word-break:normal/,
+])assert.match(scoutCss,pattern);
+
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
 for(const pattern of [/wolf-scout-source-chip/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/])assert.match(baseClient,pattern);
 new Function(baseClient);
