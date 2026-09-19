@@ -64,7 +64,7 @@
     return `
       <article class="pvp-record-card" data-record-key="${safe(category.key)}">
         <div class="pvp-record-card-head">
-          <div><span>${safe(category.label)}</span><h3>${safe(category.title)}</h3></div>
+          <div><h3>${safe(category.title)}</h3><span>${safe(category.label)}</span></div>
           ${tie ? `<small>TIE · ${entries.length}</small>` : ''}
         </div>
         <div class="pvp-record-card-body">${body}</div>
