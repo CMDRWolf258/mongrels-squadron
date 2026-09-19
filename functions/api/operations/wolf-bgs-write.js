@@ -124,6 +124,20 @@ export async function onRequestPut({ request, env }) {
     if (!body.queueSelected) delete next.queueSelected;
     if (hasStoredSystemData(next)) raw.systemSettings[name] = next;
     else delete raw.systemSettings[name];
+  } else if (action === 'set-conflict-day') {
+    const name = cleanText(body?.system, '', 140);
+    const day = Math.round(Number(body?.day));
+    if (!name) return json({ ok:false, error:'system_required' }, { status:400, headers:privateHeaders() });
+    if (!Number.isFinite(day) || day < 1 || day > 7) {
+      return json({ ok:false, error:'conflict_day_invalid' }, { status:400, headers:privateHeaders() });
+    }
+    raw.conflictDayOverrides = normalizeConflictDayOverrides(raw.conflictDayOverrides);
+    raw.conflictDayOverrides[name] = { day, setAt:now, setBy:actor };
+  } else if (action === 'clear-conflict-day') {
+    const name = cleanText(body?.system, '', 140);
+    if (!name) return json({ ok:false, error:'system_required' }, { status:400, headers:privateHeaders() });
+    raw.conflictDayOverrides = normalizeConflictDayOverrides(raw.conflictDayOverrides);
+    delete raw.conflictDayOverrides[name];
   } else if (action === 'ack-alerts') {
     raw.alertEpisodes = raw.alertEpisodes && typeof raw.alertEpisodes === 'object' ? raw.alertEpisodes : {};
     for (const episode of Object.values(raw.alertEpisodes)) {
@@ -151,6 +165,7 @@ export async function onRequestPut({ request, env }) {
   raw.defaults = normalizeDefaults(raw.defaults);
   raw.systemDefaults = normalizeSystemDefaults(raw.systemDefaults);
   raw.manualSnapshots = raw.manualSnapshots && typeof raw.manualSnapshots === 'object' ? raw.manualSnapshots : {};
+  raw.conflictDayOverrides = normalizeConflictDayOverrides(raw.conflictDayOverrides);
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(raw));
 
   return json({ ok: true, action, updatedAt: now, updatedBy: actor }, { headers: privateHeaders() });
@@ -168,6 +183,7 @@ async function readRawControl(env) {
     systemSettings: {},
     manualSnapshots: {},
     alertEpisodes: {},
+    conflictDayOverrides: {},
   };
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -181,11 +197,28 @@ async function readRawControl(env) {
       systemSettings: stored.systemSettings && typeof stored.systemSettings === 'object' ? stored.systemSettings : {},
       manualSnapshots: stored.manualSnapshots && typeof stored.manualSnapshots === 'object' ? stored.manualSnapshots : {},
       alertEpisodes: stored.alertEpisodes && typeof stored.alertEpisodes === 'object' ? stored.alertEpisodes : {},
+      conflictDayOverrides: normalizeConflictDayOverrides(stored.conflictDayOverrides),
     };
   } catch (error) {
     console.error('Could not read raw Wolf BGS Control state', error);
     return empty;
   }
+}
+
+function normalizeConflictDayOverrides(value) {
+  const out = {};
+  if (!value || typeof value !== 'object') return out;
+  for (const [system, item] of Object.entries(value)) {
+    const name = cleanText(system, '', 140);
+    const day = Math.round(Number(item?.day));
+    if (!name || !Number.isFinite(day) || day < 1 || day > 7) continue;
+    out[name] = {
+      day,
+      setAt:cleanText(item?.setAt, '', 80) || null,
+      setBy:cleanText(item?.setBy, '', 120),
+    };
+  }
+  return out;
 }
 
 function normalizeSparseSettingsMap(value, systemDefaults) {
