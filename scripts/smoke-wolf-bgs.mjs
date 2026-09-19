@@ -10,11 +10,11 @@ const critical = [
 for (const path of critical) assert.ok(existsSync(path), `Wolf BGS Control critical file is missing: ${path}`);
 
 const page = readFileSync('wolf-bgs/index.html','utf8');
-for (const pattern of [/Wolf BGS Control/,/data-global-form/,/data-system-list/,/data-system-defaults-form/,/data-page-size/,/data-favorites-first/,/data-lowest-five-watch/,/wolf-time-input/]) assert.match(page,pattern);
+for (const pattern of [/Wolf BGS Control/,/data-global-form/,/data-system-list/,/data-system-defaults-form/,/data-page-size/,/data-favorites-first/,/data-lowest-five-watch/,/wolf-time-input/,/data-faction-alert-list/,/data-queue-selector-summary/,/data-active-board-view/]) assert.match(page,pattern);
 assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page default should be 20');
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
-assert.match(page,/wolf-bgs-order-preview\.js\?v=4/,'Order Preview cache version should be v4');
+assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
 assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
 assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
@@ -34,7 +34,7 @@ assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-con
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-lab.js'),'Lab interception must load after conflict controls');
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
+for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/setBoardView/,/matchesBoardView/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
 
 const inheritanceClient=readFileSync('js/wolf-bgs-inheritance.js','utf8');
 assert.match(inheritanceClient,/wolf-bgs-write/);
@@ -70,7 +70,7 @@ for (const pattern of [
   /Prefer economic missions where practical/,/Prefer security\/combat-aligned missions where practical/,
   /automated negative-work actions are disabled/,/Suppress \/ lower .*positive redistribution/,
   /Manual asset check: sell at a station\/asset owned by/,/asset ownership is not yet verified by automation/,
-  /Overlapping same-faction counterweight needs keep the higher INF workload/,/data-order-kind/,/data-order-faction/,/data-order-amount/,
+  /Overlapping same-faction counterweight needs keep the higher INF workload/,/Retreat is pending for the Mongrels/,/emergency auto-queueing/,/data-order-kind/,/data-order-faction/,/data-order-amount/,
 ]) assert.match(orderClient,pattern);
 assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be generated as a BGS task');
 
@@ -103,7 +103,7 @@ const conflictLabV2=readFileSync('js/wolf-bgs-conflict-lab-v2.js','utf8');
 for(const pattern of [/7-Day Progression/,/BLITZ/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
 new Function(conflictLabV2);
 const publishClient=readFileSync('js/wolf-bgs-publish.js','utf8');
-for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/dataset\.orderKind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/,/source:'wolf-bgs'/,/reportingFor/]) assert.match(publishClient,pattern);
+for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/dataset\.orderKind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/,/source:'wolf-bgs'/,/reportingFor/,/autoQueueSource/,/queueSource/,/suppressedSignatures/,/evaluateOperationalCards/,/wolf-bgs-queue-selector-updated/,/RETREAT|retreat/]) assert.match(publishClient,pattern);
 new Function(publishClient);
 
 const rulesApi=readFileSync('functions/api/operations/wolf-bgs-rules.js','utf8');
@@ -131,10 +131,10 @@ const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','ut
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alert/,/retreatPending/,/refreshAlertEpisodes/]) assert.match(apiSource,pattern);
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
-for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/]) assert.match(writeApi,pattern);
+for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alert/,/alertEpisodes/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-bgs-boards\.json/]) assert.match(boardUpdater,pattern);
