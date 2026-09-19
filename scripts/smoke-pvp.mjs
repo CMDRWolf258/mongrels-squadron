@@ -126,7 +126,8 @@ const duelbotApi = readFileSync(duelbotApiPath, 'utf8');
 for (const pattern of [
   /readSession/,
   /DUELBOT_API_TOKEN/,
-  /DUELBOT_LEADERBOARD_URL/,
+  /DUELBOT_ENDPOINT/,
+  /duelbot\.fitzbound\.duckdns\.org\/api\/v1\/leaderboard/,
   /Authorization/,
   /Bearer /,
   /normalizeDuelBotLeaderboard/,
