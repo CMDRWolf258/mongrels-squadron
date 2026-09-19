@@ -281,6 +281,13 @@
     const diversify=rules.workload?.diversifyBuckets!==false && Number(rules.workload?.preferredOperators??3)>1;
     board.forEach(row=>row.cardSystem=system);
 
+    const mongrelRow=board.find(row=>norm(row.name)===norm(MONGREL));
+    const mongrelRetreatPending=Boolean(mongrelRow&&norm(mongrelRow.pending).includes('retreat'));
+    if(mongrelRetreatPending){
+      addMissionTask(tasks,MONGREL,missionStretch,'Retreat is pending for the Mongrels. Emergency support bypasses the Queue Selector.','Continue support until the pending Retreat clears; Retreat does not transition to an active state.');
+      warnings.push('RETREAT PENDING: this system is eligible for emergency auto-queueing even when its Queue Selector is off.');
+    }
+
     const findCounterweight=(source,amount,reason)=>{
       const candidates=candidateList(board,source,rules), allocated=allocateCounterweight(amount,candidates.eligible,rules);
       if (!allocated.length) { warnings.push(`No safe counterweight faction found for ${source.name}: ${reason}`); return; }
