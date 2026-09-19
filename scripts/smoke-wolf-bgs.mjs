@@ -16,7 +16,8 @@ assert.match(page,/<option value="influence-desc" selected>Influence high → lo
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
 assert.match(page,/wolf-bgs-conflicts\.js\?v=6/,'Conflict client cache version should be v6');
-assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=4/,'Conflict prototype cache version should be v4');
+assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
+assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
 assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
 assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
@@ -102,7 +103,7 @@ new Function(orderClient);
 new Function(conflictClient);
 new Function(labClient);
 const conflictLabV2=readFileSync('js/wolf-bgs-conflict-lab-v2.js','utf8');
-for(const pattern of [/Conflict Operations Prototype/,/BLITZ OVERRIDE/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/First observed score/,/SCORE STALE — AUTOMATION FROZEN/,/TIED — HOLD/,/manualHistory/,/WolfBgsConflictLabOrder/,/wolf-bgs-conflict-lab-updated/,/two observed conflict days without a win/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
+for(const pattern of [/Conflict Operations Prototype/,/BLITZ OVERRIDE/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/First observed score/,/DAY UNKNOWN/,/AUTHORITATIVE SCORE KNOWN/,/dayKnown/,/unknownHistory/,/currentDayOptions/,/data-save-unknown-score/,/if\(!dayKnown\)return\{resolved:false/,/SCORE STALE — AUTOMATION FROZEN/,/TIED — HOLD/,/manualHistory/,/WolfBgsConflictLabOrder/,/wolf-bgs-conflict-lab-updated/,/two observed conflict days without a win/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
 new Function(conflictLabV2);
 const publishClient=readFileSync('js/wolf-bgs-publish.js','utf8');
 for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/dataset\.orderKind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/,/source:'wolf-bgs'/,/reportingFor/,/autoQueueSource/,/queueSource/,/suppressedSignatures/,/evaluateOperationalCards/,/wolf-bgs-queue-selector-updated/,/RETREAT|retreat/]) assert.match(publishClient,pattern);
