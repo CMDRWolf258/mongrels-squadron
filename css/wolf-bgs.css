@@ -275,3 +275,5 @@
 .wolf-scout-empty{display:flex;gap:.5rem;align-items:baseline;padding:.55rem .15rem;color:var(--muted);font-size:.74rem}.wolf-scout-empty strong{color:#b8cbd0}
 @media(max-width:1000px){.wolf-scout-install{grid-template-columns:repeat(3,1fr)}.wolf-scout-install>.btn,.wolf-scout-readme-link{grid-column:auto}.wolf-scout-token-row{grid-template-columns:1fr 1fr auto}.wolf-scout-token-row>div:nth-child(3){display:none}}
 @media(max-width:700px){.wolf-scout-network-head{flex-direction:column}.wolf-scout-install{grid-template-columns:1fr}.wolf-scout-token-form{grid-template-columns:1fr}.wolf-scout-token-reveal{grid-template-columns:1fr}.wolf-scout-token-reveal small{grid-column:auto}.wolf-scout-token-row{grid-template-columns:1fr auto}.wolf-scout-token-row>div:nth-child(2),.wolf-scout-token-row>div:nth-child(3){display:none}}
+
+.wolf-scout-source-chip{border-color:rgba(73,205,159,.28)!important;color:#a8dbc7!important;background:rgba(73,205,159,.055)!important}.wolf-scout-source-chip b{color:#d8ffef!important}
