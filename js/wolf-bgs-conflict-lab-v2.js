@@ -12,6 +12,7 @@
     unknownHistory:[],
     unknownDraftA:0,
     unknownDraftB:0,
+    unknownBaselineEditable:false,
     blitz:false,
     days:Array.from({length:7},()=>({winner:''})),
     manualHistory:[],
@@ -169,7 +170,7 @@
     return{level,quiet,heavyLock,leader,reason,baseline};
   }
 
-  function pressureFromObservedHistory(objective,history=s.manualHistory,label='Manual'){
+  function pressureFromObservedHistory(objective,history=s.manualHistory,label='Manual',countRepeated=false){
 
     if(!history.length)return null;
     const first=history[0];
@@ -188,9 +189,9 @@
         if(leaderGain){
           quiet=0;level=raise(level);reason=label+' score confirms another win for the leader; pressure increased.';
           if(after[leader]>=3){level='heavy';heavyLock=true;reason=label+' score confirms the leader reached 3 while observed; Heavy is locked.';}
-        }else if(after.a!==before.a||after.b!==before.b){
+        }else if(countRepeated||after.a!==before.a||after.b!==before.b){
           quiet++;
-          if(!heavyLock&&quiet>=2){level=lower(level);quiet=0;reason='Two observed manual score changes without a leader win lowered pressure one level.';}
+          if(!heavyLock&&quiet>=2){level=lower(level);quiet=0;reason='Two observed score updates without a leader win lowered pressure one level.';}
         }
       }
       return{level,quiet,heavyLock,leader,reason};
@@ -206,9 +207,9 @@
       if(after[opponent]>before[opponent]){
         quiet=0;level=raise(level);reason=label+' score confirms an opponent win; pressure increased one level.';
         if(after[opponent]>=3){level='heavy';heavyLock=true;reason=label+' score confirms the opponent reached 3 while observed; Heavy is locked.';}
-      }else if(after.a!==before.a||after.b!==before.b){
+      }else if(countRepeated||after.a!==before.a||after.b!==before.b){
         quiet++;
-        if(!heavyLock&&quiet>=2){level=lower(level);quiet=0;reason='Two observed manual score changes without an opponent win lowered pressure one level.';}
+        if(!heavyLock&&quiet>=2){level=lower(level);quiet=0;reason='Two observed score updates without an opponent win lowered pressure one level.';}
       }
     }
     return{level,quiet,heavyLock,reason};
@@ -224,7 +225,7 @@
     if(!s.dayKnown){
       const latest=s.unknownHistory[s.unknownHistory.length-1];
       if(!latest)return{source:s.source,score:null,completed:null,dayKnown:false,pressure:null,stale:s.source==='stale',manual:false};
-      const p=pressureFromObservedHistory(s.objective,s.unknownHistory,'Observed');
+      const p=pressureFromObservedHistory(s.objective,s.unknownHistory,'Observed',true);
       return{source:s.source,score:{a:latest.a,b:latest.b},completed:null,dayKnown:false,pressure:p,stale:s.source==='stale',manual:false};
     }
     const completed=s.source==='stale'
@@ -460,9 +461,14 @@
     if(s.source==='stale')return;
     const c=q(),a=clamp(c?.querySelector('[data-unknown-score="a"]')?.value,0,4),b=clamp(c?.querySelector('[data-unknown-score="b"]')?.value,0,4);
     s.unknownDraftA=a;s.unknownDraftB=b;
-    const last=s.unknownHistory[s.unknownHistory.length-1];
-    if(!last||last.a!==a||last.b!==b)s.unknownHistory.push({a,b,at:new Date().toISOString(),objective:s.objective});
-    if(s.unknownHistory.length>8)s.unknownHistory=s.unknownHistory.slice(-8);
+    const observed={a,b,at:new Date().toISOString(),objective:s.objective};
+    if(s.unknownBaselineEditable){
+      s.unknownHistory=[observed];
+      s.unknownBaselineEditable=false;
+    }else{
+      s.unknownHistory.push(observed);
+      if(s.unknownHistory.length>8)s.unknownHistory=s.unknownHistory.slice(-8);
+    }
     if(resolvedState({a,b},null,false).resolved)s.blitz=false;
     save();render();
   }
@@ -487,10 +493,12 @@
             const baseline=scoreThrough(s.throughDay);
             s.unknownDraftA=baseline.a;s.unknownDraftB=baseline.b;
             s.unknownHistory=[{...baseline,at:new Date().toISOString(),objective:s.objective}];
+            s.unknownBaselineEditable=true;
           }
           s.dayKnown=false;
         }else{
           s.dayKnown=true;
+          s.unknownBaselineEditable=false;
           s.throughDay=clamp(e.target.value,0,7);
           s.observeFrom=Math.min(s.observeFrom,s.throughDay);
         }
