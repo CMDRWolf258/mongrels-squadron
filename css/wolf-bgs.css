@@ -288,11 +288,12 @@
 .wolf-scout-system-filter{display:flex;align-items:center;gap:.65rem;margin-bottom:.45rem}
 .wolf-scout-system-filter input{min-width:0;flex:1}
 .wolf-scout-system-filter span{flex:0 0 auto;color:var(--muted);font-size:.65rem}.wolf-scout-system-filter b{color:#d8ffef}
-.wolf-scout-system-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.28rem;max-height:190px;overflow:auto;padding:.45rem;border:1px solid rgba(73,205,159,.16);background:rgba(0,0,0,.16)}
-.wolf-scout-system-checks label{display:flex;align-items:flex-start;gap:.4rem;min-width:0;padding:.36rem .4rem;border:1px solid rgba(255,255,255,.045);background:rgba(255,255,255,.014);font-size:.69rem;line-height:1.25;cursor:pointer}
+.wolf-scout-system-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.28rem;max-height:190px;overflow-y:auto;overflow-x:hidden;padding:.45rem;border:1px solid rgba(73,205,159,.16);background:rgba(0,0,0,.16)}
+.wolf-scout-system-checks label{display:flex;align-items:center;gap:.5rem;min-width:0;padding:.45rem .5rem;border:1px solid rgba(255,255,255,.045);background:rgba(255,255,255,.014);font-size:.72rem;line-height:1.3;cursor:pointer}
 .wolf-scout-system-checks label:hover{border-color:rgba(73,205,159,.22);background:rgba(73,205,159,.035)}
 .wolf-scout-system-checks label[hidden]{display:none}
-.wolf-scout-system-checks input{flex:0 0 auto;margin-top:.08rem}.wolf-scout-system-checks span{min-width:0;overflow-wrap:anywhere}
+.wolf-bgs-page .wolf-scout-system-checks input[type="checkbox"]{width:16px!important;min-width:16px!important;max-width:16px!important;height:16px;flex:0 0 16px;margin:0;padding:0}
+.wolf-bgs-page .wolf-scout-system-checks label>span{display:block;flex:1 1 auto;min-width:0;margin:0;color:#d8e9ed;font-size:.72rem;text-transform:none;letter-spacing:normal;white-space:normal;overflow-wrap:normal;word-break:normal}
 .wolf-scout-system-empty{padding:.55rem;border:1px dashed rgba(255,255,255,.1);color:var(--muted);font-size:.7rem}
 .wolf-scout-token-card{border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.01)}
 .wolf-scout-token-card .wolf-scout-token-row{border:0;background:transparent;grid-template-columns:minmax(165px,1.1fr) minmax(135px,.7fr) minmax(135px,.75fr) minmax(135px,.75fr) auto}
