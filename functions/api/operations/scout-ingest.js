@@ -3,6 +3,8 @@ import { json } from '../../../lib/auth.js';
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
 const SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
+const RATE_KEY_PREFIX = 'wolf-bgs-scout-rate-v1:';
+const DEFAULT_RATE_LIMIT_PER_HOUR = 120;
 const ACCEPTED_EVENTS = new Set(['FSDJump','Location','CarrierJump']);
 const MAX_FACTIONS = 20;
 const MAX_CONFLICTS = 12;
@@ -12,6 +14,16 @@ export async function onRequestPost({ request, env }) {
 
   const auth = await authenticate(request, env);
   if (!auth) return reply({ok:false,error:'invalid_scout_token'}, 401);
+
+  const rate = await consumeRateLimit(env, auth.id);
+  if (!rate.allowed) {
+    return reply({
+      ok:false,
+      error:'scout_rate_limit_reached',
+      limit:DEFAULT_RATE_LIMIT_PER_HOUR,
+      retryAfterSeconds:rate.retryAfterSeconds,
+    }, 429, {'Retry-After':String(rate.retryAfterSeconds)});
+  }
 
   const length = Number(request.headers.get('content-length') || 0);
   if (length > 128000) return reply({ok:false,error:'payload_too_large'}, 413);
@@ -28,6 +40,9 @@ export async function onRequestPost({ request, env }) {
   }
   if (!snapshot.factions.some(row => norm(row.name) === norm(MONGREL))) {
     return reply({ok:false,error:'mongrels_not_present'}, 422);
+  }
+  if (!systemAuthorized(auth, snapshot.system)) {
+    return reply({ok:false,error:'system_not_authorized',system:snapshot.system}, 403);
   }
 
   const state = await readSnapshots(env);
@@ -146,9 +161,73 @@ function normalizeSystemFaction(value) {
 async function readTokens(env) {
   try {
     const stored = await env.DAILY_ORDERS.get(TOKENS_KEY, {type:'json'});
-    return stored && typeof stored === 'object' ? {version:1,tokens:stored.tokens || {}} : {version:1,tokens:{}};
-  } catch { return {version:1,tokens:{}}; }
+    if (!stored || typeof stored !== 'object') return {version:2,tokens:{}};
+    const tokens = {};
+    for (const [id,value] of Object.entries(stored.tokens || {})) {
+      if (!value || typeof value !== 'object') continue;
+      tokens[id] = {
+        ...value,
+        id:cleanText(value.id || id, '', 80),
+        scope:normalizeScope(value.scope, 'trusted'),
+        allowedSystems:normalizeAllowedSystems(value.allowedSystems),
+      };
+    }
+    return {version:2,tokens};
+  } catch { return {version:2,tokens:{}}; }
 }
+function normalizeScope(value, fallback = 'restricted') {
+  const scope = String(value || '').trim().toLowerCase();
+  return scope === 'trusted' || scope === 'restricted' ? scope : fallback;
+}
+
+function normalizeAllowedSystems(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of value) {
+    const name = cleanText(raw, '', 140);
+    const key = norm(name);
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+    if (out.length >= 80) break;
+  }
+  return out;
+}
+
+function systemAuthorized(token, system) {
+  if (normalizeScope(token?.scope, 'trusted') === 'trusted') return true;
+  const key = norm(system);
+  return normalizeAllowedSystems(token?.allowedSystems).some(name => norm(name) === key);
+}
+
+async function consumeRateLimit(env, tokenId) {
+  const now = Date.now();
+  const windowStart = Math.floor(now / 3600000) * 3600000;
+  const retryAfterSeconds = Math.max(1, Math.ceil((windowStart + 3600000 - now) / 1000));
+  const key = `${RATE_KEY_PREFIX}${tokenId}:${windowStart}`;
+  let count = 0;
+  try {
+    const stored = await env.DAILY_ORDERS.get(key, {type:'json'});
+    count = Math.max(0, Math.round(Number(stored?.count) || 0));
+  } catch (error) {
+    console.error('Could not read Mongrel Scout rate counter', error);
+  }
+  if (count >= DEFAULT_RATE_LIMIT_PER_HOUR) {
+    return {allowed:false,count,retryAfterSeconds};
+  }
+  try {
+    await env.DAILY_ORDERS.put(
+      key,
+      JSON.stringify({count:count + 1,windowStart:new Date(windowStart).toISOString()}),
+      {expirationTtl:7200},
+    );
+  } catch (error) {
+    console.error('Could not write Mongrel Scout rate counter', error);
+  }
+  return {allowed:true,count:count + 1,retryAfterSeconds};
+}
+
 async function readSnapshots(env) {
   try {
     const stored = await env.DAILY_ORDERS.get(SNAPSHOTS_KEY, {type:'json'});
@@ -268,10 +347,11 @@ function constantTimeEqual(a,b) {
 function storageReady(env) {
   return Boolean(env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.get === 'function' && typeof env.DAILY_ORDERS.put === 'function');
 }
-function reply(value,status) {
+function reply(value,status,extraHeaders = {}) {
   return json(value, {status,headers:{
     'Cache-Control':'no-store, max-age=0',
     'X-Content-Type-Options':'nosniff',
     'Access-Control-Allow-Origin':'null',
+    ...extraHeaders,
   }});
 }
