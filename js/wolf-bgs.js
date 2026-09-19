@@ -27,6 +27,9 @@
   const customFlag = document.querySelector('[data-custom-flag]');
   const alertList = document.querySelector('[data-faction-alert-list]');
   const alertCount = document.querySelector('[data-faction-alert-count]');
+  const alertAckButton = document.querySelector('[data-alert-ack-button]');
+  const alertAckState = document.querySelector('[data-alert-ack-state]');
+  const alertAckSubstate = document.querySelector('[data-alert-ack-substate]');
   const queueSelectorSummary = document.querySelector('[data-queue-selector-summary]');
   const queueSelectorCount = document.querySelector('[data-queue-selector-count]');
   const activeViewBanner = document.querySelector('[data-active-board-view]');
@@ -99,19 +102,35 @@
   function populateAlerts(data) {
     if (!alertList) return;
     const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
-    if (alertCount) alertCount.textContent = String(alerts.length);
+    const listedCount = Number(data?.alertMeta?.listedCount ?? alerts.length);
+    const unreviewedCount = Number(data?.alertMeta?.unreviewedCount ?? alerts.filter(alert => !alert.reviewedAt).length);
+    if (alertCount) alertCount.textContent = String(listedCount);
+
+    if (alertAckButton) {
+      const active = unreviewedCount > 0;
+      alertAckButton.disabled = !active;
+      alertAckButton.classList.toggle('is-active', active);
+      alertAckButton.classList.toggle('is-extinguished', !active);
+      alertAckButton.setAttribute('aria-label', active ? `Acknowledge ${unreviewedCount} new faction alert${unreviewedCount === 1 ? '' : 's'}` : 'Faction Alert master warning extinguished');
+      if (alertAckState) alertAckState.textContent = active ? 'ACKNOWLEDGE' : 'EXTINGUISHED';
+      if (alertAckSubstate) alertAckSubstate.textContent = active ? `${unreviewedCount} NEW ALERT${unreviewedCount === 1 ? '' : 'S'}` : (listedCount ? 'ALERTS RETAINED FOR REVIEW' : 'NO NEW ALERTS');
+    }
+
     if (!alerts.length) {
-      alertList.innerHTML = '<div class="wolf-alert-empty"><strong>No new faction alerts.</strong><span>Major Mongrel state changes will appear here when detected.</span></div>';
+      alertList.innerHTML = '<div class="wolf-alert-empty"><strong>No faction alerts retained.</strong><span>Major Mongrel state changes will appear here when detected.</span></div>';
       return;
     }
     alertList.innerHTML = alerts.map(alert => `
-      <article class="wolf-faction-alert is-${html(alert.family)}">
+      <article class="wolf-faction-alert is-${html(alert.family)} ${alert.reviewedAt ? 'is-reviewed' : 'is-new'}">
         <div class="wolf-faction-alert-main">
           <span>${html(alertFamilyLabel(alert.family))}</span>
           <strong>${html(alert.system)}</strong>
-          <small>${html(alertStatusText(alert))} · detected ${html(fmt(alert.firstSeenAt))}</small>
+          <small>${html(alertStatusText(alert))} · detected ${html(fmt(alert.firstSeenAt))}${alert.reviewedAt ? ' · ACKNOWLEDGED' : ' · NEW'}</small>
         </div>
-        <button type="button" class="btn btn-secondary btn-compact" data-view-faction-alert data-alert-system="${html(alert.system)}" data-alert-family="${html(alert.family)}">VIEW</button>
+        <div class="wolf-faction-alert-actions">
+          <button type="button" class="btn btn-secondary btn-compact" data-view-faction-alert data-alert-system="${html(alert.system)}" data-alert-family="${html(alert.family)}">VIEW</button>
+          <button type="button" class="wolf-alert-remove-button" data-remove-faction-alert data-alert-system="${html(alert.system)}" data-alert-family="${html(alert.family)}">REMOVE</button>
+        </div>
       </article>`).join('');
   }
 
@@ -652,18 +671,34 @@
   });
   queueSelectorSummary?.addEventListener('click', () => setBoardView(activeBoardView === 'queue-selected' ? '' : 'queue-selected'));
   clearActiveView?.addEventListener('click', () => setBoardView(''));
-  alertList?.addEventListener('click', async event => {
-    const button = event.target.closest('[data-view-faction-alert]');
-    if (!button) return;
-    const system = button.dataset.alertSystem || '';
-    const family = button.dataset.alertFamily || '';
-    button.disabled = true;
+  alertAckButton?.addEventListener('click', async () => {
+    if (alertAckButton.disabled) return;
+    alertAckButton.disabled = true;
     try {
-      await save('ack-alert', system, { family });
-      setBoardView(family);
+      await save('ack-alerts', '', {});
     } catch (error) {
       console.error(error);
-      button.disabled = false;
+      alertAckButton.disabled = false;
+    }
+  });
+
+  alertList?.addEventListener('click', async event => {
+    const viewButton = event.target.closest('[data-view-faction-alert]');
+    if (viewButton) {
+      setBoardView(viewButton.dataset.alertFamily || '');
+      return;
+    }
+
+    const removeButton = event.target.closest('[data-remove-faction-alert]');
+    if (!removeButton) return;
+    const system = removeButton.dataset.alertSystem || '';
+    const family = removeButton.dataset.alertFamily || '';
+    removeButton.disabled = true;
+    try {
+      await save('remove-alert', system, { family });
+    } catch (error) {
+      console.error(error);
+      removeButton.disabled = false;
     }
   });
 
