@@ -339,6 +339,25 @@
     return '<div class="wolf-report-counter"><span>'+label+'</span><div><button type="button" data-mock-counter="'+name+'" data-delta="-1">−</button><b data-mock-value="'+name+'">0</b><button type="button" data-mock-counter="'+name+'" data-delta="1">+</button></div></div>';
   }
 
+  window.WolfBgsConflictLabOrder=card=>{
+    if(!card||card.dataset?.bgsLab!=='true')return null;
+    const R=recommendation();
+    if(!R?.p)return{generate:false,state:R?.state||'needs-config'};
+    const generate=Boolean(R.amount&&R.winner&&['work','stale'].includes(R.state));
+    return{
+      generate,
+      state:R.state,
+      faction:R.winner||'',
+      amount:R.amount??null,
+      kind:R.type==='INF'?'mission-inf':'conflict-cz',
+      conflictType:R.p.type,
+      pressure:R.pr||R.C?.pressure?.level||'',
+      stale:R.state==='stale',
+      title:R.title||'',
+      detail:R.detail||'',
+    };
+  };
+
   function render(){
     const c=q(),sec=c?.querySelector('[data-conflict-section]');
     if(!sec)return;
@@ -384,6 +403,7 @@
       if(o&&!o.querySelector('option[value="tie"]'))o.insertAdjacentHTML('beforeend','<option value="tie">Tie</option>');
       if(o)o.value=s.objective;
     }
+    document.dispatchEvent(new CustomEvent('wolf-bgs-conflict-lab-updated',{detail:{system:'Mandalore'}}));
   }
 
   function resetOperational(){
