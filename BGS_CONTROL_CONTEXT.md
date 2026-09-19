@@ -504,9 +504,19 @@ A **Faction Alerts** panel near the top of BGS Control records newly detected ma
 - Bust;
 - Civil Unrest.
 
-Alerts are episode-based rather than repeating permanent state badges. Pressing **VIEW** acknowledges that alert and opens a broader board-level filter in the System List:
+Alerts are episode-based rather than repeating permanent state badges. The Faction Alerts box now has a large 3D red **FACTION ALERT** master annunciator styled like a flight-deck warning button:
+- a newly detected visible alert lights the annunciator and makes it flash red;
+- pressing **ACKNOWLEDGE** marks all currently visible new alert episodes reviewed and extinguishes the warning light;
+- acknowledgement does **not** remove any alert row;
+- acknowledged rows remain available as quick reference and are visibly marked ACKNOWLEDGED;
+- the annunciator remains extinguished until another genuinely new alert episode is detected;
+- reduced-motion clients receive the same lit warning state without animation.
+
+Alert-row actions are deliberately separate:
+- **VIEW** is navigation only. It does not acknowledge or remove the alert. It opens the broader board-level filter for that alert family;
 - conflict VIEW shows **all Mongrel pending and active War / Civil War / Election systems**;
 - Bust and Civil Unrest VIEW show pending + active systems in that state family;
-- Retreat VIEW shows pending Retreat systems.
+- Retreat VIEW shows pending Retreat systems;
+- **REMOVE** dismisses only that alert row from the Faction Alerts box. A removed episode stays suppressed while that same underlying episode remains active; once it resolves, a future separate episode may alert normally again.
 
-Conflict Pending → Active is one continuous episode. If the pending conflict was already reviewed, activation the next tick does **not** create another alert. If it was not reviewed, the same alert remains and updates to active. An active conflict that appears without a previously tracked pending episode is treated as a new alert. When a conflict ends, the episode resolves so a future separate conflict can alert again.
+Conflict Pending → Active is one continuous episode. If the pending conflict was acknowledged with the master alert button, activation the next tick does **not** create another alert. If it was not acknowledged, the same alert remains new and updates to active. An active conflict that appears without a previously tracked pending episode is treated as a new alert. When a conflict ends, the episode resolves so a future separate conflict can alert again.
