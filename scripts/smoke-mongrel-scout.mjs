@@ -70,6 +70,91 @@ for(const pattern of [
   /scoutActiveCount/,
 ])assert.match(bgsApi,pattern);
 
+const bgsFactory=new Function(
+  bgsApi.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
+  '; return {buildPayload,DEFAULTS,SYSTEM_DEFAULTS};'
+);
+const bgs=bgsFactory();
+const control={
+  defaults:{...bgs.DEFAULTS},
+  systemDefaults:{...bgs.SYSTEM_DEFAULTS},
+  systemSettings:{},
+  manualSnapshots:{},
+  alertEpisodes:{},
+  conflictDayOverrides:{},
+  globalUpdatedAt:null,
+  globalUpdatedBy:null,
+  systemDefaultsUpdatedAt:null,
+  systemDefaultsUpdatedBy:null,
+};
+const scoutSnapshot={
+  system:'Scout Test',
+  updatedAt:'2026-09-19T12:00:00Z',
+  receivedAt:'2026-09-19T12:00:02Z',
+  scoutLabel:'CMDR Test',
+  systemFaction:{name:'Regiment of Imperial Mongrels',state:'War'},
+  security:'High',
+  population:12345,
+  factions:[
+    {name:'Regiment of Imperial Mongrels',influence:0.42,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
+    {name:'Opponent Faction',influence:0.41,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
+  ],
+  conflicts:[{
+    type:'War',status:'Active',
+    faction1:{name:'Opponent Faction',stake:'',wonDays:0},
+    faction2:{name:'Regiment of Imperial Mongrels',stake:'',wonDays:1},
+  }],
+};
+let payload=bgs.buildPayload(
+  {systems:[],source:'test'},
+  {systems:{},syncOk:true,successfulSystems:0,requestedSystems:0},
+  control,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{'Scout Test':scoutSnapshot}}
+);
+assert.equal(payload.systems.length,1,'Scout-only Mongrel system should surface immediately');
+assert.equal(payload.systems[0].activeSnapshotSource,'scout');
+assert.equal(payload.systems[0].influence,42);
+assert.equal(payload.systems[0].conflictScore.factionWonDays,1,'Mongrel score must be normalized to the left side');
+assert.equal(payload.systems[0].conflictScore.opponentWonDays,0);
+assert.equal(payload.systems[0].conflictScore.opponentFaction,'Opponent Faction');
+
+const manualControl={
+  ...control,
+  manualSnapshots:{
+    'Scout Test':{
+      updatedAt:'2026-09-19T12:05:00Z',
+      updatedBy:'Wolf',
+      controller:'Regiment of Imperial Mongrels',
+      factions:[
+        {name:'Regiment of Imperial Mongrels',influence:55,state:'War',pending:'',recovering:''},
+        {name:'Opponent Faction',influence:40,state:'War',pending:'',recovering:''},
+      ],
+    },
+  },
+};
+payload=bgs.buildPayload(
+  {systems:[],source:'test'},
+  {systems:{},syncOk:true,successfulSystems:0,requestedSystems:0},
+  manualControl,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{'Scout Test':scoutSnapshot}}
+);
+assert.equal(payload.systems[0].activeSnapshotSource,'manual','Newer Wolf manual snapshot must remain authoritative');
+assert.equal(payload.systems[0].influence,55);
+
+payload=bgs.buildPayload(
+  {systems:[{
+    name:'Scout Test',present:false,formerPresence:true,
+    sourceUpdated:'2026-09-20T12:00:00Z',lastSeen:'2026-09-20T12:00:00Z',
+  }],source:'test'},
+  {systems:{},syncOk:true,successfulSystems:0,requestedSystems:0},
+  control,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{'Scout Test':scoutSnapshot}}
+);
+assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
+
 const page=readFileSync('wolf-bgs/index.html','utf8');
 for(const pattern of [/Scout Network/,/data-scout-network/,/Download EDMC Plugin/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
 
