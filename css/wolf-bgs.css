@@ -239,3 +239,7 @@
 
 .wolf-system-card.wolf-auto-evaluating>.wolf-system-body{display:none!important}
 .wolf-system-card.wolf-auto-evaluating>summary{background:rgba(42,160,191,.045)}
+
+.wolf-conflict-score-stat small{color:#8fb2bd}
+.wolf-conflict-day-chip{border-color:rgba(102,196,255,.28);color:#9dc9da}
+.wolf-conflict-day-chip b{color:#dff5ff}
