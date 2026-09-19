@@ -3,11 +3,10 @@ from __future__ import annotations
 import json
 import threading
 import tkinter as tk
-import urllib.error
-import urllib.request
 from typing import Any, Mapping, MutableMapping, Optional
 
 import myNotebook as nb
+import timeout_session
 from config import config
 
 try:
@@ -30,6 +29,9 @@ _enabled_var: Optional[tk.IntVar] = None
 _token_var: Optional[tk.StringVar] = None
 _endpoint_var: Optional[tk.StringVar] = None
 _send_lock = threading.Lock()
+_status_lock = threading.Lock()
+_pending_status = ""
+_session = timeout_session.new_session(timeout=8)
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -48,6 +50,7 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
     tk.Label(frame, text="Mongrel Scout:").grid(row=0, column=0, sticky=tk.W)
     _status_label = tk.Label(frame, text=_initial_status())
     _status_label.grid(row=0, column=1, sticky=tk.W, padx=(6, 0))
+    _status_label.bind("<<MongrelScoutStatus>>", _on_status_event)
     return frame
 
 
@@ -240,38 +243,32 @@ def _contains_mongrels(factions: list[Any]) -> bool:
 
 
 def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
-    # Serializing uploads avoids a burst of overlapping requests during journal startup.
+    # EDMC recommends network work off the main Tk thread. The lock prevents
+    # startup/location journal bursts from creating overlapping uploads.
     with _send_lock:
-        body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        request = urllib.request.Request(
-            endpoint,
-            data=body,
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "User-Agent": f"MongrelScout-EDMC/{PLUGIN_VERSION}",
-            },
-        )
         try:
-            with urllib.request.urlopen(request, timeout=8) as response:
-                response.read(4096)
-                if 200 <= response.status < 300:
-                    _set_status(f"Updated {payload['system']}")
-                else:
-                    _set_status(f"Upload failed ({response.status})")
-        except urllib.error.HTTPError as error:
+            response = _session.post(
+                endpoint,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                    "User-Agent": f"{_session.headers.get('User-Agent', 'EDMarketConnector')} MongrelScout/{PLUGIN_VERSION}",
+                },
+            )
+            if 200 <= response.status_code < 300:
+                _set_status(f"Updated {payload['system']}")
+                return
             try:
-                detail = json.loads(error.read(4096).decode("utf-8", errors="replace")).get("error", "")
+                detail = response.json().get("error", "")
             except Exception:
                 detail = ""
-            if error.code == 401:
+            if response.status_code == 401:
                 _set_status("Token rejected")
-            elif error.code == 422 and detail == "mongrels_not_present":
+            elif response.status_code == 422 and detail == "mongrels_not_present":
                 _set_status("Skipped — Mongrels absent")
             else:
-                _set_status(f"Upload failed ({error.code})")
+                _set_status(f"Upload failed ({response.status_code})")
         except Exception:
             _set_status("Upload failed — network")
 
@@ -285,10 +282,28 @@ def _initial_status() -> str:
 
 
 def _set_status(text: str) -> None:
+    # Tk itself is not thread-safe. EDMC's plugin guide recommends event_generate()
+    # to signal back to the main loop from a worker thread.
+    global _pending_status
+    with _status_lock:
+        _pending_status = text
     label = _status_label
     if label is None:
         return
     try:
-        label.after(0, lambda: label.config(text=text) if label.winfo_exists() else None)
+        label.event_generate("<<MongrelScoutStatus>>", when="tail")
     except Exception:
         pass
+
+
+def _on_status_event(event: Any) -> None:
+    label = _status_label
+    if label is None:
+        return
+    with _status_lock:
+        text = _pending_status
+    if text:
+        try:
+            label.config(text=text)
+        except Exception:
+            pass
