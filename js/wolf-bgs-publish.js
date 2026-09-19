@@ -128,7 +128,7 @@
     return [card.dataset.snapshotTime||'',card.dataset.settingsUpdated||'',card.dataset.queueSelected||'',card.dataset.retreatPending||''].join('|');
   }
 
-  async function waitForPreview(card,timeout=2600){
+  async function waitForPreview(card,timeout=5000){
     const start=Date.now();
     while(Date.now()-start<timeout){
       const host=card.querySelector('[data-order-preview-output]');
@@ -160,9 +160,13 @@
           card.open=true;
           await wait(60);
         }
-        await waitForPreview(card);
-        autoSyncCard(card);
-        evaluatedFingerprints.set(system,fingerprint);
+        const ready=await waitForPreview(card);
+        if(ready){
+          autoSyncCard(card);
+          evaluatedFingerprints.set(system,fingerprint);
+        }else{
+          evaluatedFingerprints.delete(system);
+        }
         if(!wasOpen){
           card.open=false;
           await wait(20);
