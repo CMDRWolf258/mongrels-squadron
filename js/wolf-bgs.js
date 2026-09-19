@@ -25,10 +25,18 @@
   const customPending = document.querySelector('[data-custom-pending]');
   const customControl = document.querySelector('[data-custom-control]');
   const customFlag = document.querySelector('[data-custom-flag]');
+  const alertList = document.querySelector('[data-faction-alert-list]');
+  const alertCount = document.querySelector('[data-faction-alert-count]');
+  const queueSelectorSummary = document.querySelector('[data-queue-selector-summary]');
+  const queueSelectorCount = document.querySelector('[data-queue-selector-count]');
+  const activeViewBanner = document.querySelector('[data-active-board-view]');
+  const activeViewLabel = document.querySelector('[data-active-board-view-label]');
+  const clearActiveView = document.querySelector('[data-clear-active-board-view]');
 
   let payload = null;
   let currentPage = 1;
   let pageSize = 20;
+  let activeBoardView = '';
 
   const html = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
@@ -66,9 +74,93 @@
     set('[data-summary-attention]', Number(data.meta?.attentionCount || 0).toLocaleString());
     set('[data-summary-stale]', Number(data.meta?.staleCount || 0).toLocaleString());
     set('[data-summary-slots]', String(data.defaults?.maxDailySystems ?? 6));
+    if (queueSelectorCount) queueSelectorCount.textContent = Number(data.meta?.queueSelectorCount || 0).toLocaleString();
     set('[data-summary-updated]', fmt(data.meta?.generatedAt));
     set('[data-summary-source]', data.meta?.source || 'EliteHub Vault / EDDN');
     if (sourceNote) sourceNote.textContent = data.meta?.sourceBoardNote || 'External BGS source status unavailable.';
+  }
+
+
+  function alertFamilyLabel(family) {
+    return {
+      retreat:'RETREAT PENDING',
+      conflict:'CONFLICT CHANGE',
+      bust:'BUST',
+      'civil-unrest':'CIVIL UNREST',
+    }[family] || String(family || 'ALERT').toUpperCase();
+  }
+
+  function alertStatusText(alert) {
+    const detail = String(alert?.detail || alertFamilyLabel(alert?.family)).toUpperCase();
+    if (alert?.family === 'retreat') return 'RETREAT PENDING';
+    return `${detail} ${alert?.phase === 'pending' ? 'PENDING' : 'ACTIVE'}`;
+  }
+
+  function populateAlerts(data) {
+    if (!alertList) return;
+    const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
+    if (alertCount) alertCount.textContent = String(alerts.length);
+    if (!alerts.length) {
+      alertList.innerHTML = '<div class="wolf-alert-empty"><strong>No new faction alerts.</strong><span>Major Mongrel state changes will appear here when detected.</span></div>';
+      return;
+    }
+    alertList.innerHTML = alerts.map(alert => `
+      <article class="wolf-faction-alert is-${html(alert.family)}">
+        <div class="wolf-faction-alert-main">
+          <span>${html(alertFamilyLabel(alert.family))}</span>
+          <strong>${html(alert.system)}</strong>
+          <small>${html(alertStatusText(alert))} · detected ${html(fmt(alert.firstSeenAt))}</small>
+        </div>
+        <button type="button" class="btn btn-secondary btn-compact" data-view-faction-alert data-alert-system="${html(alert.system)}" data-alert-family="${html(alert.family)}">VIEW</button>
+      </article>`).join('');
+  }
+
+  function stateNames(system, key) {
+    return (Array.isArray(system?.[key]) ? system[key] : []).map(value => String(value || '').trim().toLowerCase());
+  }
+
+  function matchesBoardView(system, view) {
+    if (!view) return true;
+    if (view === 'queue-selected') return Boolean(system.settings?.queueSelected);
+    const active = stateNames(system, 'activeStates');
+    const pending = stateNames(system, 'pendingStates');
+    if (view === 'conflict') {
+      const conflicts = new Set(['war','civil war','election']);
+      return active.some(state => conflicts.has(state)) || pending.some(state => conflicts.has(state));
+    }
+    if (view === 'retreat') return pending.includes('retreat');
+    if (view === 'bust') return active.includes('bust') || pending.includes('bust');
+    if (view === 'civil-unrest') return active.includes('civil unrest') || pending.includes('civil unrest');
+    return true;
+  }
+
+  function boardViewLabel(view) {
+    return {
+      'queue-selected':'QUEUE SELECTORS',
+      conflict:'CONFLICTS · PENDING + ACTIVE',
+      retreat:'RETREAT PENDING',
+      bust:'BUST · PENDING + ACTIVE',
+      'civil-unrest':'CIVIL UNREST · PENDING + ACTIVE',
+    }[view] || 'FILTERED VIEW';
+  }
+
+  function syncBoardViewBanner(total = null) {
+    if (!activeViewBanner) return;
+    activeViewBanner.hidden = !activeBoardView;
+    if (activeViewLabel && activeBoardView) {
+      const suffix = total === null ? '' : ` · ${total} SYSTEM${total === 1 ? '' : 'S'}`;
+      activeViewLabel.textContent = boardViewLabel(activeBoardView) + suffix;
+    }
+    queueSelectorSummary?.classList.toggle('active', activeBoardView === 'queue-selected');
+  }
+
+  function setBoardView(view) {
+    activeBoardView = view || '';
+    if (search) search.value = '';
+    if (filter) filter.value = 'all';
+    currentPage = 1;
+    renderSystems();
+    document.querySelector('.wolf-systems-section')?.scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   function populateGlobal(data) {
@@ -159,16 +251,20 @@
     const freshHours = settings.freshnessHours ?? payload.defaults?.freshnessHours ?? 8;
     const manualNewer = system.activeSnapshotSource === 'manual';
     const favorite = Boolean(settings.favorite);
+    const queueSelected = Boolean(settings.queueSelected);
     const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">A complete external faction board is not available for this system yet. The Mongrel presence row remains available, and a manual full-board snapshot can be submitted as a fallback.</div>`;
     const boardChip = system.externalBoardComplete
       ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
       : '<span class="wolf-chip">External board <b>awaiting data</b></span>';
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
 
-    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}">
+    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}" data-queue-selected="${queueSelected}" data-retreat-pending="${system.retreatPending ? 'true' : 'false'}">
       <summary>
         <div class="wolf-system-name-row">
-          <button type="button" class="wolf-favorite-button ${favorite ? 'active' : ''}" data-favorite-toggle aria-label="${favorite ? 'Remove' : 'Add'} ${html(system.name)} ${favorite ? 'from' : 'to'} favorites" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}">${favorite ? '★' : '☆'}</button>
+          <div class="wolf-system-selectors">
+            <button type="button" class="wolf-favorite-button ${favorite ? 'active' : ''}" data-favorite-toggle aria-label="${favorite ? 'Remove' : 'Add'} ${html(system.name)} ${favorite ? 'from' : 'to'} favorites" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}">${favorite ? '★' : '☆'}</button>
+            <button type="button" class="wolf-queue-selector-button ${queueSelected ? 'active' : ''}" data-queue-selector-toggle aria-pressed="${queueSelected ? 'true' : 'false'}" aria-label="${queueSelected ? 'Disable' : 'Enable'} Queue Selector for ${html(system.name)}" title="${queueSelected ? 'Queue Selector enabled — normal automation may queue this system' : 'Enable Queue Selector for normal automated queueing'}">Q</button>
+          </div>
           <div class="wolf-system-name"><strong>${html(system.name)}</strong><small>${html(system.control || 'Controller unknown')}</small></div>
         </div>
         <div class="wolf-system-stat"><span>Mongrel INF</span><b>${influence(system.influence)}</b></div>
@@ -286,6 +382,7 @@
     const q = (search?.value || '').trim().toLowerCase();
     const mode = filter?.value || 'all';
     return (payload?.systems || []).filter(system => {
+      if (activeBoardView && !matchesBoardView(system, activeBoardView)) return false;
       if (q && !String(system.name || '').toLowerCase().includes(q)) return false;
       if (mode === 'favorites') return Boolean(system.settings?.favorite);
       if (mode === 'attention') return system.retreatRisk || system.conflict || system.dataCondition === 'stale';
@@ -316,6 +413,14 @@
     return [...favoriteRows, ...remainder];
   }
 
+
+  function withOperationalFirst(rows) {
+    const operational = sortedSystems(rows.filter(system => system.retreatPending || system.settings?.queueSelected));
+    if (!operational.length) return rows;
+    const keys = new Set(operational.map(systemKey));
+    return [...operational, ...rows.filter(system => !keys.has(systemKey(system)))];
+  }
+
   function lowestFiveSystems() {
     return [...(payload?.systems || [])]
       .filter(system => num(system.influence) !== null)
@@ -329,7 +434,7 @@
 
     const matchingRows = filteredSystems();
     const sortedMatches = sortedSystems(matchingRows);
-    const rows = withFavoritesFirst(sortedMatches);
+    const rows = withOperationalFirst(withFavoritesFirst(sortedMatches));
     const total = rows.length;
     const watchRows = lowestFiveWatch?.checked ? lowestFiveSystems() : [];
     const watchKeys = new Set(watchRows.map(systemKey));
@@ -357,6 +462,7 @@
     }
 
     if (count) count.textContent = total.toLocaleString();
+    syncBoardViewBanner(total);
     if (pageStatus) pageStatus.textContent = pageText;
     if (prevPage) prevPage.disabled = currentPage <= 1;
     if (nextPage) nextPage.disabled = currentPage >= totalPages;
@@ -369,7 +475,7 @@
   }
 
   function collectSettings(card) {
-    const out = { favorite: card.dataset.favorite === 'true' };
+    const out = { favorite: card.dataset.favorite === 'true', queueSelected: card.dataset.queueSelected === 'true' };
     card.querySelectorAll('[data-setting]').forEach(el => {
       const key = el.dataset.setting;
       if (el.type === 'checkbox') out[key] = el.checked;
@@ -407,9 +513,11 @@
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
     payload = data;
     populateSummary(payload);
+    populateAlerts(payload);
     populateGlobal(payload);
     populateSystemDefaults(payload);
     renderSystems(reopenSystem);
+    window.dispatchEvent(new CustomEvent('wolf-bgs-payload-updated', { detail:{ systems:payload.systems || [] } }));
     return data;
   }
 
@@ -456,6 +564,25 @@
       return;
     }
 
+    const queueButton = event.target.closest('[data-queue-selector-toggle]');
+    if (queueButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const card = queueButton.closest('[data-system]');
+      if (!card) return;
+      const system = card.dataset.system;
+      const nextSelected = card.dataset.queueSelected !== 'true';
+      queueButton.disabled = true;
+      try {
+        await save('toggle-queue-selector', system, { queueSelected:nextSelected });
+        window.dispatchEvent(new CustomEvent('wolf-bgs-queue-selector-updated', { detail:{ system, selected:nextSelected } }));
+      } catch (error) {
+        console.error(error);
+        queueButton.disabled = false;
+      }
+      return;
+    }
+
     const card = event.target.closest('[data-system]');
     if (!card) return;
     const system = card.dataset.system;
@@ -495,7 +622,7 @@
     }
   });
 
-  const resetPage = () => { currentPage = 1; renderSystems(); };
+  const resetPage = () => { activeBoardView = ''; currentPage = 1; renderSystems(); };
   search?.addEventListener('input', resetPage);
   filter?.addEventListener('change', resetPage);
   sort?.addEventListener('change', resetPage);
@@ -526,9 +653,11 @@
       if (pageSizeEl) { pageSizeEl.value = '20'; pageSize = 20; }
       if (sort) sort.value = 'influence-desc';
       populateSummary(payload);
+      populateAlerts(payload);
       populateGlobal(payload);
       populateSystemDefaults(payload);
       renderSystems();
+      window.dispatchEvent(new CustomEvent('wolf-bgs-payload-updated', { detail:{ systems:payload.systems || [] } }));
       setAccess(true);
     } catch (error) {
       console.error('Could not load Wolf BGS Control', error);
