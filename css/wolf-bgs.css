@@ -175,3 +175,33 @@
   .wolf-pagination span{order:-1;width:100%;min-width:0;text-align:left}
   .wolf-subgrid>div:last-child .wolf-toggle-list{grid-template-columns:1fr}
 }
+
+/* Queue Selector + Faction Alert triage */
+.wolf-faction-alerts-panel{border:1px solid rgba(92,210,255,.18);background:linear-gradient(145deg,rgba(13,22,27,.92),rgba(7,11,14,.92));padding:1rem}
+.wolf-faction-alerts-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding-bottom:.8rem;border-bottom:1px solid rgba(92,210,255,.1)}
+.wolf-faction-alerts-head>div:first-child>span{display:block;color:#78dfff;font-size:.64rem;font-weight:800;letter-spacing:.1em}
+.wolf-faction-alerts-head h2{margin:.15rem 0 .2rem;font-size:1.15rem}
+.wolf-faction-alerts-head p{margin:0;color:var(--muted);font-size:.8rem;line-height:1.45;max-width:760px}
+.wolf-faction-alert-count{display:grid;place-items:center;min-width:58px;padding:.45rem .6rem;border:1px solid rgba(255,177,74,.3);background:rgba(255,177,74,.06)}
+.wolf-faction-alert-count strong{font-size:1.2rem;color:#ffd49a}.wolf-faction-alert-count small{color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em}
+.wolf-faction-alert-list{display:grid;gap:.45rem;margin-top:.7rem}
+.wolf-faction-alert{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem .75rem;border:1px solid rgba(92,210,255,.12);background:rgba(255,255,255,.018)}
+.wolf-faction-alert.is-retreat{border-color:rgba(255,88,88,.35);box-shadow:inset 3px 0 0 rgba(255,88,88,.55)}
+.wolf-faction-alert.is-conflict{border-color:rgba(255,177,74,.28);box-shadow:inset 3px 0 0 rgba(255,177,74,.45)}
+.wolf-faction-alert-main{display:grid;grid-template-columns:minmax(120px,.55fr) minmax(220px,1.1fr) minmax(240px,1.3fr);gap:.75rem;align-items:baseline;min-width:0;flex:1}
+.wolf-faction-alert-main span{color:#9fb1b6;font-size:.62rem;font-weight:850;letter-spacing:.075em}
+.wolf-faction-alert-main strong{font-size:.83rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wolf-faction-alert-main small{color:var(--muted);font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wolf-alert-empty{display:flex;gap:.55rem;align-items:baseline;padding:.5rem .1rem;color:var(--muted);font-size:.76rem}.wolf-alert-empty strong{color:#b9cbd0;font-size:.76rem}
+.wolf-system-selectors{display:flex;gap:.3rem;flex:0 0 auto}
+.wolf-queue-selector-button{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;border:1px solid rgba(92,210,255,.18);background:#0a0f12;color:#71878e;border-radius:3px;font-size:.68rem;font-weight:900;letter-spacing:.02em;cursor:pointer;padding:0}
+.wolf-queue-selector-button:hover{border-color:rgba(92,210,255,.45);color:#c6f5ff;background:rgba(42,118,139,.12)}
+.wolf-queue-selector-button.active{border-color:rgba(92,210,255,.68);background:rgba(42,160,191,.2);color:#dffcff;box-shadow:0 0 12px rgba(92,210,255,.08)}
+.wolf-system-list-meta-left{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.wolf-queue-selector-summary{display:flex;align-items:baseline;gap:.4rem;border:1px solid rgba(92,210,255,.16);background:rgba(8,13,16,.74);color:#9fb1b6;padding:.42rem .6rem;cursor:pointer}
+.wolf-queue-selector-summary span{font-size:.6rem;font-weight:850;letter-spacing:.075em}.wolf-queue-selector-summary strong{color:#dff8ff;font-size:.9rem}.wolf-queue-selector-summary small{font-size:.62rem;color:var(--muted)}
+.wolf-queue-selector-summary:hover,.wolf-queue-selector-summary.active{border-color:rgba(92,210,255,.48);background:rgba(42,160,191,.1);color:#dff8ff}
+.wolf-active-board-view{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.65rem 0;padding:.55rem .7rem;border:1px solid rgba(92,210,255,.28);background:rgba(42,160,191,.075)}
+.wolf-active-board-view span{color:#c9eef5;font-size:.7rem;font-weight:850;letter-spacing:.07em}
+.wolf-active-board-view button{border:0;background:transparent;color:#8fb9c0;font:inherit;font-size:.65rem;font-weight:800;text-transform:uppercase;cursor:pointer}.wolf-active-board-view button:hover{color:#fff;text-decoration:underline}
+@media(max-width:760px){.wolf-faction-alerts-head{align-items:center}.wolf-faction-alert{align-items:stretch;flex-direction:column}.wolf-faction-alert-main{grid-template-columns:1fr;gap:.2rem}.wolf-faction-alert-main strong,.wolf-faction-alert-main small{white-space:normal}.wolf-system-list-meta{align-items:flex-start;flex-direction:column}.wolf-pagination{width:100%;justify-content:space-between}}
