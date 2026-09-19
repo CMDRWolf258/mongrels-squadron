@@ -209,11 +209,13 @@
     const result=resolve(card);
     const activeText=result.active.length?result.active.map(row=>`${row.name} (${typeLabel(row.type)}${row.influence===null?'':`, ${row.influence.toFixed(1)}%`})`).join(' · '):'None';
     const pendingText=result.pending.length?result.pending.map(row=>`${row.name} (${typeLabel(row.type)})`).join(' · '):'None';
+    const scoreA=num(card.dataset.conflictScoreA), scoreB=num(card.dataset.conflictScoreB), scoreOpponent=card.dataset.conflictOpponent||'', scoreStale=card.dataset.conflictScoreStale==='true';
+    const scoreText=scoreA!==null&&scoreB!==null?`${scoreA}–${scoreB}${scoreOpponent?` vs ${scoreOpponent}`:''}${scoreStale?' · last known':''}`:'Awaiting conflict score from source';
     const warnings=[];
     if(result.unresolved.length)warnings.push(`Unpaired active participants: ${result.unresolved.join(', ')}. Ordinary BGS work is still locked for them, but no conflict winner order will be generated.`);
     warnings.push(...result.invalid,...result.manualNotes);
     if(result.auto.ambiguous.length)warnings.push(...result.auto.ambiguous.map(group=>`${group.names.length} factions show ${typeLabel(group.type)}; ${group.reason}. Manual confirmation is required.`));
-    host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
+    host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Mongrel conflict score</span><strong class="wolf-conflict-score-detail">${esc(scoreText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
     card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
       const a=row.querySelector('[data-conflict="factionA"]')?.value||'', b=row.querySelector('[data-conflict="factionB"]')?.value||'', typeHost=row.querySelector('[data-conflict-type]');
       const aa=result.active.find(item=>norm(item.name)===norm(a)), bb=result.active.find(item=>norm(item.name)===norm(b)), gap=influenceGap(aa,bb);
