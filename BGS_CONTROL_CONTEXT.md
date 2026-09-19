@@ -610,3 +610,21 @@ System cards identify Scout-sourced data with dedicated Scout chips. Faction ale
 - Token KV key: `wolf-bgs-scout-tokens-v1`.
 - Snapshot KV key: `wolf-bgs-scout-snapshots-v1`.
 - Raw scout tokens are never persisted by the server.
+
+
+## Mongrel Scout access-control hardening
+
+Scout tokens now carry server-side access permissions. Changing those permissions does **not** require a new token.
+
+- New tokens default to **Restricted Scout**.
+- A Restricted Scout token must have at least one assigned system and is accepted only for those exact system names.
+- **Trusted Scout** tokens may submit any system whose payload contains the Regiment of Imperial Mongrels.
+- Wolf can switch Restricted ↔ Trusted or edit a Restricted Scout's assigned systems at any time through **Scout Network → EDIT ACCESS**. The scout keeps the same token and does not need to change EDMC.
+- Legacy Scout tokens that predate access scopes normalize to Trusted so an existing installation is not silently broken; Wolf can downgrade one through EDIT ACCESS.
+- The ingest endpoint enforces scope server-side. A restricted token submitting an unassigned system receives `403 system_not_authorized`; the EDMC plugin shows **Not assigned: <system>**.
+- Every token has a KV-backed fixed-window limit of **120 upload attempts per hour**. Attempts beyond the limit receive HTTP 429 plus `Retry-After`; EDMC shows **Scout rate limit reached**.
+- The rate counter is stored separately from Scout snapshots/token metadata and expires after two hours.
+- The threat boundary remains deliberate: a Scout credential cannot sign into Wolf BGS Control, alter automation settings, manage tokens, or publish Mission Control orders. Its meaningful write capability is Scout BGS observations within its allowed scope. A malicious holder can still falsify BGS observations for systems their token is permitted to submit, so Restricted access is the default for new/unproven members and revocation remains the emergency cutoff.
+
+### Installation packaging
+The site now serves **MongrelScout.zip** from `/downloads/mongrel-scout.zip`. It contains a ready-made `MongrelScout/` folder with `load.py` and the README, so the member can unzip it and copy the folder directly into EDMC's Plugins directory. The raw source files remain under `/downloads/mongrel-scout/` for maintenance.
