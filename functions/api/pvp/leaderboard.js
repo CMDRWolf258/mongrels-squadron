@@ -48,16 +48,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 function validDuelBotEndpoint(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:'
-      && url.hostname === 'duelbot.fitzbound.duckdns.org'
-      && url.pathname === '/api/v1/leaderboard'
-      && !url.search
-      && !url.hash;
-  } catch {
-    return false;
-  }
+  return value === 'https://duelbot.fitzbound.duckdns.org/api/v1/leaderboard';
 }
 function clean(value,maxLength) {
   return typeof value === 'string' ? value.trim().slice(0,maxLength) : '';
