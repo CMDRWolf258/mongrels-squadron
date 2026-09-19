@@ -40,6 +40,7 @@ export async function onRequestPost({ request, env }) {
       scoutTokenId:auth.id,
       scoutLabel:auth.label,
     };
+    updateConflictHistory(state, snapshot);
     await env.DAILY_ORDERS.put(SNAPSHOTS_KEY, JSON.stringify(state));
   }
 
@@ -151,9 +152,62 @@ async function readTokens(env) {
 async function readSnapshots(env) {
   try {
     const stored = await env.DAILY_ORDERS.get(SNAPSHOTS_KEY, {type:'json'});
-    return stored && typeof stored === 'object' ? {version:1,systems:stored.systems || {}} : {version:1,systems:{}};
-  } catch { return {version:1,systems:{}}; }
+    return stored && typeof stored === 'object'
+      ? {version:1,systems:stored.systems || {},conflictHistory:stored.conflictHistory || {}}
+      : {version:1,systems:{},conflictHistory:{}};
+  } catch { return {version:1,systems:{},conflictHistory:{}}; }
 }
+function conflictObservation(snapshot) {
+  const mongrel = (snapshot.factions || []).find(row => norm(row?.name) === norm(MONGREL));
+  if (!mongrel) return null;
+  const conflictName = value => {
+    const text = norm(value).replaceAll('_',' ');
+    if (text === 'civilwar' || text === 'civil war') return 'Civil War';
+    if (text === 'war') return 'War';
+    if (text === 'election') return 'Election';
+    return '';
+  };
+  for (const state of mongrel.pendingStates || []) {
+    const detail = conflictName(state);
+    if (detail) return {phase:'pending',detail};
+  }
+  for (const state of mongrel.activeStates || []) {
+    const detail = conflictName(state);
+    if (detail) return {phase:'active',detail};
+  }
+  const detail = conflictName(mongrel.state);
+  return detail ? {phase:'active',detail} : null;
+}
+
+function updateConflictHistory(state, snapshot) {
+  if (!state.conflictHistory || typeof state.conflictHistory !== 'object') state.conflictHistory = {};
+  const observation = conflictObservation(snapshot);
+  const existing = state.conflictHistory[snapshot.system];
+
+  if (!observation) {
+    if (existing) delete state.conflictHistory[snapshot.system];
+    return;
+  }
+
+  const sameType = existing && norm(existing.detail) === norm(observation.detail);
+  if (!sameType || (observation.phase === 'pending' && existing?.lastPhase === 'active')) {
+    state.conflictHistory[snapshot.system] = {
+      system:snapshot.system,
+      detail:observation.detail,
+      pendingSeenAt:observation.phase === 'pending' ? snapshot.updatedAt : null,
+      activeSeenAt:observation.phase === 'active' ? snapshot.updatedAt : null,
+      lastPhase:observation.phase,
+      lastSeenAt:snapshot.updatedAt,
+    };
+    return;
+  }
+
+  existing.lastPhase = observation.phase;
+  existing.lastSeenAt = snapshot.updatedAt;
+  if (observation.phase === 'pending' && !existing.pendingSeenAt) existing.pendingSeenAt = snapshot.updatedAt;
+  if (observation.phase === 'active' && !existing.activeSeenAt) existing.activeSeenAt = snapshot.updatedAt;
+}
+
 async function noteTokenUse(env, id, snapshot) {
   try {
     const state = await readTokens(env);
