@@ -257,7 +257,14 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
                 },
             )
             if 200 <= response.status_code < 300:
-                _set_status(f"Updated {payload['system']}")
+                try:
+                    result = response.json()
+                except Exception:
+                    result = {}
+                if result.get("stored") is False:
+                    _set_status(f"Already newer: {payload['system']}")
+                else:
+                    _set_status(f"Updated {payload['system']}")
                 return
             try:
                 detail = response.json().get("error", "")
