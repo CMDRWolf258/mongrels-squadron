@@ -2,6 +2,8 @@ import { json, readSession } from '../../../lib/auth.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const MONGREL = 'Regiment of Imperial Mongrels';
+const ALERT_FAMILIES = ['retreat','conflict','bust','civil-unrest'];
+const CONFLICT_STATES = new Set(['war','civil war','election']);
 
 const DEFAULTS = {
   defaultTick: '19:00',
@@ -42,8 +44,13 @@ export async function onRequestGet({ request, env }) {
     fetchBoards(request),
     readControl(env),
   ]);
-
-  return json(buildPayload(live, boards, control, auth.session), { headers: privateHeaders() });
+  const payload = buildPayload(live, boards, control, auth.session);
+  const alertsChanged = refreshAlertEpisodes(control, payload.systems);
+  attachAlertData(payload, control);
+  if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
+    await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
+  }
+  return json(payload, { headers: privateHeaders() });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -81,6 +88,7 @@ export async function onRequestPut({ request, env }) {
     control.systemSettings[name] = {
       ...normalizeSystemSettings(body.settings, control.systemDefaults),
       favorite: body?.settings?.favorite === undefined ? Boolean(existing.favorite) : Boolean(body.settings.favorite),
+      queueSelected: body?.settings?.queueSelected === undefined ? Boolean(existing.queueSelected) : Boolean(body.settings.queueSelected),
       updatedAt: now,
       updatedBy: actor,
     };
@@ -94,6 +102,25 @@ export async function onRequestPut({ request, env }) {
       updatedAt: now,
       updatedBy: actor,
     };
+  } else if (action === 'toggle-queue-selector') {
+    const name = cleanText(body?.system, '', 140);
+    if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    const existing = control.systemSettings[name] || {};
+    control.systemSettings[name] = {
+      ...normalizeSystemSettings(existing, control.systemDefaults),
+      favorite: Boolean(existing.favorite),
+      queueSelected: Boolean(body.queueSelected),
+      updatedAt: now,
+      updatedBy: actor,
+    };
+  } else if (action === 'ack-alert') {
+    const name = cleanText(body?.system, '', 140);
+    const family = cleanText(body?.family, '', 40);
+    if (!name || !ALERT_FAMILIES.includes(family)) {
+      return json({ ok: false, error: 'alert_required' }, { status: 400, headers: privateHeaders() });
+    }
+    const key = alertKey(name, family);
+    if (control.alertEpisodes?.[key]) control.alertEpisodes[key].reviewedAt = now;
   } else if (action === 'submit-status') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
@@ -103,10 +130,12 @@ export async function onRequestPut({ request, env }) {
   }
 
   control.version = 2;
-  await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
-
   const [live, boards] = await Promise.all([fetchLive(request), fetchBoards(request)]);
-  return json(buildPayload(live, boards, control, auth.session), { headers: privateHeaders() });
+  const payload = buildPayload(live, boards, control, auth.session);
+  refreshAlertEpisodes(control, payload.systems, now);
+  attachAlertData(payload, control);
+  await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
+  return json(payload, { headers: privateHeaders() });
 }
 
 async function requireSiteAdmin(request, env) {
@@ -165,6 +194,7 @@ async function readControl(env) {
     systemDefaultsUpdatedBy: null,
     systemSettings: {},
     manualSnapshots: {},
+    alertEpisodes: {},
   };
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -181,6 +211,7 @@ async function readControl(env) {
       systemDefaultsUpdatedBy: stored.systemDefaultsUpdatedBy || null,
       systemSettings: normalizeSettingsMap(stored.systemSettings, normalizedSystemDefaults),
       manualSnapshots: normalizeSnapshotMap(stored.manualSnapshots),
+      alertEpisodes: normalizeAlertEpisodes(stored.alertEpisodes),
     };
   } catch (error) {
     console.error('Could not read Wolf BGS Control state', error);
@@ -215,6 +246,7 @@ function buildPayload(live, boards, control, session) {
       presenceCount: systems.length,
       controlledCount: systems.filter(s => s.controlled).length,
       favoriteCount: systems.filter(s => s.settings?.favorite).length,
+      queueSelectorCount: systems.filter(s => s.settings?.queueSelected).length,
       staleCount: systems.filter(s => s.dataCondition === 'stale').length,
       attentionCount: systems.filter(s => s.retreatRisk || s.conflict || s.dataCondition === 'stale').length,
       newestSourceAgeHours: sourceAges.length ? Math.min(...sourceAges) : null,
@@ -317,6 +349,7 @@ function resolveSystemSettings(systemDefaults, stored) {
     return {
       ...base,
       favorite: false,
+      queueSelected: false,
       customTick: '',
       freshnessHours: null,
       rolloverPolicy: '',
@@ -329,9 +362,123 @@ function resolveSystemSettings(systemDefaults, stored) {
     ...base,
     ...normalizeSystemSettings(stored, base),
     favorite: Boolean(stored.favorite),
+    queueSelected: Boolean(stored.queueSelected),
     updatedAt: stored.updatedAt || null,
     updatedBy: stored.updatedBy || null,
   };
+}
+
+
+function normalizeAlertEpisodes(value) {
+  if (!value || typeof value !== 'object') return {};
+  const out = {};
+  for (const [key, episode] of Object.entries(value)) {
+    if (!episode || typeof episode !== 'object') continue;
+    const system = cleanText(episode.system, '', 140);
+    const family = cleanText(episode.family, '', 40);
+    if (!system || !ALERT_FAMILIES.includes(family)) continue;
+    out[key] = {
+      system,
+      family,
+      detail: cleanText(episode.detail, '', 80),
+      phase: ['pending','active'].includes(episode.phase) ? episode.phase : 'active',
+      firstSeenAt: episode.firstSeenAt || null,
+      lastSeenAt: episode.lastSeenAt || null,
+      reviewedAt: episode.reviewedAt || null,
+    };
+  }
+  return out;
+}
+
+function alertKey(system, family) {
+  return `${system}::${family}`;
+}
+
+function alertCondition(system, family) {
+  const active = Array.isArray(system?.activeStates) ? system.activeStates : [];
+  const pending = Array.isArray(system?.pendingStates) ? system.pendingStates : [];
+  const find = (items, predicate) => items.find(item => predicate(norm(item))) || '';
+  if (family === 'retreat') {
+    const detail = find(pending, value => value === 'retreat');
+    return detail ? { detail, phase:'pending' } : null;
+  }
+  if (family === 'conflict') {
+    const pendingDetail = find(pending, value => CONFLICT_STATES.has(value));
+    if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
+    const activeDetail = find(active, value => CONFLICT_STATES.has(value));
+    return activeDetail ? { detail:activeDetail, phase:'active' } : null;
+  }
+  if (family === 'bust') {
+    const pendingDetail = find(pending, value => value === 'bust');
+    if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
+    const activeDetail = find(active, value => value === 'bust');
+    return activeDetail ? { detail:activeDetail, phase:'active' } : null;
+  }
+  if (family === 'civil-unrest') {
+    const pendingDetail = find(pending, value => value === 'civil unrest');
+    if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
+    const activeDetail = find(active, value => value === 'civil unrest');
+    return activeDetail ? { detail:activeDetail, phase:'active' } : null;
+  }
+  return null;
+}
+
+function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOString()) {
+  if (!control.alertEpisodes || typeof control.alertEpisodes !== 'object') control.alertEpisodes = {};
+  const current = new Map();
+  for (const system of systems || []) {
+    for (const family of ALERT_FAMILIES) {
+      const condition = alertCondition(system, family);
+      if (condition) current.set(alertKey(system.name, family), { system:system.name, family, ...condition });
+    }
+  }
+
+  let changed = false;
+  for (const key of Object.keys(control.alertEpisodes)) {
+    if (!current.has(key)) {
+      delete control.alertEpisodes[key];
+      changed = true;
+    }
+  }
+
+  for (const [key, condition] of current) {
+    const existing = control.alertEpisodes[key];
+    const sameEvent = existing && norm(existing.detail) === norm(condition.detail);
+    if (!sameEvent) {
+      control.alertEpisodes[key] = {
+        system:condition.system,
+        family:condition.family,
+        detail:condition.detail,
+        phase:condition.phase,
+        firstSeenAt:timestamp,
+        lastSeenAt:timestamp,
+        reviewedAt:null,
+      };
+      changed = true;
+      continue;
+    }
+    if (existing.phase !== condition.phase || existing.detail !== condition.detail || existing.lastSeenAt !== timestamp) {
+      existing.phase = condition.phase;
+      existing.detail = condition.detail;
+      existing.lastSeenAt = timestamp;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function attachAlertData(payload, control) {
+  const priority = { retreat:0, conflict:1, 'civil-unrest':2, bust:3 };
+  payload.alerts = Object.values(control.alertEpisodes || {})
+    .filter(episode => !episode.reviewedAt)
+    .sort((a,b) => (priority[a.family] ?? 9) - (priority[b.family] ?? 9) || String(a.system).localeCompare(String(b.system)))
+    .map(episode => ({
+      system:episode.system,
+      family:episode.family,
+      detail:episode.detail,
+      phase:episode.phase,
+      firstSeenAt:episode.firstSeenAt,
+    }));
 }
 
 function boardMap(value) {
@@ -469,6 +616,7 @@ function normalizeSystemSettings(value = {}, baseDefaults = SYSTEM_DEFAULTS) {
     rolloverPolicy: ['', 'strict', 'safety', 'carry'].includes(value.rolloverPolicy) ? value.rolloverPolicy : '',
     notes: cleanText(value.notes, '', 1200),
     favorite: Boolean(value.favorite),
+    queueSelected: Boolean(value.queueSelected),
   };
 }
 
@@ -498,6 +646,7 @@ function normalizeSettingsMap(value, systemDefaults) {
     out[key] = {
       ...normalizeSystemSettings(settings, systemDefaults),
       favorite: Boolean(settings?.favorite),
+      queueSelected: Boolean(settings?.queueSelected),
       updatedAt: settings?.updatedAt || null,
       updatedBy: settings?.updatedBy || null,
     };
