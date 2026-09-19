@@ -599,6 +599,7 @@ Direct Scout snapshots are stored separately from the ordinary EliteHub/EDDN sna
 - can surface a Scout-only Mongrel system before the external presence feed has caught up;
 - uses the Scout journal timestamp for freshness, not the website receive time;
 - uses a newer direct journal conflict record for conflict score, always normalized with the Mongrels on the left;
+- preserves a Scout-observed Pending conflict timestamp in the Scout KV history, so a later Active observation can still infer Day 1 even if Wolf BGS Control was not open during the pending phase;
 - retains external-source timestamps separately so the UI can show exactly which source is newest.
 
 System cards identify Scout-sourced data with dedicated Scout chips. Faction alerts, Queue Selector automation, Retreat handling, conflict score age, and conflict-day tracking all consume the same merged trusted snapshot, so fresh Scout observations can immediately affect the control logic.
