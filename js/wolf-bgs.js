@@ -782,5 +782,6 @@
   }
 
   window.WolfBgsRefresh = () => load(false);
+  window.WolfBgsGetSystems = () => (payload?.systems || []).map(system => ({name:system.name})).filter(system => system.name);
   load(true);
 })();
