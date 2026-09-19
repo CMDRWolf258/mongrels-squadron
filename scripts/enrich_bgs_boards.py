@@ -568,6 +568,11 @@ def main() -> int:
         if isinstance(previous, dict) and previous.get("factions"):
             retained = dict(previous)
             retained.update({"name": display_name, "ok": False, "stale": True, "lastAttemptAt": now_iso})
+            if conflict_sync_ok:
+                retained["conflict"] = conflict_rows.get(key)
+                retained["conflictStale"] = False
+            elif retained.get("conflict"):
+                retained["conflictStale"] = True
             merged[display_name] = retained
         else:
             merged[display_name] = {
