@@ -135,7 +135,7 @@ for (const pattern of [
   /duelbot_authentication_failed/,
   /duelbot_unavailable/,
 ]) assert.match(duelbotApi, pattern);
-assert.doesNotMatch(duelbotApi, /5zt6SyUVP6Ksh3iquWiZOygSB8fhtTHNoRzA6oBh13E3wBSvwzbnwsWmUS1gOSDW/, 'Exposed DuelBot credential must never enter source control');
+assert.doesNotMatch(duelbotApi, /Authorization\s*:\s*['"`]Bearer\s+[A-Za-z0-9._~-]{20,}['"`]/, 'DuelBot API must not hard-code a Bearer credential');
 
 const duelbotCss = readFileSync(duelbotCssPath, 'utf8');
 assert.match(duelbotCss, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Desktop DuelBot grid should use three columns');
