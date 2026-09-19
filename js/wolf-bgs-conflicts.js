@@ -106,7 +106,7 @@
         : 'Pending conflict detected; Day 1 is expected on the next configured tick.';
     }
     if(timeline.day!==null){
-      const source=timeline.source==='manual'?'MANUAL':'INFERRED';
+      const source=timeline.source==='manual'?'MANUAL VERIFIED':'INFERRED';
       if(timeline.overdue)return `${source} · beyond the 7-day maximum assumption — verify current state in game.`;
       if(timeline.day<4)return `${source} · 4-day minimum · earliest normal resolution is Day 4.`;
       return `${source} · inside the Day 4–7 resolution window.`;
@@ -129,6 +129,17 @@
     card.dataset.conflictManualSetAt=timeline.manualSetAt||'';
     card.dataset.conflictManualSetBy=timeline.manualSetBy||'';
     if(score.updatedAt)card.dataset.conflictScoreUpdated=score.updatedAt;
+
+    const scoreAge=age(card.dataset.conflictScoreUpdated||'');
+    const summaryMeta=card.querySelector('.wolf-conflict-score-stat small');
+    if(summaryMeta)summaryMeta.textContent=[timelineLabel(card),scoreAge].filter(Boolean).join(' · ')||'—';
+
+    const dayChip=card.querySelector('.wolf-conflict-day-chip');
+    if(dayChip){
+      const state=timelineState(card);
+      const source=state.source==='manual'?'MANUAL VERIFIED':state.source==='inferred'?'INFERRED':'';
+      dayChip.innerHTML=`Conflict day <b>${esc(timelineLabel(card))}</b>${source?` · ${esc(source)}`:''}${state.overdue?' · VERIFY':''}`;
+    }
   }
 
   function refreshTimelinePanel(card) {
@@ -139,7 +150,14 @@
     const timeline=timelineState(card);
     if(host)host.textContent=timelineLabel(card);
     if(detail)detail.textContent=timelineDetail(card);
-    if(input)input.value=timeline.manualDay!==null?String(timeline.manualDay):'';
+    if(input){
+      input.value=timeline.manualDay!==null?String(timeline.manualDay):'';
+      input.disabled=timeline.phase==='none';
+    }
+    const setButton=card.querySelector('[data-save-conflict-day]');
+    const clearButton=card.querySelector('[data-clear-conflict-day]');
+    if(setButton)setButton.disabled=timeline.phase==='none';
+    if(clearButton)clearButton.disabled=timeline.phase==='none'||timeline.manualDay===null;
     if(meta){
       meta.textContent=timeline.manualDay!==null
         ? `Manual anchor: Day ${timeline.manualDay} set ${formatWhen(timeline.manualSetAt)} by ${timeline.manualSetBy||'Wolf'}.`
