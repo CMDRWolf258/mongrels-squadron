@@ -272,6 +272,24 @@ function buildPayload(live, boards, control, session) {
   };
 }
 
+function normalizeConflictScore(value, stale = false) {
+  if (!value || typeof value !== 'object') return null;
+  const factionWonDays = finiteOrNull(value.factionWonDays);
+  const opponentWonDays = finiteOrNull(value.opponentWonDays);
+  if (factionWonDays === null || opponentWonDays === null) return null;
+  return {
+    factionWonDays: Math.max(0, Math.round(factionWonDays)),
+    opponentWonDays: Math.max(0, Math.round(opponentWonDays)),
+    opponentFaction: cleanText(value.opponentFaction, '', 120),
+    type: prettyStateText(cleanText(value.type, '', 60)),
+    status: prettyStateText(cleanText(value.status, '', 60)),
+    factionStake: cleanText(value.factionStake, '', 160),
+    opponentStake: cleanText(value.opponentStake, '', 160),
+    updatedAt: value.updatedAt || null,
+    stale: Boolean(stale),
+  };
+}
+
 function buildSystem(row, externalBoard, control) {
   const name = String(row.name);
   const storedSettings = control.systemSettings[name] || null;
@@ -314,6 +332,8 @@ function buildSystem(row, externalBoard, control) {
   const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
   const boardComplete = manualIsNewer ? Boolean(manual?.factions?.length) : Boolean(externalFactions.length);
+  const mongrelConflict = activeStates.some(item => ['war','civil war','election'].includes(norm(item)));
+  const conflictScore = mongrelConflict ? normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale) : null;
 
   return {
     name,
@@ -343,6 +363,8 @@ function buildSystem(row, externalBoard, control) {
     settings,
     hasCustomSettings: Boolean(storedSettings?.updatedAt),
     conflict: /\bwar\b|civil war|election/.test(conflictWords),
+    mongrelConflict,
+    conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
     dataCondition: dataCondition({ sourceUpdated: externalUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
