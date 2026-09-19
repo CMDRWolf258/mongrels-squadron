@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
   <title>Wolf BGS Control | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/wolf-bgs.css?v=9">
+  <link rel="stylesheet" href="../css/wolf-bgs.css?v=10">
   <link rel="stylesheet" href="../css/wolf-bgs-rules.css?v=2">
   <link rel="stylesheet" href="../css/wolf-bgs-sliders.css?v=2">
   <link rel="stylesheet" href="../css/wolf-bgs-order-preview.css?v=1">
@@ -57,8 +57,15 @@
       <div class="container">
         <div class="wolf-faction-alerts-panel">
           <div class="wolf-faction-alerts-head">
-            <div><span>MONITORED CHANGES</span><h2>Faction Alerts</h2><p>New major Mongrel state changes appear here once. VIEW acknowledges the alert and opens the broader board-level view for that alert family.</p></div>
-            <div class="wolf-faction-alert-count"><strong data-faction-alert-count>0</strong><small>new</small></div>
+            <div><span>MONITORED CHANGES</span><h2>Faction Alerts</h2><p>New major Mongrel state changes light the master alert. ACKNOWLEDGE extinguishes the warning light without removing any alert. VIEW opens the broader board-level picture; REMOVE dismisses only that alert row.</p></div>
+            <div class="wolf-alert-command">
+              <button type="button" class="wolf-master-alert-button is-extinguished" data-alert-ack-button disabled aria-label="Faction Alert master acknowledgement">
+                <span>FACTION ALERT</span>
+                <strong data-alert-ack-state>EXTINGUISHED</strong>
+                <small data-alert-ack-substate>NO NEW ALERTS</small>
+              </button>
+              <div class="wolf-faction-alert-count"><strong data-faction-alert-count>0</strong><small>listed</small></div>
+            </div>
           </div>
           <div class="wolf-faction-alert-list" data-faction-alert-list><div class="wolf-alert-empty"><strong>Loading faction alerts…</strong></div></div>
         </div>
@@ -166,7 +173,7 @@
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
-<script src="../js/wolf-bgs.js?v=7"></script>
+<script src="../js/wolf-bgs.js?v=8"></script>
 <script src="../js/wolf-bgs-rules.js?v=3"></script>
 <script src="../js/wolf-bgs-sliders.js?v=2"></script>
 <script src="../js/wolf-bgs-order-preview.js?v=6"></script>
