@@ -534,3 +534,37 @@ The collapsed live-system header now separates operational status from source fr
 - Conflict ingestion queries both cases where the Mongrels are stored as the primary faction and where they are stored as the opponent, then normalizes the score so the left number is always the Mongrel score.
 - Conflict-score refresh is independent enough that a retained full-board snapshot can still receive a fresher conflict score. If the conflict query itself fails, the previous score is retained and marked last-known/stale instead of silently becoming a fabricated zero.
 - The regular two-hour BGS refresh workflow now populates the conflict records. A successful live refresh verified real examples including Baldur at Mongrels 1–0 vs Baldur for Equality and Col 285 Sector VT-R d4-124 at Mongrels 0–1 vs Sacra Oculus in the captured Sep 19, 2026 snapshot.
+
+
+## Conflict timeline and score-age tracking
+
+BGS Control now tracks conflict day separately from conflict score and labels the provenance of the day estimate.
+
+Authoritative operational assumptions:
+- a Mongrel War / Civil War / Election observed as **Pending** is expected to become active on the **next configured BGS tick**;
+- once active, a conflict is assumed to last a **minimum of 4 days and a maximum of 7 days**;
+- the configured per-system tick override is used when present; otherwise the Global Automation Default tick is used;
+- tick-time arithmetic is performed against the configured daily tick in UTC, matching the existing BGS tick scheduling model.
+
+Conflict episode tracking:
+- when Pending is first observed, the episode stores `pendingSeenAt` and an `expectedActiveAt` equal to the next configured tick;
+- when the same episode becomes active, it remains the same alert/episode and records the first active observation;
+- an episode with a Pending start can therefore show **DAY N · INFERRED** and advance automatically each configured tick;
+- if the site first discovers the conflict already active and never observed its Pending start, **Conflict Day remains UNKNOWN** rather than reverse-engineering a false exact day from the score;
+- an inferred/manual timeline that advances beyond Day 7 is shown as **DAY 7+ · VERIFY** instead of silently declaring the conflict resolved;
+- the timeline explains whether it is before the Day-4 minimum resolution window or inside the Day 4–7 resolution window.
+
+Manual verification:
+- Conflict Configuration now contains a **Manual current day** selector for Day 1–7;
+- setting a day from an in-game faction-panel check creates a manual anchor and is treated as the authoritative current day;
+- that manual day then advances automatically on subsequent configured ticks;
+- **USE AUTOMATION** clears the manual anchor and returns to the observed Pending-derived timeline when one exists, otherwise Day returns to UNKNOWN;
+- conflict-day overrides are cleared when that conflict episode resolves or is replaced by a genuinely new conflict episode.
+
+Score presentation:
+- conflict score remains actual source data only; no score is invented from the inferred day;
+- the Mongrel score is always the left-hand number;
+- the card header shows the score plus compact conflict-day and source-age context;
+- expanded system chips show Conflict Day and Conflict Score separately;
+- Conflict Configuration repeats the day, score, opponent, and source age;
+- score age is calculated from the EliteHub conflict record's own `updatedAt` timestamp rather than from the website fetch time.
