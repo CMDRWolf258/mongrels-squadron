@@ -1,0 +1,83 @@
+{
+  "ok": true,
+  "schema_version": 1,
+  "generated_at": "2026-09-19T05:16:38Z",
+  "leaderboard": [
+    {
+      "key": "most_logged_duels",
+      "title": "Come at me, bro!",
+      "label": "Most logged duels",
+      "entries": [
+        { "username": "[T5] CMDR Wolf258", "value": 48 }
+      ]
+    },
+    {
+      "key": "most_wins",
+      "title": "Throne-sitter",
+      "label": "Most wins",
+      "entries": [
+        { "username": "[T5] CMDR Wolf258", "value": 23 }
+      ]
+    },
+    {
+      "key": "longest_win_streak",
+      "title": "Reigned for days",
+      "label": "Longest win streak",
+      "entries": [
+        { "username": "[T1] CMDR Swoozie", "value": 4 },
+        { "username": "[T2] Sir Ganksalot (Matt)", "value": 4 },
+        { "username": "[T5] CMDR Wolf258", "value": 4 }
+      ]
+    },
+    {
+      "key": "highest_win_percentage",
+      "title": "Concentrated power",
+      "label": "Highest win percentage (at least 3 duels)",
+      "entries": [
+        { "username": "[T1] CMDR Swoozie", "percentage": 80.0 }
+      ]
+    },
+    {
+      "key": "most_losses",
+      "title": "The dedicated practicer",
+      "label": "Most losses",
+      "entries": [
+        { "username": "[T5] CMDR Wolf258", "value": 18 }
+      ]
+    },
+    {
+      "key": "longest_losing_streak",
+      "title": "Cannon fodder",
+      "label": "Longest losing streak",
+      "entries": [
+        { "username": "[T3] CMDR Lennyshow", "value": 10 }
+      ]
+    },
+    {
+      "key": "overall_winningest_ship",
+      "title": "OP",
+      "label": "Overall winningest ship",
+      "entries": [
+        { "ship": "Federal Corvette" }
+      ]
+    },
+    {
+      "key": "top_victory_hardpoints",
+      "title": "The smoking guns",
+      "label": "Top 3 hardpoint used in victories",
+      "entries": [
+        { "label": "Size 2, Fixed, Plasma Accelerator" },
+        { "label": "Size 3, Fixed, Plasma Accelerator" },
+        { "label": "Size 3, Fixed, Pacifier Frag-cannon" }
+      ]
+    },
+    {
+      "key": "most_pending_duels",
+      "title": "\"The dog ate my homework.\"",
+      "label": "Most pending duels, waiting for entry",
+      "entries": [
+        { "username": "[T2] CMDR Daisy Huck", "value": 7 }
+      ]
+    }
+  ]
+}
