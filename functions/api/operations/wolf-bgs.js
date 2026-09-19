@@ -262,14 +262,23 @@ function buildPayload(live, boards, control, session, scoutState = {systems:{}})
   const boardsBySystem = boardMap(boards?.systems);
   const scoutsBySystem = boardMap(scoutState?.systems);
   const rowsBySystem = new Map();
+  const allExternalRows = new Map();
 
   for (const row of sourceRows) {
-    if (row && row.present !== false && row.formerPresence !== true && row.name) rowsBySystem.set(norm(row.name), row);
+    if (!row?.name) continue;
+    const key = norm(row.name);
+    allExternalRows.set(key, row);
+    if (row.present !== false && row.formerPresence !== true) rowsBySystem.set(key, row);
   }
   for (const scout of scoutsBySystem.values()) {
     if (!scout?.system || !scoutHasMongrels(scout)) continue;
     const key = norm(scout.system);
-    if (!rowsBySystem.has(key)) rowsBySystem.set(key, scoutPresenceRow(scout));
+    if (rowsBySystem.has(key)) continue;
+    const external = allExternalRows.get(key);
+    const externalSaysGone = external && (external.present === false || external.formerPresence === true);
+    const externalPresenceClock = external ? newestTimestamp(external.sourceUpdated, external.lastSeen || external.fetchedAt) : null;
+    if (externalSaysGone && compareTime(externalPresenceClock, scout.updatedAt) >= 0) continue;
+    rowsBySystem.set(key, scoutPresenceRow(scout));
   }
 
   const systems = [...rowsBySystem.values()]
