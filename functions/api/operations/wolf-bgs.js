@@ -338,6 +338,7 @@ function buildSystem(row, externalBoard, control) {
     settings,
     hasCustomSettings: Boolean(storedSettings?.updatedAt),
     conflict: /\bwar\b|civil war|election/.test(conflictWords),
+    retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
     dataCondition: dataCondition({ sourceUpdated: externalUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
   };
