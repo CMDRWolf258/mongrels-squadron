@@ -1,7 +1,9 @@
 (() => {
   const ORDERS_API='/api/operations/orders';
   const queue=new Map();
+  const suppressedSignatures=new Map();
   let panel=null;
+  let syncing=false;
   let publishBusy=false;
   let lastPublishMessage='';
   let lastPublishError='';
@@ -54,12 +56,12 @@
     ].join('|')).join('||');
   }
 
-  function snapshot(card){
+  function snapshot(card,queueSource='manual'){
     const system=card.dataset.system||'';
     const priority=card.querySelector('[data-setting="priority"]')?.value||'normal';
     const tasks=[...card.querySelectorAll('[data-order-preview-output] .wolf-order-task')].map((task,index)=>taskSnapshot(task,index,system,priority));
     const warnings=[...card.querySelectorAll('[data-order-preview-output] .wolf-order-warnings li')].map(el=>clean(el.textContent)).filter(Boolean);
-    return {system,priority,tasks,warnings,signature:currentSignature(card),queuedAt:new Date().toISOString()};
+    return {system,priority,tasks,warnings,signature:currentSignature(card),queuedAt:new Date().toISOString(),queueSource};
   }
 
   function eligible(card){
@@ -67,6 +69,54 @@
     const allowed=card.querySelector('[data-setting="allowDailyOrders"]');
     if(allowed&&!allowed.checked)return false;
     return card.querySelectorAll('[data-order-preview-output] .wolf-order-task').length>0;
+  }
+
+
+  function autoQueueSource(card){
+    if(!eligible(card))return '';
+    const allow=card.querySelector('[data-setting="allowDailyOrders"]');
+    if(allow&&!allow.checked)return '';
+    const retreat=card.dataset.retreatPending==='true';
+    const reactRetreat=card.querySelector('[data-setting="reactRetreat"]');
+    if(retreat&&(!reactRetreat||reactRetreat.checked))return 'retreat';
+    const selected=card.dataset.queueSelected==='true';
+    const auto=card.querySelector('[data-setting="autoGenerateOrders"]');
+    if(selected&&(!auto||auto.checked))return 'selector';
+    return '';
+  }
+
+  function autoSyncCard(card){
+    if(!card||isLab(card))return false;
+    const system=card.dataset.system||'';
+    if(!system)return false;
+    const existing=queue.get(system);
+    const source=autoQueueSource(card);
+    const sig=currentSignature(card);
+
+    if(!source){
+      if(existing&&['selector','retreat'].includes(existing.queueSource)){
+        queue.delete(system);
+        return true;
+      }
+      return false;
+    }
+
+    if(suppressedSignatures.get(system)===sig)return false;
+    if(suppressedSignatures.has(system)&&suppressedSignatures.get(system)!==sig)suppressedSignatures.delete(system);
+    if(existing?.queueSource==='manual')return false;
+    if(existing&&existing.signature===sig&&existing.queueSource===source)return false;
+    queue.set(system,snapshot(card,source));
+    return true;
+  }
+
+  function sourceLabel(item){
+    if(item.queueSource==='retreat')return 'AUTO · RETREAT';
+    if(item.queueSource==='selector')return 'AUTO · QUEUE SELECTOR';
+    return 'MANUAL';
+  }
+
+  function suppressCurrent(item){
+    if(item?.system&&item?.signature)suppressedSignatures.set(item.system,item.signature);
   }
 
   function ensurePanel(){
@@ -82,8 +132,21 @@
     panel=section;
     panel.addEventListener('click',event=>{
       const remove=event.target.closest('[data-remove-queued-system]');
-      if(remove){lastPublishError='';queue.delete(remove.dataset.removeQueuedSystem);syncAll();return;}
-      if(event.target.closest('[data-clear-publish-queue]')){lastPublishError='';queue.clear();syncAll();return;}
+      if(remove){
+        lastPublishError='';
+        const item=queue.get(remove.dataset.removeQueuedSystem);
+        suppressCurrent(item);
+        queue.delete(remove.dataset.removeQueuedSystem);
+        syncAll();
+        return;
+      }
+      if(event.target.closest('[data-clear-publish-queue]')){
+        lastPublishError='';
+        [...queue.values()].forEach(suppressCurrent);
+        queue.clear();
+        syncAll();
+        return;
+      }
       if(event.target.closest('[data-publish-daily-orders]'))publish();
     });
     syncPanel();
@@ -110,8 +173,13 @@
         const existing=queue.get(system);
         const sig=currentSignature(card);
         lastPublishError='';
-        if(existing&&existing.signature===sig){queue.delete(system);}
-        else{queue.set(system,snapshot(card));}
+        if(existing&&existing.signature===sig){
+          suppressCurrent(existing);
+          queue.delete(system);
+        }else{
+          suppressedSignatures.delete(system);
+          queue.set(system,snapshot(card,'manual'));
+        }
         syncAll();
       });
     }
@@ -150,7 +218,7 @@
     if(!systems.length){
       host.innerHTML='<div class="wolf-publish-empty">No systems queued yet. Add a reviewed preview from any live system card.</div>';
     }else{
-      host.innerHTML=systems.map(item=>'<article class="wolf-publish-queued-system"><div><strong>'+esc(item.system)+'</strong><span>'+item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)+(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div><button type="button" data-remove-queued-system="'+esc(item.system)+'" title="Remove from queue">×</button></article>').join('');
+      host.innerHTML=systems.map(item=>'<article class="wolf-publish-queued-system"><div><strong>'+esc(item.system)+'</strong><span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '+item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)+(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div><button type="button" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out">×</button></article>').join('');
     }
     const clear=p.querySelector('[data-clear-publish-queue]');
     const publishButton=p.querySelector('[data-publish-daily-orders]');
@@ -174,8 +242,13 @@
   }
 
   function syncAll(){
+    if(syncing)return;
+    syncing=true;
+    const cards=[...document.querySelectorAll('.wolf-system-card')];
+    cards.forEach(autoSyncCard);
     syncPanel();
-    document.querySelectorAll('.wolf-system-card').forEach(enhanceCard);
+    cards.forEach(enhanceCard);
+    syncing=false;
   }
 
   async function publish(){
@@ -206,6 +279,7 @@
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
       lastPublishError='';
       lastPublishMessage='Published '+orders.length+' task'+(orders.length===1?'':'s')+' in a new Daily Orders cycle. <a href="../operations/#daily-orders">Open Mission Control →</a>';
+      systems.forEach(suppressCurrent);
       queue.clear();
       syncAll();
     }catch(error){
@@ -226,8 +300,20 @@
       setTimeout(()=>{queued=false;syncAll();},60);
     }).observe(root,{childList:true,subtree:true});
     document.addEventListener('change',event=>{
-      if(event.target.matches('[data-setting="allowDailyOrders"],[data-global="maxDailySystems"]'))setTimeout(syncAll,0);
+      if(event.target.matches('[data-setting="allowDailyOrders"],[data-setting="autoGenerateOrders"],[data-setting="reactRetreat"],[data-global="maxDailySystems"]'))setTimeout(syncAll,0);
     });
+    window.addEventListener('wolf-bgs-queue-selector-updated',event=>{
+      const system=event.detail?.system||'';
+      const selected=Boolean(event.detail?.selected);
+      if(selected)suppressedSignatures.delete(system);
+      else{
+        const item=queue.get(system);
+        if(item?.queueSource==='selector')queue.delete(system);
+        suppressedSignatures.delete(system);
+      }
+      setTimeout(syncAll,0);
+    });
+    window.addEventListener('wolf-bgs-payload-updated',()=>setTimeout(syncAll,70));
     syncAll();
     setTimeout(syncAll,250);
     setTimeout(syncAll,700);
