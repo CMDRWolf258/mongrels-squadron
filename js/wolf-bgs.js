@@ -241,10 +241,22 @@
   }
 
   function systemStatus(system) {
+    if (system.retreatPending) return { key:'risk', label:'Retreat pending' };
     if (system.retreatRisk) return { key:'risk', label:'Retreat risk' };
     if (system.conflict) return { key:'risk', label:'Conflict' };
+    return { key:'ok', label:'Normal' };
+  }
+
+  function freshnessStatus(system) {
+    if (!system.activeSnapshotTime) return { key:'unknown', label:'Unknown' };
     if (system.dataCondition === 'stale') return { key:'stale', label:'Stale' };
-    return { key:'ok', label:'Healthy' };
+    return { key:'fresh', label:'Fresh' };
+  }
+
+  function conflictScoreText(system) {
+    const score = system?.conflictScore;
+    if (!score) return '—';
+    return `${Number(score.factionWonDays)}–${Number(score.opponentWonDays)}`;
   }
 
   function rowTemplate(faction, index) {
@@ -261,6 +273,7 @@
 
   function systemCard(system, lowWatch = false) {
     const status = systemStatus(system);
+    const freshness = freshnessStatus(system);
     const settings = system.settings || {};
     const factions = Array.isArray(system.factions) && system.factions.length ? system.factions : [{
       name:'Regiment of Imperial Mongrels', influence:system.influence, state:system.state,
@@ -276,8 +289,12 @@
       ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
       : '<span class="wolf-chip">External board <b>awaiting data</b></span>';
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
+    const score = system.conflictScore || null;
+    const scoreTitle = score
+      ? `Mongrels ${score.factionWonDays} — ${score.opponentFaction || 'Opponent'} ${score.opponentWonDays}${score.stale ? ' · last known score' : ''}`
+      : 'No active Mongrel conflict score available';
 
-    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}" data-queue-selected="${queueSelected}" data-retreat-pending="${system.retreatPending ? 'true' : 'false'}" data-snapshot-time="${html(system.activeSnapshotTime || '')}" data-settings-updated="${html(settings.updatedAt || '')}">
+    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}" data-queue-selected="${queueSelected}" data-retreat-pending="${system.retreatPending ? 'true' : 'false'}" data-snapshot-time="${html(system.activeSnapshotTime || '')}" data-settings-updated="${html(settings.updatedAt || '')}" data-conflict-score-a="${html(score?.factionWonDays ?? '')}" data-conflict-score-b="${html(score?.opponentWonDays ?? '')}" data-conflict-opponent="${html(score?.opponentFaction || '')}" data-conflict-score-stale="${score?.stale ? 'true' : 'false'}">
       <summary>
         <div class="wolf-system-name-row">
           <div class="wolf-system-selectors">
@@ -288,7 +305,8 @@
         </div>
         <div class="wolf-system-stat"><span>Mongrel INF</span><b>${influence(system.influence)}</b></div>
         <div class="wolf-system-stat hide-mobile"><span>State</span><b>${html(system.state || 'None')}</b></div>
-        <div class="wolf-system-stat hide-mobile"><span>Data</span><b>${html(age(system.activeSnapshotTime))}</b></div>
+        <div class="wolf-system-stat wolf-freshness-stat"><span>Freshness</span><b class="wolf-freshness-value ${freshness.key}">${html(freshness.label)}</b><small>${html(age(system.activeSnapshotTime))}</small></div>
+        <div class="wolf-system-stat wolf-conflict-score-stat hide-mobile" title="${html(scoreTitle)}"><span>Conflict Score</span><b class="${score ? 'has-score' : ''}">${html(conflictScoreText(system))}</b>${score?.stale ? '<small>last known</small>' : ''}</div>
         <div class="wolf-system-stat hide-tablet hide-mobile"><span>Tick</span><b>${html(tick)}</b></div>
         <div class="wolf-system-stat hide-tablet hide-mobile"><span>Priority</span><b>${html(priorityLabel(system))}</b></div>
         <span class="wolf-status-pill ${status.key}">${html(status.label)}</span>
@@ -302,6 +320,7 @@
           <span class="wolf-chip">Active snapshot <b>${manualNewer ? 'Manual' : 'External'} · ${html(fmt(system.activeSnapshotTime))}</b></span>
           <span class="wolf-chip">Freshness limit <b>${html(freshHours)}h</b></span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
+          ${score ? `<span class="wolf-chip wolf-conflict-score-chip">Conflict score <b>${html(conflictScoreText(system))}</b>${score.opponentFaction ? ` vs ${html(score.opponentFaction)}` : ''}${score.stale ? ' · last known' : ''}</span>` : ''}
           ${boardChip}
           ${system.hasCustomSettings ? '<span class="wolf-chip custom">Custom settings</span>' : '<span class="wolf-chip">System defaults</span>'}
         </div>
