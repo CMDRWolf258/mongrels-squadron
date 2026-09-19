@@ -46,6 +46,7 @@ export async function onRequestGet({ request, env }) {
   ]);
   const payload = buildPayload(live, boards, control, auth.session);
   const alertsChanged = refreshAlertEpisodes(control, payload.systems);
+  attachConflictTracking(payload, control);
   attachAlertData(payload, control);
   if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
     await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
@@ -113,6 +114,19 @@ export async function onRequestPut({ request, env }) {
       updatedAt: now,
       updatedBy: actor,
     };
+  } else if (action === 'set-conflict-day') {
+    const name = cleanText(body?.system, '', 140);
+    const day = Math.round(Number(body?.day));
+    if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    if (!Number.isFinite(day) || day < 1 || day > 7) {
+      return json({ ok: false, error: 'conflict_day_invalid' }, { status: 400, headers: privateHeaders() });
+    }
+    control.conflictDayOverrides = control.conflictDayOverrides && typeof control.conflictDayOverrides === 'object' ? control.conflictDayOverrides : {};
+    control.conflictDayOverrides[name] = { day, setAt: now, setBy: actor };
+  } else if (action === 'clear-conflict-day') {
+    const name = cleanText(body?.system, '', 140);
+    if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    if (control.conflictDayOverrides) delete control.conflictDayOverrides[name];
   } else if (action === 'ack-alerts') {
     control.alertEpisodes = control.alertEpisodes && typeof control.alertEpisodes === 'object' ? control.alertEpisodes : {};
     for (const episode of Object.values(control.alertEpisodes)) {
@@ -138,6 +152,7 @@ export async function onRequestPut({ request, env }) {
   const [live, boards] = await Promise.all([fetchLive(request), fetchBoards(request)]);
   const payload = buildPayload(live, boards, control, auth.session);
   refreshAlertEpisodes(control, payload.systems, now);
+  attachConflictTracking(payload, control, now);
   attachAlertData(payload, control);
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
   return json(payload, { headers: privateHeaders() });
@@ -200,6 +215,7 @@ async function readControl(env) {
     systemSettings: {},
     manualSnapshots: {},
     alertEpisodes: {},
+    conflictDayOverrides: {},
   };
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -217,6 +233,7 @@ async function readControl(env) {
       systemSettings: normalizeSettingsMap(stored.systemSettings, normalizedSystemDefaults),
       manualSnapshots: normalizeSnapshotMap(stored.manualSnapshots),
       alertEpisodes: normalizeAlertEpisodes(stored.alertEpisodes),
+      conflictDayOverrides: normalizeConflictDayOverrides(stored.conflictDayOverrides),
     };
   } catch (error) {
     console.error('Could not read Wolf BGS Control state', error);
@@ -412,6 +429,10 @@ function normalizeAlertEpisodes(value) {
       phase: ['pending','active'].includes(episode.phase) ? episode.phase : 'active',
       firstSeenAt: episode.firstSeenAt || null,
       lastSeenAt: episode.lastSeenAt || null,
+      firstPhase: ['pending','active'].includes(episode.firstPhase) ? episode.firstPhase : (['pending','active'].includes(episode.phase) ? episode.phase : 'active'),
+      pendingSeenAt: episode.pendingSeenAt || null,
+      expectedActiveAt: episode.expectedActiveAt || null,
+      activeSeenAt: episode.activeSeenAt || null,
       reviewedAt: episode.reviewedAt || null,
       removedAt: episode.removedAt || null,
     };
@@ -458,13 +479,22 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
   for (const system of systems || []) {
     for (const family of ALERT_FAMILIES) {
       const condition = alertCondition(system, family);
-      if (condition) current.set(alertKey(system.name, family), { system:system.name, family, ...condition });
+      if (condition) current.set(alertKey(system.name, family), {
+        system:system.name,
+        family,
+        tick:system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick,
+        ...condition,
+      });
     }
   }
 
   let changed = false;
   for (const key of Object.keys(control.alertEpisodes)) {
     if (!current.has(key)) {
+      const episode = control.alertEpisodes[key];
+      if (episode?.family === 'conflict' && control.conflictDayOverrides?.[episode.system]) {
+        delete control.conflictDayOverrides[episode.system];
+      }
       delete control.alertEpisodes[key];
       changed = true;
     }
@@ -474,18 +504,38 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
     const existing = control.alertEpisodes[key];
     const sameEvent = existing && norm(existing.detail) === norm(condition.detail);
     if (!sameEvent) {
+      if (condition.family === 'conflict' && control.conflictDayOverrides?.[condition.system]) {
+        delete control.conflictDayOverrides[condition.system];
+      }
+      const pendingSeenAt = condition.family === 'conflict' && condition.phase === 'pending' ? timestamp : null;
       control.alertEpisodes[key] = {
         system:condition.system,
         family:condition.family,
         detail:condition.detail,
         phase:condition.phase,
+        firstPhase:condition.phase,
         firstSeenAt:timestamp,
         lastSeenAt:timestamp,
+        pendingSeenAt,
+        expectedActiveAt:pendingSeenAt ? nextTickAfter(pendingSeenAt, condition.tick) : null,
+        activeSeenAt:condition.family === 'conflict' && condition.phase === 'active' ? timestamp : null,
         reviewedAt:null,
         removedAt:null,
       };
       changed = true;
       continue;
+    }
+
+    if (condition.family === 'conflict') {
+      if (condition.phase === 'pending' && !existing.pendingSeenAt) {
+        existing.pendingSeenAt = existing.firstPhase === 'pending' ? (existing.firstSeenAt || timestamp) : timestamp;
+        existing.expectedActiveAt = existing.expectedActiveAt || nextTickAfter(existing.pendingSeenAt, condition.tick);
+        changed = true;
+      }
+      if (condition.phase === 'active' && !existing.activeSeenAt) {
+        existing.activeSeenAt = timestamp;
+        changed = true;
+      }
     }
     if (existing.phase !== condition.phase || existing.detail !== condition.detail || existing.lastSeenAt !== timestamp) {
       existing.phase = condition.phase;
@@ -514,6 +564,103 @@ function attachAlertData(payload, control) {
     firstSeenAt:episode.firstSeenAt,
     reviewedAt:episode.reviewedAt || null,
   }));
+}
+
+function normalizeConflictDayOverrides(value) {
+  if (!value || typeof value !== 'object') return {};
+  const out = {};
+  for (const [system, item] of Object.entries(value)) {
+    const name = cleanText(system, '', 140);
+    const day = Math.round(Number(item?.day));
+    if (!name || !Number.isFinite(day) || day < 1 || day > 7) continue;
+    out[name] = {
+      day,
+      setAt:item?.setAt || null,
+      setBy:cleanText(item?.setBy, '', 120),
+    };
+  }
+  return out;
+}
+
+function tickParts(value) {
+  const match = String(value || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return { hour:19, minute:0 };
+  const hour = Number(match[1]), minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return { hour:19, minute:0 };
+  return { hour, minute };
+}
+
+function nextTickAfter(timestamp, tick) {
+  const start = new Date(timestamp);
+  if (!Number.isFinite(start.getTime())) return null;
+  const { hour, minute } = tickParts(tick);
+  let tickMs = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), hour, minute, 0, 0);
+  if (tickMs <= start.getTime()) tickMs += 86400000;
+  return new Date(tickMs).toISOString();
+}
+
+function ticksElapsedAfter(anchor, now, tick) {
+  const start = new Date(anchor);
+  const end = new Date(now);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return 0;
+  const first = nextTickAfter(anchor, tick);
+  if (!first) return 0;
+  const firstMs = new Date(first).getTime();
+  if (end.getTime() < firstMs) return 0;
+  return 1 + Math.floor((end.getTime() - firstMs) / 86400000);
+}
+
+function conflictTimelineFor(system, control, nowIso) {
+  const episode = control.alertEpisodes?.[alertKey(system.name, 'conflict')] || null;
+  const override = control.conflictDayOverrides?.[system.name] || null;
+  const tick = system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick;
+  const active = Boolean(system.mongrelConflict);
+  const pending = (system.pendingStates || []).some(state => CONFLICT_STATES.has(norm(state)));
+  const phase = override && (active || pending || episode) ? 'active' : (active ? 'active' : pending ? 'pending' : 'none');
+
+  let day = null;
+  let rawDay = null;
+  let source = 'unknown';
+  let anchoredAt = null;
+
+  if (override && phase !== 'none') {
+    rawDay = override.day + ticksElapsedAfter(override.setAt, nowIso, tick);
+    day = Math.min(7, rawDay);
+    source = 'manual';
+    anchoredAt = override.setAt;
+  } else if (phase === 'active' && episode?.pendingSeenAt && episode?.expectedActiveAt) {
+    const start = new Date(episode.expectedActiveAt).getTime();
+    const now = new Date(nowIso).getTime();
+    rawDay = Math.max(1, Math.floor((now - start) / 86400000) + 1);
+    day = Math.min(7, rawDay);
+    source = 'inferred';
+    anchoredAt = episode.expectedActiveAt;
+  }
+
+  return {
+    phase,
+    day,
+    rawDay,
+    source,
+    tick,
+    pendingSeenAt:episode?.pendingSeenAt || null,
+    expectedActiveAt:episode?.expectedActiveAt || null,
+    activeSeenAt:episode?.activeSeenAt || null,
+    anchoredAt,
+    manualDay:override?.day || null,
+    manualSetAt:override?.setAt || null,
+    manualSetBy:override?.setBy || null,
+    minimumDays:4,
+    maximumDays:7,
+    minimumReached:day !== null ? day >= 4 : false,
+    overdue:rawDay !== null ? rawDay > 7 : false,
+  };
+}
+
+function attachConflictTracking(payload, control, nowIso = new Date().toISOString()) {
+  for (const system of payload.systems || []) {
+    system.conflictTimeline = conflictTimelineFor(system, control, nowIso);
+  }
 }
 
 function boardMap(value) {
