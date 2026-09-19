@@ -422,6 +422,25 @@
     return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(winner)}" data-order-amount="" data-order-conflict-type="${esc(pair.type)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ${esc(typeLabel(pair.type).toUpperCase())}</span><strong>Fight Conflict Zones and turn in Combat Bonds for ${esc(winner)}</strong><p>${esc(typeLabel(pair.type))} pair: ${esc(winner)} vs ${esc(loser)}. Work only the intended winner's side.</p><small><b>Calibration:</b> exact CZ-win workload per CMDR is not programmed yet; Mandalore can be used to tune that threshold before publishing real conflict orders.</small></div></article>`;
   }
 
+  function labOrder(card){
+    if(!isLab(card)||typeof window.WolfBgsConflictLabOrder!=='function')return null;
+    try{return window.WolfBgsConflictLabOrder(card)||null;}catch(error){console.error('Mandalore conflict order hook failed',error);return null;}
+  }
+
+  function labConflictTaskMarkup(order,index=0){
+    const amount=num(order?.amount);
+    if(!order?.generate||!order?.faction||amount===null)return '';
+    const kind=order.kind==='mission-inf'?'mission-inf':'conflict-cz';
+    const conflictType=order.conflictType||'war';
+    const pressure=String(order.pressure||'contested').toUpperCase();
+    const stale=Boolean(order.stale);
+    const prefix=stale?'REVIEW / STALE':`CONFLICT / ${typeLabel(conflictType).toUpperCase()} · ${pressure}`;
+    if(kind==='mission-inf'){
+      return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="mission-inf" data-order-faction="${esc(order.faction)}" data-order-amount="${esc(amount)}" data-order-conflict-type="election"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">${esc(prefix)}</span><strong>Complete ${esc(amount)} INF of Election-compatible missions for ${esc(order.faction)}</strong><p><b>Squad-wide target.</b> ${esc(order.detail||'Support the configured Election outcome.')}</p><small>Mission Control will aggregate member +2 / +3 / +4 / +5 Influence reports toward this target.${stale?' Score is stale; review before acting or queueing.':''}</small></div></article>`;
+    }
+    return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(order.faction)}" data-order-amount="${esc(amount)}" data-order-conflict-type="${esc(conflictType)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">${esc(prefix)}</span><strong>Earn ${esc(amount)} CZ points for ${esc(order.faction)}</strong><p><b>Squad-wide target.</b> Low = 1 · Medium = 1.3 · High = 1.6 points. Redeem Combat Bonds for the intended side.</p><small>${esc(order.detail||'Work the configured conflict outcome.')}${stale?' Score is stale; review before acting or queueing.':''}</small></div></article>`;
+  }
+
   function updateTaskCount(host){
     const small=host.querySelector('.wolf-order-preview-head small'); if(!small)return;
     const count=host.querySelectorAll('.wolf-order-task').length;
@@ -438,8 +457,14 @@
         host.querySelectorAll('.wolf-order-task:not(.wolf-conflict-preview-task)').forEach(task=>{const text=task.textContent||'';if(participantNames.some(name=>text.includes(name)))task.remove();});
         host.querySelectorAll('.wolf-order-math').forEach(item=>{const text=item.textContent||'';if(participantNames.some(name=>text.includes(name)))item.remove();});
         const list=host.querySelector('.wolf-order-task-list');
-        const orders=result.resolved.filter(pair=>pair.objective==='win-a'||pair.objective==='win-b');
-        if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map(conflictTaskMarkup).join(''));
+        const prototypeOrder=labOrder(card);
+        if(list&&prototypeOrder){
+          const markup=labConflictTaskMarkup(prototypeOrder);
+          if(markup)list.insertAdjacentHTML('afterbegin',markup);
+        }else{
+          const orders=result.resolved.filter(pair=>pair.objective==='win-a'||pair.objective==='win-b');
+          if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map(conflictTaskMarkup).join(''));
+        }
         const head=host.querySelector('.wolf-order-preview-head');
         if(head)head.insertAdjacentHTML('afterend',`<div class="wolf-conflict-preview-banner"><strong>Conflict lock active</strong><span>${participantNames.length} active participant${participantNames.length===1?'':'s'} removed from ordinary influence/slider work. ${result.unresolved.length?`${result.unresolved.length} participant${result.unresolved.length===1?' is':'s are'} still unpaired.`:`${result.resolved.length} pair${result.resolved.length===1?'':'s'} resolved.`}</span></div>`);
       }
@@ -495,6 +520,7 @@
 
   function enhanceAll(){document.querySelectorAll('.wolf-system-card').forEach(ensure);}
   function watch(){const list=document.querySelector('[data-system-list]');if(!list||list.dataset.conflictObserved==='true')return;list.dataset.conflictObserved='true';let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;enhanceAll();},40);}).observe(list,{childList:true,subtree:true});}
+  document.addEventListener('wolf-bgs-conflict-lab-updated',()=>{const card=document.querySelector('[data-bgs-lab="true"]');if(card)processPreview(card);});
 
   async function init(){
     try{await load();}catch(error){console.error('Could not load Wolf BGS conflict configuration',error);}
