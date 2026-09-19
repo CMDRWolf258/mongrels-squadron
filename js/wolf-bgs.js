@@ -318,7 +318,7 @@
               <h3>Automation Controls</h3><p class="wolf-section-intro">The programmed rules will remain authoritative. Advanced intelligence suggestions will be advisory and visible separately.</p>
               <div class="wolf-toggle-list">
                 <label><input type="checkbox" data-setting="allowDailyOrders" ${settings.allowDailyOrders!==false?'checked':''}> Allow into Daily Orders</label>
-                <label><input type="checkbox" data-setting="autoGenerateOrders" ${settings.autoGenerateOrders!==false?'checked':''}> Generate orders automatically</label>
+                <label><input type="checkbox" data-setting="autoGenerateOrders" ${settings.autoGenerateOrders!==false?'checked':''}> Auto-queue Queue Selector work</label>
                 <label><input type="checkbox" data-setting="emergencyOverride" ${settings.emergencyOverride!==false?'checked':''}> Emergency priority override</label>
                 <label><input type="checkbox" data-setting="reactRetreat" ${settings.reactRetreat!==false?'checked':''}> React to Retreat risk</label>
                 <label><input type="checkbox" data-setting="reactConflict" ${settings.reactConflict!==false?'checked':''}> React to conflict</label>
