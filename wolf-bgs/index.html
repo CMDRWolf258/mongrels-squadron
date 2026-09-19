@@ -74,6 +74,40 @@
 
     <section class="section-sm">
       <div class="container">
+        <details class="wolf-panel wolf-scout-network-panel" data-scout-network>
+          <summary><span><b>Scout Network</b><small>Direct EDMC BGS uplink · individually revocable CMDR tokens</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <div class="wolf-scout-network-head">
+              <div><p class="eyebrow">Mongrel Scout Uplink</p><h3>Fly it. Update it.</h3><p>A scout only needs EDMC and the one-file Mongrel Scout plugin. When Elite writes a full faction board in a Mongrel system, the plugin sends that sanitized BGS snapshot directly here.</p></div>
+              <div class="wolf-scout-network-count"><strong data-scout-token-count>0</strong><small>issued tokens</small></div>
+            </div>
+            <div class="wolf-scout-install">
+              <div><span>1</span><p><strong>Install EDMC</strong><small>Use the current Elite Dangerous Market Connector.</small></p></div>
+              <div><span>2</span><p><strong>Install Mongrel Scout</strong><small>Create a MongrelScout plugin folder and place load.py inside.</small></p></div>
+              <div><span>3</span><p><strong>Paste scout token</strong><small>One token per trusted CMDR. Then they just fly.</small></p></div>
+              <a class="btn btn-secondary btn-compact" href="../downloads/mongrel-scout/load.py" download="load.py">Download EDMC Plugin</a>
+              <a class="wolf-scout-readme-link" href="../downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Install guide</a>
+            </div>
+            <form class="wolf-scout-token-form" data-scout-token-form>
+              <label><span>Scout label</span><input type="text" maxlength="80" data-scout-token-label placeholder="e.g. CMDR ScoutOne" autocomplete="off"></label>
+              <button type="submit" class="btn btn-primary btn-compact">Generate Scout Token</button>
+              <span class="wolf-status-message" data-scout-token-message></span>
+            </form>
+            <div class="wolf-scout-token-reveal" data-scout-token-reveal hidden>
+              <span>ONE-TIME TOKEN · COPY NOW</span>
+              <code data-scout-token-value></code>
+              <button type="button" class="btn btn-secondary btn-compact" data-copy-scout-token>COPY TOKEN</button>
+              <small>The server stores only a SHA-256 hash. This exact token cannot be recovered later; revoke it and issue another if it is lost.</small>
+            </div>
+            <div class="wolf-scout-token-list" data-scout-token-list><div class="wolf-scout-empty"><strong>Loading Scout Network…</strong></div></div>
+            <div class="wolf-rules-callout subtle"><strong>Privacy boundary</strong><span>The plugin does not send CMDR name, cargo, credits, ship/loadout, materials, missions, or general route history. Non-Mongrel systems are discarded locally and never uploaded.</span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
         <details class="wolf-panel wolf-global-panel">
           <summary><span><b>Global Automation Defaults</b><small>Cycle timing, freshness, reporting, and order-queue limits</small></span><strong>+</strong></summary>
           <form data-global-form class="wolf-panel-body">
@@ -174,6 +208,7 @@
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
 <script src="../js/wolf-bgs.js?v=11"></script>
+<script src="../js/wolf-bgs-scout.js?v=1"></script>
 <script src="../js/wolf-bgs-rules.js?v=3"></script>
 <script src="../js/wolf-bgs-sliders.js?v=2"></script>
 <script src="../js/wolf-bgs-order-preview.js?v=6"></script>
