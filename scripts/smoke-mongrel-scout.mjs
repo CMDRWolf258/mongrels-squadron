@@ -96,8 +96,8 @@ const scoutSnapshot={
   security:'High',
   population:12345,
   factions:[
-    {name:'Regiment of Imperial Mongrels',influence:0.42,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
-    {name:'Opponent Faction',influence:0.41,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
+    {name:'Regiment of Imperial Mongrels',influence:42,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
+    {name:'Opponent Faction',influence:41,state:'War',activeStates:['War'],pendingStates:[],recoveringStates:[]},
   ],
   conflicts:[{
     type:'War',status:'Active',
