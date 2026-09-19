@@ -205,3 +205,6 @@
 .wolf-active-board-view span{color:#c9eef5;font-size:.7rem;font-weight:850;letter-spacing:.07em}
 .wolf-active-board-view button{border:0;background:transparent;color:#8fb9c0;font:inherit;font-size:.65rem;font-weight:800;text-transform:uppercase;cursor:pointer}.wolf-active-board-view button:hover{color:#fff;text-decoration:underline}
 @media(max-width:760px){.wolf-faction-alerts-head{align-items:center}.wolf-faction-alert{align-items:stretch;flex-direction:column}.wolf-faction-alert-main{grid-template-columns:1fr;gap:.2rem}.wolf-faction-alert-main strong,.wolf-faction-alert-main small{white-space:normal}.wolf-system-list-meta{align-items:flex-start;flex-direction:column}.wolf-pagination{width:100%;justify-content:space-between}}
+
+.wolf-system-card.wolf-auto-evaluating>.wolf-system-body{display:none!important}
+.wolf-system-card.wolf-auto-evaluating>summary{background:rgba(42,160,191,.045)}
