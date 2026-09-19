@@ -356,7 +356,8 @@ function buildSystem(row, externalBoard, control, scout = null) {
   };
   const externalFactions = normalizeExternalFactions(externalBoard?.factions);
   const scoutFactions = normalizeScoutFactions(scout?.factions);
-  const externalUpdated = newestTimestamp(row.sourceUpdated, externalBoard?.updatedAt);
+  const rowExternalUpdated = row.sourceKind === 'scout' ? null : row.sourceUpdated;
+  const externalUpdated = newestTimestamp(rowExternalUpdated, externalBoard?.updatedAt);
   const scoutUpdated = scout?.updatedAt || null;
   const trustedSourceUpdated = newestTimestamp(externalUpdated, scoutUpdated);
   const scoutIsNewer = Boolean(scoutUpdated) && compareTime(scoutUpdated, externalUpdated) > 0;
@@ -768,6 +769,7 @@ function scoutPresenceRow(snapshot) {
     population:snapshot.population ?? null,
     sourceUpdated:snapshot.updatedAt || null,
     source:'Mongrel Scout / EDMC',
+    sourceKind:'scout',
     fetchedAt:snapshot.receivedAt || snapshot.updatedAt || null,
     present:true,
     formerPresence:false,
