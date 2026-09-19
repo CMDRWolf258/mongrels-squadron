@@ -19,12 +19,11 @@ Member browser
 
 ## Cloudflare configuration required before live testing
 
-Configure these values for the Pages project:
+Configure this secret for the Pages project:
 
-- `DUELBOT_LEADERBOARD_URL` — DuelBot's leaderboard API endpoint.
-- `DUELBOT_API_TOKEN` — the rotated shared integration credential. This must be stored as a Cloudflare secret, never committed to GitHub or exposed to browser code.
+- `DUELBOT_API_TOKEN` — the shared integration credential. It must be stored as a Cloudflare secret, never committed to GitHub or exposed to browser code.
 
-The credential supplied in the original contract should be treated as exposed and replaced before production use.
+The documented DuelBot URL is fixed in the server function as `https://duelbot.fitzbound.duckdns.org/api/v1/leaderboard`; it is not browser-configurable. Lenny has confirmed the integration is enabled and that the current credential may remain in use for this integration test.
 
 ## Access boundary
 
@@ -69,7 +68,7 @@ The Mongrels proxy intentionally does not pass DuelBot's raw error body to the b
 
 - Missing Mongrels login -> 401 `authentication_required`
 - Insufficient Mongrels access -> 403 `member_access_required`
-- Missing local endpoint/secret configuration -> 503 `duelbot_integration_not_configured`
+- Missing local secret configuration -> 503 `duelbot_integration_not_configured`
 - DuelBot 503 / timeout / network failure -> 503 `duelbot_unavailable`
 - DuelBot rejects the integration credential -> 502 `duelbot_authentication_failed`
 - Other upstream failure -> 502 `duelbot_upstream_error`
@@ -78,11 +77,9 @@ The Mongrels proxy intentionally does not pass DuelBot's raw error body to the b
 ## End-to-end activation checklist
 
 1. Finish branch smoke tests using the supplied v1 fixture.
-2. Rotate the original shared credential.
-3. Store the replacement as `DUELBOT_API_TOKEN` in Cloudflare.
-4. Set `DUELBOT_LEADERBOARD_URL` to the agreed DuelBot endpoint.
-5. Have DuelBot enable its integration kill switch.
-6. Sign in as a Mongrel member and load the PvP page.
-7. Compare all nine live categories against DuelBot's own Leaderboard button.
-8. Verify a forced DuelBot 503 produces only the graceful unavailable state.
-9. Verify a deliberately wrong token produces no secret leakage and a clean upstream-authentication failure.
+2. Store the current agreed credential as `DUELBOT_API_TOKEN` in Cloudflare as an encrypted secret.
+3. Redeploy the branch/production environment after the secret is present.
+4. Sign in as a Mongrel member and load the PvP page.
+5. Compare all nine live categories against DuelBot's own Leaderboard button.
+6. Verify a forced DuelBot 503 produces only the graceful unavailable state when coordinated with DuelBot.
+7. If the shared credential is rotated later, replace only `DUELBOT_API_TOKEN` in Cloudflare; no code change is required.
