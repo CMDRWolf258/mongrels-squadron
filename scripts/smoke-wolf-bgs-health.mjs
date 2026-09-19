@@ -31,6 +31,6 @@ assert.doesNotMatch(source, /else parkCard\(card\)/, 'A normal manual collapse m
 
 const page = readFileSync('wolf-bgs/index.html', 'utf8');
 assert.match(page, /wolf-bgs-inheritance\.js\?v=3/, 'Wolf BGS page must cache-bust the two-card health bootstrap');
-assert.ok(page.indexOf('wolf-bgs-inheritance.js?v=3') < page.indexOf('wolf-bgs.js?v=3'), 'Warm-cache guard must load before the main system deck renderer');
+assert.ok(page.indexOf('wolf-bgs-inheritance.js?v=3') < page.indexOf('wolf-bgs.js?v='), 'Warm-cache guard must load before the main system deck renderer');
 
 console.log('✓ Wolf BGS Control Room keeps only the two most recently used live-system cards mounted');
