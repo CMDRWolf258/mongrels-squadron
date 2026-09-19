@@ -568,3 +568,44 @@ Score presentation:
 - expanded system chips show Conflict Day and Conflict Score separately;
 - Conflict Configuration repeats the day, score, opponent, and source age;
 - score age is calculated from the EliteHub conflict record's own `updatedAt` timestamp rather than from the website fetch time.
+
+
+## Mongrel Scout direct EDMC uplink
+
+Wolf BGS Control now supports a first-party **Mongrel Scout** EDMarketConnector plugin so trusted CMDRs can refresh BGS data simply by flying through assigned systems.
+
+### Scout workflow
+- Wolf opens **Scout Network** in BGS Control and creates an individually named scout token.
+- The raw token is displayed **once**. The server stores only its SHA-256 hash.
+- The scout installs the one-file EDMC plugin from `/downloads/mongrel-scout/load.py`, pastes the token once in EDMC Settings, and leaves the plugin enabled.
+- The plugin listens only to `FSDJump`, `Location`, and `CarrierJump` journal events that contain a full faction board.
+- The plugin checks locally for **Regiment of Imperial Mongrels**. Non-Mongrel systems are discarded locally and never uploaded.
+- When accepted, the Scout Network records the token label, last uplink time, last system, and journal-event time. Wolf can revoke one scout without affecting any other scout.
+- While Wolf BGS Control is open, the Scout Network polls token activity every 30 seconds. A new scout uplink triggers a background refresh of the BGS deck so direct data appears without a page reload.
+
+### Privacy boundary
+The plugin deliberately does **not** transmit commander name, cargo, credits, ship/loadout, materials, missions, or general travel history. The direct payload contains only:
+- system name/address, controller, security, population when the journal supplies them;
+- faction names, influence, active/pending/recovering states, happiness;
+- local conflicts: type/status, both factions, stakes, WonDays score;
+- journal event timestamp.
+
+The EDMC plugin follows the current Python 3 plugin interface (`plugin_start3`, `plugin_prefs`, `prefs_changed`, `journal_entry`), uses EDMC's supported `config` API, Live-galaxy check, `timeout_session` HTTP client, and a worker thread so network requests do not block EDMC.
+
+### Direct-source precedence
+Direct Scout snapshots are stored separately from the ordinary EliteHub/EDDN snapshot. BGS Control compares timestamps and:
+- uses a newer direct Scout faction board as the trusted live board;
+- keeps a newer manual Wolf snapshot authoritative over Scout/external data;
+- can surface a Scout-only Mongrel system before the external presence feed has caught up;
+- uses the Scout journal timestamp for freshness, not the website receive time;
+- uses a newer direct journal conflict record for conflict score, always normalized with the Mongrels on the left;
+- retains external-source timestamps separately so the UI can show exactly which source is newest.
+
+System cards identify Scout-sourced data with dedicated Scout chips. Faction alerts, Queue Selector automation, Retreat handling, conflict score age, and conflict-day tracking all consume the same merged trusted snapshot, so fresh Scout observations can immediately affect the control logic.
+
+### Security/storage
+- Admin token management endpoint: `/api/operations/scout-tokens` (site-admin session + same-origin write protection).
+- Scout ingest endpoint: `/api/operations/scout-ingest` (Bearer scout token; no Discord/site session required).
+- Token KV key: `wolf-bgs-scout-tokens-v1`.
+- Snapshot KV key: `wolf-bgs-scout-snapshots-v1`.
+- Raw scout tokens are never persisted by the server.
