@@ -168,5 +168,5 @@ assert.equal(typeof mainModule.onRequestPut,'function');
 console.log('✓ Wolf BGS Control Mandalore lab, ±3-point influence-assisted multi-conflict pairing with manual ambiguity fallback, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
 
 const reportsClient=readFileSync('js/wolf-bgs-reports.js','utf8');
-for(const pattern of [/CURRENT CYCLE REPORTS/,/admin=1/,/data-admin-edit/,/data-admin-delete/,/method:'PATCH'/,/method:'DELETE'/,/Save Changes/]) assert.match(reportsClient,pattern);
+for(const pattern of [/CURRENT CYCLE REPORTS/,/admin=1/,/data-admin-edit/,/data-admin-delete/,/mutate\('PATCH'/,/mutate\('DELETE'/,/Save Changes/]) assert.match(reportsClient,pattern);
 new Function(reportsClient);
