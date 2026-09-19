@@ -113,14 +113,19 @@ export async function onRequestPut({ request, env }) {
       updatedAt: now,
       updatedBy: actor,
     };
-  } else if (action === 'ack-alert') {
+  } else if (action === 'ack-alerts') {
+    control.alertEpisodes = control.alertEpisodes && typeof control.alertEpisodes === 'object' ? control.alertEpisodes : {};
+    for (const episode of Object.values(control.alertEpisodes)) {
+      if (episode && !episode.removedAt && !episode.reviewedAt) episode.reviewedAt = now;
+    }
+  } else if (action === 'remove-alert') {
     const name = cleanText(body?.system, '', 140);
     const family = cleanText(body?.family, '', 40);
     if (!name || !ALERT_FAMILIES.includes(family)) {
       return json({ ok: false, error: 'alert_required' }, { status: 400, headers: privateHeaders() });
     }
     const key = alertKey(name, family);
-    if (control.alertEpisodes?.[key]) control.alertEpisodes[key].reviewedAt = now;
+    if (control.alertEpisodes?.[key]) control.alertEpisodes[key].removedAt = now;
   } else if (action === 'submit-status') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
@@ -386,6 +391,7 @@ function normalizeAlertEpisodes(value) {
       firstSeenAt: episode.firstSeenAt || null,
       lastSeenAt: episode.lastSeenAt || null,
       reviewedAt: episode.reviewedAt || null,
+      removedAt: episode.removedAt || null,
     };
   }
   return out;
@@ -454,6 +460,7 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
         firstSeenAt:timestamp,
         lastSeenAt:timestamp,
         reviewedAt:null,
+        removedAt:null,
       };
       changed = true;
       continue;
@@ -470,16 +477,21 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
 
 function attachAlertData(payload, control) {
   const priority = { retreat:0, conflict:1, 'civil-unrest':2, bust:3 };
-  payload.alerts = Object.values(control.alertEpisodes || {})
-    .filter(episode => !episode.reviewedAt)
-    .sort((a,b) => (priority[a.family] ?? 9) - (priority[b.family] ?? 9) || String(a.system).localeCompare(String(b.system)))
-    .map(episode => ({
-      system:episode.system,
-      family:episode.family,
-      detail:episode.detail,
-      phase:episode.phase,
-      firstSeenAt:episode.firstSeenAt,
-    }));
+  const visible = Object.values(control.alertEpisodes || {})
+    .filter(episode => !episode.removedAt)
+    .sort((a,b) => Number(Boolean(a.reviewedAt)) - Number(Boolean(b.reviewedAt)) || (priority[a.family] ?? 9) - (priority[b.family] ?? 9) || String(a.system).localeCompare(String(b.system)));
+  payload.alertMeta = {
+    listedCount: visible.length,
+    unreviewedCount: visible.filter(episode => !episode.reviewedAt).length,
+  };
+  payload.alerts = visible.map(episode => ({
+    system:episode.system,
+    family:episode.family,
+    detail:episode.detail,
+    phase:episode.phase,
+    firstSeenAt:episode.firstSeenAt,
+    reviewedAt:episode.reviewedAt || null,
+  }));
 }
 
 function boardMap(value) {
