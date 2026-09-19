@@ -181,7 +181,7 @@ function validateSameOrigin(request) {
   return null;
 }
 
-async async function readScoutSnapshots(env) {
+async function readScoutSnapshots(env) {
   const empty = {version:1,systems:{}};
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -195,7 +195,7 @@ async async function readScoutSnapshots(env) {
   }
 }
 
-function fetchLive(request) {
+async function fetchLive(request) {
   try {
     const url = new URL('/data/live-bgs.json', request.url);
     const response = await fetch(url.toString(), { headers: { Accept: 'application/json' }, cf: { cacheTtl: 0 } });
