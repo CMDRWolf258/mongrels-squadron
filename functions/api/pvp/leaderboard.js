@@ -11,6 +11,7 @@ export async function onRequestGet({ request, env }) {
   const token = clean(env?.DUELBOT_API_TOKEN, 256);
   const endpoint = clean(env?.DUELBOT_LEADERBOARD_URL, 300);
   if (!token || !endpoint) return reply({ok:false,error:'duelbot_integration_not_configured'},503);
+  if (!validDuelBotEndpoint(endpoint)) return reply({ok:false,error:'duelbot_endpoint_not_allowed'},503);
 
   let upstream;
   try {
@@ -46,6 +47,18 @@ export async function onRequestGet({ request, env }) {
   return reply(normalized,200);
 }
 
+function validDuelBotEndpoint(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:'
+      && url.hostname === 'duelbot.fitzbound.duckdns.org'
+      && url.pathname === '/api/v1/leaderboard'
+      && !url.search
+      && !url.hash;
+  } catch {
+    return false;
+  }
+}
 function clean(value,maxLength) {
   return typeof value === 'string' ? value.trim().slice(0,maxLength) : '';
 }
