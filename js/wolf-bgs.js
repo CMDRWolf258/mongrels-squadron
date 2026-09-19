@@ -270,7 +270,7 @@
   function conflictDaySourceText(system) {
     const timeline = system?.conflictTimeline;
     if (!timeline) return '';
-    if (timeline.source === 'manual') return 'MANUAL';
+    if (timeline.source === 'manual') return 'MANUAL VERIFIED';
     if (timeline.source === 'inferred') return 'INFERRED';
     return timeline.phase === 'active' ? 'UNKNOWN' : '';
   }
