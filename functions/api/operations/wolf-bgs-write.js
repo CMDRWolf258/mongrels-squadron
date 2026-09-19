@@ -124,7 +124,12 @@ export async function onRequestPut({ request, env }) {
     if (!body.queueSelected) delete next.queueSelected;
     if (hasStoredSystemData(next)) raw.systemSettings[name] = next;
     else delete raw.systemSettings[name];
-  } else if (action === 'ack-alert') {
+  } else if (action === 'ack-alerts') {
+    raw.alertEpisodes = raw.alertEpisodes && typeof raw.alertEpisodes === 'object' ? raw.alertEpisodes : {};
+    for (const episode of Object.values(raw.alertEpisodes)) {
+      if (episode && !episode.removedAt && !episode.reviewedAt) episode.reviewedAt = now;
+    }
+  } else if (action === 'remove-alert') {
     const name = cleanText(body?.system, '', 140);
     const family = cleanText(body?.family, '', 40);
     if (!name || !ALERT_FAMILIES.has(family)) {
@@ -132,9 +137,7 @@ export async function onRequestPut({ request, env }) {
     }
     raw.alertEpisodes = raw.alertEpisodes && typeof raw.alertEpisodes === 'object' ? raw.alertEpisodes : {};
     const key = `${name}::${family}`;
-    if (raw.alertEpisodes[key] && typeof raw.alertEpisodes[key] === 'object') {
-      raw.alertEpisodes[key].reviewedAt = now;
-    }
+    if (raw.alertEpisodes[key] && typeof raw.alertEpisodes[key] === 'object') raw.alertEpisodes[key].removedAt = now;
   } else if (action === 'submit-status') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
