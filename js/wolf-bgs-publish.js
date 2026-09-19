@@ -127,7 +127,7 @@
     const section=document.createElement('section');
     section.className='section-sm wolf-publish-section';
     section.dataset.dailyPublishPanel='true';
-    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue reviewed live-system previews here. Publishing replaces the current Daily Orders set and starts a new member-reporting cycle.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued yet. Add a reviewed preview from any live system card.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
+    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. Manual queueing remains available. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
     systems.parentNode.insertBefore(section,systems);
     panel=section;
     panel.addEventListener('click',event=>{
@@ -216,7 +216,7 @@
     p.querySelector('[data-publish-task-count]').textContent=taskCount+' task'+(taskCount===1?'':'s')+' queued'+(warnings?' · '+warnings+' warning'+(warnings===1?'':'s'):'');
     const host=p.querySelector('[data-publish-queue]');
     if(!systems.length){
-      host.innerHTML='<div class="wolf-publish-empty">No systems queued yet. Add a reviewed preview from any live system card.</div>';
+      host.innerHTML='<div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div>';
     }else{
       host.innerHTML=systems.map(item=>'<article class="wolf-publish-queued-system"><div><strong>'+esc(item.system)+'</strong><span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '+item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)+(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div><button type="button" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out">×</button></article>').join('');
     }
