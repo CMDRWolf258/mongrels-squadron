@@ -10,7 +10,7 @@ const critical = [
 for (const path of critical) assert.ok(existsSync(path), `Wolf BGS Control critical file is missing: ${path}`);
 
 const page = readFileSync('wolf-bgs/index.html','utf8');
-for (const pattern of [/Wolf BGS Control/,/data-global-form/,/data-system-list/,/data-system-defaults-form/,/data-page-size/,/data-favorites-first/,/data-lowest-five-watch/,/wolf-time-input/,/data-faction-alert-list/,/data-queue-selector-summary/,/data-active-board-view/]) assert.match(page,pattern);
+for (const pattern of [/Wolf BGS Control/,/data-global-form/,/data-system-list/,/data-system-defaults-form/,/data-page-size/,/data-favorites-first/,/data-lowest-five-watch/,/wolf-time-input/,/data-faction-alert-list/,/data-alert-ack-button/,/data-queue-selector-summary/,/data-active-board-view/]) assert.match(page,pattern);
 assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page default should be 20');
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
@@ -34,7 +34,7 @@ assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-con
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-lab.js'),'Lab interception must load after conflict controls');
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/setBoardView/,/matchesBoardView/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
+for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/ack-alerts/,/remove-alert/,/data-remove-faction-alert/,/setBoardView/,/matchesBoardView/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
 
 const inheritanceClient=readFileSync('js/wolf-bgs-inheritance.js','utf8');
 assert.match(inheritanceClient,/wolf-bgs-write/);
@@ -131,13 +131,16 @@ const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','ut
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alert/,/retreatPending/,/refreshAlertEpisodes/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/]) assert.match(apiSource,pattern);
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
-for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alert/,/alertEpisodes/]) assert.match(writeApi,pattern);
+for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-bgs-boards\.json/]) assert.match(boardUpdater,pattern);
+
+const baseCss=readFileSync('css/wolf-bgs.css','utf8');
+for(const pattern of [/\.wolf-master-alert-button/,/wolf-master-alert-flash/,/\.wolf-alert-remove-button/,/prefers-reduced-motion/]) assert.match(baseCss,pattern);
 
 const orderCss=readFileSync('css/wolf-bgs-order-preview.css','utf8');
 for (const pattern of [/\.wolf-calibration-grid/,/\.wolf-order-task/,/\.wolf-order-math/,/\.wolf-order-warnings/,/\.wolf-slider-guard\.balance-required/]) assert.match(orderCss,pattern);
