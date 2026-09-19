@@ -10,6 +10,10 @@ import {
   assistantPathwayIntent,
   buildAssistantPathwayContext,
 } from '../lib/assistant-pathway-context.js';
+import {
+  DUELBOT_CATEGORY_KEYS,
+  normalizeDuelBotLeaderboard,
+} from '../lib/duelbot-leaderboard.js';
 
 assert.equal(PVP_ROUTES.length, 5, 'PvP should expose five development routes');
 assert.equal(new Set(PVP_ROUTES.map(route => route.id)).size, 5, 'PvP contains duplicate route IDs');
@@ -68,5 +72,75 @@ const assignmentsSource = readFileSync('functions/api/pathway/assignments.js', '
 assert.match(assignmentsSource, /pathway-pvp/, 'Shared assignment API is not importing PvP');
 assert.match(assignmentsSource, /seedVersion:'pvp-v1'/, 'Shared assignment API is missing the PvP provider');
 console.log('✓ PvP provider, UI mount, client, Assistant context, and duplicate-card handling are wired');
+
+
+
+const duelbotFixturePath = 'data/fixtures/duelbot-leaderboard-v1.json';
+const duelbotApiPath = 'functions/api/pvp/leaderboard.js';
+const duelbotClientPath = 'js/pvp-leaderboard.js';
+const duelbotCssPath = 'css/pvp-leaderboard.css';
+for (const path of [duelbotFixturePath, duelbotApiPath, duelbotClientPath, duelbotCssPath]) {
+  assert.ok(existsSync(path), `DuelBot leaderboard file is missing: ${path}`);
+}
+
+const duelbotFixture = JSON.parse(readFileSync(duelbotFixturePath, 'utf8'));
+const normalizedDuelbot = normalizeDuelBotLeaderboard(duelbotFixture);
+assert.ok(normalizedDuelbot, 'DuelBot v1 sample did not pass contract normalization');
+assert.equal(normalizedDuelbot.schema_version, 1);
+assert.equal(normalizedDuelbot.leaderboard.length, 9, 'DuelBot leaderboard should expose all nine v1 categories');
+assert.deepEqual(normalizedDuelbot.leaderboard.map(category => category.key), DUELBOT_CATEGORY_KEYS, 'DuelBot category order changed');
+assert.equal(normalizedDuelbot.leaderboard.find(category => category.key === 'longest_win_streak')?.entries?.length, 3, 'Three-way DuelBot tie was lost');
+assert.equal(normalizedDuelbot.leaderboard.find(category => category.key === 'highest_win_percentage')?.entries?.[0]?.percentage, 80, 'Percentage record changed');
+assert.equal(normalizedDuelbot.leaderboard.find(category => category.key === 'overall_winningest_ship')?.entries?.[0]?.ship, 'Federal Corvette', 'Winning ship record changed');
+assert.equal(normalizedDuelbot.leaderboard.find(category => category.key === 'top_victory_hardpoints')?.entries?.length, 3, 'Top-three hardpoint ordering was lost');
+
+const badVersion = structuredClone(duelbotFixture);
+badVersion.schema_version = 2;
+assert.equal(normalizeDuelBotLeaderboard(badVersion), null, 'Unknown DuelBot schema version should be rejected');
+const missingCategory = structuredClone(duelbotFixture);
+missingCategory.leaderboard.pop();
+assert.equal(normalizeDuelBotLeaderboard(missingCategory), null, 'Incomplete DuelBot v1 payload should be rejected');
+
+const pvpHtml = readFileSync('pvp/index.html', 'utf8');
+for (const pattern of [
+  /DuelBot Leaderboard/,
+  /data-pvp-leaderboard-section/,
+  /data-pvp-leaderboard-grid/,
+  /data-pvp-leaderboard-refresh/,
+  /pvp-leaderboard\.css/,
+  /pvp-leaderboard\.js/,
+]) assert.match(pvpHtml, pattern);
+
+const duelbotClient = readFileSync(duelbotClientPath, 'utf8');
+for (const pattern of [
+  /\/api\/pvp\/leaderboard/,
+  /top_victory_hardpoints/,
+  /overall_winningest_ship/,
+  /highest_win_percentage/,
+  /TIE/,
+  /10 \* 60 \* 1000/,
+]) assert.match(duelbotClient, pattern);
+new Function(duelbotClient);
+
+const duelbotApi = readFileSync(duelbotApiPath, 'utf8');
+for (const pattern of [
+  /readSession/,
+  /DUELBOT_API_TOKEN/,
+  /DUELBOT_ENDPOINT/,
+  /duelbot\.fitzbound\.duckdns\.org\/api\/v1\/leaderboard/,
+  /Authorization/,
+  /Bearer /,
+  /normalizeDuelBotLeaderboard/,
+  /duelbot_integration_not_configured/,
+  /duelbot_authentication_failed/,
+  /duelbot_unavailable/,
+]) assert.match(duelbotApi, pattern);
+assert.doesNotMatch(duelbotApi, /5zt6SyUVP6Ksh3iquWiZOygSB8fhtTHNoRzA6oBh13E3wBSvwzbnwsWmUS1gOSDW/, 'Exposed DuelBot credential must never enter source control');
+
+const duelbotCss = readFileSync(duelbotCssPath, 'utf8');
+assert.match(duelbotCss, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'Desktop DuelBot grid should use three columns');
+assert.match(duelbotCss, /@media\(max-width:680px\)/, 'DuelBot leaderboard is missing mobile layout');
+
+console.log('✓ DuelBot v1 contract fixture, protected proxy boundary, member UI, ties, special records, and responsive layout are wired');
 
 console.log('\nAll PvP smoke checks passed.');
