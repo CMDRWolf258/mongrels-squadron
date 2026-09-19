@@ -341,7 +341,7 @@
       <div class="wolf-system-body">
         <div class="wolf-system-topline">
           ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
-          <span class="wolf-chip">External source update <b>${html(fmt(system.externalBoardUpdatedAt || system.sourceUpdated))}</b></span>
+          <span class="wolf-chip">External source update <b>${html(fmt(system.externalBoardUpdatedAt || system.externalSourceUpdated))}</b></span>
           ${system.scoutUpdatedAt ? `<span class="wolf-chip wolf-scout-source-chip">Scout update <b>${html(age(system.scoutUpdatedAt))}</b>${system.scoutLabel ? ` · ${html(system.scoutLabel)}` : ''}</span>` : ''}
           <span class="wolf-chip">Manual update <b>${html(fmt(system.manualUpdatedAt))}</b></span>
           <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active snapshot <b>${html(snapshotSourceLabel)} · ${html(fmt(system.activeSnapshotTime))}</b></span>
