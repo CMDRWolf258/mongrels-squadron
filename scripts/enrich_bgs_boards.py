@@ -188,26 +188,49 @@ query MongrelSystemIds($factionId: UUID!, $first: Int!, $after: Cursor) {
 
 
 MONGREL_CONFLICTS_QUERY = r"""
-query MongrelConflicts($name: String!, $first: Int!, $after: Cursor) {
-  factionByName(name: $name) {
-    factionConflicts(first: $first, after: $after) {
-      edges {
-        cursor
-        node {
-          id
-          type
-          status
-          factionWonDays
-          opponentWonDays
-          factionStake
-          opponentStake
-          updatedAt
-          opponentFaction { id name }
-          system { id name }
-        }
+query MongrelConflicts($factionId: UUID!, $first: Int!, $after: Cursor) {
+  factionConflicts(condition: { factionId: $factionId }, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        type
+        status
+        factionWonDays
+        opponentWonDays
+        factionStake
+        opponentStake
+        updatedAt
+        faction { id name }
+        opponentFaction { id name }
+        system { id name }
       }
-      pageInfo { hasNextPage endCursor }
     }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+"""
+
+MONGREL_OPPONENT_CONFLICTS_QUERY = r"""
+query MongrelOpponentConflicts($factionId: UUID!, $first: Int!, $after: Cursor) {
+  factionConflicts(condition: { opponentFactionId: $factionId }, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        id
+        type
+        status
+        factionWonDays
+        opponentWonDays
+        factionStake
+        opponentStake
+        updatedAt
+        faction { id name }
+        opponentFaction { id name }
+        system { id name }
+      }
+    }
+    pageInfo { hasNextPage endCursor }
   }
 }
 """
@@ -262,28 +285,26 @@ def fetch_mongrel_states(faction_id: str) -> dict[str, dict[str, Any]]:
     return rows
 
 
-def fetch_mongrel_conflicts() -> dict[str, dict[str, Any]]:
-    """Return current Vault conflict records keyed by normalized system name.
-
-    The relation is paged because the Mongrels can accumulate conflict records across
-    many systems. System-state data remains authoritative for whether a conflict is
-    currently relevant; this record supplies the opponent and daily-win score.
-    """
+def fetch_conflict_side(
+    query: str,
+    faction_id: str,
+    mongrel_is_opponent: bool,
+) -> dict[str, dict[str, Any]]:
     rows: dict[str, dict[str, Any]] = {}
     after: str | None = None
     page = 1
     while True:
         data = gql(
-            MONGREL_CONFLICTS_QUERY,
-            {"name": FACTION_NAME, "first": CONFLICT_PAGE_SIZE, "after": after},
+            query,
+            {"factionId": faction_id, "first": CONFLICT_PAGE_SIZE, "after": after},
         )
-        faction = data.get("factionByName")
-        connection = faction.get("factionConflicts") if isinstance(faction, dict) else {}
+        connection = data.get("factionConflicts") or {}
         edges = connection.get("edges") if isinstance(connection, dict) else []
         batch = 0
         for edge in edges or []:
             node = edge.get("node") if isinstance(edge, dict) else None
             system = node.get("system") if isinstance(node, dict) else None
+            faction = node.get("faction") if isinstance(node, dict) else None
             opponent = node.get("opponentFaction") if isinstance(node, dict) else None
             if not isinstance(system, dict) or not system.get("name"):
                 continue
@@ -294,31 +315,70 @@ def fetch_mongrel_conflicts() -> dict[str, dict[str, Any]]:
                 opponent_won = int(opponent_won)
             except (TypeError, ValueError):
                 continue
+
+            if mongrel_is_opponent:
+                mongrel_won = opponent_won
+                other_won = faction_won
+                other_name = str(faction.get("name") or "") if isinstance(faction, dict) else ""
+                mongrel_stake = str(node.get("opponentStake") or "")
+                other_stake = str(node.get("factionStake") or "")
+            else:
+                mongrel_won = faction_won
+                other_won = opponent_won
+                other_name = str(opponent.get("name") or "") if isinstance(opponent, dict) else ""
+                mongrel_stake = str(node.get("factionStake") or "")
+                other_stake = str(node.get("opponentStake") or "")
+
             rows[norm(system["name"])] = {
                 "id": str(node.get("id") or ""),
                 "type": str(node.get("type") or ""),
                 "status": str(node.get("status") or ""),
-                "factionWonDays": max(0, faction_won),
-                "opponentWonDays": max(0, opponent_won),
-                "opponentFaction": str(opponent.get("name") or "") if isinstance(opponent, dict) else "",
-                "factionStake": str(node.get("factionStake") or ""),
-                "opponentStake": str(node.get("opponentStake") or ""),
+                "factionWonDays": max(0, mongrel_won),
+                "opponentWonDays": max(0, other_won),
+                "opponentFaction": other_name,
+                "factionStake": mongrel_stake,
+                "opponentStake": other_stake,
                 "updatedAt": node.get("updatedAt"),
                 "source": "EliteHub Vault / EDDN",
             }
             batch += 1
-        print(f"CONFLICT PAGE {page}: {batch} records (total {len(rows)})", flush=True)
+
+        side = "OPPONENT" if mongrel_is_opponent else "FACTION"
+        print(f"CONFLICT {side} PAGE {page}: {batch} records (total {len(rows)})", flush=True)
         info = connection.get("pageInfo") if isinstance(connection, dict) else {}
         if not isinstance(info, dict) or not info.get("hasNextPage"):
             break
         next_cursor = info.get("endCursor")
         if not next_cursor or next_cursor == after:
-            raise RuntimeError("Vault conflict pagination returned no usable next cursor")
+            raise RuntimeError(f"Vault conflict {side.lower()} pagination returned no usable next cursor")
         after = str(next_cursor)
         page += 1
         if page > 100:
-            raise RuntimeError("Vault conflict pagination exceeded 100 pages")
+            raise RuntimeError(f"Vault conflict {side.lower()} pagination exceeded 100 pages")
     return rows
+
+
+def fetch_mongrel_conflicts(faction_id: str) -> dict[str, dict[str, Any]]:
+    """Return current conflict scores from the Mongrels' point of view."""
+    rows = fetch_conflict_side(MONGREL_CONFLICTS_QUERY, faction_id, False)
+    reverse = fetch_conflict_side(MONGREL_OPPONENT_CONFLICTS_QUERY, faction_id, True)
+    for key, value in reverse.items():
+        current = rows.get(key)
+        if not current or compare_conflict_time(value.get("updatedAt"), current.get("updatedAt")) >= 0:
+            rows[key] = value
+    return rows
+
+
+def compare_conflict_time(left: Any, right: Any) -> int:
+    left_dt = parse_time(left)
+    right_dt = parse_time(right)
+    if left_dt and right_dt:
+        return (left_dt > right_dt) - (left_dt < right_dt)
+    if left_dt:
+        return 1
+    if right_dt:
+        return -1
+    return 0
 
 
 def build_board_query(batch: list[dict[str, Any]]) -> tuple[str, dict[str, str]]:
@@ -455,7 +515,7 @@ def main() -> int:
     conflict_sync_ok = True
     conflict_error = ""
     try:
-        conflict_rows = fetch_mongrel_conflicts()
+        conflict_rows = fetch_mongrel_conflicts(faction_id)
     except Exception as exc:
         conflict_sync_ok = False
         conflict_error = str(exc)
