@@ -2,6 +2,7 @@ import { json, readSession } from '../../../lib/auth.js';
 import { normalizeDuelBotLeaderboard } from '../../../lib/duelbot-leaderboard.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
+const DUELBOT_ENDPOINT = 'https://duelbot.fitzbound.duckdns.org/api/v1/leaderboard';
 
 export async function onRequestGet({ request, env }) {
   const session = await readSession(request, env);
@@ -9,13 +10,11 @@ export async function onRequestGet({ request, env }) {
   if (!ALLOWED_ACCESS.has(session.access)) return reply({ok:false,error:'member_access_required'},403);
 
   const token = clean(env?.DUELBOT_API_TOKEN, 256);
-  const endpoint = clean(env?.DUELBOT_LEADERBOARD_URL, 300);
-  if (!token || !endpoint) return reply({ok:false,error:'duelbot_integration_not_configured'},503);
-  if (!validDuelBotEndpoint(endpoint)) return reply({ok:false,error:'duelbot_endpoint_not_allowed'},503);
+  if (!token) return reply({ok:false,error:'duelbot_integration_not_configured'},503);
 
   let upstream;
   try {
-    upstream = await fetch(endpoint, {
+    upstream = await fetch(DUELBOT_ENDPOINT, {
       method:'GET',
       headers:{
         Accept:'application/json',
@@ -47,9 +46,6 @@ export async function onRequestGet({ request, env }) {
   return reply(normalized,200);
 }
 
-function validDuelBotEndpoint(value) {
-  return value === 'https://duelbot.fitzbound.duckdns.org/api/v1/leaderboard';
-}
 function clean(value,maxLength) {
   return typeof value === 'string' ? value.trim().slice(0,maxLength) : '';
 }
