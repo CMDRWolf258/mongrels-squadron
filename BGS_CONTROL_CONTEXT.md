@@ -520,3 +520,17 @@ Alert-row actions are deliberately separate:
 - **REMOVE** dismisses only that alert row from the Faction Alerts box. A removed episode stays suppressed while that same underlying episode remains active; once it resolves, a future separate episode may alert normally again.
 
 Conflict Pending → Active is one continuous episode. If the pending conflict was acknowledged with the master alert button, activation the next tick does **not** create another alert. If it was not acknowledged, the same alert remains new and updates to active. An active conflict that appears without a previously tracked pending episode is treated as a new alert. When a conflict ends, the episode resolves so a future separate conflict can alert again.
+
+
+## System-card freshness and live conflict score
+
+The collapsed live-system header now separates operational status from source freshness.
+
+- The far-right status pill is **operational only**: Normal, Conflict, Retreat risk, or Retreat pending. A conflict no longer hides the condition of the source data.
+- **Freshness** has its own dedicated header column and always shows Fresh / Stale / Unknown plus the age of the active snapshot.
+- **Conflict Score** has its own header column. Active Mongrel War / Civil War / Election systems show the current daily-win score from the Mongrels' point of view, e.g. `1–0`; systems without an active Mongrel conflict show `—`.
+- The expanded system topline also shows a compact Conflict score chip with the opponent name, and the Conflict Configuration detection summary repeats the score for detailed review.
+- The score is not inferred from influence or locally invented. `scripts/enrich_bgs_boards.py` now ingests EliteHub Vault `factionConflicts` records, including `factionWonDays`, `opponentWonDays`, opponent, type/status/stakes, and update time.
+- Conflict ingestion queries both cases where the Mongrels are stored as the primary faction and where they are stored as the opponent, then normalizes the score so the left number is always the Mongrel score.
+- Conflict-score refresh is independent enough that a retained full-board snapshot can still receive a fresher conflict score. If the conflict query itself fails, the previous score is retained and marked last-known/stale instead of silently becoming a fabricated zero.
+- The regular two-hour BGS refresh workflow now populates the conflict records. A successful live refresh verified real examples including Baldur at Mongrels 1–0 vs Baldur for Equality and Col 285 Sector VT-R d4-124 at Mongrels 0–1 vs Sacra Oculus in the captured Sep 19, 2026 snapshot.
