@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
+const SCOUT_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
 const MONGREL = 'Regiment of Imperial Mongrels';
 const ALERT_FAMILIES = ['retreat','conflict','bust','civil-unrest'];
 const CONFLICT_STATES = new Set(['war','civil war','election']);
@@ -39,12 +40,13 @@ export async function onRequestGet({ request, env }) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
 
-  const [live, boards, control] = await Promise.all([
+  const [live, boards, control, scoutState] = await Promise.all([
     fetchLive(request),
     fetchBoards(request),
     readControl(env),
+    readScoutSnapshots(env),
   ]);
-  const payload = buildPayload(live, boards, control, auth.session);
+  const payload = buildPayload(live, boards, control, auth.session, scoutState);
   const alertsChanged = refreshAlertEpisodes(control, payload.systems);
   attachConflictTracking(payload, control);
   attachAlertData(payload, control);
@@ -149,8 +151,8 @@ export async function onRequestPut({ request, env }) {
   }
 
   control.version = 2;
-  const [live, boards] = await Promise.all([fetchLive(request), fetchBoards(request)]);
-  const payload = buildPayload(live, boards, control, auth.session);
+  const [live, boards, scoutState] = await Promise.all([fetchLive(request), fetchBoards(request), readScoutSnapshots(env)]);
+  const payload = buildPayload(live, boards, control, auth.session, scoutState);
   refreshAlertEpisodes(control, payload.systems, now);
   attachConflictTracking(payload, control, now);
   attachAlertData(payload, control);
@@ -179,7 +181,21 @@ function validateSameOrigin(request) {
   return null;
 }
 
-async function fetchLive(request) {
+async async function readScoutSnapshots(env) {
+  const empty = {version:1,systems:{}};
+  if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
+  try {
+    const stored = await env.DAILY_ORDERS.get(SCOUT_SNAPSHOTS_KEY, {type:'json'});
+    return stored && typeof stored === 'object'
+      ? {version:1,systems:stored.systems && typeof stored.systems === 'object' ? stored.systems : {}}
+      : empty;
+  } catch (error) {
+    console.error('Could not read Mongrel Scout snapshots', error);
+    return empty;
+  }
+}
+
+function fetchLive(request) {
   try {
     const url = new URL('/data/live-bgs.json', request.url);
     const response = await fetch(url.toString(), { headers: { Accept: 'application/json' }, cf: { cacheTtl: 0 } });
@@ -241,12 +257,23 @@ async function readControl(env) {
   }
 }
 
-function buildPayload(live, boards, control, session) {
-  const rows = Array.isArray(live?.systems) ? live.systems : [];
+function buildPayload(live, boards, control, session, scoutState = {systems:{}}) {
+  const sourceRows = Array.isArray(live?.systems) ? live.systems : [];
   const boardsBySystem = boardMap(boards?.systems);
-  const systems = rows
-    .filter(row => row && row.present !== false && row.formerPresence !== true && row.name)
-    .map(row => buildSystem(row, boardsBySystem.get(norm(row.name)) || null, control))
+  const scoutsBySystem = boardMap(scoutState?.systems);
+  const rowsBySystem = new Map();
+
+  for (const row of sourceRows) {
+    if (row && row.present !== false && row.formerPresence !== true && row.name) rowsBySystem.set(norm(row.name), row);
+  }
+  for (const scout of scoutsBySystem.values()) {
+    if (!scout?.system || !scoutHasMongrels(scout)) continue;
+    const key = norm(scout.system);
+    if (!rowsBySystem.has(key)) rowsBySystem.set(key, scoutPresenceRow(scout));
+  }
+
+  const systems = [...rowsBySystem.values()]
+    .map(row => buildSystem(row, boardsBySystem.get(norm(row.name)) || null, control, scoutsBySystem.get(norm(row.name)) || null))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const sourceAges = systems.map(s => ageHours(s.sourceUpdated)).filter(Number.isFinite);
@@ -278,6 +305,9 @@ function buildPayload(live, boards, control, session) {
       boardSyncOk: Boolean(boards?.syncOk),
       boardSuccessfulSystems: boardSuccessful,
       boardRequestedSystems: boardRequested,
+      scoutSnapshotCount: systems.filter(system => system.scoutUpdatedAt).length,
+      scoutActiveCount: systems.filter(system => system.activeSnapshotSource === 'scout').length,
+      newestScoutAt: newestTimestamp(...systems.map(system => system.scoutUpdatedAt).filter(Boolean)),
     },
     defaults: control.defaults,
     globalUpdatedAt: control.globalUpdatedAt,
@@ -307,7 +337,7 @@ function normalizeConflictScore(value, stale = false) {
   };
 }
 
-function buildSystem(row, externalBoard, control) {
+function buildSystem(row, externalBoard, control, scout = null) {
   const name = String(row.name);
   const storedSettings = control.systemSettings[name] || null;
   const settings = resolveSystemSettings(control.systemDefaults, storedSettings);
@@ -325,14 +355,22 @@ function buildSystem(row, externalBoard, control) {
     source: 'External source',
   };
   const externalFactions = normalizeExternalFactions(externalBoard?.factions);
+  const scoutFactions = normalizeScoutFactions(scout?.factions);
   const externalUpdated = newestTimestamp(row.sourceUpdated, externalBoard?.updatedAt);
-  const manualIsNewer = Boolean(manual?.updatedAt) && compareTime(manual.updatedAt, externalUpdated) > 0;
+  const scoutUpdated = scout?.updatedAt || null;
+  const trustedSourceUpdated = newestTimestamp(externalUpdated, scoutUpdated);
+  const scoutIsNewer = Boolean(scoutUpdated) && compareTime(scoutUpdated, externalUpdated) > 0;
+  const manualIsNewer = Boolean(manual?.updatedAt) && compareTime(manual.updatedAt, trustedSourceUpdated) > 0;
 
   let factions;
   if (manualIsNewer && manual?.factions?.length) {
     factions = manual.factions.map(faction => ({ ...faction, source: 'Manual' }));
+  } else if (scoutIsNewer && scoutFactions.length) {
+    factions = scoutFactions;
   } else if (externalFactions.length) {
     factions = externalFactions;
+  } else if (scoutFactions.length) {
+    factions = scoutFactions;
   } else {
     factions = mergeFactionBoard(sourceFallbackFaction, manual?.factions || [], row.sourceUpdated, manual?.updatedAt);
   }
@@ -344,13 +382,20 @@ function buildSystem(row, externalBoard, control) {
   const activeStates = factionStateArray(mongrel, 'activeStates', 'state');
   const pendingStates = factionStateArray(mongrel, 'pendingStates', 'pending');
   const recoveringStates = factionStateArray(mongrel, 'recoveringStates', 'recovering');
-  const activeController = manualIsNewer && manual?.controller ? manual.controller : (row.control || '');
-  const newest = manualIsNewer ? manual.updatedAt : externalUpdated;
+  const scoutController = cleanText(scout?.systemFaction?.name, '', 120);
+  const activeController = manualIsNewer && manual?.controller
+    ? manual.controller
+    : (scoutIsNewer && scoutController ? scoutController : (row.control || scoutController || ''));
+  const newest = manualIsNewer ? manual.updatedAt : trustedSourceUpdated;
   const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
-  const boardComplete = manualIsNewer ? Boolean(manual?.factions?.length) : Boolean(externalFactions.length);
+  const boardComplete = manualIsNewer
+    ? Boolean(manual?.factions?.length)
+    : (scoutIsNewer ? Boolean(scoutFactions.length) : Boolean(externalFactions.length || scoutFactions.length));
   const mongrelConflict = activeStates.some(item => ['war','civil war','election'].includes(norm(item)));
-  const conflictScore = mongrelConflict ? normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale) : null;
+  const externalConflictScore = normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale);
+  const directScoutConflictScore = scoutConflictScore(scout);
+  const conflictScore = mongrelConflict ? newestConflictScore(externalConflictScore, directScoutConflictScore) : null;
 
   return {
     name,
@@ -361,18 +406,22 @@ function buildSystem(row, externalBoard, control) {
     activeStates,
     pendingStates,
     recoveringStates,
-    security: row.security || '',
-    population: row.population || null,
-    sourceUpdated: externalUpdated || null,
-    sourceFetchedAt: externalBoard?.fetchedAt || row.fetchedAt || liveFallbackTimestamp(row),
+    security: scoutIsNewer && scout?.security ? scout.security : (row.security || ''),
+    population: scoutIsNewer && scout?.population !== null && scout?.population !== undefined ? scout.population : (row.population || null),
+    sourceUpdated: trustedSourceUpdated || null,
+    sourceFetchedAt: scoutIsNewer ? (scout?.receivedAt || scoutUpdated) : (externalBoard?.fetchedAt || row.fetchedAt || liveFallbackTimestamp(row)),
     externalBoardUpdatedAt: externalBoard?.updatedAt || null,
     externalBoardComplete: Boolean(externalFactions.length),
+    scoutBoardComplete: Boolean(scoutFactions.length),
+    scoutUpdatedAt:scoutUpdated,
+    scoutReceivedAt:scout?.receivedAt || null,
+    scoutLabel:cleanText(scout?.scoutLabel, '', 80),
     externalBoardOk: externalBoard ? externalBoard.ok !== false : false,
     factionCount: factions.length,
     manualUpdatedAt: manual?.updatedAt || null,
     manualUpdatedBy: manual?.updatedBy || null,
     activeSnapshotTime: newest,
-    activeSnapshotSource: manualIsNewer ? 'manual' : 'external',
+    activeSnapshotSource: manualIsNewer ? 'manual' : (scoutIsNewer ? 'scout' : 'external'),
     boardComplete,
     factions,
     manualController: manual?.controller || '',
@@ -384,7 +433,7 @@ function buildSystem(row, externalBoard, control) {
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
-    dataCondition: dataCondition({ sourceUpdated: externalUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
+    dataCondition: dataCondition({ sourceUpdated: trustedSourceUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
   };
 }
 
@@ -674,6 +723,88 @@ function boardMap(value) {
     if (board && typeof board === 'object') map.set(norm(board.name || name), board);
   }
   return map;
+}
+
+function normalizeScoutFactions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0,20).map(row => {
+    const activeStates = prettyStateList(row?.activeStates);
+    const pendingStates = prettyStateList(row?.pendingStates);
+    const recoveringStates = prettyStateList(row?.recoveringStates);
+    return {
+      name:cleanText(row?.name, '', 120),
+      influence:percentOrNull(row?.influence),
+      state:activeStates.length ? activeStates.join(', ') : prettyStateText(cleanText(row?.state, 'None', 120)),
+      pending:pendingStates.join(', '),
+      recovering:recoveringStates.join(', '),
+      activeStates,
+      pendingStates,
+      recoveringStates,
+      updatedAt:null,
+      source:'Mongrel Scout',
+    };
+  }).filter(row => row.name);
+}
+
+function scoutHasMongrels(snapshot) {
+  return Array.isArray(snapshot?.factions) && snapshot.factions.some(row => norm(row?.name) === norm(MONGREL));
+}
+
+function scoutPresenceRow(snapshot) {
+  const mongrel = (snapshot.factions || []).find(row => norm(row?.name) === norm(MONGREL)) || {};
+  const activeStates = prettyStateList(mongrel.activeStates);
+  const controller = cleanText(snapshot?.systemFaction?.name, '', 120);
+  return {
+    name:snapshot.system,
+    influence:percentOrNull(mongrel.influence),
+    controlled:norm(controller) === norm(MONGREL),
+    control:controller,
+    state:activeStates.length ? activeStates.join(', ') : prettyStateText(cleanText(mongrel.state, 'None', 120)),
+    activeStates,
+    pendingStates:prettyStateList(mongrel.pendingStates),
+    recoveringStates:prettyStateList(mongrel.recoveringStates),
+    security:cleanText(snapshot.security, '', 80),
+    population:snapshot.population ?? null,
+    sourceUpdated:snapshot.updatedAt || null,
+    source:'Mongrel Scout / EDMC',
+    fetchedAt:snapshot.receivedAt || snapshot.updatedAt || null,
+    present:true,
+    formerPresence:false,
+    stale:false,
+    ok:true,
+  };
+}
+
+function scoutConflictScore(snapshot) {
+  if (!Array.isArray(snapshot?.conflicts)) return null;
+  for (const conflict of snapshot.conflicts) {
+    const one = conflict?.faction1;
+    const two = conflict?.faction2;
+    const oneIsMongrel = norm(one?.name) === norm(MONGREL);
+    const twoIsMongrel = norm(two?.name) === norm(MONGREL);
+    if (!oneIsMongrel && !twoIsMongrel) continue;
+    const ours = oneIsMongrel ? one : two;
+    const theirs = oneIsMongrel ? two : one;
+    return {
+      factionWonDays:Math.max(0,Math.round(Number(ours?.wonDays) || 0)),
+      opponentWonDays:Math.max(0,Math.round(Number(theirs?.wonDays) || 0)),
+      opponentFaction:cleanText(theirs?.name, '', 120),
+      type:prettyStateText(cleanText(conflict?.type, '', 60)),
+      status:prettyStateText(cleanText(conflict?.status, '', 60)),
+      factionStake:cleanText(ours?.stake, '', 160),
+      opponentStake:cleanText(theirs?.stake, '', 160),
+      updatedAt:snapshot.updatedAt || null,
+      stale:false,
+      source:'Mongrel Scout',
+    };
+  }
+  return null;
+}
+
+function newestConflictScore(a,b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  return compareTime(b.updatedAt, a.updatedAt) >= 0 ? b : a;
 }
 
 function normalizeExternalFactions(value) {
