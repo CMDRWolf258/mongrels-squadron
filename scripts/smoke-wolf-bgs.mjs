@@ -34,7 +34,7 @@ assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-con
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-lab.js'),'Lab interception must load after conflict controls');
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/ack-alerts/,/remove-alert/,/data-remove-faction-alert/,/setBoardView/,/matchesBoardView/,/freshnessStatus/,/Conflict Score/,/conflictScoreText/,/data-conflict-score-a/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
+for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/ack-alerts/,/remove-alert/,/data-remove-faction-alert/,/setBoardView/,/matchesBoardView/,/freshnessStatus/,/Conflict Score/,/conflictScoreText/,/conflictDayText/,/data-conflict-score-a/,/data-conflict-score-updated/,/data-conflict-day-source/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
 
 const inheritanceClient=readFileSync('js/wolf-bgs-inheritance.js','utf8');
 assert.match(inheritanceClient,/wolf-bgs-write/);
@@ -80,7 +80,7 @@ for(const pattern of [
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
-  /wolf-conflict-preview-task/,/Conflict lock active/,/Mongrel conflict score/,/data\.conflictScoreA|dataset\.conflictScoreA/,/dataset\.bgsLab/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/Mongrel conflict score/,/CONFLICT TIMELINE/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
 assert.match(conflictClient,/\[data-faction="influence"\]/,'Influence changes must trigger conflict re-pairing');
@@ -131,21 +131,21 @@ const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','ut
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
-for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/]) assert.match(writeApi,pattern);
+for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-bgs-boards\.json/,/factionConflicts/,/factionWonDays/,/opponentWonDays/,/opponentFactionId/,/fetch_mongrel_conflicts/,/conflictSyncOk/]) assert.match(boardUpdater,pattern);
 
 const baseCss=readFileSync('css/wolf-bgs.css','utf8');
-for(const pattern of [/\.wolf-master-alert-button/,/wolf-master-alert-flash/,/\.wolf-alert-remove-button/,/prefers-reduced-motion/,/\.wolf-freshness-value/,/\.wolf-conflict-score-stat/,/\.wolf-conflict-score-chip/]) assert.match(baseCss,pattern);
+for(const pattern of [/\.wolf-master-alert-button/,/wolf-master-alert-flash/,/\.wolf-alert-remove-button/,/prefers-reduced-motion/,/\.wolf-freshness-value/,/\.wolf-conflict-score-stat/,/\.wolf-conflict-score-chip/,/\.wolf-conflict-day-chip/]) assert.match(baseCss,pattern);
 
 const orderCss=readFileSync('css/wolf-bgs-order-preview.css','utf8');
 for (const pattern of [/\.wolf-calibration-grid/,/\.wolf-order-task/,/\.wolf-order-math/,/\.wolf-order-warnings/,/\.wolf-slider-guard\.balance-required/]) assert.match(orderCss,pattern);
 const conflictCss=readFileSync('css/wolf-bgs-conflicts.css','utf8');
-for(const pattern of [/\.wolf-conflict-pair/,/\.wolf-conflict-preview-banner/,/\.wolf-conflict-preview-task/,/\.wolf-conflict-score-detail/]) assert.match(conflictCss,pattern);
+for(const pattern of [/\.wolf-conflict-pair/,/\.wolf-conflict-preview-banner/,/\.wolf-conflict-preview-task/,/\.wolf-conflict-score-detail/,/\.wolf-conflict-timeline-panel/,/\.wolf-conflict-day-controls/,/\.wolf-conflict-day-detail/]) assert.match(conflictCss,pattern);
 const labCss=readFileSync('css/wolf-bgs-lab.css','utf8');
 for(const pattern of [/\.wolf-bgs-lab-section/,/\.wolf-lab-card/,/\.wolf-lab-scenarios/]) assert.match(labCss,pattern);
 
