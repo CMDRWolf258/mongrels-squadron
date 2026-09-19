@@ -19,7 +19,17 @@
     .member-onboarding-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .member-onboarding-actions small{color:var(--muted,#aab5bf)}
     .member-admin-shortcut{margin-top:14px}
-    @media(max-width:700px){.member-onboarding-step{grid-template-columns:auto minmax(0,1fr)}.member-onboarding-step .btn{grid-column:2;justify-self:start}}
+    .member-scout-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .member-scout-panel{margin-top:24px;border:1px solid rgba(98,220,255,.22);background:linear-gradient(145deg,rgba(98,220,255,.045),rgba(255,255,255,.018))}
+    .member-scout-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+    .member-scout-step{padding:14px;border:1px solid rgba(98,220,255,.14);background:rgba(0,0,0,.14)}
+    .member-scout-step b{display:block;margin-bottom:5px;color:var(--text,#eef6fb)}
+    .member-scout-step span,.member-scout-note,.member-scout-status dd{color:var(--muted,#aab5bf);line-height:1.45}
+    .member-scout-status{display:grid;grid-template-columns:minmax(140px,.34fr) minmax(0,1fr);gap:7px 14px;margin:16px 0 0}
+    .member-scout-status dt{font-weight:800;color:var(--text,#eef6fb)}
+    .member-scout-status dd{margin:0}
+    .member-scout-note{margin:14px 0 0;padding:12px 14px;border-left:2px solid rgba(98,220,255,.5);background:rgba(98,220,255,.035)}
+    @media(max-width:700px){.member-onboarding-step{grid-template-columns:auto minmax(0,1fr)}.member-onboarding-step .btn{grid-column:2;justify-self:start}.member-scout-steps{grid-template-columns:1fr}.member-scout-status{grid-template-columns:1fr}.member-scout-status dd{margin-bottom:6px}}
   </style>
 </head>
 <body class="visual-page page-members page-member-portal">
@@ -180,7 +190,38 @@
           <div class="member-project-preview" data-dashboard-bounty-preview></div>
           <a class="btn btn-ghost" href="../pvp/#bounty-board">Open PvP Hub</a>
         </article>
+
+        <article class="member-command-card" id="mongrel-scout">
+          <div class="member-command-card-head"><div><p class="eyebrow">BGS Uplink</p><h3>Mongrel Scout</h3></div><span class="member-command-badge">EDMC</span></div>
+          <p>Send fresh faction-board observations from Elite journals directly into Wolf BGS Control when you visit Mongrel systems.</p>
+          <div class="member-scout-actions"><a class="btn btn-primary" href="/downloads/mongrel-scout.zip">Download Scout</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Setup Guide</a></div>
+        </article>
       </div>
+
+      <section class="member-resource-panel member-scout-panel" id="mongrel-scout-setup">
+        <div class="member-panel-heading"><div><p class="eyebrow">Member Tool · EDMC</p><h3>Mongrel Scout Setup</h3></div><span>Scout Uplink</span></div>
+        <p>Scout is a lightweight EDMC plugin for approved Mongrel members. It watches normal Elite journal events and uploads only the BGS fields needed by Wolf BGS Control when the Regiment of Imperial Mongrels is present.</p>
+        <div class="member-scout-steps">
+          <div class="member-scout-step"><b>1. Install EDMC</b><span>Use a working Elite Dangerous Market Connector installation on the machine that can read your live Elite journal folder.</span></div>
+          <div class="member-scout-step"><b>2. Download Mongrel Scout</b><span>Download the Scout ZIP, extract it, then copy the <strong>MongrelScout</strong> folder into EDMC's plugin folder.</span></div>
+          <div class="member-scout-step"><b>3. Restart EDMC</b><span>Open EDMC → File → Settings → Plugins → Open to confirm the plugin folder, then restart EDMC so Mongrel Scout loads.</span></div>
+          <div class="member-scout-step"><b>4. Enter your Scout token</b><span>Open EDMC Settings → Mongrel Scout, paste the token issued to you by squad leadership, leave the supplied endpoint unchanged, and enable Scout.</span></div>
+          <div class="member-scout-step"><b>5. Test a Mongrel system</b><span>Enter or jump within a system where the Mongrels are present. A successful upload shows <strong>Updated &lt;system&gt;</strong> in EDMC.</span></div>
+          <div class="member-scout-step"><b>6. Leave it running</b><span>Scout only reacts to FSDJump, Location, and CarrierJump journal events with a full local faction board. Ordinary travel outside Mongrel systems is ignored.</span></div>
+        </div>
+        <div class="member-scout-actions"><a class="btn btn-primary" href="/downloads/mongrel-scout.zip">Download Mongrel Scout</a></div>
+        <dl class="member-scout-status">
+          <dt>Armed</dt><dd>Scout is enabled and has a token. It is waiting for a qualifying journal event.</dd>
+          <dt>Updated &lt;system&gt;</dt><dd>The current BGS snapshot was accepted by the Mongrels server.</dd>
+          <dt>Already newer</dt><dd>The server already has a newer observation for that system. Nothing is wrong.</dd>
+          <dt>Not assigned: &lt;system&gt;</dt><dd>Your Scout token is restricted and that system is not assigned to it. Contact squad leadership if you should be covering that system.</dd>
+          <dt>Token rejected</dt><dd>The token is invalid or no longer active. Ask squad leadership for help.</dd>
+          <dt>Scout rate limit reached</dt><dd>Scout has hit its upload safety limit. Leave it running and try again later.</dd>
+          <dt>Upload failed</dt><dd>EDMC could not reach the Scout service. Check the network connection first.</dd>
+        </dl>
+        <p class="member-scout-note"><strong>Privacy:</strong> Scout does not upload your Commander name, cargo, credits, ship build, materials, missions, or general travel history. For a VM or second-PC setup, the important requirement is reliable live access to the Elite journal folder; a direct LAN share is preferable to cloud-sync folders.</p>
+        <p class="member-scout-note"><strong>Tokens are managed by leadership.</strong> Members can use the token they are issued, but token creation, system assignments, access scope, and revocation stay in Wolf BGS Control.</p>
+      </section>
 
       <div class="member-dashboard-columns">
         <section class="member-resource-panel">
@@ -192,6 +233,7 @@
             <a href="../trading/"><strong>Trader's Outpost</strong><span>Strategic hauling and member-profit trade opportunities.</span></a>
             <a href="../operations/"><strong>Mission Control</strong><span>Daily Orders, priority systems, watch list, live BGS data, and strategic context.</span></a>
             <a href="../members/"><strong>Squadron Roster</strong><span>Member profiles, specialties, activity preferences, carriers, and ship showcases.</span></a>
+            <a href="#mongrel-scout-setup"><strong>Mongrel Scout</strong><span>EDMC plugin download, installation steps, token setup, status meanings, and troubleshooting.</span></a>
           </div>
         </section>
 
