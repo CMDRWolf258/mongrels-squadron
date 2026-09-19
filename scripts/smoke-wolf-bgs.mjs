@@ -15,6 +15,8 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=6/,'Conflict client cache version should be v6');
+assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=4/,'Conflict prototype cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
 assert.match(page,/data-bgs-lab="true"/,'Mandalore must be marked as an isolated lab card');
 assert.match(page,/NO DAILY ORDERS/,'Lab must explicitly state that it cannot publish Daily Orders');
@@ -80,7 +82,7 @@ for(const pattern of [
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
-  /wolf-conflict-preview-task/,/Conflict lock active/,/Mongrel conflict score/,/CONFLICT TIMELINE/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/Mongrel conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
 assert.match(conflictClient,/\[data-faction="influence"\]/,'Influence changes must trigger conflict re-pairing');
@@ -100,7 +102,7 @@ new Function(orderClient);
 new Function(conflictClient);
 new Function(labClient);
 const conflictLabV2=readFileSync('js/wolf-bgs-conflict-lab-v2.js','utf8');
-for(const pattern of [/Conflict Operations Prototype/,/BLITZ OVERRIDE/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/First observed score/,/SCORE STALE — AUTOMATION FROZEN/,/TIED — HOLD/,/manualHistory/,/two observed conflict days without a win/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
+for(const pattern of [/Conflict Operations Prototype/,/BLITZ OVERRIDE/,/routine:3/,/contested:6/,/heavy:15/,/blitz:25/,/routine:6/,/contested:15/,/heavy:40/,/blitz:60/,/Faction A/,/Faction B/,/No winner \/ tied day/,/Current conflict day/,/First observed score/,/SCORE STALE — AUTOMATION FROZEN/,/TIED — HOLD/,/manualHistory/,/WolfBgsConflictLabOrder/,/wolf-bgs-conflict-lab-updated/,/two observed conflict days without a win/,/Low = /,/Medium = /,/High = /,/COMBAT BONDS NOT REDEEMED/,/CZ lost \/ abandoned/,/Full-instance disconnect/,/one shared CZ instance is one CZ result/,/\+2/,/\+3/,/\+4/,/\+5/,/RESOLVED — STOP CONFLICT WORK/,/HOLD \/ AVOID CONFLICT WORK/]) assert.match(conflictLabV2,pattern);
 new Function(conflictLabV2);
 const publishClient=readFileSync('js/wolf-bgs-publish.js','utf8');
 for(const pattern of [/Publish Queue/,/Add to Publish Queue/,/Publish Daily Orders/,/daily-orders-editor/,/new reporting cycle/i,/dataset\.orderKind/,/allowDailyOrders/,/Mandalore/,/maxDailySystems/,/source:'wolf-bgs'/,/reportingFor/,/autoQueueSource/,/queueSource/,/suppressedSignatures/,/evaluateOperationalCards/,/wolf-bgs-queue-selector-updated/,/RETREAT|retreat/]) assert.match(publishClient,pattern);
