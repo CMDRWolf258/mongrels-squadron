@@ -415,10 +415,11 @@
 
 
   function withOperationalFirst(rows) {
-    const operational = sortedSystems(rows.filter(system => system.retreatPending || system.settings?.queueSelected));
-    if (!operational.length) return rows;
-    const keys = new Set(operational.map(systemKey));
-    return [...operational, ...rows.filter(system => !keys.has(systemKey(system)))];
+    const retreat = sortedSystems(rows.filter(system => system.retreatPending));
+    const retreatKeys = new Set(retreat.map(systemKey));
+    const selected = sortedSystems(rows.filter(system => !retreatKeys.has(systemKey(system)) && system.settings?.queueSelected));
+    const keys = new Set([...retreat, ...selected].map(systemKey));
+    return [...retreat, ...selected, ...rows.filter(system => !keys.has(systemKey(system)))];
   }
 
   function lowestFiveSystems() {
