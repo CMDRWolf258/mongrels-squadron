@@ -453,12 +453,25 @@
       pageRows = [...normalPageRows.map(system => ({ system, lowWatch:false })), ...watchRows.map(system => ({ system, lowWatch:true }))];
       pageText = `Page ${currentPage} of ${totalPages} · ${normalPageRows.length} list + ${watchRows.length} low watch · ${total} systems in view`;
     } else {
-      totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const operational = !activeBoardView ? rows.filter(system => system.retreatPending || system.settings?.queueSelected) : [];
+      const operationalKeys = new Set(operational.map(systemKey));
+      const normalRows = operational.length ? rows.filter(system => !operationalKeys.has(systemKey(system))) : rows;
+      const firstNormalSlots = operational.length ? Math.max(0, pageSize - operational.length) : pageSize;
+      const remainingAfterFirst = Math.max(0, normalRows.length - firstNormalSlots);
+      totalPages = Math.max(1, 1 + Math.ceil(remainingAfterFirst / pageSize));
       currentPage = Math.min(Math.max(1, currentPage), totalPages);
-      const start = (currentPage - 1) * pageSize;
-      const normalPageRows = rows.slice(start, start + pageSize);
-      pageRows = normalPageRows.map(system => ({ system, lowWatch:false }));
-      pageText = total ? `Page ${currentPage} of ${totalPages} · ${start + 1}–${Math.min(start + pageSize, total)} of ${total}` : 'Page 1 of 1 · 0 systems';
+
+      if (currentPage === 1) {
+        const normalPageRows = normalRows.slice(0, firstNormalSlots);
+        pageRows = [...operational, ...normalPageRows].map(system => ({ system, lowWatch:false }));
+        const operationalNote = operational.length ? `${operational.length} operational + ${normalPageRows.length} list` : `${normalPageRows.length} list`;
+        pageText = total ? `Page 1 of ${totalPages} · ${operationalNote} · ${total} systems in view` : 'Page 1 of 1 · 0 systems';
+      } else {
+        const start = firstNormalSlots + (currentPage - 2) * pageSize;
+        const normalPageRows = normalRows.slice(start, start + pageSize);
+        pageRows = normalPageRows.map(system => ({ system, lowWatch:false }));
+        pageText = `Page ${currentPage} of ${totalPages} · ${normalPageRows.length} list · ${total} systems in view`;
+      }
     }
 
     if (count) count.textContent = total.toLocaleString();
