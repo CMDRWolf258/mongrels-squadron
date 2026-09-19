@@ -92,6 +92,19 @@
     const system=card.dataset.system||'';
     if(!system)return false;
     const existing=queue.get(system);
+    const hasPreview=Boolean(card.querySelector('[data-order-preview-output]'));
+    const selectorFlag=card.dataset.queueSelected==='true';
+    const retreatFlag=card.dataset.retreatPending==='true';
+
+    // Lazy cards may temporarily have no mounted preview after a list rerender.
+    // Preserve an existing auto candidate until the card is hydrated again,
+    // unless the condition that authorized it has actually been removed.
+    if(!hasPreview){
+      if(existing?.queueSource==='selector'&&!selectorFlag){queue.delete(system);return true;}
+      if(existing?.queueSource==='retreat'&&!retreatFlag&&!selectorFlag){queue.delete(system);return true;}
+      return false;
+    }
+
     const source=autoQueueSource(card);
     const sig=currentSignature(card);
 
