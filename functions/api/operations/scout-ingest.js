@@ -22,13 +22,18 @@ export async function onRequestPost({ request, env }) {
 
   const snapshot = normalizeSnapshot(body);
   if (!snapshot) return reply({ok:false,error:'invalid_scout_snapshot'}, 400);
+  const eventMs = new Date(snapshot.updatedAt).getTime();
+  if (eventMs > Date.now() + 15 * 60 * 1000) {
+    return reply({ok:false,error:'journal_timestamp_in_future'}, 422);
+  }
   if (!snapshot.factions.some(row => norm(row.name) === norm(MONGREL))) {
     return reply({ok:false,error:'mongrels_not_present'}, 422);
   }
 
   const state = await readSnapshots(env);
   const current = state.systems[snapshot.system];
-  if (!current || compareTime(snapshot.updatedAt, current.updatedAt) >= 0) {
+  const stored = !current || compareTime(snapshot.updatedAt, current.updatedAt) >= 0;
+  if (stored) {
     state.systems[snapshot.system] = {
       ...snapshot,
       receivedAt:new Date().toISOString(),
@@ -42,6 +47,7 @@ export async function onRequestPost({ request, env }) {
   return reply({
     ok:true,
     accepted:true,
+    stored,
     system:snapshot.system,
     updatedAt:snapshot.updatedAt,
     scout:auth.label,
