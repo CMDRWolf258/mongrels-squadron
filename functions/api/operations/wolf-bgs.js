@@ -47,7 +47,7 @@ export async function onRequestGet({ request, env }) {
     readScoutSnapshots(env),
   ]);
   const payload = buildPayload(live, boards, control, auth.session, scoutState);
-  const alertsChanged = refreshAlertEpisodes(control, payload.systems);
+  const alertsChanged = refreshAlertEpisodes(control, payload.systems, new Date().toISOString(), scoutState.conflictHistory);
   attachConflictTracking(payload, control);
   attachAlertData(payload, control);
   if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
@@ -153,7 +153,7 @@ export async function onRequestPut({ request, env }) {
   control.version = 2;
   const [live, boards, scoutState] = await Promise.all([fetchLive(request), fetchBoards(request), readScoutSnapshots(env)]);
   const payload = buildPayload(live, boards, control, auth.session, scoutState);
-  refreshAlertEpisodes(control, payload.systems, now);
+  refreshAlertEpisodes(control, payload.systems, now, scoutState.conflictHistory);
   attachConflictTracking(payload, control, now);
   attachAlertData(payload, control);
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
@@ -182,12 +182,16 @@ function validateSameOrigin(request) {
 }
 
 async function readScoutSnapshots(env) {
-  const empty = {version:1,systems:{}};
+  const empty = {version:1,systems:{},conflictHistory:{}};
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
     const stored = await env.DAILY_ORDERS.get(SCOUT_SNAPSHOTS_KEY, {type:'json'});
     return stored && typeof stored === 'object'
-      ? {version:1,systems:stored.systems && typeof stored.systems === 'object' ? stored.systems : {}}
+      ? {
+          version:1,
+          systems:stored.systems && typeof stored.systems === 'object' ? stored.systems : {},
+          conflictHistory:stored.conflictHistory && typeof stored.conflictHistory === 'object' ? stored.conflictHistory : {},
+        }
       : empty;
   } catch (error) {
     console.error('Could not read Mongrel Scout snapshots', error);
@@ -533,7 +537,7 @@ function alertCondition(system, family) {
   return null;
 }
 
-function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOString()) {
+function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOString(), scoutConflictHistory = {}) {
   if (!control.alertEpisodes || typeof control.alertEpisodes !== 'object') control.alertEpisodes = {};
   const current = new Map();
   for (const system of systems || []) {
@@ -567,18 +571,22 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
       if (condition.family === 'conflict' && control.conflictDayOverrides?.[condition.system]) {
         delete control.conflictDayOverrides[condition.system];
       }
-      const pendingSeenAt = condition.family === 'conflict' && condition.phase === 'pending' ? timestamp : null;
+      const scoutHistory = condition.family === 'conflict' ? scoutConflictHistory?.[condition.system] : null;
+      const matchingScoutHistory = scoutHistory && norm(scoutHistory.detail) === norm(condition.detail) ? scoutHistory : null;
+      const pendingSeenAt = condition.family === 'conflict'
+        ? (condition.phase === 'pending' ? (matchingScoutHistory?.pendingSeenAt || timestamp) : (matchingScoutHistory?.pendingSeenAt || null))
+        : null;
       control.alertEpisodes[key] = {
         system:condition.system,
         family:condition.family,
         detail:condition.detail,
         phase:condition.phase,
-        firstPhase:condition.phase,
+        firstPhase:pendingSeenAt ? 'pending' : condition.phase,
         firstSeenAt:timestamp,
         lastSeenAt:timestamp,
         pendingSeenAt,
         expectedActiveAt:pendingSeenAt ? nextTickAfter(pendingSeenAt, condition.tick) : null,
-        activeSeenAt:condition.family === 'conflict' && condition.phase === 'active' ? timestamp : null,
+        activeSeenAt:condition.family === 'conflict' && condition.phase === 'active' ? (matchingScoutHistory?.activeSeenAt || timestamp) : null,
         reviewedAt:null,
         removedAt:null,
       };
@@ -587,13 +595,20 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
     }
 
     if (condition.family === 'conflict') {
-      if (condition.phase === 'pending' && !existing.pendingSeenAt) {
+      const scoutHistory = scoutConflictHistory?.[condition.system];
+      const matchingScoutHistory = scoutHistory && norm(scoutHistory.detail) === norm(condition.detail) ? scoutHistory : null;
+      if (!existing.pendingSeenAt && matchingScoutHistory?.pendingSeenAt) {
+        existing.pendingSeenAt = matchingScoutHistory.pendingSeenAt;
+        existing.expectedActiveAt = existing.expectedActiveAt || nextTickAfter(existing.pendingSeenAt, condition.tick);
+        existing.firstPhase = 'pending';
+        changed = true;
+      } else if (condition.phase === 'pending' && !existing.pendingSeenAt) {
         existing.pendingSeenAt = existing.firstPhase === 'pending' ? (existing.firstSeenAt || timestamp) : timestamp;
         existing.expectedActiveAt = existing.expectedActiveAt || nextTickAfter(existing.pendingSeenAt, condition.tick);
         changed = true;
       }
       if (condition.phase === 'active' && !existing.activeSeenAt) {
-        existing.activeSeenAt = timestamp;
+        existing.activeSeenAt = matchingScoutHistory?.activeSeenAt || timestamp;
         changed = true;
       }
     }
