@@ -478,3 +478,35 @@ Daily Orders should eventually rank unmet work above met work, and met work abov
 History is intended to build Mongrel-specific empirical calibration without pretending to reverse-engineer Frontier's hidden formula.
 
 Mission Control visual hierarchy note: workload titles/amounts (for example `25 INF` and `20M Cr Bounties`) use a soft periwinkle treatment with no glow, deliberately separating the workload from faction cyan, action cyan, muted body text, and amber priority states.
+
+
+## Queue Selector and Faction Alerts
+
+Wolf BGS Control now separates broad monitoring from routine queue authorization.
+
+- **Every Mongrel system remains monitored.**
+- Each live system card has a compact **Q Queue Selector** beside the Favorite star. Queue Selector state is stored per system and is not a System Default.
+- The System List shows one global **QUEUE SELECTORS · N systems** counter instead of repeating the count on every card. Clicking it filters the list to selected systems.
+- Selected systems are treated as operational systems and are kept on the first operational page so their lazy cards can be evaluated without requiring Wolf to hunt across pagination.
+- Turning a Queue Selector on immediately causes that system to be evaluated. If the deterministic Order Preview has actionable work, the system is auto-added to the Publish Queue.
+- Turning a Queue Selector off removes routine work that was auto-queued because of the selector. A manually queued snapshot is preserved.
+- Pending **Retreat** is the emergency exception: Retreat work may auto-queue even when the Queue Selector is off. Retreat never transitions into an active Retreat state; when pending Retreat clears, that alert episode is resolved.
+- Auto-queued entries are visibly sourced as **AUTO · QUEUE SELECTOR** or **AUTO · RETREAT**; explicit Wolf additions are **MANUAL**.
+- Removing an auto-queued candidate suppresses that exact current preview so it is not immediately re-added. A materially changed preview may queue again. Publishing also suppresses the just-published preview so selected systems do not instantly refill the queue with the same work.
+- Existing hard limits remain: more than the configured system limit (currently 6 by default) or more than 24 tasks disables Publish rather than silently choosing which systems to discard.
+- Final **Publish Daily Orders** remains explicit Wolf authority. The existing full-replacement/new-cycle publishing behavior is still unchanged and the planned append/merge publishing redesign remains future work.
+
+Because the Control Room lazily parks collapsed system bodies for iPad/DOM health, the publisher now performs hidden sequential hydration of Queue-Selected and pending-Retreat cards, waits for the deterministic preview, queues actionable work, then collapses the card again. This keeps automation compatible with the two-card warm cache without visibly expanding every selected system.
+
+A **Faction Alerts** panel near the top of BGS Control records newly detected major Mongrel state episodes:
+- pending Retreat;
+- War / Civil War / Election conflict changes;
+- Bust;
+- Civil Unrest.
+
+Alerts are episode-based rather than repeating permanent state badges. Pressing **VIEW** acknowledges that alert and opens a broader board-level filter in the System List:
+- conflict VIEW shows **all Mongrel pending and active War / Civil War / Election systems**;
+- Bust and Civil Unrest VIEW show pending + active systems in that state family;
+- Retreat VIEW shows pending Retreat systems.
+
+Conflict Pending → Active is one continuous episode. If the pending conflict was already reviewed, activation the next tick does **not** create another alert. If it was not reviewed, the same alert remains and updates to active. An active conflict that appears without a previously tracked pending episode is treated as a new alert. When a conflict ends, the episode resolves so a future separate conflict can alert again.
