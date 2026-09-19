@@ -5,6 +5,8 @@
   let panel=null;
   let syncing=false;
   let publishBusy=false;
+  let evaluationRunning=false;
+  const evaluatedFingerprints=new Map();
   let lastPublishMessage='';
   let lastPublishError='';
 
@@ -117,6 +119,64 @@
 
   function suppressCurrent(item){
     if(item?.system&&item?.signature)suppressedSignatures.set(item.system,item.signature);
+  }
+
+
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+
+  function evaluationFingerprint(card){
+    return [card.dataset.snapshotTime||'',card.dataset.settingsUpdated||'',card.dataset.queueSelected||'',card.dataset.retreatPending||''].join('|');
+  }
+
+  async function waitForPreview(card,timeout=2600){
+    const start=Date.now();
+    while(Date.now()-start<timeout){
+      const host=card.querySelector('[data-order-preview-output]');
+      const text=clean(host?.textContent||'');
+      if(host && !/Generating preview|Calculating whole-board preview/i.test(text) &&
+        (host.querySelector('.wolf-order-task') || host.querySelector('.wolf-order-empty') || host.querySelector('.wolf-order-warnings') || host.querySelector('.wolf-order-ready'))) return true;
+      await wait(70);
+    }
+    return false;
+  }
+
+  async function evaluateOperationalCards({forceSystem=''}={}){
+    if(evaluationRunning)return;
+    if(document.querySelector('.wolf-system-card[open]:not(.wolf-auto-evaluating)') && !forceSystem)return;
+    evaluationRunning=true;
+    try{
+      const cards=[...document.querySelectorAll('.wolf-system-card')].filter(card=>{
+        if(isLab(card))return false;
+        if(forceSystem)return card.dataset.system===forceSystem;
+        return card.dataset.queueSelected==='true'||card.dataset.retreatPending==='true';
+      });
+      for(const card of cards){
+        const system=card.dataset.system||'';
+        const fingerprint=evaluationFingerprint(card);
+        if(!forceSystem && evaluatedFingerprints.get(system)===fingerprint)continue;
+        const wasOpen=card.open;
+        if(!wasOpen){
+          card.classList.add('wolf-auto-evaluating');
+          card.open=true;
+          await wait(60);
+        }
+        await waitForPreview(card);
+        autoSyncCard(card);
+        evaluatedFingerprints.set(system,fingerprint);
+        if(!wasOpen){
+          card.open=false;
+          await wait(20);
+          card.classList.remove('wolf-auto-evaluating');
+        }
+      }
+    }finally{
+      evaluationRunning=false;
+      syncAll();
+    }
+  }
+
+  function scheduleOperationalEvaluation(options={}){
+    window.setTimeout(()=>evaluateOperationalCards(options),140);
   }
 
   function ensurePanel(){
@@ -305,18 +365,24 @@
     window.addEventListener('wolf-bgs-queue-selector-updated',event=>{
       const system=event.detail?.system||'';
       const selected=Boolean(event.detail?.selected);
-      if(selected)suppressedSignatures.delete(system);
-      else{
+      evaluatedFingerprints.delete(system);
+      if(selected){
+        suppressedSignatures.delete(system);
+        scheduleOperationalEvaluation({forceSystem:system});
+      }else{
         const item=queue.get(system);
         if(item?.queueSource==='selector')queue.delete(system);
         suppressedSignatures.delete(system);
+        setTimeout(syncAll,0);
       }
-      setTimeout(syncAll,0);
     });
-    window.addEventListener('wolf-bgs-payload-updated',()=>setTimeout(syncAll,70));
+    window.addEventListener('wolf-bgs-payload-updated',()=>{
+      setTimeout(syncAll,70);
+      scheduleOperationalEvaluation();
+    });
     syncAll();
     setTimeout(syncAll,250);
-    setTimeout(syncAll,700);
+    setTimeout(()=>{syncAll();scheduleOperationalEvaluation();},700);
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',observe);else observe();
