@@ -298,12 +298,18 @@
     const tick = settings.customTick || payload.defaults?.defaultTick || '19:00';
     const freshHours = settings.freshnessHours ?? payload.defaults?.freshnessHours ?? 8;
     const manualNewer = system.activeSnapshotSource === 'manual';
+    const scoutActive = system.activeSnapshotSource === 'scout';
+    const snapshotSourceLabel = manualNewer ? 'Manual' : (scoutActive ? `Scout${system.scoutLabel ? ` · ${system.scoutLabel}` : ''}` : 'External');
     const favorite = Boolean(settings.favorite);
     const queueSelected = Boolean(settings.queueSelected);
     const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">A complete external faction board is not available for this system yet. The Mongrel presence row remains available, and a manual full-board snapshot can be submitted as a fallback.</div>`;
-    const boardChip = system.externalBoardComplete
-      ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
-      : '<span class="wolf-chip">External board <b>awaiting data</b></span>';
+    const boardChip = scoutActive && system.scoutBoardComplete
+      ? `<span class="wolf-chip wolf-scout-source-chip">Scout board <b>${html(system.factionCount || factions.length)} factions</b></span>`
+      : (system.externalBoardComplete
+        ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
+        : (system.scoutBoardComplete
+          ? `<span class="wolf-chip wolf-scout-source-chip">Scout board available <b>${html(system.factionCount || factions.length)} factions</b></span>`
+          : '<span class="wolf-chip">External board <b>awaiting data</b></span>'));
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
     const score = system.conflictScore || null;
     const timeline = system.conflictTimeline || null;
@@ -335,9 +341,10 @@
       <div class="wolf-system-body">
         <div class="wolf-system-topline">
           ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
-          <span class="wolf-chip">External source update <b>${html(fmt(system.sourceUpdated))}</b></span>
+          <span class="wolf-chip">External source update <b>${html(fmt(system.externalBoardUpdatedAt || system.sourceUpdated))}</b></span>
+          ${system.scoutUpdatedAt ? `<span class="wolf-chip wolf-scout-source-chip">Scout update <b>${html(age(system.scoutUpdatedAt))}</b>${system.scoutLabel ? ` · ${html(system.scoutLabel)}` : ''}</span>` : ''}
           <span class="wolf-chip">Manual update <b>${html(fmt(system.manualUpdatedAt))}</b></span>
-          <span class="wolf-chip">Active snapshot <b>${manualNewer ? 'Manual' : 'External'} · ${html(fmt(system.activeSnapshotTime))}</b></span>
+          <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active snapshot <b>${html(snapshotSourceLabel)} · ${html(fmt(system.activeSnapshotTime))}</b></span>
           <span class="wolf-chip">Freshness limit <b>${html(freshHours)}h</b></span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
           ${timeline && timeline.phase !== 'none' ? `<span class="wolf-chip wolf-conflict-day-chip">Conflict day <b>${html(dayText || 'DAY ?')}</b>${daySource ? ` · ${html(daySource)}` : ''}${timeline.overdue ? ' · VERIFY' : ''}</span>` : ''}
@@ -745,8 +752,9 @@
   prevPage?.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; renderSystems(); } });
   nextPage?.addEventListener('click', () => { currentPage += 1; renderSystems(); });
 
-  async function load() {
-    setAccess(false);
+  async function load(resetUi = true) {
+    const reopenSystem = !resetUi ? ([...document.querySelectorAll('.wolf-system-card[open]')][0]?.dataset.system || '') : '';
+    if (resetUi) setAccess(false);
     try {
       const response = await fetch(`/api/operations/wolf-bgs?_=${Date.now()}`, { credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } });
       if (response.status === 401 || response.status === 403) {
@@ -756,20 +764,23 @@
       if (!response.ok) throw new Error(`Wolf BGS Control request failed (${response.status})`);
       payload = await response.json();
       if (viewer) viewer.textContent = `${payload.viewer?.displayName || 'CMDR Wolf258'} · site admin`;
-      if (pageSizeEl) { pageSizeEl.value = '20'; pageSize = 20; }
-      if (sort) sort.value = 'influence-desc';
+      if (resetUi && pageSizeEl) { pageSizeEl.value = '20'; pageSize = 20; }
+      if (resetUi && sort) sort.value = 'influence-desc';
       populateSummary(payload);
       populateAlerts(payload);
       populateGlobal(payload);
       populateSystemDefaults(payload);
-      renderSystems();
+      renderSystems(reopenSystem);
       window.dispatchEvent(new CustomEvent('wolf-bgs-payload-updated', { detail:{ systems:payload.systems || [] } }));
-      setAccess(true);
+      if (resetUi) setAccess(true);
+      return payload;
     } catch (error) {
       console.error('Could not load Wolf BGS Control', error);
       if (gateStatus) gateStatus.textContent = 'Wolf BGS Control service unavailable. Please try again.';
+      return null;
     }
   }
 
-  load();
+  window.WolfBgsRefresh = () => load(false);
+  load(true);
 })();
