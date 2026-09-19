@@ -53,6 +53,18 @@
       </div>
     </section>
 
+    <section class="section-sm wolf-faction-alerts-section" data-faction-alerts-section>
+      <div class="container">
+        <div class="wolf-faction-alerts-panel">
+          <div class="wolf-faction-alerts-head">
+            <div><span>MONITORED CHANGES</span><h2>Faction Alerts</h2><p>New major Mongrel state changes appear here once. VIEW acknowledges the alert and opens the broader board-level view for that alert family.</p></div>
+            <div class="wolf-faction-alert-count"><strong data-faction-alert-count>0</strong><small>new</small></div>
+          </div>
+          <div class="wolf-faction-alert-list" data-faction-alert-list><div class="wolf-alert-empty"><strong>Loading faction alerts…</strong></div></div>
+        </div>
+      </div>
+    </section>
+
     <section class="section-sm">
       <div class="container">
         <details class="wolf-panel wolf-global-panel">
@@ -98,8 +110,12 @@
           <label><span>Status / flag</span><select data-custom-flag><option value="">Any</option><option value="favorite">Favorite</option><option value="retreat">Retreat risk</option><option value="conflict">Conflict</option><option value="stale">Stale data</option><option value="custom-settings">Custom settings</option><option value="automation-off">Automation off</option></select></label>
         </div>
 
+        <div class="wolf-active-board-view" data-active-board-view hidden><span data-active-board-view-label>FILTERED VIEW</span><button type="button" data-clear-active-board-view>Clear view</button></div>
         <div class="wolf-system-list-meta">
-          <div class="wolf-system-count"><strong data-system-count>—</strong><span>systems match</span></div>
+          <div class="wolf-system-list-meta-left">
+            <div class="wolf-system-count"><strong data-system-count>—</strong><span>systems match</span></div>
+            <button type="button" class="wolf-queue-selector-summary" data-queue-selector-summary title="Show systems enabled for routine automated queueing"><span>QUEUE SELECTORS</span><strong data-queue-selector-count>0</strong><small>systems</small></button>
+          </div>
           <div class="wolf-pagination"><button class="btn btn-secondary btn-compact" type="button" data-page-prev>← Previous</button><span data-page-status>Page 1 of 1</span><button class="btn btn-secondary btn-compact" type="button" data-page-next>Next →</button></div>
         </div>
         <div data-system-list class="wolf-system-list"><div class="wolf-loading">Loading Wolf BGS Control…</div></div>
