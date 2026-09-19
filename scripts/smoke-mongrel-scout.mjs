@@ -41,7 +41,7 @@ for(const pattern of [
   /mscout_/,
   /lastSeenAt/,
   /lastSystem/,
-  /DELETE/,
+  /onRequestDelete/,
 ])assert.match(tokenApi,pattern);
 assert.doesNotMatch(tokenApi,/state\.tokens\[id\]\s*=\s*\{[^}]*token,/s,'Raw Scout token must not be persisted');
 
