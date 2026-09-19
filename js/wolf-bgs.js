@@ -258,7 +258,7 @@
       : '<span class="wolf-chip">External board <b>awaiting data</b></span>';
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
 
-    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}" data-queue-selected="${queueSelected}" data-retreat-pending="${system.retreatPending ? 'true' : 'false'}">
+    return `<details class="wolf-system-card ${lowWatch ? 'low-watch' : ''}" data-system="${html(system.name)}" data-favorite="${favorite}" data-queue-selected="${queueSelected}" data-retreat-pending="${system.retreatPending ? 'true' : 'false'}" data-snapshot-time="${html(system.activeSnapshotTime || '')}" data-settings-updated="${html(settings.updatedAt || '')}">
       <summary>
         <div class="wolf-system-name-row">
           <div class="wolf-system-selectors">
