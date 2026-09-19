@@ -2,6 +2,7 @@ import { json, readSession } from '../../../lib/auth.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const MONGREL = 'Regiment of Imperial Mongrels';
+const ALERT_FAMILIES = new Set(['retreat','conflict','bust','civil-unrest']);
 
 const DEFAULTS = {
   defaultTick: '19:00',
@@ -87,9 +88,11 @@ export async function onRequestPut({ request, env }) {
     const existing = raw.systemSettings[name] || {};
     const overrides = normalizeSystemOverrides(body?.settings, previousSystemDefaults);
     const favorite = body?.settings?.favorite === undefined ? Boolean(existing.favorite) : Boolean(body.settings.favorite);
+    const queueSelected = body?.settings?.queueSelected === undefined ? Boolean(existing.queueSelected) : Boolean(body.settings.queueSelected);
     const next = {
       ...overrides,
       ...(favorite ? { favorite: true } : {}),
+      ...(queueSelected ? { queueSelected: true } : {}),
       updatedAt: now,
       updatedBy: actor,
     };
@@ -108,6 +111,30 @@ export async function onRequestPut({ request, env }) {
     if (!body.favorite) delete next.favorite;
     if (hasStoredSystemData(next)) raw.systemSettings[name] = next;
     else delete raw.systemSettings[name];
+  } else if (action === 'toggle-queue-selector') {
+    const name = cleanText(body?.system, '', 140);
+    if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
+    const existing = raw.systemSettings[name] || {};
+    const next = {
+      ...existing,
+      ...(body.queueSelected ? { queueSelected:true } : {}),
+      updatedAt: now,
+      updatedBy: actor,
+    };
+    if (!body.queueSelected) delete next.queueSelected;
+    if (hasStoredSystemData(next)) raw.systemSettings[name] = next;
+    else delete raw.systemSettings[name];
+  } else if (action === 'ack-alert') {
+    const name = cleanText(body?.system, '', 140);
+    const family = cleanText(body?.family, '', 40);
+    if (!name || !ALERT_FAMILIES.has(family)) {
+      return json({ ok:false, error:'alert_required' }, { status:400, headers:privateHeaders() });
+    }
+    raw.alertEpisodes = raw.alertEpisodes && typeof raw.alertEpisodes === 'object' ? raw.alertEpisodes : {};
+    const key = `${name}::${family}`;
+    if (raw.alertEpisodes[key] && typeof raw.alertEpisodes[key] === 'object') {
+      raw.alertEpisodes[key].reviewedAt = now;
+    }
   } else if (action === 'submit-status') {
     const name = cleanText(body?.system, '', 140);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
@@ -137,6 +164,7 @@ async function readRawControl(env) {
     systemDefaultsUpdatedBy: null,
     systemSettings: {},
     manualSnapshots: {},
+    alertEpisodes: {},
   };
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -149,6 +177,7 @@ async function readRawControl(env) {
       systemDefaults: stored.systemDefaults && typeof stored.systemDefaults === 'object' ? stored.systemDefaults : empty.systemDefaults,
       systemSettings: stored.systemSettings && typeof stored.systemSettings === 'object' ? stored.systemSettings : {},
       manualSnapshots: stored.manualSnapshots && typeof stored.manualSnapshots === 'object' ? stored.manualSnapshots : {},
+      alertEpisodes: stored.alertEpisodes && typeof stored.alertEpisodes === 'object' ? stored.alertEpisodes : {},
     };
   } catch (error) {
     console.error('Could not read raw Wolf BGS Control state', error);
@@ -164,6 +193,7 @@ function normalizeSparseSettingsMap(value, systemDefaults) {
     if (!key || !settings || typeof settings !== 'object') continue;
     const normalized = normalizeSystemOverrides(settings, systemDefaults);
     if (settings.favorite) normalized.favorite = true;
+    if (settings.queueSelected) normalized.queueSelected = true;
     const updatedAt = cleanText(settings.updatedAt, '', 80);
     const updatedBy = cleanText(settings.updatedBy, '', 120);
     if (updatedAt) normalized.updatedAt = updatedAt;
@@ -226,7 +256,7 @@ function normalizeSystemOverrides(value = {}, baseDefaults = SYSTEM_DEFAULTS) {
 
 function hasStoredSystemData(value) {
   if (!value || typeof value !== 'object') return false;
-  if (value.favorite || value.notes) return true;
+  if (value.favorite || value.queueSelected || value.notes) return true;
   if (OVERRIDE_KEYS.some(key => Object.prototype.hasOwnProperty.call(value, key))) return true;
   return Boolean(value.updatedAt && value.updatedBy && (value.favorite || value.notes));
 }
