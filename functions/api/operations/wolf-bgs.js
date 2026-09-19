@@ -409,6 +409,7 @@ function buildSystem(row, externalBoard, control, scout = null) {
     security: scoutIsNewer && scout?.security ? scout.security : (row.security || ''),
     population: scoutIsNewer && scout?.population !== null && scout?.population !== undefined ? scout.population : (row.population || null),
     sourceUpdated: trustedSourceUpdated || null,
+    externalSourceUpdated:externalUpdated || null,
     sourceFetchedAt: scoutIsNewer ? (scout?.receivedAt || scoutUpdated) : (externalBoard?.fetchedAt || row.fetchedAt || liveFallbackTimestamp(row)),
     externalBoardUpdatedAt: externalBoard?.updatedAt || null,
     externalBoardComplete: Boolean(externalFactions.length),
