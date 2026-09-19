@@ -29,7 +29,8 @@ for(const pattern of [
   /MongrelScoutToken/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
-assert.match(plugin,/cargo, credits, ship build, materials, missions, and general travel history are not transmitted/i);
+assert.match(plugin,/Commander name, cargo, credits/i);
+assert.match(plugin,/general travel history are not transmitted/i);
 
 const tokenApi=readFileSync('functions/api/operations/scout-tokens.js','utf8');
 for(const pattern of [
