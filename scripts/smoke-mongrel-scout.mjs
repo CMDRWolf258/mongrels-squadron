@@ -7,6 +7,7 @@ const required=[
   'functions/api/operations/scout-tokens.js',
   'functions/api/operations/scout-ingest.js',
   'js/wolf-bgs-scout.js',
+  'functions/downloads/mongrel-scout.zip.js',
 ];
 for(const path of required)assert.ok(existsSync(path),`${path} missing`);
 
@@ -27,6 +28,8 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
+  /Not assigned:/,
+  /Scout rate limit reached/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
 assert.match(plugin,/Commander name, cargo, credits/i);
@@ -41,7 +44,13 @@ for(const pattern of [
   /mscout_/,
   /lastSeenAt/,
   /lastSystem/,
+  /onRequestPatch/,
   /onRequestDelete/,
+  /restricted_systems_required/,
+  /normalizeAllowedSystems/,
+  /scope/,
+  /allowedSystems/,
+  /DEFAULT_RATE_LIMIT_PER_HOUR = 120/,
 ])assert.match(tokenApi,pattern);
 assert.doesNotMatch(tokenApi,/state\.tokens\[id\]\s*=\s*\{[^}]*token,/s,'Raw Scout token must not be persisted');
 
@@ -57,7 +66,34 @@ for(const pattern of [
   /FSDJump/,
   /Location/,
   /CarrierJump/,
+  /systemAuthorized/,
+  /system_not_authorized/,
+  /scout_rate_limit_reached/,
+  /RATE_KEY_PREFIX/,
+  /DEFAULT_RATE_LIMIT_PER_HOUR = 120/,
+  /Retry-After/,
+  /expirationTtl:7200/,
 ])assert.match(ingest,pattern);
+
+const ingestFactory=new Function(
+  ingest.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
+  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,consumeRateLimit,DEFAULT_RATE_LIMIT_PER_HOUR};'
+);
+const ingestHelpers=ingestFactory();
+assert.equal(ingestHelpers.systemAuthorized({scope:'trusted',allowedSystems:[]},'Anywhere'),true);
+assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'  baldur  '),true);
+assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'Diaba'),false);
+assert.equal(ingestHelpers.DEFAULT_RATE_LIMIT_PER_HOUR,120);
+
+const rateStore=new Map();
+const rateEnv={DAILY_ORDERS:{
+  async get(key){return rateStore.has(key)?JSON.parse(rateStore.get(key)):null;},
+  async put(key,value){rateStore.set(key,value);},
+}};
+let lastRate;
+for(let i=0;i<121;i++)lastRate=await ingestHelpers.consumeRateLimit(rateEnv,'test-token');
+assert.equal(lastRate.allowed,false,'121st Scout request in one hour should be rate-limited');
+
 
 const bgsApi=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 for(const pattern of [
@@ -156,15 +192,25 @@ payload=bgs.buildPayload(
 assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
-for(const pattern of [/Scout Network/,/data-scout-network/,/Download EDMC Plugin/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
+for(const pattern of [/Scout Network/,/data-scout-network/,/Restricted Scout/,/Trusted Scout/,/data-scout-create-systems/,/Download Mongrel Scout \(\.zip\)/,/mongrel-scout\.zip/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
 
 const client=readFileSync('js/wolf-bgs-scout.js','utf8');
-for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/REVOKE/,/WolfBgsRefresh/,/setInterval\(load,30000\)/])assert.match(client,pattern);
+for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/EDIT ACCESS/,/REVOKE/,/PATCH/,/restricted/,/trusted/,/allowedSystems/,/WolfBgsRefresh/,/setInterval\(\(\)=>load\(\),30000\)/])assert.match(client,pattern);
 new Function(client);
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for(const pattern of [/wolf-scout-source-chip/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/])assert.match(baseClient,pattern);
+for(const pattern of [/wolf-scout-source-chip/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/])assert.match(baseClient,pattern);
 new Function(baseClient);
+
+
+const zipSource=readFileSync('functions/downloads/mongrel-scout.zip.js','utf8');
+new Function(zipSource.replace(/\bexport\s+/g,''));
+for(const pattern of [/MongrelScout\/load\.py/,/MongrelScout\/README\.md/,/application\/zip/,/Content-Disposition/,/crc32/,/buildStoredZip/])assert.match(zipSource,pattern);
+const zipFactory=new Function(zipSource.replace(/\bexport\s+/g,'')+'; return {buildStoredZip};');
+const zipBytes=zipFactory().buildStoredZip([{name:'MongrelScout/load.py',data:new TextEncoder().encode('print("ok")')}]);
+assert.equal(zipBytes[0],0x50);
+assert.equal(zipBytes[1],0x4b);
+assert.match(Buffer.from(zipBytes).toString('latin1'),/MongrelScout\/load\.py/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
   const source=readFileSync(path,'utf8').replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'');
