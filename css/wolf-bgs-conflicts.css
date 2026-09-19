@@ -19,3 +19,5 @@
 .wolf-conflict-preview-task{border-color:rgba(255,174,71,.34)}
 @media(max-width:900px){.wolf-conflict-detection{grid-template-columns:1fr}.wolf-conflict-detection .wolf-conflict-alert{grid-column:auto}.wolf-conflict-pair{grid-template-columns:30px 1fr 26px 1fr}.wolf-conflict-pair label:nth-of-type(3),.wolf-conflict-type{grid-column:2/-1}.wolf-conflict-preview-banner{align-items:flex-start;flex-direction:column}.wolf-conflict-preview-banner span{text-align:left}}
 @media(max-width:620px){.wolf-conflict-pair{grid-template-columns:30px 1fr}.wolf-conflict-versus{display:none}.wolf-conflict-pair label,.wolf-conflict-type{grid-column:2}.wolf-conflict-pair-number{grid-row:1 / span 4;align-self:stretch}}
+
+.wolf-conflict-score-detail{color:#ffe1a6!important;font-size:1rem!important;letter-spacing:.025em}
