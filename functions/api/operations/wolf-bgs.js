@@ -307,7 +307,7 @@ function buildPayload(live, boards, control, session, scoutState = {systems:{}})
       boardRequestedSystems: boardRequested,
       scoutSnapshotCount: systems.filter(system => system.scoutUpdatedAt).length,
       scoutActiveCount: systems.filter(system => system.activeSnapshotSource === 'scout').length,
-      newestScoutAt: newestTimestamp(...systems.map(system => system.scoutUpdatedAt).filter(Boolean)),
+      newestScoutAt: systems.map(system => system.scoutUpdatedAt).filter(Boolean).reduce((latest,value) => newestTimestamp(latest,value), null),
     },
     defaults: control.defaults,
     globalUpdatedAt: control.globalUpdatedAt,
