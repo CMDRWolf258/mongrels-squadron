@@ -407,7 +407,7 @@
 
   function withFavoritesFirst(rows) {
     if (!favoritesFirst?.checked || !payload?.systems) return rows;
-    const favoriteRows = sortedSystems((payload.systems || []).filter(system => system.settings?.favorite));
+    const favoriteRows = sortedSystems(rows.filter(system => system.settings?.favorite));
     const favoriteKeys = new Set(favoriteRows.map(systemKey));
     const remainder = rows.filter(system => !favoriteKeys.has(systemKey(system)));
     return [...favoriteRows, ...remainder];
@@ -436,7 +436,7 @@
     const sortedMatches = sortedSystems(matchingRows);
     const rows = withOperationalFirst(withFavoritesFirst(sortedMatches));
     const total = rows.length;
-    const watchRows = lowestFiveWatch?.checked ? lowestFiveSystems() : [];
+    const watchRows = lowestFiveWatch?.checked && !activeBoardView ? lowestFiveSystems() : [];
     const watchKeys = new Set(watchRows.map(systemKey));
 
     let pageRows = [];
@@ -636,6 +636,23 @@
   [customPriority, customState, customPending, customControl, customFlag].forEach(el => {
     el?.addEventListener(el?.tagName === 'INPUT' ? 'input' : 'change', resetPage);
   });
+  queueSelectorSummary?.addEventListener('click', () => setBoardView(activeBoardView === 'queue-selected' ? '' : 'queue-selected'));
+  clearActiveView?.addEventListener('click', () => setBoardView(''));
+  alertList?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-view-faction-alert]');
+    if (!button) return;
+    const system = button.dataset.alertSystem || '';
+    const family = button.dataset.alertFamily || '';
+    button.disabled = true;
+    try {
+      await save('ack-alert', system, { family });
+      setBoardView(family);
+    } catch (error) {
+      console.error(error);
+      button.disabled = false;
+    }
+  });
+
   prevPage?.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; renderSystems(); } });
   nextPage?.addEventListener('click', () => { currentPage += 1; renderSystems(); });
 
