@@ -601,6 +601,149 @@ A useful collapsed queue row should feel approximately like:
 The exact visual design can change, but the queue must make the delta understandable in a few seconds and must clearly preview anything publication will remove.
 
 
+## Member Rewards / credit ledger concept (pre-implementation)
+
+_Added 2026-09-20. Brainstorming baseline for a future squad reward system. Values and exact UI are not locked yet._
+
+### Core model
+
+Create a reward ledger that tracks **credits the squad owes a member**, rather than pretending the website itself transfers in-game credits.
+
+Each reward transaction should preserve:
+- member / CMDR identity;
+- credit amount;
+- reason / source activity;
+- source task/order/job ID where applicable;
+- earned timestamp;
+- reward status;
+- payout/settlement timestamp and officer who marked it paid;
+- enough provenance to prevent the same qualifying event from being rewarded twice.
+
+Suggested lifecycle:
+**Available job → claimed/assigned → verified completion → reward earned/owed → paid in game → settled/history.**
+
+### Member view
+
+Members should have a compact **Rewards / Credits Owed** area showing:
+- total currently owed;
+- each unpaid reward and why it was earned;
+- recent paid rewards/history;
+- available reward jobs they may claim, when applicable.
+
+The language should make clear that the displayed balance is an **in-game payout ledger**, not stored website currency.
+
+### Public / squad visibility
+
+A squad-facing reward activity area can show who earned what and why, for example:
+**CMDR Example · 5M CR · Scouted Miwae · Earned today**.
+
+Exact privacy/detail controls can be decided later, but the concept is to make useful contributions visible and rewards transparent.
+
+### Wolf / officer payout console
+
+Wolf needs an administrative payout view that answers:
+- who is currently owed credits;
+- total owed per member;
+- why each amount is owed;
+- which individual reward entries make up the balance;
+- what has already been paid;
+- ability to mark one reward or a member's selected rewards **PAID** after transferring credits in game.
+
+Marking paid settles the ledger entry; it must not erase its history.
+
+### Automated reward rules
+
+Rewards should usually be created automatically from **verified system events**, not merely from a member pressing a claim/report button.
+
+A reward rule needs at least:
+- qualifying action/event;
+- reward amount;
+- repeat policy/cooldown;
+- verification source;
+- eligibility/assignment rules;
+- stable deduplication key.
+
+Automation should be idempotent: processing the same Scout observation, order report, or completion event twice must not issue two rewards.
+
+### Example: one-time Scout bounty
+
+Wolf posts:
+**Scout NGC 2546 Sector X — 5M CR**
+
+Flow:
+1. Member claims/selects the Scout job.
+2. The job becomes assigned according to its assignment policy.
+3. Mongrel Scout receives a qualifying fresh observation for that system attributable to that member/token.
+4. Backend verifies that the observation satisfies the job's freshness/completion requirements.
+5. The job completes and a **5M CR owed** ledger entry is created automatically.
+6. That job instance cannot reward again.
+7. Wolf later transfers the credits in game and marks the ledger entry paid.
+
+A member clicking **claimed** is not itself proof of completion.
+
+### Repeatable Scout jobs
+
+A Scout reward can optionally be recurring, for example **5M once every 24 hours**.
+
+- Completion opens the next eligible window only after the configured cooldown.
+- The 24-hour period should be anchored to a verified rewarded completion (or another deliberately chosen schedule), not to repeated page visits/claims.
+- Each eligible completion gets a unique reward-instance key so retries/duplicate observations cannot pay twice.
+- The UI should show when the job becomes eligible again.
+- We should later decide whether recurring jobs are open to any eligible member each window or remain assigned to one member until released.
+
+### Attribution requirement for Scout rewards
+
+Current Mongrel Scout observations intentionally do not send a commander name. Reward automation therefore needs a privacy-conscious attribution mechanism.
+
+Preferred concept: associate the **Scout token ID** server-side with the member who owns it. The observation/reward engine can attribute qualifying scouting to that authenticated token/member without adding CMDR identity to the ordinary public BGS observation payload or exposing it in system data.
+
+This requires care for shared tokens/devices and should be designed before Scout rewards go live.
+
+### Rewarding Daily Orders
+
+Daily Orders can also feed rewards, but the system should avoid incentives that encourage spammy low-value reports.
+
+Potential model:
+- reward **verified contribution units** reported against an active order;
+- apply per-order/per-cycle caps or milestone thresholds;
+- tie the reward to the same logical order/cycle identity used by Mission Control reporting;
+- preserve reward attribution when an order target is revised;
+- work reported after an order expires can only qualify if it was legitimately completed before cutoff under the expired-order reporting rules;
+- removed/replaced orders retain any reward already earned from valid historical work.
+
+Examples worth testing later:
+- fixed completion bounty for satisfying a claimed special order;
+- milestone reward after X verified INF contribution;
+- CZ contribution reward based on accepted CZ points;
+- daily participation reward with a cap rather than paying indefinitely per report;
+- officer-created bonus/bounty for unusual one-off work.
+
+Exact rates should remain configurable rather than hard-coded.
+
+### Anti-abuse / accounting safeguards
+
+- Server-side reward issuance only; client UI never decides that credits were earned.
+- Stable event/job/order identifiers for deduplication.
+- One-time jobs can settle only once.
+- Recurring jobs enforce their cooldown/window server-side.
+- Manual officer adjustments should create auditable ledger entries rather than silently editing balances.
+- Negative/correction entries should be possible if an award must be reversed while retaining history.
+- Payment status is separate from earned status: earning creates a debt; Wolf marking paid settles it.
+- If multiple members legitimately contribute to one job, the rule must explicitly say whether the reward is first-completion, shared, per-member, or manually allocated.
+
+### Likely relationship to existing systems
+
+This should integrate with:
+- **Mongrel Scout** for verified scouting completion;
+- **Daily Orders / Mission Control reports** for BGS contribution rewards;
+- **order/cycle identity** so revisions do not duplicate or lose rewards;
+- **member authentication / Discord identity** for ownership;
+- a future **Reward Jobs** panel for claimable assignments;
+- an officer **Payout Console** for settlement.
+
+The reward ledger should be its own durable subsystem. Daily Orders, Scout, and special jobs generate reward events into it; they should not each maintain separate balances.
+
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
