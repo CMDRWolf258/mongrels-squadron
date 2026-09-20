@@ -696,15 +696,30 @@ Working presentation concept:
   - **Estimated system tick:** e.g. 19:35 UTC / 3:35 PM local
   - **Stop this task in:** e.g. 52m
 - Low-risk / continuation-safe tasks do **not** need a countdown merely for decoration. They may instead show no timer, or a quiet status such as **Safe through transition** when that is strategically valid.
-- High-risk tasks such as Tie protection should make the cutoff visually prominent and should **disappear from the member's actionable Daily Orders when the timer expires**. Do not leave an expired task visible with a 00:00 timer or convert the old task into a still-actionable HOLD card.
-- The **system** may remain visible in a non-actionable **TRANSITION / RESULTS PENDING** state so members understand why no new task is currently available. This status belongs at the system level, not as the expired order itself.
-- Closed/expired task records and submitted progress may remain available to Wolf/admin/history/reporting views even though the task is removed from the member's active work list.
+- High-risk tasks such as Tie protection should make the cutoff visually prominent. When the timer expires, the task must stop looking actionable, but it may remain visible **for reporting only**.
+- The expired member-facing card should use extremely short, unmistakable language such as **EXPIRED — NO MORE WORK** plus one compact line: **Report only work completed before the cutoff.**
+- The work instruction itself should be visually de-emphasized after expiration so members do not mistake the card for a current task.
+- The reporting controls may remain available during the allowed late-reporting window. Submitting after expiration is permitted only for work that was actually completed before the cutoff; the UI should make that condition explicit without requiring a long explanation.
+- A late report should remain tied to the **same original order / cycleId** that issued the task. It must never roll into, count toward, or be silently reassigned to a newer BGS cycle.
+- Once the allowed late-reporting window closes, the expired task can leave the normal member view and remain available only through history/admin reporting views.
+- The **system** may also show a compact non-actionable **TRANSITION / RESULTS PENDING** state so members understand why no new task is currently available.
 - Medium-risk tasks can use their own configured safety buffer.
 - The countdown must be based on the task's calculated cutoff, not simply on the system's average tick time.
 - When the tick window is reached without a fresh post-tick board, the system-level display should shift into a visible **TRANSITION / RESULTS PENDING** state rather than pretending the old timer/order is still authoritative.
 - A fresh post-tick confirmation resets the system clock context for the new BGS day and allows newly calculated orders/timers to replace the expired ones.
 
 The purpose of these clocks is operational awareness, not a claim that Frontier's tick is exact. Member-facing wording should therefore communicate **estimated tick / tick window / task cutoff** clearly instead of presenting a false exact deadline.
+
+### Expired-order reporting semantics
+
+The expiration cutoff separates **work eligibility** from **report eligibility**.
+
+- At cutoff, the member must stop performing the task for that BGS day.
+- Reporting can remain open after cutoff so delayed submissions are not lost.
+- The report belongs to the order's original `cycleId` / order identity even if a newer Daily Orders cycle has already been published.
+- Late-report acceptance does **not** reopen the task or extend its work window.
+- Member-facing wording should stay compact and imperative: **EXPIRED — NO MORE WORK** / **Report only work completed before cutoff.**
+- Future implementation should decide the default late-reporting duration and whether officers can manually reopen/extend reporting without reopening the work order itself.
 
 ### Data and detection principles
 
