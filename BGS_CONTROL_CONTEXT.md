@@ -515,6 +515,92 @@ The desired workflow is:
 This makes Mission Control a continuously refinable operational board rather than a once-per-day static document, while preserving Wolf's explicit publish authority.
 
 
+## Publish Queue change-review / diff concept (pre-implementation)
+
+_Added 2026-09-19. This extends the live per-system reconciliation doctrine. The Publish Queue should become a review surface for changed operational plans, not merely a list of system names._
+
+### Change annunciator
+
+- BGS Control should have a highly visible **Order Changes / Queue Changes annunciator** modeled on the existing Faction Alert behavior.
+- A materially changed queued plan caused by fresh trusted data should light and flash the annunciator until Wolf acknowledges/reviews the change.
+- This alert is separate from Faction Alerts: it means **the proposed Daily Orders changed**, not merely that a faction state changed.
+- The annunciator should show a compact count of systems and/or tasks with unreviewed changes.
+- Acknowledging the annunciator should only mark the changes reviewed; it must not publish them and must not remove queue entries.
+
+### Queue rows need order summaries
+
+Each queued system should show more than the system name. The collapsed row should include a compact summary of the orders currently held inside it, for example:
+- faction / task kind / target;
+- optional status such as High Priority, conflict pressure, or timer/cutoff when relevant;
+- current published progress where useful for understanding the effect of a target change.
+
+The goal is for Wolf to understand the proposed plan without opening every system.
+
+### Diff states
+
+When fresh data changes a queued system, compare the newly generated plan with both:
+1. the previously queued/reviewed candidate; and
+2. the currently published Mission Control orders for that system.
+
+Use clear task-level change labels:
+- **NEW** — task will be added.
+- **CHANGED** — same logical task survives but its target/instructions changed.
+- **UNCHANGED** — task remains logically the same; progress will be preserved.
+- **REMOVE** — currently published task is no longer generated and will be removed if this update is published.
+- **REPLACED** — an old logical task is being removed and a fundamentally different one added; do not carry progress between them.
+
+Changed tasks should be visually emphasized. Unchanged tasks should remain visible but subdued so the actual delta is obvious.
+
+### Before → after presentation
+
+For numerical changes, show the important delta directly rather than requiring Wolf to compare two cards manually.
+
+Examples:
+- **INF target: 20 → 30** · current progress **12 / 20 → 12 / 30**
+- **CZ pressure: Contested 6 → Heavy 15**
+- **Bounty target: 20M → 30M**
+- **REMOVE: 15 INF for Faction X** · fresh board no longer requires influence support
+
+The queue should explicitly communicate that surviving logical tasks retain their submitted progress.
+
+### Removals must be impossible to miss
+
+Publishing can remove work that members are currently seeing, so removals need their own strong review treatment.
+
+- A queued system with one or more removals should carry a visible **REMOVES ORDERS** warning/badge.
+- The expanded queue row must list every task that will disappear from current Daily Orders.
+- Immediately before Publish, the confirmation/review summary should include counts such as **2 added · 1 changed · 1 removed · 3 unchanged**.
+- Wolf should be able to inspect the removed task and its existing progress before publishing.
+- Removing a task from current Daily Orders must preserve its historical reports/original cycle; it only stops being part of the latest actionable published plan.
+
+### Fresh-data replacement in Queue Selector systems
+
+- When a Queue-Selected system receives fresh trusted data, BGS Control should regenerate it immediately and replace its older auto-queued candidate in place.
+- The queue row should then show a **FRESH DATA — PLAN CHANGED** indication and the task-level diff.
+- If the fresh data produces no material change, the queue should not create a false alert merely because the source timestamp changed.
+- A material change means the operational result changed: task added/removed/replaced, target amount changed, objective/faction/work type changed, conflict pressure changed, cutoff materially changed, or another member-facing instruction changed.
+
+### Review state
+
+Each queued revision should carry a simple review state:
+- **NEW / UNREVIEWED CHANGE** — flashes/feeds the annunciator.
+- **REVIEWED** — Wolf has inspected/acknowledged the current revision.
+- If newer data changes the plan again after review, it returns to **UNREVIEWED CHANGE**.
+
+Publishing remains an explicit Wolf action. Review/acknowledgement never auto-publishes.
+
+### Intended operator view
+
+A useful collapsed queue row should feel approximately like:
+
+> **NGC 2546 Sector UZ-G d10-16** · **PLAN CHANGED**
+> 30 INF for Consortium **20 → 30** · 12 reported
+> ~~20M Bounties for Mongrels~~ **REMOVE**
+> + 6 CZ pts for Perez **NEW**
+
+The exact visual design can change, but the queue must make the delta understandable in a few seconds and must clearly preview anything publication will remove.
+
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
