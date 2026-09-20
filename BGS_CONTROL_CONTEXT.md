@@ -628,3 +628,72 @@ Scout tokens now carry server-side access permissions. Changing those permission
 
 ### Installation packaging
 The site now serves **MongrelScout.zip** from `/downloads/mongrel-scout.zip`. It contains a ready-made `MongrelScout/` folder with `load.py` and the README, so the member can unzip it and copy the folder directly into EDMC's Plugins directory. The raw source files remain under `/downloads/mongrel-scout/` for maintenance.
+
+
+## Tick timing / order-expiry concept (pre-implementation)
+
+_Added 2026-09-19. These are agreed brainstorming/design points to preserve before implementation. They are not yet production behavior and should be refined with observed data._
+
+### Core timing model
+
+- Keep **19:00 UTC as the global reference baseline**, not as a claim that every system processes at exactly 19:00.
+- Continue using a **per-system tick offset** from that baseline. The offset is intended to represent the system's own expected BGS processing time.
+- Keep **system tick timing separate from data-propagation timing**. If a system is expected to process at 19:35 but EliteHub/another surface does not show the new board until much later, that later appearance time must not be learned as the system tick offset.
+- Individual systems may drift. BGS Control should therefore reason about an **expected tick window**, not a single second-perfect timestamp.
+- The width/position of that window should eventually be informed by actual observations for that system; some inaccuracy is accepted as unavoidable.
+
+### Operational states around a tick
+
+The working concept is to distinguish at least:
+
+1. **Pre-tick** — the current day's order is still considered applicable.
+2. **Tick window / transition** — the system may already have processed, but a fresh post-tick board/score is not yet confirmed.
+3. **Post-tick confirmed** — a trustworthy fresh observation establishes the new BGS day and normal order generation can resume from the new state.
+
+A system entering its tick window must not be treated as equivalent to simply having stale data. "We have not seen the new board yet" is different from "the old day's work is certainly still current."
+
+### Order expiry should be risk-based
+
+The **safety buffer belongs to the order/objective**, not necessarily to the whole system. Different work in the same system can have different overflow risk.
+
+Working risk classes:
+
+- **High-risk / precision work** — examples include Tie protection, deliberate control-transfer balancing, Retreat-floor protection, and other work where spillover into the next BGS day could immediately damage the objective. These orders should disappear at or before the **earliest plausible tick** rather than waiting for the average expected tick.
+- **Medium-risk work** — examples include conflict-win work and influence balancing near a target boundary. These should receive a conservative pre-tick cutoff selected according to the objective's overshoot risk.
+- **Low-risk / continuation-safe work** — broad support where modest spillover into the next day is unlikely to hurt the strategy may remain available into the transition period, potentially at reduced intensity, until fresh post-tick data arrives.
+
+Exact buffer durations are intentionally **not locked yet**. They should be tuned from real system behavior rather than invented globally.
+
+### Tie-specific safety
+
+Tie work is especially sensitive to overflow.
+
+- An equal conflict score such as **0–0, 1–1, 2–2, or 3–3 already satisfies the Tie objective**.
+- Once tied, there is no strategic benefit to squeezing in extra conflict work before the tick.
+- Tie-related orders should therefore expire **earlier than the expected tick**, using the conservative edge of that system's tick window, so work intended for the current day is less likely to spill into the next day and accidentally create a new lead such as 2–2 becoming 2–3.
+- After the cutoff, the member view should clearly say that precision conflict work is closed pending the next confirmed score rather than continuing to display an obsolete task.
+
+### Member availability during the transition window
+
+A post-tick transition must not automatically become a galaxy-wide "do nothing" period.
+
+- Members may only be available during a narrow play window that overlaps the period after a likely tick but before fresh board propagation.
+- If the current objective is safe to continue without knowing the exact post-tick result, BGS Control may eventually present **SAFE CONTINUATION** work.
+- If the objective is precision-sensitive and a fresh result is required before more work can be considered safe, BGS Control should explicitly show **HOLD / AWAIT FRESH RESULT** instead of leaving yesterday's order active.
+- This decision should be made per objective/system rather than by a single global dead period.
+
+### Data and detection principles
+
+- The operational question is **"Has this system's BGS day probably closed?"**, not merely "Has an external API refreshed?"
+- A later source update time must not automatically move the learned tick offset later.
+- Fresh Scout/EliteHub/other observations may help confirm the post-tick state, but the exact signals that safely prove a system has processed still need validation before implementation.
+- Stale or missing data must never be interpreted as evidence that opposition stopped, that a tie held, or that a new BGS day definitely did or did not occur.
+- Existing per-system offsets and future observed tick history should be used to improve confidence/window estimates over time rather than pretending tick timing is perfectly deterministic.
+
+### Implementation intent
+
+The likely future flow is:
+
+> **19:00 reference → per-system offset → learned drift/tick window → objective-specific order cutoff → transition behavior (safe continuation or hold) → fresh post-tick confirmation → new Daily Orders**
+
+This section is deliberately preserved as **concept/doctrine only** so the design is not lost while conflict work is paused. Before implementation, validate the exact tick-detection signals, decide initial safety-buffer defaults, and define how the member-facing Mission Control labels each transition state.
