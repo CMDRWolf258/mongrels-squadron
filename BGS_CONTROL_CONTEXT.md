@@ -720,6 +720,32 @@ Examples worth testing later:
 
 Exact rates should remain configurable rather than hard-coded.
 
+### Daily Orders verification philosophy
+
+Daily Orders rewards should be deliberately **low-friction and capped**. Members are already spending their play time doing squad work; the reward system should not routinely require them to stop, collect screenshots/video, upload evidence, and wait for Wolf to audit it.
+
+There is no assumption that the next day's BGS board can prove an individual member performed a specific action. Board movement is useful corroborating context, but many players/actions can contribute to the same result and hidden BGS mechanics prevent clean individual attribution.
+
+Preferred evidence hierarchy:
+1. **Machine-verifiable telemetry** when available — for example Scout observations attributable server-side to a member token, or future EDMC/journal-derived events that can be safely and narrowly verified.
+2. **System-recorded Mission Control reports** for ordinary Daily Orders, subject to configured per-member/per-order/per-cycle reward caps.
+3. **Aggregate plausibility checks** from the following BGS board as anomaly detection/context, not automatic proof or rejection of one member's report.
+4. **Manual evidence** such as screenshots/video only for exceptional high-value rewards, disputes, unusual achievements, or suspicious cases — not normal daily participation.
+
+The default should therefore be **trust with bounded exposure**, not full forensic verification. A false ordinary report can only earn up to the configured cap, keeping the incentive for abuse small while avoiding a burdensome audit process for legitimate members.
+
+Potential safeguards to test:
+- per-member reward cap per Daily Orders cycle/day;
+- per-task reward ceiling even when the published workload later increases;
+- minimum meaningful contribution threshold before any reward is earned;
+- diminishing or milestone-based rewards instead of unlimited pay-per-unit;
+- no duplicate reward for editing/resubmitting the same contribution;
+- report timestamps/order eligibility enforced server-side;
+- anomaly flagging when reports are grossly inconsistent with plausible aggregate outcomes, without automatically accusing or withholding normal rewards;
+- officer review only above a configurable high-value threshold.
+
+Future EDMC/Scout integration may allow more Daily Orders actions to become machine-verifiable from journal events. Any such expansion should remain narrowly scoped to useful verification data and preserve the existing privacy-first Scout philosophy.
+
 ### Anti-abuse / accounting safeguards
 
 - Server-side reward issuance only; client UI never decides that credits were earned.
