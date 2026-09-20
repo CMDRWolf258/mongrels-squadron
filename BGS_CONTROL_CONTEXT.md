@@ -696,7 +696,9 @@ Working presentation concept:
   - **Estimated system tick:** e.g. 19:35 UTC / 3:35 PM local
   - **Stop this task in:** e.g. 52m
 - Low-risk / continuation-safe tasks do **not** need a countdown merely for decoration. They may instead show no timer, or a quiet status such as **Safe through transition** when that is strategically valid.
-- High-risk tasks such as Tie protection should make the cutoff visually prominent and should automatically disappear or convert to **HOLD / AWAIT FRESH RESULT** when the timer expires.
+- High-risk tasks such as Tie protection should make the cutoff visually prominent and should **disappear from the member's actionable Daily Orders when the timer expires**. Do not leave an expired task visible with a 00:00 timer or convert the old task into a still-actionable HOLD card.
+- The **system** may remain visible in a non-actionable **TRANSITION / RESULTS PENDING** state so members understand why no new task is currently available. This status belongs at the system level, not as the expired order itself.
+- Closed/expired task records and submitted progress may remain available to Wolf/admin/history/reporting views even though the task is removed from the member's active work list.
 - Medium-risk tasks can use their own configured safety buffer.
 - The countdown must be based on the task's calculated cutoff, not simply on the system's average tick time.
 - When the tick window is reached without a fresh post-tick board, the system-level display should shift into a visible **TRANSITION / RESULTS PENDING** state rather than pretending the old timer/order is still authoritative.
