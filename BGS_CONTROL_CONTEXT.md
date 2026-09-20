@@ -746,6 +746,51 @@ Potential safeguards to test:
 
 Future EDMC/Scout integration may allow more Daily Orders actions to become machine-verifiable from journal events. Any such expansion should remain narrowly scoped to useful verification data and preserve the existing privacy-first Scout philosophy.
 
+### Journal telemetry investigation for reward verification
+
+Research against Frontier's Player Journal documentation shows that the existing EDMC/Scout path could verify substantially more Daily Orders work without screenshots, provided members explicitly opt into the additional narrow telemetry.
+
+High-value journal events:
+- **MissionCompleted** — strongest source for mission INF verification. It includes MissionID, issuing faction and `FactionEffects`; influence effects include the affected `SystemAddress` and a plus-indicator value such as `++++`. This potentially allows exact automated attribution of mission-INF units to the intended faction/system and deduplication by MissionID.
+- **MissionAccepted / MissionFailed / MissionAbandoned** — useful supporting lifecycle events. Accepted includes faction, MissionID, expected Influence tier, destination/target information and mission type; completion remains the preferred reward trigger.
+- **Bounty** — records each awarded kill bounty, paying faction(s), victim faction, total reward and whether credit was shared. Useful for activity evidence, but BGS orders currently measure bounty vouchers claimed, so **RedeemVoucher** is the stronger completion event.
+- **RedeemVoucher** — records redemption of Bounty/CombatBond vouchers, net amount and faction information. This is promising for automatically verifying bounty-credit and combat-bond Daily Orders.
+- **FactionKillBond** — records CZ participation rewards with awarding faction, victim faction and reward. Useful for confirming the member fought for the intended side, but it does not by itself encode the current Mission Control Low/Medium/High CZ-win result.
+- **MarketSell** — records commodity, quantity, sale price, total sale and average purchase price plus MarketID. Combined with current station/system context, it can verify trade delivery and calculate transaction profit. It does not directly state BGS influence produced by the sale.
+- **SellExplorationData** — records systems sold, discovered bodies, base value, bonus and total earnings. Combined with the station/system context at sale, it can verify exploration-data turn-ins and value, though it does not directly state BGS influence.
+- **MiningRefined** — records each unit of mined commodity refined. Combined with MarketSell, this can distinguish mined cargo from ordinary trade in many reward scenarios, though provenance/accounting rules would need care.
+- **CargoDepot** — provides MissionID and delivery progress for wing cargo missions, useful as supporting evidence; MissionCompleted is still the clean completion/reward trigger.
+- **Location / FSDJump** — already useful for Scout. They include SystemAddress, local faction/state/conflict information and can establish system context for nearby journal events.
+
+Important limitation: journal telemetry can prove that a documented game event occurred, but not every event directly proves its hidden BGS effect. Reward rules should verify the **observable action we ordered** (for example, 20M bounty vouchers redeemed for the intended faction, or +4 mission INF from FactionEffects) rather than claim to measure Frontier's hidden influence calculation.
+
+### Recommended verification tiers from journal research
+
+**Excellent candidates for automatic rewards**
+- Mission INF from `MissionCompleted.FactionEffects[].Influence[]`, keyed by MissionID + affected SystemAddress/faction.
+- Bounty voucher credits from `RedeemVoucher`, with faction and amount.
+- Combat-bond redemption from `RedeemVoucher(Type=CombatBond)`.
+- Scout freshness from the existing Location/FSDJump/CarrierJump snapshot path.
+- Specific trade-delivery/value goals from `MarketSell` when station/system context is known.
+
+**Useful but needs supporting logic**
+- Exploration-data value sold at an intended station/system.
+- Mined-commodity sales using `MiningRefined` plus cargo/sale correlation.
+- CZ participation/side from `FactionKillBond`.
+- Wing cargo progress from `CargoDepot`.
+
+**Not automatically solved by the journal alone**
+- A reliable Low/Medium/High **CZ victory** count matching the site's current weighted CZ reporting model. FactionKillBond proves participation/kills, not necessarily the final CZ victory/intensity.
+- Exact hidden BGS impact of ordinary trade, exploration or bounty activity.
+- Attribution of a next-day influence change to one individual player.
+
+### Privacy-first implementation direction
+
+Do not turn Mongrel Scout into a general raw-journal uploader. If reward verification is implemented, the EDMC plugin should locally filter journal events and transmit only a small normalized **verification event** needed by enabled squad features, for example:
+`memberToken + eventType + eventId/MissionID + timestamp + SystemAddress + faction + quantity/value`.
+
+Raw journal lines, commander travel history, credits/balance, ship/loadout and unrelated gameplay should remain excluded unless a future feature has a separately justified need. Member documentation should clearly state which reward-verification events are sent and why.
+
 ### Anti-abuse / accounting safeguards
 
 - Server-side reward issuance only; client UI never decides that credits were earned.
