@@ -682,6 +682,28 @@ A post-tick transition must not automatically become a galaxy-wide "do nothing" 
 - If the objective is precision-sensitive and a fresh result is required before more work can be considered safe, BGS Control should explicitly show **HOLD / AWAIT FRESH RESULT** instead of leaving yesterday's order active.
 - This decision should be made per objective/system rather than by a single global dead period.
 
+### Member-facing tick clocks and task timers
+
+Daily Orders should give Mongrels situational awareness about both the system tick and each task's safe working window.
+
+Working presentation concept:
+
+- Each system represented in Daily Orders may show an **estimated system tick** in both **UTC** and the member's **local browser time**.
+- The member's local time should come from the browser/device timezone rather than from stored profile/location data, because members may travel and the conversion needs to remain accurate automatically.
+- The system header can show a compact countdown such as **Estimated tick in 1h 42m**, but it should also make uncertainty visible when appropriate (for example, **tick window begins in 28m** rather than implying second-perfect precision).
+- Individual tasks may have a separate **order cutoff timer**. This timer counts down to when that specific work should stop, which may be earlier than the estimated system tick.
+- A precision-sensitive task should therefore be able to show both:
+  - **Estimated system tick:** e.g. 19:35 UTC / 3:35 PM local
+  - **Stop this task in:** e.g. 52m
+- Low-risk / continuation-safe tasks do **not** need a countdown merely for decoration. They may instead show no timer, or a quiet status such as **Safe through transition** when that is strategically valid.
+- High-risk tasks such as Tie protection should make the cutoff visually prominent and should automatically disappear or convert to **HOLD / AWAIT FRESH RESULT** when the timer expires.
+- Medium-risk tasks can use their own configured safety buffer.
+- The countdown must be based on the task's calculated cutoff, not simply on the system's average tick time.
+- When the tick window is reached without a fresh post-tick board, the system-level display should shift into a visible **TRANSITION / RESULTS PENDING** state rather than pretending the old timer/order is still authoritative.
+- A fresh post-tick confirmation resets the system clock context for the new BGS day and allows newly calculated orders/timers to replace the expired ones.
+
+The purpose of these clocks is operational awareness, not a claim that Frontier's tick is exact. Member-facing wording should therefore communicate **estimated tick / tick window / task cutoff** clearly instead of presenting a false exact deadline.
+
 ### Data and detection principles
 
 - The operational question is **"Has this system's BGS day probably closed?"**, not merely "Has an external API refreshed?"
