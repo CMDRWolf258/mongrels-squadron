@@ -457,6 +457,64 @@ Current report types:
 
 The current private order document carries a `cycleId` and optional normalized reporting metadata. Reporting now stores **individual submissions** in `DAILY_ORDERS` under the active cycle instead of folding every submission into one ever-growing CMDR/order record. Squad and personal totals are recomputed from those submissions. Members can expand **MY SUBMITTED REPORTS** under an order, load one of their own reports back into the same controls, **Save Changes**, or delete it; totals recalculate immediately. Older aggregate records remain readable as a combined prior total and can still be corrected/deleted. Wolf BGS Control now includes a **CURRENT CYCLE REPORTS** manager that lists every CMDR's reports and allows officer/site-admin edit or delete across the active cycle, including exact INF reward counts, credit values, and detailed CZ fields.
 
+## Live Daily Orders reconciliation / per-system republish concept (pre-implementation)
+
+_Added 2026-09-19. This is agreed product doctrine to preserve before the publisher/reporting redesign._
+
+Daily Orders should be **revisable by system throughout the day** as better BGS data arrives. A publish is not a frozen all-day snapshot and fresh data for one system must not reset unrelated systems.
+
+### Fresh-data flow
+
+- When a newer trusted snapshot arrives for a live system (Scout, EliteHub/EDDN, or an authoritative manual update), BGS Control should immediately re-evaluate that system and generate a fresh deterministic Order Preview.
+- If the system has its **Queue Selector** enabled, the refreshed preview should automatically replace that system's older queued candidate rather than creating a duplicate.
+- Wolf still retains final publishing authority. Fresh data may update the queue automatically, but Mission Control changes only when Wolf explicitly publishes.
+- Wolf should be able to publish at any time of day and push the newest reviewed plan for the affected system without replacing/resetting unrelated Daily Orders.
+
+### Per-system replacement semantics
+
+Publishing an updated system should reconcile that system's currently published tasks against the newly generated task set:
+
+- **Unchanged logical task** → keep the existing task/report identity and all submitted progress.
+- **Same logical task, target increased** → preserve progress and update only the goal. Example: an existing 20-INF task with 12 INF reported becomes a 30-INF task with **12 / 30** progress.
+- **Same logical task, target decreased** → preserve progress and lower the goal. If existing progress already meets/exceeds the new target, the task is immediately shown as met/complete.
+- **Task no longer required by fresh data** → remove it from the member's current actionable orders. Existing reports remain attached to that task's original reporting history/cycle; they are not moved to another task.
+- **New task introduced** → add it without disturbing progress on the system's surviving tasks or on any other system.
+- **Fundamentally changed task** (different faction/objective/work type rather than merely a changed amount) → treat it as a new logical order rather than carrying old progress into unrelated work.
+
+The reconciliation key should be based on stable logical identity (at minimum system + faction + task kind + relevant objective/conflict identity), not rendered text or list position.
+
+### Reporting identity and revisions
+
+The current global full-replacement/new-`cycleId` publish model is not sufficient for this design and will need to be replaced.
+
+Future reporting should distinguish:
+- the **logical order identity** whose progress can survive revisions;
+- the **published revision/version** of that order;
+- the **originating reporting cycle/BGS-day context** for historical attribution.
+
+Updating the target of the same logical order must not zero member progress or manufacture a new unrelated reporting bucket.
+
+Removing/replacing an order must never reassign historical submissions to the newer order. Reports remain tied to the order/cycle in which the work was actually issued, including late reports submitted after an order has expired.
+
+### Interaction with tick transitions
+
+Fresh post-tick data may cause major plan changes:
+- an INF task may disappear because the new influence result no longer requires it;
+- a surviving task may receive a larger/smaller target;
+- a conflict/tie task may close or change side/pressure;
+- new work may appear.
+
+The member-facing Daily Orders page should therefore always reflect the **latest published revision**, while preserving valid progress on surviving logical tasks. Tick/order-expiry rules still determine whether an older task is actionable or reporting-only while Wolf has not yet published the newly generated post-tick plan.
+
+### Intended operator experience
+
+The desired workflow is:
+
+> **Fresh system data arrives → BGS Control immediately regenerates that system → Queue-Selected system's queued preview is replaced → Wolf reviews when convenient → Publish updates only that system's Daily Orders → unchanged tasks retain progress; obsolete tasks disappear; changed goals retain existing progress.**
+
+This makes Mission Control a continuously refinable operational board rather than a once-per-day static document, while preserving Wolf's explicit publish authority.
+
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
