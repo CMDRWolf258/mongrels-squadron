@@ -340,3 +340,18 @@
 .wolf-verification-row.is-manual-only{border-color:rgba(255,181,74,.34);background:rgba(128,80,14,.06);box-shadow:inset 3px 0 0 rgba(255,181,74,.42)}
 .wolf-verification-badge.is-manual-only{border-color:rgba(255,181,74,.42);background:rgba(128,80,14,.12);color:#ffd9a4!important}
 @media(max-width:700px){.wolf-verification-row{grid-template-columns:1fr}.wolf-verification-badge{justify-self:start}}
+
+
+/* Verification Review test controls */
+.wolf-verification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.75rem 0;padding:.72rem .8rem;border:1px solid rgba(92,210,255,.13);background:rgba(5,10,13,.52)}
+.wolf-verification-context{display:flex;align-items:center;gap:.65rem 1rem;flex-wrap:wrap;min-width:0}
+.wolf-verification-context>span{display:flex;align-items:baseline;gap:.38rem;color:#758d94;font-size:.58rem;font-weight:850;letter-spacing:.07em}
+.wolf-verification-context b{max-width:520px;color:#c4d6da;font-size:.66rem;font-weight:700;letter-spacing:0;overflow-wrap:anywhere}
+.wolf-verification-audit-summary{display:flex;gap:.45rem;flex-wrap:wrap;margin:.6rem 0 .9rem}
+.wolf-verification-audit-summary>span{display:inline-flex;align-items:center;gap:.32rem;padding:.3rem .48rem;border:1px solid rgba(255,255,255,.08);border-radius:4px;background:rgba(255,255,255,.018);font-size:.56rem;font-weight:900;letter-spacing:.065em}
+.wolf-verification-audit-summary b{font-size:.68rem}
+.wolf-verification-audit-summary .is-matched{border-color:rgba(93,206,151,.24);color:#addbc1;background:rgba(58,125,92,.05)}
+.wolf-verification-audit-summary .is-mismatch{border-color:rgba(255,95,95,.42);color:#ffd0d0;background:rgba(145,14,14,.13)}
+.wolf-verification-audit-summary .is-scout-only{border-color:rgba(92,210,255,.28);color:#bceefa;background:rgba(42,160,191,.06)}
+.wolf-verification-audit-summary .is-manual-only{border-color:rgba(255,181,74,.36);color:#ffd9a4;background:rgba(128,80,14,.1)}
+@media(max-width:700px){.wolf-verification-toolbar{align-items:stretch;flex-direction:column}.wolf-verification-toolbar .btn{width:100%}.wolf-verification-context{flex-direction:column;align-items:flex-start;gap:.35rem}}
