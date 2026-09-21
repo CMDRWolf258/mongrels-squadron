@@ -203,6 +203,30 @@
     return {system,priority,tasks,warnings,signature:currentSignature(card),queuedAt:new Date().toISOString(),queueSource};
   }
 
+  function removalSnapshot(card){
+    const system=card.dataset.system||'';
+    const priority=card.querySelector('[data-setting="priority"]')?.value||'normal';
+    return {
+      system,
+      priority,
+      tasks:[],
+      warnings:[],
+      signature:currentSignature(card),
+      queuedAt:new Date().toISOString(),
+      queueSource:'removal',
+      queueRevisionChanged:true,
+    };
+  }
+
+  function shouldQueuePublishedRemoval(card,existing){
+    const system=card?.dataset.system||'';
+    if(!system||!publishedLoaded||!publishedForSystem(system).length)return false;
+    const selectorFlag=card.dataset.queueSelected==='true';
+    const retreatFlag=card.dataset.retreatPending==='true';
+    const wasAutoManaged=['selector','retreat','removal'].includes(existing?.queueSource);
+    return selectorFlag||retreatFlag||wasAutoManaged;
+  }
+
   function eligible(card){
     if(!card||isLab(card))return false;
     const allowed=card.querySelector('[data-setting="allowDailyOrders"]');
@@ -246,7 +270,15 @@
     const sig=currentSignature(card);
 
     if(!source){
-      if(existing&&['selector','retreat'].includes(existing.queueSource)){
+      if(shouldQueuePublishedRemoval(card,existing)){
+        if(suppressedSignatures.get(system)===sig)return false;
+        if(suppressedSignatures.has(system)&&suppressedSignatures.get(system)!==sig)suppressedSignatures.delete(system);
+        if(existing?.queueSource==='manual')return false;
+        if(existing?.queueSource==='removal'&&existing.signature===sig)return false;
+        queue.set(system,removalSnapshot(card));
+        return true;
+      }
+      if(existing&&['selector','retreat','removal'].includes(existing.queueSource)){
         queue.delete(system);
         return true;
       }
@@ -268,6 +300,7 @@
   function sourceLabel(item){
     if(item.queueSource==='retreat')return 'AUTO · RETREAT';
     if(item.queueSource==='selector')return 'AUTO · QUEUE SELECTOR';
+    if(item.queueSource==='removal')return 'AUTO · ORDER REMOVAL';
     return 'MANUAL';
   }
 
@@ -311,7 +344,7 @@
       +'<div class="wolf-publish-queued-head"><div>'
       +'<button type="button" class="wolf-publish-system-link" data-open-queued-system="'+esc(item.system)+'" title="Open the full '+esc(item.system)+' system card">'+esc(item.system)+'</button>'
       +'<span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '
-      +item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)
+      +(item.queueSource==='removal'?'0 replacement tasks':item.tasks.length+' task'+(item.tasks.length===1?'':'s'))+' · '+esc(item.priority)
       +(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')
       +(diffChip?' · '+diffChip:'')+(removalChip?' · '+removalChip:'')+(freshChip?' · '+freshChip:'')
       +'</span></div>'
@@ -597,6 +630,7 @@
       priority:item.priority,
       queueSource:item.queueSource,
       signature:item.signature,
+      queueRevisionChanged:Boolean(item.queueRevisionChanged),
       warnings:item.warnings,
       tasks:item.tasks.map(task=>({
         id:task.id,
