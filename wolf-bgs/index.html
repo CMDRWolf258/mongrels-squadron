@@ -170,6 +170,20 @@
           <summary><span><b>Verification Review</b><small>Scout vs manual reports · reward dry run · ambiguity audit</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
             <p class="wolf-section-intro">Read-only pre-payout audit. This compares Frontier Scout verification with members' manual Daily Order reports. Nothing in this panel creates, edits, or pays reward debt.</p>
+            <div class="wolf-verification-toolbar">
+              <div class="wolf-verification-context">
+                <span>CURRENT CYCLE <b data-verification-cycle>—</b></span>
+                <span>ACTIVE ORDERS <b data-verification-active-orders>—</b></span>
+                <span>LAST CHECKED <b data-verification-checked>Not checked yet</b></span>
+              </div>
+              <button type="button" class="btn btn-secondary btn-compact" data-refresh-verification>Refresh Verification</button>
+            </div>
+            <div class="wolf-verification-audit-summary" aria-label="Verification comparison summary">
+              <span class="is-matched"><b data-verification-audit-matched>0</b> MATCHED</span>
+              <span class="is-mismatch"><b data-verification-audit-mismatch>0</b> MISMATCH</span>
+              <span class="is-scout-only"><b data-verification-audit-scout>0</b> SCOUT ONLY</span>
+              <span class="is-manual-only"><b data-verification-audit-manual>0</b> MANUAL ONLY</span>
+            </div>
             <div class="wolf-form-grid">
               <div class="wolf-rules-callout subtle"><strong data-verification-members>0</strong><span>Frontier-connected CMDRs</span></div>
               <div class="wolf-rules-callout subtle"><strong data-verification-matches>0</strong><span>Verified member/order matches</span></div>
