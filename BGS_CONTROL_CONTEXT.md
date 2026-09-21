@@ -1061,6 +1061,22 @@ Activation principle remains: use this comparison surface to validate real-world
 - Selecting the correct discovered site rebinds the existing job. Because reward issuance is still OFF, verification tonnage and reward preview are recalculated safely against the corrected MarketID.
 - Completed jobs do not expose Change Site. Once real ledger issuance is enabled, any post-payment site correction should use an audited correction/version flow rather than silently rewriting paid history.
 
+## Colony Architect Registry + claim tracking — 2026-09-21
+
+- Added persistent `colony-architects-v1` registry for manual colony-system ↔ CMDR architect pairing.
+- Architect pair records store system, optional system address, commander, optional linked Frontier owner ID, source (`manual` or explicitly `claim_confirmed`), optional claim evidence reference, notes, and audit timestamps.
+- Pairing changes keep a compact audit history (`paired`, `updated`, `unpaired`) so corrections do not silently erase prior assignments.
+- Added Site Admin API `/api/operations/colony-architects` and lazy-loaded BGS Control panel **Colony Architect Registry**.
+- Registry UI supports manual system/CMDR pairing, editing, unpairing, connected-CMDR/system suggestions, and explicit confirmation of captured claim evidence.
+- Architect registry is informational only. It does **not** restrict Colonization Job creation or management.
+- Frontier parser now captures `ColonisationSystemClaim` and `ColonisationSystemClaimRelease` globally for the authenticated CMDR, even when the claimed system is outside Daily Order / Colonization Job verification scope.
+- Claim events retain system, SystemAddress, timestamp, event type, and are attributed to the Frontier-connected CMDR by account ownership rather than by journal self-report.
+- Frontier manual Sync Activity now remains available even when there are no active Daily Order / Colonization Job systems, specifically so claim tracking still works.
+- Historical reconciliation falls back to the existing 3-day lookback for claim tracking when no active order/job provides an earlier verification start.
+- Member Frontier Scout now shows a `System Claims Seen` KPI and friendly claim/release activity labels.
+- Registry compares latest captured claim evidence with manual pairings and flags MATCH / CONFLICT / RELEASED without auto-overwriting the manual registry.
+- Claim parser was validated against the observed journal shape: `ColonisationSystemClaim` / `ColonisationSystemClaimRelease` with `StarSystem` and `SystemAddress`; unrelated non-target journal activity remained excluded when no verification systems were active.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
