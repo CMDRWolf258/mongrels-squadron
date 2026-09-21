@@ -195,8 +195,14 @@
       const factions=[...new Set(effects.map(x=>x.faction).filter(Boolean))];
       return `Mission · ${inf} INF${rep ? ` · REP ${rep>0?'+':''}${rep}` : ''}${factions.length ? ` · ${factions.join(', ')}` : ''}`;
     }
-    if (event.type === 'bounties_redeemed') return `Bounties redeemed · ${frontierMoney(event.amount)}`;
-    if (event.type === 'combat_bonds_redeemed') return `Combat bonds redeemed · ${frontierMoney(event.amount)}`;
+    if (event.type === 'bounties_redeemed') {
+      const split=(event.factions||[]).map(x=>`${x.faction}: ${frontierMoney(x.amount)}`).join(' · ');
+      return `Bounties redeemed · ${frontierMoney(event.amount)}${split ? ` · ${split}` : ''}`;
+    }
+    if (event.type === 'combat_bonds_redeemed') {
+      const split=(event.factions||[]).map(x=>`${x.faction}: ${frontierMoney(x.amount)}`).join(' · ');
+      return `Combat bonds redeemed · ${frontierMoney(event.amount)}${split ? ` · ${split}` : ''}`;
+    }
     if (event.type === 'cz_bond_awarded') return `CZ bond awarded · ${frontierMoney(event.amount)}`;
     if (event.type === 'market_sell') {
       const qty=Number(event.count||0).toLocaleString();
