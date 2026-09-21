@@ -86,5 +86,6 @@
     }finally{loading=false;if(refresh)refresh.disabled=false;}
   }
   refresh?.addEventListener('click',()=>load(true));
+  window.addEventListener('wolf-bgs-order-history-updated',()=>{loadedAt=0;if(panel.open)setTimeout(()=>load(true),120);});
   panel.addEventListener('toggle',()=>{if(!panel.open)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(panel.open)load();}));},{passive:true});
 })();
