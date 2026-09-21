@@ -166,7 +166,7 @@
         <div class="frontier-scout-kpi"><span>Bounties Redeemed</span><strong data-frontier-bounties>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>Combat Bonds Redeemed</span><strong data-frontier-bonds>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>CZ Bonds Awarded</span><strong data-frontier-cz>0 Cr</strong></div>
-        <div class="frontier-scout-kpi"><span>Trade Profit</span><strong data-frontier-trade>0 Cr</strong></div>
+        <div class="frontier-scout-kpi"><span>BGS Trade Profit</span><strong data-frontier-trade>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>Exploration Sold</span><strong data-frontier-exploration>0 Cr</strong></div>
       </div>
       <div class="frontier-scout-events" data-frontier-events></div>
@@ -294,11 +294,7 @@
     set('[data-frontier-bounties]',frontierMoney(s.bounties));
     set('[data-frontier-bonds]',frontierMoney(s.combatBondsRedeemed));
     set('[data-frontier-cz]',frontierMoney(s.czBondAwards));
-    const tradeText=Number(s.tradeProfitLegacySales||0)>0
-      ? (Number(s.tradeProfit||0)>0 ? `${frontierMoney(s.tradeProfit)} + re-sync` : 'Re-sync required')
-      : Number(s.tradeProfitUnavailableSales||0)>0
-        ? (Number(s.tradeProfit||0)>0 ? `${frontierMoney(s.tradeProfit)} + unknown` : 'Cost basis unavailable')
-        : frontierMoney(s.tradeProfit);
+    const tradeText=frontierMoney(s.tradeEligibleProfit);
     set('[data-frontier-trade]',tradeText);
     set('[data-frontier-exploration]',frontierMoney(s.explorationSales));
     if(events){
