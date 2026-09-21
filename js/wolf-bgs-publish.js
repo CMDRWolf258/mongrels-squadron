@@ -12,6 +12,7 @@
   let queueRenderSignature='';
   let publishedDocument={cycleId:null,orders:[]};
   let publishedLoaded=false;
+  let publishedContextLoadedAt=0;
   let reviewState={};
   let changeAckBusy=false;
   let lastPublishMessage='';
@@ -296,7 +297,7 @@
     const removalChip=(Number(diff.counts?.remove||0)+Number(diff.counts?.replaced||0))>0
       ? '<b class="wolf-queue-diff-chip is-remove">REMOVES ORDERS</b>'
       : '';
-    const freshChip=item.queueRevisionChanged&&diff.material
+    const freshChip=item.queueRevisionChanged&&diff.material&&['selector','retreat'].includes(item.queueSource)
       ? '<b class="wolf-queue-diff-chip is-fresh">FRESH DATA</b>'
       : '';
     const rows=diff.rows?.length?diff.rows:(item.tasks||[]).map(task=>({status:'plain',after:task,before:null}));
@@ -402,6 +403,7 @@
       };
       reviewState=review?.reviews&&typeof review.reviews==='object'?review.reviews:{};
       publishedLoaded=true;
+      publishedContextLoadedAt=Date.now();
       queueRenderSignature='';
       syncPanel();
     }catch(error){
@@ -738,6 +740,11 @@
       setTimeout(syncAll,70);
       scheduleOperationalEvaluation();
     });
+    const refreshPublishedIfStale=()=>{
+      if(Date.now()-publishedContextLoadedAt>60000)loadPublishedContext();
+    };
+    window.addEventListener('focus',refreshPublishedIfStale);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublishedIfStale();});
     syncAll();
     setTimeout(syncAll,250);
     setTimeout(()=>{syncAll();scheduleOperationalEvaluation();},700);
