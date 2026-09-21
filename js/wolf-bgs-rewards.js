@@ -87,5 +87,46 @@
     }
   });
 
+  async function loadLedgerPreview(){
+    const consolePanel=document.querySelector('[data-reward-ledger-admin]');
+    if(!consolePanel)return;
+    const list=consolePanel.querySelector('[data-reward-member-list]');
+    try{
+      const response=await fetch('/api/rewards/admin?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.error||'Reward ledger request failed');
+      const s=payload.summary||{};
+      const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+      const owed=consolePanel.querySelector('[data-reward-total-owed]');
+      const paid=consolePanel.querySelector('[data-reward-total-paid]');
+      const count=consolePanel.querySelector('[data-reward-member-count]');
+      if(owed)owed.textContent=fmt(s.totalOwedCredits);
+      if(paid)paid.textContent=fmt(s.totalPaidCredits);
+      if(count)count.textContent=String(Number(s.memberCount)||0);
+      if(list){
+        list.replaceChildren();
+        const members=Array.isArray(payload.members)?payload.members:[];
+        if(!members.length){
+          const empty=document.createElement('div');empty.className='wolf-scout-empty';
+          const strong=document.createElement('strong');strong.textContent='No reward ledger entries yet.';
+          const small=document.createElement('small');small.textContent='This is expected while automatic issuance remains disabled.';
+          empty.append(strong,small);list.appendChild(empty);
+        }else{
+          members.forEach(member=>{
+            const row=document.createElement('div');row.className='wolf-scout-token-row';
+            const main=document.createElement('div');
+            const strong=document.createElement('strong');strong.textContent=member.displayName||'Mongrel CMDR';
+            const small=document.createElement('small');small.textContent=`${fmt(member.owedCredits)} owed · ${fmt(member.paidCredits)} paid · ${Number(member.entryCount)||0} ledger entr${Number(member.entryCount)===1?'y':'ies'}`;
+            main.append(strong,small);row.append(main);list.appendChild(row);
+          });
+        }
+      }
+    }catch(error){
+      console.error('Could not load reward payout preview',error);
+      if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Reward ledger unavailable.</strong><small>Nothing was changed.</small></div>';
+    }
+  }
+
   load();
+  loadLedgerPreview();
 })();
