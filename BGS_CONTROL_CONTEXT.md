@@ -1053,6 +1053,14 @@ Activation principle remains: use this comparison surface to validate real-world
 - `Use This Site` automatically binds the site to the one pending active specific-build job in that system. If there are multiple pending jobs in the same system, it avoids guessing and instead pre-fills the new-job form for deliberate selection.
 - MarketID remains internal/read-only in the form. The intended operator workflow no longer requires manual lookup of a MarketID.
 
+## Colonization site-binding correction — 2026-09-21
+
+- Active specific-build Colonization Jobs with a bound construction site now expose **Change Site** in BGS Control.
+- Change Site clears only the internal MarketID binding and returns the job to **AWAITING SITE**. It preserves the job ID, title/build name, system, target, reward rules, start timestamp, and other configuration.
+- While AWAITING SITE, the job matches no colonization contribution tonnage.
+- Selecting the correct discovered site rebinds the existing job. Because reward issuance is still OFF, verification tonnage and reward preview are recalculated safely against the corrected MarketID.
+- Completed jobs do not expose Change Site. Once real ledger issuance is enabled, any post-payment site correction should use an audited correction/version flow rather than silently rewriting paid history.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
