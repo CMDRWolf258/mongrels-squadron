@@ -1088,6 +1088,17 @@ Activation principle remains: use this comparison surface to validate real-world
 - Switching a bound job keeps the existing job and recalculates verified tonnage/reward preview against the new MarketID.
 - Empty-state copy now reflects depot discovery rather than requiring a contribution event.
 
+## Published-order removal detection fix — 2026-09-21
+
+- Live Order Removal test exposed a gap: when fresh conditions caused an auto-managed system's generated preview to drop to zero tasks, `autoSyncCard()` deleted the system from the local Publish Queue before comparing it with still-published Mission Control orders. The removal therefore produced no PLAN CHANGED / REMOVE / REMOVES ORDERS indication.
+- Auto-managed systems that still have published Mission Control orders now keep a zero-task `removal` candidate when their current preview has no actionable tasks.
+- The existing plan diff can therefore compare `published tasks → []` and surface REMOVE rows, REMOVES ORDERS, and the ORDER CHANGES annunciator.
+- Removal candidates reconcile with `reconcileSystems:[system]` and `orders:[]`, which the Daily Orders API already supports; publishing removes that system's actionable orders while preserving unrelated systems.
+- Loading or refreshing the published-order baseline now calls `syncAll()` so published-only removals are detected immediately even if the baseline request resolves after initial page setup.
+- Explicit Queue Selector deselection still means hold the system out of automatic reconciliation; it removes a selector/removal candidate instead of treating deselection itself as an order-removal instruction.
+- Publish Queue source label for this state is `AUTO · ORDER REMOVAL` with removal styling.
+- `wolf-bgs-publish.js?v=15`, `wolf-bgs-publish.css?v=8`.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
