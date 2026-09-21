@@ -271,9 +271,15 @@
       return `Market sale · profit pending re-sync · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
     }
     if (event.type === 'exploration_sale') return `Exploration data sold · ${frontierMoney(event.amount)}`;
+    if (event.type === 'colonization_depot') {
+      const progress=Number.isFinite(Number(event.constructionProgress))
+        ? ` · ${Math.max(0,Math.min(100,Number(event.constructionProgress)*100)).toFixed(1)}% complete`
+        : '';
+      return `Construction site observed${progress}`;
+    }
     if (event.type === 'colonization_contribution') {
       const parts=(event.contributions||[]).map(item=>`${Number(item.amount||0).toLocaleString()} t ${item.commodity||item.commodityCode||'commodity'}`).join(' · ');
-      return `Colonization delivery · ${Number(event.totalTons||0).toLocaleString()} t · MarketID ${event.marketId||'—'}${parts?` · ${parts}`:''}`;
+      return `Colonization delivery · ${Number(event.totalTons||0).toLocaleString()} t${parts?` · ${parts}`:''}`;
     }
     if (event.type === 'npc_text') {
       const text = event.messageLocalised || event.message || 'NPC journal message';
