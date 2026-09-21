@@ -387,6 +387,55 @@
     window.setTimeout(()=>evaluateOperationalCards(options),140);
   }
 
+  async function loadPublishedContext(){
+    try{
+      const [ordersResponse,reviewResponse]=await Promise.all([
+        fetch(ORDERS_API+'?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+        fetch(REVIEW_API+'?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+      ]);
+      if(!ordersResponse.ok)throw new Error('Published Daily Orders unavailable ('+ordersResponse.status+')');
+      const orders=await ordersResponse.json();
+      const review=reviewResponse.ok?await reviewResponse.json():{reviews:{}};
+      publishedDocument={
+        cycleId:orders?.cycleId||null,
+        orders:Array.isArray(orders?.orders)?orders.orders:[],
+      };
+      reviewState=review?.reviews&&typeof review.reviews==='object'?review.reviews:{};
+      publishedLoaded=true;
+      queueRenderSignature='';
+      syncPanel();
+    }catch(error){
+      console.error('Could not load published Daily Orders comparison',error);
+      publishedLoaded=false;
+      syncPanel();
+    }
+  }
+
+  async function acknowledgeOrderChanges(){
+    if(changeAckBusy||!publishedLoaded)return;
+    const summary=changeSummary([...queue.values()]);
+    const reviews=summary.unreviewed.map(state=>({system:state.item.system,signature:state.signature}));
+    if(!reviews.length)return;
+    changeAckBusy=true;
+    syncPanel();
+    try{
+      const response=await fetch(REVIEW_API,{
+        method:'PUT',credentials:'same-origin',cache:'no-store',
+        headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'wolf-bgs-order-review'},
+        body:JSON.stringify({reviews}),
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||('Review failed ('+response.status+')'));
+      reviewState=data.reviews&&typeof data.reviews==='object'?data.reviews:reviewState;
+      queueRenderSignature='';
+    }catch(error){
+      console.error('Could not acknowledge Daily Order changes',error);
+    }finally{
+      changeAckBusy=false;
+      syncPanel();
+    }
+  }
+
   function ensurePanel(){
     if(panel)return panel;
     const privateRoot=document.querySelector('[data-wolf-private]');
@@ -395,11 +444,15 @@
     const section=document.createElement('section');
     section.className='section-sm wolf-publish-section';
     section.dataset.dailyPublishPanel='true';
-    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. Expand any queued system to review the exact frozen order snapshot that will publish. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
+    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. PLAN CHANGED highlights differences from the orders members currently see in Mission Control. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-command"><button type="button" class="wolf-order-change-alert is-extinguished" data-order-change-alert disabled><span>ORDER CHANGES</span><strong data-order-change-state>REVIEWED</strong><small data-order-change-substate>NO PENDING CHANGES</small></button><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
     systems.parentNode.insertBefore(section,systems);
     panel=section;
     queueRenderSignature='';
     panel.addEventListener('click',event=>{
+      if(event.target.closest('[data-order-change-alert]')){
+        acknowledgeOrderChanges();
+        return;
+      }
       const openSystem=event.target.closest('[data-open-queued-system]');
       if(openSystem){
         window.dispatchEvent(new CustomEvent('wolf-bgs-open-system',{detail:{system:openSystem.dataset.openQueuedSystem||''}}));
@@ -511,6 +564,29 @@
     const systems=[...queue.values()];
     const taskCount=systems.reduce((sum,item)=>sum+item.tasks.length,0);
     const warnings=systems.reduce((sum,item)=>sum+item.warnings.length,0);
+    const changes=publishedLoaded?changeSummary(systems):{material:[],unreviewed:[],changedTaskCount:0,unreviewedTaskCount:0};
+    const changeAlert=p.querySelector('[data-order-change-alert]');
+    const changeState=p.querySelector('[data-order-change-state]');
+    const changeSubstate=p.querySelector('[data-order-change-substate]');
+    if(changeAlert){
+      const active=changes.unreviewed.length>0;
+      changeAlert.disabled=!active||changeAckBusy;
+      changeAlert.classList.toggle('is-active',active);
+      changeAlert.classList.toggle('is-extinguished',!active);
+      if(changeState)changeState.textContent=changeAckBusy?'REVIEWING':active?'ACKNOWLEDGE':'REVIEWED';
+      if(changeSubstate){
+        changeSubstate.textContent=!publishedLoaded
+          ? 'CHECKING MISSION CONTROL'
+          : active
+            ? changes.unreviewed.length+' SYSTEM'+(changes.unreviewed.length===1?'':'S')+' · '+changes.unreviewedTaskCount+' CHANGE'+(changes.unreviewedTaskCount===1?'':'S')
+            : changes.material.length
+              ? changes.changedTaskCount+' CHANGE'+(changes.changedTaskCount===1?'':'S')+' REVIEWED'
+              : 'NO PENDING CHANGES';
+      }
+      changeAlert.setAttribute('aria-label',active
+        ? 'Acknowledge '+changes.unreviewedTaskCount+' queued Daily Order changes across '+changes.unreviewed.length+' systems'
+        : 'No unreviewed Daily Order changes');
+    }
     p.querySelector('[data-publish-system-count]').textContent=systems.length+' / '+maxSystems();
     p.querySelector('[data-publish-task-count]').textContent=taskCount+' task'+(taskCount===1?'':'s')+' queued'+(warnings?' · '+warnings+' warning'+(warnings===1?'':'s'):'');
     const host=p.querySelector('[data-publish-queue]');
@@ -553,6 +629,7 @@
       if(lastPublishError&&systems.length){}
       else if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
       else if(overTasks)status.textContent='Queue has '+taskCount+' tasks; the Daily Orders API supports at most 24 per cycle.';
+      else if(changes.unreviewed.length)status.textContent=changes.unreviewedTaskCount+' material Daily Order change'+(changes.unreviewedTaskCount===1?'':'s')+' across '+changes.unreviewed.length+' system'+(changes.unreviewed.length===1?'':'s')+' need review. Publishing remains available as an explicit override.';
       else if(systems.length)status.textContent='Ready to reconcile these systems into the current Daily Orders cycle. Review warnings before continuing.';
       else if(lastPublishMessage){status.innerHTML=lastPublishMessage;status.dataset.state='success';}
       else status.textContent='Nothing published from BGS Control yet.';
@@ -614,6 +691,7 @@
 
   function observe(){
     ensurePanel();
+    loadPublishedContext();
     const root=document.querySelector('[data-system-list]')||document.querySelector('[data-wolf-private]')||document.body;
     let queued=false;
     new MutationObserver(()=>{
