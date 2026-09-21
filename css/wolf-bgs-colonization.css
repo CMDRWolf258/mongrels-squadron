@@ -28,6 +28,7 @@
 .wolf-colonization-chip.is-active{border-color:rgba(93,206,151,.3);color:#b9e7cd;background:rgba(58,125,92,.07)}
 .wolf-colonization-chip.is-paused{border-color:rgba(255,181,74,.3);color:#ffdda9;background:rgba(128,80,14,.08)}
 .wolf-colonization-chip.is-completed{border-color:rgba(92,210,255,.27);color:#bceefa;background:rgba(42,160,191,.07)}
+.wolf-colonization-chip.is-awaiting{border-color:rgba(255,181,74,.38);color:#ffdda9;background:rgba(128,80,14,.09)}
 .wolf-colonization-progress{margin:.7rem 0}
 .wolf-colonization-progress>div:first-child{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem}
 .wolf-colonization-progress strong{font-size:.72rem;color:#e8f9fc}
