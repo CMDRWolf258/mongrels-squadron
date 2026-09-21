@@ -177,10 +177,16 @@
     rows.forEach(site=>{
       const row=document.createElement('div');
       row.className='wolf-colonization-observed-row';
+      row.title=site.marketId?`Internal MarketID ${site.marketId}`:'';
       const main=document.createElement('div');
-      const strong=document.createElement('strong');strong.textContent=site.system||'Unknown system';
+      const strong=document.createElement('strong');
+      strong.textContent=site.station||'Construction depot';
       const small=document.createElement('small');
-      small.textContent=`MarketID ${site.marketId} · ${fmt(site.totalTons)} t observed · last ${date(site.lastContributionAt)}`;
+      const progress=Number.isFinite(Number(site.constructionProgress))
+        ? ` · build ${Math.max(0,Math.min(100,Number(site.constructionProgress)*100)).toFixed(1)}%`
+        : '';
+      const delivered=Number(site.totalTons)>0?` · ${fmt(site.totalTons)} t contributions observed`:'';
+      small.textContent=`${site.system||'Unknown system'}${progress}${delivered} · last seen ${date(site.lastObservedAt||site.lastContributionAt)}`;
       main.append(strong,small);
       const commanders=document.createElement('span');
       commanders.textContent=(site.commanders||[]).join(', ')||'—';
@@ -188,7 +194,8 @@
       use.type='button';use.className='btn btn-secondary btn-compact';
       use.dataset.useMarketId=site.marketId||'';
       use.dataset.useSystem=site.system||'';
-      use.textContent='Use for Job';
+      use.dataset.useBuildName=site.station||'';
+      use.textContent='Use This Site';
       row.append(main,commanders,use);
       observed.append(row);
     });
@@ -283,10 +290,13 @@
     if(!button)return;
     const system=form.querySelector('[data-colonization-field="system"]');
     const market=form.querySelector('[data-colonization-field="marketId"]');
+    const build=form.querySelector('[data-colonization-field="buildName"]');
     if(system)system.value=button.dataset.useSystem||'';
     if(scope)scope.value='market';
     if(market)market.value=button.dataset.useMarketId||'';
+    if(build&&!build.value.trim())build.value=button.dataset.useBuildName||'';
     updateScope();
+    setMessage('Construction site selected. The internal site ID was filled automatically.','success');
     form.scrollIntoView({behavior:'smooth',block:'nearest'});
   });
 
