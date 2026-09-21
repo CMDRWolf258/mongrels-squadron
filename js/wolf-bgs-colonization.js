@@ -148,6 +148,9 @@
 
     const actions=document.createElement('div');
     actions.className='wolf-colonization-actions';
+    if(job.status==='active'&&job.scope==='market'&&job.marketId){
+      actions.append(actionButton('Change Site','change-site',''));
+    }
     if(job.status==='active'){
       actions.append(actionButton('Complete','complete','completed'));
     }else if(job.status==='paused'){
@@ -277,12 +280,15 @@
     if(!id)return;
     const action=button.dataset.colonizationAction;
     if(action==='delete'&&!window.confirm('Delete this Colonization Job definition? Verified Frontier events will remain stored, but the job will no longer match them.'))return;
+    if(action==='change-site'&&!window.confirm('Change the construction site for this job? The job will return to AWAITING SITE and its verification preview will be recalculated after you select the correct discovered site.'))return;
     button.disabled=true;
     try{
       if(action==='delete')await mutate({action:'delete',id});
+      else if(action==='change-site')await mutate({action:'update',job:{id,marketId:''}});
       else await mutate({action:'status',id,status:button.dataset.colonizationStatus});
       loadedAt=0;
       await load(true);
+      if(action==='change-site')setMessage('Site binding cleared. Choose the correct discovered construction site below.','success');
     }catch(error){
       console.error(error);
       setMessage('Could not update Colonization Job.','error');
