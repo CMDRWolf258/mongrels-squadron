@@ -239,9 +239,22 @@
       const toggle=event.target.closest('[data-toggle-queued-system]');
       if(toggle){
         const system=toggle.dataset.toggleQueuedSystem||'';
-        if(expandedSystems.has(system))expandedSystems.delete(system);
-        else expandedSystems.add(system);
-        syncPanel();
+        const card=toggle.closest('.wolf-publish-queued-system');
+        const detail=card?.querySelector('.wolf-publish-order-detail');
+        const expanded=expandedSystems.has(system);
+        if(expanded){
+          expandedSystems.delete(system);
+          card?.classList.remove('is-expanded');
+          if(detail)detail.hidden=true;
+          toggle.textContent='VIEW ORDERS';
+          toggle.setAttribute('aria-expanded','false');
+        }else{
+          expandedSystems.add(system);
+          card?.classList.add('is-expanded');
+          if(detail)detail.hidden=false;
+          toggle.textContent='HIDE ORDERS';
+          toggle.setAttribute('aria-expanded','true');
+        }
         return;
       }
       const remove=event.target.closest('[data-remove-queued-system]');
