@@ -976,6 +976,14 @@ Activation principle remains: use this comparison surface to validate real-world
 - Publish confirmation now summarizes added, changed, replaced, removed and unchanged tasks versus Mission Control, and explicitly notes remaining unreviewed systems.
 - The Mission Control comparison baseline refreshes on page load and again when returning to a stale tab, so changes made elsewhere do not leave the queue comparison indefinitely stale.
 
+## Lazy-loaded reward admin panels — 2026-09-21
+
+- Reward Administration, Verification Review, and Payout Console Preview no longer fetch/build their hidden data at initial BGS Control page load.
+- Each panel expands first using native `<details>` behavior, then begins its data work after two animation frames so the browser can paint the open state immediately.
+- Each panel loads once per page session; subsequent open/close actions do not refetch or rebuild the content.
+- Rapid open/close before the delayed load begins cancels the unnecessary load.
+- This change is performance-only and does not alter panel appearance or reward behavior.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
