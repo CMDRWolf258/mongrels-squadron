@@ -863,6 +863,49 @@ This should integrate with:
 The reward ledger should be its own durable subsystem. Daily Orders, Scout, and special jobs generate reward events into it; they should not each maintain separate balances.
 
 
+## Integrated Daily Order identity + verified activity backbone
+
+_Implemented 2026-09-20._
+
+The first Automation → Orders → Scout → Rewards integration layer is now live in code.
+
+### Stable logical order identity
+
+- Daily Orders now carry a `logicalKey`, stable `id`, `revision`, `createdAt`, and `revisedAt`.
+- Logical identity is derived from source + system + faction + activity/kind + semantic task wording, with numeric workload targets removed from the semantic key.
+- A target revision such as 20 INF → 30 INF therefore remains the same logical order and keeps the same order ID.
+- Materially different work becomes a new logical order.
+- Manual Mission Control editing preferentially preserves an existing explicit order ID.
+
+### Wolf publish reconciliation
+
+- Wolf BGS Control publishing no longer needs to replace the entire Daily Orders set or start a fresh reporting cycle for routine updates.
+- The publisher sends `publishMode: reconcile` plus the queued system list.
+- Only queued systems are reconciled. Published orders for unrelated systems remain untouched.
+- Within a reconciled system, surviving logical tasks preserve their ID/history, removed tasks stop being actionable, and new tasks receive new IDs.
+- The current cycle ID and cycle start are preserved during reconciliation.
+- The API rejects a reconciliation that would exceed the 24-order limit instead of silently dropping unrelated orders.
+
+### Verified Frontier activity matcher
+
+`lib/order-activity.js` now deterministically matches normalized Frontier Scout events to active Daily Orders using:
+- reporting/activity type;
+- system;
+- faction;
+- event timestamp versus order/cycle start.
+
+Currently matched machine-verifiable activity:
+- mission INF → affected system + affected faction from `MissionCompleted.FactionEffects`;
+- redeemed bounty vouchers → system + per-faction `Factions[]` split;
+- profitable trade → system + station-owning faction + verified realized profit;
+- exploration sale → system + station-owning faction, with Fleet Carrier sales already excluded upstream.
+
+One journal event is not blindly applied to every superficially similar order. If more than one active order is equally eligible for the same contribution component, the matcher marks it **ambiguous** instead of double-crediting it. Distinct faction portions of one voucher redemption may match distinct faction orders.
+
+Frontier Scout status now returns `verifiedOrders` totals and annotates recent events with their current order matches. The Member Portal shows a **VERIFIED DAILY ORDER MATCHES** section when machine-verifiable work is attached to active published orders.
+
+No reward credits are issued by this matcher yet. This layer intentionally stops at verified contribution attribution so matching can be observed and tested before the durable payout ledger begins creating squad debt.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
