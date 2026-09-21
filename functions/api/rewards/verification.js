@@ -58,6 +58,7 @@ export async function onRequestGet({request,env}) {
     ok:true,
     cycleId:current?.cycleId||null,
     cycleStartedAt,
+    activeOrderCount:(Array.isArray(current?.orders)?current.orders:[]).filter(order=>!['complete','completed','closed','cancelled','canceled','inactive'].includes(String(order?.status||'').toLowerCase())).length,
     summary:{
       connectedMembers:members.length,
       membersWithVerified:members.filter(member=>member.verifiedOrders.length).length,
