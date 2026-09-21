@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-conflict-lab-v2.css?v=4">
   <link rel="stylesheet" href="../css/wolf-bgs-lab.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-screenshot.css?v=2">
-  <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=2">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -133,14 +133,14 @@
             </div>
 
             <form class="wolf-colonization-form" data-colonization-form>
-              <h3>Create Test Job</h3>
+              <h3>Create Test Job</h3><p class="wolf-section-intro">For a specific build, you only need the system and a useful job/build name. Create it with the construction site blank; it will show <b>AWAITING SITE</b> until Scout discovers the depot.</p>
               <div class="wolf-colonization-form-grid">
                 <label class="wolf-colonization-wide"><span>Job title</span><input type="text" maxlength="160" data-colonization-field="title" placeholder="e.g. Finish Eleven's Lighthouse"></label>
                 <label class="wolf-colonization-wide"><span>System</span><input type="text" maxlength="140" data-colonization-field="system" value="NGC 2546 Sector UZ-G d10-16" required></label>
-                <label><span>Scope</span><select data-colonization-field="scope"><option value="system" selected>Any construction in system</option><option value="market">Specific build / MarketID</option></select></label>
+                <label><span>Scope</span><select data-colonization-field="scope"><option value="system" selected>Any construction in system</option><option value="market">Specific build · discover site after creation</option></select></label>
                 <div class="wolf-colonization-market-fields" data-colonization-market-fields hidden>
                   <label><span>Build name</span><input type="text" maxlength="140" data-colonization-field="buildName" placeholder="Display name"></label>
-                  <label><span>Construction site ID</span><input type="text" maxlength="40" data-colonization-field="marketId" placeholder="Choose a discovered site below" readonly></label>
+                  <label><span>Construction site</span><input type="text" maxlength="40" data-colonization-field="marketId" placeholder="Auto-discovered after Dock + Sync" readonly><small>Leave blank when creating the job. Scout will bind the internal site ID after you dock there and sync.</small></label>
                 </div>
                 <label><span>Commodity filter</span><input type="text" maxlength="100" data-colonization-field="commodity" placeholder="Optional · e.g. Titanium"></label>
                 <label><span>Squad target</span><div class="input-unit"><input type="number" min="1" max="100000000" step="1" value="10000" data-colonization-field="targetTons" required><em>t</em></div></label>
@@ -394,7 +394,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=14"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
-<script src="../js/wolf-bgs-colonization.js?v=3"></script>
+<script src="../js/wolf-bgs-colonization.js?v=4"></script>
 <script src="../js/wolf-bgs-rewards.js?v=7"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
