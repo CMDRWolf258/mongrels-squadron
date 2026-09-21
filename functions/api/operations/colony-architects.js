@@ -25,7 +25,7 @@ export async function onRequestGet({request,env}) {
   const accountByCommander=new Map(accounts.map(item=>[norm(item.account?.commander),{userId:item.userId,account:item.account}]).filter(([key])=>key));
 
   const pairs=store.pairs.map(pair=>{
-    const claim=latestClaims.get(systemKey(pair.system,pair.systemAddress)) || latestClaims.get(systemKey(pair.system,null)) || null;
+    const claim=latestClaims.get(norm(pair.system)) || null;
     const linked=pair.ownerId?accountByOwner.get(String(pair.ownerId)):accountByCommander.get(norm(pair.commander))?.account;
     let claimAlignment='none';
     if(claim?.claimed===false)claimAlignment='released';
@@ -38,7 +38,6 @@ export async function onRequestGet({request,env}) {
     };
   });
 
-  const pairedKeys=new Set(pairs.map(pair=>systemKey(pair.system,pair.systemAddress)));
   const observedClaims=[...latestClaims.values()].map(claim=>({
     ...claim,
     paired:Boolean(pairForSystem(store,claim.system)),
@@ -170,10 +169,8 @@ async function readClaimObservations(env,accounts) {
 function latestClaimsBySystem(claims) {
   const map=new Map();
   for(const claim of claims) {
-    const key=systemKey(claim.system,claim.systemAddress);
-    if(!map.has(key))map.set(key,claim);
-    const fallback=systemKey(claim.system,null);
-    if(!map.has(fallback))map.set(fallback,claim);
+    const key=norm(claim.system);
+    if(key&&!map.has(key))map.set(key,claim);
   }
   return map;
 }
@@ -201,7 +198,6 @@ function sameOrigin(request) {
   return request.headers.get('Origin')===new URL(request.url).origin
     && request.headers.get('X-Mongrels-Request')==='wolf-colony-architects';
 }
-function systemKey(system,address){return address!==null&&address!==undefined&&address!==''?'a:'+String(address):'n:'+norm(system)}
 function clean(value,max){return typeof value==='string'?value.trim().slice(0,max):String(value??'').trim().slice(0,max)}
 function norm(value){return clean(value,200).toLowerCase().replace(/\s+/g,' ')}
 function reply(body,status=200){return json(body,{status,headers:privateHeaders()})}
