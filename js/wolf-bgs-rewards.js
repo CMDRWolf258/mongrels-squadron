@@ -205,11 +205,14 @@
             seen.add(key);
             const reported=manual.get(key);
             const verified=Number(item.contribution)||0;
-            const manualScore=Number(reported?.score)||0;
-            const diff=verified-manualScore;
+            const hasManual=Boolean(reported);
+            const manualScore=hasManual?(Number(reported.score)||0):null;
+            const diff=hasManual?verified-manualScore:null;
+            const mismatch=hasManual&&Math.abs(diff)>0.009;
 
-            const row=document.createElement('div');row.className='wolf-scout-token-row';
-            const main=document.createElement('div');
+            const row=document.createElement('div');
+            row.className='wolf-scout-token-row wolf-verification-row '+(hasManual?(mismatch?'is-mismatch':'is-matched'):'is-scout-only');
+            const main=document.createElement('div');main.className='wolf-verification-main';
             const strong=document.createElement('strong');
             strong.textContent=(member.commander||reported?.displayName||'Elite CMDR')+' · '+(item.task||'Daily Order');
             const small=document.createElement('small');
@@ -218,13 +221,16 @@
               : '';
             small.textContent=[
               `Verified ${round(verified)} ${item.unit||''}`,
-              `Reported ${round(manualScore)} ${item.unit||''}`,
-              `Difference ${signed(diff)} ${item.unit||''}`,
+              hasManual?`Reported ${round(manualScore)} ${item.unit||''}`:'Reported —',
+              hasManual?`Difference ${signed(diff)} ${item.unit||''}`:'',
               item.faction,
               item.system,
             ].filter(Boolean).join(' · ')+reward;
+            const badge=document.createElement('span');
+            badge.className='wolf-verification-badge '+(hasManual?(mismatch?'is-mismatch':'is-matched'):'is-scout-only');
+            badge.textContent=hasManual?(mismatch?'MISMATCH':'MATCHED'):'SCOUT ONLY';
             main.append(strong,small);
-            row.append(main);
+            row.append(main,badge);
             list.appendChild(row);
           }
         }
@@ -232,10 +238,10 @@
         for(const [key,reported] of manual){
           if(seen.has(key)||!(Number(reported.score)>0))continue;
           rows+=1;
-          const row=document.createElement('div');row.className='wolf-scout-token-row';
-          const main=document.createElement('div');
+          const row=document.createElement('div');row.className='wolf-scout-token-row wolf-verification-row is-manual-only';
+          const main=document.createElement('div');main.className='wolf-verification-main';
           const strong=document.createElement('strong');
-          strong.textContent=(reported.displayName||'Mongrel CMDR')+' · Manual-only '+String(reported.reportType||'report').toUpperCase();
+          strong.textContent=(reported.displayName||'Mongrel CMDR')+' · '+String(reported.reportType||'report').toUpperCase();
           const small=document.createElement('small');
           small.textContent=[
             `Reported ${round(reported.score)} ${reported.reportType==='inf'?'INF':'M Cr'}`,
@@ -243,7 +249,10 @@
             reported.faction,
             reported.system,
           ].filter(Boolean).join(' · ');
-          main.append(strong,small);row.append(main);list.appendChild(row);
+          const badge=document.createElement('span');
+          badge.className='wolf-verification-badge is-manual-only';
+          badge.textContent='MANUAL ONLY';
+          main.append(strong,small);row.append(main,badge);list.appendChild(row);
         }
 
         if(!rows){
