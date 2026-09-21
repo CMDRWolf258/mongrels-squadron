@@ -293,7 +293,7 @@
     const run=()=>{
       if(!details.open)return;
       // Let the browser paint the expanded panel first; expensive work starts after.
-      requestAnimationFrame(()=>requestAnimationFrame(()=>loader()));
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{if(details.open)loader();}));
     };
     details.addEventListener('toggle',run,{passive:true});
     if(details.open)run();
