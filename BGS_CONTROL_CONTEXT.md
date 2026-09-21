@@ -1099,6 +1099,26 @@ Activation principle remains: use this comparison surface to validate real-world
 - Publish Queue source label for this state is `AUTO · ORDER REMOVAL` with removal styling.
 - `wolf-bgs-publish.js?v=15`, `wolf-bgs-publish.css?v=8`.
 
+## Durable Daily Order publication history — 2026-09-21
+
+- Added `lib/order-history.js` and central write-ahead publication archiving for every Daily Orders PUT/DELETE, regardless of whether the change originates in Wolf BGS Control or another authorized Daily Orders editor.
+- Each publication gets its own KV record under `order-history:` with:
+  - publication ID, action (`reconcile`, `replace`, `delete`), actor, timestamps, cycle IDs and reconcile-system scope,
+  - complete normalized BEFORE and AFTER Daily Order snapshots,
+  - SHA-256 hashes for both snapshots,
+  - order-level change rows (`added`, `revised`, `removed`, `unchanged`) and counts.
+- Publication sequence is write-ahead:
+  1. persist PREPARED history with full before/after payload,
+  2. mutate the live `current` Daily Orders document,
+  3. finalize the history record as APPLIED.
+- If the live mutation fails, the prepared history record is marked FAILED where possible. If finalization fails after a successful live publish, the PREPARED record still preserves the full before/after payload for recovery.
+- Existing live orders are automatically captured as the BEFORE snapshot on the first archived publication after deployment, so the system does not need a destructive migration/bootstrap.
+- Added Site Admin read-only endpoint `/api/operations/order-history` and lazy-loaded BGS Control **Daily Order History** panel.
+- History UI shows publication state, actor/time, cycle/publication IDs, hashes, reconcile scope, material changes, target deltas, and the complete resulting active-order snapshot.
+- BGS Control publication success now surfaces archive-finalization warnings and refreshes the history panel automatically when open.
+- Archive change logic was locally validated for target revision, single-order removal, and full-order removal cases.
+- Reward issuance remains OFF. This archive is provenance infrastructure for the upcoming dry-run reward engine; no balances or ledger entries are created here.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
