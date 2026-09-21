@@ -176,7 +176,7 @@
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
       </details>
       <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for the configured Scout system. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
-      <details class="member-scout-note"><summary><strong>Optional Live Scout (EDMC)</strong></summary><p>EDMC Scout is still available for immediate faction-board reporting and future live telemetry. It is no longer required for the normal Frontier-based reward-verification path.</p><div class="member-scout-actions"><a class="btn btn-ghost" href="/downloads/mongrel-scout.zip">Download Live Scout</a></div></details>
+      <details class="member-scout-note"><summary><strong>Optional Live Scout (EDMC)</strong></summary><p>EDMC Scout is still available for immediate faction-board reporting and future live telemetry. It is no longer required for the normal Frontier-based reward-verification path.</p><div class="member-scout-actions"><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div></details>
     `;
     return panel;
   }
