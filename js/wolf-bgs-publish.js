@@ -728,7 +728,11 @@
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
       lastPublishError='';
-      lastPublishMessage='Reconciled '+orders.length+' task'+(orders.length===1?'':'s')+' into the current Daily Orders cycle. Unrelated systems were preserved. <a href="../operations/#daily-orders">Open Mission Control →</a>';
+      const historyNote=data?.historyState==='applied'
+        ? ''
+        : ' <b>Archive finalization is still pending; the write-ahead before/after snapshot was preserved.</b>';
+      lastPublishMessage='Reconciled '+orders.length+' task'+(orders.length===1?'':'s')+' into the current Daily Orders cycle. Unrelated systems were preserved.'+historyNote+' <a href="../operations/#daily-orders">Open Mission Control →</a>';
+      window.dispatchEvent(new CustomEvent('wolf-bgs-order-history-updated',{detail:{publicationId:data?.historyPublicationId||'',state:data?.historyState||''}}));
       publishedDocument={cycleId:data?.cycleId||publishedDocument.cycleId,orders:Array.isArray(data?.orders)?data.orders:publishedDocument.orders};
       publishedLoaded=true;
       queueRenderSignature='';
