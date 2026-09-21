@@ -145,11 +145,9 @@
     const actions=document.createElement('div');
     actions.className='wolf-colonization-actions';
     if(job.status==='active'){
-      actions.append(actionButton('Pause','pause','paused'),actionButton('Complete','complete','completed'));
+      actions.append(actionButton('Complete','complete','completed'));
     }else if(job.status==='paused'){
-      actions.append(actionButton('Activate','activate','active'),actionButton('Complete','complete','completed'));
-    }else{
-      actions.append(actionButton('Reopen','activate','active'));
+      actions.append(actionButton('Complete','complete','completed'));
     }
     actions.append(actionButton('Delete','delete','delete','danger'));
 
