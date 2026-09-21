@@ -8,6 +8,7 @@
   let evaluationRunning=false;
   const evaluatedFingerprints=new Map();
   const expandedSystems=new Set();
+  let queueRenderSignature='';
   let lastPublishMessage='';
   let lastPublishError='';
 
@@ -230,6 +231,7 @@
     section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. Expand any queued system to review the exact frozen order snapshot that will publish. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
     systems.parentNode.insertBefore(section,systems);
     panel=section;
+    queueRenderSignature='';
     panel.addEventListener('click',event=>{
       const openSystem=event.target.closest('[data-open-queued-system]');
       if(openSystem){
@@ -343,10 +345,29 @@
     p.querySelector('[data-publish-system-count]').textContent=systems.length+' / '+maxSystems();
     p.querySelector('[data-publish-task-count]').textContent=taskCount+' task'+(taskCount===1?'':'s')+' queued'+(warnings?' · '+warnings+' warning'+(warnings===1?'':'s'):'');
     const host=p.querySelector('[data-publish-queue]');
-    if(!systems.length){
-      host.innerHTML='<div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div>';
-    }else{
-      host.innerHTML=systems.map(queuedSystemMarkup).join('');
+    const nextQueueSignature=JSON.stringify(systems.map(item=>({
+      system:item.system,
+      priority:item.priority,
+      queueSource:item.queueSource,
+      signature:item.signature,
+      warnings:item.warnings,
+      tasks:item.tasks.map(task=>({
+        id:task.id,
+        faction:task.faction,
+        kind:task.kind,
+        task:task.task,
+        detail:task.detail,
+        status:task.status,
+        reporting:task.reporting,
+      })),
+    })));
+    if(nextQueueSignature!==queueRenderSignature){
+      queueRenderSignature=nextQueueSignature;
+      if(!systems.length){
+        host.innerHTML='<div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div>';
+      }else{
+        host.innerHTML=systems.map(queuedSystemMarkup).join('');
+      }
     }
     const clear=p.querySelector('[data-clear-publish-queue]');
     const publishButton=p.querySelector('[data-publish-daily-orders]');
