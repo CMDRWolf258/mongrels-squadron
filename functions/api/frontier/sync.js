@@ -42,7 +42,7 @@ export async function onRequestPost({request,env}) {
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
       recentEvents:merged.slice(-20).reverse(),
-      diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-120).reverse() : [],
+      diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       account:publicAccount(account),
     }, {headers:privateHeaders()});
   } catch (error) {
