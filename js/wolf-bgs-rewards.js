@@ -9,6 +9,8 @@
   let settingsLoading=false;
   let ledgerLoaded=false;
   let ledgerLoading=false;
+  let ledgerLoadedAt=0;
+  const LEDGER_FRESH_MS=5000;
   let verificationLoaded=false;
   let verificationLoading=false;
   let verificationLoadedAt=0;
@@ -107,47 +109,180 @@
     }
   });
 
-  async function loadLedgerPreview(){
+  async function loadLedgerPreview(force=false){
     const consolePanel=document.querySelector('[data-reward-ledger-admin]');
-    if(!consolePanel||ledgerLoaded||ledgerLoading)return;
+    if(!consolePanel||ledgerLoading)return;
+    const fresh=ledgerLoaded&&(Date.now()-ledgerLoadedAt)<LEDGER_FRESH_MS;
+    if(!force&&fresh)return;
     ledgerLoading=true;
-    const list=consolePanel.querySelector('[data-reward-member-list]');
+
+    const ledgerList=consolePanel.querySelector('[data-reward-member-list]');
+    const dryList=consolePanel.querySelector('[data-reward-dryrun-list]');
+    const refreshButton=consolePanel.querySelector('[data-refresh-reward-dryrun]');
+    const checked=consolePanel.querySelector('[data-reward-dryrun-checked]');
+    if(refreshButton)refreshButton.disabled=true;
+    if(checked)checked.textContent='Refreshing reward engine…';
+
+    const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+    const num=(selector,value)=>{const el=consolePanel.querySelector(selector);if(el)el.textContent=Number(value||0).toLocaleString();};
+    const money=(selector,value)=>{const el=consolePanel.querySelector(selector);if(el)el.textContent=fmt(value);};
+    const short=value=>{const text=String(value||'');return text.length>16?text.slice(0,10)+'…'+text.slice(-4):text||'—';};
+    const blockerLabel=value=>({
+      cycle_missing:'Cycle missing',
+      logical_order_key_missing:'Logical order identity missing',
+      current_order_missing:'Current order missing',
+      frontier_evidence_missing:'Frontier evidence IDs missing',
+      archive_provenance_missing:'Archived publication provenance missing',
+      archive_revision_mismatch:'Archived order revision does not match current verified revision',
+      existing_ledger_exceeds_entitlement:'Existing ledger credit exceeds current entitlement',
+    }[value]||String(value||'').replaceAll('_',' '));
+
     try{
-      const response=await fetch('/api/rewards/admin?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
-      const payload=await response.json().catch(()=>({}));
-      if(!response.ok)throw new Error(payload.error||'Reward ledger request failed');
-      const s=payload.summary||{};
-      const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
-      const owed=consolePanel.querySelector('[data-reward-total-owed]');
-      const paid=consolePanel.querySelector('[data-reward-total-paid]');
-      const count=consolePanel.querySelector('[data-reward-member-count]');
-      if(owed)owed.textContent=fmt(s.totalOwedCredits);
-      if(paid)paid.textContent=fmt(s.totalPaidCredits);
-      if(count)count.textContent=String(Number(s.memberCount)||0);
-      if(list){
-        list.replaceChildren();
-        const members=Array.isArray(payload.members)?payload.members:[];
+      const [ledgerResponse,dryResponse]=await Promise.all([
+        fetch('/api/rewards/admin?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+        fetch('/api/rewards/dry-run?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+      ]);
+      const [ledger,dry]=await Promise.all([
+        ledgerResponse.json().catch(()=>({})),
+        dryResponse.json().catch(()=>({})),
+      ]);
+      if(!ledgerResponse.ok)throw new Error(ledger.error||'Reward ledger request failed');
+      if(!dryResponse.ok)throw new Error(dry.error||'Reward dry-run request failed');
+
+      const ls=ledger.summary||{};
+      money('[data-reward-total-owed]',ls.totalOwedCredits);
+      money('[data-reward-total-paid]',ls.totalPaidCredits);
+      num('[data-reward-member-count]',ls.memberCount);
+
+      const ds=dry.summary||{};
+      const mode=consolePanel.querySelector('[data-reward-engine-mode]');
+      if(mode)mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+' · NO WRITES';
+      money('[data-reward-dryrun-create]',ds.wouldCreateCredits);
+      num('[data-reward-dryrun-ready]',ds.readyObligations);
+      num('[data-reward-dryrun-blocked]',ds.blockedObligations);
+      num('[data-reward-dryrun-duplicates]',ds.duplicateSuppressed);
+      money('[data-reward-dryrun-entitlement]',ds.entitlementCredits);
+      money('[data-reward-dryrun-blocked-value]',ds.blockedDeltaCredits);
+      const cycle=consolePanel.querySelector('[data-reward-dryrun-cycle]');
+      const history=consolePanel.querySelector('[data-reward-dryrun-history]');
+      const ledgerCount=consolePanel.querySelector('[data-reward-dryrun-ledger-count]');
+      if(cycle){cycle.textContent=short(dry.cycleId);cycle.title=String(dry.cycleId||'');}
+      if(history)history.textContent=Number(dry.historyRecordCount||0).toLocaleString();
+      if(ledgerCount)ledgerCount.textContent=Number(dry.ledgerEntryCount||0).toLocaleString();
+
+      if(dryList){
+        dryList.replaceChildren();
+        const members=Array.isArray(dry.members)?dry.members:[];
         if(!members.length){
           const empty=document.createElement('div');empty.className='wolf-scout-empty';
-          const strong=document.createElement('strong');strong.textContent='No reward ledger entries yet.';
-          const small=document.createElement('small');small.textContent='This is expected while automatic issuance remains disabled.';
-          empty.append(strong,small);list.appendChild(empty);
+          const strong=document.createElement('strong');strong.textContent='No verified reward obligations in the current cycle.';
+          const small=document.createElement('small');small.textContent='Scout activity against a reward-eligible Daily Order will appear here automatically.';
+          empty.append(strong,small);dryList.appendChild(empty);
+        }else{
+          members.forEach((member,index)=>{
+            const details=document.createElement('details');
+            details.className='wolf-dryrun-member';
+            if(index===0)details.open=true;
+
+            const summary=document.createElement('summary');
+            const main=document.createElement('div');
+            const name=document.createElement('strong');name.textContent=member.commander||'Elite CMDR';
+            const info=document.createElement('small');
+            info.textContent=[
+              (Number(member.readyCount)||0)+' ready',
+              (Number(member.blockedCount)||0)+' blocked',
+              (Number(member.duplicateSuppressedCount)||0)+' duplicate suppressed',
+            ].join(' · ');
+            main.append(name,info);
+            const total=document.createElement('div');total.className='wolf-dryrun-member-total';
+            const amount=document.createElement('b');amount.textContent=fmt(member.deltaCredits);
+            const label=document.createElement('small');label.textContent='eligible delta before blockers';
+            total.append(amount,label);
+            summary.append(main,total);
+
+            const obligations=document.createElement('div');obligations.className='wolf-dryrun-obligations';
+            (member.obligations||[]).forEach(item=>{
+              const state=item.readyForLive?'ready':item.blockers?.length?'blocked':item.duplicateSuppressed?'duplicate':'blocked';
+              const row=document.createElement('div');row.className='wolf-dryrun-obligation is-'+state;
+
+              const order=document.createElement('div');order.className='wolf-dryrun-main';
+              const strong=document.createElement('strong');strong.textContent=item.task||'Daily Order';
+              const small=document.createElement('small');
+              const pub=item.provenance?.publicationId?short(item.provenance.publicationId):'—';
+              small.textContent=[
+                (member.commander||'Elite CMDR'),
+                item.system,
+                item.faction,
+                Number(item.contribution||0).toLocaleString()+' '+(item.unit||''),
+                'rev '+Number(item.revision||1),
+                (Number(item.eventCount)||0)+' evidence event'+(Number(item.eventCount)===1?'':'s'),
+                'publication '+pub,
+                'entry '+short(item.id),
+              ].filter(Boolean).join(' · ');
+              strong.title=String(item.id||'');
+              order.append(strong,small);
+
+              const amountBox=document.createElement('div');amountBox.className='wolf-dryrun-amount';
+              const due=document.createElement('strong');due.textContent=fmt(item.deltaCredits);
+              const detail=document.createElement('small');
+              detail.textContent=fmt(item.entitlementCredits)+' entitlement · '+fmt(item.existingCredits)+' already ledgered';
+              amountBox.append(due,detail);
+
+              const stateBox=document.createElement('div');stateBox.className='wolf-dryrun-state';
+              const chip=document.createElement('span');chip.className='wolf-dryrun-chip is-'+state;
+              chip.textContent=item.readyForLive?'READY':item.duplicateSuppressed&&!item.blockers?.length?'DUPLICATE SUPPRESSED':'BLOCKED';
+              stateBox.append(chip);
+              if(item.provenance?.match==='exact'){
+                const provenance=document.createElement('span');provenance.className='wolf-dryrun-chip is-provenance';provenance.textContent='ARCHIVE EXACT';
+                provenance.title=String(item.provenance.afterHash||'');
+                stateBox.append(provenance);
+              }
+
+              row.append(order,amountBox,stateBox);
+              if(item.blockers?.length){
+                const blockers=document.createElement('div');blockers.className='wolf-dryrun-blockers';
+                blockers.textContent='Blocked: '+item.blockers.map(blockerLabel).join(' · ');
+                row.append(blockers);
+              }
+              obligations.append(row);
+            });
+
+            details.append(summary,obligations);
+            dryList.append(details);
+          });
+        }
+      }
+
+      if(ledgerList){
+        ledgerList.replaceChildren();
+        const members=Array.isArray(ledger.members)?ledger.members:[];
+        if(!members.length){
+          const empty=document.createElement('div');empty.className='wolf-scout-empty';
+          const strong=document.createElement('strong');strong.textContent='Actual reward ledger is empty.';
+          const small=document.createElement('small');small.textContent='DRY RUN is computing obligations without creating any stored debt.';
+          empty.append(strong,small);ledgerList.appendChild(empty);
         }else{
           members.forEach(member=>{
             const row=document.createElement('div');row.className='wolf-scout-token-row';
             const main=document.createElement('div');
             const strong=document.createElement('strong');strong.textContent=member.displayName||'Mongrel CMDR';
-            const small=document.createElement('small');small.textContent=`${fmt(member.owedCredits)} owed · ${fmt(member.paidCredits)} paid · ${Number(member.entryCount)||0} ledger entr${Number(member.entryCount)===1?'y':'ies'}`;
-            main.append(strong,small);row.append(main);list.appendChild(row);
+            const small=document.createElement('small');small.textContent=fmt(member.owedCredits)+' owed · '+fmt(member.paidCredits)+' paid · '+(Number(member.entryCount)||0)+' ledger entr'+(Number(member.entryCount)===1?'y':'ies');
+            main.append(strong,small);row.append(main);ledgerList.appendChild(row);
           });
         }
       }
+
       ledgerLoaded=true;
+      ledgerLoadedAt=Date.now();
+      if(checked)checked.textContent='Checked '+new Date(ledgerLoadedAt).toLocaleString()+' · automatic ledger writes OFF';
     }catch(error){
-      console.error('Could not load reward payout preview',error);
-      if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Reward ledger unavailable.</strong><small>Nothing was changed.</small></div>';
+      console.error('Could not load reward dry run / payout console',error);
+      if(dryList)dryList.innerHTML='<div class="wolf-scout-empty"><strong>Reward dry run unavailable.</strong><small>No ledger state was changed.</small></div>';
+      if(ledgerList)ledgerList.innerHTML='<div class="wolf-scout-empty"><strong>Reward ledger unavailable.</strong><small>Nothing was changed.</small></div>';
+      if(checked)checked.textContent='Refresh failed · no writes performed';
     }finally{
       ledgerLoading=false;
+      if(refreshButton)refreshButton.disabled=false;
     }
   }
 
@@ -358,7 +493,11 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshVerificationIfVisible();},{passive:true});
   window.addEventListener('pageshow',refreshVerificationIfVisible,{passive:true});
 
+  const ledgerPanel=document.querySelector('[data-reward-ledger-admin]');
+  ledgerPanel?.querySelector('[data-refresh-reward-dryrun]')?.addEventListener('click',()=>loadLedgerPreview(true));
+  window.addEventListener('wolf-bgs-order-history-updated',()=>{ledgerLoadedAt=0;if(ledgerPanel?.open)setTimeout(()=>loadLedgerPreview(true),160);});
+
   loadAfterOpen(panel,load);
-  loadAfterOpen(document.querySelector('[data-reward-ledger-admin]'),loadLedgerPreview);
+  loadAfterOpen(ledgerPanel,loadLedgerPreview);
   loadAfterOpen(verificationPanel,loadVerificationReview);
 })();
