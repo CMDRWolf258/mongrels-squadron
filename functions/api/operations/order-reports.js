@@ -137,7 +137,8 @@ export async function onRequestDelete({ request, env }) {
   if (!canModify(auth.session, found.record)) return reply({ok:false,error:'report_delete_forbidden'},403);
 
   await env.DAILY_ORDERS.delete(found.key);
-  const records = await listCurrentRecords(env, current);
+  const records = (await listCurrentRecords(env, current))
+    .filter(record => String(record.reportId || '') !== String(found.reportId || ''));
   return reply({
     ok:true,
     action:'deleted',
@@ -151,7 +152,10 @@ export async function onRequestDelete({ request, env }) {
 }
 
 async function mutationReply(env, current, session, record, action) {
-  const records = await listCurrentRecords(env, current);
+  const listed = await listCurrentRecords(env, current);
+  const reportId = String(record?.reportId || '');
+  const records = listed.filter(item => String(item?.reportId || '') !== reportId);
+  records.push(record);
   return reply({
     ok:true,
     action,
