@@ -2,6 +2,7 @@
 .wolf-queue-source{display:inline-block;padding:.12rem .32rem;border:1px solid rgba(92,210,255,.18);border-radius:3px;color:#9eb4ba;font-size:.56rem;letter-spacing:.06em;vertical-align:baseline}
 .wolf-queue-source.selector{border-color:rgba(92,210,255,.35);color:#c7f4fb;background:rgba(42,160,191,.08)}
 .wolf-queue-source.retreat{border-color:rgba(255,88,88,.38);color:#ffb9b9;background:rgba(255,88,88,.07)}
+.wolf-queue-source.removal{border-color:rgba(255,105,105,.42);color:#ffc0c0;background:rgba(255,85,85,.08)}
 .wolf-queue-source.manual{border-color:rgba(255,224,138,.24);color:#e8d8a4;background:rgba(255,224,138,.04)}
 
 .wolf-publish-system-link{display:block;max-width:100%;padding:0;border:0;background:none;color:#e8fbfd;font:inherit;font-size:.8rem;font-weight:850;text-align:left;cursor:pointer;overflow-wrap:anywhere}
