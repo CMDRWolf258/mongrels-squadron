@@ -1077,6 +1077,17 @@ Activation principle remains: use this comparison surface to validate real-world
 - Registry compares latest captured claim evidence with manual pairings and flags MATCH / CONFLICT / RELEASED without auto-overwriting the manual registry.
 - Claim parser was validated against the observed journal shape: `ColonisationSystemClaim` / `ColonisationSystemClaimRelease` with `StarSystem` and `SystemAddress`; unrelated non-target journal activity remained excluded when no verification systems were active.
 
+## Colonization site-picker polish — 2026-09-21
+
+- Renamed `Observed Construction MarketIDs` to **Observed Construction Sites** and `Observed Build IDs` to **Observed Sites**; normal UI no longer asks the operator to think in MarketIDs.
+- Discovered-site rows now understand active specific-build bindings in the same system:
+  - the linked build shows a disabled green **CURRENT SITE** indicator,
+  - with one active bound job and no awaiting job, alternate builds show **SWITCH TO THIS SITE** and can rebind that job after confirmation,
+  - with one AWAITING SITE job, candidate builds show **LINK THIS SITE**,
+  - otherwise the generic **USE THIS SITE** behavior remains available for deliberate/new-job selection.
+- Switching a bound job keeps the existing job and recalculates verified tonnage/reward preview against the new MarketID.
+- Empty-state copy now reflects depot discovery rather than requiring a contribution event.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
