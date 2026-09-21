@@ -166,6 +166,29 @@
 
     <section class="section-sm">
       <div class="container">
+        <details class="wolf-panel wolf-reward-panel" data-verification-review>
+          <summary><span><b>Verification Review</b><small>Scout vs manual reports · reward dry run · ambiguity audit</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <p class="wolf-section-intro">Read-only pre-payout audit. This compares Frontier Scout verification with members' manual Daily Order reports. Nothing in this panel creates, edits, or pays reward debt.</p>
+            <div class="wolf-form-grid">
+              <div class="wolf-rules-callout subtle"><strong data-verification-members>0</strong><span>Frontier-connected CMDRs</span></div>
+              <div class="wolf-rules-callout subtle"><strong data-verification-matches>0</strong><span>Verified member/order matches</span></div>
+              <div class="wolf-rules-callout subtle"><strong data-verification-ambiguous>0</strong><span>Ambiguous verification components</span></div>
+              <div class="wolf-rules-callout subtle"><strong data-verification-unmatched>0</strong><span>Unmatched verification components</span></div>
+            </div>
+            <div class="wolf-rules-callout subtle">
+              <strong>How to read this</strong>
+              <span><b>Verified</b> comes from Frontier journal evidence. <b>Reported</b> comes from the member's existing Mission Control submissions. Differences are expected while we test; they are review signals, not automatic corrections.</span>
+            </div>
+            <div class="wolf-scout-token-list" data-verification-list><div class="wolf-scout-empty"><strong>Loading verification review…</strong></div></div>
+            <div class="wolf-scout-token-list" data-verification-flags></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
         <details class="wolf-panel wolf-reward-panel" data-reward-ledger-admin>
           <summary><span><b>Payout Console Preview</b><small>Read-only reward debt, member balances, and ledger activity</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
@@ -295,7 +318,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=8"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
-<script src="../js/wolf-bgs-rewards.js?v=2"></script>
+<script src="../js/wolf-bgs-rewards.js?v=3"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
