@@ -253,7 +253,9 @@ function replaceOrders(previous, body, now, actor) {
       : now,
   });
   const previousOrders = sameCycle && Array.isArray(previous?.orders) ? previous.orders : [];
-  normalized.orders = normalized.orders.map((order,index) => reconcileOneOrder(order, previousOrders, now, index));
+  normalized.orders = normalized.orders.map((order,index) => reconcileOneOrder(
+    order, previousOrders, now, index, normalized.cycleStartedAt || previous?.updatedAt || now
+  ));
   return normalized;
 }
 
@@ -275,7 +277,9 @@ function reconcileOrders(previous, body, now, actor) {
   );
   const currentOrders = Array.isArray(current.orders) ? current.orders : [];
   const kept = currentOrders.filter(order => !incomingSystems.has(norm(order.system)));
-  const reconciled = incomingDoc.orders.map((order,index) => reconcileOneOrder(order, currentOrders, now, index));
+  const reconciled = incomingDoc.orders.map((order,index) => reconcileOneOrder(
+    order, currentOrders, now, index, cycleStartedAt
+  ));
   const orders = [...kept, ...reconciled].slice(0,24);
 
   return {
@@ -286,7 +290,7 @@ function reconcileOrders(previous, body, now, actor) {
   };
 }
 
-function reconcileOneOrder(order, previousOrders, now, index) {
+function reconcileOneOrder(order, previousOrders, now, index, startFallback = now) {
   const logicalKey = deriveLogicalOrderKey(order);
   const prior = previousOrders.find(item =>
     cleanText(item?.logicalKey, '', 520) === logicalKey
@@ -310,7 +314,7 @@ function reconcileOneOrder(order, previousOrders, now, index) {
     id:cleanText(prior.id, '', 80) || crypto.randomUUID(),
     logicalKey,
     revision:Math.max(1,Math.floor(Number(prior.revision)||1)) + (changed ? 1 : 0),
-    createdAt:cleanText(prior.createdAt, '', 80) || currentOrderStart(prior, now),
+    createdAt:cleanText(prior.createdAt, '', 80) || currentOrderStart(prior, startFallback),
     revisedAt:changed ? now : (cleanText(prior.revisedAt, '', 80) || now),
   };
 }
