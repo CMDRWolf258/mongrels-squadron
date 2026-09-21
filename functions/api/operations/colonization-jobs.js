@@ -148,7 +148,6 @@ async function requireSiteAdmin(request,env) {
 
 function validateJob(job) {
   if(!job.system)return'colonization_system_required';
-  if(job.scope==='market'&&!job.marketId)return'colonization_market_id_required';
   if(!(Number(job.targetTons)>0))return'colonization_target_required';
   if(!(Number(job.rewardBlockTons)>0))return'colonization_reward_block_required';
   if(Number(job.rewardBlockMillions)<0)return'colonization_reward_invalid';
