@@ -166,7 +166,7 @@
       const mode=consolePanel.querySelector('[data-reward-engine-mode]');
       if(mode){
         const sources=Array.isArray(dry.sources)&&dry.sources.includes('colonization')?' · DAILY ORDERS + COLONIZATION':'';
-        mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+sources+' · NO WRITES';
+        mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+sources+' · AUTO WRITES OFF';
       }
       money('[data-reward-dryrun-create]',ds.wouldCreateCredits);
       num('[data-reward-dryrun-ready]',ds.readyObligations);
@@ -254,6 +254,20 @@
                 provenance.title=String(item.provenance.snapshotHash||item.provenance.afterHash||'');
                 stateBox.append(provenance);
               }
+              if(dry.canIssueReady===true&&item.readyForLive&&item.plannedEntry){
+                const issue=document.createElement('button');
+                issue.type='button';
+                issue.className='btn btn-secondary btn-compact wolf-dryrun-issue';
+                issue.textContent='CREATE OWED ENTRY';
+                issue.dataset.issueReadyReward=item.id||'';
+                issue.dataset.issueAmountCredits=String(Math.round(Number(item.deltaCredits)||0));
+                issue.dataset.issueEvidenceDigest=String(item.evidenceDigest||'');
+                issue.dataset.issueRewardRuleDigest=String(item.rewardRuleDigest||'');
+                issue.dataset.issueCommander=String(member.commander||'Elite CMDR');
+                issue.dataset.issueTask=String(item.task||'Reward obligation');
+                issue.title='Explicitly add this READY obligation to the actual reward ledger as OWED. This does not mark it paid.';
+                stateBox.append(issue);
+              }
 
               row.append(order,amountBox,stateBox);
               if(item.blockers?.length){
@@ -302,6 +316,74 @@
       if(refreshButton)refreshButton.disabled=false;
     }
   }
+
+  async function issueReadyReward(button){
+    if(!button||button.disabled)return;
+    const obligationId=String(button.dataset.issueReadyReward||'');
+    const amountCredits=Math.round(Number(button.dataset.issueAmountCredits)||0);
+    const commander=String(button.dataset.issueCommander||'Elite CMDR');
+    const task=String(button.dataset.issueTask||'Reward obligation');
+    const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+    if(!obligationId||amountCredits<=0)return;
+
+    const confirmed=window.confirm(
+      'Create an OWED reward-ledger entry for '+commander+'?\n\n'
+      +task+'\n'
+      +fmt(amountCredits)+'\n\n'
+      +'This records an amount owed. It does NOT mark any in-game payment as sent.'
+    );
+    if(!confirmed)return;
+
+    const original=button.textContent;
+    button.disabled=true;
+    button.textContent='VALIDATING…';
+    const consolePanel=document.querySelector('[data-reward-ledger-admin]');
+    const checked=consolePanel?.querySelector('[data-reward-dryrun-checked]');
+    if(checked)checked.textContent='Re-validating READY obligation before ledger write…';
+
+    try{
+      const response=await fetch('/api/rewards/issue',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{
+          Accept:'application/json',
+          'Content-Type':'application/json',
+          'X-Mongrels-Request':'wolf-reward-issue',
+        },
+        body:JSON.stringify({
+          obligationId,
+          expectedAmountCredits:amountCredits,
+          expectedEvidenceDigest:String(button.dataset.issueEvidenceDigest||''),
+          expectedRewardRuleDigest:String(button.dataset.issueRewardRuleDigest||''),
+        }),
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.message||payload.error||('Issue failed ('+response.status+')'));
+
+      button.textContent=payload.created?'OWED ENTRY CREATED':'ALREADY LEDGERED';
+      ledgerLoaded=false;
+      ledgerLoadedAt=0;
+      if(checked)checked.textContent=payload.message||'Reward ledger updated.';
+      await loadLedgerPreview(true);
+    }catch(error){
+      console.error('Could not create reward-ledger entry',error);
+      button.disabled=false;
+      button.textContent='REFRESH REQUIRED';
+      if(checked)checked.textContent='Ledger write rejected · '+String(error.message||error);
+      window.alert('Reward ledger was not changed.\n\n'+String(error.message||error));
+    }finally{
+      if(button.isConnected&&button.textContent==='VALIDATING…'){
+        button.disabled=false;
+        button.textContent=original;
+      }
+    }
+  }
+
+  document.querySelector('[data-reward-ledger-admin]')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-issue-ready-reward]');
+    if(button)issueReadyReward(button);
+  });
 
   async function loadVerificationReview(force=false){
     const review=document.querySelector('[data-verification-review]');
