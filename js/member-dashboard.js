@@ -170,6 +170,7 @@
         <div class="frontier-scout-kpi"><span>Exploration Sold</span><strong data-frontier-exploration>0 Cr</strong></div>
       </div>
       <div class="frontier-scout-events" data-frontier-events></div>
+      <div class="frontier-scout-events" data-frontier-order-matches hidden></div>
       <details class="member-scout-note" data-frontier-diagnostics hidden>
         <summary><strong>Admin diagnostic journal trace</strong></summary>
         <p>This temporary test view shows timestamped event names and a small whitelist of safe fields from 10-16 so we can identify the HUD reputation notification without retaining the full journal.</p>
@@ -229,6 +230,7 @@
     const disconnect=document.querySelector('[data-frontier-disconnect]');
     const kpis=document.querySelector('[data-frontier-kpis]');
     const events=document.querySelector('[data-frontier-events]');
+    const orderMatches=document.querySelector('[data-frontier-order-matches]');
     if (!badge) return;
 
     if (!payload?.configured) {
@@ -246,6 +248,7 @@
       if(connect){connect.href='/api/frontier/login';connect.hidden=false;connect.removeAttribute('aria-disabled');connect.classList.remove('is-disabled');}
       if(sync)sync.hidden=true;if(disconnect)disconnect.hidden=true;if(kpis)kpis.hidden=true;
       if(events)events.replaceChildren();
+      if(orderMatches){orderMatches.replaceChildren();orderMatches.hidden=true;}
       return;
     }
     const account=payload.account||{};
@@ -272,9 +275,30 @@
       (payload.recentEvents||[]).slice(0,8).forEach(event=>{
         const row=document.createElement('div');row.className='frontier-scout-event';
         const strong=document.createElement('strong');strong.textContent=frontierEventLabel(event);
-        const small=document.createElement('small');small.textContent=[frontierDate(event.timestamp),event.station,event.system].filter(Boolean).join(' · ');
+        const matchText=(event.orderMatches||[]).length
+          ? '✓ Matched: '+event.orderMatches.map(match=>match.orderTask).join(' · ')
+          : event.orderMatchStatus==='ambiguous' ? 'Needs order assignment' : '';
+        const small=document.createElement('small');small.textContent=[frontierDate(event.timestamp),event.station,event.system,matchText].filter(Boolean).join(' · ');
         row.append(strong,small);events.appendChild(row);
       });
+    }
+    if(orderMatches){
+      const matched=Array.isArray(payload.verifiedOrders)?payload.verifiedOrders:[];
+      orderMatches.replaceChildren();
+      orderMatches.hidden=!matched.length;
+      if(matched.length){
+        const heading=document.createElement('div');heading.className='frontier-scout-event';
+        const hs=document.createElement('strong');hs.textContent='VERIFIED DAILY ORDER MATCHES';
+        const hsmall=document.createElement('small');hsmall.textContent='Machine-verified contribution currently attached to active published orders.';
+        heading.append(hs,hsmall);orderMatches.appendChild(heading);
+        matched.forEach(item=>{
+          const row=document.createElement('div');row.className='frontier-scout-event';
+          const strong=document.createElement('strong');strong.textContent=item.task||'Daily Order';
+          const small=document.createElement('small');
+          small.textContent=[`${Number(item.contribution||0).toLocaleString()} ${item.unit||''} verified`,item.faction,item.system,`revision ${item.revision||1}`].filter(Boolean).join(' · ');
+          row.append(strong,small);orderMatches.appendChild(row);
+        });
+      }
     }
   }
   function renderFrontierDiagnostics(items) {
