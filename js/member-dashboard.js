@@ -437,7 +437,7 @@
             result.textContent='Frontier returned partial journal data. Verified events were saved; the incomplete date will remain eligible for reconciliation on a later sync.';
           }else{
             const historical=payload.journalCoverage?.historicalDate;
-            result.textContent=`Sync complete. ${Number(payload.newEvents||0)} qualifying journal event${Number(payload.newEvents||0)===1?'':'s'} matched the active order-system scope.${historical?' Historical '+historical+' was also reconciled.':''}`;
+            result.textContent=`Sync complete. ${Number(payload.newEvents||0)} retained verification/colonization event${Number(payload.newEvents||0)===1?'':'s'} found.${historical?' Historical '+historical+' was also reconciled.':''}`;
           }
         }
       }catch(error){
@@ -445,8 +445,9 @@
         if(result)result.textContent=String(error.message||'Sync failed').includes('reauthorization')?'Frontier requires you to reconnect your Elite account.':'Frontier sync could not be completed. Try again after the game session or if CAPI is temporarily unavailable.';
       }finally{
         if(!button.textContent.startsWith('Sync available in')){
-          button.disabled=false;
-          button.textContent=button.dataset.hasTargets==='false'?'No active order systems':'Sync Order Activity';
+          const canSync=button.dataset.claimTracking!=='false';
+          button.disabled=!canSync;
+          button.textContent=canSync?'Sync Activity':'Sync unavailable';
         }
       }
     });
