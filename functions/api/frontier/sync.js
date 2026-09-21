@@ -25,7 +25,7 @@ export async function onRequestPost({request,env}) {
     if (![200,206].includes(status)) throw new Error('frontier_journal_' + status);
     const text = await response.response.text();
     if (text.trim() === 'Journal unavailable') throw new Error('frontier_journal_unavailable');
-    const parsed = parseJournal(text, TEST_SYSTEM);
+    const parsed = parseJournal(text, TEST_SYSTEM, {diagnostics:auth.session.access === 'site_admin'});
     const merged = await mergeEvents(env, auth.session.sub, parsed.events);
     account = {
       ...account,
@@ -42,6 +42,7 @@ export async function onRequestPost({request,env}) {
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
       recentEvents:merged.slice(-20).reverse(),
+      diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-120).reverse() : [],
       account:publicAccount(account),
     }, {headers:privateHeaders()});
   } catch (error) {
