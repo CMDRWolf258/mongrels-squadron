@@ -1010,6 +1010,28 @@ Activation principle remains: use this comparison surface to validate real-world
 - Frontier Scout diagnostic/privacy wording now refers to active Daily Order systems instead of the old 10-16/configured-single-system wording.
 - Reward issuance remains disabled; all Verification Review changes are read-only testing/audit improvements.
 
+## Colonization Jobs test framework — 2026-09-21
+
+- Added a separate persistent Colonization Jobs layer, independent from Daily Orders and reward-ledger issuance.
+- Job definition supports:
+  - system-wide scope (any construction depot in one system),
+  - specific-build scope via construction `MarketID`, with a manual display/build name,
+  - optional commodity filter,
+  - squad target tonnage,
+  - reward block tonnage + reward M Cr per complete block,
+  - optional personal reward cap,
+  - active/completed lifecycle and creation/completion timestamps.
+- BGS Control now has a lazy-loaded `Colonization Jobs · Test Console` where Site Admin can create jobs, view squad progress, inspect per-CMDR verified tonnage/reward preview, complete/delete jobs, refresh data, and reuse observed construction MarketIDs.
+- Frontier journal parser now retains `ColonisationContribution` as normalized `colonization_contribution` evidence with system, MarketID, exact total tons, and per-commodity amounts.
+- Active Colonization Job systems are added to Frontier journal verification scope even when no Daily Order targets that system.
+- Frontier summaries now expose colonization tonnage/contribution counts; Member Scout UI shows `Colonization Delivered` and labels these events in recent activity.
+- Colonization job matching is member + job + job verification window. Specific-build jobs additionally require exact MarketID; commodity-scoped jobs count only the named commodity from a multi-commodity contribution event.
+- Reward math is preview-only: complete blocks = floor(verified tons / block tons); preview reward = blocks × reward per block, optionally capped by the job's personal cap.
+- Squad target is an operational goal, not an automatic personal reward cap. Jobs do not auto-close when the squad target is reached.
+- Completing a job freezes its verification window at completion time. Reopening is intentionally not exposed in the test UI yet because pause/reopen intervals need an explicit verification-window model before they can be made payout-safe.
+- Automatic reward debt creation remains OFF. Colonization payouts are not connected to the ledger yet.
+- Sample logic test passed: a 6,000 t MarketID-specific contribution against a 5,000 t / 100M block rule produced 1 completed block and 100M preview; a Titanium-only version correctly counted only 4,784 t from the same mixed-material contribution.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
