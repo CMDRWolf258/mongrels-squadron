@@ -2,6 +2,7 @@ import { frontierConfigured, getAccount, getEvents, privateHeaders, publicAccoun
 import { json } from '../../../lib/auth.js';
 import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
+import { activeColonizationSystems, readColonizationJobs } from '../../../lib/colonization-jobs.js';
 
 export async function onRequestGet({request,env}) {
   const auth = await requireMember(request, env); if (auth.response) return auth.response;
@@ -9,7 +10,8 @@ export async function onRequestGet({request,env}) {
   const account = configured ? await getAccount(env, auth.session.sub) : null;
   const events = account ? await getEvents(env, auth.session.sub) : [];
   const currentOrders = account ? await readCurrentOrderCycle(env) : null;
-  const targetSystems = activeOrderSystems(currentOrders);
+  const colonizationStore = account ? await readColonizationJobs(env) : {jobs:[]};
+  const targetSystems = [...new Set([...activeOrderSystems(currentOrders),...activeColonizationSystems(colonizationStore)])];
   const matched = matchVerifiedActivity(events, currentOrders);
   const rewardSettings = account ? await readRewardSettings(env) : {settings:{}};
   const rewardPreview = buildRewardPreview(matched.orderTotals, rewardSettings.settings);
