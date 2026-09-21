@@ -177,11 +177,11 @@
       <p>Primary reward verification uses Frontier's authenticated journal feed. Live EDMC Scout remains available as an optional real-time telemetry mode.</p>
       <div class="frontier-scout-grid">
         <div class="frontier-scout-box"><strong>Elite connection</strong><span data-frontier-connection>Checking Frontier integration…</span></div>
-        <div class="frontier-scout-box"><strong>Test system</strong><span data-frontier-system>NGC 2546 Sector UZ-G d10-16</span></div>
+        <div class="frontier-scout-box"><strong>Active order systems</strong><span data-frontier-system>Waiting for published Daily Orders…</span></div>
       </div>
       <div class="frontier-scout-actions">
         <a class="btn btn-primary" href="/api/frontier/login" data-frontier-connect>Connect Elite Account</a>
-        <button class="btn btn-primary" type="button" data-frontier-sync hidden>Sync 10-16 Activity</button>
+        <button class="btn btn-primary" type="button" data-frontier-sync hidden>Sync Order Activity</button>
         <button class="btn btn-ghost" type="button" data-frontier-disconnect hidden>Disconnect</button>
       </div>
       <p class="member-scout-note" data-frontier-result>Checking your Frontier connection status.</p>
@@ -229,8 +229,9 @@
         button.disabled=true;
         button.textContent=frontierCooldownText(remaining);
       }else{
-        button.disabled=false;
-        button.textContent='Sync 10-16 Activity';
+        const hasTargets=button.dataset.hasTargets!=='false';
+        button.disabled=!hasTargets;
+        button.textContent=hasTargets?'Sync Order Activity':'No active order systems';
         if(frontierCooldownTimer){clearInterval(frontierCooldownTimer);frontierCooldownTimer=null;}
       }
     };
@@ -285,6 +286,7 @@
     const kpis=document.querySelector('[data-frontier-kpis]');
     const events=document.querySelector('[data-frontier-events]');
     const orderMatches=document.querySelector('[data-frontier-order-matches]');
+    const scope=document.querySelector('[data-frontier-system]');
     if (!badge) return;
 
     if (!payload?.configured) {
@@ -306,10 +308,14 @@
       return;
     }
     const account=payload.account||{};
+    const targetSystems=Array.isArray(payload.targetSystems)?payload.targetSystems:[];
     badge.textContent='Connected';
     if(connection) connection.textContent=`${account.commander||'Elite CMDR'} · last sync ${frontierDate(account.lastSyncAt)}`;
-    if(result) result.textContent=`Frontier connection active. Re-authorization target: ${frontierDate(account.reauthDueAt)}. Journal events keep their original timestamps, so delayed CAPI delivery will not move verified work into the wrong BGS cycle.`;
-    if(connect)connect.hidden=true;if(sync)sync.hidden=false;if(disconnect)disconnect.hidden=false;
+    if(scope)scope.textContent=targetSystems.length?targetSystems.join(' · '):'No system-scoped Daily Orders currently active.';
+    if(result) result.textContent=targetSystems.length
+      ? `Frontier connection active. Scout is scoped automatically to ${targetSystems.length} active order system${targetSystems.length===1?'':'s'}. Journal timestamps and dated reconciliation preserve the original work date.`
+      : 'Frontier connection active. Publish a system-scoped Daily Order and Scout will automatically add that system to verification scope.';
+    if(connect)connect.hidden=true;if(sync){sync.hidden=false;sync.dataset.hasTargets=String(targetSystems.length>0);}if(disconnect)disconnect.hidden=false;
     applyFrontierCooldown(payload.cooldown);
     if(kpis)kpis.hidden=false;
     const s=payload.summary||{};
@@ -393,7 +399,7 @@
 
     document.querySelector('[data-frontier-sync]')?.addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='Syncing…';
-      const result=document.querySelector('[data-frontier-result]');if(result)result.textContent='Requesting today\'s Frontier journal and checking 10-16 BGS activity…';
+      const result=document.querySelector('[data-frontier-result]');if(result)result.textContent='Requesting Frontier journal data and checking activity against the currently published Daily Orders…';
       try{
         const response=await fetch('/api/frontier/sync',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','X-Mongrels-Request':'mongrel-frontier'}});
         const payload=await response.json().catch(()=>({}));
@@ -406,14 +412,23 @@
         renderFrontierDiagnostics(payload.diagnosticEvents);
         const refreshed=await fetchJson('/api/frontier/status');
         if(refreshed.response.ok)renderFrontierScout(refreshed.payload);
-        if(result)result.textContent=payload.partial?'Frontier returned a partial journal. Your verified events were saved; sync again later after the session completes.':`Sync complete. ${Number(payload.newEvents||0)} qualifying 10-16 journal events were found in Frontier's current response.`;
+        if(result){
+          if(payload.skipped){
+            result.textContent=payload.message||'No active order systems required a Frontier journal request.';
+          }else if(payload.partial){
+            result.textContent='Frontier returned partial journal data. Verified events were saved; the incomplete date will remain eligible for reconciliation on a later sync.';
+          }else{
+            const historical=payload.journalCoverage?.historicalDate;
+            result.textContent=`Sync complete. ${Number(payload.newEvents||0)} qualifying journal event${Number(payload.newEvents||0)===1?'':'s'} matched the active order-system scope.${historical?' Historical '+historical+' was also reconciled.':''}`;
+          }
+        }
       }catch(error){
         console.error('Frontier Scout sync failed',error);
         if(result)result.textContent=String(error.message||'Sync failed').includes('reauthorization')?'Frontier requires you to reconnect your Elite account.':'Frontier sync could not be completed. Try again after the game session or if CAPI is temporarily unavailable.';
       }finally{
         if(!button.textContent.startsWith('Sync available in')){
           button.disabled=false;
-          button.textContent='Sync 10-16 Activity';
+          button.textContent=button.dataset.hasTargets==='false'?'No active order systems':'Sync Order Activity';
         }
       }
     });
