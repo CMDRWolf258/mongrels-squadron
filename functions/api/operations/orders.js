@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
 const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
@@ -48,12 +49,14 @@ export async function onRequestPut({ request, env }) {
     );
   }
 
-  const orders = normalizeOrders(body, {
-    configured: true,
-    updatedAt: new Date().toISOString(),
-    updatedBy: auth.session.displayName || auth.session.username || 'Mongrel Officer',
-    cycleId: cleanText(body?.cycleId, '', 100) || crypto.randomUUID(),
-  });
+  const now = new Date().toISOString();
+  const actor = auth.session.displayName || auth.session.username || 'Mongrel Officer';
+  const previous = await readOrders(env);
+  const publishMode = cleanText(body?.publishMode, '', 40).toLowerCase();
+
+  const orders = publishMode === 'reconcile'
+    ? reconcileOrders(previous, body, now, actor)
+    : replaceOrders(previous, body, now, actor);
 
   await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
 
@@ -191,6 +194,7 @@ function emptyOrders() {
     updatedAt: null,
     updatedBy: null,
     cycleId: null,
+    cycleStartedAt: null,
     orders: [],
     officerNote: null,
   };
@@ -207,6 +211,7 @@ function normalizeOrders(value, overrides = {}) {
     updatedAt: overrides.updatedAt ?? (cleanText(source.updatedAt, '', 80) || null),
     updatedBy: overrides.updatedBy ?? (cleanText(source.updatedBy, '', 120) || null),
     cycleId: overrides.cycleId ?? (cleanText(source.cycleId, '', 100) || null),
+    cycleStartedAt: overrides.cycleStartedAt ?? (cleanText(source.cycleStartedAt, '', 80) || null),
     orders: list.map((order, index) => normalizeOrder(order, index)),
     officerNote: cleanText(source.officerNote, '', 1200) || null,
   };
@@ -214,7 +219,7 @@ function normalizeOrders(value, overrides = {}) {
 
 function normalizeOrder(order, index) {
   const source = order && typeof order === 'object' ? order : {};
-  return {
+  const normalized = {
     id: cleanText(source.id, `order-${index + 1}`, 80),
     system: cleanText(source.system, '', 120),
     faction: cleanText(source.faction, '', 120),
@@ -225,7 +230,99 @@ function normalizeOrder(order, index) {
     detail: cleanText(source.detail, '', 900),
     status: cleanText(source.status, '', 60),
     reporting: normalizeReporting(source.reporting, source.task, source.detail),
+    logicalKey:cleanText(source.logicalKey, '', 520),
+    revision:Math.max(1, Math.floor(Number(source.revision)||1)),
+    createdAt:cleanText(source.createdAt, '', 80) || null,
+    revisedAt:cleanText(source.revisedAt, '', 80) || null,
   };
+  normalized.logicalKey = normalized.logicalKey || deriveLogicalOrderKey(normalized);
+  return normalized;
+}
+
+function replaceOrders(previous, body, now, actor) {
+  const requestedCycle = cleanText(body?.cycleId, '', 100);
+  const cycleId = requestedCycle || crypto.randomUUID();
+  const sameCycle = Boolean(previous?.cycleId && requestedCycle && previous.cycleId === requestedCycle);
+  const normalized = normalizeOrders(body, {
+    configured:true,
+    updatedAt:now,
+    updatedBy:actor,
+    cycleId,
+    cycleStartedAt:sameCycle
+      ? (previous.cycleStartedAt || previous.updatedAt || now)
+      : now,
+  });
+  const previousOrders = sameCycle && Array.isArray(previous?.orders) ? previous.orders : [];
+  normalized.orders = normalized.orders.map((order,index) => reconcileOneOrder(order, previousOrders, now, index));
+  return normalized;
+}
+
+function reconcileOrders(previous, body, now, actor) {
+  const current = previous?.configured ? normalizeOrders(previous) : emptyOrders();
+  const cycleId = current.cycleId || cleanText(body?.cycleId, '', 100) || crypto.randomUUID();
+  const cycleStartedAt = current.cycleStartedAt || current.updatedAt || now;
+  const incomingDoc = normalizeOrders(body, {
+    configured:true,
+    updatedAt:now,
+    updatedBy:actor,
+    cycleId,
+    cycleStartedAt,
+  });
+  const incomingSystems = new Set(
+    (Array.isArray(body?.reconcileSystems) ? body.reconcileSystems : incomingDoc.orders.map(order => order.system))
+      .map(norm)
+      .filter(Boolean)
+  );
+  const currentOrders = Array.isArray(current.orders) ? current.orders : [];
+  const kept = currentOrders.filter(order => !incomingSystems.has(norm(order.system)));
+  const reconciled = incomingDoc.orders.map((order,index) => reconcileOneOrder(order, currentOrders, now, index));
+  const orders = [...kept, ...reconciled].slice(0,24);
+
+  return {
+    ...incomingDoc,
+    cycleId,
+    cycleStartedAt,
+    orders,
+  };
+}
+
+function reconcileOneOrder(order, previousOrders, now, index) {
+  const logicalKey = deriveLogicalOrderKey(order);
+  const prior = previousOrders.find(item =>
+    cleanText(item?.logicalKey, '', 520) === logicalKey
+    || deriveLogicalOrderKey(item) === logicalKey
+  );
+  if (!prior) {
+    return {
+      ...order,
+      id:crypto.randomUUID(),
+      logicalKey,
+      revision:1,
+      createdAt:now,
+      revisedAt:now,
+    };
+  }
+  const before = orderRevisionFingerprint(prior);
+  const after = orderRevisionFingerprint({...order,logicalKey});
+  const changed = before !== after;
+  return {
+    ...order,
+    id:cleanText(prior.id, '', 80) || crypto.randomUUID(),
+    logicalKey,
+    revision:Math.max(1,Math.floor(Number(prior.revision)||1)) + (changed ? 1 : 0),
+    createdAt:cleanText(prior.createdAt, '', 80) || currentOrderStart(prior, now),
+    revisedAt:changed ? now : (cleanText(prior.revisedAt, '', 80) || now),
+  };
+}
+
+function currentOrderStart(order, fallback) {
+  return cleanText(order?.createdAt, '', 80)
+    || cleanText(order?.revisedAt, '', 80)
+    || fallback;
+}
+
+function norm(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
 }
 
 function normalizeReporting(value, task, detail) {
