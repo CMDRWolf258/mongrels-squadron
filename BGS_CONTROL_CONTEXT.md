@@ -1032,6 +1032,19 @@ Activation principle remains: use this comparison surface to validate real-world
 - Automatic reward debt creation remains OFF. Colonization payouts are not connected to the ledger yet.
 - Sample logic test passed: a 6,000 t MarketID-specific contribution against a 5,000 t / 100M block rule produced 1 completed block and 100M preview; a Titanium-only version correctly counted only 4,784 t from the same mixed-material contribution.
 
+## Construction site auto-discovery — 2026-09-21
+
+- Specific-build Colonization Jobs no longer expect Wolf to manually know a construction MarketID.
+- Frontier parser now captures `ColonisationConstructionDepot` while docked in an active verification system, retaining:
+  - system + station context,
+  - MarketID,
+  - construction progress / complete / failed flags,
+  - per-commodity required/provided/payment values.
+- Repeated depot events are deduplicated by system address + MarketID so the stored Frontier evidence keeps the latest observation instead of filling the event store every ~15 seconds.
+- BGS Control `Observed Construction MarketIDs` now acts as a site picker: it presents station/build context and progress, while the internal MarketID is auto-filled into the specific-build job form via `Use This Site`.
+- Intended workflow: put the system in Frontier verification scope, dock at the construction depot, Sync Activity, then choose the discovered site. A contribution is no longer required just to discover its MarketID.
+- The specific-build form keeps the internal site ID read-only; users should not need to look up or type it manually.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
