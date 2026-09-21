@@ -1,5 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
+import {
+  markOrderPublicationApplied,
+  markOrderPublicationFailed,
+  prepareOrderPublication,
+} from '../../../lib/order-history.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
 const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
@@ -65,7 +70,29 @@ export async function onRequestPut({ request, env }) {
     );
   }
 
-  await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
+  const history=await prepareOrderPublication(env,{
+    before:previous,
+    after:orders,
+    actor,
+    action:publishMode === 'reconcile' ? 'reconcile' : 'replace',
+    reconcileSystems:Array.isArray(body?.reconcileSystems)?body.reconcileSystems:[],
+  });
+
+  try {
+    await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
+  } catch (error) {
+    try { await markOrderPublicationFailed(env,history,error); }
+    catch (historyError) { console.error('Could not mark failed Daily Order publication history',historyError); }
+    throw error;
+  }
+
+  let historyState='prepared';
+  try {
+    await markOrderPublicationApplied(env,history);
+    historyState='applied';
+  } catch (error) {
+    console.error('Daily Orders published but history finalization remained prepared',error);
+  }
 
   return json(
     {
@@ -75,6 +102,8 @@ export async function onRequestPut({ request, env }) {
         access: auth.session.access,
       },
       canManage: true,
+      historyPublicationId:history.record.publicationId,
+      historyState,
       ...orders,
     },
     { headers: privateHeaders() },
@@ -95,7 +124,32 @@ export async function onRequestDelete({ request, env }) {
     );
   }
 
-  await env.DAILY_ORDERS.delete(KV_KEY);
+  const previous=await readOrders(env);
+  const actor=auth.session.displayName || auth.session.username || 'Mongrel Officer';
+  const empty=emptyOrders();
+  const history=await prepareOrderPublication(env,{
+    before:previous,
+    after:empty,
+    actor,
+    action:'delete',
+    reconcileSystems:[...new Set((previous.orders||[]).map(order=>order.system).filter(Boolean))],
+  });
+
+  try {
+    await env.DAILY_ORDERS.delete(KV_KEY);
+  } catch (error) {
+    try { await markOrderPublicationFailed(env,history,error); }
+    catch (historyError) { console.error('Could not mark failed Daily Order deletion history',historyError); }
+    throw error;
+  }
+
+  let historyState='prepared';
+  try {
+    await markOrderPublicationApplied(env,history);
+    historyState='applied';
+  } catch (error) {
+    console.error('Daily Orders deleted but history finalization remained prepared',error);
+  }
 
   return json(
     {
@@ -105,7 +159,9 @@ export async function onRequestDelete({ request, env }) {
         access: auth.session.access,
       },
       canManage: true,
-      ...emptyOrders(),
+      historyPublicationId:history.record.publicationId,
+      historyState,
+      ...empty,
     },
     { headers: privateHeaders() },
   );
