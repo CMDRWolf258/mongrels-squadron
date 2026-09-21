@@ -175,6 +175,13 @@
         label.textContent=same?`Paired: ${claim.pairedCommander}`:`Registry: ${claim.pairedCommander}`;
         label.className=same?'is-ok':'is-warning';
         paired.append(label);
+        if(claim.claimed&&!same){
+          const use=document.createElement('button');
+          use.type='button';use.className='btn btn-secondary btn-compact';
+          use.dataset.architectUseClaim=claim.eventId||'';
+          use.textContent='Use Claimant';
+          paired.append(use);
+        }
       }else if(claim.claimed){
         const use=document.createElement('button');
         use.type='button';use.className='btn btn-secondary btn-compact';
