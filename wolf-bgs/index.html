@@ -116,7 +116,7 @@
           <summary><span><b>Colonization Jobs · Test Console</b><small>System or build-specific cargo jobs · Frontier verification · reward preview only</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
             <div class="wolf-colonization-head">
-              <p>Define squad hauling jobs independently from Daily Orders. Frontier <b>ColonisationContribution</b> events can verify exact delivered tonnage and construction MarketID. This console does not create reward debt.</p>
+              <p>Define squad hauling jobs independently from Daily Orders. Frontier construction-depot events discover the build automatically, while <b>ColonisationContribution</b> verifies exact delivered tonnage. This console does not create reward debt.</p>
               <button type="button" class="btn btn-secondary btn-compact" data-colonization-refresh>Refresh Jobs</button>
             </div>
 
@@ -140,7 +140,7 @@
                 <label><span>Scope</span><select data-colonization-field="scope"><option value="system" selected>Any construction in system</option><option value="market">Specific build / MarketID</option></select></label>
                 <div class="wolf-colonization-market-fields" data-colonization-market-fields hidden>
                   <label><span>Build name</span><input type="text" maxlength="140" data-colonization-field="buildName" placeholder="Display name"></label>
-                  <label><span>Construction MarketID</span><input type="text" maxlength="40" inputmode="numeric" data-colonization-field="marketId" placeholder="e.g. 3962369026"></label>
+                  <label><span>Construction site ID</span><input type="text" maxlength="40" data-colonization-field="marketId" placeholder="Choose a discovered site below" readonly></label>
                 </div>
                 <label><span>Commodity filter</span><input type="text" maxlength="100" data-colonization-field="commodity" placeholder="Optional · e.g. Titanium"></label>
                 <label><span>Squad target</span><div class="input-unit"><input type="number" min="1" max="100000000" step="1" value="10000" data-colonization-field="targetTons" required><em>t</em></div></label>
@@ -161,7 +161,7 @@
 
             <div class="wolf-colonization-observed-section">
               <h3>Observed Construction MarketIDs</h3>
-              <p>After Frontier Scout captures a contribution, its system and MarketID appear here. Use that MarketID to bind a job to one specific build.</p>
+              <p>Dock at a construction depot and Sync Activity. Scout can learn the site's internal MarketID from the depot journal event before you deliver anything. Choose the discovered site here; you do not need to look up the ID yourself.</p>
               <div class="wolf-colonization-observed" data-colonization-observed>
                 <div class="wolf-colonization-empty">No contribution events loaded yet.</div>
               </div>
