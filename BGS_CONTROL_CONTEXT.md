@@ -984,6 +984,13 @@ Activation principle remains: use this comparison surface to validate real-world
 - Rapid open/close before the delayed load begins cancels the unnecessary load.
 - This change is performance-only and does not alter panel appearance or reward behavior.
 
+## Verification Review freshness correction — 2026-09-21
+
+- The first lazy-load implementation kept Verification Review cached for the entire page session, which could hide manual Daily Order reports submitted after the first validation load.
+- Verification Review now uses a 5-second freshness window. Opening it remains instantaneous; stale validation data refreshes only after the panel paints open.
+- Returning focus/visibility to BGS Control refreshes an already-open stale Verification Review.
+- Manual report API shape was verified as compatible with the comparison join (`ownerId + orderId`, `score`); this correction is about UI freshness rather than report storage.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
