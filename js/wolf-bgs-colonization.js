@@ -177,14 +177,24 @@
     if(!rows.length){
       const empty=document.createElement('div');
       empty.className='wolf-colonization-empty';
-      empty.textContent='No ColonisationContribution events have been captured yet. After a qualifying delivery, sync Frontier Scout and refresh this panel.';
+      empty.textContent='No construction sites have been discovered yet. Dock at a construction depot, Sync Activity, then refresh this panel.';
       observed.append(empty);
       return;
     }
     rows.forEach(site=>{
       const row=document.createElement('div');
       row.className='wolf-colonization-observed-row';
-      row.title=site.marketId?`Internal MarketID ${site.marketId}`:'';
+      const selectedSystem=String(site.system||'').trim().toLowerCase();
+      const selectedMarketId=String(site.marketId||'');
+      const sameSystemJobs=jobsCache.filter(job=>
+        job.status==='active'
+        && job.scope==='market'
+        && String(job.system||'').trim().toLowerCase()===selectedSystem
+      );
+      const pendingJobs=sameSystemJobs.filter(job=>!job.marketId);
+      const boundJobs=sameSystemJobs.filter(job=>job.marketId);
+      const currentJobs=boundJobs.filter(job=>String(job.marketId||'')===selectedMarketId);
+
       const main=document.createElement('div');
       const strong=document.createElement('strong');
       strong.textContent=site.station||'Construction depot';
@@ -195,14 +205,35 @@
       const delivered=Number(site.totalTons)>0?` · ${fmt(site.totalTons)} t contributions observed`:'';
       small.textContent=`${site.system||'Unknown system'}${progress}${delivered} · last seen ${date(site.lastObservedAt||site.lastContributionAt)}`;
       main.append(strong,small);
+
       const commanders=document.createElement('span');
       commanders.textContent=(site.commanders||[]).join(', ')||'—';
+
       const use=document.createElement('button');
-      use.type='button';use.className='btn btn-secondary btn-compact';
+      use.type='button';
+      use.className='btn btn-secondary btn-compact';
       use.dataset.useMarketId=site.marketId||'';
       use.dataset.useSystem=site.system||'';
       use.dataset.useBuildName=site.station||'';
-      use.textContent='Use This Site';
+
+      if(currentJobs.length){
+        use.textContent='Current Site';
+        use.disabled=true;
+        use.classList.add('wolf-colonization-site-current');
+        use.title=currentJobs.length===1
+          ? `Currently linked to ${currentJobs[0].title||currentJobs[0].buildName||'this job'}`
+          : `Currently linked to ${currentJobs.length} active jobs`;
+      }else if(pendingJobs.length===1){
+        use.textContent='Link This Site';
+        use.title=`Link to ${pendingJobs[0].title||pendingJobs[0].buildName||'awaiting job'}`;
+      }else if(!pendingJobs.length&&boundJobs.length===1){
+        use.textContent='Switch To This Site';
+        use.dataset.switchJobId=boundJobs[0].id||'';
+        use.title=`Switch ${boundJobs[0].title||boundJobs[0].buildName||'the active job'} to this site`;
+      }else{
+        use.textContent='Use This Site';
+      }
+
       row.append(main,commanders,use);
       observed.append(row);
     });
@@ -302,7 +333,27 @@
     const selectedSystem=button.dataset.useSystem||'';
     const selectedMarketId=button.dataset.useMarketId||'';
     const selectedBuildName=button.dataset.useBuildName||'';
+    const switchJobId=button.dataset.switchJobId||'';
     const pending=jobsCache.filter(job=>job.status==='active'&&job.scope==='market'&&!job.marketId&&String(job.system||'').trim().toLowerCase()===selectedSystem.trim().toLowerCase());
+
+    if(switchJobId){
+      const job=jobsCache.find(item=>String(item.id||'')===String(switchJobId));
+      if(!job)return;
+      if(!window.confirm(`Switch ${job.title||job.buildName||'this Colonization Job'} to ${selectedBuildName||'this construction site'}? Its verification preview will be recalculated against the new site.`))return;
+      button.disabled=true;
+      setMessage(`Switching ${job.title||job.buildName||'Colonization Job'} to the selected construction site…`,'working');
+      try{
+        await mutate({action:'update',job:{id:job.id,marketId:selectedMarketId}});
+        loadedAt=0;
+        await load(true);
+        setMessage('Construction site changed. Verified tonnage and reward preview were recalculated.','success');
+      }catch(error){
+        console.error(error);
+        setMessage('Could not switch the construction site.','error');
+        button.disabled=false;
+      }
+      return;
+    }
 
     if(pending.length===1){
       button.disabled=true;
