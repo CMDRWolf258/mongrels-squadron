@@ -60,5 +60,6 @@
 .wolf-colonization-observed-row strong{font-size:.7rem}
 .wolf-colonization-observed-row small{margin-top:.12rem;color:var(--muted);font-size:.58rem}
 .wolf-colonization-observed-row>span{color:#9eb2b8;font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wolf-colonization-site-current,.wolf-colonization-site-current:disabled{border-color:rgba(93,206,151,.3);background:rgba(58,125,92,.08);color:#b9e7cd;opacity:1;cursor:default}
 @media(max-width:1050px){.wolf-colonization-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wolf-colonization-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.wolf-colonization-head,.wolf-colonization-form-actions,.wolf-colonization-job-head{align-items:stretch;flex-direction:column}.wolf-colonization-form-grid,.wolf-colonization-stats{grid-template-columns:1fr}.wolf-colonization-wide{grid-column:auto}.wolf-colonization-job-chips{justify-content:flex-start}.wolf-colonization-reward-line{grid-template-columns:1fr}.wolf-colonization-actions{justify-content:stretch;flex-wrap:wrap}.wolf-colonization-actions .btn{flex:1}.wolf-colonization-observed-row{grid-template-columns:1fr}.wolf-colonization-observed-row>span{white-space:normal}.wolf-colonization-form-actions .btn{width:100%}}
