@@ -131,58 +131,25 @@
     return 'MANUAL';
   }
 
-  function orderKindLabel(task){
-    const type=task?.reporting?.type||'';
-    if(type==='inf')return 'MISSION INF';
-    if(type==='bounties')return 'BOUNTIES';
-    if(type==='trade')return 'TRADE PROFIT';
-    if(type==='exploration')return 'EXPLORATION';
-    if(type==='cz')return 'CONFLICT ZONE';
-    return clean(task?.kind||'TASK').replaceAll('-',' ').toUpperCase();
-  }
-
-  function orderTargetLabel(task){
-    const target=num(task?.reporting?.target);
-    if(target===null)return '';
-    const type=task?.reporting?.type||'';
-    if(type==='inf')return target+' INF';
-    if(type==='bounties'||type==='trade'||type==='exploration')return target+'M Cr';
-    if(type==='cz')return target+' CZ pts';
-    return String(target);
-  }
-
   function queuedTaskMarkup(task,index){
-    const target=orderTargetLabel(task);
-    const meta=[
-      orderKindLabel(task),
-      task.faction||'Squad-wide',
-      target,
-      task.status&&task.status!=='Active'?task.status:'',
-    ].filter(Boolean);
     return '<div class="wolf-publish-order-row">'
       +'<div class="wolf-publish-order-index">'+String(index+1).padStart(2,'0')+'</div>'
-      +'<div class="wolf-publish-order-copy"><span>'+meta.map(esc).join(' · ')+'</span>'
       +'<strong>'+esc(task.task||'Operational task')+'</strong>'
-      +(task.detail?'<small>'+esc(task.detail)+'</small>':'')
-      +'</div></div>';
+      +'</div>';
   }
 
   function queuedSystemMarkup(item){
     const expanded=expandedSystems.has(item.system);
-    const warningText=item.warnings.length
-      ? '<div class="wolf-publish-warning-list"><strong>PREVIEW WARNINGS</strong><ul>'+item.warnings.map(warning=>'<li>'+esc(warning)+'</li>').join('')+'</ul></div>'
-      : '';
     return '<article class="wolf-publish-queued-system'+(expanded?' is-expanded':'')+'">'
-      +'<div class="wolf-publish-queued-head"><div><strong>'+esc(item.system)+'</strong>'
+      +'<div class="wolf-publish-queued-head"><div>'
+      +'<button type="button" class="wolf-publish-system-link" data-open-queued-system="'+esc(item.system)+'" title="Open the full '+esc(item.system)+' system card">'+esc(item.system)+'</button>'
       +'<span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '
       +item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)
       +(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div>'
       +'<div class="wolf-publish-queued-actions"><button type="button" class="wolf-publish-review-toggle" data-toggle-queued-system="'+esc(item.system)+'" aria-expanded="'+String(expanded)+'">'+(expanded?'HIDE ORDERS':'VIEW ORDERS')+'</button>'
       +'<button type="button" class="wolf-publish-remove" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out" aria-label="Remove '+esc(item.system)+' from publish queue">×</button></div></div>'
-      +'<div class="wolf-publish-order-detail" data-queued-detail="'+esc(item.system)+'"'+(expanded?'':' hidden')+'>'
-      +'<div class="wolf-publish-snapshot-label"><span>QUEUED SNAPSHOT</span><small>These are the exact orders currently waiting to publish.</small></div>'
+      +'<div class="wolf-publish-order-detail"'+(expanded?'':' hidden')+'>'
       +'<div class="wolf-publish-order-list">'+item.tasks.map(queuedTaskMarkup).join('')+'</div>'
-      +warningText
       +'</div></article>';
   }
 
@@ -264,6 +231,11 @@
     systems.parentNode.insertBefore(section,systems);
     panel=section;
     panel.addEventListener('click',event=>{
+      const openSystem=event.target.closest('[data-open-queued-system]');
+      if(openSystem){
+        window.dispatchEvent(new CustomEvent('wolf-bgs-open-system',{detail:{system:openSystem.dataset.openQueuedSystem||''}}));
+        return;
+      }
       const toggle=event.target.closest('[data-toggle-queued-system]');
       if(toggle){
         const system=toggle.dataset.toggleQueuedSystem||'';
