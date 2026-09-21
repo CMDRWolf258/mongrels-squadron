@@ -270,25 +270,54 @@
     return 'MANUAL';
   }
 
-  function queuedTaskMarkup(task,index){
-    return '<div class="wolf-publish-order-row">'
+  function queuedTaskMarkup(row,index){
+    const status=row?.status||'plain';
+    const order=row?.after||row?.before||{};
+    const labels={new:'NEW',changed:'CHANGED',remove:'REMOVE',replaced:'REPLACED',unchanged:'UNCHANGED'};
+    const chip=labels[status]
+      ? '<span class="wolf-queue-diff-status is-'+status+'">'+labels[status]+'</span>'
+      : '';
+    const delta=targetDelta(row);
+    return '<div class="wolf-publish-order-row is-'+esc(status)+'">'
       +'<div class="wolf-publish-order-index">'+String(index+1).padStart(2,'0')+'</div>'
-      +'<strong>'+esc(task.task||'Operational task')+'</strong>'
-      +'</div>';
+      +'<div class="wolf-publish-order-line">'+chip
+      +'<strong>'+esc(order.task||'Operational task')+'</strong>'
+      +(delta?'<em>'+esc(delta)+'</em>':'')
+      +'</div></div>';
   }
 
   function queuedSystemMarkup(item){
     const expanded=expandedSystems.has(item.system);
-    return '<article class="wolf-publish-queued-system'+(expanded?' is-expanded':'')+'">'
+    const diff=diffForItem(item);
+    const reviewed=isReviewed(item,diff);
+    const diffChip=diff.material
+      ? '<b class="wolf-queue-diff-chip'+(reviewed?' is-reviewed':' is-unreviewed')+'">'+(reviewed?'PLAN CHANGE REVIEWED':'PLAN CHANGED')+'</b>'
+      : '';
+    const removalChip=Number(diff.counts?.remove||0)>0
+      ? '<b class="wolf-queue-diff-chip is-remove">REMOVES ORDERS</b>'
+      : '';
+    const freshChip=item.queueRevisionChanged&&diff.material
+      ? '<b class="wolf-queue-diff-chip is-fresh">FRESH DATA</b>'
+      : '';
+    const rows=diff.rows?.length?diff.rows:(item.tasks||[]).map(task=>({status:'plain',after:task,before:null}));
+    const classes=[
+      'wolf-publish-queued-system',
+      expanded?'is-expanded':'',
+      diff.material?'has-plan-change':'',
+      diff.material&&!reviewed?'has-unreviewed-change':'',
+    ].filter(Boolean).join(' ');
+    return '<article class="'+classes+'">'
       +'<div class="wolf-publish-queued-head"><div>'
       +'<button type="button" class="wolf-publish-system-link" data-open-queued-system="'+esc(item.system)+'" title="Open the full '+esc(item.system)+' system card">'+esc(item.system)+'</button>'
       +'<span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '
       +item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)
-      +(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div>'
+      +(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')
+      +(diffChip?' · '+diffChip:'')+(removalChip?' · '+removalChip:'')+(freshChip?' · '+freshChip:'')
+      +'</span></div>'
       +'<div class="wolf-publish-queued-actions"><button type="button" class="wolf-publish-review-toggle" data-toggle-queued-system="'+esc(item.system)+'" aria-expanded="'+String(expanded)+'">'+(expanded?'HIDE ORDERS':'VIEW ORDERS')+'</button>'
       +'<button type="button" class="wolf-publish-remove" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out" aria-label="Remove '+esc(item.system)+' from publish queue">×</button></div></div>'
       +'<div class="wolf-publish-order-detail"'+(expanded?'':' hidden')+'>'
-      +'<div class="wolf-publish-order-list">'+item.tasks.map(queuedTaskMarkup).join('')+'</div>'
+      +'<div class="wolf-publish-order-list">'+rows.map(queuedTaskMarkup).join('')+'</div>'
       +'</div></article>';
   }
 
