@@ -24,7 +24,7 @@
     if(record.state==='failed')return['FAILED','is-failed'];
     return['PREPARED','is-prepared'];
   }
-  function actionText(action){return action==='reconcile'?'RECONCILE':action==='delete'?'DELETE':'REPLACE';}
+  function actionText(action){return action==='baseline'?'BASELINE':action==='reconcile'?'RECONCILE':action==='delete'?'DELETE':'REPLACE';}
   function changeRow(row){
     const order=row.after||row.before||{};
     let delta='';
@@ -53,6 +53,7 @@
     if(counts.unchanged)parts.push(counts.unchanged+' unchanged');
     const changeText=parts.join(' · ')||'No material order changes';
     let warning='';
+    if(record.legacyBaseline)warning='<div class="wolf-history-warning">LEGACY BASELINE · This snapshot anchors the already-live Daily Orders from this point forward. Earlier work remains visible to the Reward Engine but cannot be paid from guessed historical provenance.</div>';
     if(record.state==='prepared')warning='<div class="wolf-history-warning">Write-ahead record exists but finalization is still marked PREPARED. The full before/after payload is preserved for recovery.</div>';
     if(record.state==='failed')warning='<div class="wolf-history-warning is-failed">Publication failed after history preparation. '+esc(record.failure||'No failure detail recorded.')+'</div>';
     return '<details class="wolf-history-record '+stateClass+'" '+(index===0?'open':'')+'><summary><div><span>'+esc(actionText(record.action))+'</span><strong>'+esc(date(eventAt))+'</strong><small>'+esc(record.actor||'Mongrel Officer')+' · '+esc(changeText)+'</small></div><div class="wolf-history-record-state"><b>'+esc(stateLabel)+'</b><small>'+afterOrders.length+' active order'+(afterOrders.length===1?'':'s')+' after</small></div></summary><div class="wolf-history-record-body"><div class="wolf-history-meta"><span>CYCLE <b>'+esc(short(record.cycleId))+'</b></span><span>PUBLICATION <b>'+esc(short(record.publicationId))+'</b></span><span>SCOPE <b>'+esc(systems)+'</b></span><span>BEFORE <b title="'+esc(record.beforeHash||'')+'">'+esc(short(record.beforeHash))+'</b></span><span>AFTER <b title="'+esc(record.afterHash||'')+'">'+esc(short(record.afterHash))+'</b></span></div>'+warning+'<section><h4>Material Changes</h4><div class="wolf-history-changes">'+(materialRows.length?materialRows.map(changeRow).join(''):'<div class="wolf-history-empty">No material order changes in this publication.</div>')+'</div></section><section><h4>Resulting Order Snapshot</h4><div class="wolf-history-active">'+(afterOrders.length?afterOrders.map(activeOrderRow).join(''):'<div class="wolf-history-empty">No active orders remained after this publication.</div>')+'</div></section></div></details>';
