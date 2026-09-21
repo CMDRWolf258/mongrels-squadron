@@ -170,6 +170,11 @@
         <div class="frontier-scout-kpi"><span>Exploration Sold</span><strong data-frontier-exploration>0 Cr</strong></div>
       </div>
       <div class="frontier-scout-events" data-frontier-events></div>
+      <details class="member-scout-note" data-frontier-diagnostics hidden>
+        <summary><strong>Admin diagnostic journal trace</strong></summary>
+        <p>This temporary test view shows timestamped event names and a small whitelist of safe fields from 10-16 so we can identify the HUD reputation notification without retaining the full journal.</p>
+        <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
+      </details>
       <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for the configured Scout system. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
       <details class="member-scout-note"><summary><strong>Optional Live Scout (EDMC)</strong></summary><p>EDMC Scout is still available for immediate faction-board reporting and future live telemetry. It is no longer required for the normal Frontier-based reward-verification path.</p><div class="member-scout-actions"><a class="btn btn-ghost" href="/downloads/mongrel-scout.zip">Download Live Scout</a></div></details>
     `;
@@ -247,6 +252,30 @@
       });
     }
   }
+  function renderFrontierDiagnostics(items) {
+    const details=document.querySelector('[data-frontier-diagnostics]');
+    const container=document.querySelector('[data-frontier-diagnostic-events]');
+    if(!details||!container)return;
+    const rows=Array.isArray(items)?items:[];
+    details.hidden=!rows.length;
+    container.replaceChildren();
+    rows.slice(0,120).forEach(item=>{
+      const row=document.createElement('div');row.className='frontier-scout-event';
+      const strong=document.createElement('strong');strong.textContent=`${frontierDate(item.timestamp)} · ${item.event||'Unknown event'}`;
+      const safe={...item};delete safe.timestamp;delete safe.event;delete safe.system;delete safe.station;
+      const small=document.createElement('small');
+      const parts=[];
+      if(item.station)parts.push(item.station);
+      for(const [key,value] of Object.entries(safe)){
+        if(key==='keys')continue;
+        parts.push(`${key}: ${String(value)}`);
+      }
+      if(Array.isArray(item.keys)&&item.keys.length)parts.push(`keys: ${item.keys.join(', ')}`);
+      small.textContent=parts.join(' · ');
+      row.append(strong,small);container.appendChild(row);
+    });
+  }
+
   async function loadFrontierScout() {
     installFrontierScoutUi();
     try {
@@ -266,6 +295,7 @@
         const response=await fetch('/api/frontier/sync',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','X-Mongrels-Request':'mongrel-frontier'}});
         const payload=await response.json().catch(()=>({}));
         if(!response.ok||!payload.ok)throw new Error(payload.error||`Sync failed (${response.status})`);
+        renderFrontierDiagnostics(payload.diagnosticEvents);
         const refreshed=await fetchJson('/api/frontier/status');
         if(refreshed.response.ok)renderFrontierScout(refreshed.payload);
         if(result)result.textContent=payload.partial?'Frontier returned a partial journal. Your verified events were saved; sync again later after the session completes.':`Sync complete. ${Number(payload.newEvents||0)} qualifying 10-16 journal events were found in Frontier's current response.`;
