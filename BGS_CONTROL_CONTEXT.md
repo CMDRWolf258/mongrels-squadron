@@ -1144,6 +1144,23 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Colonization Reward Engine DRY RUN integration — 2026-09-21
+
+Colonization rewards now participate in the same unified Reward Engine preview as Daily Orders while **all ledger writes remain OFF**.
+
+- Each Frontier `ColonisationContribution` is evaluated against the Colonization Job revision that was effective at the event timestamp, rather than blindly using today's job definition.
+- The first discovery/binding of a specific construction site can identify cargo delivered after the job started but before its MarketID was known. That later binding is used only to identify the site; the contribution still keeps the reward rules from the event-time job revision.
+- A later real site switch is not backdated across the prior bound period.
+- Overlap arbitration is re-run against the effective historical job definitions for each event, preserving specific-build > system-wide, commodity-specific > unrestricted, and equal-specificity BLOCKED behavior.
+- Reward provenance records both archived rule-revision origins and construction-site binding provenance.
+- Pre-baseline legacy contributions are valued for visibility but remain BLOCKED because the exact pre-baseline job definition cannot be proven.
+- Missing job/binding provenance and equal-specificity overlap are BLOCKED rather than guessed.
+- If verified cargo spans genuinely different payout rules (block size, block reward, or personal cap), the obligation is BLOCKED pending an explicit rule-transition policy instead of silently mixing incompatible rules.
+- Ready Colonization obligations use deterministic IDs and future ledger provenance fields keyed to member + job + Frontier evidence + frozen reward rules.
+- Existing Colonization ledger credit for the same member/job will produce incremental delta or DUPLICATE SUPPRESSED behavior once live issuance is eventually enabled.
+- The Reward Engine panel now identifies **DAILY ORDERS + COLONIZATION**, exposes both order and colony archive counts, and labels Colonization blockers distinctly.
+- Automatic Colonization payout issuance remains OFF; this stage is observation/proof only.
+
 ## Colonization overlap arbitration — 2026-09-21
 
 - Added deterministic arbitration for `ColonisationContribution` events before Colonization Job reward/progress calculation.
