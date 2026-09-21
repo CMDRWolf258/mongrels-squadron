@@ -293,7 +293,7 @@
     const diffChip=diff.material
       ? '<b class="wolf-queue-diff-chip'+(reviewed?' is-reviewed':' is-unreviewed')+'">'+(reviewed?'PLAN CHANGE REVIEWED':'PLAN CHANGED')+'</b>'
       : '';
-    const removalChip=Number(diff.counts?.remove||0)>0
+    const removalChip=(Number(diff.counts?.remove||0)+Number(diff.counts?.replaced||0))>0
       ? '<b class="wolf-queue-diff-chip is-remove">REMOVES ORDERS</b>'
       : '';
     const freshChip=item.queueRevisionChanged&&diff.material
