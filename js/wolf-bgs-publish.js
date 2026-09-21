@@ -263,6 +263,7 @@
     if(!hasPreview){
       if(existing?.queueSource==='selector'&&!selectorFlag){queue.delete(system);return true;}
       if(existing?.queueSource==='retreat'&&!retreatFlag&&!selectorFlag){queue.delete(system);return true;}
+      if(existing?.queueSource==='removal'&&!selectorFlag&&!retreatFlag){queue.delete(system);return true;}
       return false;
     }
 
@@ -438,7 +439,7 @@
       publishedLoaded=true;
       publishedContextLoadedAt=Date.now();
       queueRenderSignature='';
-      syncPanel();
+      syncAll();
     }catch(error){
       console.error('Could not load published Daily Orders comparison',error);
       publishedLoaded=false;
@@ -765,7 +766,7 @@
         scheduleOperationalEvaluation({forceSystem:system});
       }else{
         const item=queue.get(system);
-        if(item?.queueSource==='selector')queue.delete(system);
+        if(['selector','removal'].includes(item?.queueSource))queue.delete(system);
         suppressedSignatures.delete(system);
         setTimeout(syncAll,0);
       }
