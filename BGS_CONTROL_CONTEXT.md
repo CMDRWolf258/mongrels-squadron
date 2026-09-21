@@ -947,6 +947,13 @@ Activation principle remains: use this comparison surface to validate real-world
 - The review explicitly labels the content **QUEUED SNAPSHOT** because these are the exact task objects waiting behind Publish Daily Orders, not a newly regenerated preview.
 - Removing a queued system still removes the entire system candidate; individual-order editing/removal inside the queue is not enabled yet.
 
+## Publish Queue compact review refinement — 2026-09-20
+
+- Expanded queued systems now show only one larger instruction line per queued order; metadata/detail duplication was removed from the queue.
+- The queue header still carries system, queue source, task count, priority and warning count for quick scanning.
+- The queued system name is now clickable. It focuses that exact system in the normal System Control Deck, opens its full card and scrolls to it, even if filters/pagination previously hid it.
+- Full order rationale, faction-board context and warnings remain on the normal system card rather than being duplicated in Publish Queue.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
