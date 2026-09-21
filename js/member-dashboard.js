@@ -254,7 +254,12 @@
     set('[data-frontier-bounties]',frontierMoney(s.bounties));
     set('[data-frontier-bonds]',frontierMoney(s.combatBondsRedeemed));
     set('[data-frontier-cz]',frontierMoney(s.czBondAwards));
-    set('[data-frontier-trade]',Number(s.tradeProfitUnknownSales||0) > 0 ? 'Re-sync required' : frontierMoney(s.tradeProfit));
+    const tradeText=Number(s.tradeProfitLegacySales||0)>0
+      ? (Number(s.tradeProfit||0)>0 ? `${frontierMoney(s.tradeProfit)} + re-sync` : 'Re-sync required')
+      : Number(s.tradeProfitUnavailableSales||0)>0
+        ? (Number(s.tradeProfit||0)>0 ? `${frontierMoney(s.tradeProfit)} + unknown` : 'Cost basis unavailable')
+        : frontierMoney(s.tradeProfit);
+    set('[data-frontier-trade]',tradeText);
     set('[data-frontier-exploration]',frontierMoney(s.explorationSales));
     if(events){
       events.replaceChildren();
