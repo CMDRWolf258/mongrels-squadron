@@ -177,7 +177,7 @@
       <p>Primary reward verification uses Frontier's authenticated journal feed. Live EDMC Scout remains available as an optional real-time telemetry mode.</p>
       <div class="frontier-scout-grid">
         <div class="frontier-scout-box"><strong>Elite connection</strong><span data-frontier-connection>Checking Frontier integration…</span></div>
-        <div class="frontier-scout-box"><strong>Active verification systems</strong><span data-frontier-system>Waiting for Daily Orders or Colonization Jobs…</span></div>
+        <div class="frontier-scout-box"><strong>Verification scope</strong><span data-frontier-system>Waiting for Daily Orders, Colonization Jobs, or claim tracking…</span></div>
       </div>
       <div class="frontier-scout-actions">
         <a class="btn btn-primary" href="/api/frontier/login" data-frontier-connect>Connect Elite Account</a>
@@ -193,15 +193,16 @@
         <div class="frontier-scout-kpi"><span>BGS Trade Profit</span><strong data-frontier-trade>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>Exploration Sold</span><strong data-frontier-exploration>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>Colonization Delivered</span><strong data-frontier-colonization>0 t</strong></div>
+        <div class="frontier-scout-kpi"><span>System Claims Seen</span><strong data-frontier-claims>0</strong></div>
       </div>
       <div class="frontier-scout-events" data-frontier-events></div>
       <div class="frontier-scout-events" data-frontier-order-matches hidden></div>
       <details class="member-scout-note" data-frontier-diagnostics hidden>
         <summary><strong>Admin diagnostic journal trace</strong></summary>
-        <p>This temporary test view shows timestamped event names and a small whitelist of safe fields from active Daily Order or Colonization Job systems so we can diagnose verification behavior without retaining the full journal.</p>
+        <p>This temporary test view shows timestamped event names and a small whitelist of safe fields from active Daily Order or Colonization Job systems, plus system-claim events from the connected CMDR, so we can diagnose verification behavior without retaining the full journal.</p>
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
       </details>
-      <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for active Daily Order or Colonization Job systems. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
+      <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for active Daily Order or Colonization Job systems plus colonization system-claim/release events. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
       <details class="member-scout-note"><summary><strong>Optional Live Scout (EDMC)</strong></summary><p>EDMC Scout is still available for immediate faction-board reporting and future live telemetry. It is no longer required for the normal Frontier-based reward-verification path.</p><div class="member-scout-actions"><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div></details>
     `;
     return panel;
@@ -230,9 +231,9 @@
         button.disabled=true;
         button.textContent=frontierCooldownText(remaining);
       }else{
-        const hasTargets=button.dataset.hasTargets!=='false';
-        button.disabled=!hasTargets;
-        button.textContent=hasTargets?'Sync Activity':'No active verification systems';
+        const canSync=button.dataset.claimTracking!=='false';
+        button.disabled=!canSync;
+        button.textContent=canSync?'Sync Activity':'Sync unavailable';
         if(frontierCooldownTimer){clearInterval(frontierCooldownTimer);frontierCooldownTimer=null;}
       }
     };
@@ -271,6 +272,8 @@
       return `Market sale · profit pending re-sync · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
     }
     if (event.type === 'exploration_sale') return `Exploration data sold · ${frontierMoney(event.amount)}`;
+    if (event.type === 'colonization_system_claim') return 'Colonization system claim recorded';
+    if (event.type === 'colonization_system_claim_release') return 'Colonization system claim released';
     if (event.type === 'colonization_depot') {
       const progress=Number.isFinite(Number(event.constructionProgress))
         ? ` · ${Math.max(0,Math.min(100,Number(event.constructionProgress)*100)).toFixed(1)}% complete`
@@ -322,11 +325,13 @@
     const targetSystems=Array.isArray(payload.targetSystems)?payload.targetSystems:[];
     badge.textContent='Connected';
     if(connection) connection.textContent=`${account.commander||'Elite CMDR'} · last sync ${frontierDate(account.lastSyncAt)}`;
-    if(scope)scope.textContent=targetSystems.length?targetSystems.join(' · '):'No system-scoped Daily Orders or Colonization Jobs currently active.';
+    if(scope)scope.textContent=targetSystems.length
+      ? targetSystems.join(' · ')
+      : 'No scoped Daily Order / Colonization Job systems · system-claim tracking remains active.';
     if(result) result.textContent=targetSystems.length
-      ? `Frontier connection active. Scout is scoped automatically to ${targetSystems.length} verification system${targetSystems.length===1?'':'s'} from active Daily Orders and Colonization Jobs. Journal timestamps and dated reconciliation preserve the original work date.`
-      : 'Frontier connection active. Publish a system-scoped Daily Order or create an active Colonization Job and Scout will automatically add that system to verification scope.';
-    if(connect)connect.hidden=true;if(sync){sync.hidden=false;sync.dataset.hasTargets=String(targetSystems.length>0);}if(disconnect)disconnect.hidden=false;
+      ? `Frontier connection active. Scout is scoped automatically to ${targetSystems.length} verification system${targetSystems.length===1?'':'s'} from active Daily Orders and Colonization Jobs, while colonization system claims are tracked globally for this CMDR.`
+      : 'Frontier connection active. System-claim tracking remains available even without an active Daily Order or Colonization Job.';
+    if(connect)connect.hidden=true;if(sync){sync.hidden=false;sync.dataset.claimTracking=String(payload.claimTrackingEnabled!==false);}if(disconnect)disconnect.hidden=false;
     applyFrontierCooldown(payload.cooldown);
     if(kpis)kpis.hidden=false;
     const s=payload.summary||{};
@@ -339,6 +344,7 @@
     set('[data-frontier-trade]',tradeText);
     set('[data-frontier-exploration]',frontierMoney(s.explorationSales));
     set('[data-frontier-colonization]',Number(s.colonizationTons||0).toLocaleString()+' t');
+    set('[data-frontier-claims]',Number(s.colonizationSystemClaims||0).toLocaleString());
     if(events){
       events.replaceChildren();
       (payload.recentEvents||[]).slice(0,8).forEach(event=>{
@@ -426,7 +432,7 @@
         if(refreshed.response.ok)renderFrontierScout(refreshed.payload);
         if(result){
           if(payload.skipped){
-            result.textContent=payload.message||'No active verification systems required a Frontier journal request.';
+            result.textContent=payload.message||'Frontier journal retrieval was skipped.';
           }else if(payload.partial){
             result.textContent='Frontier returned partial journal data. Verified events were saved; the incomplete date will remain eligible for reconciliation on a later sync.';
           }else{
