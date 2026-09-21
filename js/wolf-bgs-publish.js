@@ -653,8 +653,24 @@
     const warningCount=systems.reduce((sum,item)=>sum+item.warnings.length,0);
     if(systems.length>maxSystems()||taskCount>24)return;
     const warningText=warningCount?'\n\n'+warningCount+' preview warning'+(warningCount===1?' remains':'s remain')+' in the queued systems. Publishing is an explicit Wolf override.':'';
+    const changeReview=publishedLoaded?changeSummary(systems):{material:[],unreviewed:[]};
+    const totals={new:0,changed:0,remove:0,replaced:0,unchanged:0};
+    changeReview.material.forEach(state=>{
+      for(const key of Object.keys(totals))totals[key]+=Number(state.diff.counts?.[key]||0);
+    });
+    const changeParts=[
+      totals.new?totals.new+' added':'',
+      totals.changed?totals.changed+' changed':'',
+      totals.replaced?totals.replaced+' replaced':'',
+      totals.remove?totals.remove+' removed':'',
+      totals.unchanged?totals.unchanged+' unchanged':'',
+    ].filter(Boolean);
+    const changeText=changeParts.length
+      ? '\n\nPlan vs current Mission Control: '+changeParts.join(' · ')+'.'
+        +(changeReview.unreviewed.length?'\n'+changeReview.unreviewed.length+' system'+(changeReview.unreviewed.length===1?' has':'s have')+' unreviewed order changes.':'')
+      : '';
     const names=systems.map(item=>item.system).join(', ');
-    if(!window.confirm('Publish '+taskCount+' task'+(taskCount===1?'':'s')+' across '+systems.length+' system'+(systems.length===1?'':'s')+'?\n\nSystems: '+names+'\n\nQueued systems will be reconciled into the CURRENT Daily Orders cycle. Unrelated systems remain published. Matching logical tasks keep their order identity, member progress, and future reward history; removed tasks from these queued systems stop being actionable.'+warningText))return;
+    if(!window.confirm('Publish '+taskCount+' task'+(taskCount===1?'':'s')+' across '+systems.length+' system'+(systems.length===1?'':'s')+'?\n\nSystems: '+names+changeText+'\n\nQueued systems will be reconciled into the CURRENT Daily Orders cycle. Unrelated systems remain published. Matching logical tasks keep their order identity, member progress, and future reward history; removed tasks from these queued systems stop being actionable.'+warningText))return;
 
     publishBusy=true;syncPanel();
     const status=panel?.querySelector('[data-publish-status]');if(status)status.textContent='Publishing reviewed BGS orders…';
@@ -676,6 +692,9 @@
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
       lastPublishError='';
       lastPublishMessage='Reconciled '+orders.length+' task'+(orders.length===1?'':'s')+' into the current Daily Orders cycle. Unrelated systems were preserved. <a href="../operations/#daily-orders">Open Mission Control →</a>';
+      publishedDocument={cycleId:data?.cycleId||publishedDocument.cycleId,orders:Array.isArray(data?.orders)?data.orders:publishedDocument.orders};
+      publishedLoaded=true;
+      queueRenderSignature='';
       systems.forEach(suppressCurrent);
       queue.clear();
       expandedSystems.clear();
