@@ -1,0 +1,63 @@
+/* Wolf BGS Control — Colonization Jobs test console */
+.wolf-colonization-panel{border-color:rgba(125,207,255,.24)}
+.wolf-colonization-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.9rem}
+.wolf-colonization-head p{margin:0;color:var(--muted);font-size:.78rem;line-height:1.5;max-width:820px}
+.wolf-colonization-form{margin:.8rem 0 1rem;padding:.9rem;border:1px solid rgba(92,210,255,.13);background:rgba(4,10,13,.48)}
+.wolf-colonization-form h3{margin:0 0 .7rem;font-size:.92rem}
+.wolf-colonization-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.wolf-colonization-form-grid label{display:flex;flex-direction:column;gap:.32rem;min-width:0}
+.wolf-colonization-form-grid label>span{color:var(--muted);font-size:.64rem;text-transform:uppercase;letter-spacing:.07em}
+.wolf-colonization-market-fields{display:contents}
+.wolf-colonization-wide{grid-column:span 2}
+.wolf-colonization-form-actions{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.8rem;padding-top:.75rem;border-top:1px solid rgba(92,210,255,.1)}
+.wolf-colonization-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;margin:.75rem 0}
+.wolf-colonization-stats>div{padding:.68rem .75rem;border:1px solid rgba(92,210,255,.1);background:rgba(255,255,255,.012)}
+.wolf-colonization-stats span,.wolf-colonization-stats strong{display:block}
+.wolf-colonization-stats span{color:var(--muted);font-size:.58rem;font-weight:850;letter-spacing:.065em;text-transform:uppercase}
+.wolf-colonization-stats strong{margin-top:.16rem;color:#e9faff;font-size:.94rem}
+.wolf-colonization-job-list{display:grid;gap:.65rem;margin-top:.75rem}
+.wolf-colonization-job{padding:.8rem;border:1px solid rgba(92,210,255,.13);background:rgba(0,0,0,.14)}
+.wolf-colonization-job-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.wolf-colonization-job-head>div:first-child{min-width:0}
+.wolf-colonization-job-head span,.wolf-colonization-job-head strong,.wolf-colonization-job-head small{display:block}
+.wolf-colonization-job-head>div:first-child>span{color:#80bfca;font-size:.55rem;font-weight:950;letter-spacing:.08em}
+.wolf-colonization-job-head strong{margin-top:.12rem;color:#eefcff;font-size:.84rem}
+.wolf-colonization-job-head small{margin-top:.2rem;color:var(--muted);font-size:.64rem;line-height:1.4}
+.wolf-colonization-job-chips{display:flex;gap:.35rem;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.wolf-colonization-chip{display:inline-flex!important;padding:.18rem .35rem;border:1px solid rgba(120,145,151,.2);border-radius:3px;background:rgba(120,145,151,.035);color:#9cb0b6;font-size:.53rem!important;font-weight:900!important;letter-spacing:.055em!important;white-space:nowrap}
+.wolf-colonization-chip.is-active{border-color:rgba(93,206,151,.3);color:#b9e7cd;background:rgba(58,125,92,.07)}
+.wolf-colonization-chip.is-paused{border-color:rgba(255,181,74,.3);color:#ffdda9;background:rgba(128,80,14,.08)}
+.wolf-colonization-chip.is-completed{border-color:rgba(92,210,255,.27);color:#bceefa;background:rgba(42,160,191,.07)}
+.wolf-colonization-progress{margin:.7rem 0}
+.wolf-colonization-progress>div:first-child{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem}
+.wolf-colonization-progress strong{font-size:.72rem;color:#e8f9fc}
+.wolf-colonization-progress span{font-size:.62rem;color:var(--muted)}
+.wolf-colonization-track{height:7px;margin-top:.32rem;background:rgba(153,181,190,.12);overflow:hidden}
+.wolf-colonization-track i{display:block;height:100%;background:currentColor;color:#76c9dd}
+.wolf-colonization-reward-line{display:grid;grid-template-columns:auto minmax(180px,1fr) auto;gap:.45rem .7rem;align-items:baseline;padding:.52rem .6rem;border:1px solid rgba(255,181,74,.13);background:rgba(255,181,74,.025)}
+.wolf-colonization-reward-line span{color:#b5966e;font-size:.56rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.wolf-colonization-reward-line strong{font-size:.71rem;color:#f6e2c6}
+.wolf-colonization-reward-line small{color:var(--muted);font-size:.6rem}
+.wolf-colonization-members{display:grid;gap:.3rem;margin-top:.55rem}
+.wolf-colonization-member{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.7rem;align-items:center;padding:.48rem .55rem;border:1px solid rgba(255,255,255,.055);background:rgba(255,255,255,.012)}
+.wolf-colonization-member strong,.wolf-colonization-member small{display:block}
+.wolf-colonization-member strong{font-size:.72rem}
+.wolf-colonization-member small{margin-top:.12rem;color:var(--muted);font-size:.59rem;line-height:1.35}
+.wolf-colonization-member>b{color:#ffd9a4;font-size:.72rem;white-space:nowrap}
+.wolf-colonization-meta{margin-top:.55rem;color:#789097;font-size:.58rem;line-height:1.4}
+.wolf-colonization-actions{display:flex;justify-content:flex-end;gap:.4rem;margin-top:.65rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.055)}
+.wolf-colonization-delete{border:1px solid rgba(255,104,104,.28);background:rgba(83,8,8,.18);color:#e0b0b0}
+.wolf-colonization-delete:hover{border-color:rgba(255,104,104,.5);color:#ffd1d1}
+.wolf-colonization-empty{display:flex;gap:.4rem;align-items:baseline;padding:.65rem;border:1px dashed rgba(92,210,255,.14);color:var(--muted);font-size:.67rem}
+.wolf-colonization-empty strong{color:#c0d4d9}
+.wolf-colonization-observed-section{margin-top:1rem;padding-top:.85rem;border-top:1px solid rgba(92,210,255,.1)}
+.wolf-colonization-observed-section h3{margin:0 0 .2rem;font-size:.84rem}
+.wolf-colonization-observed-section>p{margin:.1rem 0 .55rem;color:var(--muted);font-size:.66rem;line-height:1.45}
+.wolf-colonization-observed{display:grid;gap:.35rem}
+.wolf-colonization-observed-row{display:grid;grid-template-columns:minmax(220px,1.3fr) minmax(130px,.7fr) auto;gap:.65rem;align-items:center;padding:.5rem .55rem;border:1px solid rgba(255,255,255,.055);background:rgba(255,255,255,.012)}
+.wolf-colonization-observed-row strong,.wolf-colonization-observed-row small{display:block}
+.wolf-colonization-observed-row strong{font-size:.7rem}
+.wolf-colonization-observed-row small{margin-top:.12rem;color:var(--muted);font-size:.58rem}
+.wolf-colonization-observed-row>span{color:#9eb2b8;font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:1050px){.wolf-colonization-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wolf-colonization-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.wolf-colonization-head,.wolf-colonization-form-actions,.wolf-colonization-job-head{align-items:stretch;flex-direction:column}.wolf-colonization-form-grid,.wolf-colonization-stats{grid-template-columns:1fr}.wolf-colonization-wide{grid-column:auto}.wolf-colonization-job-chips{justify-content:flex-start}.wolf-colonization-reward-line{grid-template-columns:1fr}.wolf-colonization-actions{justify-content:stretch;flex-wrap:wrap}.wolf-colonization-actions .btn{flex:1}.wolf-colonization-observed-row{grid-template-columns:1fr}.wolf-colonization-observed-row>span{white-space:normal}.wolf-colonization-form-actions .btn{width:100%}}
