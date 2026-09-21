@@ -181,8 +181,8 @@ function nextHistoricalDate(currentOrders,reconciled,colonizationJobs=[]) {
   const today=utcDay(new Date());
   const orderStart=cycleStart(currentOrders);
   const colonizationStart=earliestColonizationStart(colonizationJobs);
-  const candidates=[orderStart,colonizationStart].filter(Boolean).map(value=>new Date(value));
-  const start=candidates.length?new Date(Math.min(...candidates.map(value=>value.getTime()))):null;
+  const startCandidates=[orderStart,colonizationStart].filter(Boolean).map(value=>new Date(value));
+  const start=startCandidates.length?new Date(Math.min(...startCandidates.map(value=>value.getTime()))):null;
   if (!start) return null;
   const startDay=utcDay(start);
   if (startDay >= today) return null;
