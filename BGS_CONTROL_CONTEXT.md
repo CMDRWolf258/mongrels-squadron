@@ -1144,6 +1144,30 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Colonization overlap arbitration — 2026-09-21
+
+- Added deterministic arbitration for `ColonisationContribution` events before Colonization Job reward/progress calculation.
+- One Frontier contribution event can now feed at most one payable Colonization Job.
+- Arbitration priority is lexicographic and intentionally conservative:
+  1. specific-build (`MarketID`) job beats a system-wide job,
+  2. within the same scope, commodity-specific job beats unrestricted job,
+  3. if multiple matching jobs remain equally specific, the event is AMBIGUOUS and credits none of them.
+- Commodity-specific winners count only the selected commodity amount from a mixed-material contribution event; lower-priority unrestricted jobs receive zero payable tons for that entire event.
+- Losing overlap matches are retained as `suppressed` diagnostics with candidate tonnage and winner/reason, so the UI can explain where cargo went instead of silently dropping it.
+- Equal-specificity ambiguity is retained with candidate job IDs/titles and per-job potential tonnage; no deterministic tiebreaker by creation time or job ID is used for payout attribution.
+- Specific-build jobs in AWAITING SITE cannot match contributions until a MarketID is bound.
+- Colonization Job API now computes arbitration once per connected CMDR across all relevant jobs, then builds every job/member preview from those assignments.
+- Job/member previews now expose payable tons, observed candidate tons, assigned event IDs, ambiguous event/tonnage counts, suppressed overlap event/tonnage counts, and arbitration-blocked state.
+- Squad `Payable Cargo` now sums post-arbitration tons, eliminating double-counted payable progress across overlapping jobs.
+- BGS Control shows **ARBITRATION BLOCKED** for equal-specificity collisions and **OVERLAP ROUTED** when a lower-priority candidate lost to a more specific job. Member rows explain ambiguous blocked tons and tons routed elsewhere.
+- Global console callout reports assigned contribution events, ambiguous overlaps, and lower-priority matches routed away from duplicate credit.
+- Local arbitration tests passed:
+  - system-wide + specific-build + commodity-specific overlap routed a mixed 1,200t event to the commodity-specific specific-build job only (700t Titanium payable),
+  - specific-build outranked the system-wide job,
+  - commodity-specific outranked unrestricted within the same build,
+  - two equal-specificity specific-build jobs produced zero assignment and one AMBIGUOUS event.
+- Automatic colonization payout issuance remains OFF. The next reward-side step is durable Colonization Job revision/provenance followed by inclusion in the unified Reward Engine DRY RUN.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
