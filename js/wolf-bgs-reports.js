@@ -8,22 +8,27 @@
   const fmt=value=>Number.isInteger(n(value))?String(n(value)):n(value).toFixed(1);
   let panel=null;
   let busy=false;
+  let loadedAt=0;
+  const STALE_MS=5*60*1000;
 
   function ensurePanel(){
     if(panel)return panel;
     const section=document.createElement('section');
     section.className='section-sm wolf-reports-section';
     section.dataset.wolfReportManager='true';
-    section.innerHTML='<div class="container"><details class="wolf-report-manager"><summary><span><b>CURRENT CYCLE REPORTS</b><small>Review, correct, or remove submitted member workload</small></span><span class="wolf-report-manager-count"><strong data-report-count>—</strong><small data-report-cycle>Loading…</small></span><i aria-hidden="true">+</i></summary><div class="wolf-report-manager-body"><div class="wolf-report-manager-toolbar"><span data-report-status>Loading current-cycle reports…</span><button type="button" class="btn btn-secondary btn-compact" data-report-refresh>Refresh</button></div><div class="wolf-admin-report-list" data-admin-report-list></div></div></details></div>';
+    section.innerHTML='<div class="container"><details class="wolf-report-manager"><summary><span><b>CURRENT CYCLE REPORTS</b><small>Review, correct, or remove submitted member workload</small></span><span class="wolf-report-manager-count"><strong data-report-count>—</strong><small data-report-cycle>Open to load</small></span><i aria-hidden="true">+</i></summary><div class="wolf-report-manager-body"><div class="wolf-report-manager-toolbar"><span data-report-status>Open this panel to load current-cycle reports.</span><button type="button" class="btn btn-secondary btn-compact" data-report-refresh>Refresh</button></div><div class="wolf-admin-report-list" data-admin-report-list></div></div></details></div>';
     systems.parentNode.insertBefore(section,systems);
     panel=section;
-    panel.querySelector('[data-report-refresh]').addEventListener('click',load);
+    panel.querySelector('[data-report-refresh]').addEventListener('click',()=>load(true));
     panel.addEventListener('click',handleClick);
+    const details=panel.querySelector('.wolf-report-manager');
+    details?.addEventListener('toggle',()=>{if(details.open)load();},{passive:true});
     return panel;
   }
 
-  async function load(){
+  async function load(force=false){
     if(busy)return;
+    if(!force&&loadedAt&&Date.now()-loadedAt<STALE_MS)return;
     busy=true;
     const p=ensurePanel();
     const status=p.querySelector('[data-report-status]');
@@ -34,6 +39,7 @@
       if(response.status===403||!data.canManageReports){p.hidden=true;return;}
       if(!response.ok)throw new Error(data.error||'report_load_failed');
       p.hidden=false;
+      loadedAt=Date.now();
       render(data);
     }catch(error){
       console.error(error);
@@ -147,7 +153,7 @@
       status.textContent=method==='DELETE'?'Report deleted. Squad totals recalculated.':'Report updated. Squad totals recalculated.';
       status.dataset.state='success';
       busy=false;
-      setTimeout(load,160);
+      setTimeout(()=>load(true),160);
     }catch(error){
       console.error(error);
       if(localStatus)localStatus.textContent='Could not save';
@@ -179,7 +185,6 @@
 
   function start(){
     ensurePanel();
-    load();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
