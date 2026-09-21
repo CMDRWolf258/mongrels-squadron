@@ -111,6 +111,61 @@
 
     <section class="section-sm">
       <div class="container">
+        <details class="wolf-panel wolf-reward-panel" data-reward-admin>
+          <summary><span><b>Reward Administration</b><small>Per-order member payout defaults · manual adjustments will post to the audited reward ledger</small></span><strong>+</strong></summary>
+          <form class="wolf-panel-body" data-reward-form>
+            <p class="wolf-section-intro">Reward caps are <strong>personal and per individual Daily Order</strong>. A squad order reaching its operational goal does not close reward eligibility for other members or for additional qualifying work up to that member's cap.</p>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>Trade Profit</strong>
+              <span>Every complete profit block earns the configured matching reward. Default: each 10M Cr of verified profit earns 10M Cr, capped at 30M Cr per member for that order.</span>
+            </div>
+            <div class="wolf-form-grid">
+              <label><span>Profit block</span><div class="input-unit"><input type="number" min="0.1" max="1000" step="0.1" data-reward="trade.profitBlockMillions"><em>M Cr</em></div></label>
+              <label><span>Reward per block</span><div class="input-unit"><input type="number" min="0" max="1000" step="0.1" data-reward="trade.rewardPerBlockMillions"><em>M Cr</em></div></label>
+              <label><span>Personal order cap</span><div class="input-unit"><input type="number" min="0" max="100000" step="1" data-reward="trade.capMillions"><em>M Cr</em></div></label>
+            </div>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>Mission INF</strong>
+              <span>Each verified INF earns the full rate until that order's squad goal is reached. Additional personal INF remains reward-eligible at the reduced rate until the member reaches the larger of the order goal or the minimum cap.</span>
+            </div>
+            <div class="wolf-form-grid">
+              <label><span>Reward / INF through goal</span><div class="input-unit"><input type="number" min="0" max="1000" step="0.1" data-reward="inf.rewardPerInfBeforeGoalMillions"><em>M Cr</em></div></label>
+              <label><span>Reward / INF after goal</span><div class="input-unit"><input type="number" min="0" max="1000" step="0.1" data-reward="inf.rewardPerInfAfterGoalMillions"><em>M Cr</em></div></label>
+              <label><span>Minimum personal cap</span><div class="input-unit"><input type="number" min="0" max="100000" step="1" data-reward="inf.minCapMillions"><em>M Cr</em></div></label>
+            </div>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>Bounty Vouchers</strong>
+              <span>Verified redeemed vouchers earn the configured matching rate. The operational goal can be met while members continue earning from the same order until their own cap is reached.</span>
+            </div>
+            <div class="wolf-form-grid">
+              <label><span>Reward / 1M redeemed</span><div class="input-unit"><input type="number" min="0" max="1000" step="0.1" data-reward="bounties.rewardPerRedeemedMillion"><em>M Cr</em></div></label>
+              <label><span>Minimum personal cap</span><div class="input-unit"><input type="number" min="0" max="100000" step="1" data-reward="bounties.minCapMillions"><em>M Cr</em></div></label>
+            </div>
+
+            <div class="wolf-rules-callout">
+              <strong>Order-scoped caps</strong>
+              <span>Each published order has its own personal cap. Two separate 20M bounty orders therefore provide up to 30M + 30M = 60M Cr of reward opportunity per member under the defaults. Progress on one order never consumes the other order's cap.</span>
+            </div>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>Manual adjustments</strong>
+              <span>The payout ledger will provide one central adjustment form: select the authenticated member, enter a positive or negative M Cr amount, require a reason, and optionally attach it to an order. Adjustments will create ledger entries; balances will never be silently overwritten.</span>
+            </div>
+
+            <div class="wolf-save-row">
+              <span data-reward-meta>Loading reward defaults…</span>
+              <button class="btn btn-primary" type="submit">Save Reward Defaults</button>
+            </div>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
         <details class="wolf-panel wolf-global-panel">
           <summary><span><b>Global Automation Defaults</b><small>Cycle timing, freshness, reporting, and order-queue limits</small></span><strong>+</strong></summary>
           <form data-global-form class="wolf-panel-body">
@@ -222,6 +277,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=7"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
+<script src="../js/wolf-bgs-rewards.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
