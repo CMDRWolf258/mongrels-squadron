@@ -312,7 +312,7 @@
       if(lastPublishError&&systems.length){}
       else if(overSystems)status.textContent='Queue exceeds the '+maxSystems()+'-system Daily Orders limit.';
       else if(overTasks)status.textContent='Queue has '+taskCount+' tasks; the Daily Orders API supports at most 24 per cycle.';
-      else if(systems.length)status.textContent='Ready to publish a new reporting cycle. Review warnings before continuing.';
+      else if(systems.length)status.textContent='Ready to reconcile these systems into the current Daily Orders cycle. Review warnings before continuing.';
       else if(lastPublishMessage){status.innerHTML=lastPublishMessage;status.dataset.state='success';}
       else status.textContent='Nothing published from BGS Control yet.';
     }
@@ -336,7 +336,7 @@
     if(systems.length>maxSystems()||taskCount>24)return;
     const warningText=warningCount?'\n\n'+warningCount+' preview warning'+(warningCount===1?' remains':'s remain')+' in the queued systems. Publishing is an explicit Wolf override.':'';
     const names=systems.map(item=>item.system).join(', ');
-    if(!window.confirm('Publish '+taskCount+' task'+(taskCount===1?'':'s')+' across '+systems.length+' system'+(systems.length===1?'':'s')+'?\n\nSystems: '+names+'\n\nThis replaces the current Daily Orders set and starts a NEW reporting cycle. Existing report history is retained, but current progress will reset for members.'+warningText))return;
+    if(!window.confirm('Publish '+taskCount+' task'+(taskCount===1?'':'s')+' across '+systems.length+' system'+(systems.length===1?'':'s')+'?\n\nSystems: '+names+'\n\nQueued systems will be reconciled into the CURRENT Daily Orders cycle. Unrelated systems remain published. Matching logical tasks keep their order identity, member progress, and future reward history; removed tasks from these queued systems stop being actionable.'+warningText))return;
 
     publishBusy=true;syncPanel();
     const status=panel?.querySelector('[data-publish-status]');if(status)status.textContent='Publishing reviewed BGS orders…';
@@ -346,6 +346,8 @@
         method:'PUT',credentials:'same-origin',cache:'no-store',
         headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'daily-orders-editor'},
         body:JSON.stringify({
+          publishMode:'reconcile',
+          reconcileSystems:systems.map(item=>item.system),
           title:'Squadron Daily Orders',
           briefing:'Generated from reviewed Wolf BGS Control previews. Open the system card for the full briefing, execute the ordered work, and report results beside the orders.',
           officerNote:'',
@@ -355,7 +357,7 @@
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||('Publish failed ('+response.status+')'));
       lastPublishError='';
-      lastPublishMessage='Published '+orders.length+' task'+(orders.length===1?'':'s')+' in a new Daily Orders cycle. <a href="../operations/#daily-orders">Open Mission Control →</a>';
+      lastPublishMessage='Reconciled '+orders.length+' task'+(orders.length===1?'':'s')+' into the current Daily Orders cycle. Unrelated systems were preserved. <a href="../operations/#daily-orders">Open Mission Control →</a>';
       systems.forEach(suppressCurrent);
       queue.clear();
       syncAll();
