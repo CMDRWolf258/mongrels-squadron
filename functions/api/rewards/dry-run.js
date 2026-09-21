@@ -9,7 +9,7 @@ export async function onRequestGet({request,env}) {
   if(!ALLOWED.has(session.access))return reply({ok:false,error:'officer_access_required'},403);
 
   const {dryRun}=await buildUnifiedRewardEngineState(env,{baselineActor:'Reward Engine migration'});
-  return reply({ok:true,...dryRun});
+  return reply({ok:true,...dryRun,canIssueReady:session.access==='site_admin',manualLedgerIssue:true});
 }
 
 function reply(body,status=200){
