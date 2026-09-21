@@ -29,6 +29,8 @@
 .wolf-colonization-chip.is-paused{border-color:rgba(255,181,74,.3);color:#ffdda9;background:rgba(128,80,14,.08)}
 .wolf-colonization-chip.is-completed{border-color:rgba(92,210,255,.27);color:#bceefa;background:rgba(42,160,191,.07)}
 .wolf-colonization-chip.is-awaiting{border-color:rgba(255,181,74,.38);color:#ffdda9;background:rgba(128,80,14,.09)}
+.wolf-colonization-chip.is-conflict{border-color:rgba(255,95,95,.42);color:#ffd0d0;background:rgba(145,14,14,.1)}
+.wolf-colonization-chip.is-routed{border-color:rgba(92,210,255,.3);color:#bceefa;background:rgba(42,160,191,.07)}
 .wolf-colonization-progress{margin:.7rem 0}
 .wolf-colonization-progress>div:first-child{display:flex;align-items:baseline;justify-content:space-between;gap:.8rem}
 .wolf-colonization-progress strong{font-size:.72rem;color:#e8f9fc}
@@ -45,6 +47,7 @@
 .wolf-colonization-member strong{font-size:.72rem}
 .wolf-colonization-member small{margin-top:.12rem;color:var(--muted);font-size:.59rem;line-height:1.35}
 .wolf-colonization-member>b{color:#ffd9a4;font-size:.72rem;white-space:nowrap}
+.wolf-colonization-job:has(.wolf-colonization-chip.is-conflict){border-color:rgba(255,95,95,.3);box-shadow:inset 3px 0 0 rgba(255,95,95,.38)}
 .wolf-colonization-meta{margin-top:.55rem;color:#789097;font-size:.58rem;line-height:1.4}
 .wolf-colonization-actions{display:flex;justify-content:flex-end;gap:.4rem;margin-top:.65rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.055)}
 .wolf-colonization-delete{border:1px solid rgba(255,104,104,.28);background:rgba(83,8,8,.18);color:#e0b0b0}
