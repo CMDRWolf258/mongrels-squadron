@@ -938,6 +938,15 @@ Wolf BGS Control now has a read-only **Verification Review** layer before automa
 
 Activation principle remains: use this comparison surface to validate real-world matching first, then enable idempotent automatic Owed-entry creation only after discrepancies are understood.
 
+## Publish Queue exact-order review — 2026-09-20
+
+- Wolf BGS Control's Publish Queue now renders the actual frozen task snapshots stored in the queue, not only queued system names.
+- Each queued system has **VIEW ORDERS / HIDE ORDERS** controls.
+- Expanded review shows every queued order's activity type, faction, target, status, generated instruction and detailed briefing text.
+- Preview warnings are shown inside the same expanded queued-system card.
+- The review explicitly labels the content **QUEUED SNAPSHOT** because these are the exact task objects waiting behind Publish Daily Orders, not a newly regenerated preview.
+- Removing a queued system still removes the entire system candidate; individual-order editing/removal inside the queue is not enabled yet.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
