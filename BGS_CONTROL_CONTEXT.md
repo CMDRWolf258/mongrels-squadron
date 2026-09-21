@@ -991,6 +991,16 @@ Activation principle remains: use this comparison surface to validate real-world
 - Returning focus/visibility to BGS Control refreshes an already-open stale Verification Review.
 - Manual report API shape was verified as compatible with the comparison join (`ownerId + orderId`, `score`); this correction is about UI freshness rather than report storage.
 
+## Verification Review visual audit states — 2026-09-21
+
+- Verification rows now have explicit visual states for pre-automation auditing:
+  - **MISMATCH** — Scout verification and a manual report both exist but differ; row is strongly highlighted.
+  - **MATCHED** — Scout verification and manual report agree within a small numeric tolerance.
+  - **SCOUT ONLY** — verified Frontier evidence exists but no manual report exists; `Reported —` is shown instead of misleading zero.
+  - **MANUAL ONLY** — a manual report exists with no current Scout match.
+- Long verification text now wraps instead of truncating so the verified/reported/difference values are readable without hovering.
+- This is presentation-only; it does not alter verification, manual report storage, or reward calculations.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
