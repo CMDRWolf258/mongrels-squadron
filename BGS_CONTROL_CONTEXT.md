@@ -1045,6 +1045,14 @@ Activation principle remains: use this comparison surface to validate real-world
 - Intended workflow: put the system in Frontier verification scope, dock at the construction depot, Sync Activity, then choose the discovered site. A contribution is no longer required just to discover its MarketID.
 - The specific-build form keeps the internal site ID read-only; users should not need to look up or type it manually.
 
+## Specific-build no-ID workflow — 2026-09-21
+
+- Specific-build Colonization Jobs may now be created without a MarketID. They render as **AWAITING SITE** and still add their system to Frontier verification scope.
+- While unbound, a specific-build job cannot match colonization contribution tonnage, so no delivery preview can be falsely attributed before the site is identified.
+- After the commander docks at the intended construction depot and Sync Activity captures `ColonisationConstructionDepot`, BGS Control lists the discovered site by station/system/progress.
+- `Use This Site` automatically binds the site to the one pending active specific-build job in that system. If there are multiple pending jobs in the same system, it avoids guessing and instead pre-fills the new-job form for deliberate selection.
+- MarketID remains internal/read-only in the form. The intended operator workflow no longer requires manual lookup of a MarketID.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
