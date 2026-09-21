@@ -181,7 +181,7 @@
       </div>
       <div class="frontier-scout-actions">
         <a class="btn btn-primary" href="/api/frontier/login" data-frontier-connect>Connect Elite Account</a>
-        <button class="btn btn-primary" type="button" data-frontier-sync hidden>Sync Order Activity</button>
+        <button class="btn btn-primary" type="button" data-frontier-sync hidden>Sync Activity</button>
         <button class="btn btn-ghost" type="button" data-frontier-disconnect hidden>Disconnect</button>
       </div>
       <p class="member-scout-note" data-frontier-result>Checking your Frontier connection status.</p>
