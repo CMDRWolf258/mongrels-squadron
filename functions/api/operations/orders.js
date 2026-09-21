@@ -58,6 +58,13 @@ export async function onRequestPut({ request, env }) {
     ? reconcileOrders(previous, body, now, actor)
     : replaceOrders(previous, body, now, actor);
 
+  if (orders.orders.length > 24) {
+    return json(
+      { ok:false, error:'too_many_orders', count:orders.orders.length },
+      { status:400, headers:privateHeaders() },
+    );
+  }
+
   await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(orders));
 
   return json(
@@ -280,7 +287,7 @@ function reconcileOrders(previous, body, now, actor) {
   const reconciled = incomingDoc.orders.map((order,index) => reconcileOneOrder(
     order, currentOrders, now, index, cycleStartedAt
   ));
-  const orders = [...kept, ...reconciled].slice(0,24);
+  const orders = [...kept, ...reconciled];
 
   return {
     ...incomingDoc,
@@ -292,10 +299,12 @@ function reconcileOrders(previous, body, now, actor) {
 
 function reconcileOneOrder(order, previousOrders, now, index, startFallback = now) {
   const logicalKey = deriveLogicalOrderKey(order);
-  const prior = previousOrders.find(item =>
-    cleanText(item?.logicalKey, '', 520) === logicalKey
-    || deriveLogicalOrderKey(item) === logicalKey
-  );
+  const incomingId = cleanText(order?.id, '', 80);
+  const prior = previousOrders.find(item => incomingId && cleanText(item?.id, '', 80) === incomingId)
+    || previousOrders.find(item =>
+      cleanText(item?.logicalKey, '', 520) === logicalKey
+      || deriveLogicalOrderKey(item) === logicalKey
+    );
   if (!prior) {
     return {
       ...order,
