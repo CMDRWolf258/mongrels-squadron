@@ -39,7 +39,7 @@ export async function onRequestGet({request,env}) {
   const observedMap=new Map();
   for(const member of memberRows) {
     for(const event of member.events) {
-      if(event?.type!=='colonization_contribution')continue;
+      if(!['colonization_depot','colonization_contribution'].includes(event?.type))continue;
       const key=[String(event.system||''),String(event.marketId||'')].join('|');
       if(!event.system||!event.marketId)continue;
       const row=observedMap.get(key)||{
@@ -50,11 +50,26 @@ export async function onRequestGet({request,env}) {
         contributionEvents:0,
         commanders:new Set(),
         lastContributionAt:null,
+        lastObservedAt:null,
+        constructionProgress:null,
+        constructionComplete:false,
+        constructionFailed:false,
+        resources:[],
       };
-      row.totalTons+=Number(event.totalTons)||0;
-      row.contributionEvents+=1;
+      if(event.station)row.station=event.station;
       row.commanders.add(member.commander);
-      if(event.timestamp&&(!row.lastContributionAt||event.timestamp>row.lastContributionAt))row.lastContributionAt=event.timestamp;
+      if(event.timestamp&&(!row.lastObservedAt||event.timestamp>row.lastObservedAt))row.lastObservedAt=event.timestamp;
+      if(event.type==='colonization_contribution') {
+        row.totalTons+=Number(event.totalTons)||0;
+        row.contributionEvents+=1;
+        if(event.timestamp&&(!row.lastContributionAt||event.timestamp>row.lastContributionAt))row.lastContributionAt=event.timestamp;
+      }
+      if(event.type==='colonization_depot') {
+        row.constructionProgress=Number.isFinite(Number(event.constructionProgress))?Number(event.constructionProgress):row.constructionProgress;
+        row.constructionComplete=Boolean(event.constructionComplete);
+        row.constructionFailed=Boolean(event.constructionFailed);
+        row.resources=Array.isArray(event.resources)?event.resources:[];
+      }
       observedMap.set(key,row);
     }
   }
@@ -62,7 +77,7 @@ export async function onRequestGet({request,env}) {
   const observedMarkets=[...observedMap.values()].map(row=>({
     ...row,
     commanders:[...row.commanders].sort(),
-  })).sort((a,b)=>String(b.lastContributionAt||'').localeCompare(String(a.lastContributionAt||'')));
+  })).sort((a,b)=>String(b.lastObservedAt||'').localeCompare(String(a.lastObservedAt||'')));
 
   return reply({
     ok:true,
