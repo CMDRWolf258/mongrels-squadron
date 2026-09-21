@@ -166,6 +166,24 @@
 
     <section class="section-sm">
       <div class="container">
+        <details class="wolf-panel wolf-reward-panel" data-reward-ledger-admin>
+          <summary><span><b>Payout Console Preview</b><small>Read-only reward debt, member balances, and ledger activity</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <p class="wolf-section-intro">This console is intentionally read-only while verified activity matching is being tested. No automatic reward issuance or payout settlement actions are enabled yet.</p>
+            <div class="wolf-form-grid">
+              <div class="wolf-rules-callout subtle"><strong data-reward-total-owed>0 Cr</strong><span>Total currently owed</span></div>
+              <div class="wolf-rules-callout subtle"><strong data-reward-total-paid>0 Cr</strong><span>Total settled historically</span></div>
+              <div class="wolf-rules-callout subtle"><strong data-reward-member-count>0</strong><span>Members with ledger activity</span></div>
+            </div>
+            <div class="wolf-scout-token-list" data-reward-member-list><div class="wolf-scout-empty"><strong>Loading reward ledger…</strong></div></div>
+            <div class="wolf-rules-callout subtle"><strong>Next activation step</strong><span>After Scout-to-order matching is validated, verified reward entitlement can create idempotent Owed entries here. Manual adjustments and Mark Paid controls will be added only after the ledger view itself is confirmed.</span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
         <details class="wolf-panel wolf-global-panel">
           <summary><span><b>Global Automation Defaults</b><small>Cycle timing, freshness, reporting, and order-queue limits</small></span><strong>+</strong></summary>
           <form data-global-form class="wolf-panel-body">
@@ -277,7 +295,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=8"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
-<script src="../js/wolf-bgs-rewards.js?v=1"></script>
+<script src="../js/wolf-bgs-rewards.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
