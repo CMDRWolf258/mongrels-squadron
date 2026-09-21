@@ -735,6 +735,10 @@ Default rules:
 
 **Profitable trade**
 - Verification unit: qualifying realized **profit**, never gross sale revenue.
+- Reward-eligible trade must be traceable to commodities **purchased from a normal NPC station/settlement market**. Mined commodities do not qualify because mined sales do not create ordinary trade BGS influence/economy effect.
+- Commodities **bought from a Fleet Carrier market do not qualify** for the normal trade reward path. Carrier-market repricing must never manufacture rewardable profit.
+- Direct **transfer** of station-bought cargo into/out of a Fleet Carrier hold is allowed: storage/transport does not by itself break provenance because the original normal-station purchase remains the source.
+- If Scout cannot prove purchase provenance, the sale remains visible as wallet profit but is excluded from automatic Daily Order matching/reward preview until provenance can be established.
 - Each complete **10M Cr profit block** earns **10M Cr reward**.
 - Partial blocks do not create a partial reward by default. Example: 19.9M verified profit = one 10M block; 20M = two blocks.
 - Personal cap: **30M Cr reward per order**.
