@@ -2,6 +2,7 @@ import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal,
 import { json } from '../../../lib/auth.js';
 import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
+import { activeColonizationJobs, activeColonizationSystems, earliestColonizationStart, readColonizationJobs } from '../../../lib/colonization-jobs.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 
@@ -14,7 +15,9 @@ export async function onRequestPost({request,env}) {
   if (!account) return json({ok:false,error:'frontier_not_connected'}, {status:409,headers:privateHeaders()});
 
   const currentOrders = await readCurrentOrderCycle(env);
-  const targetSystems = activeOrderSystems(currentOrders);
+  const colonizationStore = await readColonizationJobs(env);
+  const colonizationJobs = activeColonizationJobs(colonizationStore);
+  const targetSystems = [...new Set([...activeOrderSystems(currentOrders),...activeColonizationSystems(colonizationJobs)])];
   if (!targetSystems.length) {
     const events = await readStoredEvents(env, auth.session.sub);
     const matched = matchVerifiedActivity(events, currentOrders);
@@ -22,7 +25,7 @@ export async function onRequestPost({request,env}) {
     return json({
       ok:true,
       skipped:true,
-      reason:'no_active_order_systems',
+      reason:'no_active_verification_systems',
       targetSystems:[],
       newEvents:0,
       storedEvents:events.length,
@@ -32,7 +35,7 @@ export async function onRequestPost({request,env}) {
       recentEvents:matched.events.slice(-20).reverse(),
       cooldown:syncCooldown(account),
       account:publicAccount(account),
-      message:'No system-scoped Daily Orders are active, so Frontier journal retrieval was skipped.',
+      message:'No system-scoped Daily Orders or active Colonization Jobs are active, so Frontier journal retrieval was skipped.',
     }, {headers:privateHeaders()});
   }
 
@@ -69,7 +72,7 @@ export async function onRequestPost({request,env}) {
     }
 
     const reconciled = new Set(Array.isArray(account.reconciledJournalDates) ? account.reconciledJournalDates : []);
-    const historicalDate = nextHistoricalDate(currentOrders,reconciled);
+    const historicalDate = nextHistoricalDate(currentOrders,reconciled,colonizationJobs);
     let historicalStatus=null;
     let historicalText='';
 
@@ -174,9 +177,12 @@ function mergeParsed(a,b,targetSystems) {
   };
 }
 
-function nextHistoricalDate(currentOrders,reconciled) {
+function nextHistoricalDate(currentOrders,reconciled,colonizationJobs=[]) {
   const today=utcDay(new Date());
-  const start=cycleStart(currentOrders);
+  const orderStart=cycleStart(currentOrders);
+  const colonizationStart=earliestColonizationStart(colonizationJobs);
+  const candidates=[orderStart,colonizationStart].filter(Boolean).map(value=>new Date(value));
+  const start=candidates.length?new Date(Math.min(...candidates.map(value=>value.getTime()))):null;
   if (!start) return null;
   const startDay=utcDay(start);
   if (startDay >= today) return null;
