@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
 import {
+  ensureOrderHistoryBaseline,
   markOrderPublicationApplied,
   markOrderPublicationFailed,
   prepareOrderPublication,
@@ -57,6 +58,15 @@ export async function onRequestPut({ request, env }) {
   const now = new Date().toISOString();
   const actor = auth.session.displayName || auth.session.username || 'Mongrel Officer';
   const previous = await readOrders(env);
+  try {
+    await ensureOrderHistoryBaseline(env,previous,null,actor);
+  } catch (error) {
+    console.error('Could not initialize Daily Order history baseline before publication',error);
+    return json(
+      { ok:false, error:'order_history_baseline_failed' },
+      { status:503, headers:privateHeaders() },
+    );
+  }
   const publishMode = cleanText(body?.publishMode, '', 40).toLowerCase();
 
   const orders = publishMode === 'reconcile'
@@ -126,6 +136,15 @@ export async function onRequestDelete({ request, env }) {
 
   const previous=await readOrders(env);
   const actor=auth.session.displayName || auth.session.username || 'Mongrel Officer';
+  try {
+    await ensureOrderHistoryBaseline(env,previous,null,actor);
+  } catch (error) {
+    console.error('Could not initialize Daily Order history baseline before deletion',error);
+    return json(
+      { ok:false, error:'order_history_baseline_failed' },
+      { status:503, headers:privateHeaders() },
+    );
+  }
   const empty=emptyOrders();
   const history=await prepareOrderPublication(env,{
     before:previous,

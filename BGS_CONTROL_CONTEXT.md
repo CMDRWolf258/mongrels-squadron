@@ -1144,6 +1144,24 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Daily Order legacy baseline / event-time guard — 2026-09-21
+
+Added the same migration safety concept used by Colonization to Daily Orders.
+
+- If the current Daily Order cycle predates durable Order History and has no archived publication, the system creates a one-time **APPLIED legacy baseline** snapshot for that cycle.
+- Baseline creation is idempotent and occurs before a legacy current cycle can be published/reconciled/deleted, and can also initialize from the Reward Engine or Daily Order History view.
+- The baseline anchors the exact current order definitions **from the baseline timestamp forward**. It does not invent earlier publication history.
+- Reward Engine provenance now stays attached to the **origin publication of the exact order revision**, rather than a later unchanged snapshot that happens to contain the same revision.
+- Verified Daily Order evidence is partitioned at the revision-provenance boundary:
+  - evidence before a legacy baseline remains visible as **BLOCKED · contribution predates the durable Daily Order baseline**;
+  - evidence after the baseline can independently become **READY** under the anchored definition;
+  - evidence predating a later non-legacy order revision is conservatively BLOCKED as a revision-time mismatch instead of being silently reattributed;
+  - evidence without a provable event timestamp is BLOCKED.
+- Pre-baseline diagnostic obligations never create a planned ledger entry.
+- Existing historical work therefore remains visible for audit while new work can use the same current orders without being permanently contaminated by legacy evidence.
+- Daily Order History labels the migration record **BASELINE** and explains the historical boundary.
+- Automatic reward ledger writes remain OFF.
+
 ## Colonization Reward Engine DRY RUN integration — 2026-09-21
 
 Colonization rewards now participate in the same unified Reward Engine preview as Daily Orders while **all ledger writes remain OFF**.

@@ -1,7 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { getEvents, listFrontierAccounts } from '../../../lib/frontier.js';
 import { matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
-import { listOrderPublications } from '../../../lib/order-history.js';
+import { ensureOrderHistoryBaseline, listOrderPublications } from '../../../lib/order-history.js';
 import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
 import { readRewardSettings } from '../../../lib/reward-rules.js';
 import { buildRewardDryRun, REWARD_ENGINE_MODE } from '../../../lib/reward-dry-run.js';
@@ -24,13 +24,22 @@ export async function onRequestGet({request,env}) {
     readColonizationJobs(env),
   ]);
 
-  const [historyRecords,colonizationHistoryRecords]=await Promise.all([
+  let [historyRecords,colonizationHistoryRecords]=await Promise.all([
     listOrderPublications(env,{
       limit:250,
       cycleId:current?.cycleId||'',
     }),
     listColonizationJobPublications(env,{limit:500}),
   ]);
+
+  if(!historyRecords.length&&current?.cycleId){
+    try{
+      const baseline=await ensureOrderHistoryBaseline(env,current,historyRecords,'Reward Engine migration');
+      if(baseline)historyRecords=[baseline];
+    }catch(error){
+      console.error('Could not initialize Daily Order history baseline for reward dry run',error);
+    }
+  }
 
   const enriched=[];
   for(const accountRow of accounts){

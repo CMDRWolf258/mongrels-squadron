@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { listOrderPublications } from '../../../lib/order-history.js';
+import { ensureOrderHistoryBaseline, listOrderPublications } from '../../../lib/order-history.js';
+import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
 
 export async function onRequestGet({request,env}) {
   const session=await readSession(request,env);
@@ -9,7 +10,20 @@ export async function onRequestGet({request,env}) {
   const url=new URL(request.url);
   const limit=Math.max(1,Math.min(100,Math.floor(Number(url.searchParams.get('limit'))||40)));
   const cycleId=String(url.searchParams.get('cycleId')||'').trim().slice(0,100);
-  const records=await listOrderPublications(env,{limit,cycleId});
+  let records=await listOrderPublications(env,{limit,cycleId});
+  const current=await readCurrentOrderCycle(env);
+  if(current?.cycleId&&(!cycleId||cycleId===current.cycleId)){
+    try{
+      const baseline=await ensureOrderHistoryBaseline(env,current,records,'Daily Order History migration');
+      if(baseline){
+        records=[baseline,...records]
+          .sort((a,b)=>String(b.appliedAt||b.preparedAt||'').localeCompare(String(a.appliedAt||a.preparedAt||'')))
+          .slice(0,limit);
+      }
+    }catch(error){
+      console.error('Could not initialize Daily Order history baseline',error);
+    }
+  }
 
   const summary={
     recordCount:records.length,
@@ -27,6 +41,7 @@ export async function onRequestGet({request,env}) {
     summary,
     archivalMode:'write-ahead',
     immutablePayload:true,
+    legacyBaselineSupported:true,
   });
 }
 
