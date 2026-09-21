@@ -1,5 +1,6 @@
 import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, TEST_SYSTEM } from '../../../lib/frontier.js';
 import { json } from '../../../lib/auth.js';
+import { matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 
 export async function onRequestPost({request,env}) {
   const auth = await requireMember(request, env); if (auth.response) return auth.response;
@@ -27,6 +28,8 @@ export async function onRequestPost({request,env}) {
     if (text.trim() === 'Journal unavailable') throw new Error('frontier_journal_unavailable');
     const parsed = parseJournal(text, TEST_SYSTEM, {diagnostics:auth.session.access === 'site_admin'});
     const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
+    const currentOrders = await readCurrentOrderCycle(env);
+    const matched = matchVerifiedActivity(merged, currentOrders);
     account = {
       ...account,
       lastSyncAt:new Date().toISOString(),
@@ -41,7 +44,9 @@ export async function onRequestPost({request,env}) {
       newEvents:parsed.events.length,
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
-      recentEvents:merged.slice(-20).reverse(),
+      orderCycleId:matched.cycleId,
+      verifiedOrders:matched.orderTotals,
+      recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       account:publicAccount(account),
     }, {headers:privateHeaders()});
