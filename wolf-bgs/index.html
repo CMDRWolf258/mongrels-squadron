@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-conflict-lab-v2.css?v=4">
   <link rel="stylesheet" href="../css/wolf-bgs-lab.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-screenshot.css?v=2">
+  <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=1">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -104,6 +105,67 @@
             </div>
             <div class="wolf-scout-token-list" data-scout-token-list><div class="wolf-scout-empty"><strong>Loading Scout Network…</strong></div></div>
             <div class="wolf-rules-callout subtle"><strong>Privacy boundary</strong><span>The plugin does not send CMDR name, cargo, credits, ship/loadout, materials, missions, or general route history. Non-Mongrel systems are discarded locally and never uploaded.</span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <details class="wolf-panel wolf-colonization-panel" data-colonization-jobs>
+          <summary><span><b>Colonization Jobs · Test Console</b><small>System or build-specific cargo jobs · Frontier verification · reward preview only</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <div class="wolf-colonization-head">
+              <p>Define squad hauling jobs independently from Daily Orders. Frontier <b>ColonisationContribution</b> events can verify exact delivered tonnage and construction MarketID. This console does not create reward debt.</p>
+              <button type="button" class="btn btn-secondary btn-compact" data-colonization-refresh>Refresh Jobs</button>
+            </div>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>TEST MODE</strong>
+              <span>Jobs and progress are persistent, but rewards below are preview calculations only. Automatic payout issuance remains OFF until live ColonisationContribution events are validated.</span>
+            </div>
+
+            <div class="wolf-colonization-stats">
+              <div><span>Active Jobs</span><strong data-colonization-active-count>0</strong></div>
+              <div><span>Observed Build IDs</span><strong data-colonization-observed-count>0</strong></div>
+              <div><span>Job-Matched Cargo</span><strong data-colonization-verified-tons>0 t</strong></div>
+              <div><span>Frontier CMDRs</span><strong data-colonization-connected>0</strong></div>
+            </div>
+
+            <form class="wolf-colonization-form" data-colonization-form>
+              <h3>Create Test Job</h3>
+              <div class="wolf-colonization-form-grid">
+                <label class="wolf-colonization-wide"><span>Job title</span><input type="text" maxlength="160" data-colonization-field="title" placeholder="e.g. Finish Eleven's Lighthouse"></label>
+                <label class="wolf-colonization-wide"><span>System</span><input type="text" maxlength="140" data-colonization-field="system" value="NGC 2546 Sector UZ-G d10-16" required></label>
+                <label><span>Scope</span><select data-colonization-field="scope"><option value="system" selected>Any construction in system</option><option value="market">Specific build / MarketID</option></select></label>
+                <span class="wolf-colonization-market-fields" data-colonization-market-fields hidden>
+                  <label><span>Build name</span><input type="text" maxlength="140" data-colonization-field="buildName" placeholder="Display name"></label>
+                  <label><span>Construction MarketID</span><input type="text" maxlength="40" inputmode="numeric" data-colonization-field="marketId" placeholder="e.g. 3962369026"></label>
+                </span>
+                <label><span>Commodity filter</span><input type="text" maxlength="100" data-colonization-field="commodity" placeholder="Optional · e.g. Titanium"></label>
+                <label><span>Squad target</span><div class="input-unit"><input type="number" min="1" max="100000000" step="1" value="10000" data-colonization-field="targetTons" required><em>t</em></div></label>
+                <label><span>Reward block</span><div class="input-unit"><input type="number" min="1" max="100000000" step="1" value="5000" data-colonization-field="rewardBlockTons" required><em>t</em></div></label>
+                <label><span>Reward per block</span><div class="input-unit"><input type="number" min="0" max="1000000" step="1" value="100" data-colonization-field="rewardBlockMillions" required><em>M Cr</em></div></label>
+                <label><span>Personal reward cap</span><div class="input-unit"><input type="number" min="0" max="100000000" step="1" data-colonization-field="personalCapMillions" placeholder="No cap"><em>M Cr</em></div></label>
+                <label class="wolf-colonization-wide"><span>Notes</span><input type="text" maxlength="1000" data-colonization-field="notes" placeholder="Optional instructions or payout notes"></label>
+              </div>
+              <div class="wolf-colonization-form-actions">
+                <span class="wolf-status-message" data-colonization-message>Open this panel to load Colonization Jobs.</span>
+                <button type="submit" class="btn btn-primary btn-compact">Create Test Job</button>
+              </div>
+            </form>
+
+            <div class="wolf-colonization-job-list" data-colonization-job-list>
+              <div class="wolf-colonization-empty"><strong>Loading jobs…</strong></div>
+            </div>
+
+            <div class="wolf-colonization-observed-section">
+              <h3>Observed Construction MarketIDs</h3>
+              <p>After Frontier Scout captures a contribution, its system and MarketID appear here. Use that MarketID to bind a job to one specific build.</p>
+              <div class="wolf-colonization-observed" data-colonization-observed>
+                <div class="wolf-colonization-empty">No contribution events loaded yet.</div>
+              </div>
+            </div>
           </div>
         </details>
       </div>
@@ -332,6 +394,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=14"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
+<script src="../js/wolf-bgs-colonization.js?v=1"></script>
 <script src="../js/wolf-bgs-rewards.js?v=7"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
