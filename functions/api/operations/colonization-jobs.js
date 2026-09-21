@@ -2,6 +2,7 @@ import { json, readSession } from '../../../lib/auth.js';
 import { getEvents, listFrontierAccounts, privateHeaders } from '../../../lib/frontier.js';
 import {
   COLONIZATION_JOBS_KEY,
+  arbitrateColonizationContributions,
   colonizationJobPreview,
   normalizeColonizationJob,
   readColonizationJobs,
@@ -19,19 +20,39 @@ export async function onRequestGet({request,env}) {
     events:await getEvents(env,row.userId),
   })));
 
+  const verificationByMember=memberRows.map(member=>({
+    ...member,
+    arbitration:arbitrateColonizationContributions(member.events,store.jobs),
+  }));
+
   const jobs=store.jobs.map(job=>{
-    const members=memberRows.map(member=>({
+    const members=verificationByMember.map(member=>({
       ownerId:member.ownerId,
       commander:member.commander,
-      ...colonizationJobPreview(job,member.events),
-    })).filter(row=>row.tons>0||row.eventCount>0);
+      ...colonizationJobPreview(job,member.events,member.arbitration),
+    })).filter(row=>
+      row.tons>0
+      || row.eventCount>0
+      || row.ambiguousEventCount>0
+      || row.suppressedEventCount>0
+    );
     const squadTons=members.reduce((sum,row)=>sum+(Number(row.tons)||0),0);
     const squadEvents=members.reduce((sum,row)=>sum+(Number(row.eventCount)||0),0);
+    const ambiguousEvents=members.reduce((sum,row)=>sum+(Number(row.ambiguousEventCount)||0),0);
+    const ambiguousPotentialTons=members.reduce((sum,row)=>sum+(Number(row.ambiguousPotentialTons)||0),0);
+    const suppressedEvents=members.reduce((sum,row)=>sum+(Number(row.suppressedEventCount)||0),0);
+    const suppressedTons=members.reduce((sum,row)=>sum+(Number(row.suppressedTons)||0),0);
     return {
       ...job,
       squadTons,
+      payableTons:squadTons,
       squadEvents,
-      contributorCount:members.length,
+      contributorCount:members.filter(row=>row.tons>0).length,
+      arbitrationBlocked:ambiguousEvents>0,
+      ambiguousEvents,
+      ambiguousPotentialTons,
+      suppressedEvents,
+      suppressedTons,
       members,
     };
   });
@@ -84,6 +105,13 @@ export async function onRequestGet({request,env}) {
     jobs,
     observedMarkets,
     connectedMembers:accounts.length,
+    arbitrationSummary:{
+      assignedEvents:verificationByMember.reduce((sum,row)=>sum+(Number(row.arbitration?.summary?.assignedEvents)||0),0),
+      ambiguousEvents:verificationByMember.reduce((sum,row)=>sum+(Number(row.arbitration?.summary?.ambiguousEvents)||0),0),
+      suppressedMatches:verificationByMember.reduce((sum,row)=>sum+(Number(row.arbitration?.summary?.suppressedMatches)||0),0),
+      assignedTons:verificationByMember.reduce((sum,row)=>sum+(Number(row.arbitration?.summary?.assignedTons)||0),0),
+      ambiguousObservedTons:verificationByMember.reduce((sum,row)=>sum+(Number(row.arbitration?.summary?.ambiguousObservedTons)||0),0),
+    },
     updatedAt:store.updatedAt,
     updatedBy:store.updatedBy,
     automaticRewardIssuance:false,
