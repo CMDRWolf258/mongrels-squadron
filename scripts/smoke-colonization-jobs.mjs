@@ -125,6 +125,10 @@ assert.match(html,/wolf-bgs-colonization-history\.js/,'Wolf BGS Control is not l
 
 const client=readFileSync('js/wolf-bgs-colonization.js','utf8');
 assert.match(client,/wolf-bgs-colonization-history-updated/,'Colonization Job mutations do not refresh history');
+assert.match(client,/data\.colonizationJobSelect|dataset\.colonizationJobSelect/,'Multiple awaiting jobs need an explicit site-link selector');
+assert.match(client,/Link to: \$\{jobName\(pendingJobs\[0\]\)\}/,'Single awaiting jobs should name the target job on the site button');
+assert.match(client,/pendingSelection/,'Observed-site handler is not reading the explicit pending-job selection');
+assert.doesNotMatch(client,/Multiple pending build jobs exist in this system\. Site selected in the new-job form/,'Multiple pending jobs must not fall back to the new-job form');
 
 console.log('✓ Colonization Job revisions increment only on material definition changes');
 console.log('✓ Legacy jobs receive an idempotent revision-1 provenance baseline');
