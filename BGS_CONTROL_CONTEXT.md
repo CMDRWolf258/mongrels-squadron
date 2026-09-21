@@ -962,6 +962,20 @@ Activation principle remains: use this comparison surface to validate real-world
 - Publish Queue background synchronization no longer rewrites the queued-system DOM unless the actual queued snapshot changes.
 - VIEW ORDERS / HIDE ORDERS continues to toggle only the existing row in place; routine board refreshes should no longer replace the button during a click.
 
+## Publish Queue Mission Control change detection — 2026-09-20
+
+- Publish Queue now compares each queued system's frozen task snapshot against the **currently published Mission Control Daily Orders** for that system.
+- Comparison uses the same logical-order identity semantics as server reconciliation: stable logical tasks survive numeric target revisions; fundamentally different tasks are treated as new/replaced.
+- Queue rows classify the pending result as **NEW**, **CHANGED**, **REPLACED**, **REMOVE**, or **UNCHANGED**.
+- Numeric reporting-target revisions show a compact before → after delta in the expanded one-line order review.
+- Systems with material differences are highlighted; removals/replacements carry **REMOVES ORDERS** treatment.
+- Automation-driven queue replacement after fresh BGS data carries **FRESH DATA** when the queued plan materially changed.
+- A dedicated amber **ORDER CHANGES** annunciator flashes for unreviewed material differences. Pure source/timestamp refreshes do not trigger it when the operational plan is unchanged.
+- Acknowledging Order Changes marks the current change signatures reviewed but never publishes or modifies Mission Control.
+- Review signatures are persisted server-side under authenticated site-admin control, so the same revision stays reviewed across reloads/devices. If the queued plan or published baseline changes materially, the signature changes and the alert re-arms.
+- Publish confirmation now summarizes added, changed, replaced, removed and unchanged tasks versus Mission Control, and explicitly notes remaining unreviewed systems.
+- The Mission Control comparison baseline refreshes on page load and again when returning to a stale tab, so changes made elsewhere do not leave the queue comparison indefinitely stale.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
