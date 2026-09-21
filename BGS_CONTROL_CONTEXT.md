@@ -1001,6 +1001,15 @@ Activation principle remains: use this comparison surface to validate real-world
 - Long verification text now wraps instead of truncating so the verified/reported/difference values are readable without hovering.
 - This is presentation-only; it does not alter verification, manual report storage, or reward calculations.
 
+## Testing-quality pass — 2026-09-21
+
+- Verification Review now includes an explicit Refresh Verification button, Last Checked timestamp, current cycle context, active-order count, and compact MATCHED / MISMATCH / SCOUT ONLY / MANUAL ONLY totals.
+- Mission Control report progress now updates from the mutation response instead of waiting on a follow-up KV read. The report API also explicitly merges the just-written report into POST/PATCH summaries and excludes a just-deleted report from DELETE summaries, avoiding Cloudflare KV propagation races.
+- BGS Control collapsed system-card influence target meters now render before first expansion. Effective target min/max are carried on the always-mounted details element so lazy body parking no longer hides the target band from the header meter.
+- Obsolete Publish Queue detail CSS for the old snapshot label/order-copy/warning-list view was removed.
+- Frontier Scout diagnostic/privacy wording now refers to active Daily Order systems instead of the old 10-16/configured-single-system wording.
+- Reward issuance remains disabled; all Verification Review changes are read-only testing/audit improvements.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
