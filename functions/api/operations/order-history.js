@@ -1,0 +1,43 @@
+import { json, readSession } from '../../../lib/auth.js';
+import { listOrderPublications } from '../../../lib/order-history.js';
+
+export async function onRequestGet({request,env}) {
+  const session=await readSession(request,env);
+  if(!session)return reply({ok:false,error:'authentication_required'},401);
+  if(session.access!=='site_admin')return reply({ok:false,error:'site_admin_required'},403);
+
+  const url=new URL(request.url);
+  const limit=Math.max(1,Math.min(100,Math.floor(Number(url.searchParams.get('limit'))||40)));
+  const cycleId=String(url.searchParams.get('cycleId')||'').trim().slice(0,100);
+  const records=await listOrderPublications(env,{limit,cycleId});
+
+  const summary={
+    recordCount:records.length,
+    appliedCount:records.filter(row=>row.state==='applied').length,
+    preparedCount:records.filter(row=>row.state==='prepared').length,
+    failedCount:records.filter(row=>row.state==='failed').length,
+    added:records.reduce((sum,row)=>sum+Number(row?.changes?.counts?.added||0),0),
+    revised:records.reduce((sum,row)=>sum+Number(row?.changes?.counts?.revised||0),0),
+    removed:records.reduce((sum,row)=>sum+Number(row?.changes?.counts?.removed||0),0),
+  };
+
+  return reply({
+    ok:true,
+    records,
+    summary,
+    archivalMode:'write-ahead',
+    immutablePayload:true,
+  });
+}
+
+function reply(body,status=200){
+  return json(body,{
+    status,
+    headers:{
+      'Cache-Control':'private, no-store, no-cache, must-revalidate',
+      Pragma:'no-cache',
+      Vary:'Cookie',
+      'X-Content-Type-Options':'nosniff',
+    },
+  });
+}
