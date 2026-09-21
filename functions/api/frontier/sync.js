@@ -33,7 +33,7 @@ export async function onRequestPost({request,env}) {
     if (status === 204) {
       account = {...account,lastSyncAt:new Date().toISOString()};
       await saveAccount(env, auth.session.sub, account);
-      return json({ok:true,partial:false,targetSystem:TEST_SYSTEM,newEvents:0,summary:summarizeEvents([]),account:publicAccount(account),message:'No journal data is available from Frontier for today yet.'},{headers:privateHeaders()});
+      return json({ok:true,partial:false,targetSystem:TEST_SYSTEM,newEvents:0,summary:summarizeEvents([]),cooldown:syncCooldown(account),account:publicAccount(account),message:'No journal data is available from Frontier for today yet.'},{headers:privateHeaders()});
     }
     if (![200,206].includes(status)) throw new Error('frontier_journal_' + status);
     const text = await response.response.text();
@@ -62,6 +62,7 @@ export async function onRequestPost({request,env}) {
       verifiedOrders:rewardPreview,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
+      cooldown:syncCooldown(account),
       account:publicAccount(account),
     }, {headers:privateHeaders()});
   } catch (error) {
