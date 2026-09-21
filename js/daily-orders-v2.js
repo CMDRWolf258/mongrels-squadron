@@ -88,16 +88,18 @@
 
   async function load(){
     try{
-      const [ordersRes,reportsRes]=await Promise.all([
+      const [ordersRes,reportsRes,frontierRes]=await Promise.all([
         fetch('/api/operations/orders?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
         fetch('/api/operations/order-reports?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+        fetch('/api/frontier/status?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
       ]);
       if(!ordersRes.ok||!reportsRes.ok)return;
-      render(await ordersRes.json(),await reportsRes.json());
+      const frontierPayload=frontierRes.ok?await frontierRes.json():null;
+      render(await ordersRes.json(),await reportsRes.json(),frontierPayload);
     }catch(error){console.error('Mission Control structured order view failed',error);}
   }
 
-  function render(payload,reportPayload){
+  function render(payload,reportPayload,frontierPayload){
     const openSystems=new Set([...list.querySelectorAll('.mc-system-order-card[open]')].map(card=>card.dataset.system));
     const orders=(Array.isArray(payload.orders)?payload.orders:[]).filter(active);
     if(!orders.length)return;
@@ -135,7 +137,10 @@
       items.forEach((order,i)=>{
         const pair=document.createElement('div');pair.className='mc-order-pair';
         pair.append(orderBrief(order,i));
-        if(spec(order).type)pair.append(reportBlock(order,reportPayload.summaries?.[order.id],reportPayload.reports||[]));
+        if(spec(order).type){
+          const verified=(Array.isArray(frontierPayload?.verifiedOrders)?frontierPayload.verifiedOrders:[]).find(item=>String(item.orderId)===String(order.id));
+          pair.append(reportBlock(order,reportPayload.summaries?.[order.id],reportPayload.reports||[],verified));
+        }
         else{const empty=document.createElement('div');empty.className='mc-no-report';empty.innerHTML='<span>REPORTING</span><strong>No report requested</strong><p>Complete this order as briefed.</p>';pair.append(empty);}
         pairs.append(pair);
       });
@@ -151,13 +156,16 @@
     return el;
   }
 
-  function reportBlock(order,summary,reports=[]){
+  function reportBlock(order,summary,reports=[],verified=null){
     const s=spec(order),squad=summary?.squad||{},viewer=summary?.viewer||{},score=n(squad.score),mine=n(viewer.score),target=s.target;
     const host=document.createElement('section');host.className='mc-report-block';host.dataset.orderId=order.id;
     if(s.blitz)host.classList.add('is-blitz');
     const progress=target&&target>0?Math.max(0,Math.min(100,(score/target)*100)):0;
     const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
-    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
+    const verifiedLine=verified
+      ? '<div class="mc-verified-progress"><span>SCOUT VERIFIED</span><strong>'+esc(fmt(verified.contribution)+' '+(verified.unit||''))+'</strong>'+(verified.rewardEligible?'<small>Reward preview '+esc(fmt(verified.entitlementMillions))+'M / '+esc(fmt(verified.capMillions))+'M Cr cap · preview only</small>':'<small>Verified contribution · reward rule not active</small>')+'</div>'
+      : '';
+    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You reported <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div>'+verifiedLine+'<div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
     const form=host.querySelector('.mc-report-form');
     let editor=null;
     if(s.type==='cz')editor=czForm(order);
