@@ -38,6 +38,8 @@
 .wolf-dryrun-chip.is-blocked{border-color:rgba(255,95,95,.38);color:#ffd0d0;background:rgba(145,14,14,.09)}
 .wolf-dryrun-chip.is-duplicate{border-color:rgba(92,210,255,.3);color:#bceefa;background:rgba(42,160,191,.07)}
 .wolf-dryrun-chip.is-provenance{border-color:rgba(169,123,255,.3);color:#dfd0ff;background:rgba(92,52,145,.07)}
+.wolf-dryrun-issue{margin-left:.15rem;white-space:normal;line-height:1.15;text-align:center;border-color:rgba(93,206,151,.35)}
+.wolf-dryrun-issue:disabled{opacity:.65;cursor:wait}
 .wolf-dryrun-blockers{grid-column:1/-1;margin-top:-.12rem;color:#ffbcbc;font-size:.55rem;line-height:1.35}
 .wolf-dryrun-meta{display:flex;flex-wrap:wrap;gap:.35rem .55rem;margin:.65rem 0 0}
 .wolf-dryrun-meta span{padding:.2rem .3rem;border:1px solid rgba(255,255,255,.05);color:var(--muted);font-size:.54rem}
@@ -46,5 +48,5 @@
 .wolf-ledger-divider h3{margin:0 0 .12rem;font-size:.82rem}
 .wolf-ledger-divider p{margin:0;color:var(--muted);font-size:.63rem;line-height:1.4}
 @media(max-width:1100px){.wolf-dryrun-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.wolf-dryrun-obligation{grid-template-columns:minmax(0,1fr) auto}.wolf-dryrun-state{grid-column:1/-1;justify-content:flex-start}}
-@media(max-width:700px){.wolf-dryrun-head{flex-direction:column}.wolf-dryrun-stats{grid-template-columns:1fr 1fr}.wolf-dryrun-obligation{grid-template-columns:1fr}.wolf-dryrun-amount{text-align:left}.wolf-dryrun-state{grid-column:auto}.wolf-dryrun-member>summary{align-items:flex-start;flex-direction:column}.wolf-dryrun-member-total{text-align:left}}
+@media(max-width:700px){.wolf-dryrun-head{flex-direction:column}.wolf-dryrun-stats{grid-template-columns:1fr 1fr}.wolf-dryrun-obligation{grid-template-columns:1fr}.wolf-dryrun-amount{text-align:left}.wolf-dryrun-state{grid-column:auto;justify-content:flex-start}.wolf-dryrun-issue{margin-left:0;width:100%}.wolf-dryrun-member>summary{align-items:flex-start;flex-direction:column}.wolf-dryrun-member-total{text-align:left}}
 @media(max-width:500px){.wolf-dryrun-stats{grid-template-columns:1fr}}
