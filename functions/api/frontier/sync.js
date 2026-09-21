@@ -86,11 +86,28 @@ export async function onRequestPost({request,env}) {
       if (historicalStatus===200 || historicalStatus===204) reconciled.add(historicalDate);
     }
 
-    const combinedText=[historicalText,currentText].filter(Boolean).join('\n');
-    const parsed = parseJournal(combinedText,targetSystems,{
-      diagnostics:auth.session.access === 'site_admin',
-      knownSystemAddresses:account.systemAddresses || {},
-    });
+    const yesterday=formatUtcDay(addUtcDays(utcDay(new Date()),-1));
+    let parsed;
+    if (historicalText && historicalDate === yesterday) {
+      parsed=parseJournal([historicalText,currentText].filter(Boolean).join('\n'),targetSystems,{
+        diagnostics:auth.session.access === 'site_admin',
+        knownSystemAddresses:account.systemAddresses || {},
+      });
+    } else {
+      const historicalParsed=historicalText
+        ? parseJournal(historicalText,targetSystems,{
+            diagnostics:auth.session.access === 'site_admin',
+            knownSystemAddresses:account.systemAddresses || {},
+          })
+        : emptyParsed(targetSystems);
+      const currentParsed=currentText
+        ? parseJournal(currentText,targetSystems,{
+            diagnostics:auth.session.access === 'site_admin',
+            knownSystemAddresses:{...(account.systemAddresses||{}),...(historicalParsed.systemAddresses||{})},
+          })
+        : emptyParsed(targetSystems);
+      parsed=mergeParsed(historicalParsed,currentParsed,targetSystems);
+    }
     const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
     const matched = matchVerifiedActivity(merged, currentOrders);
     const rewardSettings = await readRewardSettings(env);
@@ -135,6 +152,26 @@ export async function onRequestPost({request,env}) {
     const reauth=code.includes('reauthorization');
     return json({ok:false,error:reauth?'frontier_reauthorization_required':'frontier_sync_failed'}, {status:reauth?401:502,headers:privateHeaders()});
   }
+}
+
+function emptyParsed(targetSystems) {
+  return {
+    events:[],excluded:[],diagnostics:[],lastEventAt:null,lastSystem:'',
+    targetSystems:Array.isArray(targetSystems)?targetSystems:[],
+    systemAddresses:{},
+  };
+}
+
+function mergeParsed(a,b,targetSystems) {
+  return {
+    events:[...(a?.events||[]),...(b?.events||[])],
+    excluded:[...(a?.excluded||[]),...(b?.excluded||[])],
+    diagnostics:[...(a?.diagnostics||[]),...(b?.diagnostics||[])],
+    lastEventAt:[a?.lastEventAt,b?.lastEventAt].filter(Boolean).sort().at(-1)||null,
+    lastSystem:b?.lastSystem||a?.lastSystem||'',
+    targetSystems:Array.isArray(targetSystems)?targetSystems:[],
+    systemAddresses:{...(a?.systemAddresses||{}),...(b?.systemAddresses||{})},
+  };
 }
 
 function nextHistoricalDate(currentOrders,reconciled) {
