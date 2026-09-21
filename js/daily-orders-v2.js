@@ -7,6 +7,9 @@
   const REPORT_TYPES=new Set(['cz','inf','bounties','trade','exploration']);
   const CREDIT_TYPES=new Set(['bounties','trade','exploration']);
   let refreshTimer=null;
+  let ordersPayloadCache=null;
+  let reportsPayloadCache=null;
+  let frontierPayloadCache=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const n=value=>Number.isFinite(Number(value))?Number(value):0;
@@ -94,9 +97,26 @@
         fetch('/api/frontier/status?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
       ]);
       if(!ordersRes.ok||!reportsRes.ok)return;
+      const ordersPayload=await ordersRes.json();
+      const reportsPayload=await reportsRes.json();
       const frontierPayload=frontierRes.ok?await frontierRes.json():null;
-      render(await ordersRes.json(),await reportsRes.json(),frontierPayload);
+      ordersPayloadCache=ordersPayload;
+      reportsPayloadCache=reportsPayload;
+      frontierPayloadCache=frontierPayload;
+      render(ordersPayload,reportsPayload,frontierPayload);
     }catch(error){console.error('Mission Control structured order view failed',error);}
+  }
+
+  function applyReportMutation(data){
+    if(!ordersPayloadCache||!data||typeof data!=='object')return false;
+    reportsPayloadCache={
+      ...(reportsPayloadCache||{}),
+      ...data,
+      summaries:data.summaries||reportsPayloadCache?.summaries||{},
+      reports:Array.isArray(data.reports)?data.reports:(reportsPayloadCache?.reports||[]),
+    };
+    render(ordersPayloadCache,reportsPayloadCache,frontierPayloadCache);
+    return true;
   }
 
   function render(payload,reportPayload,frontierPayload){
@@ -313,7 +333,7 @@
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'report_delete_failed');
       status.textContent='Report deleted. Squad progress updated.';status.dataset.state='success';
-      setTimeout(load,180);
+      if(!applyReportMutation(data))setTimeout(load,180);
     }catch(error){
       console.error(error);status.textContent='Could not delete report. Please try again.';status.dataset.state='error';
     }
@@ -364,7 +384,7 @@
       if(!response.ok)throw new Error(data.error||'report_failed');
       status.textContent=editing?'Report updated. Squad progress recalculated.':'Report added to squad progress.';status.dataset.state='success';
       setEditUi(form,false);resetReport(form);
-      setTimeout(load,180);
+      if(!applyReportMutation(data))setTimeout(load,180);
     }catch(error){console.error(error);status.textContent=error.message==='empty_report'?'Add a result before saving.':'Could not save report. Please try again.';status.dataset.state='error';button.disabled=false;}
   }
 
