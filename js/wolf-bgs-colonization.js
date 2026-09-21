@@ -66,6 +66,7 @@
     });
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
+    window.dispatchEvent(new CustomEvent('wolf-bgs-colonization-history-updated'));
     return data;
   }
 
@@ -101,6 +102,7 @@
     chips.className='wolf-colonization-job-chips';
     chips.append(
       badge(String(job.status||'active').toUpperCase(),`is-${job.status||'active'}`),
+      badge('REV '+Number(job.revision||1)),
       ...(job.scope==='market'&&!job.marketId?[badge('AWAITING SITE','is-awaiting')]:[]),
       ...(job.arbitrationBlocked?[badge('ARBITRATION BLOCKED','is-conflict')]:[]),
       ...(number(job.suppressedEvents)>0?[badge('OVERLAP ROUTED','is-routed')]:[]),
@@ -336,8 +338,8 @@
     const id=card?.dataset.jobId||'';
     if(!id)return;
     const action=button.dataset.colonizationAction;
-    if(action==='delete'&&!window.confirm('Delete this Colonization Job definition? Verified Frontier events will remain stored, but the job will no longer match them.'))return;
-    if(action==='change-site'&&!window.confirm('Change the construction site for this job? The job will return to AWAITING SITE and its verification preview will be recalculated after you select the correct discovered site.'))return;
+    if(action==='delete'&&!window.confirm('Delete this Colonization Job definition? Its final revision will remain in durable history and verified Frontier events will remain stored. Automatic payouts are still off.'))return;
+    if(action==='change-site'&&!window.confirm('Change the construction site for this job? The current site binding will remain archived as the prior revision. The job will return to AWAITING SITE and its preview will be recalculated after you select the correct site.'))return;
     button.disabled=true;
     try{
       if(action==='delete')await mutate({action:'delete',id});
