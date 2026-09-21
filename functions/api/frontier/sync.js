@@ -26,7 +26,7 @@ export async function onRequestPost({request,env}) {
     const text = await response.response.text();
     if (text.trim() === 'Journal unavailable') throw new Error('frontier_journal_unavailable');
     const parsed = parseJournal(text, TEST_SYSTEM, {diagnostics:auth.session.access === 'site_admin'});
-    const merged = await mergeEvents(env, auth.session.sub, parsed.events);
+    const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
     account = {
       ...account,
       lastSyncAt:new Date().toISOString(),
