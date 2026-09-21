@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=5">
   <link rel="stylesheet" href="../css/wolf-bgs-architects.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-history.css?v=1">
-  <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=2">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -379,7 +379,7 @@
           <summary><span><b>Reward Engine · DRY RUN</b><small>Exact would-create obligations · provenance gates · actual ledger remains untouched</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
             <div class="wolf-dryrun-head">
-              <p>The engine computes exact Frontier-verified Daily Order and Colonization Job reward obligations. This endpoint has no ledger-write capability: dry-run results cannot create debt, mark payouts, or change member balances.</p>
+              <p>The engine computes exact Frontier-verified Daily Order and Colonization Job reward obligations. DRY RUN itself remains read-only. A site admin may explicitly promote a READY row into the actual ledger as OWED; blocked or stale rows cannot be issued, and nothing is marked paid automatically.</p>
               <button type="button" class="btn btn-secondary btn-compact" data-refresh-reward-dryrun>Refresh Dry Run</button>
             </div>
             <div class="wolf-dryrun-mode">
@@ -395,7 +395,7 @@
             </div>
             <div class="wolf-rules-callout subtle">
               <strong>LIVE GATE</strong>
-              <span>A verified reward is live-ready only when its source has exact durable provenance, Frontier evidence IDs, unambiguous attribution, and no already-issued excess. Daily Orders require their archived cycle/order revision; Colonization requires the archived job revision and construction-site binding. Missing provenance is BLOCKED rather than guessed.</span>
+              <span>A verified reward is live-ready only when its source has exact durable provenance, Frontier evidence IDs, unambiguous attribution, and no already-issued excess. READY is still only a preview until a site admin explicitly creates the OWED ledger entry. The server re-validates the evidence, rules, amount, and duplicate state before any write.</span>
             </div>
             <div class="wolf-dryrun-meta">
               <span>CYCLE <b data-reward-dryrun-cycle>—</b></span>
@@ -409,7 +409,7 @@
 
             <div class="wolf-ledger-divider">
               <h3>Actual Reward Ledger</h3>
-              <p>This remains the real stored ledger. DRY RUN does not write to it.</p>
+              <p>This is the real stored ledger. READY rows enter it only through the explicit CREATE OWED ENTRY action. Creating an owed entry does not mean the in-game credits have been paid.</p>
             </div>
             <div class="wolf-form-grid">
               <div class="wolf-rules-callout subtle"><strong data-reward-total-owed>0 Cr</strong><span>Total currently owed</span></div>
@@ -539,7 +539,7 @@
 <script src="../js/wolf-bgs-architects.js?v=2"></script>
 <script src="../js/wolf-bgs-colonization.js?v=9"></script>
 <script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
-<script src="../js/wolf-bgs-rewards.js?v=11"></script>
+<script src="../js/wolf-bgs-rewards.js?v=12"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>

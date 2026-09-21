@@ -1144,6 +1144,22 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Controlled Reward Ledger issue — 2026-09-21
+
+The Reward Engine now has an explicit **READY → OWED ledger** action while automatic issuance remains OFF.
+
+- Only a **site admin** can issue a READY obligation at this stage.
+- The client never sends a ledger entry payload. It sends only the deterministic obligation ID plus the amount/evidence/rule digests that were displayed.
+- The server re-runs the full unified Reward Engine against current Daily Order history, Colonization history, Frontier evidence, reward settings, and the actual ledger before allowing a write.
+- The write is rejected if the obligation disappeared, became BLOCKED, changed amount, changed evidence, changed reward rules, or is otherwise stale.
+- A successful action creates exactly one real ledger entry with status **OWED**. It does **not** mark any in-game credit transfer as paid.
+- Ledger creation is deterministic/idempotent: clicking the same obligation twice cannot create duplicate debt.
+- Approval audit fields are stored on the ledger entry: source obligation ID, approval mode, approved timestamp, and approving admin.
+- The BGS Control button is deliberately labeled **CREATE OWED ENTRY** and requires a confirmation explaining that no in-game payment is being recorded.
+- After creation, the Reward Engine refreshes against the real ledger; the same entitlement should become **DUPLICATE SUPPRESSED** / zero remaining delta until new verified contribution increases entitlement.
+- DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
+- Automatic reward ledger writes remain OFF. Batch issue is not enabled.
+
 ## Daily Order legacy baseline / event-time guard — 2026-09-21
 
 Added the same migration safety concept used by Colonization to Daily Orders.
