@@ -11,6 +11,8 @@
   let ledgerLoading=false;
   let verificationLoaded=false;
   let verificationLoading=false;
+  let verificationLoadedAt=0;
+  const VERIFICATION_FRESH_MS=5000;
 
   function getPath(obj,path){
     return String(path||'').split('.').reduce((value,key)=>value&&typeof value==='object'?value[key]:undefined,obj);
@@ -143,9 +145,11 @@
     }
   }
 
-  async function loadVerificationReview(){
+  async function loadVerificationReview(force=false){
     const review=document.querySelector('[data-verification-review]');
-    if(!review||verificationLoaded||verificationLoading)return;
+    if(!review||verificationLoading)return;
+    const fresh=verificationLoaded && (Date.now()-verificationLoadedAt)<VERIFICATION_FRESH_MS;
+    if(!force&&fresh)return;
     verificationLoading=true;
     const list=review.querySelector('[data-verification-list]');
     const flags=review.querySelector('[data-verification-flags]');
@@ -280,6 +284,7 @@
         }
       }
       verificationLoaded=true;
+      verificationLoadedAt=Date.now();
     }catch(error){
       console.error('Could not load verification review',error);
       if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Verification review unavailable.</strong><small>No reward state was changed.</small></div>';
@@ -299,7 +304,18 @@
     if(details.open)run();
   }
 
+  const verificationPanel=document.querySelector('[data-verification-review]');
+  const refreshVerificationIfVisible=()=>{
+    if(!verificationPanel?.open)return;
+    if(Date.now()-verificationLoadedAt<VERIFICATION_FRESH_MS)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(verificationPanel.open)loadVerificationReview(true);}));
+  };
+
+  window.addEventListener('focus',refreshVerificationIfVisible,{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshVerificationIfVisible();},{passive:true});
+  window.addEventListener('pageshow',refreshVerificationIfVisible,{passive:true});
+
   loadAfterOpen(panel,load);
   loadAfterOpen(document.querySelector('[data-reward-ledger-admin]'),loadLedgerPreview);
-  loadAfterOpen(document.querySelector('[data-verification-review]'),loadVerificationReview);
+  loadAfterOpen(verificationPanel,loadVerificationReview);
 })();
