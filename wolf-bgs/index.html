@@ -379,7 +379,7 @@
           <summary><span><b>Reward Engine · DRY RUN</b><small>Exact would-create obligations · provenance gates · actual ledger remains untouched</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
             <div class="wolf-dryrun-head">
-              <p>The engine now computes the exact verified-order reward entries it would create from Frontier Scout activity. This endpoint has no ledger-write capability: dry-run results cannot create debt, mark payouts, or change member balances.</p>
+              <p>The engine computes exact Frontier-verified Daily Order and Colonization Job reward obligations. This endpoint has no ledger-write capability: dry-run results cannot create debt, mark payouts, or change member balances.</p>
               <button type="button" class="btn btn-secondary btn-compact" data-refresh-reward-dryrun>Refresh Dry Run</button>
             </div>
             <div class="wolf-dryrun-mode">
@@ -395,11 +395,11 @@
             </div>
             <div class="wolf-rules-callout subtle">
               <strong>LIVE GATE</strong>
-              <span>A verified reward is considered live-ready only when it has a current cycle, stable logical order identity, exact archived order revision, Frontier evidence IDs, and no already-issued excess. Missing provenance is shown as BLOCKED rather than guessed.</span>
+              <span>A verified reward is live-ready only when its source has exact durable provenance, Frontier evidence IDs, unambiguous attribution, and no already-issued excess. Daily Orders require their archived cycle/order revision; Colonization requires the archived job revision and construction-site binding. Missing provenance is BLOCKED rather than guessed.</span>
             </div>
             <div class="wolf-dryrun-meta">
               <span>CYCLE <b data-reward-dryrun-cycle>—</b></span>
-              <span>ARCHIVE RECORDS <b data-reward-dryrun-history>0</b></span>
+              <span>ORDER ARCHIVE <b data-reward-dryrun-history>0</b></span><span>COLONY ARCHIVE <b data-reward-dryrun-colonization-history>0</b></span>
               <span>ACTUAL LEDGER ENTRIES <b data-reward-dryrun-ledger-count>0</b></span>
               <span>BLOCKED VALUE <b data-reward-dryrun-blocked-value>0 Cr</b></span>
             </div>
@@ -539,7 +539,7 @@
 <script src="../js/wolf-bgs-architects.js?v=2"></script>
 <script src="../js/wolf-bgs-colonization.js?v=9"></script>
 <script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
-<script src="../js/wolf-bgs-rewards.js?v=9"></script>
+<script src="../js/wolf-bgs-rewards.js?v=10"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
