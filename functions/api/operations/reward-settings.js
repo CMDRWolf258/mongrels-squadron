@@ -1,12 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { DEFAULT_REWARD_SETTINGS, normalizeRewardSettings } from '../../../lib/reward-rules.js';
-
-const KV_KEY = 'reward-settings-v1';
+import { DEFAULT_REWARD_SETTINGS, normalizeRewardSettings, readRewardSettings, REWARD_SETTINGS_KEY } from '../../../lib/reward-rules.js';
 
 export async function onRequestGet({request,env}) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
-  const stored = await readSettings(env);
+  const stored = await readRewardSettings(env);
   return reply({
     ok:true,
     settings:stored.settings,
@@ -36,23 +34,8 @@ export async function onRequestPut({request,env}) {
     updatedAt:new Date().toISOString(),
     updatedBy:auth.session.displayName || auth.session.username || 'Wolf',
   };
-  await env.DAILY_ORDERS.put(KV_KEY, JSON.stringify(stored));
+  await env.DAILY_ORDERS.put(REWARD_SETTINGS_KEY, JSON.stringify(stored));
   return reply({ok:true,...stored,defaults:DEFAULT_REWARD_SETTINGS});
-}
-
-async function readSettings(env) {
-  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') {
-    return {settings:normalizeRewardSettings(),updatedAt:null,updatedBy:null};
-  }
-  const stored = await env.DAILY_ORDERS.get(KV_KEY,{type:'json'});
-  if (!stored || typeof stored !== 'object') {
-    return {settings:normalizeRewardSettings(),updatedAt:null,updatedBy:null};
-  }
-  return {
-    settings:normalizeRewardSettings(stored.settings),
-    updatedAt:stored.updatedAt || null,
-    updatedBy:stored.updatedBy || null,
-  };
 }
 
 async function requireSiteAdmin(request, env) {
