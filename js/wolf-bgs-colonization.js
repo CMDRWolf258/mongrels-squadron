@@ -102,6 +102,8 @@
     chips.append(
       badge(String(job.status||'active').toUpperCase(),`is-${job.status||'active'}`),
       ...(job.scope==='market'&&!job.marketId?[badge('AWAITING SITE','is-awaiting')]:[]),
+      ...(job.arbitrationBlocked?[badge('ARBITRATION BLOCKED','is-conflict')]:[]),
+      ...(number(job.suppressedEvents)>0?[badge('OVERLAP ROUTED','is-routed')]:[]),
       badge(`${fmt(job.contributorCount)} CMDR${number(job.contributorCount)===1?'':'s'}`),
     );
     head.append(title,chips);
@@ -132,7 +134,14 @@
         const main=document.createElement('div');
         const name=document.createElement('strong');name.textContent=member.commander||'Elite CMDR';
         const detail=document.createElement('small');
-        detail.textContent=`${fmt(member.tons)} t verified · ${fmt(member.completeBlocks)} complete reward block${number(member.completeBlocks)===1?'':'s'} · ${fmt(member.tonsToNextBlock)} t to next block`;
+        const detailParts=[
+          `${fmt(member.tons)} t payable after arbitration`,
+          `${fmt(member.completeBlocks)} complete reward block${number(member.completeBlocks)===1?'':'s'}`,
+          `${fmt(member.tonsToNextBlock)} t to next block`,
+        ];
+        if(number(member.ambiguousEventCount)>0)detailParts.push(`${fmt(member.ambiguousPotentialTons)} t blocked by ambiguous overlap`);
+        if(number(member.suppressedEventCount)>0)detailParts.push(`${fmt(member.suppressedTons)} t routed to a more specific job`);
+        detail.textContent=detailParts.join(' · ');
         main.append(name,detail);
         const amount=document.createElement('b');
         amount.textContent=money(member.rewardPreviewMillions);
@@ -144,7 +153,14 @@
 
     const meta=document.createElement('div');
     meta.className='wolf-colonization-meta';
-    meta.textContent=`Started ${date(job.startsAt)}${job.endsAt?` · ended ${date(job.endsAt)}`:''}${job.squadEvents?` · ${fmt(job.squadEvents)} verified contribution event${number(job.squadEvents)===1?'':'s'}`:''}`;
+    const metaParts=[
+      `Started ${date(job.startsAt)}`,
+      job.endsAt?`ended ${date(job.endsAt)}`:'',
+      job.squadEvents?`${fmt(job.squadEvents)} payable contribution event${number(job.squadEvents)===1?'':'s'}`:'',
+      job.ambiguousEvents?`${fmt(job.ambiguousEvents)} ambiguous event${number(job.ambiguousEvents)===1?'':'s'} blocked`:'',
+      job.suppressedEvents?`${fmt(job.suppressedEvents)} overlap match${number(job.suppressedEvents)===1?' was':'es were'} routed elsewhere`:'',
+    ].filter(Boolean);
+    meta.textContent=metaParts.join(' · ');
 
     const actions=document.createElement('div');
     actions.className='wolf-colonization-actions';
@@ -249,6 +265,16 @@
     setText('[data-colonization-observed-count]',observedRows.length.toLocaleString());
     setText('[data-colonization-verified-tons]',fmt(verifiedTons)+' t');
     setText('[data-colonization-connected]',number(data.connectedMembers).toLocaleString());
+    const arbitration=data.arbitrationSummary||{};
+    const arbitrationNote=panel.querySelector('[data-colonization-arbitration-summary]');
+    if(arbitrationNote){
+      const ambiguous=number(arbitration.ambiguousEvents);
+      const suppressed=number(arbitration.suppressedMatches);
+      const assigned=number(arbitration.assignedEvents);
+      arbitrationNote.textContent=ambiguous
+        ? `Arbitration assigned ${fmt(assigned)} contribution event${assigned===1?'':'s'} and blocked ${fmt(ambiguous)} ambiguous overlap${ambiguous===1?'':'s'}. ${fmt(suppressed)} lower-priority overlap match${suppressed===1?' was':'es were'} routed away from duplicate credit.`
+        : `Arbitration assigned ${fmt(assigned)} contribution event${assigned===1?'':'s'} with no ambiguous overlaps. ${fmt(suppressed)} lower-priority overlap match${suppressed===1?' was':'es were'} routed away from duplicate credit.`;
+    }
 
     list.replaceChildren();
     if(!jobs.length){
