@@ -12,6 +12,7 @@
   const marketFields=panel.querySelector('[data-colonization-market-fields]');
   let loading=false;
   let loadedAt=0;
+  let jobsCache=[];
   const FRESH_MS=5000;
 
   const number=value=>Number(value)||0;
@@ -89,7 +90,9 @@
     strong.textContent=job.title||job.buildName||job.system||'Colonization Job';
     const small=document.createElement('small');
     const scopeText=job.scope==='market'
-      ? `${job.system} · ${job.buildName||'Build'} · MarketID ${job.marketId||'—'}`
+      ? (job.marketId
+          ? `${job.system} · ${job.buildName||'Specific construction build'}`
+          : `${job.system} · waiting for construction site discovery`)
       : `${job.system} · any construction depot`;
     small.textContent=scopeText+(job.commodity?` · ${job.commodity} only`:'');
     title.append(eyebrow,strong,small);
@@ -98,6 +101,7 @@
     chips.className='wolf-colonization-job-chips';
     chips.append(
       badge(String(job.status||'active').toUpperCase(),`is-${job.status||'active'}`),
+      ...(job.scope==='market'&&!job.marketId?[badge('AWAITING SITE','is-awaiting')]:[]),
       badge(`${fmt(job.contributorCount)} CMDR${number(job.contributorCount)===1?'':'s'}`),
     );
     head.append(title,chips);
@@ -203,6 +207,7 @@
 
   function render(data){
     const jobs=Array.isArray(data.jobs)?data.jobs:[];
+    jobsCache=jobs;
     const observedRows=Array.isArray(data.observedMarkets)?data.observedMarkets:[];
     const active=jobs.filter(job=>job.status==='active').length;
     const verifiedTons=jobs.reduce((sum,job)=>sum+number(job.squadTons),0);
@@ -285,18 +290,41 @@
     }
   });
 
-  observed?.addEventListener('click',event=>{
+  observed?.addEventListener('click',async event=>{
     const button=event.target.closest('[data-use-market-id]');
     if(!button)return;
+    const selectedSystem=button.dataset.useSystem||'';
+    const selectedMarketId=button.dataset.useMarketId||'';
+    const selectedBuildName=button.dataset.useBuildName||'';
+    const pending=jobsCache.filter(job=>job.status==='active'&&job.scope==='market'&&!job.marketId&&String(job.system||'').trim().toLowerCase()===selectedSystem.trim().toLowerCase());
+
+    if(pending.length===1){
+      button.disabled=true;
+      setMessage(`Binding discovered construction site to ${pending[0].title||pending[0].buildName||'pending job'}…`,'working');
+      try{
+        await mutate({action:'update',job:{id:pending[0].id,marketId:selectedMarketId,buildName:pending[0].buildName||selectedBuildName}});
+        loadedAt=0;
+        await load(true);
+        setMessage('Construction site discovered and bound to the pending job.','success');
+      }catch(error){
+        console.error(error);
+        setMessage('Could not bind the discovered site to the pending job.','error');
+        button.disabled=false;
+      }
+      return;
+    }
+
     const system=form.querySelector('[data-colonization-field="system"]');
     const market=form.querySelector('[data-colonization-field="marketId"]');
     const build=form.querySelector('[data-colonization-field="buildName"]');
-    if(system)system.value=button.dataset.useSystem||'';
+    if(system)system.value=selectedSystem;
     if(scope)scope.value='market';
-    if(market)market.value=button.dataset.useMarketId||'';
-    if(build&&!build.value.trim())build.value=button.dataset.useBuildName||'';
+    if(market)market.value=selectedMarketId;
+    if(build&&!build.value.trim())build.value=selectedBuildName;
     updateScope();
-    setMessage('Construction site selected. The internal site ID was filled automatically.','success');
+    setMessage(pending.length>1
+      ? 'Multiple pending build jobs exist in this system. Site selected in the new-job form so you can choose deliberately.'
+      : 'Construction site selected. The internal site ID was filled automatically.','success');
     form.scrollIntoView({behavior:'smooth',block:'nearest'});
   });
 
