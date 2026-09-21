@@ -235,7 +235,12 @@
       const commodity=event.commodity||'commodity';
       const faction=event.stationFaction ? ` · ${event.stationFaction}` : '';
       if (event.profitKnown === true && Number.isFinite(Number(event.profit))) {
-        return `Market sale · ${frontierMoney(event.profit)} profit · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
+        const eligibility=event.bgsTradeEligible===true
+          ? ' · BGS trade verified'
+          : event.tradeEligibilityReason
+            ? ` · not reward eligible: ${String(event.tradeEligibilityReason).replaceAll('_',' ')}`
+            : '';
+        return `Market sale · ${frontierMoney(event.profit)} profit · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}${eligibility}`;
       }
       return `Market sale · profit pending re-sync · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
     }
