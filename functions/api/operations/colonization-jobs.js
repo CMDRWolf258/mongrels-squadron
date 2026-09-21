@@ -109,7 +109,8 @@ export async function onRequestPut({request,env}) {
     const index=jobs.findIndex(job=>String(job.id)===id);
     if(index<0)return reply({ok:false,error:'colonization_job_not_found'},404);
     if(!['active','paused','completed'].includes(status))return reply({ok:false,error:'colonization_status_invalid'},400);
-    jobs[index]=normalizeColonizationJob({...jobs[index],status,updatedBy:actor},jobs[index]);
+    const endsAt=status==='completed'?(jobs[index].endsAt||new Date().toISOString()):(status==='active'?null:jobs[index].endsAt);
+    jobs[index]=normalizeColonizationJob({...jobs[index],status,endsAt,updatedBy:actor},jobs[index]);
   } else if(action==='delete') {
     const id=clean(body?.id,80);
     const index=jobs.findIndex(job=>String(job.id)===id);
