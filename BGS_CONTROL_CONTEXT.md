@@ -954,6 +954,13 @@ Activation principle remains: use this comparison surface to validate real-world
 - The queued system name is now clickable. It focuses that exact system in the normal System Control Deck, opens its full card and scrolls to it, even if filters/pagination previously hid it.
 - Full order rationale, faction-board context and warnings remain on the normal system card rather than being duplicated in Publish Queue.
 
+## Faction Alert conflict activation re-arm — 2026-09-20
+
+- Fixed an alert-lifecycle bug where acknowledging a pending conflict could suppress the master warning when the same War/Civil War/Election became active.
+- Pending → active conflict promotion now re-arms the alert once by clearing the older acknowledgement.
+- Existing affected alerts self-repair: if `activeSeenAt` is later than `reviewedAt`, the episode becomes unreviewed on refresh and the master alert should light/flash again.
+- Acknowledging after the active phase begins remains stable because the new `reviewedAt` is later than `activeSeenAt`; ordinary refreshes do not repeatedly re-arm it.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
