@@ -199,8 +199,13 @@
     if (event.type === 'combat_bonds_redeemed') return `Combat bonds redeemed · ${frontierMoney(event.amount)}`;
     if (event.type === 'cz_bond_awarded') return `CZ bond awarded · ${frontierMoney(event.amount)}`;
     if (event.type === 'market_sell') {
-      const profit=Number(event.profit)||0;
-      return `Market sale · ${frontierMoney(profit)} profit · ${Number(event.count||0).toLocaleString()} t ${event.commodity||''}${event.stationFaction ? ` · ${event.stationFaction}` : ''}`;
+      const qty=Number(event.count||0).toLocaleString();
+      const commodity=event.commodity||'commodity';
+      const faction=event.stationFaction ? ` · ${event.stationFaction}` : '';
+      if (event.profitKnown === true && Number.isFinite(Number(event.profit))) {
+        return `Market sale · ${frontierMoney(event.profit)} profit · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
+      }
+      return `Market sale · profit pending re-sync · ${frontierMoney(event.total)} revenue · ${qty} t ${commodity}${faction}`;
     }
     if (event.type === 'exploration_sale') return `Exploration data sold · ${frontierMoney(event.amount)}`;
     if (event.type === 'npc_text') {
@@ -249,7 +254,7 @@
     set('[data-frontier-bounties]',frontierMoney(s.bounties));
     set('[data-frontier-bonds]',frontierMoney(s.combatBondsRedeemed));
     set('[data-frontier-cz]',frontierMoney(s.czBondAwards));
-    set('[data-frontier-trade]',frontierMoney(s.tradeProfit));
+    set('[data-frontier-trade]',Number(s.tradeProfitUnknownSales||0) > 0 ? 'Re-sync required' : frontierMoney(s.tradeProfit));
     set('[data-frontier-exploration]',frontierMoney(s.explorationSales));
     if(events){
       events.replaceChildren();
