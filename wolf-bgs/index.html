@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-lab.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-screenshot.css?v=2">
   <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=2">
+  <link rel="stylesheet" href="../css/wolf-bgs-architects.css?v=1">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -105,6 +106,57 @@
             </div>
             <div class="wolf-scout-token-list" data-scout-token-list><div class="wolf-scout-empty"><strong>Loading Scout Network…</strong></div></div>
             <div class="wolf-rules-callout subtle"><strong>Privacy boundary</strong><span>The plugin does not send CMDR name, cargo, credits, ship/loadout, materials, missions, or general route history. Non-Mongrel systems are discarded locally and never uploaded.</span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <details class="wolf-panel wolf-architect-panel" data-colony-architects>
+          <summary><span><b>Colony Architect Registry</b><small>Manual system ↔ CMDR pairing · Frontier claim evidence · informational only</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <div class="wolf-architect-head">
+              <p>Track who owns the architect role for colony systems without using it as an access gate. Future Frontier system claims are captured as evidence; older systems can be paired manually and corrected at any time.</p>
+              <button type="button" class="btn btn-secondary btn-compact" data-architect-refresh>Refresh Registry</button>
+            </div>
+
+            <div class="wolf-rules-callout subtle">
+              <strong>NO JOB RESTRICTION</strong>
+              <span>This registry is informational. Colonization Job creation is not restricted by architect identity. Captured claim events never overwrite a manual pairing unless you explicitly confirm the claimant.</span>
+            </div>
+
+            <div class="wolf-architect-stats">
+              <div><span>Paired Systems</span><strong data-architect-paired-count>0</strong></div>
+              <div><span>Active Claims Seen</span><strong data-architect-claim-count>0</strong></div>
+              <div><span>Unpaired Claims</span><strong data-architect-unpaired-count>0</strong></div>
+              <div><span>Claim Conflicts</span><strong data-architect-conflict-count>0</strong></div>
+            </div>
+
+            <form class="wolf-architect-form" data-architect-form>
+              <input type="hidden" data-architect-claim-event>
+              <div class="wolf-architect-form-grid">
+                <label><span>Colony system</span><input type="text" maxlength="140" list="wolf-architect-system-options" data-architect-system placeholder="System name" required><datalist id="wolf-architect-system-options" data-architect-system-options></datalist></label>
+                <label><span>Architect CMDR</span><input type="text" maxlength="100" list="wolf-architect-commander-options" data-architect-commander placeholder="CMDR name" required><datalist id="wolf-architect-commander-options" data-architect-commander-options></datalist></label>
+                <label><span>Note</span><input type="text" maxlength="500" data-architect-note placeholder="Optional source / context"></label>
+              </div>
+              <div class="wolf-architect-form-actions">
+                <span class="wolf-status-message" data-architect-message>Open this panel to load architect data.</span>
+                <div><button type="button" class="btn btn-secondary btn-compact" data-architect-clear>Clear</button><button type="submit" class="btn btn-primary btn-compact">Pair / Update Architect</button></div>
+              </div>
+            </form>
+
+            <div class="wolf-architect-section">
+              <h3>Architect Pairings</h3>
+              <p>Manual records are the registry of record. Frontier claim evidence is shown beside them when available.</p>
+              <div class="wolf-architect-pairs" data-architect-pairs><div class="wolf-architect-empty"><strong>Loading pairings…</strong></div></div>
+            </div>
+
+            <div class="wolf-architect-section">
+              <h3>Captured System Claims</h3>
+              <p>Claim and release events are attributed to the Frontier-connected CMDR who synced them. Use Claimant loads that evidence into the pairing form for explicit confirmation.</p>
+              <div class="wolf-architect-claims" data-architect-claims><div class="wolf-architect-empty"><strong>Loading claim evidence…</strong></div></div>
+            </div>
           </div>
         </details>
       </div>
@@ -394,6 +446,7 @@
   <script src="../js/wolf-bgs-conflict-lab-v2.js?v=5"></script>
 <script src="../js/wolf-bgs-publish.js?v=14"></script>
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
+<script src="../js/wolf-bgs-architects.js?v=1"></script>
 <script src="../js/wolf-bgs-colonization.js?v=5"></script>
 <script src="../js/wolf-bgs-rewards.js?v=7"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
