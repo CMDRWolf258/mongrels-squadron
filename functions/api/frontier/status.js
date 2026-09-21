@@ -21,6 +21,7 @@ export async function onRequestGet({request,env}) {
     connected:Boolean(account),
     account:publicAccount(account),
     targetSystems,
+    claimTrackingEnabled:true,
     summary:summarizeEvents(events),
     orderCycleId:matched.cycleId,
     verifiedOrders:rewardPreview,
