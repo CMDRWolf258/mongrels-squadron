@@ -25,11 +25,13 @@ export async function onRequestGet({request,env}) {
       displayName:entry?.displayName||'Mongrel CMDR',
       owedCredits:0,
       paidCredits:0,
+      owedEntryCount:0,
+      paidEntryCount:0,
       entryCount:0,
       latestAt:null,
     };
-    if(entry?.status==='paid')member.paidCredits+=amount;
-    else if(entry?.status==='owed')member.owedCredits+=amount;
+    if(entry?.status==='paid'){member.paidCredits+=amount;member.paidEntryCount+=1;}
+    else if(entry?.status==='owed'){member.owedCredits+=amount;member.owedEntryCount+=1;}
     member.entryCount+=1;
     if(entry?.createdAt&&(!member.latestAt||entry.createdAt>member.latestAt))member.latestAt=entry.createdAt;
     members.set(key,member);
@@ -43,10 +45,13 @@ export async function onRequestGet({request,env}) {
       memberCount:members.size,
       entryCount:entries.length,
     },
+    canConfirmPayments:session.access==='site_admin',
+    paymentMode:'manual_confirmation',
     members:[...members.values()]
       .map(m=>({...m,owedCredits:round(m.owedCredits),paidCredits:round(m.paidCredits)}))
       .sort((a,b)=>b.owedCredits-a.owedCredits||String(a.displayName).localeCompare(String(b.displayName))),
-    entries:entries.slice(0,250),
+    owedEntries:entries.filter(entry=>entry?.status==='owed').slice(0,500),
+    entries:entries.slice(0,500),
   });
 }
 
