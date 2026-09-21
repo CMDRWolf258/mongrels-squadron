@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=3">
   <link rel="stylesheet" href="../css/wolf-bgs-architects.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-history.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=1">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -347,16 +348,47 @@
     <section class="section-sm">
       <div class="container">
         <details class="wolf-panel wolf-reward-panel" data-reward-ledger-admin>
-          <summary><span><b>Payout Console Preview</b><small>Read-only reward debt, member balances, and ledger activity</small></span><strong>+</strong></summary>
+          <summary><span><b>Reward Engine · DRY RUN</b><small>Exact would-create obligations · provenance gates · actual ledger remains untouched</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
-            <p class="wolf-section-intro">This console is intentionally read-only while verified activity matching is being tested. No automatic reward issuance or payout settlement actions are enabled yet.</p>
+            <div class="wolf-dryrun-head">
+              <p>The engine now computes the exact verified-order reward entries it would create from Frontier Scout activity. This endpoint has no ledger-write capability: dry-run results cannot create debt, mark payouts, or change member balances.</p>
+              <button type="button" class="btn btn-secondary btn-compact" data-refresh-reward-dryrun>Refresh Dry Run</button>
+            </div>
+            <div class="wolf-dryrun-mode">
+              <strong data-reward-engine-mode>DRY RUN</strong>
+              <span data-reward-dryrun-checked>Not checked yet</span>
+            </div>
+            <div class="wolf-dryrun-stats">
+              <div><span>Would Create</span><strong data-reward-dryrun-create>0 Cr</strong></div>
+              <div><span>Ready Obligations</span><strong data-reward-dryrun-ready>0</strong></div>
+              <div><span>Blocked</span><strong data-reward-dryrun-blocked>0</strong></div>
+              <div><span>Duplicate Suppressed</span><strong data-reward-dryrun-duplicates>0</strong></div>
+              <div><span>Total Entitlement</span><strong data-reward-dryrun-entitlement>0 Cr</strong></div>
+            </div>
+            <div class="wolf-rules-callout subtle">
+              <strong>LIVE GATE</strong>
+              <span>A verified reward is considered live-ready only when it has a current cycle, stable logical order identity, exact archived order revision, Frontier evidence IDs, and no already-issued excess. Missing provenance is shown as BLOCKED rather than guessed.</span>
+            </div>
+            <div class="wolf-dryrun-meta">
+              <span>CYCLE <b data-reward-dryrun-cycle>—</b></span>
+              <span>ARCHIVE RECORDS <b data-reward-dryrun-history>0</b></span>
+              <span>ACTUAL LEDGER ENTRIES <b data-reward-dryrun-ledger-count>0</b></span>
+              <span>BLOCKED VALUE <b data-reward-dryrun-blocked-value>0 Cr</b></span>
+            </div>
+            <div class="wolf-dryrun-list" data-reward-dryrun-list>
+              <div class="wolf-scout-empty"><strong>Loading dry-run obligations…</strong></div>
+            </div>
+
+            <div class="wolf-ledger-divider">
+              <h3>Actual Reward Ledger</h3>
+              <p>This remains the real stored ledger. DRY RUN does not write to it.</p>
+            </div>
             <div class="wolf-form-grid">
               <div class="wolf-rules-callout subtle"><strong data-reward-total-owed>0 Cr</strong><span>Total currently owed</span></div>
               <div class="wolf-rules-callout subtle"><strong data-reward-total-paid>0 Cr</strong><span>Total settled historically</span></div>
               <div class="wolf-rules-callout subtle"><strong data-reward-member-count>0</strong><span>Members with ledger activity</span></div>
             </div>
-            <div class="wolf-scout-token-list" data-reward-member-list><div class="wolf-scout-empty"><strong>Loading reward ledger…</strong></div></div>
-            <div class="wolf-rules-callout subtle"><strong>Next activation step</strong><span>After Scout-to-order matching is validated, verified reward entitlement can create idempotent Owed entries here. Manual adjustments and Mark Paid controls will be added only after the ledger view itself is confirmed.</span></div>
+            <div class="wolf-scout-token-list" data-reward-member-list><div class="wolf-scout-empty"><strong>Loading actual reward ledger…</strong></div></div>
           </div>
         </details>
       </div>
@@ -478,7 +510,7 @@
 <script src="../js/wolf-bgs-history.js?v=2"></script>
 <script src="../js/wolf-bgs-architects.js?v=2"></script>
 <script src="../js/wolf-bgs-colonization.js?v=6"></script>
-<script src="../js/wolf-bgs-rewards.js?v=7"></script>
+<script src="../js/wolf-bgs-rewards.js?v=8"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
