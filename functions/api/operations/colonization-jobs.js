@@ -1,18 +1,29 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { getEvents, listFrontierAccounts, privateHeaders } from '../../../lib/frontier.js';
 import {
-  COLONIZATION_JOBS_KEY,
   arbitrateColonizationContributions,
+  buildColonizationJobsStore,
   colonizationJobPreview,
   normalizeColonizationJob,
   readColonizationJobs,
-  writeColonizationJobs,
+  writeColonizationJobsStore,
 } from '../../../lib/colonization-jobs.js';
+import {
+  ensureColonizationJobHistoryBaseline,
+  markColonizationJobPublicationApplied,
+  markColonizationJobPublicationFailed,
+  prepareColonizationJobPublication,
+} from '../../../lib/colonization-job-history.js';
 
 export async function onRequestGet({request,env}) {
   const auth=await requireSiteAdmin(request,env);
   if(auth.response)return auth.response;
   const store=await readColonizationJobs(env);
+  try{
+    await ensureColonizationJobHistoryBaseline(env,store);
+  }catch(error){
+    console.error('Could not initialize Colonization Job history baseline',error);
+  }
   const accounts=await listFrontierAccounts(env);
   const memberRows=await Promise.all(accounts.map(async row=>({
     ownerId:row.userId,
@@ -132,12 +143,21 @@ export async function onRequestPut({request,env}) {
   const store=await readColonizationJobs(env);
   const jobs=[...store.jobs];
   const actor=auth.session.displayName||auth.session.username||'Wolf';
+  let targetJobId='';
+
+  try{
+    await ensureColonizationJobHistoryBaseline(env,store);
+  }catch(error){
+    console.error('Could not initialize Colonization Job history baseline before mutation',error);
+    return reply({ok:false,error:'colonization_history_baseline_failed'},503);
+  }
 
   if(action==='create') {
     const job=normalizeColonizationJob({...body.job,createdBy:actor,updatedBy:actor});
     const error=validateJob(job);
     if(error)return reply({ok:false,error},400);
     jobs.unshift(job);
+    targetJobId=job.id;
   } else if(action==='update') {
     const id=clean(body?.job?.id||body?.id,80);
     const index=jobs.findIndex(job=>String(job.id)===id);
@@ -146,6 +166,7 @@ export async function onRequestPut({request,env}) {
     const error=validateJob(job);
     if(error)return reply({ok:false,error},400);
     jobs[index]=job;
+    targetJobId=id;
   } else if(action==='status') {
     const id=clean(body?.id,80);
     const status=clean(body?.status,20);
@@ -154,17 +175,52 @@ export async function onRequestPut({request,env}) {
     if(!['active','paused','completed'].includes(status))return reply({ok:false,error:'colonization_status_invalid'},400);
     const endsAt=status==='completed'?(jobs[index].endsAt||new Date().toISOString()):(status==='active'?null:jobs[index].endsAt);
     jobs[index]=normalizeColonizationJob({...jobs[index],status,endsAt,updatedBy:actor},jobs[index]);
+    targetJobId=id;
   } else if(action==='delete') {
     const id=clean(body?.id,80);
     const index=jobs.findIndex(job=>String(job.id)===id);
     if(index<0)return reply({ok:false,error:'colonization_job_not_found'},404);
+    targetJobId=id;
     jobs.splice(index,1);
   } else {
     return reply({ok:false,error:'unsupported_action'},400);
   }
 
-  const saved=await writeColonizationJobs(env,jobs,actor);
-  return reply({ok:true,jobs:saved.jobs,updatedAt:saved.updatedAt,updatedBy:saved.updatedBy,automaticRewardIssuance:false});
+  const afterStore=buildColonizationJobsStore(jobs,actor);
+  const history=await prepareColonizationJobPublication(env,{
+    before:store,
+    after:afterStore,
+    actor,
+    action,
+    targetJobId,
+  });
+
+  let saved;
+  try{
+    saved=await writeColonizationJobsStore(env,afterStore);
+  }catch(error){
+    try{await markColonizationJobPublicationFailed(env,history,error);}
+    catch(historyError){console.error('Could not mark failed Colonization Job publication history',historyError);}
+    throw error;
+  }
+
+  let historyState='prepared';
+  try{
+    await markColonizationJobPublicationApplied(env,history);
+    historyState='applied';
+  }catch(error){
+    console.error('Colonization Jobs changed but history finalization remained prepared',error);
+  }
+
+  return reply({
+    ok:true,
+    jobs:saved.jobs,
+    updatedAt:saved.updatedAt,
+    updatedBy:saved.updatedBy,
+    historyPublicationId:history.record.publicationId,
+    historyState,
+    automaticRewardIssuance:false,
+  });
 }
 
 async function requireSiteAdmin(request,env) {

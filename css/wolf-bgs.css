@@ -355,3 +355,9 @@
 .wolf-verification-audit-summary .is-scout-only{border-color:rgba(92,210,255,.28);color:#bceefa;background:rgba(42,160,191,.06)}
 .wolf-verification-audit-summary .is-manual-only{border-color:rgba(255,181,74,.36);color:#ffd9a4;background:rgba(128,80,14,.1)}
 @media(max-width:700px){.wolf-verification-toolbar{align-items:stretch;flex-direction:column}.wolf-verification-toolbar .btn{width:100%}.wolf-verification-context{flex-direction:column;align-items:flex-start;gap:.35rem}}
+
+
+@media (prefers-reduced-motion: reduce){
+  .wolf-master-alert-button.is-active{animation:none}
+  .wolf-master-alert-button,.wolf-expand{transition:none}
+}

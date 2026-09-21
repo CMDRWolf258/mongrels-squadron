@@ -1447,3 +1447,48 @@ The likely future flow is:
 > **19:00 reference → per-system offset → learned drift/tick window → objective-specific order cutoff → transition behavior (safe continuation or hold) → fresh post-tick confirmation → new Daily Orders**
 
 This section is deliberately preserved as **concept/doctrine only** so the design is not lost while conflict work is paused. Before implementation, validate the exact tick-detection signals, decide initial safety-buffer defaults, and define how the member-facing Mission Control labels each transition state.
+
+
+## Colonization Job durable history / revisions — 2026-09-21
+
+Implemented the provenance layer required before Colonization rewards can join the main Reward Engine.
+
+### Revisioned job definitions
+
+- Every Colonization Job now has a durable `revision` and `revisionStartedAt`.
+- New jobs begin at **revision 1**.
+- A material change increments the revision. Material job state includes the system, system-vs-specific-build scope, MarketID/site binding, build name, commodity filter, target tons, reward-block tons, reward per block, personal cap, status, effective start/end times, title, and notes.
+- Metadata-only/no-op normalization does not create a new revision.
+- Site discovery/rebinding therefore becomes an auditable revision instead of silently rewriting the job that older cargo was evaluated against.
+
+### Legacy baseline
+
+- Existing Colonization Jobs that predate this feature receive a one-time **APPLIED baseline snapshot** when the admin Colonization console/history first loads.
+- The migration is idempotent and does not alter the live job definition, Frontier events, or reward balances.
+- The baseline establishes the current legacy definition as revision 1. Earlier edits that happened before durable history existed cannot be reconstructed and are explicitly treated as legacy history.
+
+### Write-ahead job history
+
+Every later create, update, site-binding change, status change, or delete now follows the same safety pattern used by Daily Orders:
+
+1. Write an immutable-style **PREPARED** history record containing the complete BEFORE and AFTER job-store snapshots.
+2. Store SHA-256 hashes for both snapshots plus the actor, action, target job ID, publication ID, timestamps, and ADDED / REVISED / REMOVED / UNCHANGED change summary.
+3. Apply the live Colonization Job mutation.
+4. Mark the history record **APPLIED** after the live change succeeds.
+5. If the live write fails, mark the prepared history record **FAILED** with the failure detail.
+6. If final history marking fails after the live write, the PREPARED payload remains available for recovery rather than losing provenance.
+
+Deleting a job does **not** delete its archived revisions.
+
+### Admin visibility
+
+- Wolf BGS Control now includes a read-only **Colonization Job History** panel.
+- It displays publication state, revision transitions, system/build scope, commodity restriction, reward rules, before/after hashes, material changes, and the resulting job snapshot.
+- The live Colonization Job cards display their current revision.
+- Successful job mutations notify the history panel so an open archive refreshes after changes.
+
+### Reward safety
+
+- **Automatic Colonization reward issuance remains OFF.**
+- This history layer creates no reward debt and does not write to the reward ledger.
+- The archive now provides the exact job/rule provenance needed for the next step: evaluate arbitrated `ColonisationContribution` evidence against the correct archived job revision and feed resulting obligations into the existing **DRY RUN → READY / BLOCKED / DUPLICATE SUPPRESSED** reward pipeline.

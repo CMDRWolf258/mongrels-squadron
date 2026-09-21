@@ -227,6 +227,34 @@
 
     <section class="section-sm">
       <div class="container">
+        <details class="wolf-panel wolf-history-panel" data-colonization-history>
+          <summary><span><b>Colonization Job History</b><small>Durable job revisions · site binding · reward rules · payout provenance</small></span><strong>+</strong></summary>
+          <div class="wolf-panel-body">
+            <div class="wolf-history-head">
+              <p>Read-only archive for Colonization Jobs. Existing jobs receive a one-time baseline snapshot, then every create, edit, site binding, status change, and removal writes the complete BEFORE/AFTER job state before the live definition changes.</p>
+              <button type="button" class="btn btn-secondary btn-compact" data-colonization-history-refresh>Refresh History</button>
+            </div>
+            <div class="wolf-rules-callout subtle">
+              <strong>COLONIZATION PROVENANCE · PAYOUTS OFF</strong>
+              <span>Each revision freezes the system/build binding, commodity restriction, target, reward block, payout rate, personal cap, status, and effective window. This archive creates no reward debt; it gives the future Reward Engine an exact rule snapshot to point back to.</span>
+            </div>
+            <div class="wolf-history-stats">
+              <div><span>History Records</span><strong data-colonization-history-records>0</strong></div>
+              <div><span>Applied</span><strong data-colonization-history-applied>0</strong></div>
+              <div><span>Jobs Revised</span><strong data-colonization-history-revised>0</strong></div>
+              <div><span>Jobs Removed</span><strong data-colonization-history-removed>0</strong></div>
+            </div>
+            <div class="wolf-status-message" data-colonization-history-message>Open this panel to load Colonization Job history.</div>
+            <div class="wolf-history-list" data-colonization-history-list>
+              <div class="wolf-history-empty"><strong>Loading archive…</strong></div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
         <details class="wolf-panel wolf-history-panel" data-order-history>
           <summary><span><b>Daily Order History</b><small>Durable publication snapshots · revisions · removals · payout provenance</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
@@ -509,7 +537,8 @@
 <script src="../js/wolf-bgs-reports.js?v=1"></script>
 <script src="../js/wolf-bgs-history.js?v=2"></script>
 <script src="../js/wolf-bgs-architects.js?v=2"></script>
-<script src="../js/wolf-bgs-colonization.js?v=7"></script>
+<script src="../js/wolf-bgs-colonization.js?v=8"></script>
+<script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
 <script src="../js/wolf-bgs-rewards.js?v=9"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>

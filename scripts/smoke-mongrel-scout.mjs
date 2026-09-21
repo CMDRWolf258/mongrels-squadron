@@ -192,7 +192,7 @@ payload=bgs.buildPayload(
 assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
-for(const pattern of [/Scout Network/,/data-scout-network/,/Restricted Scout/,/Trusted Scout/,/data-scout-create-systems/,/Download Mongrel Scout \(\.zip\)/,/mongrel-scout\.zip/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
+for(const pattern of [/Scout Network/,/data-scout-network/,/Restricted Scout/,/Trusted Scout/,/data-scout-create-systems/,/Download Mongrel Scout \(\.zip\)/,/\/api\/downloads\/mongrel-scout/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
 
 const client=readFileSync('js/wolf-bgs-scout.js','utf8');
 for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/EDIT ACCESS/,/REVOKE/,/PATCH/,/restricted/,/trusted/,/allowedSystems/,/WolfBgsRefresh/,/setInterval\(\(\)=>load\(\),30000\)/])assert.match(client,pattern);
