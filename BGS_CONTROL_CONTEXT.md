@@ -1119,6 +1119,31 @@ Activation principle remains: use this comparison surface to validate real-world
 - Archive change logic was locally validated for target revision, single-order removal, and full-order removal cases.
 - Reward issuance remains OFF. This archive is provenance infrastructure for the upcoming dry-run reward engine; no balances or ledger entries are created here.
 
+## Reward engine true DRY RUN — 2026-09-21
+
+- Added read-only `/api/rewards/dry-run` and `lib/reward-dry-run.js`. Engine mode is hard-coded `dry_run`; endpoint has no ledger-write path and returns `writeCapability:false`, `liveIssuanceSupported:false`, `automaticLedgerWrites:false`.
+- Dry run uses Frontier Scout matches from the current Daily Order cycle and current reward rules to calculate exact verified reward entitlement.
+- `matchVerifiedActivity()` now carries stable Frontier `sourceEventIds` into each per-order verified total.
+- Each potential verified-order obligation is scoped by member + cycle + logical order and includes:
+  - current order ID/logical key/revision,
+  - verified contribution and unit,
+  - entitlement credits, already-ledgered verified credits, incremental delta,
+  - Frontier evidence IDs + evidence digest,
+  - exact archived publication provenance (publication ID, after-snapshot hash, archived revision),
+  - frozen reward-rule snapshot + reward-rule digest,
+  - deterministic proposed ledger entry ID.
+- Proposed entry IDs are keyed by member + cycle + logical order + evidence digest + reward-rule digest. This supports future append-only incremental issuance: new evidence produces a new deterministic ID while repeated evaluation of identical evidence/rules produces the same ID.
+- Existing verified-order ledger credits for the same member/cycle/logical order are subtracted from entitlement. Fully satisfied obligations are `DUPLICATE SUPPRESSED`; existing credit greater than entitlement is flagged as an over-issued blocker rather than creating negative debt silently.
+- Live-readiness blockers currently include missing cycle, logical identity, current order, Frontier evidence, archive provenance, exact archive revision, or over-issued existing ledger state.
+- Reward ledger schema advanced to v2 provenance fields: source order revision, publication ID, archive hash, evidence digest, reward-rule digest, reward type/contribution/unit, and reward rule snapshot.
+- BGS Control `Payout Console Preview` is now **Reward Engine · DRY RUN** with:
+  - would-create credits, ready/blocked obligation counts, duplicate suppression, total entitlement, blocked value,
+  - per-CMDR exact obligations, evidence-event count, order revision, publication provenance, deterministic entry ID, blockers,
+  - the actual stored reward ledger shown separately underneath for side-by-side proof that dry run writes nothing.
+- Payout console refreshes manually, after Daily Order publication/history changes, and when returning to the page while open.
+- Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
+- Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
