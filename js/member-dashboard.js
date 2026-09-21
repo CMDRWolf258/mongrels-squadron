@@ -188,7 +188,13 @@
     return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
   };
   function frontierEventLabel(event) {
-    if (event.type === 'mission_inf') return `Mission INF · ${(event.effects||[]).reduce((n,x)=>n+(Number(x.infUnits)||0),0)} INF`;
+    if (event.type === 'mission_inf') {
+      const effects=event.effects||[];
+      const inf=effects.reduce((n,x)=>n+(Number(x.infUnits)||0),0);
+      const rep=effects.reduce((n,x)=>n+(Number(x.repUnits)||0),0);
+      const factions=[...new Set(effects.map(x=>x.faction).filter(Boolean))];
+      return `Mission · ${inf} INF${rep ? ` · REP ${rep>0?'+':''}${rep}` : ''}${factions.length ? ` · ${factions.join(', ')}` : ''}`;
+    }
     if (event.type === 'bounties_redeemed') return `Bounties redeemed · ${frontierMoney(event.amount)}`;
     if (event.type === 'combat_bonds_redeemed') return `Combat bonds redeemed · ${frontierMoney(event.amount)}`;
     if (event.type === 'cz_bond_awarded') return `CZ bond awarded · ${frontierMoney(event.amount)}`;
