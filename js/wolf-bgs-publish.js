@@ -1,5 +1,6 @@
 (() => {
   const ORDERS_API='/api/operations/orders';
+  const REVIEW_API='/api/operations/order-change-review';
   const queue=new Map();
   const suppressedSignatures=new Map();
   let panel=null;
@@ -9,6 +10,10 @@
   const evaluatedFingerprints=new Map();
   const expandedSystems=new Set();
   let queueRenderSignature='';
+  let publishedDocument={cycleId:null,orders:[]};
+  let publishedLoaded=false;
+  let reviewState={};
+  let changeAckBusy=false;
   let lastPublishMessage='';
   let lastPublishError='';
 
@@ -16,6 +21,135 @@
   const clean=value=>String(value||'').trim().replace(/\s+/g,' ');
   const slug=value=>clean(value).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,44)||'system';
   const num=value=>value===''||value===null||value===undefined?null:(Number.isFinite(Number(value))?Number(value):null);
+
+  const norm=value=>clean(value).toLowerCase();
+  function semanticTask(value){
+    return norm(value)
+      .replace(/\b\d+(?:\.\d+)?\s*m\s*cr\b/g,' amount ')
+      .replace(/\b\d+(?:\.\d+)?\s*inf\b/g,' inf ')
+      .replace(/\b\d+(?:\.\d+)?\s*(?:cz\s*)?(?:points?|pts?)\b/g,' cz ')
+      .replace(/\b\d+(?:\.\d+)?\b/g,' number ')
+      .replace(/\s+/g,' ')
+      .trim()
+      .slice(0,180)||'task';
+  }
+  function logicalKey(order){
+    const explicit=clean(order?.logicalKey);
+    if(explicit)return explicit;
+    const reportingType=clean(order?.reporting?.type);
+    return [
+      norm(order?.source)||'manual',
+      norm(order?.system)||'squad-wide',
+      norm(order?.faction)||'any-faction',
+      norm(order?.kind)||reportingType||'task',
+      semanticTask(order?.task||order?.detail||order?.kind||'task'),
+    ].join('|').slice(0,520);
+  }
+  function materialFingerprint(order){
+    const reporting=order?.reporting&&typeof order.reporting==='object'
+      ? {type:clean(order.reporting.type),target:num(order.reporting.target),blitz:Boolean(order.reporting.blitz)}
+      : null;
+    return JSON.stringify({
+      system:clean(order?.system),faction:clean(order?.faction),kind:clean(order?.kind),
+      source:clean(order?.source),priority:clean(order?.priority),task:clean(order?.task),
+      detail:clean(order?.detail),status:clean(order?.status),reporting,
+    });
+  }
+  function replacementGroup(order){
+    return [norm(order?.faction),clean(order?.reporting?.type)||norm(order?.kind)||'task'].join('|');
+  }
+  function comparePlans(beforeTasks=[],afterTasks=[]){
+    const before=Array.isArray(beforeTasks)?beforeTasks:[];
+    const after=Array.isArray(afterTasks)?afterTasks:[];
+    const used=new Set();
+    let rows=after.map(afterTask=>{
+      const key=logicalKey(afterTask);
+      const priorIndex=before.findIndex((beforeTask,index)=>!used.has(index)&&logicalKey(beforeTask)===key);
+      if(priorIndex<0)return{status:'new',after:afterTask,before:null};
+      used.add(priorIndex);
+      const beforeTask=before[priorIndex];
+      return{
+        status:materialFingerprint(beforeTask)===materialFingerprint(afterTask)?'unchanged':'changed',
+        before:beforeTask,
+        after:afterTask,
+      };
+    });
+    rows.push(...before.map((beforeTask,index)=>used.has(index)?null:{status:'remove',before:beforeTask,after:null}).filter(Boolean));
+
+    const removals=rows.filter(row=>row.status==='remove');
+    const replacementRemovals=new Set();
+    for(const row of rows){
+      if(row.status!=='new')continue;
+      const prior=removals.find(candidate=>!replacementRemovals.has(candidate)&&replacementGroup(candidate.before)===replacementGroup(row.after));
+      if(!prior)continue;
+      row.status='replaced';
+      row.before=prior.before;
+      replacementRemovals.add(prior);
+    }
+    rows=rows.filter(row=>!replacementRemovals.has(row));
+
+    const counts={new:0,changed:0,remove:0,replaced:0,unchanged:0};
+    rows.forEach(row=>{counts[row.status]=(counts[row.status]||0)+1;});
+    return{
+      rows,
+      counts,
+      material:rows.some(row=>row.status!=='unchanged'),
+      changedTaskCount:counts.new+counts.changed+counts.remove+counts.replaced,
+    };
+  }
+  function publishedForSystem(system){
+    return (Array.isArray(publishedDocument?.orders)?publishedDocument.orders:[])
+      .filter(order=>norm(order?.system)===norm(system));
+  }
+  function diffForItem(item){
+    if(!publishedLoaded)return{rows:(item?.tasks||[]).map(task=>({status:'plain',after:task,before:null})),counts:{},material:false,changedTaskCount:0};
+    return comparePlans(publishedForSystem(item.system),item.tasks||[]);
+  }
+  function targetText(order){
+    const target=num(order?.reporting?.target);
+    if(target===null)return'';
+    const type=clean(order?.reporting?.type);
+    if(type==='inf')return target+' INF';
+    if(['bounties','trade','exploration'].includes(type))return target+'M Cr';
+    if(type==='cz')return target+' CZ pts';
+    return String(target);
+  }
+  function targetDelta(row){
+    if(!row?.before||!row?.after)return'';
+    const before=targetText(row.before),after=targetText(row.after);
+    return before&&after&&before!==after?before+' → '+after:'';
+  }
+  function hashText(value){
+    let hash=2166136261;
+    for(let i=0;i<value.length;i++){
+      hash^=value.charCodeAt(i);
+      hash=Math.imul(hash,16777619);
+    }
+    return (hash>>>0).toString(36);
+  }
+  function changeSignature(item){
+    const before=publishedForSystem(item.system).map(materialFingerprint).sort();
+    const after=(item.tasks||[]).map(materialFingerprint).sort();
+    return hashText(JSON.stringify({cycleId:publishedDocument?.cycleId||'',system:item.system,before,after}));
+  }
+  function isReviewed(item,diff=diffForItem(item)){
+    return !diff.material || reviewState?.[item.system]?.signature===changeSignature(item);
+  }
+  function changeSummary(systems){
+    const states=systems.map(item=>{
+      const diff=diffForItem(item);
+      const signature=diff.material?changeSignature(item):'';
+      const reviewed=!diff.material||reviewState?.[item.system]?.signature===signature;
+      return{item,diff,signature,reviewed};
+    });
+    const material=states.filter(state=>state.diff.material);
+    const unreviewed=material.filter(state=>!state.reviewed);
+    return{
+      states,material,unreviewed,
+      changedTaskCount:material.reduce((sum,state)=>sum+state.diff.changedTaskCount,0),
+      unreviewedTaskCount:unreviewed.reduce((sum,state)=>sum+state.diff.changedTaskCount,0),
+    };
+  }
 
   function isLab(card){return card?.dataset.bgsLab==='true'||card?.dataset.system==='Mandalore';}
   function maxSystems(){const n=Number(document.querySelector('[data-global="maxDailySystems"]')?.value);return Number.isFinite(n)&&n>0?n:6;}
@@ -122,7 +256,11 @@
     if(suppressedSignatures.has(system)&&suppressedSignatures.get(system)!==sig)suppressedSignatures.delete(system);
     if(existing?.queueSource==='manual')return false;
     if(existing&&existing.signature===sig&&existing.queueSource===source)return false;
-    queue.set(system,snapshot(card,source));
+    const next=snapshot(card,source);
+    if(existing&&existing.signature!==next.signature){
+      next.queueRevisionChanged=comparePlans(existing.tasks,next.tasks).material;
+    }
+    queue.set(system,next);
     return true;
   }
 
@@ -308,7 +446,9 @@
           queue.delete(system);
         }else{
           suppressedSignatures.delete(system);
-          queue.set(system,snapshot(card,'manual'));
+          const next=snapshot(card,'manual');
+          if(existing&&existing.signature!==next.signature)next.queueRevisionChanged=comparePlans(existing.tasks,next.tasks).material;
+          queue.set(system,next);
         }
         syncAll();
       });
