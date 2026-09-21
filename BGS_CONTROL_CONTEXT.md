@@ -954,12 +954,13 @@ Activation principle remains: use this comparison surface to validate real-world
 - The queued system name is now clickable. It focuses that exact system in the normal System Control Deck, opens its full card and scrolls to it, even if filters/pagination previously hid it.
 - Full order rationale, faction-board context and warnings remain on the normal system card rather than being duplicated in Publish Queue.
 
-## Faction Alert conflict activation re-arm — 2026-09-20
 
-- Fixed an alert-lifecycle bug where acknowledging a pending conflict could suppress the master warning when the same War/Civil War/Election became active.
-- Pending → active conflict promotion now re-arms the alert once by clearing the older acknowledgement.
-- Existing affected alerts self-repair: if `activeSeenAt` is later than `reviewedAt`, the episode becomes unreviewed on refresh and the master alert should light/flash again.
-- Acknowledging after the active phase begins remains stable because the new `reviewedAt` is later than `activeSeenAt`; ordinary refreshes do not repeatedly re-arm it.
+## Faction Alert flash + Publish Queue interaction correction — 2026-09-20
+
+- Conflict acknowledgement persists through pending → active for the same conflict episode. Becoming active does **not** create a second alert after Wolf already acknowledged it.
+- The master Faction Alert's active state is intended to flash continuously until acknowledged. The CSS exception that could leave it bright red but non-flashing under `prefers-reduced-motion` was removed for this critical command warning.
+- Publish Queue background synchronization no longer rewrites the queued-system DOM unless the actual queued snapshot changes.
+- VIEW ORDERS / HIDE ORDERS continues to toggle only the existing row in place; routine board refreshes should no longer replace the button during a click.
 
 ## Next product stages
 
