@@ -718,6 +718,22 @@
   });
   queueSelectorSummary?.addEventListener('click', () => setBoardView(activeBoardView === 'queue-selected' ? '' : 'queue-selected'));
   clearActiveView?.addEventListener('click', () => setBoardView(''));
+
+  window.addEventListener('wolf-bgs-open-system', event => {
+    const system=String(event.detail?.system||'').trim();
+    if(!system||!payload)return;
+    activeBoardView='';
+    if(search)search.value=system;
+    if(filter)filter.value='all';
+    currentPage=1;
+    renderSystems(system);
+    window.setTimeout(()=>{
+      const card=[...document.querySelectorAll('.wolf-system-card[data-system]')].find(el=>el.dataset.system===system);
+      if(!card)return;
+      card.open=true;
+      card.scrollIntoView({behavior:'smooth',block:'start'});
+    },40);
+  });
   alertAckButton?.addEventListener('click', async () => {
     if (alertAckButton.disabled) return;
     alertAckButton.disabled = true;
