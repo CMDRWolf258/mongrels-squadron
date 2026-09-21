@@ -20,6 +20,9 @@
   const bountyCount = $('[data-dashboard-bounty-count]');
   const bountySummary = $('[data-dashboard-bounty-summary]');
   const bountyPreview = $('[data-dashboard-bounty-preview]');
+  const rewardsBadge = $('[data-dashboard-rewards-badge]');
+  const rewardsSummary = $('[data-dashboard-rewards-summary]');
+  const rewardsPreview = $('[data-dashboard-rewards-preview]');
   const onboarding = $('[data-new-member-onboarding]');
   const onboardingBadge = $('[data-onboarding-badge]');
   const onboardingIntro = $('[data-onboarding-intro]');
@@ -35,6 +38,27 @@
   const renderCarriers=payload=>{const posts=Array.isArray(payload?.posts)?payload.posts:[];const active=posts.filter(p=>p.status!=='complete');if(carrierCount)carrierCount.textContent=active.length?`${active.length} Active`:'No Active Posts';if(carrierSummary)carrierSummary.textContent=active.length?'Upcoming moves and logistics requests that may need member attention.':'No active carrier moves or logistics requests are posted right now.';if(!carrierPreview)return;carrierPreview.replaceChildren();active.sort((a,b)=>{if(a.priority!==b.priority)return a.priority==='urgent'?-1:1;const ad=a.departure?Date.parse(a.departure):Infinity,bd=b.departure?Date.parse(b.departure):Infinity;return ad-bd;}).slice(0,3).forEach(p=>{const row=document.createElement('div');row.className='member-order-preview-row';const meta=document.createElement('span');meta.textContent=[p.priority==='urgent'?'Urgent':null,p.carrierCallsign,p.destination].filter(Boolean).join(' · ');const title=document.createElement('strong');title.textContent=`${p.carrierName} — ${String(p.activityType||'Coordination').replace(/_/g,' ')}`;row.append(meta,title);carrierPreview.appendChild(row);});};
   const renderTrades=payload=>{const items=Array.isArray(payload?.routes)?payload.routes:[];const active=items.filter(i=>i.status!=='complete'&&i.status!=='expired');if(tradeCount)tradeCount.textContent=active.length?`${active.length} Active`:'No Active Routes';if(tradeSummary)tradeSummary.textContent=active.length?'Current strategic hauling and member-posted trade opportunities are shown below.':'No active member-posted trade routes are available right now.';if(!tradePreview)return;tradePreview.replaceChildren();active.sort((a,b)=>(b.category==='squad')-(a.category==='squad')||(Number(b.profitPerTon)||0)-(Number(a.profitPerTon)||0)).slice(0,3).forEach(i=>{const row=document.createElement('div');row.className='member-order-preview-row';const meta=document.createElement('span');meta.textContent=[i.category==='squad'?'Squad Support':(i.profitPerTon?`${Number(i.profitPerTon).toLocaleString()} Cr/t`:'Trade Route'),i.destinationSystem].filter(Boolean).join(' · ');const title=document.createElement('strong');title.textContent=i.title||i.commodity||'Trade opportunity';row.append(meta,title);tradePreview.appendChild(row);});};
   const renderBounties=payload=>{const items=Array.isArray(payload?.bounties)?payload.bounties:[];const active=items.filter(i=>i.status==='active');if(bountyCount)bountyCount.textContent=active.length?`${active.length} Active`:'No Active Bounties';if(bountySummary)bountySummary.textContent=active.length?'Current member-posted in-game PvP contracts are shown below.':'No active in-game bounty contracts are posted right now.';if(!bountyPreview)return;bountyPreview.replaceChildren();active.slice(0,3).forEach(i=>{const row=document.createElement('div');row.className='member-bounty-preview-row';const target=document.createElement('strong');target.className='member-bounty-target';target.textContent=i.target;const reward=document.createElement('strong');reward.className='member-bounty-reward';reward.textContent=i.reward;const meta=document.createElement('span');meta.textContent=i.system||'PvP Contract';row.append(target,reward,meta);bountyPreview.appendChild(row);});};
+  const renderRewards=payload=>{
+    const s=payload?.summary||{};
+    const owed=Number(s.owedCredits)||0;
+    const paid=Number(s.paidCredits)||0;
+    const entries=Array.isArray(payload?.entries)?payload.entries:[];
+    if(rewardsBadge)rewardsBadge.textContent=owed?owed.toLocaleString()+' Cr Owed':'0 Cr Owed';
+    if(rewardsSummary)rewardsSummary.textContent=entries.length
+      ? `Your reward ledger currently shows ${owed.toLocaleString()} Cr owed and ${paid.toLocaleString()} Cr settled.`
+      : 'No reward ledger entries yet. Verified Scout activity is currently shown as reward preview only and does not create debt.';
+    if(!rewardsPreview)return;
+    rewardsPreview.replaceChildren();
+    entries.slice(0,3).forEach(entry=>{
+      const row=document.createElement('div');row.className='member-order-preview-row';
+      const meta=document.createElement('span');
+      meta.textContent=[entry.status==='paid'?'Paid':'Owed',entry.createdAt?new Date(entry.createdAt).toLocaleDateString():null].filter(Boolean).join(' · ');
+      const title=document.createElement('strong');
+      const amount=Number(entry.amountCredits)||0;
+      title.textContent=`${amount>=0?'+':''}${amount.toLocaleString()} Cr · ${entry.reason||'Squad reward'}`;
+      row.append(meta,title);rewardsPreview.appendChild(row);
+    });
+  };
   const renderUnavailable=()=>{if(count)count.textContent='Unavailable';if(summary)summary.textContent='The secure Daily Orders service could not be reached.';};
 
   function setOnboardingRow(name, complete) {
@@ -114,7 +138,7 @@
     }
   });
 
-  const init=async()=>{try{const {response,payload:session}=await fetchJson('/api/auth/session');if(!response.ok||!session.authenticated)return;const isOfficer=['officer','site_admin'].includes(session.access);if(officerPanel)officerPanel.hidden=!isOfficer;if(memberNote)memberNote.hidden=isOfficer;siteAdminLinks.forEach(link=>{link.hidden=session.access!=='site_admin';});const [ordersResult,projectsResult,carrierResult,tradeResult,bountyResult,onboardingResultData]=await Promise.all([fetchJson('/api/operations/orders'),fetchJson('/api/projects'),fetchJson('/api/carriers?resource=coordination'),fetchJson('/api/trades'),fetchJson('/api/bounties'),fetchJson('/api/member/onboarding')]);if(ordersResult.response.ok)renderOrders(ordersResult.payload);else renderUnavailable();if(projectsResult.response.ok)renderProjects(projectsResult.payload);if(carrierResult.response.ok)renderCarriers(carrierResult.payload);if(tradeResult.response.ok)renderTrades(tradeResult.payload);if(bountyResult.response.ok)renderBounties(bountyResult.payload);if(onboardingResultData.response.ok)renderOnboarding(onboardingResultData.payload);}catch(error){console.error('Could not load member dashboard',error);renderUnavailable();}};
+  const init=async()=>{try{const {response,payload:session}=await fetchJson('/api/auth/session');if(!response.ok||!session.authenticated)return;const isOfficer=['officer','site_admin'].includes(session.access);if(officerPanel)officerPanel.hidden=!isOfficer;if(memberNote)memberNote.hidden=isOfficer;siteAdminLinks.forEach(link=>{link.hidden=session.access!=='site_admin';});const [ordersResult,projectsResult,carrierResult,tradeResult,bountyResult,onboardingResultData,rewardsResult]=await Promise.all([fetchJson('/api/operations/orders'),fetchJson('/api/projects'),fetchJson('/api/carriers?resource=coordination'),fetchJson('/api/trades'),fetchJson('/api/bounties'),fetchJson('/api/member/onboarding'),fetchJson('/api/rewards/status')]);if(ordersResult.response.ok)renderOrders(ordersResult.payload);else renderUnavailable();if(projectsResult.response.ok)renderProjects(projectsResult.payload);if(carrierResult.response.ok)renderCarriers(carrierResult.payload);if(tradeResult.response.ok)renderTrades(tradeResult.payload);if(bountyResult.response.ok)renderBounties(bountyResult.payload);if(onboardingResultData.response.ok)renderOnboarding(onboardingResultData.payload);if(rewardsResult.response.ok)renderRewards(rewardsResult.payload);}catch(error){console.error('Could not load member dashboard',error);renderUnavailable();}};
   function installFrontierScoutUi() {
     const card = document.querySelector('#mongrel-scout');
     const panel = document.querySelector('#mongrel-scout-setup');
