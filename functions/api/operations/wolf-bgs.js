@@ -608,23 +608,8 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
         changed = true;
       }
 
-      const promotedToActive = existing.phase === 'pending' && condition.phase === 'active';
       if (condition.phase === 'active' && !existing.activeSeenAt) {
         existing.activeSeenAt = matchingScoutHistory?.activeSeenAt || timestamp;
-        changed = true;
-      }
-
-      // An acknowledgement of the pending conflict must not suppress the separate
-      // "war is now active" warning. This also repairs episodes promoted before
-      // this rule existed: if activeSeenAt is newer than reviewedAt, re-arm it.
-      const reviewedMs = Date.parse(existing.reviewedAt || '');
-      const activeMs = Date.parse(existing.activeSeenAt || '');
-      const activeBeganAfterReview = condition.phase === 'active'
-        && Number.isFinite(reviewedMs)
-        && Number.isFinite(activeMs)
-        && activeMs > reviewedMs;
-      if ((promotedToActive || activeBeganAfterReview) && existing.reviewedAt) {
-        existing.reviewedAt = null;
         changed = true;
       }
     }
