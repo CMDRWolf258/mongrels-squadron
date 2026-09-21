@@ -720,6 +720,54 @@ Examples worth testing later:
 
 Exact rates should remain configurable rather than hard-coded.
 
+### Agreed Daily Orders reward defaults — 2026-09-20
+
+Reward accounting is **member + logical order + Daily Orders cycle scoped**. The squad's operational target and the member's personal reward cap are separate concepts.
+
+Critical rule:
+- **Reaching the squad order goal never closes reward eligibility by itself.**
+- Each member may continue performing qualifying verified work against that same order until that member reaches the order's personal reward cap.
+- Reward caps are independent for each published logical order. Work credited to Order A never consumes Order B's cap, even when both orders use the same activity type or are in the same system.
+- Example: two separate bounty orders with 20M operational goals each use the default 30M personal cap each, so one member can earn up to **60M Cr total** across the two orders.
+- Order revisions that preserve the logical order identity also preserve the member's already-earned reward/progress and cap consumption.
+
+Default rules:
+
+**Profitable trade**
+- Verification unit: qualifying realized **profit**, never gross sale revenue.
+- Each complete **10M Cr profit block** earns **10M Cr reward**.
+- Partial blocks do not create a partial reward by default. Example: 19.9M verified profit = one 10M block; 20M = two blocks.
+- Personal cap: **30M Cr reward per order**.
+- Fleet Carrier market sales are not qualifying BGS trade and must not feed this reward path.
+
+**Mission INF**
+- Verification unit: actual affected-system/faction INF from `MissionCompleted.FactionEffects`.
+- Each **1 INF** earns **1M Cr reward** through the order's operational INF goal.
+- Verified personal INF beyond the order goal earns **0.5M Cr per INF**.
+- Personal reward cap: **the larger of the order goal expressed in M Cr at the default 1M/INF rate, or 30M Cr**.
+- Therefore a 20-INF order pays the first 20 INF at 1M/INF, then permits another 10M of reward at 0.5M/INF before the 30M cap is reached. A 40-INF order has a 40M cap; reaching 40 INF already reaches that cap.
+- The post-goal reduced rate is personal reward accounting; it does not change Mission Control's squad progress total.
+
+**Bounty vouchers**
+- Verification unit: qualifying **redeemed** bounty vouchers, not kill-time bounty awards.
+- Each **1M Cr redeemed** earns **1M Cr reward**.
+- Personal reward cap: **the larger of the order's bounty goal or 30M Cr**.
+- A 20M bounty order therefore remains reward-eligible after the squad reaches 20M; each member may earn up to 30M from that order.
+- `Bounty` journal events are supporting evidence only. `RedeemVoucher` is the reward trigger.
+- Fleet Carrier voucher redemption does not qualify for faction BGS reward credit.
+
+**Manual/special rewards**
+- Do not add manual-reward fields to every system card.
+- Use one central **Reward Administration / Payout Console**.
+- Manual entries must be additive ledger transactions, never direct balance edits.
+- Required fields: authenticated member identity, positive or negative amount, reason, creating officer/site-admin and timestamp; optional related order/job/system reference.
+- Corrections use negative ledger entries so the audit history remains intact.
+
+Implementation baseline:
+- `lib/reward-rules.js` owns normalized defaults and entitlement math.
+- Reward defaults are stored separately in `DAILY_ORDERS` under `reward-settings-v1` and edited centrally in Wolf BGS Control.
+- Automated issuance should calculate a member's **total entitlement for the order** from verified cumulative contribution, compare it to reward already issued for that member/order, and issue only the positive delta. This makes repeated Frontier syncs and parser retries idempotent.
+
 ### Daily Orders verification philosophy
 
 Daily Orders rewards should be deliberately **low-friction and capped**. Members are already spending their play time doing squad work; the reward system should not routinely require them to stop, collect screenshots/video, upload evidence, and wait for Wolf to audit it.
