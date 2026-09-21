@@ -7,6 +7,7 @@
   let publishBusy=false;
   let evaluationRunning=false;
   const evaluatedFingerprints=new Map();
+  const expandedSystems=new Set();
   let lastPublishMessage='';
   let lastPublishError='';
 
@@ -130,6 +131,61 @@
     return 'MANUAL';
   }
 
+  function orderKindLabel(task){
+    const type=task?.reporting?.type||'';
+    if(type==='inf')return 'MISSION INF';
+    if(type==='bounties')return 'BOUNTIES';
+    if(type==='trade')return 'TRADE PROFIT';
+    if(type==='exploration')return 'EXPLORATION';
+    if(type==='cz')return 'CONFLICT ZONE';
+    return clean(task?.kind||'TASK').replaceAll('-',' ').toUpperCase();
+  }
+
+  function orderTargetLabel(task){
+    const target=num(task?.reporting?.target);
+    if(target===null)return '';
+    const type=task?.reporting?.type||'';
+    if(type==='inf')return target+' INF';
+    if(type==='bounties'||type==='trade'||type==='exploration')return target+'M Cr';
+    if(type==='cz')return target+' CZ pts';
+    return String(target);
+  }
+
+  function queuedTaskMarkup(task,index){
+    const target=orderTargetLabel(task);
+    const meta=[
+      orderKindLabel(task),
+      task.faction||'Squad-wide',
+      target,
+      task.status&&task.status!=='Active'?task.status:'',
+    ].filter(Boolean);
+    return '<div class="wolf-publish-order-row">'
+      +'<div class="wolf-publish-order-index">'+String(index+1).padStart(2,'0')+'</div>'
+      +'<div class="wolf-publish-order-copy"><span>'+meta.map(esc).join(' · ')+'</span>'
+      +'<strong>'+esc(task.task||'Operational task')+'</strong>'
+      +(task.detail?'<small>'+esc(task.detail)+'</small>':'')
+      +'</div></div>';
+  }
+
+  function queuedSystemMarkup(item){
+    const expanded=expandedSystems.has(item.system);
+    const warningText=item.warnings.length
+      ? '<div class="wolf-publish-warning-list"><strong>PREVIEW WARNINGS</strong><ul>'+item.warnings.map(warning=>'<li>'+esc(warning)+'</li>').join('')+'</ul></div>'
+      : '';
+    return '<article class="wolf-publish-queued-system'+(expanded?' is-expanded':'')+'">'
+      +'<div class="wolf-publish-queued-head"><div><strong>'+esc(item.system)+'</strong>'
+      +'<span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '
+      +item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)
+      +(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div>'
+      +'<div class="wolf-publish-queued-actions"><button type="button" class="wolf-publish-review-toggle" data-toggle-queued-system="'+esc(item.system)+'" aria-expanded="'+String(expanded)+'">'+(expanded?'HIDE ORDERS':'VIEW ORDERS')+'</button>'
+      +'<button type="button" class="wolf-publish-remove" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out" aria-label="Remove '+esc(item.system)+' from publish queue">×</button></div></div>'
+      +'<div class="wolf-publish-order-detail" data-queued-detail="'+esc(item.system)+'"'+(expanded?'':' hidden')+'>'
+      +'<div class="wolf-publish-snapshot-label"><span>QUEUED SNAPSHOT</span><small>These are the exact orders currently waiting to publish.</small></div>'
+      +'<div class="wolf-publish-order-list">'+item.tasks.map(queuedTaskMarkup).join('')+'</div>'
+      +warningText
+      +'</div></article>';
+  }
+
   function suppressCurrent(item){
     if(item?.system&&item?.signature)suppressedSignatures.set(item.system,item.signature);
   }
@@ -204,15 +260,24 @@
     const section=document.createElement('section');
     section.className='section-sm wolf-publish-section';
     section.dataset.dailyPublishPanel='true';
-    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. Manual queueing remains available. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
+    section.innerHTML='<div class="container"><div class="wolf-publish-panel"><div class="wolf-publish-head"><div><span>DAILY ORDERS</span><h2>Publish Queue</h2><p>Queue Selectors feed routine work here automatically; pending Retreat can bypass the selector as an emergency. Expand any queued system to review the exact frozen order snapshot that will publish. Publishing is always Wolf-controlled.</p></div><div class="wolf-publish-count"><strong data-publish-system-count>0 / 6</strong><small data-publish-task-count>0 tasks queued</small></div></div><div class="wolf-publish-queue" data-publish-queue><div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div></div><div class="wolf-publish-actions"><span data-publish-status>Nothing published from BGS Control yet.</span><div><button type="button" class="btn btn-secondary btn-compact" data-clear-publish-queue disabled>Clear Queue</button><button type="button" class="btn btn-primary" data-publish-daily-orders disabled>Publish Daily Orders</button></div></div></div></div>';
     systems.parentNode.insertBefore(section,systems);
     panel=section;
     panel.addEventListener('click',event=>{
+      const toggle=event.target.closest('[data-toggle-queued-system]');
+      if(toggle){
+        const system=toggle.dataset.toggleQueuedSystem||'';
+        if(expandedSystems.has(system))expandedSystems.delete(system);
+        else expandedSystems.add(system);
+        syncPanel();
+        return;
+      }
       const remove=event.target.closest('[data-remove-queued-system]');
       if(remove){
         lastPublishError='';
         const item=queue.get(remove.dataset.removeQueuedSystem);
         suppressCurrent(item);
+        expandedSystems.delete(remove.dataset.removeQueuedSystem);
         queue.delete(remove.dataset.removeQueuedSystem);
         syncAll();
         return;
@@ -221,6 +286,7 @@
         lastPublishError='';
         [...queue.values()].forEach(suppressCurrent);
         queue.clear();
+        expandedSystems.clear();
         syncAll();
         return;
       }
@@ -295,7 +361,7 @@
     if(!systems.length){
       host.innerHTML='<div class="wolf-publish-empty">No systems queued. Selected routine systems and pending Retreat emergencies will appear here when they generate actionable work.</div>';
     }else{
-      host.innerHTML=systems.map(item=>'<article class="wolf-publish-queued-system"><div><strong>'+esc(item.system)+'</strong><span><b class="wolf-queue-source '+esc(item.queueSource||'manual')+'">'+esc(sourceLabel(item))+'</b> · '+item.tasks.length+' task'+(item.tasks.length===1?'':'s')+' · '+esc(item.priority)+(item.warnings.length?' · '+item.warnings.length+' warning'+(item.warnings.length===1?'':'s'):'')+'</span></div><button type="button" data-remove-queued-system="'+esc(item.system)+'" title="Hold this current queue candidate out">×</button></article>').join('');
+      host.innerHTML=systems.map(queuedSystemMarkup).join('');
     }
     const clear=p.querySelector('[data-clear-publish-queue]');
     const publishButton=p.querySelector('[data-publish-daily-orders]');
@@ -360,6 +426,7 @@
       lastPublishMessage='Reconciled '+orders.length+' task'+(orders.length===1?'':'s')+' into the current Daily Orders cycle. Unrelated systems were preserved. <a href="../operations/#daily-orders">Open Mission Control →</a>';
       systems.forEach(suppressCurrent);
       queue.clear();
+      expandedSystems.clear();
       syncAll();
     }catch(error){
       console.error('Could not publish BGS Daily Orders',error);
