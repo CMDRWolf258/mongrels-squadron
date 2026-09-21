@@ -910,6 +910,20 @@ Frontier Scout status now returns `verifiedOrders` totals and annotates recent e
 
 No reward credits are issued by this matcher yet. This layer intentionally stops at verified contribution attribution so matching can be observed and tested before the durable payout ledger begins creating squad debt.
 
+## Read-only reward integration surfaces — 2026-09-20
+
+Further integration was intentionally built without enabling automatic debt creation.
+
+- Mission Control now fetches Frontier Scout status alongside order/report data and shows **SCOUT VERIFIED** contribution on the matching order when available.
+- That strip also shows the configured **reward preview / personal cap** for eligible INF, bounty and trade orders. It remains explicitly preview-only.
+- Manual Mission Control reports remain visible separately as **You reported**, preventing machine verification from being confused with self-reporting during the transition.
+- The Member Portal now has a **Rewards & Credits Owed** card backed by `/api/rewards/status`. It shows real durable ledger debt/history; while issuance is disabled it correctly remains zero/empty.
+- Wolf BGS Control now has a **Payout Console Preview** backed by `/api/rewards/admin`, showing total owed, total paid, and balances grouped by authenticated member. It is read-only.
+- The payout ledger storage format is active, but no verified activity automatically appends entries yet.
+- Manual adjustment and Mark Paid actions remain intentionally disabled until matching and ledger presentation are validated.
+
+Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
+
 ## Next product stages
 
 The next major stages after validating the Mandalore lab and conflict-pair behavior are:
