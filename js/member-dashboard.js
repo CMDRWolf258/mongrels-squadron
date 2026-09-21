@@ -188,6 +188,31 @@
     const d = new Date(value);
     return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
   };
+  let frontierCooldownTimer=null;
+  function frontierCooldownText(seconds){
+    const total=Math.max(0,Math.ceil(Number(seconds)||0));
+    const m=Math.floor(total/60),s=total%60;
+    return `Sync available in ${m}:${String(s).padStart(2,'0')}`;
+  }
+  function applyFrontierCooldown(cooldown){
+    const button=document.querySelector('[data-frontier-sync]');
+    if(!button)return;
+    if(frontierCooldownTimer){clearInterval(frontierCooldownTimer);frontierCooldownTimer=null;}
+    const next=Date.parse(cooldown?.nextSyncAt||'');
+    const update=()=>{
+      const remaining=Number.isFinite(next)?Math.max(0,Math.ceil((next-Date.now())/1000)):0;
+      if(remaining>0){
+        button.disabled=true;
+        button.textContent=frontierCooldownText(remaining);
+      }else{
+        button.disabled=false;
+        button.textContent='Sync 10-16 Activity';
+        if(frontierCooldownTimer){clearInterval(frontierCooldownTimer);frontierCooldownTimer=null;}
+      }
+    };
+    update();
+    if(Number.isFinite(next)&&next>Date.now())frontierCooldownTimer=setInterval(update,1000);
+  }
   function frontierEventLabel(event) {
     if (event.type === 'mission_inf') {
       const effects=event.effects||[];
@@ -256,6 +281,7 @@
     if(connection) connection.textContent=`${account.commander||'Elite CMDR'} · last sync ${frontierDate(account.lastSyncAt)}`;
     if(result) result.textContent=`Frontier connection active. Re-authorization target: ${frontierDate(account.reauthDueAt)}. Journal events keep their original timestamps, so delayed CAPI delivery will not move verified work into the wrong BGS cycle.`;
     if(connect)connect.hidden=true;if(sync)sync.hidden=false;if(disconnect)disconnect.hidden=false;
+    applyFrontierCooldown(payload.cooldown);
     if(kpis)kpis.hidden=false;
     const s=payload.summary||{};
     const set=(sel,text)=>{const el=document.querySelector(sel);if(el)el.textContent=text;};
@@ -295,7 +321,10 @@
           const row=document.createElement('div');row.className='frontier-scout-event';
           const strong=document.createElement('strong');strong.textContent=item.task||'Daily Order';
           const small=document.createElement('small');
-          small.textContent=[`${Number(item.contribution||0).toLocaleString()} ${item.unit||''} verified`,item.faction,item.system,`revision ${item.revision||1}`].filter(Boolean).join(' · ');
+          const reward=item.rewardEligible
+            ? `Reward preview: ${Number(item.entitlementMillions||0).toLocaleString()}M / ${Number(item.capMillions||0).toLocaleString()}M Cr cap · preview only`
+            : '';
+          small.textContent=[`${Number(item.contribution||0).toLocaleString()} ${item.unit||''} verified`,reward,item.faction,item.system,`revision ${item.revision||1}`].filter(Boolean).join(' · ');
           row.append(strong,small);orderMatches.appendChild(row);
         });
       }
@@ -343,6 +372,11 @@
       try{
         const response=await fetch('/api/frontier/sync',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','X-Mongrels-Request':'mongrel-frontier'}});
         const payload=await response.json().catch(()=>({}));
+        if(response.status===429&&payload.error==='frontier_sync_cooldown'){
+          applyFrontierCooldown({nextSyncAt:payload.nextSyncAt,remainingSeconds:payload.retryAfterSeconds});
+          if(result)result.textContent=frontierCooldownText(payload.retryAfterSeconds);
+          return;
+        }
         if(!response.ok||!payload.ok)throw new Error(payload.error||`Sync failed (${response.status})`);
         renderFrontierDiagnostics(payload.diagnosticEvents);
         const refreshed=await fetchJson('/api/frontier/status');
@@ -351,7 +385,12 @@
       }catch(error){
         console.error('Frontier Scout sync failed',error);
         if(result)result.textContent=String(error.message||'Sync failed').includes('reauthorization')?'Frontier requires you to reconnect your Elite account.':'Frontier sync could not be completed. Try again after the game session or if CAPI is temporarily unavailable.';
-      }finally{button.disabled=false;button.textContent='Sync 10-16 Activity';}
+      }finally{
+        if(!button.textContent.startsWith('Sync available in')){
+          button.disabled=false;
+          button.textContent='Sync 10-16 Activity';
+        }
+      }
     });
     document.querySelector('[data-frontier-disconnect]')?.addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;
