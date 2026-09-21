@@ -165,7 +165,14 @@
     rows.forEach(row => body.appendChild(row));
   }
   function systemName(card) { return card.dataset.system || ''; }
-  function targetValues(card) { return { min:num(card.querySelector('[data-setting="targetMin"]')?.value), max:num(card.querySelector('[data-setting="targetMax"]')?.value) }; }
+  function targetValues(card) {
+    const minInput=card.querySelector('[data-setting="targetMin"]');
+    const maxInput=card.querySelector('[data-setting="targetMax"]');
+    return {
+      min:num(minInput ? minInput.value : card.dataset.targetMin),
+      max:num(maxInput ? maxInput.value : card.dataset.targetMax),
+    };
+  }
   function currentInfluence(card) {
     const stat = [...card.querySelectorAll('summary .wolf-system-stat')].find(item => norm(item.querySelector('span')?.textContent) === 'mongrel inf');
     return num(String(stat?.querySelector('b')?.textContent || '').replace('%',''));
@@ -254,7 +261,7 @@
 
   function wireCardActions(card) {
     if(card.dataset.rulesWired==='true') return; card.dataset.rulesWired='true';
-    card.addEventListener('change',event=>{ if(event.target.matches('[data-faction="influence"]')) sortFactionRows(card); if(event.target.matches('[data-setting="targetMin"],[data-setting="targetMax"]')){refreshMeters(card);refreshProgrammedPreview(card);} });
+    card.addEventListener('change',event=>{ if(event.target.matches('[data-faction="influence"]')) sortFactionRows(card); if(event.target.matches('[data-setting="targetMin"],[data-setting="targetMax"]')){const values=targetValues(card);card.dataset.targetMin=values.min??'';card.dataset.targetMax=values.max??'';refreshMeters(card);refreshProgrammedPreview(card);} });
     card.addEventListener('click',event=>{ if(event.target.closest('[data-save-faction-strategy]')){saveFactionStrategies(card);return;} if(event.target.closest('[data-reset-faction-strategy]')){resetFactionStrategies(card);return;} if(event.target.closest('[data-reset-system-defaults]')) resetSystemDefaults(card); });
   }
 
