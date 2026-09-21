@@ -18,27 +18,6 @@ export async function onRequestPost({request,env}) {
   const colonizationStore = await readColonizationJobs(env);
   const colonizationJobs = activeColonizationJobs(colonizationStore);
   const targetSystems = [...new Set([...activeOrderSystems(currentOrders),...activeColonizationSystems(colonizationJobs)])];
-  if (!targetSystems.length) {
-    const events = await readStoredEvents(env, auth.session.sub);
-    const matched = matchVerifiedActivity(events, currentOrders);
-    const rewardSettings = await readRewardSettings(env);
-    return json({
-      ok:true,
-      skipped:true,
-      reason:'no_active_verification_systems',
-      targetSystems:[],
-      newEvents:0,
-      storedEvents:events.length,
-      summary:summarizeEvents(events),
-      orderCycleId:matched.cycleId,
-      verifiedOrders:buildRewardPreview(matched.orderTotals,rewardSettings.settings),
-      recentEvents:matched.events.slice(-20).reverse(),
-      cooldown:syncCooldown(account),
-      account:publicAccount(account),
-      message:'No system-scoped Daily Orders or active Colonization Jobs are active, so Frontier journal retrieval was skipped.',
-    }, {headers:privateHeaders()});
-  }
-
   const cooldown = syncCooldown(account);
   if (!cooldown.ready) {
     return json({
@@ -47,6 +26,7 @@ export async function onRequestPost({request,env}) {
       retryAfterSeconds:cooldown.remainingSeconds,
       nextSyncAt:cooldown.nextSyncAt,
       targetSystems,
+      claimTrackingEnabled:true,
       cooldown,
       account:publicAccount(account),
     }, {status:429,headers:{...privateHeaders(),'Retry-After':String(cooldown.remainingSeconds)}});
@@ -130,6 +110,7 @@ export async function onRequestPost({request,env}) {
       ok:true,
       partial:currentStatus===206 || historicalStatus===206,
       targetSystems,
+      claimTrackingEnabled:true,
       newEvents:parsed.events.length,
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
@@ -182,12 +163,11 @@ function nextHistoricalDate(currentOrders,reconciled,colonizationJobs=[]) {
   const orderStart=cycleStart(currentOrders);
   const colonizationStart=earliestColonizationStart(colonizationJobs);
   const startCandidates=[orderStart,colonizationStart].filter(Boolean).map(value=>new Date(value));
-  const start=startCandidates.length?new Date(Math.min(...startCandidates.map(value=>value.getTime()))):null;
-  if (!start) return null;
+  const oldestAllowed=addUtcDays(today,-HISTORICAL_LOOKBACK_DAYS);
+  const start=startCandidates.length?new Date(Math.min(...startCandidates.map(value=>value.getTime()))):oldestAllowed;
   const startDay=utcDay(start);
   if (startDay >= today) return null;
 
-  const oldestAllowed=addUtcDays(today,-HISTORICAL_LOOKBACK_DAYS);
   const first=startDay < oldestAllowed ? oldestAllowed : startDay;
   const candidates=[];
   for(let day=addUtcDays(today,-1); day>=first; day=addUtcDays(day,-1)) {
