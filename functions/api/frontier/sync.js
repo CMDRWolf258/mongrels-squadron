@@ -1,12 +1,24 @@
-import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, TEST_SYSTEM } from '../../../lib/frontier.js';
+import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, syncCooldown, TEST_SYSTEM } from '../../../lib/frontier.js';
 import { json } from '../../../lib/auth.js';
 import { matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
 
 export async function onRequestPost({request,env}) {
   const auth = await requireMember(request, env); if (auth.response) return auth.response;
   if (!sameOrigin(request)) return json({ok:false,error:'request_validation_failed'}, {status:403,headers:privateHeaders()});
   let account = await getAccount(env, auth.session.sub);
   if (!account) return json({ok:false,error:'frontier_not_connected'}, {status:409,headers:privateHeaders()});
+  const cooldown = syncCooldown(account);
+  if (!cooldown.ready) {
+    return json({
+      ok:false,
+      error:'frontier_sync_cooldown',
+      retryAfterSeconds:cooldown.remainingSeconds,
+      nextSyncAt:cooldown.nextSyncAt,
+      cooldown:syncCooldown(account),
+      account:publicAccount(account),
+    }, {status:429,headers:{...privateHeaders(),'Retry-After':String(cooldown.remainingSeconds)}});
+  }
 
   try {
     const access = await ensureAccessToken(request, env, auth.session.sub, account);
@@ -30,6 +42,8 @@ export async function onRequestPost({request,env}) {
     const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
     const currentOrders = await readCurrentOrderCycle(env);
     const matched = matchVerifiedActivity(merged, currentOrders);
+    const rewardSettings = await readRewardSettings(env);
+    const rewardPreview = buildRewardPreview(matched.orderTotals, rewardSettings.settings);
     account = {
       ...account,
       lastSyncAt:new Date().toISOString(),
@@ -45,7 +59,7 @@ export async function onRequestPost({request,env}) {
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
       orderCycleId:matched.cycleId,
-      verifiedOrders:matched.orderTotals,
+      verifiedOrders:rewardPreview,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       account:publicAccount(account),
