@@ -18,6 +18,7 @@
   const number=value=>Number(value)||0;
   const fmt=value=>Math.round(number(value)).toLocaleString();
   const money=value=>`${Math.round(number(value)*10)/10}M Cr`;
+  const jobName=job=>job?.title||job?.buildName||job?.system||'Colonization Job';
   const date=value=>{
     if(!value)return'—';
     const d=new Date(value);
@@ -227,6 +228,9 @@
       const commanders=document.createElement('span');
       commanders.textContent=(site.commanders||[]).join(', ')||'—';
 
+      const action=document.createElement('div');
+      action.className='wolf-colonization-site-action';
+
       const use=document.createElement('button');
       use.type='button';
       use.className='btn btn-secondary btn-compact';
@@ -235,24 +239,51 @@
       use.dataset.useBuildName=site.station||'';
 
       if(currentJobs.length){
-        use.textContent='Current Site';
+        use.textContent=currentJobs.length===1
+          ? `Current · ${jobName(currentJobs[0])}`
+          : `Current Site · ${currentJobs.length} jobs`;
         use.disabled=true;
         use.classList.add('wolf-colonization-site-current');
         use.title=currentJobs.length===1
-          ? `Currently linked to ${currentJobs[0].title||currentJobs[0].buildName||'this job'}`
+          ? `Currently linked to ${jobName(currentJobs[0])}`
           : `Currently linked to ${currentJobs.length} active jobs`;
+        action.append(use);
       }else if(pendingJobs.length===1){
-        use.textContent='Link This Site';
-        use.title=`Link to ${pendingJobs[0].title||pendingJobs[0].buildName||'awaiting job'}`;
-      }else if(!pendingJobs.length&&boundJobs.length===1){
-        use.textContent='Switch To This Site';
+        use.textContent=`Link to: ${jobName(pendingJobs[0])}`;
+        use.dataset.pendingJobId=pendingJobs[0].id||'';
+        use.title=`Link this construction site to ${jobName(pendingJobs[0])}`;
+        action.append(use);
+      }else if(pendingJobs.length>1){
+        const chooser=document.createElement('label');
+        chooser.className='wolf-colonization-site-chooser';
+        const chooserLabel=document.createElement('span');
+        chooserLabel.textContent='LINK SITE TO';
+        const select=document.createElement('select');
+        select.dataset.colonizationJobSelect='true';
+        select.setAttribute('aria-label',`Choose Colonization Job for ${site.station||'construction site'}`);
+        pendingJobs.forEach(job=>{
+          const option=document.createElement('option');
+          option.value=job.id||'';
+          option.textContent=jobName(job);
+          select.append(option);
+        });
+        chooser.append(chooserLabel,select);
+        use.textContent='Link Site';
+        use.dataset.pendingSelection='1';
+        use.title='Link this construction site to the selected awaiting job';
+        action.append(chooser,use);
+      }else if(boundJobs.length===1){
+        use.textContent=`Switch ${jobName(boundJobs[0])} Here`;
         use.dataset.switchJobId=boundJobs[0].id||'';
-        use.title=`Switch ${boundJobs[0].title||boundJobs[0].buildName||'the active job'} to this site`;
+        use.title=`Switch ${jobName(boundJobs[0])} to this site`;
+        action.append(use);
       }else{
         use.textContent='Use This Site';
+        use.title='Use this construction site in the new-job form';
+        action.append(use);
       }
 
-      row.append(main,commanders,use);
+      row.append(main,commanders,action);
       observed.append(row);
     });
   }
@@ -362,6 +393,8 @@
     const selectedMarketId=button.dataset.useMarketId||'';
     const selectedBuildName=button.dataset.useBuildName||'';
     const switchJobId=button.dataset.switchJobId||'';
+    const directPendingJobId=button.dataset.pendingJobId||'';
+    const choosePendingJob=button.dataset.pendingSelection==='1';
     const pending=jobsCache.filter(job=>job.status==='active'&&job.scope==='market'&&!job.marketId&&String(job.system||'').trim().toLowerCase()===selectedSystem.trim().toLowerCase());
 
     if(switchJobId){
@@ -383,18 +416,28 @@
       return;
     }
 
-    if(pending.length===1){
+    if(directPendingJobId||choosePendingJob){
+      const row=button.closest('.wolf-colonization-observed-row');
+      const selectedJobId=directPendingJobId||row?.querySelector('[data-colonization-job-select]')?.value||'';
+      const job=pending.find(item=>String(item.id||'')===String(selectedJobId));
+      if(!job){
+        setMessage('That awaiting Colonization Job is no longer available. Refresh Jobs and try again.','error');
+        return;
+      }
+      const chooser=row?.querySelector('[data-colonization-job-select]');
       button.disabled=true;
-      setMessage(`Binding discovered construction site to ${pending[0].title||pending[0].buildName||'pending job'}…`,'working');
+      if(chooser)chooser.disabled=true;
+      setMessage(`Binding ${selectedBuildName||'construction site'} to ${jobName(job)}…`,'working');
       try{
-        await mutate({action:'update',job:{id:pending[0].id,marketId:selectedMarketId,buildName:pending[0].buildName||selectedBuildName}});
+        await mutate({action:'update',job:{id:job.id,marketId:selectedMarketId,buildName:job.buildName||selectedBuildName}});
         loadedAt=0;
         await load(true);
-        setMessage('Construction site discovered and bound to the pending job.','success');
+        setMessage(`${selectedBuildName||'Construction site'} linked to ${jobName(job)}.`,'success');
       }catch(error){
         console.error(error);
-        setMessage('Could not bind the discovered site to the pending job.','error');
+        setMessage('Could not bind the discovered site to the selected Colonization Job.','error');
         button.disabled=false;
+        if(chooser)chooser.disabled=false;
       }
       return;
     }
@@ -407,9 +450,7 @@
     if(market)market.value=selectedMarketId;
     if(build&&!build.value.trim())build.value=selectedBuildName;
     updateScope();
-    setMessage(pending.length>1
-      ? 'Multiple pending build jobs exist in this system. Site selected in the new-job form so you can choose deliberately.'
-      : 'Construction site selected. The internal site ID was filled automatically.','success');
+    setMessage('Construction site selected for a new job. The internal site ID was filled automatically.','success');
     form.scrollIntoView({behavior:'smooth',block:'nearest'});
   });
 
