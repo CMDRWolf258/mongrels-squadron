@@ -189,6 +189,10 @@
     if (event.type === 'cz_bond_awarded') return `CZ bond awarded · ${frontierMoney(event.amount)}`;
     if (event.type === 'market_sell') return `Market sale · ${Number(event.count||0).toLocaleString()} t ${event.commodity||''}`;
     if (event.type === 'exploration_sale') return `Exploration data sold · ${frontierMoney(event.amount)}`;
+    if (event.type === 'npc_text') {
+      const text = event.messageLocalised || event.message || 'NPC journal message';
+      return event.possibleReputation ? `Reputation diagnostic · ${text}` : `NPC journal text · ${text}`;
+    }
     return String(event.sourceEvent || event.type || 'Journal event');
   }
   function renderFrontierScout(payload) {
