@@ -494,6 +494,14 @@
   window.addEventListener('pageshow',refreshVerificationIfVisible,{passive:true});
 
   const ledgerPanel=document.querySelector('[data-reward-ledger-admin]');
+  const refreshLedgerIfVisible=()=>{
+    if(!ledgerPanel?.open)return;
+    if(Date.now()-ledgerLoadedAt<LEDGER_FRESH_MS)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(ledgerPanel.open)loadLedgerPreview(true);}));
+  };
+  window.addEventListener('focus',refreshLedgerIfVisible,{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLedgerIfVisible();},{passive:true});
+  window.addEventListener('pageshow',refreshLedgerIfVisible,{passive:true});
   ledgerPanel?.querySelector('[data-refresh-reward-dryrun]')?.addEventListener('click',()=>loadLedgerPreview(true));
   window.addEventListener('wolf-bgs-order-history-updated',()=>{ledgerLoadedAt=0;if(ledgerPanel?.open)setTimeout(()=>loadLedgerPreview(true),160);});
 
