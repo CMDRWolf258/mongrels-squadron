@@ -5,6 +5,12 @@
   if(!panel||!form)return;
 
   const API='/api/operations/reward-settings';
+  let settingsLoaded=false;
+  let settingsLoading=false;
+  let ledgerLoaded=false;
+  let ledgerLoading=false;
+  let verificationLoaded=false;
+  let verificationLoading=false;
 
   function getPath(obj,path){
     return String(path||'').split('.').reduce((value,key)=>value&&typeof value==='object'?value[key]:undefined,obj);
@@ -48,14 +54,19 @@
   }
 
   async function load(){
+    if(settingsLoaded||settingsLoading)return;
+    settingsLoading=true;
     if(meta)meta.textContent='Loading reward defaults…';
     try{
       const response=await fetch(API+'?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
       if(!response.ok)throw new Error('Reward settings request failed ('+response.status+')');
       fill(await response.json());
+      settingsLoaded=true;
     }catch(error){
       console.error('Could not load reward settings',error);
       if(meta)meta.textContent='Could not load reward defaults.';
+    }finally{
+      settingsLoading=false;
     }
   }
 
@@ -79,6 +90,7 @@
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||'Save failed ('+response.status+')');
       fill(payload);
+      settingsLoaded=true;
     }catch(error){
       console.error('Could not save reward settings',error);
       if(meta)meta.textContent='Could not save reward defaults.';
@@ -89,7 +101,8 @@
 
   async function loadLedgerPreview(){
     const consolePanel=document.querySelector('[data-reward-ledger-admin]');
-    if(!consolePanel)return;
+    if(!consolePanel||ledgerLoaded||ledgerLoading)return;
+    ledgerLoading=true;
     const list=consolePanel.querySelector('[data-reward-member-list]');
     try{
       const response=await fetch('/api/rewards/admin?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
@@ -121,15 +134,19 @@
           });
         }
       }
+      ledgerLoaded=true;
     }catch(error){
       console.error('Could not load reward payout preview',error);
       if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Reward ledger unavailable.</strong><small>Nothing was changed.</small></div>';
+    }finally{
+      ledgerLoading=false;
     }
   }
 
   async function loadVerificationReview(){
     const review=document.querySelector('[data-verification-review]');
-    if(!review)return;
+    if(!review||verificationLoaded||verificationLoading)return;
+    verificationLoading=true;
     const list=review.querySelector('[data-verification-list]');
     const flags=review.querySelector('[data-verification-flags]');
     const number=(sel,value)=>{const el=review.querySelector(sel);if(el)el.textContent=Number(value||0).toLocaleString();};
@@ -262,13 +279,27 @@
           });
         }
       }
+      verificationLoaded=true;
     }catch(error){
       console.error('Could not load verification review',error);
       if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Verification review unavailable.</strong><small>No reward state was changed.</small></div>';
+    }finally{
+      verificationLoading=false;
     }
   }
 
-  load();
-  loadLedgerPreview();
-  loadVerificationReview();
+  function loadAfterOpen(details,loader){
+    if(!details)return;
+    const run=()=>{
+      if(!details.open)return;
+      // Let the browser paint the expanded panel first; expensive work starts after.
+      requestAnimationFrame(()=>requestAnimationFrame(()=>loader()));
+    };
+    details.addEventListener('toggle',run,{passive:true});
+    if(details.open)run();
+  }
+
+  loadAfterOpen(panel,load);
+  loadAfterOpen(document.querySelector('[data-reward-ledger-admin]'),loadLedgerPreview);
+  loadAfterOpen(document.querySelector('[data-verification-review]'),loadVerificationReview);
 })();
