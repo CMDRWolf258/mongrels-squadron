@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { invalidateKeyListCache, listKeysCached } from '../../../lib/kv-list-cache.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
 const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
@@ -77,6 +78,7 @@ export async function onRequestPost({ request, env }) {
   };
 
   await env.DAILY_ORDERS.put(submissionKey(record.cycleId, reportId), JSON.stringify(record));
+  await invalidateKeyListCache(env,reportListCacheKey('submissions',record.cycleId));
   return mutationReply(env, current, auth.session, record, 'created');
 }
 
@@ -137,6 +139,7 @@ export async function onRequestDelete({ request, env }) {
   if (!canModify(auth.session, found.record)) return reply({ok:false,error:'report_delete_forbidden'},403);
 
   await env.DAILY_ORDERS.delete(found.key);
+  await invalidateKeyListCache(env,reportListCacheKey(found.storageKind==='legacy'?'legacy':'submissions',cycleId(current)));
   const records = (await listCurrentRecords(env, current))
     .filter(record => String(record.reportId || '') !== String(found.reportId || ''));
   return reply({
@@ -225,6 +228,14 @@ function legacyPrefix(cycle, orderId) {
   return LEGACY_PREFIX + encodeURIComponent(cycle) + ':' + encodeURIComponent(orderId) + ':';
 }
 
+function legacyCyclePrefix(cycle) {
+  return LEGACY_PREFIX + encodeURIComponent(cycle) + ':';
+}
+
+function reportListCacheKey(kind, cycle) {
+  return 'kv-list-cache:order-reports-v1:' + kind + ':' + encodeURIComponent(cycle);
+}
+
 function legacyId(orderId, ownerId) {
   return 'legacy:' + encodeURIComponent(orderId) + ':' + encodeURIComponent(ownerId);
 }
@@ -260,7 +271,10 @@ async function readReportById(env, current, reportId) {
 
 async function listCurrentRecords(env, current) {
   const cycle = cycleId(current);
-  const submissions = await listRecords(env, submissionPrefix(cycle));
+  const [submissions,legacy] = await Promise.all([
+    listRecords(env,submissionPrefix(cycle),reportListCacheKey('submissions',cycle)),
+    listRecords(env,legacyCyclePrefix(cycle),reportListCacheKey('legacy',cycle)),
+  ]);
   const newRecords = submissions.map(record => ({
     ...record,
     reportId:clean(record.reportId),
@@ -268,26 +282,27 @@ async function listCurrentRecords(env, current) {
     submissions:1,
   })).filter(record => record.reportId);
 
-  const orders = Array.isArray(current.orders) ? current.orders : [];
-  const legacyPages = await Promise.all(orders.map(order => listRecords(env, legacyPrefix(cycle, order.id))));
-  const legacyRecords = legacyPages.flat().map(record => ({
-    ...record,
-    reportId:legacyId(record.orderId, record.ownerId),
-    storageKind:'legacy',
-    createdAt:record.createdAt || record.updatedAt || null,
-  }));
+  const currentOrderIds=new Set((Array.isArray(current.orders)?current.orders:[]).map(order=>String(order?.id||'')).filter(Boolean));
+  const legacyRecords = legacy
+    .filter(record=>currentOrderIds.has(String(record?.orderId||'')))
+    .map(record => ({
+      ...record,
+      reportId:legacyId(record.orderId, record.ownerId),
+      storageKind:'legacy',
+      createdAt:record.createdAt || record.updatedAt || null,
+    }));
 
   return [...legacyRecords, ...newRecords];
 }
 
-async function listRecords(env, prefix) {
+async function listRecords(env, prefix, cacheKey) {
   if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.list !== 'function') return [];
-  const keys=[]; let cursor;
-  do {
-    const page = await env.DAILY_ORDERS.list({ prefix, cursor, limit:1000 });
-    keys.push(...(page?.keys || []).map(item=>item.name));
-    cursor = page?.list_complete ? undefined : page?.cursor;
-  } while (cursor);
+  const keys=await listKeysCached(env,{
+    prefix,
+    cacheKey,
+    maxAgeSeconds:21600,
+    maxKeys:5000,
+  });
   const records = await Promise.all(keys.map(key => env.DAILY_ORDERS.get(key,{type:'json'})));
   return records.filter(Boolean);
 }
