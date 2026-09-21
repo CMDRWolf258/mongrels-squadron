@@ -259,7 +259,7 @@
     const rows=Array.isArray(items)?items:[];
     details.hidden=!rows.length;
     container.replaceChildren();
-    rows.slice(0,120).forEach(item=>{
+    rows.slice(0,500).forEach(item=>{
       const row=document.createElement('div');row.className='frontier-scout-event';
       const strong=document.createElement('strong');strong.textContent=`${frontierDate(item.timestamp)} · ${item.event||'Unknown event'}`;
       const safe={...item};delete safe.timestamp;delete safe.event;delete safe.system;delete safe.station;
