@@ -1,13 +1,41 @@
-import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, syncCooldown, TEST_SYSTEM } from '../../../lib/frontier.js';
+import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, syncCooldown } from '../../../lib/frontier.js';
 import { json } from '../../../lib/auth.js';
-import { matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
 
+const HISTORICAL_LOOKBACK_DAYS = 3;
+
 export async function onRequestPost({request,env}) {
-  const auth = await requireMember(request, env); if (auth.response) return auth.response;
+  const auth = await requireMember(request, env);
+  if (auth.response) return auth.response;
   if (!sameOrigin(request)) return json({ok:false,error:'request_validation_failed'}, {status:403,headers:privateHeaders()});
+
   let account = await getAccount(env, auth.session.sub);
   if (!account) return json({ok:false,error:'frontier_not_connected'}, {status:409,headers:privateHeaders()});
+
+  const currentOrders = await readCurrentOrderCycle(env);
+  const targetSystems = activeOrderSystems(currentOrders);
+  if (!targetSystems.length) {
+    const events = await readStoredEvents(env, auth.session.sub);
+    const matched = matchVerifiedActivity(events, currentOrders);
+    const rewardSettings = await readRewardSettings(env);
+    return json({
+      ok:true,
+      skipped:true,
+      reason:'no_active_order_systems',
+      targetSystems:[],
+      newEvents:0,
+      storedEvents:events.length,
+      summary:summarizeEvents(events),
+      orderCycleId:matched.cycleId,
+      verifiedOrders:buildRewardPreview(matched.orderTotals,rewardSettings.settings),
+      recentEvents:matched.events.slice(-20).reverse(),
+      cooldown:syncCooldown(account),
+      account:publicAccount(account),
+      message:'No system-scoped Daily Orders are active, so Frontier journal retrieval was skipped.',
+    }, {headers:privateHeaders()});
+  }
+
   const cooldown = syncCooldown(account);
   if (!cooldown.ready) {
     return json({
@@ -15,46 +43,73 @@ export async function onRequestPost({request,env}) {
       error:'frontier_sync_cooldown',
       retryAfterSeconds:cooldown.remainingSeconds,
       nextSyncAt:cooldown.nextSyncAt,
-      cooldown:syncCooldown(account),
+      targetSystems,
+      cooldown,
       account:publicAccount(account),
     }, {status:429,headers:{...privateHeaders(),'Retry-After':String(cooldown.remainingSeconds)}});
   }
 
   try {
-    const access = await ensureAccessToken(request, env, auth.session.sub, account);
+    let access = await ensureAccessToken(request, env, auth.session.sub, account);
     account = access.account;
-    let response = await fetchJournal(access.accessToken, env);
-    if (response.response.status === 401 || response.response.status === 422) {
-      const retry = await ensureAccessToken(request, env, auth.session.sub, {...account,accessExpiresAt:'1970-01-01T00:00:00Z'});
-      account = retry.account;
-      response = await fetchJournal(retry.accessToken, env);
+
+    let current = await fetchJournal(access.accessToken, env);
+    if (current.response.status === 401 || current.response.status === 422) {
+      access = await ensureAccessToken(request, env, auth.session.sub, {...account,accessExpiresAt:'1970-01-01T00:00:00Z'});
+      account = access.account;
+      current = await fetchJournal(access.accessToken, env);
     }
-    const status = response.response.status;
-    if (status === 204) {
-      account = {...account,lastSyncAt:new Date().toISOString()};
-      await saveAccount(env, auth.session.sub, account);
-      return json({ok:true,partial:false,targetSystem:TEST_SYSTEM,newEvents:0,summary:summarizeEvents([]),cooldown:syncCooldown(account),account:publicAccount(account),message:'No journal data is available from Frontier for today yet.'},{headers:privateHeaders()});
+
+    const currentStatus=current.response.status;
+    if (![200,204,206].includes(currentStatus)) throw new Error('frontier_journal_' + currentStatus);
+    let currentText='';
+    if (currentStatus !== 204) {
+      currentText=await current.response.text();
+      if (currentText.trim()==='Journal unavailable') throw new Error('frontier_journal_unavailable');
     }
-    if (![200,206].includes(status)) throw new Error('frontier_journal_' + status);
-    const text = await response.response.text();
-    if (text.trim() === 'Journal unavailable') throw new Error('frontier_journal_unavailable');
-    const parsed = parseJournal(text, TEST_SYSTEM, {diagnostics:auth.session.access === 'site_admin'});
+
+    const reconciled = new Set(Array.isArray(account.reconciledJournalDates) ? account.reconciledJournalDates : []);
+    const historicalDate = nextHistoricalDate(currentOrders,reconciled);
+    let historicalStatus=null;
+    let historicalText='';
+
+    if (historicalDate) {
+      const path='/' + historicalDate.replaceAll('-','/');
+      const historical=await fetchJournal(access.accessToken,env,path);
+      historicalStatus=historical.response.status;
+      if ([200,206].includes(historicalStatus)) {
+        historicalText=await historical.response.text();
+        if (historicalText.trim()==='Journal unavailable') historicalText='';
+      } else if (historicalStatus !== 204) {
+        console.warn('Historical Frontier journal request failed', historicalDate, historicalStatus);
+      }
+      if (historicalStatus===200 || historicalStatus===204) reconciled.add(historicalDate);
+    }
+
+    const combinedText=[historicalText,currentText].filter(Boolean).join('\n');
+    const parsed = parseJournal(combinedText,targetSystems,{
+      diagnostics:auth.session.access === 'site_admin',
+      knownSystemAddresses:account.systemAddresses || {},
+    });
     const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
-    const currentOrders = await readCurrentOrderCycle(env);
     const matched = matchVerifiedActivity(merged, currentOrders);
     const rewardSettings = await readRewardSettings(env);
     const rewardPreview = buildRewardPreview(matched.orderTotals, rewardSettings.settings);
+
     account = {
       ...account,
       lastSyncAt:new Date().toISOString(),
       lastJournalEventAt:parsed.lastEventAt || account.lastJournalEventAt,
       lastSystem:parsed.lastSystem || account.lastSystem,
+      systemAddresses:{...(account.systemAddresses||{}),...(parsed.systemAddresses||{})},
+      reconciledJournalDates:[...reconciled].sort().slice(-14),
     };
     await saveAccount(env, auth.session.sub, account);
+
     return json({
       ok:true,
-      partial:status===206,
-      targetSystem:TEST_SYSTEM,
+      partial:currentStatus===206 || historicalStatus===206,
+      targetSystems,
       newEvents:parsed.events.length,
       storedEvents:merged.length,
       summary:summarizeEvents(merged),
@@ -62,8 +117,17 @@ export async function onRequestPost({request,env}) {
       verifiedOrders:rewardPreview,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
+      journalCoverage:{
+        currentStatus,
+        historicalDate,
+        historicalStatus,
+        reconciledDates:account.reconciledJournalDates,
+      },
       cooldown:syncCooldown(account),
       account:publicAccount(account),
+      message:currentStatus===204 && !historicalText
+        ? 'No current-day journal data is available from Frontier yet.'
+        : undefined,
     }, {headers:privateHeaders()});
   } catch (error) {
     console.error('Frontier journal sync failed', error);
@@ -71,4 +135,48 @@ export async function onRequestPost({request,env}) {
     const reauth=code.includes('reauthorization');
     return json({ok:false,error:reauth?'frontier_reauthorization_required':'frontier_sync_failed'}, {status:reauth?401:502,headers:privateHeaders()});
   }
+}
+
+function nextHistoricalDate(currentOrders,reconciled) {
+  const today=utcDay(new Date());
+  const start=cycleStart(currentOrders);
+  if (!start) return null;
+  const startDay=utcDay(start);
+  if (startDay >= today) return null;
+
+  const oldestAllowed=addUtcDays(today,-HISTORICAL_LOOKBACK_DAYS);
+  const first=startDay < oldestAllowed ? oldestAllowed : startDay;
+  const candidates=[];
+  for(let day=addUtcDays(today,-1); day>=first; day=addUtcDays(day,-1)) {
+    const key=formatUtcDay(day);
+    if (!reconciled.has(key)) candidates.push(key);
+  }
+  return candidates[0] || null;
+}
+
+function cycleStart(current) {
+  const values=[
+    current?.cycleStartedAt,
+    ...(Array.isArray(current?.orders)?current.orders.map(order=>order?.createdAt):[]),
+    current?.updatedAt,
+  ].map(value=>Date.parse(value||'')).filter(Number.isFinite);
+  return values.length ? new Date(Math.min(...values)) : null;
+}
+
+function utcDay(value) {
+  const d=value instanceof Date ? value : new Date(value);
+  return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+}
+function addUtcDays(value,days) {
+  const d=new Date(value);
+  d.setUTCDate(d.getUTCDate()+days);
+  return d;
+}
+function formatUtcDay(value) {
+  return value.toISOString().slice(0,10);
+}
+
+async function readStoredEvents(env,userId) {
+  const stored=await env.DAILY_ORDERS.get('frontier-bgs-events:'+userId,{type:'json'});
+  return Array.isArray(stored?.events)?stored.events:[];
 }
