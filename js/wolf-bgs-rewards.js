@@ -34,6 +34,12 @@
     return Number.isNaN(d.getTime())?'Reward defaults saved.':`Saved ${d.toLocaleString()}`;
   }
 
+  function dateTime(value){
+    if(!value)return'—';
+    const d=new Date(value);
+    return Number.isNaN(d.getTime())?String(value):d.toLocaleString();
+  }
+
   function fill(payload){
     const settings=payload?.settings||{};
     form.querySelectorAll('[data-reward]').forEach(input=>{
@@ -153,6 +159,10 @@
     verificationLoading=true;
     const list=review.querySelector('[data-verification-list]');
     const flags=review.querySelector('[data-verification-flags]');
+    const refreshButton=review.querySelector('[data-refresh-verification]');
+    const checked=review.querySelector('[data-verification-checked]');
+    if(refreshButton)refreshButton.disabled=true;
+    if(checked)checked.textContent='Refreshing…';
     const number=(sel,value)=>{const el=review.querySelector(sel);if(el)el.textContent=Number(value||0).toLocaleString();};
     const round=value=>Math.round((Number(value)||0)*10)/10;
     const signed=value=>{const n=round(value);return (n>0?'+':'')+n.toLocaleString();};
@@ -173,6 +183,17 @@
       number('[data-verification-ambiguous]',s.ambiguousComponents);
       number('[data-verification-unmatched]',s.unmatchedComponents);
 
+      const cycle=review.querySelector('[data-verification-cycle]');
+      const activeOrders=review.querySelector('[data-verification-active-orders]');
+      if(cycle){
+        const id=String(verification.cycleId||'No active cycle');
+        const started=verification.cycleStartedAt?dateTime(verification.cycleStartedAt):'';
+        cycle.textContent=started?`${id} · started ${started}`:id;
+        cycle.title=id;
+      }
+      if(activeOrders)activeOrders.textContent=Number(verification.activeOrderCount||0).toLocaleString();
+
+      const audit={matched:0,mismatch:0,scoutOnly:0,manualOnly:0};
       const reports=Array.isArray(reportsPayload.reports)?reportsPayload.reports:[];
       const manual=new Map();
       for(const report of reports){
@@ -209,6 +230,9 @@
             const manualScore=hasManual?(Number(reported.score)||0):null;
             const diff=hasManual?verified-manualScore:null;
             const mismatch=hasManual&&Math.abs(diff)>0.009;
+            if(!hasManual)audit.scoutOnly+=1;
+            else if(mismatch)audit.mismatch+=1;
+            else audit.matched+=1;
 
             const row=document.createElement('div');
             row.className='wolf-scout-token-row wolf-verification-row '+(hasManual?(mismatch?'is-mismatch':'is-matched'):'is-scout-only');
@@ -238,6 +262,7 @@
         for(const [key,reported] of manual){
           if(seen.has(key)||!(Number(reported.score)>0))continue;
           rows+=1;
+          audit.manualOnly+=1;
           const row=document.createElement('div');row.className='wolf-scout-token-row wolf-verification-row is-manual-only';
           const main=document.createElement('div');main.className='wolf-verification-main';
           const strong=document.createElement('strong');
@@ -262,6 +287,11 @@
           empty.append(strong,small);list.appendChild(empty);
         }
       }
+
+      number('[data-verification-audit-matched]',audit.matched);
+      number('[data-verification-audit-mismatch]',audit.mismatch);
+      number('[data-verification-audit-scout]',audit.scoutOnly);
+      number('[data-verification-audit-manual]',audit.manualOnly);
 
       if(flags){
         flags.replaceChildren();
@@ -294,11 +324,14 @@
       }
       verificationLoaded=true;
       verificationLoadedAt=Date.now();
+      if(checked)checked.textContent=new Date(verificationLoadedAt).toLocaleString();
     }catch(error){
       console.error('Could not load verification review',error);
       if(list)list.innerHTML='<div class="wolf-scout-empty"><strong>Verification review unavailable.</strong><small>No reward state was changed.</small></div>';
+      if(checked)checked.textContent='Refresh failed';
     }finally{
       verificationLoading=false;
+      if(refreshButton)refreshButton.disabled=false;
     }
   }
 
@@ -314,6 +347,7 @@
   }
 
   const verificationPanel=document.querySelector('[data-verification-review]');
+  verificationPanel?.querySelector('[data-refresh-verification]')?.addEventListener('click',()=>loadVerificationReview(true));
   const refreshVerificationIfVisible=()=>{
     if(!verificationPanel?.open)return;
     if(Date.now()-verificationLoadedAt<VERIFICATION_FRESH_MS)return;
