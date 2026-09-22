@@ -56,3 +56,6 @@
 .scout-setup-notice{flex-basis:100%;margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(34,211,238,.16);color:#dffbff;font-size:.78rem;font-weight:700;letter-spacing:.035em}
 .scout-setup-notice strong{color:#22d3ee}
 .scout-setup-panel{flex-wrap:wrap}
+
+.scout-job-system-line{display:flex;align-items:center;gap:7px;min-width:0}.scout-job-system-line>strong{min-width:0;overflow-wrap:anywhere}.scout-job-system-line em{color:#7fe8f2;font-size:.64rem;font-style:normal;font-weight:800}
+.scout-job-copy-system{display:inline-grid;place-items:center;width:27px;height:27px;flex:0 0 27px;border:1px solid rgba(34,211,238,.28);border-radius:7px;background:rgba(34,211,238,.055);color:#5fe8f5;font-size:.85rem;line-height:1;cursor:pointer}.scout-job-copy-system:hover{background:rgba(34,211,238,.12);border-color:rgba(34,211,238,.55)}
