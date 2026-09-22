@@ -9,7 +9,9 @@ export async function onRequestGet({request,env}) {
   if (!session) return reply({ok:false,error:'authentication_required'},401);
   if (!ALLOWED.has(session.access)) return reply({ok:false,error:'officer_access_required'},403);
 
-  const entries = await listAllRewardEntries(env);
+  const allEntries = await listAllRewardEntries(env);
+  const memberFundedEntries=allEntries.filter(entry=>entry?.fundingMode==='member');
+  const entries=allEntries.filter(entry=>entry?.fundingMode!=='member');
   const members = new Map();
   let totalOwedCredits=0;
   let totalPaidCredits=0;
@@ -56,6 +58,8 @@ export async function onRequestGet({request,env}) {
       totalPaidCredits:round(totalPaidCredits),
       memberCount:members.size,
       entryCount:entries.length,
+      memberFundedEntryCount:memberFundedEntries.length,
+      memberFundedUnsettledCredits:round(memberFundedEntries.filter(entry=>entry?.status!=='paid').reduce((sum,entry)=>sum+(Number(entry.amountCredits)||0),0)),
     },
     canConfirmPayments:session.access==='site_admin',
     paymentMode:'manual_confirmation',
