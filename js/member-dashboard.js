@@ -46,7 +46,7 @@
     if(rewardsBadge)rewardsBadge.textContent=owed?owed.toLocaleString()+' Cr Owed':'0 Cr Owed';
     if(rewardsSummary)rewardsSummary.textContent=entries.length
       ? `Your reward ledger currently shows ${owed.toLocaleString()} Cr owed and ${paid.toLocaleString()} Cr settled.`
-      : 'No reward ledger entries yet. Verified Scout activity is currently shown as reward preview only and does not create debt.';
+      : 'No reward ledger entries yet. Verified Daily Order, Colonization, and Scout Job rewards appear here after leadership creates the OWED ledger entry.';
     if(!rewardsPreview)return;
     rewardsPreview.replaceChildren();
     entries.slice(0,3).forEach(entry=>{
