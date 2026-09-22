@@ -15,6 +15,7 @@
   const SOURCE_STORAGE='mongrels-scout-distance-source-v1';
   const SORT_STORAGE='mongrels-scout-sort-v1';
   let payload=null;
+  let routePreferencesLoaded=false;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const fmtCredits=millions=>Math.round((Number(millions)||0)*1_000_000).toLocaleString()+' Cr';
@@ -53,6 +54,7 @@
   };
   const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
   const recall=key=>{try{return localStorage.getItem(key)||'';}catch{return'';}};
+  const forget=key=>{try{localStorage.removeItem(key);}catch{}};
 
   async function api(method='GET',body=null){
     const response=await fetch('/api/operations/scout-jobs'+(method==='GET'?'?_='+Date.now():'') ,{
@@ -138,20 +140,23 @@
     const jobs=payload.jobs||[];
     if(routeOptions)routeOptions.innerHTML=jobs.map(job=>'<option value="'+esc(job.system)+'"></option>').join('');
 
-    if(sort){
-      const savedSort=recall(SORT_STORAGE);
-      if(savedSort&&[...sort.options].some(option=>option.value===savedSort))sort.value=savedSort;
-    }
-    if(routeSource&&!routeSource.value){
-      const savedSource=recall(SOURCE_STORAGE);
-      if(savedSource&&findSystem(savedSource))routeSource.value=findSystem(savedSource).system;
+    if(!routePreferencesLoaded){
+      if(sort){
+        const savedSort=recall(SORT_STORAGE);
+        if(savedSort&&[...sort.options].some(option=>option.value===savedSort))sort.value=savedSort;
+      }
+      if(routeSource&&!routeSource.value){
+        const savedSource=recall(SOURCE_STORAGE);
+        if(savedSource&&findSystem(savedSource))routeSource.value=findSystem(savedSource).system;
+      }
+      routePreferencesLoaded=true;
     }
 
     const last=payload.viewer?.lastScoutLocation;
     if(useLast){
       useLast.hidden=!(last?.system&&coordinates(last?.coords));
       if(!useLast.hidden){
-        useLast.textContent='Use Last Scout · '+last.system;
+        useLast.textContent='Use Last Scout';
         useLast.title='Use '+last.system+' as the route finder starting system';
       }
     }
@@ -298,7 +303,11 @@
   search?.addEventListener('input',render);
   filter?.addEventListener('change',render);
   sort?.addEventListener('change',()=>{remember(SORT_STORAGE,sort.value);render();});
-  routeSource?.addEventListener('input',()=>{updateRouteStatus();render();});
+  routeSource?.addEventListener('input',()=>{
+    if(!findSystem(routeSource.value))forget(SOURCE_STORAGE);
+    updateRouteStatus();
+    render();
+  });
   routeSource?.addEventListener('change',()=>{
     const exact=findSystem(routeSource.value);
     if(exact){
