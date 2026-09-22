@@ -89,7 +89,10 @@
       const parts=[];
       if(Number(summary.created)>0)parts.push(Number(summary.created)+' posted');
       if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
+      if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' completed/removed card'+(Number(summary.deleted)===1?'':'s')+' cleaned up');
       if(Number(summary.unchanged)>0)parts.push(Number(summary.unchanged)+' unchanged');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
       setStatus('Colonization Jobs synced'+(parts.length?' · '+parts.join(' · '):' · no current jobs')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
