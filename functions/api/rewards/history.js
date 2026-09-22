@@ -11,7 +11,7 @@ export async function onRequestGet({request,env}) {
 
   const url=new URL(request.url);
   const offset=Math.max(0,Math.floor(Number(url.searchParams.get('offset'))||0));
-  const limit=Math.min(25,Math.max(5,Math.floor(Number(url.searchParams.get('limit'))||12));
+  const limit=Math.min(25,Math.max(5,Math.floor(Number(url.searchParams.get('limit'))||12)));
   const entries=await listRewardEntries(env,session.sub);
   return reply({ok:true,...buildRewardPaidHistoryPage(entries,{offset,limit})});
 }
