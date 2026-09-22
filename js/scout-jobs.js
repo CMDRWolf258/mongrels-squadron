@@ -73,7 +73,7 @@
   }
 
   function render(){
-    if(!payload||!list)return;
+    if(!payload)return;
     const s=payload.summary||{};
     for(const [key,value] of Object.entries({available:s.available,claimed:s.claimed,fresh:s.fresh,priority:s.priority})){
       const el=host.querySelector('[data-scout-summary="'+key+'"]');
@@ -83,6 +83,7 @@
     if(defaultReward)defaultReward.textContent=fmtCredits(payload.defaultRewardMillions||0);
 
     if(summaryOnly)return;
+    if(!list)return;
 
     const binding=host.querySelector('[data-scout-binding-note]');
     if(binding){
@@ -117,7 +118,7 @@
           : '';
 
       return '<article class="scout-job-card '+(bonus>0?'is-priority ':'')+(job.status==='claimed'?'is-claimed ':'')+(job.status.startsWith('fresh')?'is-fresh ':'')+'">'
-        +'<div class="scout-job-main"><strong>'+esc(job.system)+'</strong><span class="scout-job-status '+esc(info.cls)+'">'+esc(info.label)+'</span><small>Last Live Scout board: '+esc(job.latestScoutAt?fmtTime(job.latestScoutAt)+' · '+age(job.latestScoutAt):'Never')+'</small></div>'
+        +'<div class="scout-job-main"><div class="scout-job-system-line"><strong>'+esc(job.system)+'</strong><button type="button" class="scout-job-copy-system" data-scout-copy-system="'+esc(job.system)+'" title="Copy system name" aria-label="Copy '+esc(job.system)+'">⧉</button><em aria-live="polite"></em></div><span class="scout-job-status '+esc(info.cls)+'">'+esc(info.label)+'</span><small>Last Live Scout board: '+esc(job.latestScoutAt?fmtTime(job.latestScoutAt)+' · '+age(job.latestScoutAt):'Never')+'</small></div>'
         +'<div class="scout-job-meta"><span>REWARD</span><strong class="scout-job-reward">'+esc(fmtCredits(total))+'</strong><small>'+esc(fmtCredits(base))+' base'+(bonus>0?' + '+esc(fmtCredits(bonus))+' bonus':'')+'</small></div>'
         +'<div class="scout-job-meta"><span>SYSTEM TICK</span><strong>'+esc(job.cycle?.tickConfiguredTime||'19:00')+' CT</strong><small>Cycle boundary '+esc(fmtTime(job.cycle?.cycleEndsAt))+'</small></div>'
         +'<div class="scout-job-meta"><span>CYCLE</span><strong>'+esc(job.dataFresh?'CURRENT DATA':'NEEDS SCOUT')+'</strong><small>'+esc(countdown(job.cycle?.cycleEndsAt))+'</small></div>'
@@ -164,7 +165,16 @@
     }
   }
 
-  list?.addEventListener('click',event=>{
+  list?.addEventListener('click',async event=>{
+    const copy=event.target.closest('[data-scout-copy-system]');
+    if(copy){
+      const system=copy.dataset.scoutCopySystem||'';
+      const out=copy.parentElement?.querySelector('em');
+      try{await navigator.clipboard.writeText(system);if(out)out.textContent='Copied';}
+      catch{if(out)out.textContent='Copy failed';}
+      window.setTimeout(()=>{if(out)out.textContent='';},1400);
+      return;
+    }
     const claim=event.target.closest('[data-scout-claim]');
     if(claim){mutate('claim',claim.dataset.scoutClaim,claim);return;}
     const release=event.target.closest('[data-scout-release]');
