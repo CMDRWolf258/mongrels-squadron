@@ -249,14 +249,17 @@
     const verifiedLine=verified
       ? '<div class="mc-verified-progress"><span>SCOUT VERIFIED</span><strong>'+esc(fmt(verified.contribution)+' '+(verified.unit||''))+'</strong>'+(verified.rewardEligible?'<small>Reward preview '+esc(fmt(verified.entitlementMillions))+'M / '+esc(fmt(verified.capMillions))+'M Cr cap · preview only</small>':'<small>Verified contribution · reward rule not active</small>')+'</div>'
       : '';
-    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>You reported <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' reports</span></div>'+verifiedLine+'<div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div>';
+    const mineReports=reports.filter(report=>String(report.orderId)===String(order.id));
+    const manualSummary=mineReports.length
+      ? mineReports.length+' YOUR REPORT'+(mineReports.length===1?'':'S')
+      : 'OPEN IF NEEDED';
+    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>Manual total <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' manual reports</span></div>'+verifiedLine+'<details class="mc-manual-report"><summary><span><strong>MANUAL REPORTING</strong><small>Backup entry if Scout misses activity</small></span><b>'+esc(manualSummary)+' <i aria-hidden="true">▾</i></b></summary><div class="mc-manual-report-body"><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div></div></details>';
     const form=host.querySelector('.mc-report-form');
     let editor=null;
     if(s.type==='cz')editor=czForm(order);
     else if(s.type==='inf')editor=infForm(order);
     else if(CREDIT_TYPES.has(s.type))editor=creditForm(order,s.type);
     if(editor)form.append(editor);
-    const mineReports=reports.filter(report=>String(report.orderId)===String(order.id));
     if(editor&&mineReports.length)form.append(reportHistory(order,editor,s.type,mineReports));
     return host;
   }
