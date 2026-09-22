@@ -1144,6 +1144,29 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Member Rewards account / payout requests — 2026-09-21
+
+Added a dedicated member-facing **Rewards** account at `/rewards/` plus a compact Mission Control preview.
+
+- The Rewards page is member-authenticated and shows only the signed-in member's own ledger.
+- The account combines every reward source into one balance: BGS, Colonization, future scouting jobs, manual adjustments, special jobs, and future reward programs.
+- Top-level account figures show **Available Balance**, outstanding entry count, lifetime paid total, and payout-request status.
+- Outstanding entries are grouped by source with reason, verified contribution when available, approval time, and amount.
+- Paid history is grouped by payment batch when possible.
+- Members can **REQUEST PAYOUT** without changing or creating debt. The request is only a collection signal to leadership.
+- A payout request snapshots the currently owed entry IDs and total. Rewards earned after the request are shown separately and can be included by updating the request.
+- Members can cancel an active payout request without affecting what is owed.
+- The admin Payment Console surfaces **PAYOUT REQUESTED** on that CMDR and prioritizes requested CMDRs in the ledger list.
+- Partial settlement keeps a payout request active until every ledger entry included in that request has been paid. Once the requested entries are settled, the request is marked fulfilled even if newer rewards remain owed.
+- Mission Control now has a compact **MY REWARDS** preview with available balance, outstanding count, payout state, and a direct link to the full Rewards account.
+- The reward ledger now preserves `scouting_job` as a first-class kind in preparation for verified scouting rewards.
+
+### Faction Alert blink repair
+- The active Faction Alert master button still uses the red `wolf-master-alert-flash` warning cycle.
+- The prior `prefers-reduced-motion` override was suppressing the blink entirely on systems/browsers reporting reduced motion, leaving the button illuminated but static.
+- Reduced-motion mode now removes nonessential transitions but keeps the critical warning as a slower 1.6-second stepped light flash. This is a color/light-state warning, not positional motion.
+- `wolf-bgs.css` cache version advanced so the repaired animation is not hidden by a stale stylesheet.
+
 ## Reward payment console / settlement batches — 2026-09-21
 
 Added the operator-facing payment side of the real Reward Ledger.
