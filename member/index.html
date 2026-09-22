@@ -213,13 +213,13 @@
         <p>Scout is a lightweight EDMC plugin for approved Mongrel members. It watches normal Elite journal events and uploads only the BGS fields needed by Wolf BGS Control when the Regiment of Imperial Mongrels is present.</p>
         <div class="member-scout-steps">
           <div class="member-scout-step"><b>1. Install EDMC</b><span>Use a working Elite Dangerous Market Connector installation on the machine that can read your live Elite journal folder.</span></div>
-          <div class="member-scout-step"><b>2. Download Mongrel Scout</b><span>Download the Scout ZIP, extract it, then copy the <strong>MongrelScout</strong> folder into EDMC's plugin folder.</span></div>
-          <div class="member-scout-step"><b>3. Restart EDMC</b><span>Open EDMC → File → Settings → Plugins → Open to confirm the plugin folder, then restart EDMC so Mongrel Scout loads.</span></div>
-          <div class="member-scout-step"><b>4. Enter your Scout token</b><span>Open EDMC Settings → Mongrel Scout, paste the token issued to you by squad leadership, leave the supplied endpoint unchanged, and enable Scout.</span></div>
+          <div class="member-scout-step"><b>2. Read the README</b><span>Download and unzip Scout, then read the top-level <strong>README.md</strong> before installing. The plugin folder itself can be treated as a black box.</span></div>
+          <div class="member-scout-step"><b>3. Reveal the plugin folder</b><span>In EDMC open <strong>File → Settings → Plugins → Open</strong>. Use the folder EDMC opens rather than looking under Program Files.</span></div>
+          <div class="member-scout-step"><b>4. Copy the MongrelScout FOLDER</b><span>Copy the whole extracted <strong>MongrelScout</strong> folder into the plugin folder EDMC revealed; do not copy individual files. Restart EDMC, then enter your Scout token.</span></div>
           <div class="member-scout-step"><b>5. Test a Mongrel system</b><span>Enter or jump within a system where the Mongrels are present. A successful upload shows <strong>Updated &lt;system&gt;</strong> in EDMC.</span></div>
           <div class="member-scout-step"><b>6. Leave it running</b><span>Scout only reacts to FSDJump, Location, and CarrierJump journal events with a full local faction board. Ordinary travel outside Mongrel systems is ignored.</span></div>
         </div>
-        <div class="member-scout-actions"><a class="btn btn-primary" href="/api/downloads/mongrel-scout">Download Mongrel Scout</a></div>
+        <div class="member-scout-actions"><a class="btn btn-primary" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Mongrel Scout</a></div>
         <dl class="member-scout-status">
           <dt>Armed</dt><dd>Scout is enabled and has a token. It is waiting for a qualifying journal event.</dd>
           <dt>Updated &lt;system&gt;</dt><dd>The current BGS snapshot was accepted by the Mongrels server.</dd>
@@ -273,7 +273,7 @@
 </footer>
 <script src="../js/site.js?v=72"></script>
 <script src="../js/auth-ui.js?v=68"></script>
-<script src="../js/member-dashboard.js?v=83"></script>
+<script src="../js/member-dashboard.js?v=84"></script>
 <script src="../js/mongrel-assistant.js?v=69"></script>
 </body>
 </html>

@@ -255,9 +255,9 @@ payload=bgs.buildPayload(
 assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
 
 const memberPage=readFileSync('member/index.html','utf8');
-for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/member-dashboard\.js\?v=83/])assert.match(memberPage,pattern);
+for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/member-dashboard\.js\?v=84/])assert.match(memberPage,pattern);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
-for(const pattern of [/Live Scout \(EDMC\) · Faction-board setup/,/jump out and back in/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
+for(const pattern of [/Live Scout \(EDMC\)/,/Live Scout installation & refresh instructions/,/Recent verified activity/,/data-frontier-activity-count/,/Read README/,/Plugins → Open/,/MongrelScout FOLDER/,/jump out and back in/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
 const operationsPage=readFileSync('operations/index.html','utf8');
 assert.match(operationsPage,/Connect Elite & Scout/);
 assert.match(operationsPage,/\.\.\/member\/#mongrel-scout/);
@@ -288,12 +288,20 @@ new Function(baseClient);
 
 const zipSource=readFileSync('functions/downloads/mongrel-scout.zip.js','utf8');
 new Function(zipSource.replace(/\bexport\s+/g,''));
-for(const pattern of [/MongrelScout\/load\.py/,/MongrelScout\/README\.md/,/application\/zip/,/Content-Disposition/,/crc32/,/buildStoredZip/])assert.match(zipSource,pattern);
+for(const pattern of [/MongrelScout\/load\.py/,/path:'README\.md'/,/application\/zip/,/Content-Disposition/,/crc32/,/buildStoredZip/])assert.match(zipSource,pattern);
+assert.doesNotMatch(zipSource,/path:'MongrelScout\/README\.md'/);
 const zipFactory=new Function(zipSource.replace(/\bexport\s+/g,'')+'; return {buildStoredZip};');
 const zipBytes=zipFactory().buildStoredZip([{name:'MongrelScout/load.py',data:new TextEncoder().encode('print("ok")')}]);
 assert.equal(zipBytes[0],0x50);
 assert.equal(zipBytes[1],0x4b);
 assert.match(Buffer.from(zipBytes).toString('latin1'),/MongrelScout\/load\.py/);
+
+const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8');
+assert.match(apiZipSource,/path:'README\.md'/);
+assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
+const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
+for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/])assert.match(scoutReadme,pattern);
+assert.doesNotMatch(scoutReadme,/included `load\.py`/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
   const source=readFileSync(path,'utf8').replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'');

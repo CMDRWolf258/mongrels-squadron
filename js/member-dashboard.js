@@ -160,6 +160,11 @@
         .frontier-scout-events{display:grid;gap:8px;margin-top:14px}
         .frontier-scout-event{padding:10px 12px;border-left:2px solid rgba(98,220,255,.4);background:rgba(255,255,255,.018)}
         .frontier-scout-event strong{display:block}.frontier-scout-event small{color:var(--muted,#aab5bf)}
+        .frontier-live-scout-callout{margin:18px 0 12px;padding:16px;border:1px solid rgba(255,190,88,.34);background:linear-gradient(145deg,rgba(255,164,55,.075),rgba(98,220,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+        .frontier-live-scout-callout .eyebrow{margin:0 0 3px;color:#ffc66d}.frontier-live-scout-callout h4{margin:0;color:var(--text,#eef6fb);font-size:1.15rem}.frontier-live-scout-callout p{margin:8px 0 0;color:var(--muted,#aab5bf);line-height:1.5}
+        .frontier-live-scout-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+        .frontier-live-scout-setup{margin:0 0 18px;border:1px solid rgba(98,220,255,.18);background:rgba(0,0,0,.12)}.frontier-live-scout-setup>summary{padding:12px 14px;cursor:pointer;color:var(--text,#eef6fb)}.frontier-live-scout-setup>div,.frontier-live-scout-setup>p{margin-left:14px;margin-right:14px}.frontier-live-scout-setup>.member-scout-actions{margin-bottom:14px}
+        .frontier-scout-activity{margin:16px 0;border:1px solid rgba(98,220,255,.14);background:rgba(0,0,0,.12)}.frontier-scout-activity>summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;list-style:none}.frontier-scout-activity>summary::-webkit-details-marker{display:none}.frontier-scout-activity>summary strong,.frontier-scout-activity>summary small{display:block}.frontier-scout-activity>summary small{margin-top:2px;color:var(--muted,#aab5bf);font-size:.78rem}.frontier-scout-activity>summary b{color:#9fdde5;font-size:.72rem;white-space:nowrap}.frontier-scout-activity-body{padding:0 12px 12px}
         @media(max-width:700px){.frontier-scout-grid,.frontier-scout-kpis{grid-template-columns:1fr}}
       `;
       document.head.appendChild(style);
@@ -185,6 +190,31 @@
         <button class="btn btn-ghost" type="button" data-frontier-disconnect hidden>Disconnect</button>
       </div>
       <p class="member-scout-note" data-frontier-result>Checking your Frontier connection status.</p>
+
+      <section class="frontier-live-scout-callout" aria-labelledby="liveScoutHeading">
+        <p class="eyebrow">Live faction-board reporting</p>
+        <h4 id="liveScoutHeading">Live Scout (EDMC)</h4>
+        <p>Use Live Scout when you want Wolf BGS Control to receive a fresh faction board from the system you are visiting. <strong>Read the README first</strong>; it shows exactly which EDMC plugin folder to use and which folder to copy.</p>
+        <div class="frontier-live-scout-actions">
+          <a class="btn btn-primary" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a>
+          <a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a>
+        </div>
+      </section>
+
+      <details class="frontier-live-scout-setup" id="live-scout-setup" open>
+        <summary><strong>Live Scout installation & refresh instructions</strong></summary>
+        <p>Scout is event-driven. It sends a complete faction board on <strong>FSDJump</strong>, <strong>Location</strong>, or <strong>CarrierJump</strong>; it does not continuously poll influence while you remain parked in one system.</p>
+        <div class="member-scout-steps">
+          <div class="member-scout-step"><b>1. Install EDMC</b><span>Install and run Elite Dangerous Market Connector on the machine that can read your live Elite journal folder.</span></div>
+          <div class="member-scout-step"><b>2. Read the README</b><span>Download the Scout ZIP, unzip it, and read the top-level <strong>README.md</strong>. The <strong>MongrelScout</strong> folder itself can be treated as a black box.</span></div>
+          <div class="member-scout-step"><b>3. Reveal the real plugin folder</b><span>In EDMC open <strong>File → Settings → Plugins → Open</strong>. Use the folder EDMC opens; do not guess from Program Files.</span></div>
+          <div class="member-scout-step"><b>4. Copy the whole folder</b><span>Copy the extracted <strong>MongrelScout FOLDER</strong> into the plugin folder EDMC revealed. Do not copy the individual files by themselves.</span></div>
+          <div class="member-scout-step"><b>5. Restart & authorize</b><span>Restart EDMC, open Settings → Mongrel Scout, paste the Scout token issued by leadership, and enable Scout.</span></div>
+          <div class="member-scout-step"><b>6. Get a fresh board</b><span>Jump into the Mongrel system. If you are already sitting there and need a fresh post-tick board, <strong>jump out and back in</strong>. EDMC should show <strong>Updated &lt;system&gt;</strong>.</span></div>
+        </div>
+        <div class="member-scout-actions"><a class="btn btn-primary" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div>
+      </details>
+
       <div class="frontier-scout-kpis" data-frontier-kpis hidden>
         <div class="frontier-scout-kpi"><span>Mission INF</span><strong data-frontier-inf>0</strong></div>
         <div class="frontier-scout-kpi"><span>Bounties Redeemed</span><strong data-frontier-bounties>0 Cr</strong></div>
@@ -195,25 +225,20 @@
         <div class="frontier-scout-kpi"><span>Colonization Delivered</span><strong data-frontier-colonization>0 t</strong></div>
         <div class="frontier-scout-kpi"><span>System Claims Seen</span><strong data-frontier-claims>0</strong></div>
       </div>
-      <div class="frontier-scout-events" data-frontier-events></div>
-      <div class="frontier-scout-events" data-frontier-order-matches hidden></div>
+
+      <details class="frontier-scout-activity">
+        <summary><span><strong>Recent verified activity</strong><small>Frontier journal entries and Daily Order matches</small></span><b data-frontier-activity-count>0 items ▾</b></summary>
+        <div class="frontier-scout-activity-body">
+          <div class="frontier-scout-events" data-frontier-events></div>
+          <div class="frontier-scout-events" data-frontier-order-matches hidden></div>
+        </div>
+      </details>
+
+      <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for active Daily Order or Colonization Job systems plus colonization system-claim/release events. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
       <details class="member-scout-note" data-frontier-diagnostics hidden>
         <summary><strong>Admin diagnostic journal trace</strong></summary>
         <p>This temporary test view shows timestamped event names and a small whitelist of safe fields from active Daily Order or Colonization Job systems, plus system-claim events from the connected CMDR, so we can diagnose verification behavior without retaining the full journal.</p>
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
-      </details>
-      <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for active Daily Order or Colonization Job systems plus colonization system-claim/release events. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
-      <details class="member-scout-note" id="live-scout-setup"><summary><strong>Live Scout (EDMC) · Faction-board setup</strong></summary>
-        <p>Live Scout is event-driven. It sends a complete faction board when Elite writes an <strong>FSDJump</strong>, <strong>Location</strong>, or <strong>CarrierJump</strong> journal event. It does not continuously poll influence while you remain parked in one system.</p>
-        <div class="member-scout-steps">
-          <div class="member-scout-step"><b>1. Install EDMC</b><span>Use Elite Dangerous Market Connector on the machine that can read your live Elite journal folder.</span></div>
-          <div class="member-scout-step"><b>2. Download Live Scout</b><span>Download the ZIP, extract it, and copy the <strong>MongrelScout</strong> folder into EDMC's plugin folder.</span></div>
-          <div class="member-scout-step"><b>3. Restart EDMC</b><span>Confirm the plugin loads in EDMC, then open Settings → Mongrel Scout.</span></div>
-          <div class="member-scout-step"><b>4. Enter your token</b><span>Paste the Scout token issued by leadership, leave the supplied endpoint unchanged, and enable Scout.</span></div>
-          <div class="member-scout-step"><b>5. Get a fresh board</b><span>Jump into the Mongrel system. If you are already sitting there and need a fresh post-tick board, <strong>jump out and back in</strong>.</span></div>
-          <div class="member-scout-step"><b>6. Confirm the upload</b><span>EDMC should show <strong>Updated &lt;system&gt;</strong>. Leaving Scout running is fine, but new influence only arrives when Elite emits another qualifying full-board event.</span></div>
-        </div>
-        <div class="member-scout-actions"><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div>
       </details>
     `;
     return panel;
@@ -312,7 +337,12 @@
     const kpis=document.querySelector('[data-frontier-kpis]');
     const events=document.querySelector('[data-frontier-events]');
     const orderMatches=document.querySelector('[data-frontier-order-matches]');
+    const activityCount=document.querySelector('[data-frontier-activity-count]');
     const scope=document.querySelector('[data-frontier-system]');
+    const recentCount=Array.isArray(payload?.recentEvents)?Math.min(8,payload.recentEvents.length):0;
+    const matchCount=Array.isArray(payload?.verifiedOrders)?payload.verifiedOrders.length:0;
+    const activityItems=recentCount+matchCount;
+    if(activityCount)activityCount.textContent=`${activityItems} item${activityItems===1?'':'s'} ▾`;
     if (!badge) return;
 
     if (!payload?.configured) {

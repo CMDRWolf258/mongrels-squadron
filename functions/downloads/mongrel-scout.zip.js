@@ -1,6 +1,6 @@
 const FILES = [
   { source:'/downloads/mongrel-scout/load.py', path:'MongrelScout/load.py' },
-  { source:'/downloads/mongrel-scout/README.md', path:'MongrelScout/README.md' },
+  { source:'/downloads/mongrel-scout/README.md', path:'README.md' },
 ];
 
 export async function onRequestGet({ request }) {

@@ -5,12 +5,14 @@ Mongrel Scout sends a sanitized BGS snapshot directly to Wolf BGS Control whenev
 ## Install
 
 1. Install and run the current Elite Dangerous Market Connector (EDMC).
-2. Download **MongrelScout.zip** from Wolf BGS Control and unzip it.
-3. In EDMC open **File → Settings → Plugins → Open**.
-4. Copy the extracted **MongrelScout** folder into EDMC's plugins folder. The included `load.py` is the plugin program; you do not need to open or edit it.
+2. Download **MongrelScout.zip** from the Mongrels site and unzip it. Open the top-level **README.md** first; the plugin folder itself can be treated as a black box.
+3. In EDMC open **File → Settings → Plugins → Open**. **This reveals EDMC's actual plugin folder.** Use the folder EDMC opens rather than trying to find one under Program Files yourself.
+4. Copy the extracted **MongrelScout FOLDER** into the plugin folder EDMC just opened. Copy the whole folder, not the individual files inside it.
 5. Restart EDMC.
-6. In **Settings → Mongrel Scout**, paste the one-time scout token Wolf gives you.
+6. In **Settings → Mongrel Scout**, paste the one-time Scout token issued by squad leadership.
 7. Leave **Enable Mongrel Scout** checked.
+
+After installation, the EDMC plugins folder should contain a **MongrelScout** folder. You should not need to open, edit, or move individual files inside that folder.
 
 After that, just play Elite. Jumping into a Mongrel system is enough when the journal event contains its faction board. Scout is event-driven, not a continuous poller: if you are already sitting in a system and need a fresh post-tick board, jump out and back in so Elite writes a new FSDJump faction board.
 
