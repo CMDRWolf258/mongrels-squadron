@@ -1770,10 +1770,10 @@ Colonization Jobs now have a member-facing home in **Trader's Outpost** while co
 - Posting identity is bound to the authenticated website account. A **member-funded** reward additionally requires a connected Frontier account so the payer is tied to a verified CMDR identity.
 - Funding modes are explicit:
   - **No reward** — coordinated volunteer hauling only.
-  - **Member funded** — the posting CMDR personally pledges the reward and maximum budget.
+  - **Member funded** — the posting CMDR personally pledges the reward. Maximum pledge is optional; blank means no cap until the job is completed.
   - **Request squad funding** — creates a pending funding request; it is not squad debt until an Officer/Site Admin approves it.
 - Squad funding is intentionally **not retroactive**. Cargo moved before approval can still count toward job progress, but reward eligibility starts with the approved job revision.
-- Member-funded jobs use the posted maximum pledge as a shared job budget. Verified rewards are allocated in full configured reward blocks and stop when the remaining pledge cannot fund another complete block.
+- When a member-funded job has a maximum pledge, it is a shared job budget. Verified rewards are allocated in full configured reward blocks and stop when the remaining pledge cannot fund another complete block. If Maximum Pledge is blank/zero, reward liability is intentionally uncapped and valid blocks keep accruing until the job is completed.
 - A posting CMDR cannot earn their own member-funded reward.
 - Frontier Sync now reconciles fully verified member-funded Colonization obligations into the durable reward ledger automatically. These entries carry the payer owner/CMDR and remain separate from the squad treasury/payment console.
 - Member-funded settlement is **OWED → PAYMENT SENT → PAID**:
@@ -1784,3 +1784,17 @@ Colonization Jobs now have a member-facing home in **Trader's Outpost** while co
 - Closing or pausing a job does not delete already-created reward debt. Pausing now creates an actual earning boundary; work during the pause does not become rewardable if the job is later resumed.
 - Reward history preserves funding source/payer metadata so completed member-funded settlements remain distinguishable from squad payouts.
 - Cloudflare KV remains the low-volume persistence layer. Deterministic ledger IDs and the durable reward-key registry protect normal retries, but strict simultaneous reservation of the final shared pledge block would require a stronger transactional primitive such as D1 or a Durable Object if concurrency grows materially.
+
+
+## Automatic verified reward issuance — 2026-09-22
+
+The unified Reward Engine has moved from manual **READY → CREATE OWED ENTRY** approval to automatic debt creation for obligations that already pass the existing verification/provenance gates.
+
+- **READY squad-funded rewards automatically become OWED.** This covers verified Daily Order rewards, approved squad-funded Colonization rewards, and verified Scout Job winners.
+- Automatic issuance runs after a successful **Frontier Sync** and after a valid **Live Scout** observation is recorded. Opening/refreshing the Wolf Reward Engine also runs a catch-up reconciliation before rendering the ledger/audit so an older READY backlog is picked up without per-row approval.
+- The automatic writer accepts only obligations with `readyForLive === true`, a planned entry, positive delta, and no blockers. Member-funded Colonization rewards stay on their separate payer-owned reconciliation/payment path.
+- Blocked, ambiguous, stale, pre-baseline, over-issued, or otherwise non-ready obligations remain audit-only and do **not** create debt.
+- Ledger creation remains deterministic/idempotent through the existing obligation IDs, direct deterministic-key check, durable reward-key registry, and key-list write-through.
+- Automatic issuance creates **OWED** debt only. It never marks an in-game payment sent or paid. Squad payment confirmation remains a deliberate Site Admin action after credits are actually transferred.
+- The per-obligation **CREATE OWED ENTRY** control is removed from the normal Reward Engine UI. The Reward Engine now identifies itself as **AUTOMATIC** / **AUTO OWED ON**.
+- Reward audit CMDR rows stay collapsed by default. Operators expand them only when they want to inspect exact provenance, blockers, duplicate suppression, or entitlement details.
