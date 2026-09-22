@@ -103,6 +103,37 @@ const current=matchVerifiedActivity(events,document);
 assert.equal(current.orderTotals.length,1);
 assert.equal(current.orderTotals[0].contribution,3,'Old 5 INF must not carry into the new tick cycle');
 assert.deepEqual(current.orderTotals[0].sourceEventIds,['new-inf']);
+
+const latePublishedDocument=await decorateDailyOrdersForTiming(fakeEnv,{
+  configured:true,
+  cycleId:'late-publication',
+  cycleStartedAt:'2026-09-18T00:00:00.000Z',
+  orders:[{
+    ...baseOrder,
+    id:'late-order',
+    system:'Default System',
+    faction:'Late Faction',
+    task:'Complete 25 INF for Late Faction',
+    logicalKey:'manual|default system|late faction|inf|late',
+    createdAt:'2026-09-22T06:00:00.000Z',
+  }],
+},{now:new Date('2026-09-22T06:30:00.000Z')});
+const sameCycleBeforePublish={
+  id:'same-cycle-before-publish',
+  type:'mission_inf',
+  timestamp:'2026-09-22T05:30:00.000Z',
+  effects:[{infUnits:5,faction:'Late Faction',system:'Default System'}],
+};
+const lateMatched=matchVerifiedActivity([sameCycleBeforePublish],latePublishedDocument);
+assert.equal(lateMatched.orderTotals.length,1);
+assert.equal(lateMatched.orderTotals[0].contribution,5,'Verified work from the same BGS cycle must count even if the order was published later');
+const previousCycleBeforePublish={
+  ...sameCycleBeforePublish,
+  id:'previous-cycle-before-publish',
+  timestamp:'2026-09-21T23:00:00.000Z',
+};
+assert.equal(matchVerifiedActivity([previousCycleBeforePublish],latePublishedDocument).orderTotals.length,0,'Earlier BGS-cycle work must still remain excluded');
+console.log('✓ Late-published orders recover exact Scout work from the same BGS cycle without carrying older-cycle work forward');
 const historical=matchVerifiedActivityHistory(events,document,{depth:2});
 assert.equal(historical.orderTotals.length,2);
 assert.equal(historical.orderTotals.reduce((sum,row)=>sum+row.contribution,0),8);

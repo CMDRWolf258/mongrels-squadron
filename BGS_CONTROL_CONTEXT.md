@@ -924,6 +924,15 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Same-cycle Scout credit across Daily Order publication — 2026-09-22
+
+Scout matching now treats the **per-system BGS work cycle** as the authoritative lower time boundary for verified activity, rather than the order's later publication timestamp.
+
+- Exact activity type, system, and faction matching are still required.
+- Verified work completed earlier in the **same current BGS cycle** can attach when an order is generated or revised later in that cycle.
+- Activity from the previous BGS cycle remains excluded, so tick resets still prevent old progress from carrying forward.
+- This specifically fixes repaired cross-system mission effects such as Wolf 258 Dynasty INF in B38-0 being correctly normalized in Recent Activity but failing to advance a Daily Order that was published later in the same BGS cycle.
+
 ## One-time mission-origin historical backfill — 2026-09-22
 
 The mission-origin fix now repairs recent events that were normalized before `MissionAccepted` tracking existed.
