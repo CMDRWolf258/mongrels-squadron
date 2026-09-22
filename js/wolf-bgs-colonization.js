@@ -31,6 +31,21 @@
     message.className=`wolf-status-message ${state}`.trim();
   }
 
+  function discordMutationNote(discord){
+    if(!discord)return'';
+    const labels={
+      created:' Discord announcement posted.',
+      edited:' Discord announcement updated.',
+      recreated:' Discord announcement recreated.',
+      unchanged:' Discord announcement already current.',
+      removed:' Discord announcement marked removed.',
+    };
+    if(labels[discord.mode])return labels[discord.mode];
+    if(discord.configured===false)return' Discord webhook is not configured.';
+    if(discord.attempted&&discord.ok===false)return' Job change saved, but Discord sync failed.';
+    return'';
+  }
+
   function setText(selector,value){
     const el=panel.querySelector(selector);
     if(el)el.textContent=String(value);
@@ -350,7 +365,7 @@
     if(button)button.disabled=true;
     setMessage('Creating colonization job…','working');
     try{
-      await mutate({action:'create',job:payloadFromForm()});
+      const mutation=await mutate({action:'create',job:payloadFromForm()});
       form.querySelector('[data-colonization-field="title"]').value='';
       form.querySelector('[data-colonization-field="buildName"]').value='';
       form.querySelector('[data-colonization-field="marketId"]').value='';
@@ -358,7 +373,7 @@
       form.querySelector('[data-colonization-field="notes"]').value='';
       loadedAt=0;
       await load(true);
-      setMessage('Colonization job created. Reward issuance remains OFF.','success');
+      setMessage('Colonization job created. Reward issuance remains OFF.'+discordMutationNote(mutation.discord),'success');
     }catch(error){
       console.error(error);
       setMessage(error.message||'Could not create colonization job.','error');
@@ -376,12 +391,15 @@
     if(action==='change-site'&&!window.confirm('Change the construction site for this job? The current site binding will remain archived as the prior revision. The job will return to AWAITING SITE and its preview will be recalculated after you select the correct site.'))return;
     button.disabled=true;
     try{
-      if(action==='delete')await mutate({action:'delete',id});
-      else if(action==='change-site')await mutate({action:'update',job:{id,marketId:''}});
-      else await mutate({action:'status',id,status:button.dataset.colonizationStatus});
+      let mutation;
+      if(action==='delete')mutation=await mutate({action:'delete',id});
+      else if(action==='change-site')mutation=await mutate({action:'update',job:{id,marketId:''}});
+      else mutation=await mutate({action:'status',id,status:button.dataset.colonizationStatus});
       loadedAt=0;
       await load(true);
-      if(action==='change-site')setMessage('Site binding cleared. Choose the correct discovered construction site below.','success');
+      if(action==='change-site')setMessage('Site binding cleared. Choose the correct discovered construction site below.'+discordMutationNote(mutation?.discord),'success');
+      else if(action==='delete')setMessage('Colonization job removed.'+discordMutationNote(mutation?.discord),'success');
+      else setMessage('Colonization job status updated.'+discordMutationNote(mutation?.discord),'success');
     }catch(error){
       console.error(error);
       setMessage('Could not update Colonization Job.','error');
