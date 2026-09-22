@@ -122,7 +122,7 @@ assert.match(apiSource,/ensureColonizationJobHistoryBaseline/,'Colonization Jobs
 const html=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(html,/data-colonization-history/,'Wolf BGS Control is missing the Colonization Job History panel');
 assert.match(html,/wolf-bgs-colonization-history\.js/,'Wolf BGS Control is not loading the Colonization Job History client');
-assert.match(html,/wolf-bgs-colonization\.js\?v=11/,'Colonization Job client cache version should be v11');
+assert.match(html,/wolf-bgs-colonization\.js\?v=12/,'Colonization Job client cache version should be v12');
 
 const client=readFileSync('js/wolf-bgs-colonization.js','utf8');
 assert.match(client,/wolf-bgs-colonization-history-updated/,'Colonization Job mutations do not refresh history');
