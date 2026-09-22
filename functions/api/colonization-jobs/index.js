@@ -149,7 +149,7 @@ export async function onRequestPut({request,env}) {
   if(action==='status'){
     const status=clean(body?.status,20);
     if(!['active','paused','completed'].includes(status))return reply({ok:false,error:'colonization_status_invalid'},400);
-    const endsAt=status==='completed'?(existing.endsAt||new Date().toISOString()):(status==='active'?null:existing.endsAt);
+    const endsAt=status==='active'?null:(existing.endsAt||new Date().toISOString());
     next=normalizeColonizationJob({...existing,status,endsAt,updatedBy:actor},existing);
   }else if(action==='approve-funding'||action==='reject-funding'){
     if(!manager)return reply({ok:false,error:'colonization_funding_approval_required'},403);
@@ -267,7 +267,8 @@ function normalizeFundingForCreate(source,{fundingMode,ownerId,payerName,actor})
 function presentJob(job,session,progress={}){
   const manager=MANAGERS.has(session?.access);
   const mine=Boolean(job.postingOwnerId&&String(job.postingOwnerId)===String(session?.sub||''));
-  const budget=Number(job.rewardBudgetMillions)||0;
+  const theoreticalBudget=Number(job.rewardBlockMillions)>0?Math.ceil((Number(job.targetTons)||0)/Math.max(1,Number(job.rewardBlockTons)||1))*Number(job.rewardBlockMillions):0;
+  const budget=Number(job.rewardBudgetMillions)||theoreticalBudget;
   const preview=Number(progress.rewardPreviewMillions)||0;
   return {
     id:job.id,
@@ -329,6 +330,7 @@ function validateJob(job){
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockTons)>0))return'colonization_reward_block_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockMillions)>0))return'colonization_reward_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBudgetMillions)>0))return'colonization_reward_budget_required';
+  if(job.fundingMode!=='none'&&Number(job.rewardBudgetMillions)<Number(job.rewardBlockMillions))return'colonization_reward_budget_too_small';
   if(job.fundingMode==='member'&&!job.fundingPayerOwnerId)return'colonization_member_payer_required';
   return'';
 }
