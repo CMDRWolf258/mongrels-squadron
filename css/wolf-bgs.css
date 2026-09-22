@@ -89,6 +89,8 @@
 .wolf-chip b{color:#fff}
 .wolf-chip.custom{border-color:rgba(255,224,138,.28);color:#ffe6a3}
 .wolf-chip.low-watch{border-color:rgba(255,177,74,.4);color:#ffd49a;background:rgba(64,42,12,.2);font-weight:700;letter-spacing:.06em}
+.wolf-mixed-source-chip{border-color:rgba(255,177,74,.38)!important;color:#ffd49a!important;background:rgba(64,42,12,.16)!important}
+.wolf-row-source{display:grid;gap:.08rem}.wolf-row-source small{color:var(--muted);font-size:.62rem}
 .wolf-subgrid{display:grid;grid-template-columns:1fr;gap:1rem;align-items:start}
 .wolf-subgrid>div{min-width:0}
 .wolf-section{border:1px solid rgba(92,210,255,.12);background:rgba(6,10,12,.64);padding:1rem;margin-bottom:1rem;min-width:0}
