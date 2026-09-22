@@ -3,6 +3,7 @@ import { getAccount } from '../../../lib/frontier.js';
 import {
   buildScoutJobBoard,
   claimScoutJob,
+  listBoundScoutTokens,
   readScoutJobSettings,
   releaseScoutJobClaim,
   writeScoutJobSettings,
@@ -56,8 +57,13 @@ export async function onRequestPost({request,env}){
   try{
     if(action==='claim'){
       if(!system)return reply({ok:false,error:'system_required'},400);
-      const [systems,account]=await Promise.all([activeMongrelSystems(request),getAccount(env,auth.session.sub)]);
+      const [systems,account,boundTokens]=await Promise.all([
+        activeMongrelSystems(request),
+        getAccount(env,auth.session.sub),
+        listBoundScoutTokens(env,auth.session.sub),
+      ]);
       if(!containsSystem(systems,system))return reply({ok:false,error:'scout_job_system_not_active'},409);
+      if(!boundTokens.length)return reply({ok:false,error:'scout_token_not_bound'},409);
       const result=await claimScoutJob(env,{
         system,
         ownerId:auth.session.sub,
