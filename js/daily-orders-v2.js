@@ -83,6 +83,15 @@
     return order?.task||'Operational task';
   }
 
+  function targetHint(order){
+    const s=spec(order);
+    if(s.type==='inf')return 'MISSION REWARD POINTS · +++++ = 5 INF';
+    if(s.type==='bounties')return 'REDEEMED BOUNTY VOUCHER VALUE';
+    if(s.type==='trade')return 'PROFIT · NOT GROSS SALES';
+    if(s.type==='exploration')return 'UNIVERSAL CARTOGRAPHICS SALE VALUE';
+    return '';
+  }
+
 
   function factionDisplay(name){
     const value=String(name||'').trim();
@@ -221,7 +230,8 @@
         pair.append(orderBrief(order,i));
         if(spec(order).type){
           const verified=(Array.isArray(frontierPayload?.verifiedOrders)?frontierPayload.verifiedOrders:[]).find(item=>String(item.orderId)===String(order.id));
-          pair.append(reportBlock(order,reportPayload.summaries?.[order.id],reportPayload.reports||[],verified));
+          const verifiedSquad=reportPayload?.verifiedSummaries?.[order.id]||null;
+          pair.append(reportBlock(order,reportPayload.summaries?.[order.id],reportPayload.reports||[],verified,verifiedSquad));
         }
         else{const empty=document.createElement('div');empty.className='mc-no-report';empty.innerHTML='<span>REPORTING</span><strong>No report requested</strong><p>Complete this order as briefed.</p>';pair.append(empty);}
         pairs.append(pair);
@@ -236,24 +246,28 @@
     const copy=briefingCopy(order);
     const cycle=cycleFor(order),target=timerTarget(cycle);
     const timer=cycle&&timedOrder(order)?'<b class="mc-order-reset-pill '+(cycle.phase==='transition'?'is-transition':'')+'">'+esc(cycle.phase==='transition'?'TRANSITION':'TICK IN')+' <span data-cycle-target="'+esc(target||'')+'">'+esc(countdown(target))+'</span></b>':'';
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+timer+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
+    const hint=targetHint(order);
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+timer+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3>'+(hint?'<small class="mc-order-target-hint">'+esc(hint)+'</small>':'')+'</div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
     return el;
   }
 
-  function reportBlock(order,summary,reports=[],verified=null){
-    const s=spec(order),squad=summary?.squad||{},viewer=summary?.viewer||{},score=n(squad.score),mine=n(viewer.score),target=s.target;
+  function reportBlock(order,summary,reports=[],verified=null,verifiedSquad=null){
+    const s=spec(order),squad=summary?.squad||{},viewer=summary?.viewer||{},manualScore=n(squad.score),mine=n(viewer.score),target=s.target;
+    const scoutScore=n(verifiedSquad?.contribution);
+    const trackedScore=manualScore+scoutScore;
     const host=document.createElement('section');host.className='mc-report-block';host.dataset.orderId=order.id;
     if(s.blitz)host.classList.add('is-blitz');
-    const progress=target&&target>0?Math.max(0,Math.min(100,(score/target)*100)):0;
-    const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&score>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-score))+' remaining':'Reporting open';
+    const progress=target&&target>0?Math.max(0,Math.min(100,(trackedScore/target)*100)):0;
+    const status=s.blitz?'OPEN · CONTINUE PUSHING':target!==null&&trackedScore>=target?'TARGET MET':target!==null?fmt(Math.max(0,target-trackedScore))+' remaining':'Reporting open';
     const verifiedLine=verified
-      ? '<div class="mc-verified-progress"><span>SCOUT VERIFIED</span><strong>'+esc(fmt(verified.contribution)+' '+(verified.unit||''))+'</strong>'+(verified.rewardEligible?'<small>Reward preview '+esc(fmt(verified.entitlementMillions))+'M / '+esc(fmt(verified.capMillions))+'M Cr cap · preview only</small>':'<small>Verified contribution · reward rule not active</small>')+'</div>'
+      ? '<div class="mc-verified-progress"><span>YOUR SCOUT VERIFIED</span><strong>'+esc(fmt(verified.contribution)+' '+(verified.unit||''))+'</strong>'+(verified.rewardEligible?'<small>Reward preview '+esc(fmt(verified.entitlementMillions))+'M / '+esc(fmt(verified.capMillions))+'M Cr cap · preview only</small>':'<small>Verified contribution · reward rule not active</small>')+'</div>'
       : '';
     const mineReports=reports.filter(report=>String(report.orderId)===String(order.id));
     const manualSummary=mineReports.length
       ? mineReports.length+' YOUR REPORT'+(mineReports.length===1?'':'S')
       : 'OPEN IF NEEDED';
-    host.innerHTML='<div class="mc-report-head"><strong>SQUAD '+fmt(score)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+'<div class="mc-progress-meta"><span>Manual total <b>'+fmt(mine)+' '+label(s.type)+'</b></span><span>'+n(squad.reporterCount)+' CMDR'+(n(squad.reporterCount)===1?'':'s')+' · '+n(squad.reportCount)+' manual reports</span></div>'+verifiedLine+'<details class="mc-manual-report"><summary><span><strong>MANUAL REPORTING</strong><small>Backup entry if Scout misses activity</small></span><b>'+esc(manualSummary)+' <i aria-hidden="true">▾</i></b></summary><div class="mc-manual-report-body"><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div></div></details>';
+    const sourceMeta='<div class="mc-progress-meta mc-progress-sources"><span>Scout verified squad <b>'+fmt(scoutScore)+' '+label(s.type)+'</b> · '+n(verifiedSquad?.commanderCount)+' linked CMDR'+(n(verifiedSquad?.commanderCount)===1?'':'s')+'</span><span>Manual fallback <b>'+fmt(manualScore)+' '+label(s.type)+'</b> · '+n(squad.reportCount)+' reports</span></div>';
+    host.innerHTML='<div class="mc-report-head"><strong>TRACKED '+fmt(trackedScore)+(target!==null?' / '+fmt(target):'')+' '+label(s.type)+'</strong><b>'+status+'</b></div>'+(target!==null?'<div class="mc-progress-track"><i style="width:'+progress+'%"></i></div>':'')+sourceMeta+verifiedLine+'<details class="mc-manual-report"><summary><span><strong>MANUAL REPORTING</strong><small>Only report work Scout did not capture</small></span><b>'+esc(manualSummary)+' <i aria-hidden="true">▾</i></b></summary><div class="mc-manual-report-body"><div class="mc-report-form"></div><div class="mc-report-status" aria-live="polite"></div></div></details>';
     const form=host.querySelector('.mc-report-form');
     let editor=null;
     if(s.type==='cz')editor=czForm(order);

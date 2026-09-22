@@ -8,6 +8,7 @@ import {
   workCycleForTimestamp,
 } from '../lib/daily-order-cycle.js';
 import {
+  aggregateVerifiedOrderTotals,
   matchVerifiedActivity,
   matchVerifiedActivityHistory,
 } from '../lib/order-activity.js';
@@ -107,8 +108,17 @@ assert.equal(historical.orderTotals.reduce((sum,row)=>sum+row.contribution,0),8)
 assert.equal(new Set(historical.orderTotals.map(row=>row.sourceCycleId)).size,2);
 console.log('✓ Current Mission Control progress resets while Reward Engine can still see recent prior-cycle evidence');
 
+const squadVerified=aggregateVerifiedOrderTotals([
+  {userId:'wolf',matched:{orderTotals:[{orderId:'trade-order',sourceCycleId:'cycle-a',type:'trade',target:20,contribution:9.2,unit:'M Cr',eventCount:1,sourceEventIds:['trade-1']}]}},
+  {userId:'wingmate',matched:{orderTotals:[{orderId:'trade-order',sourceCycleId:'cycle-a',type:'trade',target:20,contribution:4.8,unit:'M Cr',eventCount:1,sourceEventIds:['trade-2']}]}},
+]);
+assert.equal(squadVerified['trade-order'].contribution,14);
+assert.equal(squadVerified['trade-order'].commanderCount,2);
+assert.equal(squadVerified['trade-order'].sourceEventCount,2);
+console.log('✓ Squad Scout contributions aggregate across linked CMDRs for Daily Order progress');
+
 const reports=readFileSync('functions/api/operations/order-reports.js','utf8');
-for(const pattern of [/workCycleId/,/recordBelongsToCurrentWorkCycle/,/workCycleForTimestamp/,/historyDepth:14/])assert.match(reports,pattern);
+for(const pattern of [/workCycleId/,/recordBelongsToCurrentWorkCycle/,/workCycleForTimestamp/,/historyDepth:14/,/verifiedSummaries/,/listFrontierAccounts/,/getEvents/,/aggregateVerifiedOrderTotals/])assert.match(reports,pattern);
 
 const rewards=readFileSync('lib/reward-dry-run.js','utf8');
 for(const pattern of [/preview\.sourceCycleId/,/wantedCycle/,/sourceCycleId/])assert.match(rewards,pattern);
@@ -117,7 +127,7 @@ assert.match(runtime,/matchVerifiedActivityHistory/);
 assert.match(runtime,/historyDepth:7/);
 
 const client=readFileSync('js/daily-orders-v2.js','utf8');
-for(const pattern of [/PER-SYSTEM DAILY CYCLES/,/EST TICK/,/TRANSITION/,/UTC/,/localStamp/,/data-cycle-target/,/TICK IN/,/MANUAL REPORTING/,/Backup entry if Scout misses activity/,/OPEN IF NEEDED/])assert.match(client,pattern);
+for(const pattern of [/PER-SYSTEM DAILY CYCLES/,/EST TICK/,/TRANSITION/,/UTC/,/localStamp/,/data-cycle-target/,/TICK IN/,/MANUAL REPORTING/,/Only report work Scout did not capture/,/OPEN IF NEEDED/,/MISSION REWARD POINTS · \+\+\+\+\+ = 5 INF/,/TRACKED /,/Scout verified squad/,/YOUR SCOUT VERIFIED/])assert.match(client,pattern);
 new Function(client);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
@@ -127,12 +137,16 @@ assert.match(wolfUi,/Custom tick \(CT\)/);
 assert.match(wolfUi,/\$\{html\(tick\)\} CT/);
 
 const page=readFileSync('operations/index.html','utf8');
-assert.match(page,/mission-control-orders-v2\.css\?v=17/);
-assert.match(page,/daily-orders-v2\.js\?v=16/);
+assert.match(page,/mission-control-orders-v2\.css\?v=18/);
+assert.match(page,/daily-orders-v2\.js\?v=17/);
 const css=readFileSync('css/mission-control-orders-v2.css','utf8');
 assert.match(css,/\.mc-manual-report/);
 assert.match(css,/font-size:1\.42rem/);
 assert.match(css,/\.mc-order-reset-pill\{[^}]*font-size:\.68rem!important/);
+assert.match(css,/\.mc-order-target h3\{[^}]*color:#ffc76d/);
+assert.match(css,/\.mc-progress-track\{height:10px/);
+assert.match(css,/\.mc-order-copy p\{[^}]*font-size:\.98rem/);
+assert.match(css,/\.private-orders-section \.member-orders-panel/);
 
 console.log('✓ Mission Control shows UTC + browser-local tick clocks from a Central-time admin schedule');
 console.log('\nAll per-system Daily Order cycle smoke checks passed.');

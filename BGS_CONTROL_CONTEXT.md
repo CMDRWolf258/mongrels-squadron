@@ -1217,6 +1217,19 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## Daily Orders clarity / Scout-driven squad progress — 2026-09-22
+
+Mission Control now applies Scout verification directly to Daily Order progress instead of merely displaying it as a separate note.
+
+- The secure reports endpoint aggregates current-work-cycle Scout contributions across all linked Frontier accounts without exposing member event details or commander names.
+- Daily Order progress is now **Scout verified squad + manual fallback**. Manual entry is explicitly labelled **Only report work Scout did not capture**, so the two sources are intended to be additive rather than duplicate reports of the same activity.
+- The main progress header now says **TRACKED** rather than implying the old manual-only total was the entire squad picture.
+- The member's own Scout row is labelled **YOUR SCOUT VERIFIED** while the progress source line shows the squad-wide verified total and linked-CMDR count.
+- INF orders retain the compact `25 INF` title but add **MISSION REWARD POINTS · +++++ = 5 INF** so members understand that INF means mission reward pips/points.
+- Main task values use the site's warm amber/orange accent, descriptions are larger/brighter, and progress bars are thicker.
+- The authenticated Daily Orders surface and its system/order cards use a deeper teal/navy treatment with a subtle warm accent so operational tasking stands apart from the surrounding Mission Control cards.
+- Optional order color remains unchanged for now.
+
 ## Mission Control Scout-first reporting UI — 2026-09-22
 
 Mission Control now treats Scout/Frontier verification as the primary reporting path while preserving manual entry as a backup.
