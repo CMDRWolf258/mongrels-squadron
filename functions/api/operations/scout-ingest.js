@@ -1,5 +1,6 @@
 import { json } from '../../../lib/auth.js';
 import { hasActiveScoutClaim, recordScoutObservation } from '../../../lib/scout-jobs.js';
+import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -91,6 +92,16 @@ export async function onRequestPost({ request, env }) {
       scoutJob={recorded:false,status:'job_processing_failed'};
     }
   }
+
+  let automaticRewards=null;
+  if(stored&&scoutJob?.recorded){
+    try{
+      automaticRewards=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · Live Scout'});
+    }catch(error){
+      console.error('Could not automatically issue verified rewards after Scout observation',error);
+    }
+  }
+
   return reply({
     ok:true,
     accepted:true,
@@ -99,6 +110,7 @@ export async function onRequestPost({ request, env }) {
     updatedAt:snapshot.updatedAt,
     scout:auth.label,
     scoutJob,
+    automaticRewards,
   }, 200);
 }
 
