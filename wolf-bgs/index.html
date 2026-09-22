@@ -94,11 +94,12 @@
             </div>
             <form class="wolf-scout-token-form" data-scout-token-form>
               <label><span>Scout label</span><input type="text" maxlength="80" data-scout-token-label placeholder="e.g. CMDR ScoutOne" autocomplete="off"></label>
+              <label><span>Reward owner</span><select data-scout-token-owner><option value="">Unbound — no Scout Job rewards</option></select></label>
               <label><span>Access level</span><select data-scout-token-scope><option value="restricted" selected>Restricted Scout</option><option value="trusted">Trusted Scout</option></select></label>
               <button type="submit" class="btn btn-primary btn-compact">Generate Scout Token</button>
               <span class="wolf-status-message" data-scout-token-message></span>
               <div class="wolf-scout-create-systems" data-scout-create-systems></div>
-              <small class="wolf-scout-create-help"><b>Restricted</b> is recommended for new members: only checked systems are accepted. <b>Trusted</b> can update every Mongrel system. You can change access later without replacing their token. All Scout tokens are limited to 120 upload attempts per hour.</small>
+              <small class="wolf-scout-create-help"><b>Reward owner</b> binds the token to the authenticated Mongrel account that can earn Scout Job rewards. Frontier-connected CMDRs appear in the selector. <b>Restricted</b> is recommended for new members: only checked systems are accepted unless they hold an active Scout Job claim. <b>Trusted</b> can update every Mongrel system. All Scout tokens are limited to 120 upload attempts per hour.</small>
             </form>
             <div class="wolf-scout-token-reveal" data-scout-token-reveal hidden>
               <span>ONE-TIME TOKEN · COPY NOW</span>
