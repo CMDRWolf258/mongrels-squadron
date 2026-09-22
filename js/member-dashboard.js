@@ -40,7 +40,7 @@
   const renderBounties=payload=>{const items=Array.isArray(payload?.bounties)?payload.bounties:[];const active=items.filter(i=>i.status==='active');if(bountyCount)bountyCount.textContent=active.length?`${active.length} Active`:'No Active Bounties';if(bountySummary)bountySummary.textContent=active.length?'Current member-posted in-game PvP contracts are shown below.':'No active in-game bounty contracts are posted right now.';if(!bountyPreview)return;bountyPreview.replaceChildren();active.slice(0,3).forEach(i=>{const row=document.createElement('div');row.className='member-bounty-preview-row';const target=document.createElement('strong');target.className='member-bounty-target';target.textContent=i.target;const reward=document.createElement('strong');reward.className='member-bounty-reward';reward.textContent=i.reward;const meta=document.createElement('span');meta.textContent=i.system||'PvP Contract';row.append(target,reward,meta);bountyPreview.appendChild(row);});};
   const renderRewards=payload=>{
     const s=payload?.summary||{};
-    const owed=Number(s.owedCredits)||0;
+    const owed=Number(s.unsettledCredits??s.owedCredits)||0;
     const paid=Number(s.paidCredits)||0;
     const entries=Array.isArray(payload?.entries)?payload.entries:[];
     if(rewardsBadge)rewardsBadge.textContent=owed?owed.toLocaleString()+' Cr Owed':'0 Cr Owed';
@@ -52,7 +52,7 @@
     entries.slice(0,3).forEach(entry=>{
       const row=document.createElement('div');row.className='member-order-preview-row';
       const meta=document.createElement('span');
-      meta.textContent=[entry.status==='paid'?'Paid':'Owed',entry.createdAt?new Date(entry.createdAt).toLocaleDateString():null].filter(Boolean).join(' · ');
+      meta.textContent=[entry.status==='paid'?'Paid':entry.status==='payment_sent'?'Payment Sent':'Owed',entry.createdAt?new Date(entry.createdAt).toLocaleDateString():null].filter(Boolean).join(' · ');
       const title=document.createElement('strong');
       const amount=Number(entry.amountCredits)||0;
       title.textContent=`${amount>=0?'+':''}${amount.toLocaleString()} Cr · ${entry.reason||'Squad reward'}`;
