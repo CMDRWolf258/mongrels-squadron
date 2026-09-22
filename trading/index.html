@@ -15,7 +15,7 @@
 <section class="section-sm trader-colonization-section" data-colonization-board>
   <div class="container">
     <div class="trade-member-posting colonization-member-posting">
-      <div><p class="eyebrow">Member Logistics · Verified Hauling</p><h2>Colonization Jobs</h2><p>Post construction hauling for the squad, offer your own reward, or request squad funding. Frontier-verified contributions can be matched to the same Colonization Job system used by Wolf BGS Control.</p></div>
+      <div><p class="eyebrow">Member Logistics · Verified Hauling</p><h2>Colonization Jobs</h2><p>Post construction hauling for the squad, offer your own reward, or request squad funding. Reward credit uses Frontier-verified contribution events, so hauling CMDRs should keep their Elite connection current and Sync Activity after delivery.</p></div>
       <div class="trade-post-actions"><a class="btn btn-secondary" href="/api/auth/login?return=%2Ftrading%2F%23colonization-jobs" data-colony-sign-in>Sign in to View</a><button class="btn btn-primary" type="button" data-colony-create hidden>Post Colonization Job</button></div>
     </div>
     <div id="colonization-jobs" data-colony-private hidden>
@@ -55,7 +55,7 @@
 <label class="project-editor-wide"><span>Job Title</span><input type="text" maxlength="160" required data-colony-title placeholder="Example: Finish Eleven's Lighthouse"></label>
 <label class="project-editor-wide"><span>System</span><input type="text" maxlength="140" required data-colony-system placeholder="System name"></label>
 <label><span>Job Scope</span><select data-colony-scope><option value="system">Any construction in system</option><option value="market">Specific construction build</option></select></label>
-<label data-colony-build-wrap hidden><span>Build Name</span><input type="text" maxlength="140" data-colony-build placeholder="Optional display name"></label>
+<label data-colony-build-wrap hidden><span>Build Name</span><input type="text" maxlength="140" data-colony-build placeholder="Optional display name"><small>The internal construction-site ID can be linked later from verified observed-site data.</small></label>
 <label><span>Commodity Filter</span><input type="text" maxlength="100" data-colony-commodity placeholder="Optional · all commodities"></label>
 <label><span>Target Cargo (t)</span><input type="number" min="1" max="100000000" step="1" value="10000" required data-colony-target></label>
 <label><span>Funding</span><select data-colony-funding><option value="none">No reward · help requested</option><option value="member">Member funded · I will pay</option><option value="squad">Request squad funding</option></select></label>
