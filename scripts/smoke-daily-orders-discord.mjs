@@ -34,7 +34,7 @@ const base={
   cycleId:'cycle-a',
   orders:[
     {id:'1',system:'Diaba',faction:'Regiment of Imperial Mongrels',priority:'high',kind:'bounties',task:'Claim 20–30M bounty vouchers'},
-    {id:'2',system:'Diaba',faction:'Regiment of Imperial Mongrels',priority:'normal',kind:'inf',task:'Complete 15 INF missions'},
+    {id:'2',system:'Diaba',faction:'Regiment of Imperial Mongrels',priority:'high',kind:'inf',task:'Complete 15 INF missions'},
     {id:'3',system:'Miwae',faction:'Regiment of Imperial Mongrels',priority:'critical',kind:'trade',task:'Complete 20M profitable trade'},
   ],
 };
@@ -42,8 +42,9 @@ const base={
 const missionControl='https://mongrels-squadron.pages.dev/operations/#daily-orders';
 const payload=buildDailyOrdersDiscordPayload(base,{actor:'Wolf',missionControlUrl:missionControl});
 assert.equal(payload.embeds[0].fields.length,2,'Orders should group into one Discord field per system');
-assert.equal(payload.embeds[0].fields[0].name,'Diaba');
-assert.match(payload.embeds[0].fields[0].value,/20–30M bounty vouchers/);
+assert.equal(payload.embeds[0].fields[0].name,'Diaba · HIGH');
+assert.match(payload.embeds[0].fields[0].value,/\*\*BOUNTIES\*\* Claim 20–30M bounty vouchers/);
+assert.doesNotMatch(payload.embeds[0].fields[0].value,/\*\*HIGH\*\*/,'Shared system priority should not be repeated on each order line');
 assert.match(payload.embeds[0].description,/Open Mission Control/);
 assert.match(payload.embeds[0].footer.text,/3 tasks · 2 systems · Published by Wolf/);
 
@@ -59,6 +60,15 @@ const worstCase={
     task:'Complete this deliberately long operational assignment '.repeat(6),
   })),
 };
+const mixedPayload=buildDailyOrdersDiscordPayload({
+  ...base,
+  orders:[
+    {...base.orders[0],priority:'high'},
+    {...base.orders[1],priority:'low'},
+  ],
+},{actor:'Wolf',missionControlUrl:missionControl});
+assert.equal(mixedPayload.embeds[0].fields[0].name,'Diaba · MIXED','Priority disagreement should stay visible instead of being silently hidden');
+
 const worstPayload=buildDailyOrdersDiscordPayload(worstCase,{actor:'Wolf',missionControlUrl:missionControl});
 const embed=worstPayload.embeds[0];
 const embedChars=(embed.title||'').length+(embed.description||'').length+(embed.footer?.text||'').length
