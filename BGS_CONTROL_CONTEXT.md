@@ -924,6 +924,17 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## One-time mission-origin historical backfill — 2026-09-22
+
+The mission-origin fix now repairs recent events that were normalized before `MissionAccepted` tracking existed.
+
+- Frontier accounts without `missionOriginBackfillVersion: 1` force a **one-time re-read of the previous three UTC journal days**, even if those dates were already marked reconciled.
+- The historical texts are concatenated with the current journal and reparsed chronologically, allowing `MissionAccepted` to seed the MissionID origin before the matching `MissionCompleted` is normalized.
+- Corrected mission events use the same stable event ID, so `mergeEvents` replaces the old ambiguous event instead of creating a duplicate.
+- After the backfill requests succeed, the account stores `missionOriginBackfillVersion: 1` and `missionOriginBackfillAt`; later syncs return to the normal lightweight reconciliation path.
+- If one of the forced historical requests fails, the version is not advanced and the repair remains eligible on a later sync.
+- The member sync result explicitly reports when the mission-origin backfill was applied.
+
 ## Mission origin attribution for cross-system influence — 2026-09-22
 
 Frontier mission verification now correlates `MissionAccepted` and `MissionCompleted` by `MissionID`.

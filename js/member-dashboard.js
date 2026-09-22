@@ -488,7 +488,8 @@
             result.textContent='Frontier returned partial journal data. Verified events were saved; the incomplete date will remain eligible for reconciliation on a later sync.';
           }else{
             const historical=payload.journalCoverage?.historicalDate;
-            result.textContent=`Sync complete. ${Number(payload.newEvents||0)} retained verification/colonization event${Number(payload.newEvents||0)===1?'':'s'} found.${historical?' Historical '+historical+' was also reconciled.':''}`;
+            const originBackfill=payload.journalCoverage?.missionOriginBackfill?.applied;
+            result.textContent=`Sync complete. ${Number(payload.newEvents||0)} retained verification/colonization event${Number(payload.newEvents||0)===1?'':'s'} found.${historical?' Historical '+historical+' was also reconciled.':''}${originBackfill?' Recent mission origins were backfilled and existing mission events were re-evaluated.':''}`;
           }
         }
       }catch(error){

@@ -5,6 +5,8 @@ import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rule
 import { activeColonizationJobs, activeColonizationSystems, earliestColonizationStart, readColonizationJobs } from '../../../lib/colonization-jobs.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
+export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
+const MISSION_ORIGIN_BACKFILL_LOOKBACK_DAYS = 3;
 
 export async function onRequestPost({request,env}) {
   const auth = await requireMember(request, env);
@@ -52,7 +54,35 @@ export async function onRequestPost({request,env}) {
     }
 
     const reconciled = new Set(Array.isArray(account.reconciledJournalDates) ? account.reconciledJournalDates : []);
-    const historicalDate = nextHistoricalDate(currentOrders,reconciled,colonizationJobs);
+    const backfillPending=(Number(account.missionOriginBackfillVersion)||0)<MISSION_ORIGIN_BACKFILL_VERSION;
+    const backfillDates=backfillPending&&targetSystems.length
+      ? missionOriginBackfillDates(new Date(),MISSION_ORIGIN_BACKFILL_LOOKBACK_DAYS)
+      : [];
+    const backfillRows=[];
+    const backfillStatuses={};
+
+    if(backfillDates.length){
+      for(const date of backfillDates){
+        const path='/' + date.replaceAll('-','/');
+        const response=await fetchJournal(access.accessToken,env,path);
+        const status=response.response.status;
+        backfillStatuses[date]=status;
+        let text='';
+        if([200,206].includes(status)){
+          text=await response.response.text();
+          if(text.trim()==='Journal unavailable')text='';
+        }else if(status!==204){
+          console.warn('Mission-origin backfill journal request failed',date,status);
+        }
+        if(status===200||status===204)reconciled.add(date);
+        if(text)backfillRows.push({date,text});
+      }
+    }
+
+    const backfillSucceeded=backfillDates.length>0
+      && backfillDates.every(date=>[200,204,206].includes(backfillStatuses[date]));
+
+    const historicalDate = backfillPending ? null : nextHistoricalDate(currentOrders,reconciled,colonizationJobs);
     let historicalStatus=null;
     let historicalText='';
 
@@ -71,7 +101,13 @@ export async function onRequestPost({request,env}) {
 
     const yesterday=formatUtcDay(addUtcDays(utcDay(new Date()),-1));
     let parsed;
-    if (historicalText && historicalDate === yesterday) {
+    if(backfillRows.length){
+      parsed=parseJournal([...backfillRows.map(row=>row.text),currentText].filter(Boolean).join('\n'),targetSystems,{
+        diagnostics:auth.session.access === 'site_admin',
+        knownSystemAddresses:account.systemAddresses || {},
+        knownMissionOrigins:account.missionOrigins || {},
+      });
+    }else if (historicalText && historicalDate === yesterday) {
       parsed=parseJournal([historicalText,currentText].filter(Boolean).join('\n'),targetSystems,{
         diagnostics:auth.session.access === 'site_admin',
         knownSystemAddresses:account.systemAddresses || {},
@@ -106,13 +142,17 @@ export async function onRequestPost({request,env}) {
       lastSystem:parsed.lastSystem || account.lastSystem,
       systemAddresses:{...(account.systemAddresses||{}),...(parsed.systemAddresses||{})},
       missionOrigins:pruneMissionOrigins({...(account.missionOrigins||{}),...(parsed.missionOrigins||{})}),
+      ...(backfillSucceeded ? {
+        missionOriginBackfillVersion:MISSION_ORIGIN_BACKFILL_VERSION,
+        missionOriginBackfillAt:new Date().toISOString(),
+      } : {}),
       reconciledJournalDates:[...reconciled].sort().slice(-14),
     };
     await saveAccount(env, auth.session.sub, account);
 
     return json({
       ok:true,
-      partial:currentStatus===206 || historicalStatus===206,
+      partial:currentStatus===206 || historicalStatus===206 || Object.values(backfillStatuses).includes(206),
       targetSystems,
       claimTrackingEnabled:true,
       newEvents:parsed.events.length,
@@ -126,11 +166,18 @@ export async function onRequestPost({request,env}) {
         currentStatus,
         historicalDate,
         historicalStatus,
+        missionOriginBackfill:{
+          version:MISSION_ORIGIN_BACKFILL_VERSION,
+          pending:backfillPending,
+          applied:backfillSucceeded,
+          dates:backfillDates,
+          statuses:backfillStatuses,
+        },
         reconciledDates:account.reconciledJournalDates,
       },
       cooldown:syncCooldown(account),
       account:publicAccount(account),
-      message:currentStatus===204 && !historicalText
+      message:currentStatus===204 && !historicalText && !backfillRows.length
         ? 'No current-day journal data is available from Frontier yet.'
         : undefined,
     }, {headers:privateHeaders()});
@@ -175,6 +222,14 @@ function pruneMissionOrigins(value){
       .sort((a,b)=>String(b[1]?.acceptedAt||'').localeCompare(String(a[1]?.acceptedAt||'')))
       .slice(0,200)
   );
+}
+
+export function missionOriginBackfillDates(now=new Date(),lookbackDays=MISSION_ORIGIN_BACKFILL_LOOKBACK_DAYS){
+  const today=utcDay(now);
+  const days=Math.max(1,Math.min(7,Math.floor(Number(lookbackDays)||MISSION_ORIGIN_BACKFILL_LOOKBACK_DAYS)));
+  const out=[];
+  for(let offset=days;offset>=1;offset-=1)out.push(formatUtcDay(addUtcDays(today,-offset)));
+  return out;
 }
 
 function nextHistoricalDate(currentOrders,reconciled,colonizationJobs=[]) {

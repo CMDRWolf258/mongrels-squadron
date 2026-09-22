@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseJournal } from '../lib/frontier.js';
+import { MISSION_ORIGIN_BACKFILL_VERSION, missionOriginBackfillDates } from '../functions/api/frontier/sync.js';
 import { matchVerifiedActivity } from '../lib/order-activity.js';
 
 const origin='NGC 2546 Sector OQ-H b38-0';
@@ -52,6 +53,20 @@ assert.deepEqual(
 );
 console.log('✓ Mission completion preserves source + secondary influence as separate faction/system effects');
 
+assert.equal(MISSION_ORIGIN_BACKFILL_VERSION,1);
+assert.deepEqual(
+  missionOriginBackfillDates(new Date('2026-09-22T12:00:00Z'),3),
+  ['2026-09-19','2026-09-20','2026-09-21']
+);
+const repaired=parseJournal([acceptedJournal,completedJournal].join('\n'),[origin,destination]);
+assert.equal(repaired.events.length,1);
+assert.equal(repaired.events[0].originSystem,origin);
+assert.deepEqual(
+  repaired.events[0].effects.map(effect=>[effect.faction,effect.system,effect.infUnits]).sort(),
+  [[consortium,destination,1],[dynasty,origin,5]].sort()
+);
+console.log('✓ Forced recent-history reparse can repair old mission events without pre-existing origin metadata');
+
 const cycle={cycleId:'cycle',cycleStartedAt:'2026-09-21T00:00:00Z',cycleEndsAt:'2026-09-22T23:59:59Z',acceptFromAt:'2026-09-21T00:00:00Z'};
 const current={
   cycleId:'publication',
@@ -78,5 +93,9 @@ const sync=readFileSync('functions/api/frontier/sync.js','utf8');
 assert.match(sync,/knownMissionOrigins/);
 assert.match(sync,/missionOrigins:pruneMissionOrigins/);
 assert.match(sync,/missionOrigins:\{\.\.\.\(a\?\.missionOrigins/);
+assert.match(sync,/missionOriginBackfillVersion/);
+assert.match(sync,/backfillPending/);
+assert.match(sync,/backfillRows/);
+assert.match(sync,/Recent mission origins were backfilled|missionOriginBackfill/);
 
 console.log('\nAll mission-origin attribution smoke checks passed.');
