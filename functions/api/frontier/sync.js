@@ -5,6 +5,7 @@ import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rule
 import { activeColonizationJobs, activeColonizationSystems, earliestColonizationStart, readColonizationJobs } from '../../../lib/colonization-jobs.js';
 import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
+import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -166,6 +167,17 @@ export async function onRequestPost({request,env}) {
       console.error('Could not automatically issue verified rewards after Frontier sync',error);
     }
 
+    let colonizationDiscord=null;
+    try{
+      colonizationDiscord=await syncAllColonizationJobsDiscord(env,{
+        actor:'Mongrel Scout · Frontier Sync',
+        controlUrl:colonizationControlUrlForRequest(request),
+        createMissing:false,
+      });
+    }catch(error){
+      console.error('Could not refresh tracked Colonization Job Discord messages after Frontier sync',error);
+    }
+
     return json({
       ok:true,
       partial:currentStatus===206 || historicalStatus===206 || Object.values(backfillStatuses).includes(206),
@@ -178,6 +190,7 @@ export async function onRequestPost({request,env}) {
       verifiedOrders:rewardPreview,
       memberFundedColonization,
       automaticRewards,
+      colonizationDiscord,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       journalCoverage:{
@@ -205,6 +218,12 @@ export async function onRequestPost({request,env}) {
     const reauth=code.includes('reauthorization');
     return json({ok:false,error:reauth?'frontier_reauthorization_required':'frontier_sync_failed'}, {status:reauth?401:502,headers:privateHeaders()});
   }
+}
+
+function colonizationControlUrlForRequest(request){
+  const url=new URL('/wolf-bgs/',request.url);
+  url.hash='colonization-jobs';
+  return url.toString();
 }
 
 function emptyParsed(targetSystems) {
