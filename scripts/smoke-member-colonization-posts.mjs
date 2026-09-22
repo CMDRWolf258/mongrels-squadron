@@ -204,13 +204,17 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=5/);
-assert.match(tradePage,/trading-colonization\.css\?v=1/);
+assert.match(tradePage,/trading-colonization\.js\?v=6/);
+assert.match(tradePage,/trading-colonization\.css\?v=2/);
 assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
 assert.match(tradePage,/Target Cargo \(t\)[\s\S]*placeholder="Optional · leave blank for open-ended"/,'Target cargo should be optional for open-ended jobs');
 assert.doesNotMatch(tradePage,/data-colony-target[^>]*required/,'Target cargo must not be required');
 assert.match(tradePage,/Maximum Pledge \(M Cr\)[\s\S]*Optional · leave blank for no cap/,'Maximum pledge should be optional');
 assert.doesNotMatch(tradePage,/data-colony-budget[^>]*required/,'Maximum pledge must not be required');
+
+assert.match(tradePage,/Reward verification requires a current Elite connection/);
+assert.match(tradePage,/data-colony-frontier-connect/);
+assert.match(tradePage,/data-colony-frontier-sync/);
 
 const colonyUi=readFileSync('js/trading-colonization.js','utf8');
 assert.match(colonyUi,/data-colony-action="complete">Complete<\/button>/);
@@ -218,6 +222,10 @@ assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must sur
 assert.match(colonyUi,/event\.key!=='Enter'/,'Enter in a Colonization form field must not submit the job');
 assert.match(colonyUi,/job\.canEditFunding/,'Funding inputs should use the server-provided safe-edit state');
 assert.match(colonyUi,/OPEN-ENDED/,'Open-ended jobs should render without a fake percentage target');
+assert.match(colonyUi,/\/api\/frontier\/status/,'Colonization board should check Elite connection state');
+assert.match(colonyUi,/\/api\/frontier\/sync/,'Colonization board should offer direct Sync Activity');
+assert.match(colonyUi,/Manage Payments/,'Member-funded job owner should have a payment shortcut');
+assert.match(colonyUi,/\/rewards\/#payments-i-owe/);
 assert.match(colonyUi,/rewardBudgetUnlimited\?'No cap'/,'Uncapped funded jobs should display No cap');
 assert.match(colonyUi,/No maximum pledge/,'Funding summary should explain uncapped reward liability');
 assert.match(colonyUi,/mode==='archived'/);
