@@ -38,7 +38,8 @@ for(const pattern of [
   /wolf-bgs-control/,
   /DISCORD_OPERATIONS_WEBHOOK_URL|discordOperationsConfigured/,
   /Mission Control Link Test/,
-  /no automatic Discord alerts are enabled yet/i,
+  /scoutCycleRefreshServerConfigured/,
+  /low-noise persistent\/update-in-place model/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
 
@@ -67,7 +68,7 @@ for(const pattern of [
   /data-discord-sync-colonization/,
   /data-discord-sync-scout/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=5/,
+  /wolf-bgs-discord\.js\?v=6/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
