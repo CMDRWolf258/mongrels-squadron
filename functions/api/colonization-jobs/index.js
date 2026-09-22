@@ -193,18 +193,27 @@ export async function onRequestPut({request,env}) {
       merged.commodity=requested.commodity??existing.commodity;
     }
 
-    if(fundingFieldsRequested(requested)){
+    if(fundingFieldsRequested(requested)&&fundingDefinitionChanged(existing,requested)){
       const locked=await fundingTermsLocked(env,existing,store.jobs);
-      if(locked&&fundingDefinitionChanged(existing,requested)){
+      if(locked){
         return reply({
           ok:false,
           error:'colonization_funding_terms_locked',
           message:'Reward settings are locked because verified hauling, an issued reward, or squad approval already exists for this job.',
         },409);
       }
-      if(!locked){
+      try{
         const funding=await normalizeFundingForEdit(env,requested,existing,{actor,session:auth.session});
         Object.assign(merged,funding);
+      }catch(error){
+        if(error?.code==='frontier_required_for_member_funding'){
+          return reply({
+            ok:false,
+            error:'frontier_required_for_member_funding',
+            message:'Connect the posting CMDR to Elite before changing this job to member-funded.',
+          },409);
+        }
+        throw error;
       }
     }
     next=normalizeColonizationJob(merged,existing);
