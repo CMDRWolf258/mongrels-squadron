@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=66" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
+  <title>Scout Jobs | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/scout-jobs.css?v=2">
+</head>
+<body class="visual-page page-command">
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Command</a><a href="../rewards/">Rewards</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero operations-hero hero-flare operations-flare">
+    <div class="container page-hero-grid">
+      <div><p class="eyebrow">Mission Control · Live Scout</p><h1>Scout Jobs</h1><p>Paid faction-board scouting across the Mongrel footprint. Find systems that need current data, reserve a job when you want protection, or simply scout an available system and let Live Scout verify the work.</p></div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section mc-access-gate" data-mc-gate>
+    <div class="container">
+      <div class="mission-control-gate-card">
+        <div class="mission-control-gate-mark" aria-hidden="true">⌁</div>
+        <div><p class="eyebrow">Members Only</p><h2>Scout Board Restricted</h2><p>Scout Jobs expose current Mongrel system coverage and paid operational work. Sign in with an approved Mongrels Discord account to continue.</p></div>
+        <div class="mission-control-gate-action"><span class="tag">Protected</span><a class="btn btn-primary" data-mc-login href="/api/auth/login?return=%2Fscout-jobs%2F">Sign In with Discord →</a><small data-mc-gate-status>Checking secure session…</small></div>
+      </div>
+    </div>
+  </section>
+
+  <div data-mission-control-private hidden>
+    <section class="section-sm">
+      <div class="container scout-board-nav"><a class="btn btn-secondary btn-compact" href="../operations/">← Mission Control</a><a class="btn btn-secondary btn-compact" href="../member/#mongrel-scout">Live Scout Setup</a><a class="btn btn-secondary btn-compact" href="../rewards/">My Rewards</a></div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="scout-jobs-panel scout-jobs-dedicated" data-scout-jobs-board>
+          <div class="scout-jobs-head">
+            <div><p class="eyebrow">Live Scout · Paid Operational Work</p><h2>Current Scout Board</h2><p>One reward is available per system per tick-aware BGS cycle. Claims are optional. An active claim protects that CMDR's reward priority for up to 60 minutes while other valid uploads are retained as runner-up evidence.</p></div>
+            <button type="button" class="btn btn-secondary btn-compact" data-scout-jobs-refresh>Refresh Board</button>
+          </div>
+          <div class="scout-jobs-rule"><strong>Quick scouting is welcome.</strong> You do not need to claim first. If nobody has the system reserved, the first eligible attributed Live Scout upload wins that cycle's reward. Useful board data is still accepted after a reward has been won.</div>
+          <div class="scout-jobs-summary">
+            <div><span>Available</span><strong data-scout-summary="available">—</strong></div>
+            <div><span>Priority</span><strong data-scout-summary="priority">—</strong></div>
+            <div><span>Claimed</span><strong data-scout-summary="claimed">—</strong></div>
+            <div><span>Fresh This Cycle</span><strong data-scout-summary="fresh">—</strong></div>
+          </div>
+          <div class="scout-jobs-rule" data-scout-binding-note hidden></div>
+          <div class="scout-jobs-tools">
+            <input type="search" data-scout-jobs-search placeholder="Filter systems or priority reason…" autocomplete="off">
+            <select data-scout-jobs-filter>
+              <option value="open" selected>Open work</option>
+              <option value="available">Available only</option>
+              <option value="priority">Priority bonus</option>
+              <option value="claimed">Claimed</option>
+              <option value="fresh">Fresh this cycle</option>
+              <option value="all">All systems</option>
+            </select>
+            <span class="wolf-status-message" data-scout-jobs-status>Loading Scout Board…</span>
+          </div>
+          <div class="scout-jobs-list" data-scout-jobs-list><div class="scout-job-empty">Loading Scout Jobs…</div></div>
+          <div class="scout-job-admin-meta">Default cycle reward: <strong data-scout-default-reward>—</strong> · Live Scout must be installed and linked to your account for reward attribution.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=66"></script>
+<script src="../js/operations.js?v=66"></script>
+<script src="../js/scout-jobs.js?v=2"></script>
+</body>
+</html>
