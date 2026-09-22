@@ -405,7 +405,7 @@
           <summary><span><b>Reward Engine · DRY RUN</b><small>Exact would-create obligations · provenance gates · actual ledger remains untouched</small></span><strong>+</strong></summary>
           <div class="wolf-panel-body">
             <div class="wolf-dryrun-head">
-              <p>The engine computes exact Frontier-verified Daily Order and Colonization Job reward obligations. DRY RUN itself remains read-only. A site admin may explicitly promote a READY row into the actual ledger as OWED; blocked or stale rows cannot be issued, and nothing is marked paid automatically.</p>
+              <p>The engine computes exact verified Daily Order, Colonization Job, and Live Scout Job reward obligations. DRY RUN itself remains read-only. A site admin may explicitly promote a READY row into the actual ledger as OWED; blocked or stale rows cannot be issued, and nothing is marked paid automatically.</p>
               <button type="button" class="btn btn-secondary btn-compact" data-refresh-reward-dryrun>Refresh Dry Run</button>
             </div>
             <div class="wolf-dryrun-mode">
@@ -421,7 +421,7 @@
             </div>
             <div class="wolf-rules-callout subtle">
               <strong>LIVE GATE</strong>
-              <span>A verified reward is live-ready only when its source has exact durable provenance, Frontier evidence IDs, unambiguous attribution, and no already-issued excess. READY is still only a preview until a site admin explicitly creates the OWED ledger entry. The server re-validates the evidence, rules, amount, and duplicate state before any write.</span>
+              <span>A verified reward is live-ready only when its source has durable provenance or direct Scout evidence, unambiguous member attribution, and no already-issued excess. READY is still only a preview until a site admin explicitly creates the OWED ledger entry. The server re-validates the evidence, rules, amount, and duplicate state before any write.</span>
             </div>
             <div class="wolf-dryrun-meta">
               <span>CYCLE <b data-reward-dryrun-cycle>—</b></span>
