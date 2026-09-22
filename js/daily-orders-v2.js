@@ -7,6 +7,8 @@
   const REPORT_TYPES=new Set(['cz','inf','bounties','trade','exploration']);
   const CREDIT_TYPES=new Set(['bounties','trade','exploration']);
   let refreshTimer=null;
+  let cycleTimer=null;
+  let cycleReloadKey='';
   let ordersPayloadCache=null;
   let reportsPayloadCache=null;
   let frontierPayloadCache=null;
@@ -15,6 +17,61 @@
   const n=value=>Number.isFinite(Number(value))?Number(value):0;
   const fmt=value=>Number.isInteger(n(value))?String(n(value)):n(value).toFixed(1);
   const active=order=>!['complete','completed','closed','cancelled','canceled','inactive'].includes(String(order?.status||'').toLowerCase());
+
+  function cycleFor(order){return order?.workCycle&&typeof order.workCycle==='object'?order.workCycle:null;}
+  function timerTarget(cycle){return cycle?.phase==='transition'?cycle?.cycleEndsAt:cycle?.estimatedTickAt;}
+  function countdown(value){
+    const target=Date.parse(value||'');
+    if(!Number.isFinite(target))return'—';
+    const total=Math.max(0,Math.floor((target-Date.now())/1000));
+    const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;
+    return String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(seconds).padStart(2,'0');
+  }
+  function utcStamp(value){
+    const date=new Date(value||'');if(Number.isNaN(date.getTime()))return'—';
+    return new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date)+' UTC';
+  }
+  function localStamp(value){
+    const date=new Date(value||'');if(Number.isNaN(date.getTime()))return'—';
+    return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(date);
+  }
+  function timingLabel(cycle){return cycle?.phase==='transition'?'TRANSITION':'EST TICK';}
+  function timedOrder(order){
+    const priority=String(order?.priority||'').trim().toLowerCase();
+    const status=String(order?.status||'').trim().toLowerCase();
+    return !['low','optional'].includes(priority)&&status!=='optional';
+  }
+  function updateCycleTimers(){
+    let expiredKey='';
+    document.querySelectorAll('[data-cycle-target]').forEach(node=>{
+      const target=node.dataset.cycleTarget||'';
+      node.textContent=countdown(target);
+      const ms=Date.parse(target);
+      if(Number.isFinite(ms)&&Date.now()>=ms)expiredKey=target;
+    });
+    if(expiredKey&&cycleReloadKey!==expiredKey){
+      cycleReloadKey=expiredKey;
+      setTimeout(load,1200);
+    }
+  }
+  function ensureCycleTimer(){
+    if(cycleTimer)return;
+    cycleTimer=setInterval(updateCycleTimers,1000);
+  }
+  function cycleOverview(orders){
+    const rows=orders.map(order=>({order,cycle:cycleFor(order)})).filter(row=>row.cycle);
+    if(!rows.length)return null;
+    rows.sort((a,b)=>Date.parse(timerTarget(a.cycle)||'')-Date.parse(timerTarget(b.cycle)||''));
+    const next=rows[0],target=timerTarget(next.cycle);
+    const el=document.createElement('aside');el.className='mc-cycle-overview';
+    el.innerHTML='<div><span>PER-SYSTEM DAILY CYCLES</span><strong>'+esc(next.cycle.phase==='transition'?'Tick transition in '+next.cycle.system:'Next estimated tick · '+next.cycle.system)+'</strong><small>'+esc(utcStamp(next.cycle.estimatedTickAt))+' · '+esc(localStamp(next.cycle.estimatedTickAt))+' · progress resets independently after each system transition window</small></div><div class="mc-cycle-overview-clock"><span>'+esc(timingLabel(next.cycle))+'</span><b data-cycle-target="'+esc(target||'')+'">'+esc(countdown(target))+'</b></div>';
+    return el;
+  }
+  function systemTickHtml(order){
+    const cycle=cycleFor(order);if(!cycle)return'';
+    const target=timerTarget(cycle);
+    return '<span class="mc-system-tick '+(cycle.phase==='transition'?'is-transition':'')+'"><small>'+esc(timingLabel(cycle))+'</small><b>'+esc(utcStamp(cycle.estimatedTickAt))+'</b><em>'+esc(localStamp(cycle.estimatedTickAt))+'</em><strong data-cycle-target="'+esc(target||'')+'">'+esc(countdown(target))+'</strong></span>';
+  }
 
   function shortTitle(order){
     const s=spec(order), amount=s.target!==null?fmt(s.target):'';
@@ -91,16 +148,17 @@
 
   async function load(){
     try{
-      const [ordersRes,reportsRes,frontierRes]=await Promise.all([
-        fetch('/api/operations/orders?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
+      const ordersRes=await fetch('/api/operations/orders?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+      if(!ordersRes.ok)return;
+      const ordersPayload=await ordersRes.json();
+      ordersPayloadCache=ordersPayload;
+      const [reportsRes,frontierRes]=await Promise.all([
         fetch('/api/operations/order-reports?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
         fetch('/api/frontier/status?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
       ]);
-      if(!ordersRes.ok||!reportsRes.ok)return;
-      const ordersPayload=await ordersRes.json();
+      if(!reportsRes.ok)return;
       const reportsPayload=await reportsRes.json();
       const frontierPayload=frontierRes.ok?await frontierRes.json():null;
-      ordersPayloadCache=ordersPayload;
       reportsPayloadCache=reportsPayload;
       frontierPayloadCache=frontierPayload;
       render(ordersPayload,reportsPayload,frontierPayload);
@@ -131,6 +189,10 @@
     }
     list.classList.add('mc-orders-v2');
     list.replaceChildren();
+    const overview=cycleOverview(orders);
+    if(overview)list.append(overview);
+    ensureCycleTimer();
+    updateCycleTimers();
     const noteCard=section.querySelector('[data-orders-officer-note]');
     const noteText=section.querySelector('[data-orders-officer-note-text]');
     if(noteCard&&noteText&&/^Published from Wolf BGS Control\.?$/i.test(noteText.textContent.trim()))noteCard.hidden=true;
@@ -144,7 +206,7 @@
       const priorities=items.map(x=>x.priority).filter(Boolean);
       const priority=priorities[0]||'Active';
       const priorityKey=priorityClass(priority);
-      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-focus">'+systemFocus(items)+'</span><span class="mc-system-tags"><b class="mc-priority-pill is-'+esc(priorityKey)+'">'+esc(priorityLabel(priority))+'</b><b class="mc-order-count">'+items.length+' ORDER'+(items.length===1?'':'S')+'</b></span><span class="mc-expand-mark" aria-hidden="true"><span class="mc-expand-closed">VIEW ORDERS ▾</span><span class="mc-expand-open">HIDE ORDERS ▴</span></span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
+      card.innerHTML='<summary><span class="mc-order-index">'+String(index).padStart(2,'0')+'</span><span class="mc-system-summary"><span class="mc-system-name-line"><strong>'+esc(system)+'</strong>'+(system!=='Squad-wide'?'<button type="button" class="mc-copy-system" title="Copy system name" aria-label="Copy '+esc(system)+'">⧉</button>':'')+'<em aria-live="polite"></em></span></span><span class="mc-system-focus">'+systemFocus(items)+'</span>'+systemTickHtml(items[0])+'<span class="mc-system-tags"><b class="mc-priority-pill is-'+esc(priorityKey)+'">'+esc(priorityLabel(priority))+'</b><b class="mc-order-count">'+items.length+' ORDER'+(items.length===1?'':'S')+'</b></span><span class="mc-expand-mark" aria-hidden="true"><span class="mc-expand-closed">VIEW ORDERS ▾</span><span class="mc-expand-open">HIDE ORDERS ▴</span></span></summary><div class="mc-system-order-body"><div class="mc-order-pairs"></div></div>';
       const pairs=card.querySelector('.mc-order-pairs');
       const copyButton=card.querySelector('.mc-copy-system');
       if(copyButton)copyButton.addEventListener('click',async event=>{
@@ -172,7 +234,9 @@
     const el=document.createElement('article');el.className='mc-order-brief';
     const status=order.status&&String(order.status).toLowerCase()!=='active'?'<b>'+esc(order.status)+'</b>':'';
     const copy=briefingCopy(order);
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
+    const cycle=cycleFor(order),target=timerTarget(cycle);
+    const timer=cycle&&timedOrder(order)?'<b class="mc-order-reset-pill '+(cycle.phase==='transition'?'is-transition':'')+'">'+esc(cycle.phase==='transition'?'TRANSITION':'TICK IN')+' <span data-cycle-target="'+esc(target||'')+'">'+esc(countdown(target))+'</span></b>':'';
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+timer+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3></div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
     return el;
   }
 
@@ -389,6 +453,7 @@
   }
 
   function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(load,80);}
+  window.addEventListener('pagehide',()=>{if(cycleTimer)clearInterval(cycleTimer);cycleTimer=null;});
   window.addEventListener('mongrels:orders-loaded',event=>{if(event.detail?.authenticated)schedule();});
   if(!list.children.length)schedule();
 })();

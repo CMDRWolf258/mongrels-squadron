@@ -33,6 +33,7 @@ jobs:
         run: |
           node --experimental-default-type=module scripts/smoke-test.mjs
           node --experimental-default-type=module scripts/smoke-daily-orders.mjs
+          node --experimental-default-type=module scripts/smoke-daily-order-cycles.mjs
           node --experimental-default-type=module scripts/smoke-daily-order-baseline.mjs
           node --experimental-default-type=module scripts/smoke-exobiology.mjs
           node --experimental-default-type=module scripts/smoke-pve.mjs

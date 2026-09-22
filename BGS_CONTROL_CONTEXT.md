@@ -1217,6 +1217,23 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## Per-system Daily Order work cycles and clocks — 2026-09-22
+
+Daily Order progress now follows the BGS tick model instead of carrying forever under one publication cycle.
+
+- There is **no squad-wide midnight/fixed-local reset**. Each order resolves its work cycle from its system's configured BGS tick.
+- Timing comes from Wolf BGS Control: per-system `customTick` when present, otherwise the global reference tick (currently 19:00 UTC), plus the configured transition window and late-report grace.
+- Current defaults remain **90 minutes transition** and **3 hours late-report grace**.
+- The scheduled work cycle remains on the old bucket through the transition window. After the transition window ends, the next request resolves a new deterministic per-system work-cycle ID and current progress starts from zero.
+- Existing order definitions carry forward; **manual report totals and Frontier-verified current progress do not**.
+- Legacy manual reports without a work-cycle ID are classified by their original report timestamp against recent system work-cycle windows, so an old 5/25 INF report cannot appear in today's progress merely because the order definition is unchanged.
+- New manual reports store their exact `workCycleId`, start and end timestamps while retaining the existing publication-cycle storage prefix. This avoids multiplying KV LIST prefixes per active system.
+- Frontier matching is bounded by each order's work-cycle start/end. Mission Control shows current-cycle verified progress only.
+- Reward Engine separately evaluates the current plus **7 prior work cycles**, with deterministic per-work-cycle source IDs, so current progress can reset without silently discarding recent unissued verified reward evidence.
+- Mission Control now shows a rolling-cycle overview plus per-system estimated tick in **UTC and the member's browser/device local time**. High/normal-risk order cards get a live countdown; low/optional orders may omit the per-order timer.
+- During the configured transition window, clocks switch to **TRANSITION** and count down to the fresh progress bucket.
+- The order publication cycle remains distinct from the per-system work cycle: publication history still proves what the order said; the work cycle proves which BGS day the contribution belongs to.
+
 ## Daily Order legacy baseline / event-time guard — 2026-09-21
 
 Added the same migration safety concept used by Colonization to Daily Orders.
