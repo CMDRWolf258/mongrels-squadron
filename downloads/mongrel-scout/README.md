@@ -19,12 +19,12 @@ After that, just play Elite. Jumping into a Mongrel system is enough when the jo
 ## What is transmitted
 
 Only the current system's BGS fields from `FSDJump`, `Location`, or `CarrierJump`:
-- system name/address, controller, security and population when present;
+- system name/address and galactic X/Y/Z coordinates, plus controller, security and population when present;
 - faction names, influence, active/pending/recovering states and happiness;
 - local conflict type/status, participants, stakes and WonDays score;
 - the journal event timestamp.
 
-The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. Systems without the Regiment of Imperial Mongrels are ignored locally and never uploaded.
+The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. Galactic coordinates describe the system itself and are used by the Scout Board to calculate straight-line distance between Mongrel systems. Systems without the Regiment of Imperial Mongrels are ignored locally and never uploaded.
 
 ## Scout workflow
 
