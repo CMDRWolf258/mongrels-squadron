@@ -178,7 +178,6 @@ for(const pattern of [
   /Update Request/,
   /data-cancel-reward-payout/,
   /mutateRequest\('cancel'\)/,
-  /paymentBatchId/,
   /LOAD OLDER PAYOUTS/,
   /\/api\/rewards\/history/,
   /paidHistoryNextOffset/,
