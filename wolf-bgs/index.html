@@ -88,7 +88,7 @@
                 <h3>Operations Webhook</h3>
                 <p>Verify the Cloudflare webhook secret and send one manual test embed to the configured Discord channel. This does not enable any automatic notifications.</p>
               </div>
-              <button type="button" class="btn btn-primary btn-compact" data-discord-test disabled>Send Test Alert</button>
+              <div class="wolf-discord-actions"><button type="button" class="btn btn-secondary btn-compact" data-discord-sync-orders disabled>Sync Current Daily Orders</button><button type="button" class="btn btn-primary btn-compact" data-discord-test disabled>Send Test Alert</button></div>
             </div>
             <div class="wolf-rules-callout subtle"><strong>SAFE TEST MODE</strong><span>The webhook URL stays server-side in Cloudflare. The browser receives only configured/not-configured status, and Discord mentions are disabled for this test.</span></div>
             <span class="wolf-status-message working" data-discord-status>Checking Discord webhook…</span>
@@ -591,7 +591,7 @@
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
 <script src="../js/wolf-bgs.js?v=18"></script>
-<script src="../js/wolf-bgs-discord.js?v=1"></script>
+<script src="../js/wolf-bgs-discord.js?v=2"></script>
 <script src="../js/wolf-bgs-scout.js?v=4"></script>
 <script src="../js/wolf-bgs-scout-jobs.js?v=2"></script>
 <script src="../js/wolf-bgs-rules.js?v=4"></script>
