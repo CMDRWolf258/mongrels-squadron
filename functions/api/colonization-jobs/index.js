@@ -103,6 +103,7 @@ export async function onRequestPost({request,env}) {
   const job=normalizeColonizationJob({
     ...(body?.job||{}),
     ...funding,
+    marketId:body?.job?.scope==='market'?'':undefined,
     postingOwnerId:auth.session.sub,
     postingOwnerName:actor,
     postingCommander,
@@ -166,12 +167,16 @@ export async function onRequestPut({request,env}) {
   }else if(action==='update'){
     const requested=body?.job&&typeof body.job==='object'?body.job:{};
     const lockedFunding=existing.fundingMode==='member'||existing.fundingApprovalStatus==='approved';
+    const requestedStatus=requested.status??existing.status;
+    if(!['active','paused','completed'].includes(requestedStatus))return reply({ok:false,error:'colonization_status_invalid'},400);
+    const statusChanged=requestedStatus!==existing.status;
     const merged={
       ...existing,
       title:requested.title??existing.title,
       targetTons:requested.targetTons??existing.targetTons,
       notes:requested.notes??existing.notes,
-      status:requested.status??existing.status,
+      status:requestedStatus,
+      endsAt:statusChanged?(requestedStatus==='active'?null:(existing.endsAt||new Date().toISOString())):existing.endsAt,
       updatedBy:actor,
     };
     if(manager){
