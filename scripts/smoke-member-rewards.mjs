@@ -126,7 +126,8 @@ for(const pattern of [
   /SCOUTING/,
   /BGS/,
   /Update Request/,
-  /Cancel Request/,
+  /data-cancel-reward-payout/,
+  /mutateRequest\('cancel'\)/,
   /paymentBatchId/,
 ]) assert.match(ui,pattern);
 new Function(ui);
