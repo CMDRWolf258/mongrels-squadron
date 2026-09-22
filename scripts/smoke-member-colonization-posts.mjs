@@ -196,7 +196,7 @@ const colonyUi=readFileSync('js/trading-colonization.js','utf8');
 assert.match(colonyUi,/data-colony-action="complete">Complete<\/button>/);
 assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must survive an immediately stale KV read');
 assert.match(colonyUi,/mode==='archived'/);
-assert.match(colonyUi,/Job completed and archived/);
+assert.match(colonyUi,/Job completed\. It is now in Archived/);
 new Function(colonyUi);
 
 const memberApi=readFileSync('functions/api/colonization-jobs/index.js','utf8');
