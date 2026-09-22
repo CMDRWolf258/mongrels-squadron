@@ -164,6 +164,8 @@ assert.match(scoutUi,/data-scout-copy-system/);
 assert.match(scoutUi,/navigator\.clipboard\.writeText\(system\)/);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
 assert.match(memberUi,/honorMemberDeepLink/);
+assert.match(memberUi,/addEventListener\('pageshow',restoreMemberDeepLink\)/);
+assert.match(memberUi,/addEventListener\('hashchange',restoreMemberDeepLink\)/);
 assert.match(memberUi,/scrollIntoView/);
 assert.match(memberUi,/live-scout-setup/);
 const memberPage=readFileSync('member/index.html','utf8');
