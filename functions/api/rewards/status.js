@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { listRewardEntries, summarizeRewardLedger } from '../../../lib/reward-ledger.js';
 import { readRewardPayoutRequest, rewardPayoutRequestView } from '../../../lib/reward-payout-requests.js';
+import { buildRewardPaidHistoryPage } from '../../../lib/reward-history.js';
 
 const ALLOWED = new Set(['member','officer','site_admin']);
 
@@ -24,6 +25,7 @@ export async function onRequestGet({request,env}) {
     summary,
     payoutRequest:rewardPayoutRequestView(requestRecord,entries),
     entries:entries.filter(entry=>entry?.status==='owed'),
+    paidHistory:buildRewardPaidHistoryPage(entries,{offset:0,limit:12}),
   });
 }
 
