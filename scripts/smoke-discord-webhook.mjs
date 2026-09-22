@@ -47,7 +47,9 @@ for(const pattern of [
   /data-discord-integration/,
   /data-discord-test/,
   /data-discord-sync-orders/,
+  /data-discord-sync-colonization/,
   /api\/operations\/discord-test/,
+  /api\/operations\/discord-colonization-jobs/,
   /api\/operations\/discord-daily-orders/,
   /X-Mongrels-Request/,
   /Send Test Alert|Sending test alert/,
@@ -60,8 +62,9 @@ for(const pattern of [
   /data-discord-integration/,
   /data-discord-test/,
   /data-discord-sync-orders/,
+  /data-discord-sync-colonization/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=2/,
+  /wolf-bgs-discord\.js\?v=3/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
