@@ -4,6 +4,7 @@ import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
 import { activeColonizationJobs, activeColonizationSystems, earliestColonizationStart, readColonizationJobs } from '../../../lib/colonization-jobs.js';
 import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
+import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -158,6 +159,13 @@ export async function onRequestPost({request,env}) {
       console.error('Could not reconcile member-funded Colonization rewards',error);
     }
 
+    let automaticRewards=null;
+    try{
+      automaticRewards=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · Frontier Sync'});
+    }catch(error){
+      console.error('Could not automatically issue verified rewards after Frontier sync',error);
+    }
+
     return json({
       ok:true,
       partial:currentStatus===206 || historicalStatus===206 || Object.values(backfillStatuses).includes(206),
@@ -169,6 +177,7 @@ export async function onRequestPost({request,env}) {
       orderCycleId:matched.cycleId,
       verifiedOrders:rewardPreview,
       memberFundedColonization,
+      automaticRewards,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       journalCoverage:{
