@@ -178,6 +178,8 @@ assert.match(memberApi,/postingOwnerId:auth\.session\.sub/);
 assert.match(memberApi,/fundingApprovalStatus:'pending'/);
 assert.match(memberApi,/approve-funding/);
 assert.match(memberApi,/not_colonization_job_owner/);
+assert.match(memberApi,/marketId:body\?\.job\?\.scope==='market'\?'':undefined/,'Member specific-build posts must start unbound');
+assert.match(memberApi,/endsAt:statusChanged\?\(requestedStatus==='active'\?null:/,'Editor status changes must create the same pause\/complete earning boundary');
 
 const paymentsApi=readFileSync('functions/api/rewards/member-payments.js','utf8');
 assert.match(paymentsApi,/mark-sent/);
