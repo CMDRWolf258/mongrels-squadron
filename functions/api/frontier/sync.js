@@ -75,18 +75,21 @@ export async function onRequestPost({request,env}) {
       parsed=parseJournal([historicalText,currentText].filter(Boolean).join('\n'),targetSystems,{
         diagnostics:auth.session.access === 'site_admin',
         knownSystemAddresses:account.systemAddresses || {},
+        knownMissionOrigins:account.missionOrigins || {},
       });
     } else {
       const historicalParsed=historicalText
         ? parseJournal(historicalText,targetSystems,{
             diagnostics:auth.session.access === 'site_admin',
             knownSystemAddresses:account.systemAddresses || {},
+            knownMissionOrigins:account.missionOrigins || {},
           })
         : emptyParsed(targetSystems);
       const currentParsed=currentText
         ? parseJournal(currentText,targetSystems,{
             diagnostics:auth.session.access === 'site_admin',
             knownSystemAddresses:{...(account.systemAddresses||{}),...(historicalParsed.systemAddresses||{})},
+            knownMissionOrigins:{...(account.missionOrigins||{}),...(historicalParsed.missionOrigins||{})},
           })
         : emptyParsed(targetSystems);
       parsed=mergeParsed(historicalParsed,currentParsed,targetSystems);
@@ -102,6 +105,7 @@ export async function onRequestPost({request,env}) {
       lastJournalEventAt:parsed.lastEventAt || account.lastJournalEventAt,
       lastSystem:parsed.lastSystem || account.lastSystem,
       systemAddresses:{...(account.systemAddresses||{}),...(parsed.systemAddresses||{})},
+      missionOrigins:pruneMissionOrigins({...(account.missionOrigins||{}),...(parsed.missionOrigins||{})}),
       reconciledJournalDates:[...reconciled].sort().slice(-14),
     };
     await saveAccount(env, auth.session.sub, account);
@@ -143,6 +147,7 @@ function emptyParsed(targetSystems) {
     events:[],excluded:[],diagnostics:[],lastEventAt:null,lastSystem:'',
     targetSystems:Array.isArray(targetSystems)?targetSystems:[],
     systemAddresses:{},
+    missionOrigins:{},
   };
 }
 
@@ -155,7 +160,21 @@ function mergeParsed(a,b,targetSystems) {
     lastSystem:b?.lastSystem||a?.lastSystem||'',
     targetSystems:Array.isArray(targetSystems)?targetSystems:[],
     systemAddresses:{...(a?.systemAddresses||{}),...(b?.systemAddresses||{})},
+    missionOrigins:{...(a?.missionOrigins||{}),...(b?.missionOrigins||{})},
   };
+}
+
+function pruneMissionOrigins(value){
+  const cutoff=Date.now()-(14*86400000);
+  return Object.fromEntries(
+    Object.entries(value&&typeof value==='object'?value:{})
+      .filter(([,origin])=>{
+        const when=Date.parse(origin?.completedAt||origin?.acceptedAt||'');
+        return Number.isFinite(when)&&when>=cutoff;
+      })
+      .sort((a,b)=>String(b[1]?.acceptedAt||'').localeCompare(String(a[1]?.acceptedAt||'')))
+      .slice(0,200)
+  );
 }
 
 function nextHistoricalDate(currentOrders,reconciled,colonizationJobs=[]) {

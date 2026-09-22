@@ -216,7 +216,7 @@
       </details>
 
       <div class="frontier-scout-kpis" data-frontier-kpis hidden>
-        <div class="frontier-scout-kpi"><span>Mission INF</span><strong data-frontier-inf>0</strong></div>
+        <div class="frontier-scout-kpi"><span>BGS INF Effects</span><strong data-frontier-inf>0</strong></div>
         <div class="frontier-scout-kpi"><span>Bounties Redeemed</span><strong data-frontier-bounties>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>Combat Bonds Redeemed</span><strong data-frontier-bonds>0 Cr</strong></div>
         <div class="frontier-scout-kpi"><span>CZ Bonds Awarded</span><strong data-frontier-cz>0 Cr</strong></div>
@@ -278,11 +278,17 @@
   }
   function frontierEventLabel(event) {
     if (event.type === 'mission_inf') {
-      const effects=event.effects||[];
-      const inf=effects.reduce((n,x)=>n+(Number(x.infUnits)||0),0);
-      const rep=effects.reduce((n,x)=>n+(Number(x.repUnits)||0),0);
-      const factions=[...new Set(effects.map(x=>x.faction).filter(Boolean))];
-      return `Mission · ${inf} INF${rep ? ` · REP ${rep>0?'+':''}${rep}` : ''}${factions.length ? ` · ${factions.join(', ')}` : ''}`;
+      const effects=Array.isArray(event.effects)?event.effects:[];
+      const parts=effects.map(effect=>{
+        const faction=effect.faction||'Faction';
+        const inf=Number(effect.infUnits)||0;
+        const rep=Number(effect.repUnits)||0;
+        const system=effect.system? ` @ ${effect.system}` : '';
+        const infText=inf ? ` +${inf} INF${system}` : '';
+        const repText=rep ? ` · REP ${rep>0?'+':''}${rep}` : '';
+        return `${faction}${infText}${repText}`;
+      }).filter(Boolean);
+      return parts.length ? `Mission · ${parts.join(' · ')}` : 'Mission completed';
     }
     if (event.type === 'bounties_redeemed') {
       const split=(event.factions||[]).map(x=>`${x.faction}: ${frontierMoney(x.amount)}`).join(' · ');
@@ -397,7 +403,8 @@
         const matchText=(event.orderMatches||[]).length
           ? '✓ Matched: '+event.orderMatches.map(match=>match.orderTask).join(' · ')
           : event.orderMatchStatus==='ambiguous' ? 'Needs order assignment' : '';
-        const small=document.createElement('small');small.textContent=[frontierDate(event.timestamp),event.station,event.system,matchText].filter(Boolean).join(' · ');
+        const missionOrigin=event.type==='mission_inf'&&event.originSystem ? 'Origin: '+event.originSystem : '';
+        const small=document.createElement('small');small.textContent=[frontierDate(event.timestamp),missionOrigin,event.station,event.system,matchText].filter(Boolean).join(' · ');
         row.append(strong,small);events.appendChild(row);
       });
     }
