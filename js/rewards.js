@@ -21,6 +21,10 @@
   const paidList=document.querySelector('[data-reward-paid-list]');
   const paidHistoryMore=document.querySelector('[data-reward-paid-more]');
   const paidHistoryStatus=document.querySelector('[data-reward-paid-status]');
+  const memberPaymentList=document.querySelector('[data-member-payment-list]');
+  const memberPaymentOwed=document.querySelector('[data-member-payment-owed]');
+  const memberPaymentSent=document.querySelector('[data-member-payment-sent]');
+  const memberPaymentStatus=document.querySelector('[data-member-payment-status]');
 
   let account=null;
   let loading=false;
@@ -51,6 +55,9 @@
   function entryDetail(entry){
     const parts=[source(entry).label];
     if(Number(entry?.verifiedContribution)>0)parts.push(Number(entry.verifiedContribution).toLocaleString()+' '+String(entry.verifiedUnit||''));
+    if(entry?.fundingMode==='member')parts.push('member funded · payer '+String(entry.payerDisplayName||'posting CMDR'));
+    else parts.push('squad funded');
+    if(entry?.status==='payment_sent')parts.push('payment sent '+dateTime(entry.paymentSentAt));
     if(entry?.createdAt)parts.push('approved '+dateTime(entry.createdAt));
     return parts.join(' · ');
   }
@@ -58,25 +65,26 @@
   function renderOutstanding(entries){
     if(!outstandingList)return;
     outstandingList.replaceChildren();
-    const owed=entries.filter(entry=>entry?.status==='owed');
-    if(!owed.length){
+    const unsettled=entries.filter(entry=>entry?.status==='owed'||entry?.status==='payment_sent');
+    if(!unsettled.length){
       const empty=document.createElement('div');empty.className='reward-empty';
       const strong=document.createElement('strong');strong.textContent='No outstanding rewards.';
       const small=document.createElement('small');small.textContent='New approved rewards from BGS, Colonization, scouting, and other programs will appear here.';
       empty.append(strong,small);outstandingList.append(empty);return;
     }
     const groups=new Map();
-    owed.forEach(entry=>{
+    unsettled.forEach(entry=>{
       const meta=source(entry);
-      const group=groups.get(meta.key)||{...meta,entries:[]};
-      group.entries.push(entry);groups.set(meta.key,group);
+      const groupKey=meta.key+(entry.fundingMode==='member'?'-member':'-squad');
+      const group=groups.get(groupKey)||{...meta,key:groupKey,label:meta.label+(entry.fundingMode==='member'?' · MEMBER FUNDED':''),entries:[]};
+      group.entries.push(entry);groups.set(groupKey,group);
     });
     [...groups.values()].forEach(group=>{
       const section=document.createElement('section');section.className='reward-source-group';
       const head=document.createElement('div');head.className='reward-source-head';
       const main=document.createElement('div');
       const title=document.createElement('strong');title.textContent=group.label;
-      const count=document.createElement('small');count.textContent=group.entries.length+' outstanding reward'+(group.entries.length===1?'':'s');
+      const count=document.createElement('small');count.textContent=group.entries.length+' unsettled reward'+(group.entries.length===1?'':'s');
       main.append(title,count);
       const total=document.createElement('b');total.textContent=fmt(group.entries.reduce((sum,e)=>sum+(Number(e.amountCredits)||0),0));
       head.append(main,total);
@@ -87,8 +95,18 @@
         const reason=document.createElement('strong');reason.textContent=entry.reason||'Approved reward';
         const detail=document.createElement('small');detail.textContent=entryDetail(entry);
         info.append(reason,detail);
-        const amount=document.createElement('div');amount.className='reward-entry-amount';amount.textContent=fmt(entry.amountCredits);
-        row.append(info,amount);list.append(row);
+        if(entry.status==='payment_sent'){
+          const state=document.createElement('span');state.className='reward-entry-status';state.textContent='PAYMENT SENT · CONFIRM RECEIPT';
+          info.append(state);
+        }
+        const side=document.createElement('div');side.className='reward-entry-actions';
+        const amount=document.createElement('div');amount.className='reward-entry-amount';amount.textContent=fmt(entry.amountCredits);side.append(amount);
+        if(entry.fundingMode==='member'&&entry.status==='payment_sent'){
+          const confirm=document.createElement('button');confirm.type='button';confirm.className='btn btn-primary btn-compact';confirm.textContent='Confirm Received';
+          confirm.addEventListener('click',()=>mutateMemberPayment('confirm-received',entry,confirm));
+          side.append(confirm);
+        }
+        row.append(info,side);list.append(row);
       });
       section.append(head,list);outstandingList.append(section);
     });
@@ -173,8 +191,78 @@
     }
   }
 
+  function renderMemberPayments(payload={}){
+    if(memberPaymentOwed)memberPaymentOwed.textContent=fmt(payload.summary?.owedCredits||0);
+    if(memberPaymentSent)memberPaymentSent.textContent=fmt(payload.summary?.paymentSentCredits||0);
+    if(!memberPaymentList)return;
+    memberPaymentList.replaceChildren();
+    const rows=Array.isArray(payload.entries)?payload.entries:[];
+    if(!rows.length){
+      const empty=document.createElement('div');empty.className='reward-empty';
+      const strong=document.createElement('strong');strong.textContent='You do not currently owe any member-funded rewards.';
+      const small=document.createElement('small');small.textContent='Verified Colonization Job rewards you pledge will appear here when another CMDR earns them.';
+      empty.append(strong,small);memberPaymentList.append(empty);return;
+    }
+    rows.forEach(entry=>{
+      const row=document.createElement('article');row.className='member-payment-row';
+      const main=document.createElement('div');main.className='member-payment-main';
+      const title=document.createElement('strong');title.textContent=entry.displayName||'Mongrel CMDR';
+      const detail=document.createElement('small');
+      detail.textContent=(entry.reason||'Member-funded Colonization reward')+' · '+(Number(entry.verifiedContribution)||0).toLocaleString()+' '+String(entry.verifiedUnit||'')+(entry.status==='payment_sent'?' · sent '+dateTime(entry.paymentSentAt):'');
+      main.append(title,detail);
+      const side=document.createElement('div');side.className='member-payment-side';
+      const amount=document.createElement('b');amount.textContent=fmt(entry.amountCredits);side.append(amount);
+      if(entry.status==='owed'){
+        const button=document.createElement('button');button.type='button';button.className='btn btn-primary btn-compact';button.textContent='Mark Payment Sent';
+        button.addEventListener('click',()=>mutateMemberPayment('mark-sent',entry,button));side.append(button);
+      }else{
+        const waiting=document.createElement('small');waiting.textContent='Awaiting recipient confirmation';side.append(waiting);
+      }
+      row.append(main,side);memberPaymentList.append(row);
+    });
+  }
+
+  async function loadMemberPayments(){
+    if(!memberPaymentList)return;
+    try{
+      const response=await fetch('/api/rewards/member-payments?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.message||payload.error||'Member-funded payments unavailable');
+      renderMemberPayments(payload);
+      if(memberPaymentStatus)memberPaymentStatus.textContent=payload.summary?.unsettledCredits>0?'Member-funded obligations are tracked separately from squad payouts.':'No member-funded payments currently require action.';
+    }catch(error){
+      console.error('Could not load member-funded payments',error);
+      if(memberPaymentStatus)memberPaymentStatus.textContent=String(error.message||error);
+    }
+  }
+
+  async function mutateMemberPayment(action,entry,button){
+    if(button)button.disabled=true;
+    const message=action==='mark-sent'
+      ? 'Mark '+fmt(entry.amountCredits)+' to '+String(entry.displayName||'this CMDR')+' as sent? Only do this after the in-game transfer is complete.'
+      : 'Confirm that you received '+fmt(entry.amountCredits)+' from '+String(entry.payerDisplayName||'the posting CMDR')+'?';
+    if(!window.confirm(message)){if(button)button.disabled=false;return;}
+    try{
+      const response=await fetch('/api/rewards/member-payments',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'member-reward-payment'},
+        body:JSON.stringify({action,entryId:entry.id,ownerId:entry.ownerId}),
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.message||payload.error||'Payment update failed');
+      if(memberPaymentStatus)memberPaymentStatus.textContent=payload.message||'Payment state updated.';
+      await loadMemberPayments();
+      loading=false;
+      await load();
+    }catch(error){
+      console.error('Could not update member-funded payment',error);
+      if(memberPaymentStatus)memberPaymentStatus.textContent=String(error.message||error);
+      if(button)button.disabled=false;
+    }
+  }
+
   function renderRequest(request,summary){
-    const owed=Number(summary?.owedCredits)||0;
+    const owed=Number(summary?.squadOwedCredits)||0;
     const active=Boolean(request?.active);
     requestPanel?.classList.toggle('is-requested',active);
     if(requestStateEl)requestStateEl.textContent=active?'REQUESTED':owed>0?'AVAILABLE':'CLEAR';
@@ -211,9 +299,9 @@
     const summary=payload.summary||{};
     const commander=payload.viewer?.commander||entries.find(entry=>entry?.displayName)?.displayName||payload.viewer?.displayName||'Mongrel Member';
     if(viewer)viewer.textContent=commander;
-    if(owedEl)owedEl.textContent=fmt(summary.owedCredits);
+    if(owedEl)owedEl.textContent=fmt(summary.unsettledCredits||summary.owedCredits);
     if(paidEl)paidEl.textContent=fmt(summary.paidCredits);
-    if(outstandingEl)outstandingEl.textContent=entries.filter(entry=>entry?.status==='owed').length.toLocaleString();
+    if(outstandingEl)outstandingEl.textContent=entries.filter(entry=>entry?.status==='owed'||entry?.status==='payment_sent').length.toLocaleString();
     renderRequest(payload.payoutRequest||{},summary);
     renderOutstanding(entries);
     renderPaidBatches(payload.paidHistory?.batches||[],{append:false});
@@ -232,7 +320,7 @@
         setAccess(false);return;
       }
       if(!response.ok)throw new Error(payload.error||('Rewards request failed ('+response.status+')'));
-      render(payload);setAccess(true);
+      render(payload);setAccess(true);await loadMemberPayments();
     }catch(error){
       console.error('Could not load reward account',error);
       if(gateStatus)gateStatus.textContent='Reward account service unavailable. Please try again.';
@@ -244,7 +332,7 @@
 
   async function mutateRequest(action){
     if(!account||loading)return;
-    const expected=Math.round(Number(account?.summary?.owedCredits)||0);
+    const expected=Math.round(Number(account?.summary?.squadOwedCredits)||0);
     if(action==='request'&&expected<=0)return;
     const button=action==='cancel'?cancelButton:requestButton;
     if(button)button.disabled=true;
