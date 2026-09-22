@@ -8,6 +8,8 @@ import {
   releaseScoutJobClaim,
   writeScoutJobSettings,
 } from '../../../lib/scout-jobs.js';
+import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
+import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 
 const ALLOWED=new Set(['member','officer','site_admin']);
 
@@ -17,7 +19,7 @@ export async function onRequestGet({request,env}){
 
   const admin=new URL(request.url).searchParams.get('admin')==='1'&&auth.session.access==='site_admin';
   const [systems,account]=await Promise.all([
-    activeMongrelSystems(request),
+    loadActiveMongrelSystems(request),
     getAccount(env,auth.session.sub),
   ]);
   const board=await buildScoutJobBoard(env,{
@@ -58,7 +60,7 @@ export async function onRequestPost({request,env}){
     if(action==='claim'){
       if(!system)return reply({ok:false,error:'system_required'},400);
       const [systems,account,boundTokens]=await Promise.all([
-        activeMongrelSystems(request),
+        loadActiveMongrelSystems(request),
         getAccount(env,auth.session.sub),
         listBoundScoutTokens(env,auth.session.sub),
       ]);
@@ -70,13 +72,15 @@ export async function onRequestPost({request,env}){
         commander:account?.commander||actor,
         now:new Date(),
       });
-      return reply({ok:true,action:'claim',claim:result.claim,alreadyClaimed:result.alreadyClaimed});
+      const discord=await syncScoutDiscordAfterAction(request,env,{systems,createMissing:false});
+      return reply({ok:true,action:'claim',claim:result.claim,alreadyClaimed:result.alreadyClaimed,discord});
     }
 
     if(action==='release'){
       if(!system)return reply({ok:false,error:'system_required'},400);
       const result=await releaseScoutJobClaim(env,{system,ownerId:auth.session.sub,now:new Date()});
-      return reply({ok:true,action:'release',...result});
+      const discord=await syncScoutDiscordAfterAction(request,env,{createMissing:false});
+      return reply({ok:true,action:'release',...result,discord});
     }
 
     if(auth.session.access!=='site_admin')return reply({ok:false,error:'site_admin_required'},403);
@@ -88,7 +92,8 @@ export async function onRequestPost({request,env}){
         defaultRewardMillions:bounded(body?.defaultRewardMillions,current.defaultRewardMillions,0,100000),
       };
       const saved=await writeScoutJobSettings(env,next,{actor});
-      return reply({ok:true,action,settings:saved});
+      const discord=await syncScoutDiscordAfterAction(request,env,{createMissing:false});
+      return reply({ok:true,action,settings:saved,discord});
     }
 
     if(action==='save-system'){
@@ -107,7 +112,8 @@ export async function onRequestPost({request,env}){
         },
       };
       const saved=await writeScoutJobSettings(env,current,{actor});
-      return reply({ok:true,action,settings:saved});
+      const discord=await syncScoutDiscordAfterAction(request,env,{createMissing:true});
+      return reply({ok:true,action,settings:saved,discord});
     }
 
     return reply({ok:false,error:'unsupported_action'},400);
@@ -118,33 +124,24 @@ export async function onRequestPost({request,env}){
   }
 }
 
-async function activeMongrelSystems(request){
+async function syncScoutDiscordAfterAction(request,env,{systems=null,createMissing=false}={}){
   try{
-    const url=new URL('/data/live-bgs.json',request.url);
-    const response=await fetch(url.toString(),{headers:{Accept:'application/json'},cf:{cacheTtl:0}});
-    if(!response.ok)throw new Error('live_bgs_'+response.status);
-    const data=await response.json();
-    return (Array.isArray(data?.systems)?data.systems:[])
-      .filter(row=>row?.name&&row.present!==false&&row.formerPresence!==true)
-      .map(row=>({
-        name:clean(row.name).slice(0,140),
-        coords:normalizeCoordinates(row.coords),
-        coordsSource:clean(row.coordsSource||'').slice(0,80),
-      }));
+    const rows=Array.isArray(systems)?systems:await loadActiveMongrelSystems(request);
+    const board=await buildScoutJobBoard(env,{systems:rows,viewer:null,now:new Date()});
+    return await syncScoutDiscordBoard(env,{
+      board,
+      scoutBoardUrl:new URL('/scout-jobs/',request.url).toString(),
+      setupUrl:new URL('/member/?section=live-scout-setup#live-scout-setup',request.url).toString(),
+      createMissing,
+      originSystem:'Diaba',
+      ordinaryLimit:15,
+    });
   }catch(error){
-    console.error('Scout Jobs could not load active Mongrel systems',error);
-    return[];
+    console.error('Scout Job action succeeded but Discord sync failed',error);
+    return {feature:'scout_jobs',configured:true,error:'discord_scout_sync_failed',failed:1};
   }
 }
 
-function normalizeCoordinates(value){
-  const source=Array.isArray(value)
-    ? {x:value[0],y:value[1],z:value[2]}
-    : (value&&typeof value==='object'?value:null);
-  if(!source)return null;
-  const x=Number(source.x),y=Number(source.y),z=Number(source.z);
-  return Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z)?{x,y,z}:null;
-}
 function containsSystem(rows,system){
   const wanted=norm(system);
   return rows.some(row=>norm(row?.name)===wanted);
