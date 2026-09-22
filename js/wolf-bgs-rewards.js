@@ -21,6 +21,8 @@
   let paymentSelectionCommander='';
   let paymentRequestId='';
   let paymentCanConfirm=false;
+  const RECENT_ISSUE_OVERLAY_MS=120000;
+  const recentlyIssuedRewardEntries=new Map();
 
   function getPath(obj,path){
     return String(path||'').split('.').reduce((value,key)=>value&&typeof value==='object'?value[key]:undefined,obj);
@@ -49,6 +51,111 @@
   }
 
   const formatCredits=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+
+  function activeRecentIssues(){
+    const now=Date.now();
+    for(const [id,row] of recentlyIssuedRewardEntries){
+      if(!row?.entry||!Number.isFinite(Number(row.issuedAt))||now-Number(row.issuedAt)>RECENT_ISSUE_OVERLAY_MS){
+        recentlyIssuedRewardEntries.delete(id);
+      }
+    }
+    return recentlyIssuedRewardEntries;
+  }
+
+  function overlayRecentlyIssuedLedger(ledger){
+    const recent=activeRecentIssues();
+    if(!recent.size||!ledger||typeof ledger!=='object')return ledger;
+    const entries=Array.isArray(ledger.entries)?ledger.entries.slice():[];
+    const owedEntries=Array.isArray(ledger.owedEntries)?ledger.owedEntries.slice():entries.filter(entry=>entry?.status==='owed');
+    const members=Array.isArray(ledger.members)?ledger.members.map(member=>({...member}):[];
+    const summary={...(ledger.summary||{})};
+    const seen=new Set(entries.map(entry=>String(entry?.id||'')).filter(Boolean));
+
+    for(const {entry} of recent.values()){
+      const id=String(entry?.id||'');
+      if(!id||seen.has(id))continue;
+      seen.add(id);
+      entries.unshift(entry);
+      if(entry?.status==='owed')owedEntries.unshift(entry);
+
+      const amount=Math.round(Number(entry?.amountCredits)||0);
+      summary.entryCount=(Number(summary.entryCount)||0)+1;
+      if(entry?.status==='paid')summary.totalPaidCredits=(Number(summary.totalPaidCredits)||0)+amount;
+      else if(entry?.status==='owed')summary.totalOwedCredits=(Number(summary.totalOwedCredits)||0)+amount;
+
+      const ownerId=String(entry?.ownerId||'');
+      let member=members.find(row=>String(row?.ownerId||'')===ownerId);
+      if(!member){
+        member={
+          ownerId,
+          displayName:entry?.displayName||'Mongrel CMDR',
+          owedCredits:0,
+          paidCredits:0,
+          owedEntryCount:0,
+          paidEntryCount:0,
+          entryCount:0,
+          latestAt:entry?.createdAt||null,
+          payoutRequest:null,
+        };
+        members.push(member);
+        summary.memberCount=(Number(summary.memberCount)||0)+1;
+      }
+      member.entryCount=(Number(member.entryCount)||0)+1;
+      if(entry?.status==='paid'){
+        member.paidCredits=(Number(member.paidCredits)||0)+amount;
+        member.paidEntryCount=(Number(member.paidEntryCount)||0)+1;
+      }else if(entry?.status==='owed'){
+        member.owedCredits=(Number(member.owedCredits)||0)+amount;
+        member.owedEntryCount=(Number(member.owedEntryCount)||0)+1;
+      }
+      if(entry?.createdAt&&(!member.latestAt||String(entry.createdAt)>String(member.latestAt)))member.latestAt=entry.createdAt;
+    }
+
+    ledger.entries=entries;
+    ledger.owedEntries=owedEntries;
+    ledger.members=members;
+    ledger.summary=summary;
+    return ledger;
+  }
+
+  function overlayRecentlyIssuedDryRun(dry){
+    const recent=activeRecentIssues();
+    if(!recent.size||!dry||typeof dry!=='object')return dry;
+    const summary=dry.summary&&typeof dry.summary==='object'?dry.summary:{};
+
+    for(const member of Array.isArray(dry.members)?dry.members:[]){
+      for(const item of Array.isArray(member?.obligations)?member.obligations:[]){
+        const issued=recent.get(String(item?.id||''));
+        if(!issued?.entry)continue;
+
+        const beforeDelta=Math.max(0,Math.round(Number(item.deltaCredits)||0));
+        const credit=Math.min(beforeDelta,Math.max(0,Math.round(Number(issued.entry.amountCredits)||0)));
+        if(!credit)continue;
+
+        const wasReady=item.readyForLive===true;
+        item.existingCredits=Math.max(0,Math.round(Number(item.existingCredits)||0)+credit);
+        item.deltaCredits=Math.max(0,beforeDelta-credit);
+        item.readyForLive=item.deltaCredits>0&&!(Array.isArray(item.blockers)&&item.blockers.length);
+        item.duplicateSuppressed=item.deltaCredits===0&&Number(item.entitlementCredits)>0&&!item.blockers?.length;
+        if(!item.readyForLive)item.plannedEntry=null;
+
+        member.deltaCredits=Math.max(0,(Number(member.deltaCredits)||0)-credit);
+        summary.wouldCreateCredits=Math.max(0,(Number(summary.wouldCreateCredits)||0)-credit);
+        summary.existingVerifiedCredits=(Number(summary.existingVerifiedCredits)||0)+credit;
+        if(wasReady&&!item.readyForLive){
+          member.readyCount=Math.max(0,(Number(member.readyCount)||0)-1);
+          summary.readyObligations=Math.max(0,(Number(summary.readyObligations)||0)-1);
+          if(item.duplicateSuppressed){
+            member.duplicateSuppressedCount=(Number(member.duplicateSuppressedCount)||0)+1;
+            summary.duplicateSuppressed=(Number(summary.duplicateSuppressed)||0)+1;
+          }
+        }
+      }
+    }
+    dry.summary=summary;
+    return dry;
+  }
+
   const paymentSourceLabel=entry=>{
     if(entry?.kind==='colonization_job'||entry?.rewardType==='colonization')return'COLONIZATION';
     if(entry?.kind==='verified_order')return'DAILY ORDER';
@@ -212,6 +319,8 @@
       ]);
       if(!ledgerResponse.ok)throw new Error(ledger.error||'Reward ledger request failed');
       if(!dryResponse.ok)throw new Error(dry.error||'Reward dry-run request failed');
+      overlayRecentlyIssuedLedger(ledger);
+      overlayRecentlyIssuedDryRun(dry);
 
       const ls=ledger.summary||{};
       money('[data-reward-total-owed]',ls.totalOwedCredits);
@@ -644,10 +753,13 @@
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.message||payload.error||('Issue failed ('+response.status+')'));
 
+      if(payload.entry?.id){
+        recentlyIssuedRewardEntries.set(String(payload.entry.id),{entry:payload.entry,issuedAt:Date.now()});
+      }
       button.textContent=payload.created?'OWED ENTRY CREATED':'ALREADY LEDGERED';
       ledgerLoaded=false;
       ledgerLoadedAt=0;
-      if(checked)checked.textContent=payload.message||'Reward ledger updated.';
+      if(checked)checked.textContent=(payload.message||'Reward ledger updated.')+' Refreshing the console with the confirmed write…';
       await loadLedgerPreview(true);
     }catch(error){
       console.error('Could not create reward-ledger entry',error);
