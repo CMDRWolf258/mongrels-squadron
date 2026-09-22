@@ -8,8 +8,16 @@ export async function onRequestGet({request,env}) {
   if(!session)return reply({ok:false,error:'authentication_required'},401);
   if(!ALLOWED.has(session.access))return reply({ok:false,error:'officer_access_required'},403);
 
-  const {dryRun}=await buildUnifiedRewardEngineState(env,{baselineActor:'Reward Engine migration'});
-  return reply({ok:true,...dryRun,canIssueReady:session.access==='site_admin',manualLedgerIssue:true});
+  const {dryRun}=await buildUnifiedRewardEngineState(env,{baselineActor:'Reward Engine audit'});
+  return reply({
+    ok:true,
+    ...dryRun,
+    engineMode:'automatic_verified',
+    automaticLedgerWrites:true,
+    dryRunOnly:false,
+    canIssueReady:false,
+    manualLedgerIssue:false,
+  });
 }
 
 function reply(body,status=200){
