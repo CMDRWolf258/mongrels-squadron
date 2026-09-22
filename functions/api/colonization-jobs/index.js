@@ -7,6 +7,7 @@ import {
   normalizeColonizationJob,
   readColonizationJobs,
   writeColonizationJobsStore,
+  writeColonizationJobStatusOverride,
 } from '../../../lib/colonization-jobs.js';
 import {
   ensureColonizationJobHistoryBaseline,
@@ -199,8 +200,18 @@ export async function onRequestPut({request,env}) {
 
   const validation=validateJob(next);
   if(validation)return reply({ok:false,error:validation},400);
+  const statusChanged=next.status!==existing.status;
   jobs[index]=next;
   const saved=await commitMutation(env,{before:store,jobs,actor,action:action==='status'?'status':'update',targetJobId:id});
+  if(statusChanged){
+    await writeColonizationJobStatusOverride(env,{
+      jobId:id,
+      status:next.status,
+      endsAt:next.endsAt,
+      actor,
+      updatedAt:next.updatedAt,
+    });
+  }
   return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt});
 }
 
