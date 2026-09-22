@@ -114,7 +114,7 @@
         ? 'Live Scout'+(system.scoutLabel ? ' · '+system.scoutLabel : '')
         : (system.freshestSource || system.source || 'EliteHub Vault / EDDN');
       const detail = sourceLabel+' · '+ageLabel(stamp);
-      if (hours <= 6 && (!system.stale || scoutSource)) return { key: 'fresh', label: 'Fresh', detail, rank: 0 };
+      if (hours <= 8 && (!system.stale || scoutSource)) return { key: 'fresh', label: 'Fresh', detail, rank: 0 };
       if (hours <= 24 && (!system.stale || scoutSource)) return { key: 'aging', label: 'Aging', detail, rank: 1 };
       return { key: 'stale', label: 'Stale', detail, rank: 2 };
     }
