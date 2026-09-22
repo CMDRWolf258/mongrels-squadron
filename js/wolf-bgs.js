@@ -333,7 +333,7 @@
         <div class="wolf-system-stat hide-mobile"><span>State</span><b>${html(system.state || 'None')}</b></div>
         <div class="wolf-system-stat wolf-freshness-stat"><span>Freshness</span><b class="wolf-freshness-value ${freshness.key}">${html(freshness.label)}</b><small>${html(age(system.activeSnapshotTime))}</small></div>
         <div class="wolf-system-stat wolf-conflict-score-stat hide-mobile" title="${html(scoreTitle)}"><span>Conflict Score</span><b class="${score ? 'has-score' : ''}">${html(conflictScoreText(system))}</b><small>${html([dayText, scoreAge].filter(Boolean).join(' · ') || '—')}</small></div>
-        <div class="wolf-system-stat hide-tablet hide-mobile"><span>Tick</span><b>${html(tick)}</b></div>
+        <div class="wolf-system-stat hide-tablet hide-mobile"><span>Tick</span><b>${html(tick)} CT</b></div>
         <div class="wolf-system-stat hide-tablet hide-mobile"><span>Priority</span><b>${html(priorityLabel(system))}</b></div>
         <span class="wolf-status-pill ${status.key}">${html(status.label)}</span>
         <span class="wolf-expand">+</span>
@@ -397,7 +397,7 @@
             <section class="wolf-section">
               <h3>Tick & Freshness</h3>
               <div class="wolf-system-settings-grid">
-                <label class="wolf-field"><span>Custom tick</span><input class="wolf-time-input" type="time" data-setting="customTick" value="${html(settings.customTick || '')}"><small>Blank = global ${html(payload.defaults?.defaultTick || '19:00')}</small></label>
+                <label class="wolf-field"><span>Custom tick (CT)</span><input class="wolf-time-input" type="time" data-setting="customTick" value="${html(settings.customTick || '')}"><small>Blank = global ${html(payload.defaults?.defaultTick || '19:00')} CT</small></label>
                 <label class="wolf-field"><span>Custom freshness hours</span><input type="number" min="1" max="72" data-setting="freshnessHours" value="${settings.freshnessHours ?? ''}" placeholder="Global ${html(payload.defaults?.freshnessHours ?? 8)}"></label>
                 <label class="wolf-field wolf-grid-span"><span>Rollover policy</span><select data-setting="rolloverPolicy"><option value="" ${!settings.rolloverPolicy?'selected':''}>Use global (${html(payload.defaults?.rolloverPolicy || 'safety')})</option><option value="strict" ${settings.rolloverPolicy==='strict'?'selected':''}>Strict</option><option value="safety" ${settings.rolloverPolicy==='safety'?'selected':''}>Safety Only</option><option value="carry" ${settings.rolloverPolicy==='carry'?'selected':''}>Carry Forward</option></select></label>
               </div>
