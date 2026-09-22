@@ -73,6 +73,7 @@ export async function onRequestPost({ request, env }) {
       const result=await recordScoutObservation(env,{
         system:snapshot.system,
         systemAddress:snapshot.systemAddress,
+        coords:snapshot.starPos,
         ownerId:auth.ownerId||'',
         commander:auth.ownerCommander||auth.label||'Mongrel Scout',
         tokenId:auth.id,
@@ -149,6 +150,7 @@ function normalizeSnapshot(value) {
     event,
     system,
     systemAddress:safeInteger(value.systemAddress),
+    starPos:normalizeCoordinates(value.starPos),
     updatedAt,
     systemFaction:normalizeSystemFaction(value.systemFaction),
     security:cleanText(value.security, '', 80),
@@ -341,6 +343,7 @@ async function noteTokenUse(env, id, snapshot) {
       ...state.tokens[id],
       lastSeenAt:new Date().toISOString(),
       lastSystem:snapshot.system,
+      lastCoords:snapshot.starPos||null,
       lastEventAt:snapshot.updatedAt,
     };
     await env.DAILY_ORDERS.put(TOKENS_KEY, JSON.stringify(state));
@@ -358,6 +361,14 @@ function percentOrNull(value) {
   if (!Number.isFinite(n)) return null;
   const percent = n <= 1 ? n * 100 : n;
   return Math.max(0,Math.min(100,percent));
+}
+function normalizeCoordinates(value) {
+  const source=Array.isArray(value)
+    ? {x:value[0],y:value[1],z:value[2]}
+    : (value&&typeof value==='object'?value:null);
+  if(!source)return null;
+  const x=Number(source.x),y=Number(source.y),z=Number(source.z);
+  return Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z)?{x,y,z}:null;
 }
 function safeInteger(value) {
   if (value === null || value === undefined || value === '') return null;
