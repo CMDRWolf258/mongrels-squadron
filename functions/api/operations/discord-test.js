@@ -7,6 +7,7 @@ export async function onRequestGet({request,env}){
   return reply({
     ok:true,
     configured:discordOperationsConfigured(env),
+    scoutCycleRefreshServerConfigured:String(env?.SCOUT_DISCORD_CRON_TOKEN||'').trim().length>=24,
   });
 }
 
@@ -24,7 +25,7 @@ export async function onRequestPost({request,env}){
     const result=await sendOperationsDiscord(env,{
       embeds:[{
         title:'Mission Control Link Test',
-        description:'Discord webhook connectivity is working. This is a manual test from Wolf BGS Control; no automatic Discord alerts are enabled yet.',
+        description:'Discord webhook connectivity is working. This is a manual test from Wolf BGS Control; automated operations messages use the low-noise persistent/update-in-place model.',
         color:0x22d3ee,
         fields:[
           {name:'Source',value:'Wolf BGS Control',inline:true},
