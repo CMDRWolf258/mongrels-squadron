@@ -50,7 +50,10 @@
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
         setButtons(false);
-        setStatus('Webhook secret detected · Daily Orders, Colonization, and Scout automation are ready.','success');
+        const cycle=data.scoutCycleRefreshServerConfigured
+          ? ' · Scout cycle refresh token detected on server'
+          : ' · scheduled Scout cycle refresh token not configured yet';
+        setStatus('Webhook secret detected · Daily Orders, Colonization, and Scout automation are ready'+cycle+'.',data.scoutCycleRefreshServerConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
