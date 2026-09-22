@@ -12,7 +12,7 @@ const originalFetch=globalThis.fetch;
 let captured=null;
 globalThis.fetch=async(url,options)=>{
   captured={url,options};
-  return new Response('',{status:204});
+  return new Response(null,{status:204});
 };
 try{
   const result=await sendOperationsDiscord(
