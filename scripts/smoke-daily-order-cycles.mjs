@@ -153,8 +153,8 @@ assert.match(wolfUi,/Custom tick \(CT\)/);
 assert.match(wolfUi,/\$\{html\(tick\)\} CT/);
 
 const page=readFileSync('operations/index.html','utf8');
-assert.match(page,/mission-control-orders-v2\.css\?v=18/);
-assert.match(page,/daily-orders-v2\.js\?v=17/);
+assert.match(page,/mission-control-orders-v2\.css\?v=19/);
+assert.match(page,/daily-orders-v2\.js\?v=18/);
 const css=readFileSync('css/mission-control-orders-v2.css','utf8');
 assert.match(css,/\.mc-manual-report/);
 assert.match(css,/font-size:1\.42rem/);
