@@ -199,7 +199,7 @@
     return map[code]||code||'Could not save Colonization Job.';
   }
   form?.addEventListener('keydown',event=>{
-    if(event.key!=='Enter'||event.target?.tagName==='TEXTAREA'||event.target?.type==='submit')return;
+    if(event.key!=='Enter'||event.target?.tagName!=='INPUT'||event.target?.type==='submit')return;
     event.preventDefault();
   });
     createButton?.addEventListener('click',()=>openEditor());refresh?.addEventListener('click',load);filter?.addEventListener('change',render);form?.addEventListener('submit',save);form?.addEventListener('input',()=>{dirty=true;syncEditor();});form?.addEventListener('change',syncEditor);document.querySelectorAll('[data-colony-cancel]').forEach(button=>button.addEventListener('click',()=>closeEditor()));$('[data-colony-close-job]')?.addEventListener('click',()=>{if(editing)handleCardAction(editing,'complete',$('[data-colony-close-job]'));});
