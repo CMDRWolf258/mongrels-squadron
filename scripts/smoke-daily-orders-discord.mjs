@@ -47,6 +47,24 @@ assert.match(payload.embeds[0].fields[0].value,/20–30M bounty vouchers/);
 assert.match(payload.embeds[0].description,/Open Mission Control/);
 assert.match(payload.embeds[0].footer.text,/3 tasks · 2 systems · Published by Wolf/);
 
+const worstCase={
+  ...base,
+  cycleId:'cycle-limit',
+  briefing:'B'.repeat(1200),
+  orders:Array.from({length:24},(_,index)=>({
+    id:String(index+1),
+    system:'Long System Name '+String(index+1).padStart(2,'0')+' Sector ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    priority:'critical',
+    kind:'bounties',
+    task:'Complete this deliberately long operational assignment '.repeat(6),
+  })),
+};
+const worstPayload=buildDailyOrdersDiscordPayload(worstCase,{actor:'Wolf',missionControlUrl:missionControl});
+const embed=worstPayload.embeds[0];
+const embedChars=(embed.title||'').length+(embed.description||'').length+(embed.footer?.text||'').length
+  +(embed.fields||[]).reduce((sum,field)=>sum+String(field.name||'').length+String(field.value||'').length,0);
+assert.ok(embedChars<6000,'Daily Orders embed must remain below Discord total embed text limit');
+
 const requests=[];
 let nextMessage=111111;
 const originalFetch=globalThis.fetch;
@@ -109,6 +127,15 @@ assert.equal(noWebhook.attempted,false);
 
 const ordersApi=readFileSync('functions/api/operations/orders.js','utf8');
 for(const pattern of [/syncDailyOrdersDiscord/,/clearDailyOrdersDiscord/,/missionControlUrlForRequest/,/discord,/])assert.match(ordersApi,pattern);
+
+const manualEndpoint=readFileSync('functions/api/operations/discord-daily-orders.js','utf8');
+for(const pattern of [
+  /session\.access!=='site_admin'/,
+  /X-Mongrels-Request/,
+  /wolf-bgs-control/,
+  /no_daily_orders_published/,
+  /syncDailyOrdersDiscord/,
+])assert.match(manualEndpoint,pattern);
 
 const publisher=readFileSync('js/wolf-bgs-publish.js','utf8');
 for(const pattern of [/data\?\.discord\?\.ok/,/data\.discord\.mode==='edited'/,/announcement updated\./,/Discord sync failed/])assert.match(publisher,pattern);
