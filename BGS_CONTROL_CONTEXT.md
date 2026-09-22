@@ -924,6 +924,15 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Scout Jobs dedicated board — 2026-09-22
+
+The full Scout Jobs queue moved out of Mission Control because the expanding Mongrel system list consumed too much vertical space.
+
+- Mission Control now keeps only a compact Scout Jobs summary: Available, Priority, Claimed, Fresh This Cycle, default reward, and a direct **Open Scout Board** action.
+- The full member workflow lives at `/scout-jobs/`, retaining search/filter controls, rewards, tick-cycle information, claims/releases, runner-up messaging, and Live Scout identity status.
+- The dedicated page uses the same protected Mission Control session gate and existing `/api/operations/scout-jobs` backend; no claim, cycle, verification, or reward semantics changed.
+- Scout rows are slightly denser on the dedicated page so large system lists remain easier to scan on desktop and mobile.
+
 ## Scout Jobs v1 — tick-aware paid scouting — 2026-09-22
 
 Scout Jobs now turns Live Scout faction-board uploads into a member-facing, rewardable operational queue.

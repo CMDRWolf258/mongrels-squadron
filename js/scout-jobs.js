@@ -6,6 +6,7 @@
   const filter=host.querySelector('[data-scout-jobs-filter]');
   const status=host.querySelector('[data-scout-jobs-status]');
   const refresh=host.querySelector('[data-scout-jobs-refresh]');
+  const summaryOnly=host.hasAttribute('data-scout-jobs-summary-only');
   let payload=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -80,6 +81,8 @@
     }
     const defaultReward=host.querySelector('[data-scout-default-reward]');
     if(defaultReward)defaultReward.textContent=fmtCredits(payload.defaultRewardMillions||0);
+
+    if(summaryOnly)return;
 
     const binding=host.querySelector('[data-scout-binding-note]');
     if(binding){

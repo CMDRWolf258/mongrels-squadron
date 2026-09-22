@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../css/global.css?v=70">
   <link rel="stylesheet" href="../css/mission-control-orders-v2.css?v=19">
   <link rel="stylesheet" href="../css/rewards.css?v=1">
-  <link rel="stylesheet" href="../css/scout-jobs.css?v=1">
+  <link rel="stylesheet" href="../css/scout-jobs.css?v=2">
 </head>
 <body class="visual-page page-command">
 <header class="site-header">
@@ -64,7 +64,7 @@
         <nav class="section-jump-nav">
           <a href="#overview">Overview</a>
           <a href="#daily-orders">Daily Orders</a>
-          <a href="#scout-jobs">Scout Jobs</a>
+          <a href="../scout-jobs/">Scout Jobs</a>
           <a href="#playbook">Member Playbook</a>
           <a href="#priority">Priority Systems</a>
           <a href="#watch">Watch List</a>
@@ -173,37 +173,25 @@
 
     <section id="scout-jobs" class="section-sm">
       <div class="container">
-        <div class="scout-jobs-panel" data-scout-jobs-board>
+        <div class="scout-jobs-panel scout-jobs-launcher" data-scout-jobs-board data-scout-jobs-summary-only>
           <div class="scout-jobs-head">
             <div>
               <p class="eyebrow">Live Scout · Paid Operational Work</p>
               <h2>Scout Jobs</h2>
-              <p>Keep the Mongrels' faction boards current one system cycle at a time. A claim is optional: without one, the first eligible Live Scout upload wins the cycle reward. A 60-minute claim protects that CMDR while they travel; other valid uploads become runner-up evidence and can be promoted automatically if the claim expires.</p>
+              <p>See what needs a fresh faction board, priority bonuses, active reservations, and completed scouting for the current BGS cycle.</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-compact" data-scout-jobs-refresh>Refresh Board</button>
+            <a class="btn btn-primary" href="../scout-jobs/">Open Scout Board →</a>
           </div>
-          <div class="scout-jobs-rule"><strong>One reward per system per tick-aware cycle.</strong> System-specific tick times and the configured transition offset define the cycle boundary. Live Scout data is still accepted after a reward is won; only additional reward credit is suppressed for that cycle.</div>
           <div class="scout-jobs-summary">
             <div><span>Available</span><strong data-scout-summary="available">—</strong></div>
             <div><span>Priority</span><strong data-scout-summary="priority">—</strong></div>
             <div><span>Claimed</span><strong data-scout-summary="claimed">—</strong></div>
             <div><span>Fresh This Cycle</span><strong data-scout-summary="fresh">—</strong></div>
           </div>
-          <div class="scout-jobs-rule" data-scout-binding-note hidden></div>
-          <div class="scout-jobs-tools">
-            <input type="search" data-scout-jobs-search placeholder="Filter systems or priority reason…" autocomplete="off">
-            <select data-scout-jobs-filter>
-              <option value="open" selected>Open work</option>
-              <option value="available">Available only</option>
-              <option value="priority">Priority bonus</option>
-              <option value="claimed">Claimed</option>
-              <option value="fresh">Fresh this cycle</option>
-              <option value="all">All systems</option>
-            </select>
-            <span class="wolf-status-message" data-scout-jobs-status>Loading Scout Board…</span>
+          <div class="scout-jobs-launcher-foot">
+            <span class="wolf-status-message" data-scout-jobs-status>Loading Scout status…</span>
+            <span>Default cycle reward: <strong data-scout-default-reward>—</strong></span>
           </div>
-          <div class="scout-jobs-list" data-scout-jobs-list><div class="scout-job-empty">Loading Scout Jobs…</div></div>
-          <div class="scout-job-admin-meta">Default cycle reward: <strong data-scout-default-reward>—</strong> · Install and authorize Live Scout from the Member Portal before doing rewardable scouting.</div>
         </div>
       </div>
     </section>
@@ -355,7 +343,7 @@
 <script src="../js/reward-preview.js?v=1"></script>
 <script src="../js/daily-orders.js?v=68"></script>
 <script src="../js/daily-orders-v2.js?v=18"></script>
-<script src="../js/scout-jobs.js?v=1"></script>
+<script src="../js/scout-jobs.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
