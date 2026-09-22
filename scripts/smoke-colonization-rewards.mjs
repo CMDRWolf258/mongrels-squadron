@@ -171,7 +171,7 @@ assert.match(api,/buildUnifiedRewardEngineState/,'Reward DRY RUN API is not usin
 assert.match(runtime,/buildColonizationRewardDryRun/,'Unified Reward Engine is not building Colonization obligations');
 assert.match(runtime,/listColonizationJobPublications/,'Unified Reward Engine is missing Colonization history provenance');
 const ui=readFileSync('js/wolf-bgs-rewards.js','utf8');
-assert.match(ui,/DAILY ORDERS \+ COLONIZATION/,'Reward Engine UI does not identify the unified sources');
+for(const pattern of [/DAILY ORDERS/,/COLONIZATION/,/SCOUTING/,/sourceNames/])assert.match(ui,pattern,'Reward Engine UI does not identify the unified sources');
 assert.match(ui,/colonization_overlap_ambiguous/,'Reward Engine UI is missing the Colonization ambiguity blocker');
 const html=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(html,/COLONY ARCHIVE/,'Reward Engine metadata does not expose the Colonization archive');
