@@ -1,0 +1,44 @@
+name: Refresh Scout Discord cycles
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run away from the top-of-hour GitHub Actions rush. The endpoint uses the
+    # site's per-system tick/cycle rules, so this is a polling cadence rather
+    # than an assumed universal Elite tick time.
+    - cron: '7,37 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh-scout-discord-cycles
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      SCOUT_DISCORD_CRON_TOKEN: ${{ secrets.SCOUT_DISCORD_CRON_TOKEN }}
+    steps:
+      - name: Refresh Scout Discord cycle state
+        shell: bash
+        run: |
+          if [ -z "$SCOUT_DISCORD_CRON_TOKEN" ]; then
+            echo "SCOUT_DISCORD_CRON_TOKEN is not configured; scheduled Scout Discord refresh is safely skipped."
+            exit 0
+          fi
+
+          response_file="$(mktemp)"
+          status="$(
+            curl               --silent               --show-error               --retry 2               --retry-delay 5               --connect-timeout 15               --max-time 60               --output "$response_file"               --write-out "%{http_code}"               --request POST               --header "Authorization: Bearer $SCOUT_DISCORD_CRON_TOKEN"               --header "Accept: application/json"               "https://mongrels-squadron.pages.dev/api/internal/scout-discord-refresh"
+          )"
+
+          cat "$response_file"
+          echo
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Scout Discord scheduled refresh failed with HTTP $status."
+            exit 1
+          fi
