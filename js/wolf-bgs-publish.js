@@ -203,19 +203,39 @@
     return {system,priority,tasks,warnings,signature:currentSignature(card),queuedAt:new Date().toISOString(),queueSource};
   }
 
-  function removalSnapshot(card){
-    const system=card.dataset.system||'';
-    const priority=card.querySelector('[data-setting="priority"]')?.value||'normal';
+  function removalSnapshotForSystem(system,card=null,existing=null){
+    const published=publishedForSystem(system);
+    const priority=card?.querySelector('[data-setting="priority"]')?.value
+      || existing?.priority
+      || published[0]?.priority
+      || 'normal';
+    const signature=card
+      ? currentSignature(card)
+      : (existing?.signature||('remove|'+(publishedDocument?.cycleId||'current')+'|'+norm(system)));
     return {
       system,
       priority,
       tasks:[],
       warnings:[],
-      signature:currentSignature(card),
+      signature,
       queuedAt:new Date().toISOString(),
       queueSource:'removal',
       queueRevisionChanged:true,
     };
+  }
+
+  function removalSnapshot(card){
+    const system=card.dataset.system||'';
+    return removalSnapshotForSystem(system,card,queue.get(system));
+  }
+
+  function queuePublishedRemoval(system){
+    if(!system||!publishedLoaded||!publishedForSystem(system).length)return false;
+    const existing=queue.get(system);
+    const card=[...document.querySelectorAll('.wolf-system-card')].find(node=>node.dataset.system===system)||null;
+    queue.set(system,removalSnapshotForSystem(system,card,existing));
+    queueRenderSignature='';
+    return true;
   }
 
   function shouldQueuePublishedRemoval(card,existing){
@@ -261,9 +281,13 @@
     // Preserve an existing auto candidate until the card is hydrated again,
     // unless the condition that authorized it has actually been removed.
     if(!hasPreview){
+      if(existing?.queueSource==='removal'){
+        if(publishedLoaded&&publishedForSystem(system).length)return false;
+        queue.delete(system);
+        return true;
+      }
       if(existing?.queueSource==='selector'&&!selectorFlag){queue.delete(system);return true;}
       if(existing?.queueSource==='retreat'&&!retreatFlag&&!selectorFlag){queue.delete(system);return true;}
-      if(existing?.queueSource==='removal'&&!selectorFlag&&!retreatFlag){queue.delete(system);return true;}
       return false;
     }
 
@@ -776,9 +800,13 @@
         suppressedSignatures.delete(system);
         scheduleOperationalEvaluation({forceSystem:system});
       }else{
-        const item=queue.get(system);
-        if(['selector','removal'].includes(item?.queueSource))queue.delete(system);
+        const queuedRemoval=queuePublishedRemoval(system);
+        if(!queuedRemoval){
+          const item=queue.get(system);
+          if(['selector','removal'].includes(item?.queueSource))queue.delete(system);
+        }
         suppressedSignatures.delete(system);
+        queueRenderSignature='';
         setTimeout(syncAll,0);
       }
     });
