@@ -169,7 +169,7 @@ assert.match(memberUi,/addEventListener\('hashchange',restoreMemberDeepLink\)/);
 assert.match(memberUi,/scrollIntoView/);
 assert.match(memberUi,/live-scout-setup/);
 const memberPage=readFileSync('member/index.html','utf8');
-assert.match(memberPage,/member-dashboard\.js\?v=87/);
+assert.match(memberPage,/member-dashboard\.js\?v=88/);
 const adminPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(adminPage,/data-scout-job-admin/);
 assert.match(adminPage,/wolf-bgs-scout-jobs\.js\?v=2/);
