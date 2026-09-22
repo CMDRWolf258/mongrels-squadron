@@ -1798,3 +1798,17 @@ The unified Reward Engine has moved from manual **READY → CREATE OWED ENTRY** 
 - Automatic issuance creates **OWED** debt only. It never marks an in-game payment sent or paid. Squad payment confirmation remains a deliberate Site Admin action after credits are actually transferred.
 - The per-obligation **CREATE OWED ENTRY** control is removed from the normal Reward Engine UI. The Reward Engine now identifies itself as **AUTOMATIC** / **AUTO OWED ON**.
 - Reward audit CMDR rows stay collapsed by default. Operators expand them only when they want to inspect exact provenance, blockers, duplicate suppression, or entitlement details.
+
+
+## Colonization reward start date/time — 2026-09-22
+
+Member-facing Colonization Job creation/editing now includes an explicit **Reward Start Date / Time**.
+
+- The field defaults to the member's current local time for a new post and is stored as an ISO timestamp.
+- It may be deliberately backdated so recent verified hauling that began before the website post existed can count.
+- `startsAt` is the authoritative lower eligibility boundary for Colonization contribution matching.
+- If an event predates the first archived publication but occurs at/after the explicit Reward Start, the Reward Engine may use the latest approved archived job revision as the exact rule/provenance source. This is recorded on the obligation as retroactive-start credit.
+- A pending squad-funded request still creates no squad debt. Once leadership approves the request, that approval accepts the listed Reward Start boundary, so verified hauling at/after the listed start can become eligible even if it occurred before approval.
+- A member may change the Reward Start while no reward-ledger activity exists for the job. Once ledger debt exists, the start time is locked to prevent rewriting already-earned/issued history.
+- For an already-approved squad-funded member post, only an Officer or Site Admin may change the Reward Start.
+- Saving a Colonization Job now triggers reward reconciliation immediately against already-stored Frontier evidence. If the needed journal event has not been stored yet, the hauling CMDR should use **Sync Activity**; the existing historical sync path uses the job's `startsAt` and can recover recent dated journal evidence within the configured historical lookback.
