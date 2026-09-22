@@ -1,6 +1,9 @@
 (() => {
   const section=document.querySelector('[data-daily-orders]');
   const list=section?.querySelector('[data-orders-list]');
+  const frontierConnect=section?.querySelector('[data-orders-frontier-connect]');
+  const frontierSync=section?.querySelector('[data-orders-frontier-sync]');
+  const frontierStatus=section?.querySelector('[data-orders-frontier-status]');
   if(!section||!list)return;
 
   const WEIGHTS={low:1,medium:1.3,high:1.6};
@@ -17,6 +20,76 @@
   const n=value=>Number.isFinite(Number(value))?Number(value):0;
   const fmt=value=>Number.isInteger(n(value))?String(n(value)):n(value).toFixed(1);
   const active=order=>!['complete','completed','closed','cancelled','canceled','inactive'].includes(String(order?.status||'').toLowerCase());
+
+  function frontierTime(value){
+    const date=new Date(value||'');
+    if(Number.isNaN(date.getTime()))return'never';
+    return new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(date);
+  }
+  function setFrontierStatus(text,warning=false){
+    if(!frontierStatus)return;
+    frontierStatus.hidden=false;
+    frontierStatus.textContent=text;
+    frontierStatus.classList.toggle('is-warning',Boolean(warning));
+  }
+  function renderFrontierControl(data={}){
+    if(!frontierConnect||!frontierSync)return;
+    if(!data?.configured){
+      frontierConnect.hidden=true;
+      frontierSync.hidden=true;
+      if(frontierStatus)frontierStatus.hidden=true;
+      return;
+    }
+    const reauthDue=data?.account?.reauthDueAt&&Date.parse(data.account.reauthDueAt)<=Date.now();
+    if(!data.connected||reauthDue){
+      frontierConnect.hidden=false;
+      frontierConnect.textContent=reauthDue?'Reconnect Elite':'Connect Elite';
+      frontierConnect.classList.add('is-attention');
+      frontierSync.hidden=true;
+      setFrontierStatus(reauthDue?'Elite connection needs re-authorization.':'Connect Elite to sync verified progress.',true);
+      return;
+    }
+    frontierConnect.hidden=true;
+    frontierSync.hidden=false;
+    frontierSync.classList.remove('is-attention');
+    const cooldown=data.cooldown||{};
+    if(cooldown.ready===false){
+      const seconds=Math.max(1,Number(cooldown.remainingSeconds)||0);
+      frontierSync.disabled=true;
+      frontierSync.textContent='Sync in '+(seconds<60?seconds+'s':Math.ceil(seconds/60)+'m');
+    }else{
+      frontierSync.disabled=false;
+      frontierSync.textContent='Sync Activity';
+    }
+    setFrontierStatus((data.account?.commander||'Elite CMDR')+' · last sync '+frontierTime(data.account?.lastSyncAt),false);
+  }
+  async function syncFrontierActivity(){
+    if(!frontierSync||frontierSync.disabled)return;
+    frontierSync.disabled=true;
+    frontierSync.textContent='Syncing…';
+    setFrontierStatus('Syncing Frontier activity and verified order progress…',false);
+    try{
+      const response=await fetch('/api/frontier/sync',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{Accept:'application/json','X-Mongrels-Request':'mongrel-frontier'},
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(response.status===429){
+        await load();
+        return;
+      }
+      if(!response.ok||!payload.ok)throw new Error(payload.error||'Elite sync failed');
+      setFrontierStatus('Sync complete · '+Number(payload.newEvents||0).toLocaleString()+' new verification event'+(Number(payload.newEvents||0)===1?'':'s')+'.',false);
+      await load();
+    }catch(error){
+      console.error('Daily Orders Frontier sync failed',error);
+      setFrontierStatus(String(error.message||error).includes('reauthorization')?'Reconnect Elite before syncing.':'Sync failed. Try again shortly.',true);
+      frontierSync.disabled=false;
+      frontierSync.textContent='Sync Activity';
+    }
+  }
 
   function cycleFor(order){return order?.workCycle&&typeof order.workCycle==='object'?order.workCycle:null;}
   function timerTarget(cycle){return cycle?.phase==='transition'?cycle?.cycleEndsAt:cycle?.estimatedTickAt;}
@@ -215,6 +288,7 @@
   }
 
   function render(payload,reportPayload,frontierPayload){
+    renderFrontierControl(frontierPayload||{});
     const openSystems=new Set([...list.querySelectorAll('.mc-system-order-card[open]')].map(card=>card.dataset.system));
     const orders=(Array.isArray(payload.orders)?payload.orders:[]).filter(active);
     if(!orders.length)return;
@@ -497,6 +571,7 @@
     }catch(error){console.error(error);status.textContent=error.message==='empty_report'?'Add a result before saving.':'Could not save report. Please try again.';status.dataset.state='error';button.disabled=false;}
   }
 
+  frontierSync?.addEventListener('click',syncFrontierActivity);
   function schedule(){clearTimeout(refreshTimer);refreshTimer=setTimeout(load,80);}
   window.addEventListener('pagehide',()=>{if(cycleTimer)clearInterval(cycleTimer);cycleTimer=null;});
   window.addEventListener('mongrels:orders-loaded',event=>{if(event.detail?.authenticated)schedule();});
