@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-architects.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-history.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=4">
-  <link rel="stylesheet" href="../css/scout-jobs.css?v=1">
+  <link rel="stylesheet" href="../css/scout-jobs.css?v=3">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -127,12 +127,21 @@
               </div>
               <div class="scout-jobs-admin-grid">
                 <label><span>Default reward · M Cr</span><input type="number" min="0" max="100000" step="1" data-scout-job-default value="0"></label>
-                <div><button type="button" class="btn btn-primary btn-compact" data-save-scout-job-default>SAVE DEFAULT</button></div>
-                <div class="scout-job-admin-meta">A system bonus is added on top of this amount. Zero is allowed while testing.</div>
+                <div class="scout-job-default-actions"><button type="button" class="btn btn-primary btn-compact" data-save-scout-job-default>SAVE DEFAULT</button><button type="button" class="btn btn-secondary btn-compact" data-reset-scout-job-default>RESET TO 0</button></div>
+                <div class="scout-job-admin-meta">A system bonus is added on top of this amount. Reset returns the global default to 0 Cr without changing system bonuses.</div>
                 <div class="scout-job-admin-meta" data-scout-job-admin-status>Loading Scout Job controls…</div>
               </div>
               <div class="scout-jobs-rule"><strong>Priority bonus:</strong> set an extra amount and reason on any system. By default the bonus is one-shot and clears after that system's next rewarded Scout completion; you can make it persistent instead.</div>
+              <div class="scout-job-admin-toolbar">
+                <input type="search" data-scout-job-admin-search placeholder="Search systems or priority reason…" autocomplete="off">
+                <span data-scout-job-admin-count>— systems</span>
+              </div>
               <div class="scout-jobs-admin-list" data-scout-job-admin-list><div class="scout-job-empty">Loading active systems…</div></div>
+              <div class="scout-job-admin-pagination">
+                <button type="button" class="btn btn-secondary btn-compact" data-scout-job-admin-prev>← Previous</button>
+                <span data-scout-job-admin-page>Page 1 of 1</span>
+                <button type="button" class="btn btn-secondary btn-compact" data-scout-job-admin-next>Next →</button>
+              </div>
             </div>
           </div>
         </details>
@@ -563,7 +572,7 @@
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
 <script src="../js/wolf-bgs.js?v=17"></script>
 <script src="../js/wolf-bgs-scout.js?v=4"></script>
-<script src="../js/wolf-bgs-scout-jobs.js?v=1"></script>
+<script src="../js/wolf-bgs-scout-jobs.js?v=2"></script>
 <script src="../js/wolf-bgs-rules.js?v=4"></script>
 <script src="../js/wolf-bgs-sliders.js?v=2"></script>
 <script src="../js/wolf-bgs-order-preview.js?v=6"></script>

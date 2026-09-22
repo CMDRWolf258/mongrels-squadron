@@ -924,6 +924,13 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Scout Jobs setup + admin usability — 2026-09-22
+
+- The dedicated Scout Jobs page now starts with a compact setup panel linking directly to Frontier connection, Live Scout download, README setup instructions, and the full Member Setup area.
+- Wolf BGS Scout Job controls now include an explicit **RESET TO 0** action for the global default reward in addition to normal editing/saving.
+- The Wolf BGS system reward list now has text search across system name, priority reason, and status.
+- Admin system controls are paginated client-side at **10 systems per page** by default with Previous/Next controls.
+
 ## Scout Jobs dedicated board — 2026-09-22
 
 The full Scout Jobs queue moved out of Mission Control because the expanding Mongrel system list consumed too much vertical space.
