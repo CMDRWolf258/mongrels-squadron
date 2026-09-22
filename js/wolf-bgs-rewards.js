@@ -305,6 +305,9 @@
       colonization_legacy_history_gap:'Contribution predates the durable Colonization Job baseline',
       colonization_reward_rules_changed_during_job:'Reward rules changed while verified cargo spans multiple revisions',
       colonization_overlap_ambiguous:'Contribution matches multiple equally specific Colonization Jobs',
+      colonization_member_funded_payment_flow:'Member-funded reward · payer settlement flow handles this outside the squad payout queue',
+      colonization_squad_funding_pending:'Squad-funded reward request is awaiting leadership approval',
+      colonization_squad_funding_rejected:'Squad funding request was rejected',
       existing_ledger_exceeds_entitlement:'Existing ledger credit exceeds current entitlement',
       scout_evidence_missing:'Scout Job verification evidence is missing',
     }[value]||String(value||'').replaceAll('_',' '));
