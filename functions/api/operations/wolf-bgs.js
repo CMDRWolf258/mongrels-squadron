@@ -355,6 +355,10 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const storedSettings = control.systemSettings[name] || null;
   const settings = resolveSystemSettings(control.systemDefaults, storedSettings);
   const manual = control.manualSnapshots[name] || null;
+  const rowExternalUpdated = row.sourceKind === 'scout' ? null : normalizeSourceTime(row.sourceUpdated);
+  const externalBoardUpdated = normalizeSourceTime(externalBoard?.updatedAt);
+  const scoutUpdated = normalizeSourceTime(scout?.updatedAt);
+  const manualUpdated = normalizeSourceTime(manual?.updatedAt);
   const sourceFallbackFaction = {
     name: MONGREL,
     influence: finiteOrNull(row.influence),
@@ -364,21 +368,19 @@ function buildSystem(row, externalBoard, control, scout = null) {
     activeStates: prettyStateList(row.activeStates),
     pendingStates: prettyStateList(row.pendingStates),
     recoveringStates: prettyStateList(row.recoveringStates),
-    updatedAt: row.sourceUpdated || null,
+    updatedAt: rowExternalUpdated,
     source: 'External source',
   };
   const externalFactions = normalizeExternalFactions(externalBoard?.factions);
-  const scoutFactions = normalizeScoutFactions(scout?.factions);
-  const rowExternalUpdated = row.sourceKind === 'scout' ? null : row.sourceUpdated;
-  const externalUpdated = newestTimestamp(rowExternalUpdated, externalBoard?.updatedAt);
-  const scoutUpdated = scout?.updatedAt || null;
+  const scoutFactions = normalizeScoutFactions(scout?.factions, scoutUpdated);
+  const externalUpdated = newestTimestamp(rowExternalUpdated, externalBoardUpdated);
   const trustedSourceUpdated = newestTimestamp(externalUpdated, scoutUpdated);
   const scoutIsNewer = Boolean(scoutUpdated) && compareTime(scoutUpdated, externalUpdated) > 0;
-  const manualIsNewer = Boolean(manual?.updatedAt) && compareTime(manual.updatedAt, trustedSourceUpdated) > 0;
+  const manualIsNewer = Boolean(manualUpdated) && compareTime(manualUpdated, trustedSourceUpdated) > 0;
 
   let factions;
   if (manualIsNewer && manual?.factions?.length) {
-    factions = manual.factions.map(faction => ({ ...faction, source: 'Manual' }));
+    factions = manual.factions.map(faction => ({ ...faction, source: 'Manual', updatedAt:manualUpdated }));
   } else if (scoutIsNewer && scoutFactions.length) {
     factions = scoutFactions;
   } else if (externalFactions.length) {
@@ -400,7 +402,12 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const activeController = manualIsNewer && manual?.controller
     ? manual.controller
     : (scoutIsNewer && scoutController ? scoutController : (row.control || scoutController || ''));
-  const newest = manualIsNewer ? manual.updatedAt : trustedSourceUpdated;
+  const newest = manualIsNewer ? manualUpdated : trustedSourceUpdated;
+  const factionTimes=factions.map(faction=>normalizeSourceTime(faction?.updatedAt)).filter(Boolean);
+  const boardOldestUpdatedAt=oldestTimestamp(factionTimes) || newest;
+  const boardNewestUpdatedAt=factionTimes.reduce((latest,value)=>newestTimestamp(latest,value), null) || newest;
+  const boardAgeSpreadHours=timestampSpreadHours(boardOldestUpdatedAt,boardNewestUpdatedAt);
+  const boardMixedAge=boardAgeSpreadHours !== null && boardAgeSpreadHours >= 1;
   const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
   const boardComplete = manualIsNewer
@@ -422,10 +429,12 @@ function buildSystem(row, externalBoard, control, scout = null) {
     recoveringStates,
     security: scoutIsNewer && scout?.security ? scout.security : (row.security || ''),
     population: scoutIsNewer && scout?.population !== null && scout?.population !== undefined ? scout.population : (row.population || null),
-    sourceUpdated: trustedSourceUpdated || null,
+    sourceUpdated: boardOldestUpdatedAt || trustedSourceUpdated || null,
     externalSourceUpdated:externalUpdated || null,
-    sourceFetchedAt: scoutIsNewer ? (scout?.receivedAt || scoutUpdated) : (externalBoard?.fetchedAt || row.fetchedAt || liveFallbackTimestamp(row)),
-    externalBoardUpdatedAt: externalBoard?.updatedAt || null,
+    sourceFetchedAt: scoutIsNewer ? (normalizeSourceTime(scout?.receivedAt) || scoutUpdated) : (normalizeSourceTime(externalBoard?.fetchedAt) || normalizeSourceTime(row.fetchedAt) || liveFallbackTimestamp(row)),
+    externalBoardUpdatedAt: externalBoardUpdated,
+    externalBoardOldestAt: externalFactions.length ? oldestTimestamp(externalFactions.map(faction=>faction.updatedAt).filter(Boolean)) : rowExternalUpdated,
+    externalBoardNewestAt: externalFactions.length ? externalFactions.map(faction=>faction.updatedAt).filter(Boolean).reduce((latest,value)=>newestTimestamp(latest,value), null) : externalUpdated,
     externalBoardComplete: Boolean(externalFactions.length),
     scoutBoardComplete: Boolean(scoutFactions.length),
     scoutUpdatedAt:scoutUpdated,
@@ -433,10 +442,13 @@ function buildSystem(row, externalBoard, control, scout = null) {
     scoutLabel:cleanText(scout?.scoutLabel, '', 80),
     externalBoardOk: externalBoard ? externalBoard.ok !== false : false,
     factionCount: factions.length,
-    manualUpdatedAt: manual?.updatedAt || null,
+    manualUpdatedAt: manualUpdated,
     manualUpdatedBy: manual?.updatedBy || null,
-    activeSnapshotTime: newest,
+    activeSnapshotTime: boardOldestUpdatedAt,
+    activeSnapshotNewestTime: boardNewestUpdatedAt,
     activeSnapshotSource: manualIsNewer ? 'manual' : (scoutIsNewer ? 'scout' : 'external'),
+    boardAgeSpreadHours,
+    boardMixedAge,
     boardComplete,
     factions,
     manualController: manual?.controller || '',
@@ -448,7 +460,7 @@ function buildSystem(row, externalBoard, control, scout = null) {
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
-    dataCondition: dataCondition({ sourceUpdated: trustedSourceUpdated, manualUpdatedAt: manual?.updatedAt }, freshnessLimit),
+    dataCondition: dataCondition({ sourceUpdated: boardOldestUpdatedAt, manualUpdatedAt: null }, freshnessLimit),
   };
 }
 
@@ -752,8 +764,9 @@ function boardMap(value) {
   return map;
 }
 
-function normalizeScoutFactions(value) {
+function normalizeScoutFactions(value, updatedAt = null) {
   if (!Array.isArray(value)) return [];
+  const snapshotUpdatedAt=normalizeSourceTime(updatedAt);
   return value.slice(0,20).map(row => {
     const activeStates = prettyStateList(row?.activeStates);
     const pendingStates = prettyStateList(row?.pendingStates);
@@ -767,7 +780,7 @@ function normalizeScoutFactions(value) {
       activeStates,
       pendingStates,
       recoveringStates,
-      updatedAt:null,
+      updatedAt:snapshotUpdatedAt,
       source:'Mongrel Scout',
     };
   }).filter(row => row.name);
@@ -850,7 +863,7 @@ function normalizeExternalFactions(value) {
       activeStates,
       pendingStates,
       recoveringStates,
-      updatedAt: row?.updatedAt || null,
+      updatedAt: normalizeSourceTime(row?.updatedAt),
       source: 'External source',
     };
   }).filter(row => row.name);
@@ -1037,6 +1050,31 @@ function newestTimestamp(a, b) {
   if (!a) return b || null;
   if (!b) return a;
   return compareTime(a, b) >= 0 ? a : b;
+}
+
+function oldestTimestamp(values) {
+  let oldest=null;
+  for(const value of Array.isArray(values)?values:[]){
+    const normalized=normalizeSourceTime(value);
+    if(!normalized)continue;
+    if(!oldest||compareTime(normalized,oldest)<0)oldest=normalized;
+  }
+  return oldest;
+}
+
+function timestampSpreadHours(oldest,newest){
+  const start=Date.parse(oldest||''),end=Date.parse(newest||'');
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)return null;
+  return Math.round(((end-start)/3600000)*100)/100;
+}
+
+function normalizeSourceTime(value) {
+  if (!value) return null;
+  let text=String(value).trim();
+  if (!text) return null;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(text)) text += 'Z';
+  const time=Date.parse(text);
+  return Number.isFinite(time) ? new Date(time).toISOString() : null;
 }
 
 function compareTime(a, b) {
