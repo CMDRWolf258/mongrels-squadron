@@ -18,6 +18,7 @@ export async function onRequestPost({request,env}) {
 
   let account = await getAccount(env, auth.session.sub);
   if (!account) return json({ok:false,error:'frontier_not_connected'}, {status:409,headers:privateHeaders()});
+  const previousSyncAt=account.lastSyncAt||null;
 
   const currentOrders = await readCurrentOrderCycle(env);
   const colonizationStore = await readColonizationJobs(env);
@@ -167,15 +168,21 @@ export async function onRequestPost({request,env}) {
       console.error('Could not automatically issue verified rewards after Frontier sync',error);
     }
 
+    const colonizationActivityChanged=hasNewColonizationActivity(parsed.events,{
+      previousSyncAt,
+      historicalReconciliation:Boolean(historicalText||backfillRows.length),
+    });
     let colonizationDiscord=null;
-    try{
-      colonizationDiscord=await syncAllColonizationJobsDiscord(env,{
-        actor:'Mongrel Scout · Frontier Sync',
-        controlUrl:colonizationControlUrlForRequest(request),
-        createMissing:false,
-      });
-    }catch(error){
-      console.error('Could not refresh tracked Colonization Job Discord messages after Frontier sync',error);
+    if(colonizationActivityChanged){
+      try{
+        colonizationDiscord=await syncAllColonizationJobsDiscord(env,{
+          actor:'Mongrel Scout · Frontier Sync',
+          controlUrl:colonizationControlUrlForRequest(request),
+          createMissing:false,
+        });
+      }catch(error){
+        console.error('Could not refresh tracked Colonization Job Discord messages after Frontier sync',error);
+      }
     }
 
     return json({
@@ -191,6 +198,7 @@ export async function onRequestPost({request,env}) {
       memberFundedColonization,
       automaticRewards,
       colonizationDiscord,
+      colonizationDiscordRefreshTriggered:colonizationActivityChanged,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       journalCoverage:{
@@ -218,6 +226,18 @@ export async function onRequestPost({request,env}) {
     const reauth=code.includes('reauthorization');
     return json({ok:false,error:reauth?'frontier_reauthorization_required':'frontier_sync_failed'}, {status:reauth?401:502,headers:privateHeaders()});
   }
+}
+
+function hasNewColonizationActivity(events,{previousSyncAt=null,historicalReconciliation=false}={}){
+  const rows=(Array.isArray(events)?events:[]).filter(event=>['colonization_contribution','colonization_depot'].includes(event?.type));
+  if(!rows.length)return false;
+  if(historicalReconciliation)return true;
+  const previous=Date.parse(previousSyncAt||'');
+  if(!Number.isFinite(previous))return true;
+  return rows.some(event=>{
+    const when=Date.parse(event?.timestamp||'');
+    return Number.isFinite(when)&&when>previous;
+  });
 }
 
 function colonizationControlUrlForRequest(request){
