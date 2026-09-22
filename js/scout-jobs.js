@@ -4,9 +4,16 @@
   const list=host.querySelector('[data-scout-jobs-list]');
   const search=host.querySelector('[data-scout-jobs-search]');
   const filter=host.querySelector('[data-scout-jobs-filter]');
+  const sort=host.querySelector('[data-scout-jobs-sort]');
+  const routeSource=host.querySelector('[data-scout-distance-source]');
+  const routeOptions=host.querySelector('[data-scout-distance-options]');
+  const routeStatus=host.querySelector('[data-scout-distance-status]');
+  const useLast=host.querySelector('[data-scout-use-last]');
   const status=host.querySelector('[data-scout-jobs-status]');
   const refresh=host.querySelector('[data-scout-jobs-refresh]');
   const summaryOnly=host.hasAttribute('data-scout-jobs-summary-only');
+  const SOURCE_STORAGE='mongrels-scout-distance-source-v1';
+  const SORT_STORAGE='mongrels-scout-sort-v1';
   let payload=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -33,6 +40,19 @@
     const hours=Math.floor(mins/60),rest=mins%60;
     return hours+'h '+rest+'m remaining';
   };
+  const norm=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const coordinates=value=>{
+    if(!value||typeof value!=='object')return null;
+    const x=Number(value.x),y=Number(value.y),z=Number(value.z);
+    return Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z)?{x,y,z}:null;
+  };
+  const distance=(a,b)=>{
+    const one=coordinates(a),two=coordinates(b);
+    if(!one||!two)return null;
+    return Math.sqrt((one.x-two.x)**2+(one.y-two.y)**2+(one.z-two.z)**2);
+  };
+  const remember=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
+  const recall=key=>{try{return localStorage.getItem(key)||'';}catch{return'';}};
 
   async function api(method='GET',body=null){
     const response=await fetch('/api/operations/scout-jobs'+(method==='GET'?'?_='+Date.now():'') ,{
@@ -58,10 +78,50 @@
     return{label:'AVAILABLE',cls:''};
   }
 
+  function findSystem(name){
+    const wanted=norm(name);
+    if(!wanted)return null;
+    return (payload?.jobs||[]).find(job=>norm(job.system)===wanted)||null;
+  }
+
+  function origin(){
+    const typed=String(routeSource?.value||'').trim();
+    const job=findSystem(typed);
+    if(job&&coordinates(job.coords))return{system:job.system,coords:job.coords,source:job.coordinateSource||'System catalog'};
+    const last=payload?.viewer?.lastScoutLocation;
+    if(last&&norm(last.system)===norm(typed)&&coordinates(last.coords))return{system:last.system,coords:last.coords,source:last.coordinateSource||'Live Scout'};
+    return null;
+  }
+
+  function jobDistance(job,from=origin()){
+    if(!from)return null;
+    return distance(from.coords,job.coords);
+  }
+
+  function sortJobs(rows){
+    const mode=String(sort?.value||'priority');
+    const from=origin();
+    const statusRank=value=>({available:0,claimed:1,fresh_unattributed:2,fresh:3,disabled:4})[value]??9;
+    const reward=job=>Number(job.reward?.totalMillions)||0;
+    const priority=job=>Number(job.reward?.bonusMillions)>0?1:0;
+    const dist=job=>{
+      const value=jobDistance(job,from);
+      return Number.isFinite(value)?value:Number.POSITIVE_INFINITY;
+    };
+    const name=(a,b)=>String(a.system||'').localeCompare(String(b.system||''));
+    return [...rows].sort((a,b)=>{
+      if(mode==='distance')return dist(a)-dist(b)||priority(b)-priority(a)||statusRank(a.status)-statusRank(b.status)||name(a,b);
+      if(mode==='priority-distance')return priority(b)-priority(a)||dist(a)-dist(b)||reward(b)-reward(a)||statusRank(a.status)-statusRank(b.status)||name(a,b);
+      if(mode==='reward')return reward(b)-reward(a)||dist(a)-dist(b)||name(a,b);
+      if(mode==='name')return name(a,b);
+      return priority(b)-priority(a)||statusRank(a.status)-statusRank(b.status)||name(a,b);
+    });
+  }
+
   function filteredJobs(){
     const q=String(search?.value||'').trim().toLowerCase();
     const wanted=String(filter?.value||'open');
-    return (payload?.jobs||[]).filter(job=>{
+    const rows=(payload?.jobs||[]).filter(job=>{
       if(q&&!String(job.system||'').toLowerCase().includes(q)&&!String(job.reward?.bonusReason||'').toLowerCase().includes(q))return false;
       if(wanted==='open')return ['available','claimed'].includes(job.status);
       if(wanted==='available')return job.status==='available';
@@ -70,6 +130,49 @@
       if(wanted==='fresh')return job.status.startsWith('fresh');
       return true;
     });
+    return sortJobs(rows);
+  }
+
+  function setupRouteControls(){
+    if(!payload||summaryOnly)return;
+    const jobs=payload.jobs||[];
+    if(routeOptions)routeOptions.innerHTML=jobs.map(job=>'<option value="'+esc(job.system)+'"></option>').join('');
+
+    if(sort){
+      const savedSort=recall(SORT_STORAGE);
+      if(savedSort&&[...sort.options].some(option=>option.value===savedSort))sort.value=savedSort;
+    }
+    if(routeSource&&!routeSource.value){
+      const savedSource=recall(SOURCE_STORAGE);
+      if(savedSource&&findSystem(savedSource))routeSource.value=findSystem(savedSource).system;
+    }
+
+    const last=payload.viewer?.lastScoutLocation;
+    if(useLast){
+      useLast.hidden=!(last?.system&&coordinates(last?.coords));
+      if(!useLast.hidden){
+        useLast.textContent='Use Last Scout · '+last.system;
+        useLast.title='Use '+last.system+' as the route finder starting system';
+      }
+    }
+    updateRouteStatus();
+  }
+
+  function updateRouteStatus(){
+    if(!routeStatus||!payload)return;
+    const typed=String(routeSource?.value||'').trim();
+    const from=origin();
+    const coordinateCount=Number(payload.summary?.coordinates||0);
+    const total=Number(payload.summary?.systems||payload.jobs?.length||0);
+    if(!typed){
+      routeStatus.textContent='Coordinate coverage '+coordinateCount.toLocaleString()+' / '+total.toLocaleString()+' systems · select a starting system to calculate distances.';
+      return;
+    }
+    if(!from){
+      routeStatus.textContent='Choose a tracked system with known coordinates from the search list.';
+      return;
+    }
+    routeStatus.textContent='Distances from '+from.system+' · '+coordinateCount.toLocaleString()+' / '+total.toLocaleString()+' tracked systems are coordinate-ready.';
   }
 
   function render(){
@@ -91,7 +194,10 @@
       binding.textContent='Your website account does not currently have a Live Scout token bound to it. You can still view the board, but Scout Job rewards cannot be attributed until leadership binds your token.';
     }
 
+    setupRouteControls();
+    const from=origin();
     const jobs=filteredJobs();
+    updateRouteStatus();
     if(!jobs.length){
       list.innerHTML='<div class="scout-job-empty"><strong>No Scout Jobs match this view.</strong><br>Fresh systems return to the available queue when their next tick-aware cycle begins.</div>';
       return;
@@ -117,9 +223,18 @@
           ? '<button type="button" class="btn btn-primary btn-compact" data-scout-claim="'+esc(job.system)+'" '+(job.canClaim?'':'disabled')+'>CLAIM 60 MIN</button>'
           : '';
 
+      const ly=jobDistance(job,from);
+      const distanceStrong=from
+        ? (Number.isFinite(ly)?ly.toFixed(1)+' LY':'Unknown')
+        : '—';
+      const distanceSmall=from
+        ? (Number.isFinite(ly)?'from '+from.system:'Coordinates unavailable')
+        : 'Select starting system';
+
       return '<article class="scout-job-card '+(bonus>0?'is-priority ':'')+(job.status==='claimed'?'is-claimed ':'')+(job.status.startsWith('fresh')?'is-fresh ':'')+'">'
         +'<div class="scout-job-main"><div class="scout-job-system-line"><strong>'+esc(job.system)+'</strong><button type="button" class="scout-job-copy-system" data-scout-copy-system="'+esc(job.system)+'" title="Copy system name" aria-label="Copy '+esc(job.system)+'">⧉</button><em aria-live="polite"></em></div><span class="scout-job-status '+esc(info.cls)+'">'+esc(info.label)+'</span><small>Last Live Scout board: '+esc(job.latestScoutAt?fmtTime(job.latestScoutAt)+' · '+age(job.latestScoutAt):'Never')+'</small></div>'
         +'<div class="scout-job-meta"><span>REWARD</span><strong class="scout-job-reward">'+esc(fmtCredits(total))+'</strong><small>'+esc(fmtCredits(base))+' base'+(bonus>0?' + '+esc(fmtCredits(bonus))+' bonus':'')+'</small></div>'
+        +'<div class="scout-job-meta scout-job-distance"><span>DISTANCE</span><strong>'+esc(distanceStrong)+'</strong><small>'+esc(distanceSmall)+'</small></div>'
         +'<div class="scout-job-meta"><span>SYSTEM TICK</span><strong>'+esc(job.cycle?.tickConfiguredTime||'19:00')+' CT</strong><small>Cycle boundary '+esc(fmtTime(job.cycle?.cycleEndsAt))+'</small></div>'
         +'<div class="scout-job-meta"><span>CYCLE</span><strong>'+esc(job.dataFresh?'CURRENT DATA':'NEEDS SCOUT')+'</strong><small>'+esc(countdown(job.cycle?.cycleEndsAt))+'</small></div>'
         +'<div class="scout-job-actions">'+action+'</div>'
@@ -182,6 +297,26 @@
   });
   search?.addEventListener('input',render);
   filter?.addEventListener('change',render);
+  sort?.addEventListener('change',()=>{remember(SORT_STORAGE,sort.value);render();});
+  routeSource?.addEventListener('input',()=>{updateRouteStatus();render();});
+  routeSource?.addEventListener('change',()=>{
+    const exact=findSystem(routeSource.value);
+    if(exact){
+      routeSource.value=exact.system;
+      remember(SOURCE_STORAGE,exact.system);
+      if(sort){sort.value='distance';remember(SORT_STORAGE,'distance');}
+    }
+    render();
+  });
+  useLast?.addEventListener('click',()=>{
+    const last=payload?.viewer?.lastScoutLocation;
+    if(!last?.system||!coordinates(last.coords))return;
+    if(routeSource)routeSource.value=last.system;
+    if(sort)sort.value='distance';
+    remember(SOURCE_STORAGE,last.system);
+    remember(SORT_STORAGE,'distance');
+    render();
+  });
   refresh?.addEventListener('click',load);
   load();
   window.setInterval(()=>{if(document.visibilityState==='visible')load();},60000);
