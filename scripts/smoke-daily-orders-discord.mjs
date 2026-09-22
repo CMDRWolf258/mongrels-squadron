@@ -111,6 +111,6 @@ const ordersApi=readFileSync('functions/api/operations/orders.js','utf8');
 for(const pattern of [/syncDailyOrdersDiscord/,/clearDailyOrdersDiscord/,/missionControlUrlForRequest/,/discord,/])assert.match(ordersApi,pattern);
 
 const publisher=readFileSync('js/wolf-bgs-publish.js','utf8');
-for(const pattern of [/data\?\.discord\?\.ok/,/Discord announcement updated/,/Discord sync failed/])assert.match(publisher,pattern);
+for(const pattern of [/data\?\.discord\?\.ok/,/data\.discord\.mode==='edited'/,/announcement updated\./,/Discord sync failed/])assert.match(publisher,pattern);
 
 console.log('✓ Daily Orders create, edit, replace-cycle, clear, and publish-status Discord behavior is wired');
