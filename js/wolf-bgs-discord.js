@@ -4,6 +4,7 @@
   const testButton=panel.querySelector('[data-discord-test]');
   const syncOrdersButton=panel.querySelector('[data-discord-sync-orders]');
   const syncColonizationButton=panel.querySelector('[data-discord-sync-colonization]');
+  const syncScoutButton=panel.querySelector('[data-discord-sync-scout]');
   const status=panel.querySelector('[data-discord-status]');
 
   function setStatus(message,state=''){
@@ -17,6 +18,7 @@
     if(testButton)testButton.disabled=disabled;
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
+    if(syncScoutButton)syncScoutButton.disabled=disabled;
   }
 
   async function api(path,method='GET'){
@@ -48,7 +50,7 @@
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
         setButtons(false);
-        setStatus('Webhook secret detected · Daily Orders and Colonization automation are ready.','success');
+        setStatus('Webhook secret detected · Daily Orders, Colonization, and Scout automation are ready.','success');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -102,6 +104,35 @@
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
       setStatus(messages[error.message]||'Colonization Jobs Discord sync failed · '+String(error.message||error),'error');
+    }finally{
+      setButtons(false);
+    }
+  });
+
+  syncScoutButton?.addEventListener('click',async()=>{
+    setButtons(true);
+    setStatus('Syncing Scout Operations to Discord…','working');
+    try{
+      const data=await api('/api/operations/discord-scout-jobs','POST');
+      const summary=data.discord||{};
+      const parts=[];
+      if(Number(summary.displayedPriority)>0)parts.push(Number(summary.displayedPriority)+' priority');
+      parts.push(Number(summary.displayedOrdinary||0)+' nearest needs scouting');
+      if(Number(summary.created)>0)parts.push(Number(summary.created)+' priority card'+(Number(summary.created)===1?'':'s')+' posted');
+      if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
+      if(Number(summary.completionShown)>0)parts.push(Number(summary.completionShown)+' completion'+(Number(summary.completionShown)===1?'':'s')+' shown');
+      if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' old card'+(Number(summary.deleted)===1?'':'s')+' cleaned up');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
+      if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
+      setStatus('Scout Operations synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+    }catch(error){
+      const messages={
+        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
+        discord_scout_sync_failed:'Scout Board remains available on the site, but Discord sync failed.',
+        request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
+      };
+      setStatus(messages[error.message]||'Scout Jobs Discord sync failed · '+String(error.message||error),'error');
     }finally{
       setButtons(false);
     }
