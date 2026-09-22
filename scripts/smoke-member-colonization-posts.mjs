@@ -28,7 +28,7 @@ class MemoryKv {
   }
 }
 
-const memberJob=normalizeColonizationJob({
+const memberJob={...normalizeColonizationJob({
   id:'member-job',
   title:'Member funded build',
   system:'Test System',
@@ -47,7 +47,7 @@ const memberJob=normalizeColonizationJob({
   createdAt:'2026-09-22T12:00:00.000Z',
   createdBy:'Payer',
   updatedBy:'Payer',
-});
+}),revisionStartedAt:'2026-09-22T12:00:00.000Z',updatedAt:'2026-09-22T12:00:00.000Z'};
 assert.equal(memberJob.fundingMode,'member');
 assert.equal(memberJob.fundingApprovalStatus,'approved');
 assert.equal(memberJob.fundingPayerOwnerId,'payer-user');
