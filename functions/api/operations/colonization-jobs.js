@@ -15,7 +15,7 @@ import {
   markColonizationJobPublicationFailed,
   prepareColonizationJobPublication,
 } from '../../../lib/colonization-job-history.js';
-import { archiveColonizationJobDiscord, syncColonizationJobDiscord } from '../../../lib/colonization-discord.js';
+import { syncColonizationMutationDiscord } from '../../../lib/colonization-discord.js';
 
 export async function onRequestGet({request,env}) {
   const auth=await requireSiteAdmin(request,env);
@@ -225,23 +225,16 @@ export async function onRequestPut({request,env}) {
 
   let discord=null;
   try{
-    if(action==='delete'&&removedJob){
-      discord=await archiveColonizationJobDiscord(env,{
-        job:removedJob,
-        actor,
-        controlUrl:colonizationControlUrlForRequest(request),
-      });
-    }else if(targetJob){
-      discord=await syncColonizationJobDiscord(env,{
-        job:targetJob,
-        actor,
-        controlUrl:colonizationControlUrlForRequest(request),
-        createMissing:action==='create',
-      });
-    }
+    discord=await syncColonizationMutationDiscord(env,{
+      action,
+      job:targetJob,
+      removedJob,
+      actor,
+      controlUrl:colonizationControlUrlForRequest(request),
+    });
   }catch(error){
     console.error('Colonization Job saved but Discord sync failed',error);
-    discord={feature:'colonization_job',configured:true,attempted:true,ok:false,mode:'failed',error:'discord_colonization_sync_failed'};
+    discord={feature:'colonization_job_mutation',configured:true,attempted:true,ok:false,mode:'failed',error:'discord_colonization_sync_failed'};
   }
 
   return reply({
