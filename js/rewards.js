@@ -246,7 +246,7 @@
       const response=await fetch('/api/rewards/member-payments',{
         method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'member-reward-payment'},
-        body:JSON.stringify({action,entryId:entry.id,ownerId:entry.ownerId}),
+        body:JSON.stringify({action,entryId:entry.id}),
       });
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.message||payload.error||'Payment update failed');
