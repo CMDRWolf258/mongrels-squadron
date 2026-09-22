@@ -2,6 +2,7 @@ import { json } from '../../../lib/auth.js';
 import { buildScoutJobBoard, hasActiveScoutClaim, recordScoutObservation } from '../../../lib/scout-jobs.js';
 import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
+import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
@@ -105,6 +106,20 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
+  let bgsDiscord=null;
+  if(stored){
+    try{
+      const bgsView=await loadBgsDiscordView(request,env);
+      bgsDiscord=await syncBgsDiscordBoard(env,{
+        view:bgsView,
+        missionControlUrl:new URL('/wolf-bgs/#faction-alerts',request.url).toString(),
+        createMissing:false,
+      });
+    }catch(error){
+      console.error('Live Scout snapshot saved but BGS Discord refresh failed',error);
+    }
+  }
+
   let scoutDiscord=null;
   if(stored&&scoutJob?.recorded){
     try{
@@ -133,6 +148,7 @@ export async function onRequestPost({ request, env }) {
     scoutJob,
     automaticRewards,
     scoutDiscord,
+    bgsDiscord,
   }, 200);
 }
 
