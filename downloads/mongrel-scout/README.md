@@ -12,7 +12,7 @@ Mongrel Scout sends a sanitized BGS snapshot directly to Wolf BGS Control whenev
 6. In **Settings → Mongrel Scout**, paste the one-time scout token Wolf gives you.
 7. Leave **Enable Mongrel Scout** checked.
 
-After that, just play Elite. Jumping into a Mongrel system is enough when the journal event contains its faction board.
+After that, just play Elite. Jumping into a Mongrel system is enough when the journal event contains its faction board. Scout is event-driven, not a continuous poller: if you are already sitting in a system and need a fresh post-tick board, jump out and back in so Elite writes a new FSDJump faction board.
 
 ## What is transmitted
 

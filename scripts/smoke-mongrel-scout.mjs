@@ -102,7 +102,7 @@ for(const pattern of [
   /normalizeScoutFactions/,
   /scoutConflictScore/,
   /scoutPresenceRow/,
-  /activeSnapshotSource: manualIsNewer \? 'manual' : \(scoutIsNewer \? 'scout'/,
+  /activeSnapshotSource: activeSource/,
   /scoutActiveCount/,
 ])assert.match(bgsApi,pattern);
 
@@ -178,6 +178,46 @@ assert.equal(payload.systems[0].boardMixedAge,true);
 assert.ok(payload.systems[0].boardAgeSpreadHours>6);
 console.log('✓ Mixed-age external boards expose complete-board freshness instead of newest-row freshness');
 
+const newerScout={
+  ...scoutSnapshot,
+  updatedAt:'2026-09-21T23:00:00Z',
+  receivedAt:'2026-09-21T23:00:02Z',
+  factions:[
+    {name:'Regiment of Imperial Mongrels',influence:51,state:'Boom',activeStates:['Boom'],pendingStates:[],recoveringStates:[]},
+    {name:'Opponent Faction',influence:49,state:'None',activeStates:[],pendingStates:[],recoveringStates:[]},
+  ],
+};
+payload=bgs.buildPayload(
+  {systems:[{name:'Scout Test',influence:44,control:'Regiment of Imperial Mongrels',state:'Boom',sourceUpdated:'2026-09-21T18:18:24.737000',present:true}],source:'test'},
+  {systems:{'Scout Test':mixedExternalBoard},syncOk:true,successfulSystems:1,requestedSystems:1},
+  control,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{'Scout Test':newerScout}}
+);
+assert.equal(payload.systems[0].activeSnapshotSource,'scout','Scout must win while any required external faction row is older than the Scout board');
+assert.equal(payload.systems[0].activeSnapshotTime,'2026-09-21T23:00:00.000Z');
+assert.equal(payload.systems[0].influence,51);
+console.log('✓ Coherent Scout board stays active until the whole external board is newer');
+
+const allExternalNewer={
+  ...mixedExternalBoard,
+  updatedAt:'2026-09-22T01:05:48.298000',
+  factions:mixedExternalBoard.factions.map((row,index)=>({
+    ...row,
+    updatedAt:index===0?'2026-09-22T00:30:00.000000':'2026-09-22T01:05:48.298000',
+  })),
+};
+payload=bgs.buildPayload(
+  {systems:[{name:'Scout Test',influence:44,control:'Regiment of Imperial Mongrels',state:'Boom',sourceUpdated:'2026-09-22T00:30:00.000000',present:true}],source:'test'},
+  {systems:{'Scout Test':allExternalNewer},syncOk:true,successfulSystems:1,requestedSystems:1},
+  control,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{'Scout Test':newerScout}}
+);
+assert.equal(payload.systems[0].activeSnapshotSource,'external','External may replace Scout only after every faction row is newer');
+assert.equal(payload.systems[0].activeSnapshotTime,'2026-09-22T00:30:00.000Z');
+console.log('✓ External board takes over only when the complete board is newer than Scout');
+
 const manualControl={
   ...control,
   manualSnapshots:{
@@ -214,6 +254,15 @@ payload=bgs.buildPayload(
 );
 assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
 
+const memberPage=readFileSync('member/index.html','utf8');
+for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/member-dashboard\.js\?v=83/])assert.match(memberPage,pattern);
+const memberUi=readFileSync('js/member-dashboard.js','utf8');
+for(const pattern of [/Live Scout \(EDMC\) · Faction-board setup/,/jump out and back in/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
+const operationsPage=readFileSync('operations/index.html','utf8');
+assert.match(operationsPage,/Connect Elite & Scout/);
+assert.match(operationsPage,/\.\.\/member\/#mongrel-scout/);
+new Function(memberUi);
+
 const page=readFileSync('wolf-bgs/index.html','utf8');
 for(const pattern of [/Scout Network/,/data-scout-network/,/Restricted Scout/,/Trusted Scout/,/data-scout-create-systems/,/Download Mongrel Scout \(\.zip\)/,/\/api\/downloads\/mongrel-scout/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
 
@@ -230,7 +279,10 @@ for(const pattern of [
 ])assert.match(scoutCss,pattern);
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for(const pattern of [/wolf-scout-source-chip/,/wolf-mixed-source-chip/,/Active board complete through/,/External board oldest/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/,/parsedTime/])assert.match(baseClient,pattern);
+for(const pattern of [/wolf-scout-source-chip/,/Active board/,/Refresh with Scout:/,/jump out and back in/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/,/parsedTime/])assert.match(baseClient,pattern);
+assert.doesNotMatch(baseClient,/External board newest/);
+assert.doesNotMatch(baseClient,/External board oldest/);
+assert.doesNotMatch(baseClient,/Mixed \/ Stale/);
 new Function(baseClient);
 
 

@@ -256,8 +256,7 @@
 
   function freshnessStatus(system) {
     if (!system.activeSnapshotTime) return { key:'unknown', label:'Unknown' };
-    if (system.dataCondition === 'stale') return { key:'stale', label:system.boardMixedAge ? 'Mixed / Stale' : 'Stale' };
-    if (system.boardMixedAge) return { key:'fresh', label:'Fresh · Mixed' };
+    if (system.dataCondition === 'stale') return { key:'stale', label:'Stale' };
     return { key:'fresh', label:'Fresh' };
   }
 
@@ -290,7 +289,7 @@
       <td><input data-faction="state" maxlength="120" value="${html(faction?.state || 'None')}" placeholder="None"></td>
       <td><input data-faction="pending" maxlength="240" value="${html(faction?.pending || '')}" placeholder="None"></td>
       <td><input data-faction="recovering" maxlength="240" value="${html(faction?.recovering || '')}" placeholder="None"></td>
-      <td><span class="wolf-row-source">${html(faction?.source || (index === 0 ? 'External source' : 'Manual'))}${faction?.updatedAt ? `<small>${html(age(faction.updatedAt))}</small>` : ''}</span></td>
+      <td><span class="wolf-row-source">${html(faction?.source || (index === 0 ? 'External source' : 'Manual'))}</span></td>
       <td><button type="button" class="wolf-mini-button" data-remove-faction aria-label="Remove faction">×</button></td>
     </tr>`;
   }
@@ -310,17 +309,11 @@
     const snapshotSourceLabel = manualNewer ? 'Manual' : (scoutActive ? `Scout${system.scoutLabel ? ` · ${system.scoutLabel}` : ''}` : 'External');
     const favorite = Boolean(settings.favorite);
     const queueSelected = Boolean(settings.queueSelected);
-    const mixedBoardWarning = system.boardMixedAge
-      ? `<div class="wolf-danger-note">This board contains faction rows from different update times. Freshness is based on the oldest row needed for the complete board, not the newest row.</div>`
+    const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">A complete trusted faction board is not available for this system yet. Jump into the system with Mongrel Scout or submit a manual board as a fallback.</div>`;
+    const activeBoardAge=age(system.activeSnapshotTime);
+    const scoutRefreshHelp=system.scoutBoardComplete
+      ? '<div class="wolf-scout-refresh-help"><strong>Refresh with Scout:</strong> Scout updates on FSDJump, Location, or CarrierJump. If you are already parked in this system, jump out and back in to force a fresh full faction board.</div>'
       : '';
-    const boardWarning = system.boardComplete ? mixedBoardWarning : `<div class="wolf-danger-note">A complete trusted faction board is not available for this system yet. The Mongrel presence row remains available, and a manual full-board snapshot can be submitted as a fallback.</div>`;
-    const boardChip = scoutActive && system.scoutBoardComplete
-      ? `<span class="wolf-chip wolf-scout-source-chip">Scout board <b>${html(system.factionCount || factions.length)} factions</b></span>`
-      : (system.externalBoardComplete
-        ? `<span class="wolf-chip">External board <b>${html(system.factionCount || factions.length)} factions</b></span>`
-        : (system.scoutBoardComplete
-          ? `<span class="wolf-chip wolf-scout-source-chip">Scout board available <b>${html(system.factionCount || factions.length)} factions</b></span>`
-          : '<span class="wolf-chip">External board <b>awaiting data</b></span>'));
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
     const score = system.conflictScore || null;
     const timeline = system.conflictTimeline || null;
@@ -352,23 +345,19 @@
       <div class="wolf-system-body">
         <div class="wolf-system-topline">
           ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
-          <span class="wolf-chip">External board newest <b>${html(fmt(system.externalBoardNewestAt || system.externalBoardUpdatedAt || system.externalSourceUpdated))}</b></span>
-          ${system.externalBoardOldestAt ? `<span class="wolf-chip ${system.boardMixedAge ? 'wolf-mixed-source-chip' : ''}">External board oldest <b>${html(fmt(system.externalBoardOldestAt))}</b></span>` : ''}
-          ${system.scoutUpdatedAt ? `<span class="wolf-chip wolf-scout-source-chip">Scout board <b>${html(age(system.scoutUpdatedAt))}</b>${system.scoutLabel ? ` · ${html(system.scoutLabel)}` : ''}</span>` : ''}
-          <span class="wolf-chip">Manual update <b>${html(fmt(system.manualUpdatedAt))}</b></span>
-          <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active board complete through <b>${html(snapshotSourceLabel)} · ${html(fmt(system.activeSnapshotTime))}</b></span>
+          <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active board <b>${html(snapshotSourceLabel)} · ${html(activeBoardAge)}</b></span>
           <span class="wolf-chip">Freshness limit <b>${html(freshHours)}h</b></span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
           ${timeline && timeline.phase !== 'none' ? `<span class="wolf-chip wolf-conflict-day-chip">Conflict day <b>${html(dayText || 'DAY ?')}</b>${daySource ? ` · ${html(daySource)}` : ''}${timeline.overdue ? ' · VERIFY' : ''}</span>` : ''}
           ${score ? `<span class="wolf-chip wolf-conflict-score-chip">Conflict score <b>${html(conflictScoreText(system))}</b>${score.opponentFaction ? ` vs ${html(score.opponentFaction)}` : ''}${scoreAge ? ` · ${html(scoreAge)}` : ''}${score.stale ? ' · last known' : ''}</span>` : ''}
-          ${boardChip}
           ${system.hasCustomSettings ? '<span class="wolf-chip custom">Custom settings</span>' : '<span class="wolf-chip">System defaults</span>'}
         </div>
+        ${scoutRefreshHelp}
         <div class="wolf-subgrid">
           <div>
             <section class="wolf-section">
               <h3>System Status & Faction Board</h3>
-              <p class="wolf-section-intro">All faction rows are editable. Origin shows each faction row's data age. Submit Status creates one coherent manual board and becomes authoritative when it is newer.</p>
+              <p class="wolf-section-intro">All faction rows below come from the active board shown above. Submit Status creates one coherent manual board and becomes authoritative when it is newer.</p>
               ${boardWarning}
               <div class="wolf-table-scroll"><table class="wolf-faction-table"><thead><tr><th>Faction</th><th>Influence %</th><th>State</th><th>Pending</th><th>Recovering</th><th>Origin</th><th></th></tr></thead><tbody data-faction-body>${factions.map(rowTemplate).join('')}</tbody></table></div>
               <div class="wolf-faction-actions"><button type="button" class="wolf-mini-button" data-add-faction>+ Add Faction</button><span class="wolf-status-message" data-status-message></span></div>
