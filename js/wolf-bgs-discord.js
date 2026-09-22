@@ -5,6 +5,7 @@
   const syncOrdersButton=panel.querySelector('[data-discord-sync-orders]');
   const syncColonizationButton=panel.querySelector('[data-discord-sync-colonization]');
   const syncScoutButton=panel.querySelector('[data-discord-sync-scout]');
+  const syncBgsButton=panel.querySelector('[data-discord-sync-bgs]');
   const status=panel.querySelector('[data-discord-status]');
 
   function setStatus(message,state=''){
@@ -19,6 +20,7 @@
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
     if(syncScoutButton)syncScoutButton.disabled=disabled;
+    if(syncBgsButton)syncBgsButton.disabled=disabled;
   }
 
   async function api(path,method='GET'){
@@ -110,6 +112,29 @@
     }finally{
       setButtons(false);
     }
+  });
+
+  syncBgsButton?.addEventListener('click',async()=>{
+    setButtons(true);
+    setStatus('Syncing BGS Alerts & Opportunities to Discord…','working');
+    try{
+      const data=await api('/api/operations/discord-bgs-alerts','POST');
+      const summary=data.discord||{};
+      const parts=[
+        Number(summary.actionCount||0)+' action alert'+(Number(summary.actionCount||0)===1?'':'s'),
+        Number(summary.opportunityCount||0)+' opportunity system'+(Number(summary.opportunityCount||0)===1?'':'s'),
+      ];
+      if(Number(summary.created)>0)parts.push(Number(summary.created)+' card'+(Number(summary.created)===1?'':'s')+' posted');
+      if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
+      if(Number(summary.resolvedShown)>0)parts.push(Number(summary.resolvedShown)+' resolved');
+      if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' cleaned up');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('summary updated');
+      if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
+      setStatus('BGS Discord synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+    }catch(error){
+      setStatus('BGS Alerts Discord sync failed · '+String(error.message||error),'error');
+    }finally{setButtons(false);}
   });
 
   syncScoutButton?.addEventListener('click',async()=>{
