@@ -1812,3 +1812,16 @@ Member-facing Colonization Job creation/editing now includes an explicit **Rewar
 - A member may change the Reward Start while no reward-ledger activity exists for the job. Once ledger debt exists, the start time is locked to prevent rewriting already-earned/issued history.
 - For an already-approved squad-funded member post, only an Officer or Site Admin may change the Reward Start.
 - Saving a Colonization Job now triggers reward reconciliation immediately against already-stored Frontier evidence. If the needed journal event has not been stored yet, the hauling CMDR should use **Sync Activity**; the existing historical sync path uses the job's `startsAt` and can recover recent dated journal evidence within the configured historical lookback.
+
+
+## Tick-cycle data freshness — 2026-09-22
+
+BGS data freshness is now based on the **per-system BGS tick cycle**, not a fixed number of elapsed hours.
+
+- A system snapshot is **Fresh** when its authoritative snapshot timestamp falls within that system's current `resolveSystemWorkCycle(...)` window.
+- Once the system rolls into the next cycle, the previous-cycle snapshot becomes **Stale** even if it is only a few hours old.
+- Conversely, a snapshot can remain Fresh for much longer than the old 8-hour limit when it still belongs to the current cycle.
+- The existing transition buffer remains part of the cycle boundary. During the configured post-tick transition window, the previous cycle remains authoritative; the new cycle begins when that transition window closes.
+- Per-system custom tick times are honored. Systems without an override use the global default tick.
+- The old global `freshnessHours` and per-system `freshnessHours` controls are retired from the BGS Control UI and normalized settings. Global Defaults now show the fixed policy **Current BGS cycle**.
+- BGS Control and Mission Control / All Systems use the same tick-cycle interpretation. Mission Control also continues to prefer a newer authenticated Live Scout snapshot over older EDDN data and identifies that source in the freshness detail.

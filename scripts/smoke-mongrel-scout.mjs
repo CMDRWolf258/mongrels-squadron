@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -107,10 +108,11 @@ for(const pattern of [
 ])assert.match(bgsApi,pattern);
 
 const bgsFactory=new Function(
+  'resolveSystemWorkCycle',
   bgsApi.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
   '; return {buildPayload,DEFAULTS,SYSTEM_DEFAULTS};'
 );
-const bgs=bgsFactory();
+const bgs=bgsFactory(resolveSystemWorkCycle);
 const control={
   defaults:{...bgs.DEFAULTS},
   systemDefaults:{...bgs.SYSTEM_DEFAULTS},

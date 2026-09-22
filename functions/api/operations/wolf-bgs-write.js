@@ -6,7 +6,7 @@ const ALERT_FAMILIES = new Set(['retreat','conflict','bust','civil-unrest']);
 
 const DEFAULTS = {
   defaultTick: '19:00',
-  freshnessHours: 8,
+  freshnessMode: 'tick-cycle',
   transitionMinutes: 90,
   lateGraceHours: 3,
   maxDailySystems: 6,
@@ -38,7 +38,7 @@ const OVERRIDE_KEYS = [
   'priority', 'controlPolicy', 'targetMin', 'targetMax', 'desiredStates', 'avoidStates',
   'protectRetreat', 'avoidExpansion', 'allowDailyOrders', 'autoGenerateOrders',
   'emergencyOverride', 'reactRetreat', 'reactConflict', 'reactExpansion',
-  'reactInfluence', 'reactStates', 'customTick', 'freshnessHours', 'rolloverPolicy',
+  'reactInfluence', 'reactStates', 'customTick', 'rolloverPolicy',
 ];
 
 export async function onRequestGet({ request, env }) {
@@ -277,10 +277,6 @@ function normalizeSystemOverrides(value = {}, baseDefaults = SYSTEM_DEFAULTS) {
   }
 
   if (validTime(value.customTick)) out.customTick = value.customTick;
-  if (value.freshnessHours !== '' && value.freshnessHours !== null && value.freshnessHours !== undefined) {
-    const freshnessHours = clampNumber(value.freshnessHours, 1, 72, null);
-    if (freshnessHours !== null) out.freshnessHours = freshnessHours;
-  }
   if (['strict', 'safety', 'carry'].includes(value.rolloverPolicy)) out.rolloverPolicy = value.rolloverPolicy;
 
   const notes = cleanText(value.notes, '', 1200);
@@ -317,7 +313,7 @@ function normalizeManualSnapshot(value = {}, now, actor) {
 function normalizeDefaults(value = {}) {
   return {
     defaultTick: validTime(value.defaultTick) ? value.defaultTick : DEFAULTS.defaultTick,
-    freshnessHours: clampNumber(value.freshnessHours, 1, 72, DEFAULTS.freshnessHours),
+    freshnessMode: 'tick-cycle',
     transitionMinutes: clampNumber(value.transitionMinutes, 0, 360, DEFAULTS.transitionMinutes),
     lateGraceHours: clampNumber(value.lateGraceHours, 0, 24, DEFAULTS.lateGraceHours),
     maxDailySystems: Math.round(clampNumber(value.maxDailySystems, 1, 12, DEFAULTS.maxDailySystems)),

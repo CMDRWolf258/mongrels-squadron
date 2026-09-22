@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { resolveSystemWorkCycle } from '../../../lib/daily-order-cycle.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const SCOUT_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
@@ -8,7 +9,7 @@ const CONFLICT_STATES = new Set(['war','civil war','election']);
 
 const DEFAULTS = {
   defaultTick: '19:00',
-  freshnessHours: 8,
+  freshnessMode: 'tick-cycle',
   transitionMinutes: 90,
   lateGraceHours: 3,
   maxDailySystems: 6,
@@ -286,7 +287,7 @@ function buildPayload(live, boards, control, session, scoutState = {systems:{}})
   }
 
   const systems = [...rowsBySystem.values()]
-    .map(row => buildSystem(row, boardsBySystem.get(norm(row.name)) || null, control, scoutsBySystem.get(norm(row.name)) || null))
+    .map(row => buildSystem(row, boardsBySystem.get(norm(row.name)) || null, control, scoutsBySystem.get(norm(row.name)) || null, new Date()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const sourceAges = systems.map(s => ageHours(s.sourceUpdated)).filter(Number.isFinite);
@@ -350,7 +351,7 @@ function normalizeConflictScore(value, stale = false) {
   };
 }
 
-function buildSystem(row, externalBoard, control, scout = null) {
+function buildSystem(row, externalBoard, control, scout = null, now = new Date()) {
   const name = String(row.name);
   const storedSettings = control.systemSettings[name] || null;
   const settings = resolveSystemSettings(control.systemDefaults, storedSettings);
@@ -420,7 +421,15 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const boardAgeSpreadHours=timestampSpreadHours(boardOldestUpdatedAt,boardNewestUpdatedAt);
   const boardMixedAge=boardAgeSpreadHours !== null && boardAgeSpreadHours >= 1;
   const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
-  const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
+  const freshnessCycle = resolveSystemWorkCycle(name, {
+    defaults:{
+      defaultTick:control.defaults?.defaultTick || DEFAULTS.defaultTick,
+      transitionMinutes:control.defaults?.transitionMinutes ?? DEFAULTS.transitionMinutes,
+      lateGraceHours:control.defaults?.lateGraceHours ?? DEFAULTS.lateGraceHours,
+      rolloverPolicy:control.defaults?.rolloverPolicy || DEFAULTS.rolloverPolicy,
+    },
+    systemSettings:control.systemSettings || {},
+  }, { now });
   const boardComplete = activeSource==='manual'
     ? Boolean(manual?.factions?.length)
     : (activeSource==='scout' ? Boolean(scoutFactions.length) : Boolean(externalFactions.length));
@@ -477,12 +486,13 @@ function buildSystem(row, externalBoard, control, scout = null) {
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
+    freshnessCycle,
     dataCondition: dataCondition({
       sourceUpdated: activeSource==='manual'
         ? manualUpdated
         : (activeSource==='scout' ? scoutUpdated : (externalBoardCompleteThrough || boardOldestUpdatedAt || externalUpdated)),
       manualUpdatedAt:null,
-    }, freshnessLimit),
+    }, freshnessCycle),
   };
 }
 
@@ -494,7 +504,6 @@ function resolveSystemSettings(systemDefaults, stored) {
       favorite: false,
       queueSelected: false,
       customTick: '',
-      freshnessHours: null,
       rolloverPolicy: '',
       notes: '',
       updatedAt: null,
@@ -935,7 +944,7 @@ function prettyStateText(value) {
 function normalizeDefaults(value = {}) {
   return {
     defaultTick: validTime(value.defaultTick) ? value.defaultTick : DEFAULTS.defaultTick,
-    freshnessHours: clampNumber(value.freshnessHours, 1, 72, DEFAULTS.freshnessHours),
+    freshnessMode: 'tick-cycle',
     transitionMinutes: clampNumber(value.transitionMinutes, 0, 360, DEFAULTS.transitionMinutes),
     lateGraceHours: clampNumber(value.lateGraceHours, 0, 24, DEFAULTS.lateGraceHours),
     maxDailySystems: Math.round(clampNumber(value.maxDailySystems, 1, 12, DEFAULTS.maxDailySystems)),
@@ -988,7 +997,6 @@ function normalizeSystemSettings(value = {}, baseDefaults = SYSTEM_DEFAULTS) {
     reactInfluence: value.reactInfluence === undefined ? base.reactInfluence : value.reactInfluence !== false,
     reactStates: value.reactStates === undefined ? base.reactStates : value.reactStates !== false,
     customTick: validTime(value.customTick) ? value.customTick : '',
-    freshnessHours: value.freshnessHours === '' || value.freshnessHours === null || value.freshnessHours === undefined ? null : clampNumber(value.freshnessHours, 1, 72, null),
     rolloverPolicy: ['', 'strict', 'safety', 'carry'].includes(value.rolloverPolicy) ? value.rolloverPolicy : '',
     notes: cleanText(value.notes, '', 1200),
     favorite: Boolean(value.favorite),
@@ -1053,11 +1061,13 @@ function normalizeSnapshotMap(value) {
   return out;
 }
 
-function dataCondition(system, freshnessHours) {
+function dataCondition(system, cycle) {
   const newest = newestTimestamp(system.sourceUpdated, system.manualUpdatedAt);
-  const hours = ageHours(newest);
-  if (hours === null || hours > Number(freshnessHours || DEFAULTS.freshnessHours)) return 'stale';
-  return 'current';
+  const snapshotMs = Date.parse(newest || '');
+  const startMs = Date.parse(cycle?.cycleStartedAt || '');
+  const endMs = Date.parse(cycle?.cycleEndsAt || '');
+  if (!Number.isFinite(snapshotMs) || !Number.isFinite(startMs) || !Number.isFinite(endMs)) return 'stale';
+  return snapshotMs >= startMs && snapshotMs < endMs ? 'current' : 'stale';
 }
 
 function normalizePriority(value) {

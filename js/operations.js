@@ -105,23 +105,23 @@
 
   function freshness(system) {
     if (system.formerPresence || system.present === false) return { key: 'former', label: 'Former presence', detail: system.retiredAt ? `Removed ${ageLabel(system.retiredAt)}` : 'No longer in active presence feed', rank: 4 };
-    const stamp = system.freshestUpdatedAt || system.sourceUpdated;
+    const stamp = system.freshestUpdatedAt || system.sourceUpdated || system.fetchedAt || system.lastSeen;
+    if (!stamp) return { key: 'unknown', label: 'Unknown', detail: 'No source timestamp', rank: 3 };
     const scoutSource = system.freshestSource === 'Mongrel Scout / EDMC' || system.sourceKind === 'scout';
-    if (stamp) {
-      const hours = ageHours(stamp);
-      if (hours === null) return { key: 'unknown', label: 'Unknown', detail: 'Source timestamp unreadable', rank: 3 };
-      const sourceLabel = scoutSource
-        ? 'Live Scout'+(system.scoutLabel ? ' · '+system.scoutLabel : '')
-        : (system.freshestSource || system.source || 'EliteHub Vault / EDDN');
-      const detail = sourceLabel+' · '+ageLabel(stamp);
-      if (hours <= 8 && (!system.stale || scoutSource)) return { key: 'fresh', label: 'Fresh', detail, rank: 0 };
-      if (hours <= 24 && (!system.stale || scoutSource)) return { key: 'aging', label: 'Aging', detail, rank: 1 };
-      return { key: 'stale', label: 'Stale', detail, rank: 2 };
-    }
-    if (system.stale === true) return { key: 'stale', label: 'Last known', detail: 'Upstream source age unavailable', rank: 3 };
-    const syncStamp = system.fetchedAt || system.lastSeen;
-    if (syncStamp) return { key: 'sync', label: 'Synced', detail: `Fetched ${ageLabel(syncStamp)} · source age unknown`, rank: 1 };
-    return { key: 'unknown', label: 'Unknown', detail: 'No source timestamp', rank: 3 };
+    const sourceLabel = scoutSource
+      ? 'Live Scout'+(system.scoutLabel ? ' · '+system.scoutLabel : '')
+      : (system.freshestSource || system.source || 'EliteHub Vault / EDDN');
+    const current = system.dataCondition === 'current';
+    const cycle = system.freshnessCycle || {};
+    const cycleNote = current
+      ? 'current BGS cycle'
+      : (cycle.cycleStartedAt ? 'before current cycle' : 'cycle unavailable');
+    return {
+      key: current ? 'fresh' : 'stale',
+      label: current ? 'Fresh' : 'Stale',
+      detail: sourceLabel+' · '+ageLabel(stamp)+' · '+cycleNote,
+      rank: current ? 0 : 2,
+    };
   }
 
   function finiteNumber(value) {
@@ -411,7 +411,7 @@
     if (mode === 'conflict') return Boolean(system.conflict);
     if (mode === 'expansion-risk') return Boolean(system.expansionRisk);
     if (mode === 'retreat-risk') return Boolean(system.retreatRisk);
-    if (mode === 'stale') return ['aging','stale','unknown'].includes(freshness(system).key);
+    if (mode === 'stale') return ['stale','unknown'].includes(freshness(system).key);
     return true;
   }
 

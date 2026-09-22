@@ -303,7 +303,7 @@
       pending:(system.pendingStates || []).join(', '), recovering:(system.recoveringStates || []).join(', '), source:'External source',
     }];
     const tick = settings.customTick || payload.defaults?.defaultTick || '19:00';
-    const freshHours = settings.freshnessHours ?? payload.defaults?.freshnessHours ?? 8;
+    const cycle = system.freshnessCycle || {};
     const manualNewer = system.activeSnapshotSource === 'manual';
     const scoutActive = system.activeSnapshotSource === 'scout';
     const snapshotSourceLabel = manualNewer ? 'Manual' : (scoutActive ? `Scout${system.scoutLabel ? ` · ${system.scoutLabel}` : ''}` : 'External');
@@ -346,7 +346,7 @@
         <div class="wolf-system-topline">
           ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
           <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active board <b>${html(snapshotSourceLabel)} · ${html(activeBoardAge)}</b></span>
-          <span class="wolf-chip">Freshness limit <b>${html(freshHours)}h</b></span>
+          <span class="wolf-chip">Freshness <b>Current BGS cycle</b>${cycle.cycleStartedAt ? ` · since ${html(fmt(cycle.cycleStartedAt))}` : ''}</span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
           ${timeline && timeline.phase !== 'none' ? `<span class="wolf-chip wolf-conflict-day-chip">Conflict day <b>${html(dayText || 'DAY ?')}</b>${daySource ? ` · ${html(daySource)}` : ''}${timeline.overdue ? ' · VERIFY' : ''}</span>` : ''}
           ${score ? `<span class="wolf-chip wolf-conflict-score-chip">Conflict score <b>${html(conflictScoreText(system))}</b>${score.opponentFaction ? ` vs ${html(score.opponentFaction)}` : ''}${scoreAge ? ` · ${html(scoreAge)}` : ''}${score.stale ? ' · last known' : ''}</span>` : ''}
@@ -399,7 +399,7 @@
               <h3>Tick & Freshness</h3>
               <div class="wolf-system-settings-grid">
                 <label class="wolf-field"><span>Custom tick (CT)</span><input class="wolf-time-input" type="time" data-setting="customTick" value="${html(settings.customTick || '')}"><small>Blank = global ${html(payload.defaults?.defaultTick || '19:00')} CT</small></label>
-                <label class="wolf-field"><span>Custom freshness hours</span><input type="number" min="1" max="72" data-setting="freshnessHours" value="${settings.freshnessHours ?? ''}" placeholder="Global ${html(payload.defaults?.freshnessHours ?? 8)}"></label>
+                <label class="wolf-field"><span>Freshness policy</span><input value="Current BGS cycle" disabled><small>Uses this system's tick and the global transition buffer.</small></label>
                 <label class="wolf-field wolf-grid-span"><span>Rollover policy</span><select data-setting="rolloverPolicy"><option value="" ${!settings.rolloverPolicy?'selected':''}>Use global (${html(payload.defaults?.rolloverPolicy || 'safety')})</option><option value="strict" ${settings.rolloverPolicy==='strict'?'selected':''}>Strict</option><option value="safety" ${settings.rolloverPolicy==='safety'?'selected':''}>Safety Only</option><option value="carry" ${settings.rolloverPolicy==='carry'?'selected':''}>Carry Forward</option></select></label>
               </div>
             </section>

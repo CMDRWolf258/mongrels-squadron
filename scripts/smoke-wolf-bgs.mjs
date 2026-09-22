@@ -134,10 +134,21 @@ const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','ut
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
+
+const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
+assert.match(wolfPage,/Freshness policy/);
+assert.match(wolfPage,/Current BGS cycle/);
+assert.doesNotMatch(wolfPage,/Maximum data age/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=18/);
+const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
+assert.match(wolfMainClient,/Current BGS cycle/);
+assert.match(wolfMainClient,/freshnessCycle/);
+assert.doesNotMatch(wolfMainClient,/Custom freshness hours/);
+new Function(wolfMainClient);
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
-for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
+for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-bgs-boards\.json/,/factionConflicts/,/factionWonDays/,/opponentWonDays/,/opponentFactionId/,/fetch_mongrel_conflicts/,/conflictSyncOk/]) assert.match(boardUpdater,pattern);
@@ -167,6 +178,8 @@ assert.equal(typeof slidersModule.onRequestPut,'function');
 const mainModule=await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof mainModule.onRequestGet,'function');
 assert.equal(typeof mainModule.onRequestPut,'function');
+assert.doesNotMatch(apiSource,/freshnessHours:/,'BGS Control API should no longer expose hour-based freshness defaults');
+assert.doesNotMatch(writeApi,/freshnessHours:/,'BGS Control write API should no longer persist hour-based freshness overrides');
 
 console.log('✓ Wolf BGS Control Mandalore lab, ±3-point influence-assisted multi-conflict pairing with manual ambiguity fallback, participant locking, conflict-specific preview work, exploration tiers, Economy bucket selection, smart counterweight mission preferences, positive-redistribution suppression, negative-work safety, per-system calibration, and private APIs are structurally sound');
 

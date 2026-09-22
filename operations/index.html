@@ -324,7 +324,7 @@
         </div>
         <div class="bgs-live-footnote">
           <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Loading secure snapshot</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteHub Vault / EDDN</strong></span></div>
-          <p class="bgs-data-note">EDDN-backed data is not guaranteed to be real-time. Mission Control also uses authenticated Live Scout faction-board snapshots when they are newer, and identifies the source and age in each system row. Former presences are retained so a retreat does not silently erase history.</p>
+          <p class="bgs-data-note">EDDN-backed data is not guaranteed to be real-time. Mission Control also uses authenticated Live Scout faction-board snapshots when they are newer. Freshness is tick-aware: a snapshot remains Fresh while it belongs to that system’s current BGS cycle, using the configured system tick and transition buffer. Former presences are retained so a retreat does not silently erase history.</p>
         </div>
       </div>
     </section>
@@ -347,7 +347,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
-<script src="../js/operations.js?v=67"></script>
+<script src="../js/operations.js?v=68"></script>
 <script src="../js/reward-preview.js?v=2"></script>
 <script src="../js/daily-orders.js?v=68"></script>
 <script src="../js/daily-orders-v2.js?v=19"></script>

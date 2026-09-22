@@ -51,7 +51,7 @@
           <article><span>Mongrel Presence</span><strong data-summary-presence>—</strong><small>Active systems</small></article>
           <article><span>Controlled</span><strong data-summary-controlled>—</strong><small>Mongrel control</small></article>
           <article><span>Needs Attention</span><strong data-summary-attention>—</strong><small>Risk / stale indicators</small></article>
-          <article><span>Stale Data</span><strong data-summary-stale>—</strong><small>Outside freshness policy</small></article>
+          <article><span>Stale Data</span><strong data-summary-stale>—</strong><small>Outside current BGS cycle</small></article>
           <article><span>Daily Order Slots</span><strong data-summary-slots>—</strong><small>Global maximum</small></article>
           <article><span>Source Snapshot</span><strong data-summary-updated>—</strong><small data-summary-source>EliteHub Vault / EDDN</small></article>
         </div>
@@ -476,7 +476,7 @@
           <form data-global-form class="wolf-panel-body">
             <div class="wolf-form-grid">
               <label><span>Default system tick (CT)</span><input class="wolf-time-input" type="time" data-global="defaultTick"></label>
-              <label><span>Maximum data age</span><div class="input-unit"><input type="number" min="1" max="72" step="1" data-global="freshnessHours"><em>hours</em></div></label>
+              <label><span>Freshness policy</span><input type="text" value="Current BGS cycle" disabled><small>A snapshot remains fresh until this system rolls into its next tick cycle.</small></label>
               <label><span>Tick-watch buffer</span><div class="input-unit"><input type="number" min="0" max="360" step="15" data-global="transitionMinutes"><em>min</em></div></label>
               <label><span>Late-report grace</span><div class="input-unit"><input type="number" min="0" max="24" step="1" data-global="lateGraceHours"><em>hours</em></div></label>
               <label><span>Max Daily Order systems</span><input type="number" min="1" max="12" step="1" data-global="maxDailySystems"></label>
@@ -570,7 +570,7 @@
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
-<script src="../js/wolf-bgs.js?v=17"></script>
+<script src="../js/wolf-bgs.js?v=18"></script>
 <script src="../js/wolf-bgs-scout.js?v=4"></script>
 <script src="../js/wolf-bgs-scout-jobs.js?v=2"></script>
 <script src="../js/wolf-bgs-rules.js?v=4"></script>
