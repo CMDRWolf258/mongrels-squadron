@@ -140,7 +140,7 @@ const html=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(html,/Actual Reward Ledger · Payment Console/);
 assert.match(html,/selection is limited to one CMDR at a time/i);
 assert.match(html,/data-payment-selected-total/);
-assert.match(html,/wolf-bgs-rewards\.js\?v=14/);
+assert.match(html,/wolf-bgs-rewards\.js\?v=15/);
 assert.match(html,/wolf-bgs-dry-run\.css\?v=4/);
 
 const css=readFileSync('css/wolf-bgs-dry-run.css','utf8');
