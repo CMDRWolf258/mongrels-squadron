@@ -148,8 +148,12 @@
     requestAnimationFrame(()=>requestAnimationFrame(()=>target.scrollIntoView({block:'start',behavior:'auto'})));
   }
   function restoreMemberDeepLink(){
+    const requested=new URLSearchParams(location.search).get('section');
+    if(requested==='live-scout-setup'&&location.hash!=='#live-scout-setup')history.replaceState(history.state,'',location.pathname+location.search+'#live-scout-setup');
     if(!location.hash)return;
     honorMemberDeepLink();
+    window.setTimeout(honorMemberDeepLink,80);
+    window.setTimeout(honorMemberDeepLink,260);
   }
   window.addEventListener('pageshow',restoreMemberDeepLink);
   window.addEventListener('hashchange',restoreMemberDeepLink);
@@ -257,7 +261,7 @@
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
       </details>
     `;
-    honorMemberDeepLink();
+    restoreMemberDeepLink();
     return panel;
   }
 
