@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=66" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
+  <title>Rewards | The Mongrels</title>
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/rewards.css?v=1">
+</head>
+<body class="visual-page reward-account-page">
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="../">
+      <img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo">
+      <span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span>
+    </a>
+    <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
+    <nav class="nav-links" data-nav>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../rewards/" aria-current="page">Rewards</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero reward-hero hero-flare">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Member Account</p>
+        <h1>Rewards</h1>
+        <p>Your squadron reward account across BGS operations, Colonization, scouting assignments, and future Mongrel reward programs.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section reward-access-gate" data-reward-account-gate>
+    <div class="container">
+      <div class="reward-gate-card">
+        <div>
+          <p class="eyebrow">Members Only</p>
+          <h2>Reward Account Restricted</h2>
+          <p>Sign in with an approved Mongrels Discord account to view your own reward balance, payout requests, and payment history.</p>
+        </div>
+        <div class="reward-gate-action">
+          <span class="tag">Private Account</span>
+          <a class="btn btn-primary" data-reward-login href="/api/auth/login?return=%2Frewards%2F">Sign In with Discord →</a>
+          <small data-reward-gate-status>Checking secure session…</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div data-reward-account-private hidden>
+    <section class="section-sm reward-account-overview">
+      <div class="container">
+        <div class="reward-member-banner">
+          <div><span>Authenticated Reward Account</span><strong data-reward-account-viewer>Mongrel Member</strong></div>
+          <button class="btn btn-secondary btn-compact" type="button" data-refresh-reward-account>Refresh Account</button>
+        </div>
+
+        <div class="reward-summary-grid">
+          <article class="reward-summary-primary"><span>Available Balance</span><strong data-reward-account-owed>0 Cr</strong><small>Approved rewards currently owed to you</small></article>
+          <article><span>Outstanding Rewards</span><strong data-reward-account-outstanding>0</strong><small>Individual unpaid ledger entries</small></article>
+          <article><span>Lifetime Paid</span><strong data-reward-account-paid>0 Cr</strong><small>Reward credits recorded as settled</small></article>
+          <article><span>Payout Status</span><strong data-reward-account-request-state>AVAILABLE</strong><small data-reward-account-request-meta>No active payout request</small></article>
+        </div>
+
+        <section class="reward-request-panel" data-reward-request-panel>
+          <div>
+            <p class="eyebrow">Payout Request</p>
+            <h2 data-reward-request-title>Ready when you are</h2>
+            <p data-reward-request-copy>Your balance is already owed once it appears here. Requesting payout simply tells leadership that you are ready to collect.</p>
+            <div class="reward-request-detail" data-reward-request-detail hidden></div>
+          </div>
+          <div class="reward-request-actions">
+            <button class="btn btn-primary" type="button" data-request-reward-payout disabled>Request Payout</button>
+            <button class="btn btn-secondary" type="button" data-cancel-reward-payout hidden>Cancel Request</button>
+            <small data-reward-request-status aria-live="polite"></small>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Available Balance</p><h2>Outstanding Rewards</h2></div>
+          <p>Every approved reward feeds the same account, regardless of whether it came from BGS, Colonization, scouting, or another Mongrel program.</p>
+        </div>
+        <div class="reward-source-groups" data-reward-outstanding-list>
+          <div class="reward-empty"><strong>Loading outstanding rewards…</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm reward-history-section">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Settlement History</p><h2>Paid Rewards</h2></div>
+          <p>Completed payouts remain here as your permanent reward history.</p>
+        </div>
+        <div class="reward-history-list" data-reward-paid-list>
+          <div class="reward-empty"><strong>Loading payment history…</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container">
+        <div class="reward-privacy-note">
+          <strong>Private account</strong>
+          <span>You can only view your own reward balance and history. Squadron-wide balances and payment controls remain restricted to leadership.</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=66"></script>
+<script src="../js/rewards.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=66"></script>
+</body>
+</html>
