@@ -1144,6 +1144,27 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Reward payment console / settlement batches — 2026-09-21
+
+Added the operator-facing payment side of the real Reward Ledger.
+
+- Actual ledger activity is grouped by **CMDR** in expandable accordion rows.
+- Outstanding ledger entries have checkboxes so multiple debts for one CMDR can be paid in one in-game transfer.
+- Selection is hard-limited to **one CMDR at a time**. Once a CMDR has selected entries, other CMDR payment controls are disabled until the selection is cleared.
+- Each CMDR group includes **SELECT ALL OWED**, per-entry reason/source/contribution/owed timestamp/approver details, current outstanding total, and recent paid history.
+- A sticky selection bar shows the selected CMDR, selected entry count, and **TOTAL SELECTED** for quick reference while making the in-game credit transfer.
+- **CONFIRM PAYMENT** is site-admin only and requires an explicit confirmation that the in-game transfer has already been completed.
+- Payment confirmation is batch-based and server-validated:
+  - all selected entries must still exist and still be OWED;
+  - all selected entries must belong to the same owner/CMDR;
+  - the server recomputes the selected total and compares it to the amount shown to the operator;
+  - batches are capped at 100 entries;
+  - same-origin request validation is required.
+- Payment batches use a durable **PREPARED → APPLIED / FAILED** write-ahead record. A failed partial batch stores the entry IDs already updated so recovery never depends on guessing.
+- Successful settlement marks the selected ledger entries **PAID** and records paid timestamp, paying admin, payment batch ID, and confirmation audit metadata.
+- A client-generated payment request ID makes a successfully applied batch safe against a lost-response retry: the same request can return its existing APPLIED result rather than creating a second batch.
+- No automatic payment behavior exists. The system only records settlement after a site admin confirms the in-game transfer was completed.
+
 ## Controlled Reward Ledger issue — 2026-09-21
 
 The Reward Engine now has an explicit **READY → OWED ledger** action while automatic issuance remains OFF.
