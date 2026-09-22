@@ -269,13 +269,13 @@
     if(requestMetaEl){
       requestMetaEl.textContent=active
         ? fmt(request.requestedRemainingCredits||request.requestedCredits)+' requested · '+dateTime(request.requestedAt)
-        : owed>0?'Ready to request when you want to collect':'No outstanding balance';
+        : owed>0?'Squad-funded balance ready to request':'No squad-funded balance waiting';
     }
-    if(requestTitle)requestTitle.textContent=active?'Payout requested':'Ready when you are';
+    if(requestTitle)requestTitle.textContent=active?'Squad payout requested':'Ready when you are';
     if(requestCopy){
       requestCopy.textContent=active
-        ? 'Leadership can see that you are ready to collect. Your balance remains owed until the in-game transfer is completed and recorded.'
-        : 'Your balance is already owed once it appears here. Requesting payout simply tells leadership that you are ready to collect.';
+        ? 'Leadership can see that you are ready to collect your squad-funded rewards. That balance remains owed until the in-game transfer is completed and recorded.'
+        : 'Squad-funded rewards can be requested from leadership here. Member-funded Colonization rewards are settled directly with the posting CMDR below.';
     }
     if(requestDetail){
       requestDetail.replaceChildren();
