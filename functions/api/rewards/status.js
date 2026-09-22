@@ -14,6 +14,11 @@ export async function onRequestGet({request,env}) {
     readRewardPayoutRequest(env,session.sub),
   ]);
   const summary=summarizeRewardLedger(entries);
+  const squadEntries=entries.filter(entry=>entry?.fundingMode!=='member');
+  const memberEntries=entries.filter(entry=>entry?.fundingMode==='member');
+  summary.squadOwedCredits=Math.round(squadEntries.filter(entry=>entry?.status==='owed').reduce((sum,entry)=>sum+(Number(entry.amountCredits)||0),0));
+  summary.memberOwedCredits=Math.round(memberEntries.filter(entry=>entry?.status==='owed').reduce((sum,entry)=>sum+(Number(entry.amountCredits)||0),0));
+  summary.memberPaymentSentCredits=Math.round(memberEntries.filter(entry=>entry?.status==='payment_sent').reduce((sum,entry)=>sum+(Number(entry.amountCredits)||0),0));
   return reply({
     ok:true,
     viewer:{
@@ -23,8 +28,8 @@ export async function onRequestGet({request,env}) {
       access:session.access,
     },
     summary,
-    payoutRequest:rewardPayoutRequestView(requestRecord,entries),
-    entries:entries.filter(entry=>entry?.status==='owed'),
+    payoutRequest:rewardPayoutRequestView(requestRecord,squadEntries),
+    entries:entries.filter(entry=>entry?.status==='owed'||entry?.status==='payment_sent'),
     paidHistory:buildRewardPaidHistoryPage(entries,{offset:0,limit:12}),
   });
 }

@@ -47,6 +47,8 @@ jobs:
           node --experimental-default-type=module scripts/smoke-colonization.mjs
           node --experimental-default-type=module scripts/smoke-colonization-jobs.mjs
           node --experimental-default-type=module scripts/smoke-colonization-rewards.mjs
+          node --experimental-default-type=module scripts/smoke-member-colonization-posts.mjs
+          node --experimental-default-type=module scripts/smoke-member-colonization-posts.mjs
           node --experimental-default-type=module scripts/smoke-reward-issue.mjs
           node --experimental-default-type=module scripts/smoke-reward-payments.mjs
           node --experimental-default-type=module scripts/smoke-member-rewards.mjs

@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=1">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -12,6 +12,31 @@
 <section class="page-hero trading-hero hero-flare trading-flare"><div class="container page-hero-grid"><div><p class="eyebrow">Trade Desk</p><h1>Trader's Outpost</h1><p>Move cargo for the pack, share profitable routes, and keep useful opportunities in one squad-curated board.</p></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section>
 <section class="section-sm"><div class="container trading-status-strip"><div class="status-item"><span>Squad Routes</span><strong id="squadRouteCount" class="accent">—</strong></div><div class="status-item"><span>Credit Routes</span><strong id="creditRouteCount">—</strong></div><div class="status-item"><span>Highest Listed Profit</span><strong id="topProfit">—</strong></div><div class="status-item"><span>Route Freshness</span><strong id="tradeFreshness">—</strong></div></div></section>
 <section class="section-sm"><div class="container trade-member-posting"><div><p class="eyebrow">Member Trade Network</p><h2>Found a useful route?</h2><p>Share strategic hauling, carrier logistics, colony supply, or a profitable route with the squad. Your post stays yours to maintain; Officers can moderate the board.</p></div><div class="trade-post-actions"><a class="btn btn-secondary" href="/api/auth/login?return=%2Ftrading%2F" data-trade-sign-in>Sign in to Post</a><button class="btn btn-primary" type="button" data-trade-create hidden>Post Trade Route</button></div></div></section>
+<section class="section-sm trader-colonization-section" data-colonization-board>
+  <div class="container">
+    <div class="trade-member-posting colonization-member-posting">
+      <div><p class="eyebrow">Member Logistics · Verified Hauling</p><h2>Colonization Jobs</h2><p>Post construction hauling for the squad, offer your own reward, or request squad funding. Reward credit uses Frontier-verified contribution events, so hauling CMDRs should keep their Elite connection current and Sync Activity after delivery.</p></div>
+      <div class="trade-post-actions"><a class="btn btn-secondary" href="/api/auth/login?return=%2Ftrading%2F%23colonization-jobs" data-colony-sign-in>Sign in to View</a><button class="btn btn-primary" type="button" data-colony-create hidden>Post Colonization Job</button></div>
+    </div>
+    <div id="colonization-jobs" data-colony-private hidden>
+      <div class="colonization-board-stats">
+        <div><span>Active Jobs</span><strong data-colony-stat="active">0</strong></div>
+        <div><span>Verified Cargo</span><strong data-colony-stat="tons">0 t</strong></div>
+        <div><span>Pending Squad Funding</span><strong data-colony-stat="pending">0</strong></div>
+        <div><span>My Jobs</span><strong data-colony-stat="mine">0</strong></div>
+      </div>
+      <div class="colonization-board-toolbar">
+        <div><strong>Active Colonization Board</strong><small data-colony-status>Loading Colonization Jobs…</small></div>
+        <div class="colonization-board-filters">
+          <select data-colony-filter aria-label="Filter Colonization Jobs"><option value="active">Active</option><option value="mine">My Jobs</option><option value="pending">Funding Requests</option><option value="all">All</option></select>
+          <button class="btn btn-secondary btn-compact" type="button" data-colony-refresh>Refresh</button>
+        </div>
+      </div>
+      <div class="colonization-job-grid" data-colony-list><div class="data-empty-state"><div><strong>Loading Colonization Jobs…</strong></div></div></div>
+    </div>
+  </div>
+</section>
+
 <section class="section trading-priority-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Squad Priority</p><h2>Support the Mongrels</h2></div><p>Hauling tied to BGS, colonization, construction, carrier logistics, or another squad goal. Profit is secondary to the objective.</p></div><div id="squadTradeGrid" class="trade-grid"></div><div id="squadTradeEmpty" class="data-empty-state" hidden><div class="data-empty-icon">↔</div><div><strong>No squad trade objective is posted.</strong><p>Member and leadership logistics posts will appear here when active.</p></div></div></div></section>
 <section class="section trading-profit-section" id="member-trade-board"><div class="container"><div class="section-heading"><div><p class="eyebrow">Make Some Credits</p><h2>Member Trade Board</h2></div><p>Current opportunities discovered by Mongrels. Market prices move quickly, so always check the freshness stamp before committing a carrier-load of cargo.</p></div><div class="trade-toolbar"><label><span>Search routes</span><input id="tradeSearch" type="search" placeholder="Commodity, station, system…"></label><label><span>Pad size</span><select id="tradePadFilter"><option value="all">All pads</option><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option></select></label><label><span>Sort</span><select id="tradeSort"><option value="profit-desc">Profit: high to low</option><option value="updated-desc">Recently updated</option><option value="commodity-asc">Commodity A–Z</option></select></label></div><div id="creditTradeGrid" class="trade-grid"></div><div id="creditTradeEmpty" class="data-empty-state" hidden><div class="data-empty-icon">₡</div><div><strong>No member routes match the current filters.</strong><p>Post a route when you find something worth sharing.</p></div></div></div></section>
 <section class="section-sm"><div class="container trade-info-panel"><div><p class="eyebrow">Trust the timestamp</p><h2>Member-posted, not guaranteed live.</h2><p>Route cards show when they were updated and who posted them. Live market automation can be layered in later; until then, treat old market prices as leads rather than guarantees.</p></div><div class="trade-info-tags"><span>Owner-managed posts</span><span>Freshness stamps</span><span>System copy buttons</span><span>Officer moderation</span></div></div></section>
@@ -26,6 +51,26 @@
 <label><span>Status</span><select data-trade-status><option value="active">Active</option><option value="complete">Complete</option><option value="expired">Expired</option></select></label><label><span>Tags</span><input type="text" maxlength="300" data-trade-tags placeholder="Carrier, Colonization, Large Pad"></label>
 <label class="project-editor-wide"><span>Objective</span><textarea rows="3" maxlength="500" data-trade-objective placeholder="Why should members run this route?"></textarea></label><label class="project-editor-wide"><span>Notes</span><textarea rows="4" maxlength="1400" data-trade-notes placeholder="Price caveats, loading instructions, timing, or other details."></textarea></label>
 </div><div class="project-editor-actions"><span data-trade-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-trade-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Route</button></div></div></form></section>
+<section class="project-editor-shell" data-colony-editor-shell hidden aria-label="Colonization Job editor"><div class="project-editor-backdrop" data-colony-cancel></div><form class="project-editor-panel" data-colony-form><div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost · Colonization</p><h2 data-colony-form-title>Post Colonization Job</h2></div><button class="btn btn-secondary" type="button" data-colony-cancel>Close</button></div><input type="hidden" data-colony-id><div class="project-editor-grid">
+<label class="project-editor-wide"><span>Job Title</span><input type="text" maxlength="160" required data-colony-title placeholder="Example: Finish Eleven's Lighthouse"></label>
+<label class="project-editor-wide"><span>System</span><input type="text" maxlength="140" required data-colony-system placeholder="System name"></label>
+<label><span>Job Scope</span><select data-colony-scope><option value="system">Any construction in system</option><option value="market">Specific construction build</option></select></label>
+<label data-colony-build-wrap hidden><span>Build Name</span><input type="text" maxlength="140" data-colony-build placeholder="Optional display name"><small>The internal construction-site ID can be linked later from verified observed-site data.</small></label>
+<label><span>Commodity Filter</span><input type="text" maxlength="100" data-colony-commodity placeholder="Optional · all commodities"></label>
+<label><span>Target Cargo (t)</span><input type="number" min="1" max="100000000" step="1" value="10000" required data-colony-target></label>
+<label><span>Funding</span><select data-colony-funding><option value="none">No reward · help requested</option><option value="member">Member funded · I will pay</option><option value="squad">Request squad funding</option></select></label>
+<label><span>Status</span><select data-colony-job-status><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label>
+<div class="project-editor-wide colony-funding-fields" data-colony-funding-fields hidden>
+  <div class="project-editor-grid">
+    <label><span>Reward Block (t)</span><input type="number" min="1" max="100000000" step="1" value="1000" data-colony-reward-tons></label>
+    <label><span>Reward / Block (M Cr)</span><input type="number" min="1" max="1000000" step="1" value="10" data-colony-reward-millions></label>
+    <label><span>Maximum Pledge (M Cr)</span><input type="number" min="1" max="100000000" step="1" value="100" data-colony-budget></label>
+    <label><span>Personal Cap (M Cr)</span><input type="number" min="0" max="100000000" step="1" data-colony-personal-cap placeholder="No per-CMDR cap"></label>
+  </div>
+  <p class="colony-funding-summary" data-colony-funding-summary></p>
+</div>
+<label class="project-editor-wide"><span>Instructions / Notes</span><textarea rows="4" maxlength="1000" data-colony-notes placeholder="Where to haul, priority commodities, timing, carrier support, or other instructions."></textarea></label>
+</div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Close Job</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
 </main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=69"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=69"></script><script src="../js/trading-colonization.js?v=1"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>

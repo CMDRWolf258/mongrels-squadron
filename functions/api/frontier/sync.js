@@ -3,6 +3,7 @@ import { json } from '../../../lib/auth.js';
 import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
 import { activeColonizationJobs, activeColonizationSystems, earliestColonizationStart, readColonizationJobs } from '../../../lib/colonization-jobs.js';
+import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -150,6 +151,13 @@ export async function onRequestPost({request,env}) {
     };
     await saveAccount(env, auth.session.sub, account);
 
+    let memberFundedColonization=null;
+    try{
+      memberFundedColonization=await reconcileMemberFundedColonizationRewards(env);
+    }catch(error){
+      console.error('Could not reconcile member-funded Colonization rewards',error);
+    }
+
     return json({
       ok:true,
       partial:currentStatus===206 || historicalStatus===206 || Object.values(backfillStatuses).includes(206),
@@ -160,6 +168,7 @@ export async function onRequestPost({request,env}) {
       summary:summarizeEvents(merged),
       orderCycleId:matched.cycleId,
       verifiedOrders:rewardPreview,
+      memberFundedColonization,
       recentEvents:matched.events.slice(-20).reverse(),
       diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
       journalCoverage:{

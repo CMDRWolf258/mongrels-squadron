@@ -23,7 +23,7 @@ export async function onRequestPost({request,env}) {
 
   const action=clean(body?.action).toLowerCase();
   const actor=clean(session.displayName||session.username)||'Mongrel Member';
-  const entries=await listRewardEntries(env,session.sub);
+  const entries=(await listRewardEntries(env,session.sub)).filter(entry=>entry?.fundingMode!=='member');
 
   if(action==='request'){
     const owed=entries.filter(entry=>entry?.status==='owed'&&(Number(entry?.amountCredits)||0)>0);

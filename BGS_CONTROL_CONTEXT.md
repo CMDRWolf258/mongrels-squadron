@@ -1761,3 +1761,26 @@ Deleting a job does **not** delete its archived revisions.
 - **Automatic Colonization reward issuance remains OFF.**
 - This history layer creates no reward debt and does not write to the reward ledger.
 - The archive now provides the exact job/rule provenance needed for the next step: evaluate arbitrated `ColonisationContribution` evidence against the correct archived job revision and feed resulting obligations into the existing **DRY RUN → READY / BLOCKED / DUPLICATE SUPPRESSED** reward pipeline.
+
+## Trader's Outpost member Colonization Jobs + member-funded settlement — 2026-09-22
+
+Colonization Jobs now have a member-facing home in **Trader's Outpost** while continuing to use the same canonical Colonization Job store, Frontier evidence, overlap arbitration, durable revision history, and Wolf BGS administrative tooling.
+
+- Authenticated members can create and maintain Colonization Jobs. Officers and Site Admins can moderate them. Existing Wolf-created jobs remain compatible and appear as approved squad-funded jobs.
+- Posting identity is bound to the authenticated website account. A **member-funded** reward additionally requires a connected Frontier account so the payer is tied to a verified CMDR identity.
+- Funding modes are explicit:
+  - **No reward** — coordinated volunteer hauling only.
+  - **Member funded** — the posting CMDR personally pledges the reward and maximum budget.
+  - **Request squad funding** — creates a pending funding request; it is not squad debt until an Officer/Site Admin approves it.
+- Squad funding is intentionally **not retroactive**. Cargo moved before approval can still count toward job progress, but reward eligibility starts with the approved job revision.
+- Member-funded jobs use the posted maximum pledge as a shared job budget. Verified rewards are allocated in full configured reward blocks and stop when the remaining pledge cannot fund another complete block.
+- A posting CMDR cannot earn their own member-funded reward.
+- Frontier Sync now reconciles fully verified member-funded Colonization obligations into the durable reward ledger automatically. These entries carry the payer owner/CMDR and remain separate from the squad treasury/payment console.
+- Member-funded settlement is **OWED → PAYMENT SENT → PAID**:
+  - the funding CMDR sees **Payments I Owe** on `/rewards/` and marks the in-game transfer sent;
+  - the recipient sees the sent reward in their own account and confirms receipt;
+  - only that confirmation marks the entry PAID.
+- Member-funded entries are excluded from squad payout requests and the Wolf BGS squad payment console. Site Admin bulk/squad payment confirmation also rejects them defensively.
+- Closing or pausing a job does not delete already-created reward debt. Pausing now creates an actual earning boundary; work during the pause does not become rewardable if the job is later resumed.
+- Reward history preserves funding source/payer metadata so completed member-funded settlements remain distinguishable from squad payouts.
+- Cloudflare KV remains the low-volume persistence layer. Deterministic ledger IDs and the durable reward-key registry protect normal retries, but strict simultaneous reservation of the final shared pledge block would require a stronger transactional primitive such as D1 or a Durable Object if concurrency grows materially.

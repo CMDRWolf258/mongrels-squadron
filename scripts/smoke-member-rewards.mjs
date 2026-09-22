@@ -132,7 +132,7 @@ const status=readFileSync('functions/api/rewards/status.js','utf8');
 assert.match(status,/rewardPayoutRequestView/);
 assert.match(status,/viewer:/);
 assert.match(status,/paidHistory:buildRewardPaidHistoryPage/);
-assert.match(status,/entries:entries\.filter\(entry=>entry\?\.status==='owed'\)/);
+assert.match(status,/status==='owed'\|\|entry\?\.status==='payment_sent'/);
 const historyApi=readFileSync('functions/api/rewards/history.js','utf8');
 assert.match(historyApi,/buildRewardPaidHistoryPage/);
 assert.match(historyApi,/session\.sub/);
@@ -157,15 +157,15 @@ assert.match(pay,/reconcileRewardPayoutRequest/);
 const page=readFileSync('rewards/index.html','utf8');
 for(const pattern of [
   /Member Account/,
-  /Available Balance/,
+  /Unsettled Rewards/,
   /Outstanding Rewards/,
-  /Payout Status/,
+  /Squad Payout Status/,
   /Request Payout/,
   /Paid Rewards/,
   /Private account/,
   /data-reward-paid-more/,
-  /rewards\.js\?v=2/,
-  /rewards\.css\?v=2/,
+  /rewards\.js\?v=3/,
+  /rewards\.css\?v=3/,
 ]) assert.match(page,pattern);
 
 const ui=readFileSync('js/rewards.js','utf8');
@@ -180,6 +180,7 @@ for(const pattern of [
   /mutateRequest\('cancel'\)/,
   /LOAD OLDER PAYOUTS/,
   /\/api\/rewards\/history/,
+  /\/api\/rewards\/member-payments/,
   /paidHistoryNextOffset/,
 ]) assert.match(ui,pattern);
 new Function(ui);
@@ -187,7 +188,7 @@ new Function(ui);
 const ops=readFileSync('operations/index.html','utf8');
 assert.match(ops,/data-mc-reward-preview/);
 assert.match(ops,/Open Reward Account/);
-assert.match(ops,/reward-preview\.js\?v=1/);
+assert.match(ops,/reward-preview\.js\?v=2/);
 const preview=readFileSync('js/reward-preview.js','utf8');
 assert.match(preview,/PAYOUT REQUESTED/);
 assert.match(preview,/\/api\/rewards\/status/);
