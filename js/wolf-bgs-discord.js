@@ -3,6 +3,7 @@
   if(!panel)return;
   const testButton=panel.querySelector('[data-discord-test]');
   const syncOrdersButton=panel.querySelector('[data-discord-sync-orders]');
+  const syncColonizationButton=panel.querySelector('[data-discord-sync-colonization]');
   const status=panel.querySelector('[data-discord-status]');
 
   function setStatus(message,state=''){
@@ -15,6 +16,7 @@
   function setButtons(disabled){
     if(testButton)testButton.disabled=disabled;
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
+    if(syncColonizationButton)syncColonizationButton.disabled=disabled;
   }
 
   async function api(path,method='GET'){
@@ -46,7 +48,7 @@
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
         setButtons(false);
-        setStatus('Webhook secret detected · Daily Orders automation is ready.','success');
+        setStatus('Webhook secret detected · Daily Orders and Colonization automation are ready.','success');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -73,6 +75,30 @@
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
       setStatus(messages[error.message]||'Discord test failed · '+String(error.message||error),'error');
+    }finally{
+      setButtons(false);
+    }
+  });
+
+  syncColonizationButton?.addEventListener('click',async()=>{
+    setButtons(true);
+    setStatus('Syncing current Colonization Jobs to Discord…','working');
+    try{
+      const data=await api('/api/operations/discord-colonization-jobs','POST');
+      const summary=data.discord||{};
+      const parts=[];
+      if(Number(summary.created)>0)parts.push(Number(summary.created)+' posted');
+      if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
+      if(Number(summary.unchanged)>0)parts.push(Number(summary.unchanged)+' unchanged');
+      if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
+      setStatus('Colonization Jobs synced'+(parts.length?' · '+parts.join(' · '):' · no current jobs')+'.',Number(summary.failed)>0?'error':'success');
+    }catch(error){
+      const messages={
+        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
+        discord_colonization_sync_failed:'Colonization Jobs remain unchanged on the site, but Discord sync failed.',
+        request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
+      };
+      setStatus(messages[error.message]||'Colonization Jobs Discord sync failed · '+String(error.message||error),'error');
     }finally{
       setButtons(false);
     }
