@@ -924,6 +924,16 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Reward issue immediate-consistency repair — 2026-09-22
+
+The controlled **CREATE OWED ENTRY** action now stays coherent while Cloudflare KV key listings propagate.
+
+- Reward-ledger creation remains server-authoritative and idempotent; the deterministic entry key is still checked directly before any write.
+- A successful ledger write now writes the new key through to the existing cached reward-key list when that cache is fresh, instead of relying only on a subsequent eventually-consistent KV `list()`.
+- The BGS Control reward console temporarily overlays server-confirmed newly issued entries for up to two minutes. This prevents a stale immediate refresh from changing **OWED ENTRY CREATED** back into **CREATE OWED ENTRY**.
+- The overlay also updates the owed total, member balance/payment rows, and dry-run duplicate state from the confirmed server response, so mobile users do not need to press the issue button repeatedly while KV listing catches up.
+- This does not weaken duplicate protection or create client-authoritative debt. The overlay is presentation-only; the actual write still occurs only through `/api/rewards/issue`.
+
 ## Same-cycle Scout credit across Daily Order publication — 2026-09-22
 
 Scout matching now treats the **per-system BGS work cycle** as the authoritative lower time boundary for verified activity, rather than the order's later publication timestamp.
