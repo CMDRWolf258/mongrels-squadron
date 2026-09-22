@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
 import { decorateDailyOrdersForTiming } from '../../../lib/daily-order-cycle.js';
+import { buildOrderRewardPolicies, readRewardSettings } from '../../../lib/reward-rules.js';
 import {
   ensureOrderHistoryBaseline,
   markOrderPublicationApplied,
@@ -17,6 +18,8 @@ export async function onRequestGet({ request, env }) {
   if (auth.response) return auth.response;
 
   const orders = await readOrders(env);
+  const rewardState = await readRewardSettings(env);
+  const rewardPolicies = buildOrderRewardPolicies(orders?.orders, rewardState.settings);
 
   return json(
     {
@@ -26,6 +29,7 @@ export async function onRequestGet({ request, env }) {
         access: auth.session.access,
       },
       canManage: MANAGER_ACCESS.has(auth.session.access),
+      rewardPolicies,
       ...orders,
     },
     { headers: privateHeaders() },

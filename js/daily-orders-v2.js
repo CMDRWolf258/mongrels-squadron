@@ -92,6 +92,34 @@
     return '';
   }
 
+  function rewardPolicyHtml(order,policy){
+    if(!policy)return'';
+    if(policy.eligible===false){
+      return '<div class="mc-order-reward is-none"><span>REWARD</span><strong>No credit reward configured</strong></div>';
+    }
+    const target=Number(policy.target);
+    const hasTarget=Number.isFinite(target)&&target>=0;
+    const goal=Number(policy.goalRewardMillions)||0;
+    const cap=Number(policy.capMillions)||0;
+    let rate='';
+    if(policy.type==='inf'){
+      const before=Number(policy.rewardPerInfBeforeGoalMillions)||0;
+      const after=Number(policy.rewardPerInfAfterGoalMillions)||0;
+      rate=fmt(before)+'M Cr per INF';
+      if(after!==before)rate+=' · '+fmt(after)+'M/INF after target';
+    }else if(policy.type==='trade'){
+      rate=fmt(policy.rewardPerBlockMillions)+'M Cr per '+fmt(policy.profitBlockMillions)+'M Cr profit';
+    }else if(policy.type==='bounties'){
+      rate=fmt(policy.rewardPerRedeemedMillion)+'M Cr per 1M Cr redeemed';
+    }
+    const targetText=hasTarget
+      ? 'At '+fmt(target)+' '+label(policy.type)+': '+fmt(goal)+'M Cr'
+      : '';
+    const capText=cap>0?'Personal cap '+fmt(cap)+'M Cr':'';
+    const details=[rate,targetText,capText].filter(Boolean).join(' · ');
+    return '<div class="mc-order-reward"><span>PERSONAL REWARD</span><strong>'+esc(rate||('Up to '+fmt(cap)+'M Cr'))+'</strong>'+(details?'<small>'+esc([targetText,capText].filter(Boolean).join(' · '))+'</small>':'')+'</div>';
+  }
+
 
   function factionDisplay(name){
     const value=String(name||'').trim();
@@ -227,7 +255,7 @@
       });
       items.forEach((order,i)=>{
         const pair=document.createElement('div');pair.className='mc-order-pair';
-        pair.append(orderBrief(order,i));
+        pair.append(orderBrief(order,i,payload?.rewardPolicies?.[order.id]||null));
         if(spec(order).type){
           const verified=(Array.isArray(frontierPayload?.verifiedOrders)?frontierPayload.verifiedOrders:[]).find(item=>String(item.orderId)===String(order.id));
           const verifiedSquad=reportPayload?.verifiedSummaries?.[order.id]||null;
@@ -240,14 +268,14 @@
     }
   }
 
-  function orderBrief(order,index){
+  function orderBrief(order,index,rewardPolicy=null){
     const el=document.createElement('article');el.className='mc-order-brief';
     const status=order.status&&String(order.status).toLowerCase()!=='active'?'<b>'+esc(order.status)+'</b>':'';
     const copy=briefingCopy(order);
     const cycle=cycleFor(order),target=timerTarget(cycle);
     const timer=cycle&&timedOrder(order)?'<b class="mc-order-reset-pill '+(cycle.phase==='transition'?'is-transition':'')+'">'+esc(cycle.phase==='transition'?'TRANSITION':'TICK IN')+' <span data-cycle-target="'+esc(target||'')+'">'+esc(countdown(target))+'</span></b>':'';
     const hint=targetHint(order);
-    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+timer+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3>'+(hint?'<small class="mc-order-target-hint">'+esc(hint)+'</small>':'')+'</div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>';
+    el.innerHTML='<div class="mc-order-brief-top"><span>ORDER '+(index+1)+'</span>'+(order.priority?'<b>'+esc(order.priority)+'</b>':'')+status+timer+'</div><div class="mc-order-brief-main"><div class="mc-order-target"><strong>'+esc(factionDisplay(order.faction))+'</strong><h3>'+esc(shortTitle(order))+'</h3>'+(hint?'<small class="mc-order-target-hint">'+esc(hint)+'</small>':'')+'</div><div class="mc-order-copy"><p>'+esc(copy)+'</p></div></div>'+rewardPolicyHtml(order,rewardPolicy);
     return el;
   }
 

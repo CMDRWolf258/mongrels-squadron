@@ -1217,6 +1217,16 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## Daily Order reward visibility — 2026-09-22
+
+Mission Control now shows the configured reward rule directly on every Daily Order card.
+
+- Reward display is calculated server-side from the same `reward-settings-v1` rules used by Frontier verification and the Reward Engine; the UI does not hardcode payout values.
+- Eligible INF, trade, and bounty orders show a **PERSONAL REWARD** strip with the exact earning rate, the payout represented by the published target, and the personal cap.
+- INF also shows the post-target rate when it differs from the normal rate.
+- Order types without an active Daily Order credit rule explicitly say **No credit reward configured** so members are not left guessing.
+- This is display-only; reward issuance and ledger logic are unchanged.
+
 ## Live Scout onboarding refinement — 2026-09-22
 
 Member feedback identified two installation traps and one discoverability problem.
