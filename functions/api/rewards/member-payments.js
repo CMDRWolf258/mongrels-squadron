@@ -48,10 +48,18 @@ export async function onRequestPost({request,env}) {
   const actor=session.displayName||session.username||'Mongrel Member';
   try{
     if(action==='mark-sent'){
+      const entryId=clean(body?.entryId);
+      const entries=await listAllRewardEntries(env);
+      const payable=entries.find(entry=>
+        clean(entry?.id)===entryId
+        && entry?.fundingMode==='member'
+        && clean(entry?.payerOwnerId)===clean(session.sub)
+      );
+      if(!payable)throw new Error('reward_entry_missing');
       const entry=await markMemberRewardPaymentSent(env,{
         payerOwnerId:session.sub,
-        ownerId:clean(body?.ownerId),
-        entryId:clean(body?.entryId),
+        ownerId:payable.ownerId,
+        entryId,
         actor,
       });
       return reply({ok:true,entry:publicEntry(entry),message:'Payment marked SENT. The recipient can now confirm receipt.'});
@@ -75,7 +83,6 @@ export async function onRequestPost({request,env}) {
 function publicEntry(entry={}){
   return{
     id:entry.id||'',
-    ownerId:entry.ownerId||'',
     displayName:entry.displayName||'Mongrel CMDR',
     amountCredits:Number(entry.amountCredits)||0,
     reason:entry.reason||'Member-funded Colonization reward',
