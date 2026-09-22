@@ -46,7 +46,9 @@ const client=readFileSync('js/wolf-bgs-discord.js','utf8');
 for(const pattern of [
   /data-discord-integration/,
   /data-discord-test/,
+  /data-discord-sync-orders/,
   /api\/operations\/discord-test/,
+  /api\/operations\/discord-daily-orders/,
   /X-Mongrels-Request/,
   /Send Test Alert|Sending test alert/,
 ])assert.match(client,pattern);
@@ -57,9 +59,10 @@ for(const pattern of [
   /Discord Integration/,
   /data-discord-integration/,
   /data-discord-test/,
+  /data-discord-sync-orders/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=1/,
-  /wolf-bgs\.css\?v=22/,
+  /wolf-bgs-discord\.js\?v=2/,
+  /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
 console.log('✓ Discord operations webhook helper, admin-only test endpoint, safe payload, and Wolf BGS test control are wired');
