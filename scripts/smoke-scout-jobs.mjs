@@ -164,7 +164,7 @@ assert.match(scoutUi,/data-scout-copy-system/);
 assert.match(scoutUi,/navigator\.clipboard\.writeText\(system\)/);
 const adminPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(adminPage,/data-scout-job-admin/);
-assert.match(adminPage,/wolf-bgs-scout-jobs\.js\?v=3/);
+assert.match(adminPage,/wolf-bgs-scout-jobs\.js\?v=2/);
 assert.match(adminPage,/data-reset-scout-job-default/);
 assert.match(adminPage,/data-scout-job-admin-search/);
 assert.match(adminPage,/data-scout-job-admin-prev/);
