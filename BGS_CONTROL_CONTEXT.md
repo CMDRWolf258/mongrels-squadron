@@ -1144,6 +1144,19 @@ Activation principle remains: use this comparison surface to validate real-world
 - Local dry-run simulation validated: exact archived 5-INF obligation produced 5M ready entitlement; 3M prior verified ledger credit reduced the delta to 2M; missing archive provenance blocked issuance; repeated identical evidence produced the same deterministic entry ID.
 - Colonization rewards remain on their separate preview framework for now. They will join the unified dry-run engine after overlapping-job arbitration is defined.
 
+## Member Rewards paid-history paging — 2026-09-21
+
+Paid reward history no longer grows into one unbounded member-page list.
+
+- The Rewards account loads the newest **12 payout batches** initially.
+- Multiple reward entries settled in one in-game transfer remain grouped inside one expandable payout batch.
+- If older history exists, the member sees **LOAD OLDER PAYOUTS** rather than page-number navigation.
+- Each click fetches the next 12 payout batches and appends them in chronological order.
+- The UI shows **Showing X of Y payout batches** so members know how much history remains.
+- Outstanding rewards are not paged or truncated; the member status response returns all currently OWED entries.
+- Lifetime Paid remains calculated across the complete ledger, not just the visible history page.
+- Paid history is fetched through a member-authenticated endpoint bound to the signed-in Discord account; members cannot request another member's history.
+
 ## Member Rewards account / payout requests — 2026-09-21
 
 Added a dedicated member-facing **Rewards** account at `/rewards/` plus a compact Mission Control preview.

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { buildRewardPaidHistoryPage } from '../lib/reward-history.js';
 import {
   cancelRewardPayoutRequest,
   readRewardPayoutRequest,
@@ -86,9 +87,56 @@ assert.equal(cancelled.state,'cancelled');
 assert.equal((await readRewardPayoutRequest(env,'wolf')).state,'cancelled');
 console.log('✓ Members can cancel a request without changing the underlying owed balance');
 
+const paidHistoryEntries=[];
+for(let batch=0;batch<15;batch+=1){
+  const paidAt=new Date(Date.UTC(2026,8,22-batch,12,0,0)).toISOString();
+  paidHistoryEntries.push({
+    id:'history-'+batch+'-a',
+    ownerId:'wolf',
+    displayName:'Wolf258',
+    status:'paid',
+    amountCredits:1_000_000,
+    kind:'verified_order',
+    reason:'History reward A',
+    paidAt,
+    paidBy:'Wolf',
+    paymentBatchId:'history-batch-'+batch,
+  });
+  if(batch===0)paidHistoryEntries.push({
+    id:'history-'+batch+'-b',
+    ownerId:'wolf',
+    displayName:'Wolf258',
+    status:'paid',
+    amountCredits:2_000_000,
+    kind:'colonization_job',
+    reason:'History reward B',
+    paidAt,
+    paidBy:'Wolf',
+    paymentBatchId:'history-batch-'+batch,
+  });
+}
+const firstHistory=buildRewardPaidHistoryPage(paidHistoryEntries,{offset:0,limit:12});
+assert.equal(firstHistory.returnedBatchCount,12);
+assert.equal(firstHistory.totalBatchCount,15);
+assert.equal(firstHistory.hasMore,true);
+assert.equal(firstHistory.nextOffset,12);
+assert.equal(firstHistory.batches[0].entryCount,2,'Entries paid in one transfer should stay grouped as one payout batch');
+assert.equal(firstHistory.batches[0].totalCredits,3_000_000);
+const olderHistory=buildRewardPaidHistoryPage(paidHistoryEntries,{offset:firstHistory.nextOffset,limit:12});
+assert.equal(olderHistory.returnedBatchCount,3);
+assert.equal(olderHistory.hasMore,false);
+assert.equal(olderHistory.nextOffset,null);
+console.log('✓ Paid history starts with 12 payout batches and can load the remaining older batches');
+
 const status=readFileSync('functions/api/rewards/status.js','utf8');
 assert.match(status,/rewardPayoutRequestView/);
 assert.match(status,/viewer:/);
+assert.match(status,/paidHistory:buildRewardPaidHistoryPage/);
+assert.match(status,/entries:entries\.filter\(entry=>entry\?\.status==='owed'\)/);
+const historyApi=readFileSync('functions/api/rewards/history.js','utf8');
+assert.match(historyApi,/buildRewardPaidHistoryPage/);
+assert.match(historyApi,/session\.sub/);
+assert.match(historyApi,/member_access_required/);
 const requestApi=readFileSync('functions/api/rewards/request.js','utf8');
 for(const pattern of [
   /member_access_required/,
@@ -115,7 +163,9 @@ for(const pattern of [
   /Request Payout/,
   /Paid Rewards/,
   /Private account/,
-  /rewards\.js\?v=1/,
+  /data-reward-paid-more/,
+  /rewards\.js\?v=2/,
+  /rewards\.css\?v=2/,
 ]) assert.match(page,pattern);
 
 const ui=readFileSync('js/rewards.js','utf8');
@@ -128,7 +178,9 @@ for(const pattern of [
   /Update Request/,
   /data-cancel-reward-payout/,
   /mutateRequest\('cancel'\)/,
-  /paymentBatchId/,
+  /LOAD OLDER PAYOUTS/,
+  /\/api\/rewards\/history/,
+  /paidHistoryNextOffset/,
 ]) assert.match(ui,pattern);
 new Function(ui);
 
