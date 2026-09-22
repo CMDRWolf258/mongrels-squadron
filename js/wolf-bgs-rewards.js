@@ -376,6 +376,12 @@
             const meta=document.createElement('small');
             meta.textContent=fmt(member.owedCredits)+' owed · '+(Number(member.owedEntryCount)||0)+' outstanding · '+fmt(member.paidCredits)+' paid historically';
             main.append(name,meta);
+            if(member.payoutRequest?.active){
+              const requested=document.createElement('span');
+              requested.className='wolf-payment-request-badge';
+              requested.textContent='PAYOUT REQUESTED · '+fmt(member.payoutRequest.requestedRemainingCredits||member.payoutRequest.requestedCredits);
+              main.append(requested);
+            }
             const balance=document.createElement('div');balance.className='wolf-payment-member-balance';
             const amount=document.createElement('b');amount.textContent=fmt(member.owedCredits);
             const label=document.createElement('small');label.textContent='OUTSTANDING';
@@ -383,6 +389,17 @@
             summary.append(main,balance);
 
             const body=document.createElement('div');body.className='wolf-payment-member-body';
+            if(member.payoutRequest?.active){
+              const request=document.createElement('div');request.className='wolf-payment-request-callout';
+              const strong=document.createElement('strong');strong.textContent='PAYOUT REQUESTED';
+              const small=document.createElement('small');
+              small.textContent=[
+                fmt(member.payoutRequest.requestedRemainingCredits||member.payoutRequest.requestedCredits)+' remaining from request',
+                member.payoutRequest.requestedAt?'requested '+dateTime(member.payoutRequest.requestedAt):'',
+                Number(member.payoutRequest.newSinceRequestCredits)>0?fmt(member.payoutRequest.newSinceRequestCredits)+' earned since request':'',
+              ].filter(Boolean).join(' · ');
+              request.append(strong,small);body.append(request);
+            }
             if(memberOwed.length){
               const toolbar=document.createElement('div');toolbar.className='wolf-payment-toolbar';
               const note=document.createElement('span');

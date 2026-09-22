@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { listAllRewardEntries, markRewardEntriesPaid } from '../../../lib/reward-ledger.js';
+import { reconcileRewardPayoutRequest } from '../../../lib/reward-payout-requests.js';
 import {
   markRewardPaymentBatchApplied,
   markRewardPaymentBatchFailed,
@@ -98,11 +99,29 @@ export async function onRequestPost({request,env}) {
     const applied=await markRewardPaymentBatchApplied(env,prepared.key,{
       paidEntryIds:paid.map(entry=>entry.id),
     });
+
+    let payoutRequest=null;
+    try{
+      const paidById=new Map(paid.map(entry=>[clean(entry.id),entry]));
+      const ownerEntries=ledger
+        .filter(entry=>clean(entry?.ownerId)===ownerId)
+        .map(entry=>paidById.get(clean(entry?.id))||entry);
+      payoutRequest=await reconcileRewardPayoutRequest(env,{
+        ownerId,
+        entries:ownerEntries,
+        actor,
+        paymentBatchId:requestId,
+      });
+    }catch(requestError){
+      console.error('Could not reconcile member payout request after payment',requestError);
+    }
+
     return reply({
       ok:true,
       alreadyApplied:false,
       batch:publicBatch(applied),
       paidEntries:paid.map(publicEntry),
+      payoutRequestState:payoutRequest?.state||null,
       message:'Selected reward entries were marked PAID.',
     });
   }catch(error){

@@ -55,6 +55,9 @@
 .wolf-payment-member>summary strong,.wolf-payment-member>summary small{display:block}
 .wolf-payment-member>summary strong{color:#eef9fc;font-size:.75rem}
 .wolf-payment-member>summary small{margin-top:.12rem;color:var(--muted);font-size:.58rem;line-height:1.35}
+.wolf-payment-request-badge{display:inline-flex;margin-top:.28rem;padding:.18rem .32rem;border:1px solid rgba(255,177,74,.3);background:rgba(90,58,12,.12);color:#ffd49a;font-size:.5rem;font-weight:950;letter-spacing:.06em}
+.wolf-payment-request-callout{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap;margin-bottom:.55rem;padding:.5rem .58rem;border:1px solid rgba(255,177,74,.24);background:rgba(90,58,12,.08)}
+.wolf-payment-request-callout strong{color:#ffd49a;font-size:.58rem;letter-spacing:.07em}.wolf-payment-request-callout small{color:#cbbda7;font-size:.54rem;line-height:1.35}
 .wolf-payment-member-balance{text-align:right;flex:0 0 auto}
 .wolf-payment-member-balance b{color:#ffd7a1;font-size:.78rem}
 .wolf-payment-member-balance small{font-size:.5rem;letter-spacing:.07em}

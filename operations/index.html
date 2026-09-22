@@ -10,6 +10,7 @@
   <title>Mission Control | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
   <link rel="stylesheet" href="../css/mission-control-orders-v2.css?v=15">
+  <link rel="stylesheet" href="../css/rewards.css?v=1">
 </head>
 <body class="visual-page page-command">
 <header class="site-header">
@@ -20,7 +21,7 @@
     </a>
     <button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button>
     <nav class="nav-links" data-nav>
-      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
+      <a href="../">Home</a><a href="../about/">About</a><a href="../operations/" aria-current="page">Command</a><a href="../rewards/">Rewards</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a>
     </nav>
   </div>
 </header>
@@ -82,6 +83,17 @@
           <article class="bgs-summary-card"><span>Active Orders</span><strong id="summaryActiveOrders">—</strong><small>Current secure tasking</small></article>
           <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest Vault/EDDN snapshot</small></article>
         </div>
+        <aside class="mc-reward-preview" data-mc-reward-preview>
+          <div class="mc-reward-preview-main">
+            <div class="mc-reward-preview-balance"><b data-mc-reward-balance>—</b><small>Available Balance</small></div>
+            <div class="mc-reward-preview-copy">
+              <span>MY REWARDS</span>
+              <strong data-mc-reward-summary>Loading reward account…</strong>
+              <small data-mc-reward-status>BGS, Colonization, scouting, and future squad rewards share one account.</small>
+            </div>
+          </div>
+          <a class="btn btn-secondary btn-compact" href="../rewards/">Open Reward Account →</a>
+        </aside>
       </div>
     </section>
 
@@ -300,6 +312,7 @@
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
 <script src="../js/operations.js?v=66"></script>
+<script src="../js/reward-preview.js?v=1"></script>
 <script src="../js/daily-orders.js?v=68"></script>
 <script src="../js/daily-orders-v2.js?v=14"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
