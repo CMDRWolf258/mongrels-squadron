@@ -201,7 +201,8 @@
       return;
     }
     const errors = Array.isArray(meta?.syncErrors) ? meta.syncErrors.length : 0;
-    liveStatusEl.textContent = errors ? `Snapshot with ${errors} warning${errors === 1 ? '' : 's'} · ${ageLabel(meta.generatedAt)}` : `Snapshot synced · ${ageLabel(meta.generatedAt)}`;
+    const latest= newestTimestamp(meta?.generatedAt,meta?.newestScoutAt) || meta?.generatedAt;
+    liveStatusEl.textContent = errors ? `Snapshot with ${errors} warning${errors === 1 ? '' : 's'} · ${ageLabel(latest)}` : `Snapshot synced · ${ageLabel(latest)}`;
     liveStatusEl.className = errors ? 'live-feed-pill partial' : 'live-feed-pill live';
   }
 
