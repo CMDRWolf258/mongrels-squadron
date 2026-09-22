@@ -81,4 +81,13 @@ assert.match(activitiesSource, /Pathway Available/, 'Activities hub does not mar
 assert.doesNotMatch(activitiesSource, /Surface Operations/, 'Activities hub still exposes the legacy Surface Operations name');
 console.log('✓ Operations provider, naming, UI mount, client, Assistant context, and duplicate-card handling are wired');
 
+const missionPage=readFileSync('operations/index.html','utf8');
+assert.match(missionPage,/operations\.js\?v=67/);
+const missionClient=readFileSync('js/operations.js','utf8');
+for(const pattern of [/freshestUpdatedAt/,/freshestSource/,/Mongrel Scout \/ EDMC/,/Live Scout/,/newestScoutAt/])assert.match(missionClient,pattern);
+new Function(missionClient);
+const bgsOperations=readFileSync('lib/bgs-operations.js','utf8');
+for(const pattern of [/readScoutSnapshots/,/mergeScoutSnapshot/,/scoutHasMongrels/,/freshestUpdatedAt/,/freshestSource/,/scoutSnapshotCount/,/newestScoutAt/])assert.match(bgsOperations,pattern);
+console.log('✓ Mission Control All Systems uses current Live Scout data for system freshness');
+
 console.log('\nAll Operations smoke checks passed.');
