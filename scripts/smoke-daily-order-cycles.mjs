@@ -117,7 +117,7 @@ assert.match(runtime,/matchVerifiedActivityHistory/);
 assert.match(runtime,/historyDepth:7/);
 
 const client=readFileSync('js/daily-orders-v2.js','utf8');
-for(const pattern of [/PER-SYSTEM DAILY CYCLES/,/EST TICK/,/TRANSITION/,/UTC/,/localStamp/,/data-cycle-target/,/TICK IN/])assert.match(client,pattern);
+for(const pattern of [/PER-SYSTEM DAILY CYCLES/,/EST TICK/,/TRANSITION/,/UTC/,/localStamp/,/data-cycle-target/,/TICK IN/,/MANUAL REPORTING/,/Backup entry if Scout misses activity/,/OPEN IF NEEDED/])assert.match(client,pattern);
 new Function(client);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
@@ -127,8 +127,12 @@ assert.match(wolfUi,/Custom tick \(CT\)/);
 assert.match(wolfUi,/\$\{html\(tick\)\} CT/);
 
 const page=readFileSync('operations/index.html','utf8');
-assert.match(page,/mission-control-orders-v2\.css\?v=16/);
-assert.match(page,/daily-orders-v2\.js\?v=15/);
+assert.match(page,/mission-control-orders-v2\.css\?v=17/);
+assert.match(page,/daily-orders-v2\.js\?v=16/);
+const css=readFileSync('css/mission-control-orders-v2.css','utf8');
+assert.match(css,/\.mc-manual-report/);
+assert.match(css,/font-size:1\.42rem/);
+assert.match(css,/\.mc-order-reset-pill\{[^}]*font-size:\.68rem!important/);
 
 console.log('✓ Mission Control shows UTC + browser-local tick clocks from a Central-time admin schedule');
 console.log('\nAll per-system Daily Order cycle smoke checks passed.');

@@ -1217,6 +1217,17 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## Mission Control Scout-first reporting UI — 2026-09-22
+
+Mission Control now treats Scout/Frontier verification as the primary reporting path while preserving manual entry as a backup.
+
+- The compact order progress, manual aggregate, and SCOUT VERIFIED status remain visible without opening anything.
+- The large manual INF/CZ/credit entry controls are collapsed by default under **MANUAL REPORTING**.
+- The collapsed row explicitly says **Backup entry if Scout misses activity** and shows whether the member already has manual reports for that order.
+- Existing manual reporting, report history, corrections, and late-report behavior are unchanged; expanding the row exposes the same controls.
+- Tick visibility was increased: the rolling-cycle countdown is larger, per-system countdowns are larger, and the per-order **TICK IN / TRANSITION** pill is easier to read.
+- This is a presentation change only; it does not alter Scout verification, reward eligibility, work-cycle boundaries, or manual report accounting.
+
 ## Per-system Daily Order work cycles and clocks — 2026-09-22
 
 Daily Order progress now follows the BGS tick model instead of carrying forever under one publication cycle.
