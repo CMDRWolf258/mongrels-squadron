@@ -103,8 +103,9 @@ try{
   const third=await syncDailyOrdersDiscord(env,{
     document:nextCycle,actor:'Wolf',publicationId:'pub-3',missionControlUrl:missionControl,
   });
-  assert.equal(third.mode,'created','A genuinely new Daily Orders cycle should create a new Discord post');
-  assert.equal(requests[2].options.method,'POST');
+  assert.equal(third.mode,'edited','A new Daily Orders publication cycle must reuse the living Discord announcement');
+  assert.equal(requests[2].options.method,'PATCH');
+  assert.match(requests[2].url,/\/messages\/111111/);
 
   const cleared=await clearDailyOrdersDiscord(env,{
     previous:nextCycle,actor:'Wolf',publicationId:'pub-4',missionControlUrl:missionControl,
@@ -116,7 +117,15 @@ try{
 
   const stored=JSON.parse(env.DAILY_ORDERS.map.get('discord-daily-orders-v1'));
   assert.equal(stored.current.cycleId,'cycle-b');
+  assert.equal(stored.current.messageId,'111111','The living Daily Orders message ID should survive cycle rollover');
   assert.equal(stored.current.cleared,true);
+
+  env.DISCORD_OPERATIONS_WEBHOOK_URL='https://discord.com/api/webhooks/'+'9876543210/'+'replacement_channel_token';
+  const changedWebhook=await syncDailyOrdersDiscord(env,{
+    document:{...nextCycle,cycleId:'cycle-c'},actor:'Wolf',publicationId:'pub-5',missionControlUrl:missionControl,
+  });
+  assert.equal(changedWebhook.mode,'created','Changing webhook/channel should create the living message in the new destination');
+  assert.equal(requests[4].options.method,'POST');
 }finally{
   globalThis.fetch=originalFetch;
 }
@@ -140,4 +149,4 @@ for(const pattern of [
 const publisher=readFileSync('js/wolf-bgs-publish.js','utf8');
 for(const pattern of [/data\?\.discord\?\.ok/,/data\.discord\.mode==='edited'/,/announcement updated\./,/Discord sync failed/])assert.match(publisher,pattern);
 
-console.log('✓ Daily Orders create, edit, replace-cycle, clear, and publish-status Discord behavior is wired');
+console.log('✓ Daily Orders use one living Discord announcement across cycle rollover, while webhook changes create a new destination message');
