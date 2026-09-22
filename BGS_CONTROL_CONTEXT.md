@@ -1222,7 +1222,7 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 Daily Order progress now follows the BGS tick model instead of carrying forever under one publication cycle.
 
 - There is **no squad-wide midnight/fixed-local reset**. Each order resolves its work cycle from its system's configured BGS tick.
-- Timing comes from Wolf BGS Control: per-system `customTick` when present, otherwise the global reference tick (currently 19:00 UTC), plus the configured transition window and late-report grace.
+- Timing comes from Wolf BGS Control: per-system `customTick` when present, otherwise the global reference tick (currently **19:00 CT / 7:00 PM Central**), plus the configured transition window and late-report grace. Admin tick inputs are Central-time wall clocks; runtime converts them to UTC instants using `America/Chicago` so CST/CDT is handled automatically.
 - Current defaults remain **90 minutes transition** and **3 hours late-report grace**.
 - The scheduled work cycle remains on the old bucket through the transition window. After the transition window ends, the next request resolves a new deterministic per-system work-cycle ID and current progress starts from zero.
 - Existing order definitions carry forward; **manual report totals and Frontier-verified current progress do not**.
@@ -1472,7 +1472,7 @@ _Added 2026-09-19. These are agreed brainstorming/design points to preserve befo
 
 ### Core timing model
 
-- Keep **19:00 UTC as the global reference baseline**, not as a claim that every system processes at exactly 19:00.
+- Keep **19:00 Central Time (CT) as the operator-entered global reference baseline**, not as a claim that every system processes at exactly that wall-clock time. Convert it to the correct UTC instant for display/calculation, including CST/CDT daylight-saving changes.
 - Continue using a **per-system tick offset** from that baseline. The offset is intended to represent the system's own expected BGS processing time.
 - Keep **system tick timing separate from data-propagation timing**. If a system is expected to process at 19:35 but EliteHub/another surface does not show the new board until much later, that later appearance time must not be learned as the system tick offset.
 - Individual systems may drift. BGS Control should therefore reason about an **expected tick window**, not a single second-perfect timestamp.
@@ -1569,7 +1569,7 @@ The expiration cutoff separates **work eligibility** from **report eligibility**
 
 The likely future flow is:
 
-> **19:00 reference → per-system offset → learned drift/tick window → objective-specific order cutoff → transition behavior (safe continuation or hold) → fresh post-tick confirmation → new Daily Orders**
+> **19:00 CT reference → per-system offset → learned drift/tick window → objective-specific order cutoff → transition behavior (safe continuation or hold) → fresh post-tick confirmation → new Daily Orders**
 
 This section is deliberately preserved as **concept/doctrine only** so the design is not lost while conflict work is paused. Before implementation, validate the exact tick-detection signals, decide initial safety-buffer defaults, and define how the member-facing Mission Control labels each transition state.
 
