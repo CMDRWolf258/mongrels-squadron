@@ -263,6 +263,7 @@
 
   function renderRequest(request,summary){
     const owed=Number(summary?.squadOwedCredits)||0;
+    const memberUnsettled=(Number(summary?.memberOwedCredits)||0)+(Number(summary?.memberPaymentSentCredits)||0);
     const active=Boolean(request?.active);
     requestPanel?.classList.toggle('is-requested',active);
     if(requestStateEl)requestStateEl.textContent=active?'REQUESTED':owed>0?'AVAILABLE':'CLEAR';
@@ -287,7 +288,7 @@
     }
     if(requestButton){
       requestButton.disabled=owed<=0;
-      requestButton.hidden=active&&!(Number(request?.newSinceRequestCredits)>0);
+      requestButton.hidden=owed<=0||(active&&!(Number(request?.newSinceRequestCredits)>0));
       requestButton.textContent=active?'Update Request':'Request Payout';
     }
     if(cancelButton)cancelButton.hidden=!active;
