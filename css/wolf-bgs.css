@@ -363,3 +363,13 @@
   .wolf-master-alert-button.is-active{animation-duration:1.6s}
   .wolf-master-alert-button,.wolf-expand{transition:none}
 }
+
+
+/* Discord operations webhook test */
+.wolf-discord-panel{border-color:rgba(88,101,242,.28)}
+.wolf-discord-test-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.wolf-discord-test-row h3{margin:.12rem 0 .25rem;font-size:1.05rem}
+.wolf-discord-test-row p{margin:0;max-width:760px;color:var(--muted);line-height:1.45}
+.wolf-discord-test-row .btn{flex:0 0 auto;min-width:150px}
+.wolf-discord-panel [data-discord-status]{display:block;margin-top:.8rem}
+@media(max-width:720px){.wolf-discord-test-row{align-items:stretch;flex-direction:column}.wolf-discord-test-row .btn{width:100%;min-width:0}}
