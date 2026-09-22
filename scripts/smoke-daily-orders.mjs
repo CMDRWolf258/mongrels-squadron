@@ -6,9 +6,13 @@ for(const path of ['js/daily-orders-v2.js','css/mission-control-orders-v2.css','
 const page=readFileSync('operations/index.html','utf8');
 assert.match(page,/mission-control-orders-v2\.css/);
 assert.match(page,/daily-orders-v2\.js/);
+assert.match(page,/data-orders-frontier-connect/);
+assert.match(page,/data-orders-frontier-sync/);
+assert.match(page,/Connect Elite/);
+assert.match(page,/Sync Activity/);
 
 const client=readFileSync('js/daily-orders-v2.js','utf8');
-for(const pattern of [/mc-system-order-card/,/mc-report-head/,/CZ victories/,/Losses \/ disconnects/,/Full-instance disconnect/,/Combat Bonds not redeemed/,/Mission INF/,/inf2/,/inf3/,/inf4/,/inf5/,/REPORT BOUNTIES/,/REPORT TRADE/,/REPORT EXPLORATION/,/mc-system-focus/,/HIGH PRIORITY/,/VIEW ORDERS/,/HIDE ORDERS/,/mc-reset-report/,/resetReport/,/mc-my-reports/,/beginEdit/,/deleteSubmittedReport/,/method:editing\?'PATCH':'POST'/,/data-credit-amount/,/profit, not gross sales/i,/M Cr/,/one shared wing instance/i,/daily-order-report/,/trackedScore>=target/,/OPEN · CONTINUE PUSHING/]) assert.match(client,pattern);
+for(const pattern of [/\/api\/frontier\/status/,/\/api\/frontier\/sync/,/mongrel-frontier/,/renderFrontierControl/,/syncFrontierActivity/,/mc-system-order-card/,/mc-report-head/,/CZ victories/,/Losses \/ disconnects/,/Full-instance disconnect/,/Combat Bonds not redeemed/,/Mission INF/,/inf2/,/inf3/,/inf4/,/inf5/,/REPORT BOUNTIES/,/REPORT TRADE/,/REPORT EXPLORATION/,/mc-system-focus/,/HIGH PRIORITY/,/VIEW ORDERS/,/HIDE ORDERS/,/mc-reset-report/,/resetReport/,/mc-my-reports/,/beginEdit/,/deleteSubmittedReport/,/method:editing\?'PATCH':'POST'/,/data-credit-amount/,/profit, not gross sales/i,/M Cr/,/one shared wing instance/i,/daily-order-report/,/trackedScore>=target/,/OPEN · CONTINUE PUSHING/]) assert.match(client,pattern);
 new Function(client);
 
 const apiSource=readFileSync('functions/api/operations/order-reports.js','utf8');
