@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +28,8 @@ FACTION_NAME = "Regiment of Imperial Mongrels"
 API_URL = "https://vault.elitehub.eu/graphql"
 USER_AGENT = "MongrelsSquadronSite-BGS/4.0 (+Cloudflare Pages)"
 API_KEY = os.getenv("ELITEHUB_VAULT_API_KEY", "").strip()
+EDSM_SYSTEMS_URL = "https://www.edsm.net/api-v1/systems"
+EDSM_BATCH_SIZE = 40
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -56,6 +59,54 @@ def number(value: Any) -> float | None:
     if 0 <= n <= 1:
         n *= 100
     return round(n, 2)
+
+
+def normalize_coords(value: Any) -> dict[str, float] | None:
+    if isinstance(value, (list, tuple)) and len(value) >= 3:
+        source = {"x": value[0], "y": value[1], "z": value[2]}
+    elif isinstance(value, dict):
+        source = value
+    else:
+        return None
+    try:
+        x, y, z = float(source.get("x")), float(source.get("y")), float(source.get("z"))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return {"x": x, "y": y, "z": z}
+
+
+def fetch_edsm_coordinates(names: list[str]) -> dict[str, dict[str, float]]:
+    """Fetch only missing system coordinates in modest batches and return by normalized name."""
+    out: dict[str, dict[str, float]] = {}
+    clean_names = [str(name).strip() for name in names if str(name).strip()]
+    for start in range(0, len(clean_names), EDSM_BATCH_SIZE):
+        batch = clean_names[start:start + EDSM_BATCH_SIZE]
+        fields = [("systemName[]", name) for name in batch]
+        fields.append(("showCoordinates", "1"))
+        body = urllib.parse.urlencode(fields).encode("utf-8")
+        request = urllib.request.Request(
+            EDSM_SYSTEMS_URL,
+            data=body,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if not isinstance(payload, list):
+            continue
+        for row in payload:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or "").strip()
+            coords = normalize_coords(row.get("coords"))
+            if name and coords:
+                out[norm(name)] = coords
+        print(f"EDSM COORDS: resolved {len(out)} / {len(clean_names)} requested so far", flush=True)
+    return out
 
 
 def gql(query: str, variables: dict[str, Any] | None = None, timeout: int = 20) -> dict[str, Any]:
@@ -465,8 +516,12 @@ def main() -> int:
                 source_updated = max(source_updated or value, value)
 
         previous = old_by_norm.get(norm(system_name), {})
+        previous_coords = normalize_coords(previous.get("coords"))
         found[norm(system_name)] = {
             "name": system_name,
+            "coords": previous_coords,
+            "coordsSource": previous.get("coordsSource") if previous_coords else None,
+            "coordsUpdatedAt": previous.get("coordsUpdatedAt") if previous_coords else None,
             "influence": influence,
             "controlled": norm(controller) == norm(FACTION_NAME) if controller else None,
             "control": controller,
@@ -494,6 +549,21 @@ def main() -> int:
         msg = f"Vault returned only {len(found)} usable presences; previous snapshot had {old_active_count}. Preserving last known snapshot."
         print(f"INCOMPLETE: {msg}", flush=True)
         return fail_with_existing(existing, msg)
+
+    missing_coordinate_names = [row["name"] for row in found.values() if not normalize_coords(row.get("coords"))]
+    if missing_coordinate_names:
+        try:
+            edsm_coords = fetch_edsm_coordinates(missing_coordinate_names)
+            for key, row in found.items():
+                coords = edsm_coords.get(key)
+                if not coords:
+                    continue
+                row["coords"] = coords
+                row["coordsSource"] = "EDSM"
+                row["coordsUpdatedAt"] = now_iso
+        except Exception as exc:
+            # Coordinates improve Scout routing but must never block the authoritative BGS refresh.
+            print(f"EDSM COORD ERR: {exc}", flush=True)
 
     refreshed = list(found.values())
 
@@ -542,6 +612,8 @@ def main() -> int:
         "activePresenceSystems": active_count,
         "formerPresenceSystems": former_count,
         "vaultPresenceRows": len(nodes),
+        "coordinateSystems": sum(1 for row in refreshed if normalize_coords(row.get("coords"))),
+        "coordinateSource": "EDSM cache + Live Scout journal StarPos",
         "errors": parse_errors[:25],
         "systems": refreshed,
     }
