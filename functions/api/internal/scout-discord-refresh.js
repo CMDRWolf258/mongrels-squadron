@@ -3,6 +3,7 @@ import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 
 export async function onRequestPost({request,env}){
   const auth=await authenticateCron(request,env);
@@ -19,6 +20,12 @@ export async function onRequestPost({request,env}){
       createMissing:false,
       originSystem:'Diaba',
       ordinaryLimit:15,
+    });
+    const bgsView=await loadBgsDiscordView(request,env);
+    const bgsDiscord=await syncBgsDiscordBoard(env,{
+      view:bgsView,
+      missionControlUrl:new URL('/wolf-bgs/#faction-alerts',request.url).toString(),
+      createMissing:false,
     });
     return reply({
       ok:true,
@@ -37,6 +44,17 @@ export async function onRequestPost({request,env}){
         failed:discord.failed||0,
         displayedPriority:discord.displayedPriority||0,
         displayedOrdinary:discord.displayedOrdinary||0,
+      },
+      bgsDiscord:{
+        summaryMode:bgsDiscord.summary?.mode||null,
+        created:bgsDiscord.created||0,
+        edited:bgsDiscord.edited||0,
+        resolvedShown:bgsDiscord.resolvedShown||0,
+        deleted:bgsDiscord.deleted||0,
+        unchanged:bgsDiscord.unchanged||0,
+        failed:bgsDiscord.failed||0,
+        actionCount:bgsDiscord.actionCount||0,
+        opportunityCount:bgsDiscord.opportunityCount||0,
       },
     });
   }catch(error){
