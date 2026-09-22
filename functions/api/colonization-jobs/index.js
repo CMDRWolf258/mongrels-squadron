@@ -9,6 +9,7 @@ import {
   writeColonizationJobsStore,
   writeColonizationJobStatusOverride,
 } from '../../../lib/colonization-jobs.js';
+import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
 import {
   ensureColonizationJobHistoryBaseline,
   markColonizationJobPublicationApplied,
@@ -24,10 +25,11 @@ export async function onRequestGet({request,env}) {
   const auth=await requireMember(request,env);
   if(auth.response)return auth.response;
 
-  const [store,frontierAccount,accounts]=await Promise.all([
+  const [store,frontierAccount,accounts,ledgerEntries]=await Promise.all([
     readColonizationJobs(env),
     getAccount(env,auth.session.sub),
     listFrontierAccounts(env),
+    listAllRewardEntries(env),
   ]);
   try{await ensureColonizationJobHistoryBaseline(env,store,'Member Colonization Board');}
   catch(error){console.error('Could not initialize Colonization Job history baseline',error);}
@@ -47,11 +49,15 @@ export async function onRequestGet({request,env}) {
     const squadTons=previews.reduce((sum,row)=>sum+(Number(row.tons)||0),0);
     const contributorCount=previews.filter(row=>Number(row.tons)>0).length;
     const rewardPreviewMillions=round1(previews.reduce((sum,row)=>sum+(Number(row.rewardPreviewMillions)||0),0));
+    const hasTrackedWork=previews.some(row=>(Number(row.tons)||0)>0||(Number(row.eventCount)||0)>0||(Number(row.ambiguousEventCount)||0)>0);
+    const hasLedger=ledgerEntries.some(entry=>String(entry?.sourceJobId||'')===String(job.id||''));
+    const fundingTermsLocked=hasTrackedWork||hasLedger||(Boolean(job.postingOwnerId)&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='approved');
     return presentJob(job,auth.session,{
       squadTons,
       contributorCount,
       rewardPreviewMillions,
       ambiguousEvents:previews.reduce((sum,row)=>sum+(Number(row.ambiguousEventCount)||0),0),
+      fundingTermsLocked,
     });
   });
 
@@ -167,7 +173,6 @@ export async function onRequestPut({request,env}) {
     },existing);
   }else if(action==='update'){
     const requested=body?.job&&typeof body.job==='object'?body.job:{};
-    const lockedFunding=existing.fundingMode==='member'||existing.fundingApprovalStatus==='approved';
     const requestedStatus=requested.status??existing.status;
     if(!['active','paused','completed'].includes(requestedStatus))return reply({ok:false,error:'colonization_status_invalid'},400);
     const statusChanged=requestedStatus!==existing.status;
@@ -187,11 +192,20 @@ export async function onRequestPut({request,env}) {
       merged.buildName=requested.buildName??existing.buildName;
       merged.commodity=requested.commodity??existing.commodity;
     }
-    if(!lockedFunding&&existing.fundingMode==='squad'&&existing.fundingApprovalStatus==='pending'){
-      merged.rewardBlockTons=requested.rewardBlockTons??existing.rewardBlockTons;
-      merged.rewardBlockMillions=requested.rewardBlockMillions??existing.rewardBlockMillions;
-      merged.personalCapMillions=requested.personalCapMillions??existing.personalCapMillions;
-      merged.rewardBudgetMillions=requested.rewardBudgetMillions??existing.rewardBudgetMillions;
+
+    if(fundingFieldsRequested(requested)){
+      const locked=await fundingTermsLocked(env,existing,store.jobs);
+      if(locked&&fundingDefinitionChanged(existing,requested)){
+        return reply({
+          ok:false,
+          error:'colonization_funding_terms_locked',
+          message:'Reward settings are locked because verified hauling, an issued reward, or squad approval already exists for this job.',
+        },409);
+      }
+      if(!locked){
+        const funding=await normalizeFundingForEdit(env,requested,existing,{actor,session:auth.session});
+        Object.assign(merged,funding);
+      }
     }
     next=normalizeColonizationJob(merged,existing);
   }else{
@@ -235,8 +249,8 @@ export async function onRequestDelete({request,env}) {
 function normalizeFundingForCreate(source,{fundingMode,ownerId,payerName,actor}){
   const blockTons=positiveInt(source.rewardBlockTons,5000);
   const blockMillions=fundingMode==='none'?0:nonNegative(source.rewardBlockMillions,0);
-  const targetTons=positiveInt(source.targetTons,10000);
-  const defaultBudget=blockMillions>0?Math.ceil(targetTons/blockTons)*blockMillions:0;
+  const targetTons=nonNegativeInt(source.targetTons,0);
+  const defaultBudget=blockMillions>0&&targetTons>0?Math.ceil(targetTons/blockTons)*blockMillions:0;
   const requestedBudget=nonNegative(source.rewardBudgetMillions,defaultBudget);
   if(fundingMode==='none'){
     return {
@@ -319,8 +333,107 @@ function presentJob(job,session,progress={}){
     ambiguousEvents:Number(progress.ambiguousEvents)||0,
     isMine:mine,
     canEdit:mine||manager,
+    canEditFunding:(mine||manager)&&!Boolean(progress.fundingTermsLocked),
+    fundingTermsLocked:Boolean(progress.fundingTermsLocked),
     canModerate:manager,
     canApproveFunding:manager&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending',
+  };
+}
+
+function fundingFieldsRequested(source={}){
+  return ['fundingMode','rewardBlockTons','rewardBlockMillions','rewardBudgetMillions','personalCapMillions']
+    .some(key=>Object.prototype.hasOwnProperty.call(source,key));
+}
+
+function fundingDefinitionChanged(existing={},requested={}){
+  const next={
+    fundingMode:FUNDING_MODES.has(requested.fundingMode)?requested.fundingMode:existing.fundingMode,
+    rewardBlockTons:Object.prototype.hasOwnProperty.call(requested,'rewardBlockTons')?Number(requested.rewardBlockTons):Number(existing.rewardBlockTons),
+    rewardBlockMillions:Object.prototype.hasOwnProperty.call(requested,'rewardBlockMillions')?Number(requested.rewardBlockMillions):Number(existing.rewardBlockMillions),
+    rewardBudgetMillions:Object.prototype.hasOwnProperty.call(requested,'rewardBudgetMillions')?Number(requested.rewardBudgetMillions):Number(existing.rewardBudgetMillions),
+    personalCapMillions:Object.prototype.hasOwnProperty.call(requested,'personalCapMillions')
+      ? (requested.personalCapMillions===null||requested.personalCapMillions===''?null:Number(requested.personalCapMillions))
+      : (existing.personalCapMillions===null||existing.personalCapMillions===undefined?null:Number(existing.personalCapMillions)),
+  };
+  return String(next.fundingMode||'')!==String(existing.fundingMode||'')
+    || next.rewardBlockTons!==Number(existing.rewardBlockTons)
+    || next.rewardBlockMillions!==Number(existing.rewardBlockMillions)
+    || next.rewardBudgetMillions!==Number(existing.rewardBudgetMillions)
+    || next.personalCapMillions!==(existing.personalCapMillions===null||existing.personalCapMillions===undefined?null:Number(existing.personalCapMillions));
+}
+
+async function fundingTermsLocked(env,job,allJobs=[]){
+  if(Boolean(job.postingOwnerId)&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='approved')return true;
+  const ledger=await listAllRewardEntries(env);
+  if(ledger.some(entry=>String(entry?.sourceJobId||'')===String(job.id||'')))return true;
+  const accounts=await listFrontierAccounts(env);
+  for(const row of accounts){
+    const events=await getEvents(env,row.userId);
+    const arbitration=arbitrateColonizationContributions(events,allJobs);
+    const preview=colonizationJobPreview(job,events,arbitration);
+    if((Number(preview?.tons)||0)>0||(Number(preview?.eventCount)||0)>0||(Number(preview?.ambiguousEventCount)||0)>0)return true;
+  }
+  return false;
+}
+
+async function normalizeFundingForEdit(env,source,existing,{actor,session}){
+  const fundingMode=FUNDING_MODES.has(source.fundingMode)?source.fundingMode:existing.fundingMode;
+  const blockTons=positiveInt(source.rewardBlockTons,Number(existing.rewardBlockTons)||5000);
+  const blockMillions=fundingMode==='none'?0:nonNegative(source.rewardBlockMillions,Number(existing.rewardBlockMillions)||0);
+  const budget=fundingMode==='none'?0:nonNegative(source.rewardBudgetMillions,Number(existing.rewardBudgetMillions)||0);
+  const personalCap=Object.prototype.hasOwnProperty.call(source,'personalCapMillions')
+    ? nullableNumber(source.personalCapMillions)
+    : existing.personalCapMillions;
+
+  if(fundingMode==='none'){
+    return {
+      fundingMode:'none',
+      fundingApprovalStatus:'not_required',
+      rewardBlockTons:blockTons,
+      rewardBlockMillions:0,
+      rewardBudgetMillions:0,
+      personalCapMillions:null,
+      fundingPayerOwnerId:'',
+      fundingPayerName:'',
+      fundingApprovedAt:null,
+      fundingApprovedBy:'',
+      fundingNote:'',
+    };
+  }
+  if(fundingMode==='member'){
+    const payerOwnerId=existing.postingOwnerId||session.sub;
+    const payerAccount=await getAccount(env,payerOwnerId);
+    if(!payerAccount?.commander){
+      const error=new Error('frontier_required_for_member_funding');
+      error.code='frontier_required_for_member_funding';
+      throw error;
+    }
+    return {
+      fundingMode:'member',
+      fundingApprovalStatus:'approved',
+      rewardBlockTons:blockTons,
+      rewardBlockMillions:blockMillions,
+      rewardBudgetMillions:budget,
+      personalCapMillions:personalCap,
+      fundingPayerOwnerId:payerOwnerId,
+      fundingPayerName:payerAccount.commander,
+      fundingApprovedAt:new Date().toISOString(),
+      fundingApprovedBy:actor,
+      fundingNote:'',
+    };
+  }
+  return {
+    fundingMode:'squad',
+    fundingApprovalStatus:'pending',
+    rewardBlockTons:blockTons,
+    rewardBlockMillions:blockMillions,
+    rewardBudgetMillions:budget,
+    personalCapMillions:personalCap,
+    fundingPayerOwnerId:'',
+    fundingPayerName:'Regiment of Imperial Mongrels',
+    fundingApprovedAt:null,
+    fundingApprovedBy:'',
+    fundingNote:'',
   };
 }
 
@@ -342,7 +455,6 @@ async function commitMutation(env,{before,jobs,actor,action,targetJobId}){
 
 function validateJob(job){
   if(!job.system)return'colonization_system_required';
-  if(!(Number(job.targetTons)>0))return'colonization_target_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockTons)>0))return'colonization_reward_block_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockMillions)>0))return'colonization_reward_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBudgetMillions)>0))return'colonization_reward_budget_required';
@@ -360,6 +472,7 @@ function storageReady(env){return Boolean(env?.DAILY_ORDERS&&typeof env.DAILY_OR
 function sameOrigin(request){const origin=request.headers.get('Origin');return origin===new URL(request.url).origin&&request.headers.get('X-Mongrels-Request')==='colonization-post-editor'}
 function clean(value,max){return String(value??'').trim().slice(0,max)}
 function positiveInt(value,fallback){const n=Math.floor(Number(value));return Number.isFinite(n)&&n>0?n:fallback}
+function nonNegativeInt(value,fallback){const n=Math.floor(Number(value));return Number.isFinite(n)&&n>=0?n:fallback}
 function nonNegative(value,fallback){const n=Number(value);return Number.isFinite(n)&&n>=0?n:fallback}
 function nullableNumber(value){if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?n:null}
 function round1(value){return Math.round((Number(value)||0)*10)/10}
