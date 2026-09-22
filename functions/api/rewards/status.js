@@ -18,11 +18,12 @@ export async function onRequestGet({request,env}) {
     viewer:{
       userId:session.sub,
       displayName:session.displayName||session.username||'Mongrel Member',
+      commander:entries.find(entry=>entry?.displayName)?.displayName||'',
       access:session.access,
     },
     summary,
     payoutRequest:rewardPayoutRequestView(requestRecord,entries),
-    entries:entries.slice(0,250),
+    entries:entries.filter(entry=>entry?.status==='owed'),
   });
 }
 
