@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
+import { readRewardPayoutRequest, rewardPayoutRequestView } from '../../../lib/reward-payout-requests.js';
 
 const ALLOWED = new Set(['officer','site_admin']);
 
@@ -37,6 +38,17 @@ export async function onRequestGet({request,env}) {
     members.set(key,member);
   }
 
+  const memberRows=await Promise.all([...members.values()].map(async member=>{
+    const memberEntries=entries.filter(entry=>String(entry?.ownerId||'')===member.ownerId);
+    const requestRecord=await readRewardPayoutRequest(env,member.ownerId);
+    return {
+      ...member,
+      owedCredits:round(member.owedCredits),
+      paidCredits:round(member.paidCredits),
+      payoutRequest:rewardPayoutRequestView(requestRecord,memberEntries),
+    };
+  }));
+
   return reply({
     ok:true,
     summary:{
@@ -47,9 +59,10 @@ export async function onRequestGet({request,env}) {
     },
     canConfirmPayments:session.access==='site_admin',
     paymentMode:'manual_confirmation',
-    members:[...members.values()]
-      .map(m=>({...m,owedCredits:round(m.owedCredits),paidCredits:round(m.paidCredits)}))
-      .sort((a,b)=>b.owedCredits-a.owedCredits||String(a.displayName).localeCompare(String(b.displayName))),
+    members:memberRows
+      .sort((a,b)=>Number(Boolean(b.payoutRequest?.active))-Number(Boolean(a.payoutRequest?.active))
+        || b.owedCredits-a.owedCredits
+        || String(a.displayName).localeCompare(String(b.displayName))),
     owedEntries:entries.filter(entry=>entry?.status==='owed').slice(0,500),
     entries:entries.slice(0,500),
   });
