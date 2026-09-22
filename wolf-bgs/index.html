@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-colonization.css?v=5">
   <link rel="stylesheet" href="../css/wolf-bgs-architects.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-history.css?v=1">
-  <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=2">
+  <link rel="stylesheet" href="../css/wolf-bgs-dry-run.css?v=3">
 </head>
 <body class="visual-page page-command wolf-bgs-page">
 <header class="site-header">
@@ -408,8 +408,8 @@
             </div>
 
             <div class="wolf-ledger-divider">
-              <h3>Actual Reward Ledger</h3>
-              <p>This is the real stored ledger. READY rows enter it only through the explicit CREATE OWED ENTRY action. Creating an owed entry does not mean the in-game credits have been paid.</p>
+              <h3>Actual Reward Ledger · Payment Console</h3>
+              <p>Rewards are grouped by CMDR. Expand one CMDR, select one or more outstanding entries, use the selected total as your in-game payment reference, then confirm only after the credits have actually been transferred. Selection is limited to one CMDR at a time.</p>
             </div>
             <div class="wolf-form-grid">
               <div class="wolf-rules-callout subtle"><strong data-reward-total-owed>0 Cr</strong><span>Total currently owed</span></div>
@@ -417,6 +417,18 @@
               <div class="wolf-rules-callout subtle"><strong data-reward-member-count>0</strong><span>Members with ledger activity</span></div>
             </div>
             <div class="wolf-scout-token-list" data-reward-member-list><div class="wolf-scout-empty"><strong>Loading actual reward ledger…</strong></div></div>
+            <div class="wolf-payment-selection-bar" data-reward-payment-bar hidden>
+              <div class="wolf-payment-selection-summary">
+                <span>PAYING <b data-payment-selected-commander>—</b></span>
+                <span><b data-payment-selected-count>0</b> selected</span>
+                <strong data-payment-selected-total>0 Cr</strong>
+                <small data-reward-payment-status>Confirm only after the in-game transfer is complete.</small>
+              </div>
+              <div class="wolf-payment-selection-actions">
+                <button type="button" class="btn btn-secondary btn-compact" data-payment-clear>CLEAR SELECTION</button>
+                <button type="button" class="btn btn-primary btn-compact" data-payment-confirm>CONFIRM PAYMENT</button>
+              </div>
+            </div>
           </div>
         </details>
       </div>
@@ -539,7 +551,7 @@
 <script src="../js/wolf-bgs-architects.js?v=2"></script>
 <script src="../js/wolf-bgs-colonization.js?v=9"></script>
 <script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
-<script src="../js/wolf-bgs-rewards.js?v=12"></script>
+<script src="../js/wolf-bgs-rewards.js?v=13"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
