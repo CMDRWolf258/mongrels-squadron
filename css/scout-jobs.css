@@ -28,3 +28,14 @@
 .scout-job-admin-meta{margin-top:10px;color:#81969c;font-size:.7rem}
 @media(max-width:980px){.scout-job-card{grid-template-columns:1fr 1fr}.scout-job-actions{justify-content:flex-start}.scout-job-main,.scout-job-note{grid-column:1/-1}.scout-jobs-admin-grid{grid-template-columns:1fr 1fr}.scout-job-admin-row{grid-template-columns:1fr 1fr}.scout-job-admin-row>strong{grid-column:1/-1}}
 @media(max-width:620px){.scout-jobs-summary{grid-template-columns:1fr 1fr}.scout-job-card,.scout-jobs-admin-grid,.scout-job-admin-row{grid-template-columns:1fr}.scout-job-main,.scout-job-note,.scout-job-admin-row>strong{grid-column:auto}.scout-jobs-head{display:block}.scout-job-actions{justify-content:stretch}.scout-job-actions .btn{width:100%}}
+
+.scout-jobs-launcher{padding:16px 18px}
+.scout-jobs-launcher .scout-jobs-head{margin-bottom:8px;align-items:center}
+.scout-jobs-launcher .scout-jobs-summary{margin:10px 0}
+.scout-jobs-launcher-foot{display:flex;justify-content:space-between;gap:12px;align-items:center;color:#81969c;font-size:.72rem}
+.scout-board-nav{display:flex;gap:8px;flex-wrap:wrap}
+.scout-jobs-dedicated .scout-job-card{padding:10px 12px;gap:10px}
+.scout-jobs-dedicated .scout-job-main small{margin-top:2px}
+.scout-jobs-dedicated .scout-job-status{margin-top:4px;padding:3px 6px}
+.scout-jobs-dedicated .scout-job-note{padding-top:6px}
+@media(max-width:620px){.scout-jobs-launcher .scout-jobs-head .btn{margin-top:12px;width:100%}.scout-jobs-launcher-foot{display:grid}}
