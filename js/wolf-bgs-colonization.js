@@ -111,12 +111,15 @@
     );
     head.append(title,chips);
 
-    const target=Math.max(1,number(job.targetTons));
+    const target=Math.max(0,number(job.targetTons));
     const tons=number(job.squadTons);
-    const pct=Math.max(0,Math.min(100,(tons/target)*100));
+    const openEnded=target<=0;
+    const pct=openEnded?0:Math.max(0,Math.min(100,(tons/target)*100));
     const progress=document.createElement('div');
     progress.className='wolf-colonization-progress';
-    progress.innerHTML=`<div><strong>${fmt(tons)} / ${fmt(target)} t</strong><span>${pct.toFixed(1)}%</span></div><div class="wolf-colonization-track"><i style="width:${pct}%"></i></div>`;
+    progress.innerHTML=openEnded
+      ? `<div><strong>${fmt(tons)} t hauled</strong><span>OPEN-ENDED</span></div>`
+      : `<div><strong>${fmt(tons)} / ${fmt(target)} t</strong><span>${pct.toFixed(1)}%</span></div><div class="wolf-colonization-track"><i style="width:${pct}%"></i></div>`;
 
     const reward=document.createElement('div');
     reward.className='wolf-colonization-reward-line';

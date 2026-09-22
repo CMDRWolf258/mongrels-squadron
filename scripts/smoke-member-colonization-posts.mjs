@@ -55,7 +55,15 @@ memberJob.revisionStartedAt='2026-09-22T12:00:00.000Z';
 memberJob.createdAt='2026-09-22T12:00:00.000Z';
 memberJob.updatedAt='2026-09-22T12:00:00.000Z';
 assert.equal(memberJob.rewardBudgetMillions,50);
-console.log('✓ Member-funded Colonization metadata is durable');
+const openEndedJob=normalizeColonizationJob({
+  ...memberJob,
+  id:'open-ended-job',
+  targetTons:0,
+  revision:1,
+  createdAt:'2026-09-22T12:00:00.000Z',
+});
+assert.equal(openEndedJob.targetTons,0,'A blank/open-ended target must remain zero instead of defaulting to 10,000 t');
+console.log('✓ Member-funded Colonization metadata is durable and open-ended targets are preserved');
 
 const memberHistory=[record({
   publicationId:'member-create',
@@ -188,13 +196,18 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=3/);
+assert.match(tradePage,/trading-colonization\.js\?v=4/);
 assert.match(tradePage,/trading-colonization\.css\?v=1/);
 assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
+assert.match(tradePage,/Target Cargo \(t\)[\s\S]*placeholder="Optional · leave blank for open-ended"/,'Target cargo should be optional for open-ended jobs');
+assert.doesNotMatch(tradePage,/data-colony-target[^>]*required/,'Target cargo must not be required');
 
 const colonyUi=readFileSync('js/trading-colonization.js','utf8');
 assert.match(colonyUi,/data-colony-action="complete">Complete<\/button>/);
 assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must survive an immediately stale KV read');
+assert.match(colonyUi,/event\.key!=='Enter'/,'Enter in a Colonization form field must not submit the job');
+assert.match(colonyUi,/job\.canEditFunding/,'Funding inputs should use the server-provided safe-edit state');
+assert.match(colonyUi,/OPEN-ENDED/,'Open-ended jobs should render without a fake percentage target');
 assert.match(colonyUi,/mode==='archived'/);
 assert.match(colonyUi,/Job completed\. It is now in Archived/);
 new Function(colonyUi);
@@ -205,6 +218,9 @@ assert.match(memberApi,/postingOwnerId:auth\.session\.sub/);
 assert.match(memberApi,/fundingApprovalStatus:'pending'/);
 assert.match(memberApi,/approve-funding/);
 assert.match(memberApi,/not_colonization_job_owner/);
+assert.match(memberApi,/fundingTermsLocked/,'Member API must lock reward edits after verified hauling or issued rewards');
+assert.match(memberApi,/canEditFunding/,'Member API must expose whether reward terms are still safe to edit');
+assert.doesNotMatch(memberApi,/colonization_target_required/,'Open-ended jobs must not require a target tonnage');
 assert.match(memberApi,/const validation=action==='status'\?'':validateJob\(next\)/,'Status-only changes must not be blocked by legacy reward-budget validation');
 assert.match(memberApi,/marketId:body\?\.job\?\.scope==='market'\?'':undefined/,'Member specific-build posts must start unbound');
 assert.match(memberApi,/endsAt:statusChanged\?\(requestedStatus==='active'\?null:/,'Editor status changes must create the same pause\/complete earning boundary');
