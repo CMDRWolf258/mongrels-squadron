@@ -19,9 +19,15 @@
   const requestStatus=document.querySelector('[data-reward-request-status]');
   const outstandingList=document.querySelector('[data-reward-outstanding-list]');
   const paidList=document.querySelector('[data-reward-paid-list]');
+  const paidHistoryMore=document.querySelector('[data-reward-paid-more]');
+  const paidHistoryStatus=document.querySelector('[data-reward-paid-status]');
 
   let account=null;
   let loading=false;
+  let paidHistoryLoading=false;
+  let paidHistoryNextOffset=null;
+  let paidHistoryShown=0;
+  let paidHistoryTotal=0;
   const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
   const dateTime=value=>{
     if(!value)return'—';
@@ -88,47 +94,83 @@
     });
   }
 
-  function renderPaid(entries){
+  function renderPaidBatches(batches,{append=false}={}){
     if(!paidList)return;
-    paidList.replaceChildren();
-    const paid=entries.filter(entry=>entry?.status==='paid');
-    if(!paid.length){
+    const rows=Array.isArray(batches)?batches:[];
+    if(!append)paidList.replaceChildren();
+    if(!rows.length&&!append){
       const empty=document.createElement('div');empty.className='reward-empty';
       const strong=document.createElement('strong');strong.textContent='No paid reward history yet.';
       const small=document.createElement('small');small.textContent='Completed payouts will remain here after leadership confirms the in-game transfer.';
       empty.append(strong,small);paidList.append(empty);return;
     }
-    const groups=new Map();
-    paid.forEach(entry=>{
-      const key=entry.paymentBatchId||('legacy-'+String(entry.paidAt||entry.id||'paid'));
-      const group=groups.get(key)||{key,entries:[],paidAt:entry.paidAt||null,paidBy:entry.paidBy||''};
-      group.entries.push(entry);
-      if(entry.paidAt&&(!group.paidAt||entry.paidAt>group.paidAt))group.paidAt=entry.paidAt;
-      groups.set(key,group);
-    });
-    [...groups.values()]
-      .sort((a,b)=>String(b.paidAt||'').localeCompare(String(a.paidAt||'')))
-      .forEach((group,index)=>{
-        const details=document.createElement('details');details.className='reward-history-batch';if(index===0)details.open=true;
-        const summary=document.createElement('summary');
-        const main=document.createElement('div');
-        const title=document.createElement('strong');title.textContent='Payout · '+dateTime(group.paidAt);
-        const meta=document.createElement('small');meta.textContent=group.entries.length+' reward entr'+(group.entries.length===1?'y':'ies')+(group.paidBy?' · recorded by '+group.paidBy:'');
-        main.append(title,meta);
-        const total=document.createElement('b');total.textContent=fmt(group.entries.reduce((sum,e)=>sum+(Number(e.amountCredits)||0),0));
-        summary.append(main,total);
-        const items=document.createElement('div');items.className='reward-history-items';
-        group.entries.forEach(entry=>{
-          const row=document.createElement('div');row.className='reward-paid-entry';
-          const info=document.createElement('span');
-          const reason=document.createElement('strong');reason.textContent=entry.reason||'Reward payment';
-          const detail=document.createElement('small');detail.textContent=entryDetail(entry);
-          info.append(reason,detail);
-          const amount=document.createElement('b');amount.textContent=fmt(entry.amountCredits);
-          row.append(info,amount);items.append(row);
-        });
-        details.append(summary,items);paidList.append(details);
+
+    rows.forEach((group,index)=>{
+      const details=document.createElement('details');
+      details.className='reward-history-batch';
+      details.dataset.rewardHistoryBatch=group.batchId||('legacy-'+String(group.paidAt||index));
+      if(!append&&index===0)details.open=true;
+
+      const summary=document.createElement('summary');
+      const main=document.createElement('div');
+      const title=document.createElement('strong');title.textContent='Payout · '+dateTime(group.paidAt);
+      const meta=document.createElement('small');
+      meta.textContent=Number(group.entryCount||group.entries?.length||0)+' reward entr'+(Number(group.entryCount||group.entries?.length||0)===1?'y':'ies')+(group.paidBy?' · recorded by '+group.paidBy:'');
+      main.append(title,meta);
+      const total=document.createElement('b');total.textContent=fmt(group.totalCredits);
+      summary.append(main,total);
+
+      const items=document.createElement('div');items.className='reward-history-items';
+      (Array.isArray(group.entries)?group.entries:[]).forEach(entry=>{
+        const row=document.createElement('div');row.className='reward-paid-entry';
+        const info=document.createElement('span');
+        const reason=document.createElement('strong');reason.textContent=entry.reason||'Reward payment';
+        const detail=document.createElement('small');detail.textContent=entryDetail(entry);
+        info.append(reason,detail);
+        const amount=document.createElement('b');amount.textContent=fmt(entry.amountCredits);
+        row.append(info,amount);items.append(row);
       });
+      details.append(summary,items);paidList.append(details);
+    });
+  }
+
+  function syncPaidHistoryControls(page={}){
+    paidHistoryNextOffset=page.hasMore?Number(page.nextOffset):null;
+    paidHistoryShown=Number(page.offset||0)+Number(page.returnedBatchCount||0);
+    paidHistoryTotal=Number(page.totalBatchCount||0);
+    if(paidHistoryStatus){
+      paidHistoryStatus.textContent=paidHistoryTotal
+        ? 'Showing '+Math.min(paidHistoryShown,paidHistoryTotal).toLocaleString()+' of '+paidHistoryTotal.toLocaleString()+' payout batches'
+        : 'No completed payouts yet';
+    }
+    if(paidHistoryMore){
+      paidHistoryMore.hidden=!page.hasMore;
+      paidHistoryMore.disabled=false;
+      paidHistoryMore.textContent='LOAD OLDER PAYOUTS';
+    }
+  }
+
+  async function loadOlderPaidHistory(){
+    if(paidHistoryLoading||paidHistoryNextOffset===null)return;
+    paidHistoryLoading=true;
+    if(paidHistoryMore){paidHistoryMore.disabled=true;paidHistoryMore.textContent='LOADING…';}
+    try{
+      const response=await fetch('/api/rewards/history?offset='+encodeURIComponent(paidHistoryNextOffset)+'&limit=12&_='+Date.now(),{
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{Accept:'application/json'},
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.error||('Reward history request failed ('+response.status+')'));
+      renderPaidBatches(payload.batches,{append:true});
+      syncPaidHistoryControls(payload);
+    }catch(error){
+      console.error('Could not load older reward payouts',error);
+      if(paidHistoryStatus)paidHistoryStatus.textContent='Older payout history could not be loaded. Try again.';
+      if(paidHistoryMore){paidHistoryMore.disabled=false;paidHistoryMore.textContent='TRY AGAIN';}
+    }finally{
+      paidHistoryLoading=false;
+    }
   }
 
   function renderRequest(request,summary){
@@ -167,14 +209,15 @@
     account=payload;
     const entries=Array.isArray(payload.entries)?payload.entries:[];
     const summary=payload.summary||{};
-    const commander=entries.find(entry=>entry?.displayName)?.displayName||payload.viewer?.displayName||'Mongrel Member';
+    const commander=payload.viewer?.commander||entries.find(entry=>entry?.displayName)?.displayName||payload.viewer?.displayName||'Mongrel Member';
     if(viewer)viewer.textContent=commander;
     if(owedEl)owedEl.textContent=fmt(summary.owedCredits);
     if(paidEl)paidEl.textContent=fmt(summary.paidCredits);
     if(outstandingEl)outstandingEl.textContent=entries.filter(entry=>entry?.status==='owed').length.toLocaleString();
     renderRequest(payload.payoutRequest||{},summary);
     renderOutstanding(entries);
-    renderPaid(entries);
+    renderPaidBatches(payload.paidHistory?.batches||[],{append:false});
+    syncPaidHistoryControls(payload.paidHistory||{});
   }
 
   async function load(){
@@ -226,6 +269,7 @@
   }
 
   refresh?.addEventListener('click',load);
+  paidHistoryMore?.addEventListener('click',loadOlderPaidHistory);
   requestButton?.addEventListener('click',()=>mutateRequest('request'));
   cancelButton?.addEventListener('click',()=>mutateRequest('cancel'));
   setAccess(false);
