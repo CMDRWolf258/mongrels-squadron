@@ -155,7 +155,7 @@ assert.match(scoutPage,/\/api\/frontier\/login/);
 assert.match(scoutPage,/\/api\/downloads\/mongrel-scout/);
 assert.match(scoutPage,/downloads\/mongrel-scout\/README\.md/);
 assert.match(scoutPage,/Install EDMC and download Live Scout/);
-assert.match(scoutPage,/member\\\/#live-scout-setup/);
+assert.ok(scoutPage.includes('../member/#live-scout-setup'));
 assert.match(scoutPage,/LIVE SCOUT REQUIRED/);
 assert.match(scoutPage,/needed to update system data and receive Scout Job rewards/);
 const scoutUi=readFileSync('js/scout-jobs.js','utf8');
