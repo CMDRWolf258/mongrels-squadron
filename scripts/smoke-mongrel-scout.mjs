@@ -29,6 +29,8 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
+  /PLUGIN_VERSION = "1\.1\.0"/,
+  /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
 ])assert.match(plugin,pattern);
@@ -74,17 +76,22 @@ for(const pattern of [
   /DEFAULT_RATE_LIMIT_PER_HOUR = 120/,
   /Retry-After/,
   /expirationTtl:7200/,
+  /starPos:normalizeCoordinates/,
+  /lastCoords:snapshot\.starPos/,
 ])assert.match(ingest,pattern);
 
 const ingestFactory=new Function(
   ingest.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
-  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,consumeRateLimit,DEFAULT_RATE_LIMIT_PER_HOUR};'
+  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,DEFAULT_RATE_LIMIT_PER_HOUR};'
 );
 const ingestHelpers=ingestFactory();
 assert.equal(ingestHelpers.systemAuthorized({scope:'trusted',allowedSystems:[]},'Anywhere'),true);
 assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'  baldur  '),true);
 assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'Diaba'),false);
 assert.equal(ingestHelpers.DEFAULT_RATE_LIMIT_PER_HOUR,120);
+assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
+assert.deepEqual(ingestHelpers.normalizeCoordinates({x:1,y:2,z:3}),{x:1,y:2,z:3});
+assert.equal(ingestHelpers.normalizeCoordinates(['bad',2,3]),null);
 
 const rateStore=new Map();
 const rateEnv={DAILY_ORDERS:{
@@ -302,7 +309,7 @@ const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/])assert.match(scoutReadme,pattern);
+for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/included `load\.py`/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
