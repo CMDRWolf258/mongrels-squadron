@@ -299,6 +299,9 @@ assert.match(memberApi,/canEditStart/,'Member API must expose whether reward sta
 assert.match(memberApi,/normalizeRequestedStart/);
 assert.match(memberApi,/colonization_start_time_locked/);
 assert.match(memberApi,/colonization_start_time_requires_manager/);
+assert.match(memberApi,/reconcileAfterJobChange/,'Saving a Colonization Job should reconcile already-stored verified evidence');
+assert.match(memberApi,/reconcileAutomaticRewardEntries/);
+assert.match(memberApi,/reconcileMemberFundedColonizationRewards/);
 assert.doesNotMatch(memberApi,/colonization_target_required/,'Open-ended jobs must not require a target tonnage');
 assert.doesNotMatch(memberApi,/colonization_reward_budget_required/,'Funded Colonization jobs must not require a maximum pledge');
 assert.match(memberApi,/rewardBudgetUnlimited:unlimitedBudget/,'API should explicitly identify uncapped reward jobs');
