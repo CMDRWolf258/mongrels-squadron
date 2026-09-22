@@ -51,6 +51,9 @@ const memberJob={...normalizeColonizationJob({
 assert.equal(memberJob.fundingMode,'member');
 assert.equal(memberJob.fundingApprovalStatus,'approved');
 assert.equal(memberJob.fundingPayerOwnerId,'payer-user');
+memberJob.revisionStartedAt='2026-09-22T12:00:00.000Z';
+memberJob.createdAt='2026-09-22T12:00:00.000Z';
+memberJob.updatedAt='2026-09-22T12:00:00.000Z';
 assert.equal(memberJob.rewardBudgetMillions,50);
 console.log('✓ Member-funded Colonization metadata is durable');
 
@@ -93,6 +96,33 @@ const pendingDry=await buildColonizationRewardDryRun({
 });
 assert.equal(pendingDry.obligations.length,0,'Pending squad funding must not accrue retroactive reward entitlement');
 console.log('✓ Squad-funded requests start reward eligibility only after approval');
+
+const approvedSquad={
+  ...pendingSquad,
+  revision:2,
+  revisionStartedAt:'2026-09-22T12:40:00.000Z',
+  fundingApprovalStatus:'approved',
+  fundingApprovedAt:'2026-09-22T12:40:00.000Z',
+  fundingApprovedBy:'Officer',
+  updatedAt:'2026-09-22T12:40:00.000Z',
+};
+const approvedHistory=[
+  record({publicationId:'pending-create',appliedAt:'2026-09-22T12:00:01.000Z',after:[pendingSquad]}),
+  {
+    ...record({publicationId:'pending-approve',appliedAt:'2026-09-22T12:40:01.000Z',after:[approvedSquad]}),
+    action:'update',
+    before:{version:1,jobs:[pendingSquad],updatedAt:'2026-09-22T12:40:01.000Z',updatedBy:'Officer'},
+  },
+];
+const approvedDry=await buildColonizationRewardDryRun({
+  accounts:[account('hauler-user','HaulerCMDR',[contribution('approved-event','2026-09-22T12:45:00.000Z',1000)])],
+  colonizationStore:{version:1,jobs:[approvedSquad]},
+  historyRecords:approvedHistory,
+  ledgerEntries:[],
+});
+assert.equal(approvedDry.summary.readyObligations,1,'Post-approval hauling should enter the squad reward engine');
+assert.equal(approvedDry.obligations[0].deltaCredits,10_000_000);
+console.log('✓ Post-approval verified hauling becomes squad-reward eligible');
 
 const env={DAILY_ORDERS:new MemoryKv()};
 const created=await appendRewardEntryWithResult(env,{
@@ -139,7 +169,8 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js/);
+assert.match(tradePage,/trading-colonization\.js\?v=1/);
+assert.match(tradePage,/trading-colonization\.css\?v=1/);
 
 const memberApi=readFileSync('functions/api/colonization-jobs/index.js','utf8');
 assert.match(memberApi,/requireMember/);
@@ -161,6 +192,14 @@ assert.match(frontierSync,/reconcileMemberFundedColonizationRewards/,'Verified F
 const rewardsPage=readFileSync('rewards/index.html','utf8');
 assert.match(rewardsPage,/Payments I Owe/);
 assert.match(rewardsPage,/data-member-payment-list/);
+assert.match(rewardsPage,/rewards\.js\?v=3/);
+assert.match(rewardsPage,/rewards\.css\?v=3/);
+const rewardsUi=readFileSync('js/rewards.js','utf8');
+assert.match(rewardsUi,/Mark Payment Sent/);
+assert.match(rewardsUi,/Confirm Received/);
+assert.match(rewardsUi,/squadOwedCredits/);
+const rewardPreview=readFileSync('js/reward-preview.js','utf8');
+assert.match(rewardPreview,/memberPaymentSentCredits/);
 
 console.log('\nAll member Colonization posting and funding smoke checks passed.');
 
