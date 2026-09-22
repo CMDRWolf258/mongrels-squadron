@@ -38,7 +38,7 @@ const env={DAILY_ORDERS:fakeKv({
   'wolf-bgs-scout-tokens-v1':{
     version:2,
     tokens:{
-      a:{id:'a',label:'Scout A',hash:'x',scope:'trusted',ownerId:'A',ownerCommander:'CMDR A'},
+      a:{id:'a',label:'Scout A',hash:'x',scope:'trusted',ownerId:'A',ownerCommander:'CMDR A',lastSystem:'Test System',lastSeenAt:'2026-09-23T02:00:05.000Z',lastEventAt:'2026-09-23T02:00:00.000Z',lastCoords:{x:10,y:20,z:30}},
       b:{id:'b',label:'Scout B',hash:'y',scope:'trusted',ownerId:'B',ownerCommander:'CMDR B'},
     },
   },
@@ -127,14 +127,19 @@ assert.ok(dry.obligations.every(row=>row.plannedEntry?.kind==='scouting_job'));
 console.log('✓ Scout Jobs arbitrate claims, runner-ups, cycle resets, bonuses, and reward obligations');
 
 const board=await buildScoutJobBoard(env,{
-  systems:[{name:'Test System'}],
+  systems:[{name:'Test System',coords:{x:10,y:20,z:30},coordsSource:'EDSM'}],
   viewer:{userId:'A',displayName:'A',commander:'CMDR A'},
   now:new Date('2026-09-23T02:05:00.000Z'),
 });
 assert.equal(board.jobs[0].status,'fresh');
 assert.equal(board.jobs[0].winner.mine,true);
 assert.equal(board.viewer.scoutBound,true);
-console.log('✓ Scout Board reports current-cycle freshness and bound Scout identity');
+assert.deepEqual(board.jobs[0].coords,{x:10,y:20,z:30});
+assert.equal(board.jobs[0].coordinateSource,'EDSM');
+assert.equal(board.summary.coordinates,1);
+assert.equal(board.viewer.lastScoutLocation.system,'Test System');
+assert.deepEqual(board.viewer.lastScoutLocation.coords,{x:10,y:20,z:30});
+console.log('✓ Scout Board reports freshness, coordinate coverage, and the viewer last Scout location');
 
 const ingest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
 for(const pattern of [/recordScoutObservation/,/hasActiveScoutClaim/,/ownerId:auth\.ownerId/,/scoutJob/])assert.match(ingest,pattern);
@@ -158,10 +163,19 @@ assert.match(scoutPage,/Install EDMC and download Live Scout/);
 assert.ok(scoutPage.includes('../member/?section=live-scout-setup#live-scout-setup'));
 assert.match(scoutPage,/LIVE SCOUT REQUIRED/);
 assert.match(scoutPage,/needed to update system data and receive Scout Job rewards/);
+assert.match(scoutPage,/data-scout-distance-source/);
+assert.match(scoutPage,/data-scout-jobs-sort/);
+assert.match(scoutPage,/data-scout-use-last/);
+assert.match(scoutPage,/Nearest first/);
+assert.match(scoutPage,/Priority \+ distance/);
 const scoutUi=readFileSync('js/scout-jobs.js','utf8');
 assert.match(scoutUi,/if\(!payload\)return/,'summary mode must render without a full job-list element');
 assert.match(scoutUi,/data-scout-copy-system/);
 assert.match(scoutUi,/navigator\.clipboard\.writeText\(system\)/);
+assert.match(scoutUi,/priority-distance/);
+assert.match(scoutUi,/Math\.sqrt/);
+assert.match(scoutUi,/mongrels-scout-distance-source-v1/);
+assert.match(scoutUi,/lastScoutLocation/);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
 assert.match(memberUi,/honorMemberDeepLink/);
 assert.match(memberUi,/addEventListener\('pageshow',restoreMemberDeepLink\)/);
