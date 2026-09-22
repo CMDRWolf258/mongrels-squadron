@@ -6,6 +6,7 @@
   const list=host.querySelector('[data-scout-token-list]');
   const form=host.querySelector('[data-scout-token-form]');
   const labelInput=host.querySelector('[data-scout-token-label]');
+  const ownerInput=host.querySelector('[data-scout-token-owner]');
   const scopeInput=host.querySelector('[data-scout-token-scope]');
   const createSystems=host.querySelector('[data-scout-create-systems]');
   const message=host.querySelector('[data-scout-token-message]');
@@ -16,6 +17,7 @@
   let networkFingerprint='';
   let systemNames=[];
   let tokens=[];
+  let owners=[];
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const norm=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -50,6 +52,15 @@
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||`Request failed (${response.status})`);
     return data;
+  }
+
+  function ownerOptions(selected=''){
+    const chosen=String(selected||'');
+    return '<option value="">Unbound — no Scout Job rewards</option>'
+      +owners.map(row=>'<option value="'+esc(row.userId)+'" '+(String(row.userId)===chosen?'selected':'')+'>'+esc(row.commander||row.userId)+'</option>').join('');
+  }
+  function refreshOwnerSelector(selected=''){
+    if(ownerInput)ownerInput.innerHTML=ownerOptions(selected||ownerInput.value||'');
   }
 
   function mergedSystemNames(extra=[]){
@@ -104,7 +115,8 @@
     return `
       <div class="wolf-scout-access-editor" data-scout-access-editor hidden>
         <div class="wolf-scout-access-editor-head">
-          <div><span>ACCESS CONTROL</span><strong>${esc(row.label)}</strong><small>Changing this does not change the scout's token.</small></div>
+          <div><span>ACCESS CONTROL</span><strong>${esc(row.label)}</strong><small>Changing access or reward ownership does not change the scout's token.</small></div>
+          <label><span>Reward owner</span><select data-edit-scout-owner>${ownerOptions(row.ownerId||'')}</select></label>
           <label><span>Scout level</span><select data-edit-scout-scope><option value="restricted" ${row.scope==='restricted'?'selected':''}>Restricted Scout</option><option value="trusted" ${row.scope==='trusted'?'selected':''}>Trusted Scout</option></select></label>
         </div>
         <div class="wolf-scout-edit-systems" data-edit-scout-systems ${row.scope==='trusted'?'hidden':''}>${selectorMarkup(allowed,`edit-${row.id}`)}</div>
@@ -128,6 +140,7 @@
         <div class="wolf-scout-token-row">
           <div class="wolf-scout-token-identity"><span>SCOUT</span><strong>${esc(row.label)}</strong><small>Created ${esc(fmt(row.createdAt))}</small></div>
           <div class="wolf-scout-token-access"><span>ACCESS</span>${accessSummary(row)}</div>
+          <div><span>REWARD OWNER</span><strong>${esc(row.ownerCommander||'UNBOUND')}</strong><small>${row.ownerId?'Scout Jobs enabled':'No automatic Scout Job credit'}</small></div>
           <div><span>LAST UPLINK</span><strong>${esc(row.lastSeenAt?age(row.lastSeenAt):'Never')}</strong><small>${esc(row.lastSystem||'No system received yet')}</small></div>
           <div><span>GAME DATA</span><strong>${esc(row.lastEventAt?age(row.lastEventAt):'—')}</strong><small>${esc(row.lastEventAt?fmt(row.lastEventAt):'No event yet')}</small></div>
           <div class="wolf-scout-token-actions"><button type="button" class="wolf-scout-edit" data-edit-scout-access>EDIT ACCESS</button><button type="button" class="wolf-scout-revoke" data-revoke-scout-token>REVOKE</button></div>
@@ -141,6 +154,8 @@
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||'load_failed');
       const rows=Array.isArray(data?.tokens)?data.tokens:[];
+      owners=Array.isArray(data?.owners)?data.owners:[];
+      refreshOwnerSelector();
       const nextFingerprint=rows.map(row=>`${row.id}:${row.lastSeenAt||''}:${row.lastEventAt||''}:${row.lastSystem||''}`).sort().join('|');
       const changed=Boolean(networkFingerprint)&&nextFingerprint!==networkFingerprint;
       networkFingerprint=nextFingerprint;
@@ -173,6 +188,7 @@
     event.preventDefault();
     const label=labelInput?.value?.trim()||'';
     const scope=scopeInput?.value==='trusted'?'trusted':'restricted';
+    const ownerId=ownerInput?.value||'';
     const allowedSystems=scope==='restricted'?selectedSystems(createSystems):[];
     if(!label){setMessage('Enter a scout label first.','error');return;}
     if(scope==='restricted'&&!allowedSystems.length){setMessage('Choose at least one system for a Restricted Scout.','error');return;}
@@ -180,13 +196,14 @@
     if(button)button.disabled=true;
     setMessage('Generating one-time scout token…','working');
     try{
-      const data=await request('POST',{label,scope,allowedSystems});
+      const data=await request('POST',{label,ownerId,scope,allowedSystems});
       if(reveal&&revealValue){
         reveal.hidden=false;
         revealValue.textContent=data.token||'';
       }
       if(labelInput)labelInput.value='';
       if(scopeInput)scopeInput.value='restricted';
+      if(ownerInput)ownerInput.value='';
       refreshCreateSelector(false);
       setMessage('Token created. Copy it now — the site will not show it again.','success');
       await load({forceRender:true});
@@ -260,6 +277,7 @@
     if(saveButton){
       const editor=card.querySelector('[data-scout-access-editor]');
       const scope=editor?.querySelector('[data-edit-scout-scope]')?.value==='trusted'?'trusted':'restricted';
+      const ownerId=editor?.querySelector('[data-edit-scout-owner]')?.value||'';
       const allowedSystems=scope==='restricted'?selectedSystems(editor):[];
       if(scope==='restricted'&&!allowedSystems.length){
         setMessage(`${row.label} needs at least one assigned system.`,'error');
@@ -267,7 +285,7 @@
       }
       saveButton.disabled=true;
       try{
-        await request('PATCH',{id,scope,allowedSystems});
+        await request('PATCH',{id,ownerId,scope,allowedSystems});
         setMessage(`${row.label} access updated. Their existing token still works.`,'success');
         await load({forceRender:true});
       }catch(error){

@@ -924,6 +924,24 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Scout Jobs v1 — tick-aware paid scouting — 2026-09-22
+
+Scout Jobs now turns Live Scout faction-board uploads into a member-facing, rewardable operational queue.
+
+- **One reward per system per BGS work cycle**, not a rolling 24-hour timer. Scout Jobs uses the same per-system tick configuration and transition offset as Daily Orders through the shared system-cycle resolver.
+- A Live Scout board collected in the current work cycle marks that system fresh for the cycle. After the next cycle boundary, it returns to the queue.
+- **Claims are optional.** With no active claim, the first eligible attributed Live Scout upload wins the cycle reward.
+- A member may reserve a system for **60 minutes**, bounded by the current system-cycle end. During the reservation, another member's valid upload is retained as **runner-up** evidence instead of receiving the reward.
+- If the claimant does not complete before the reservation expires (or releases it), the earliest valid runner-up is promoted automatically without requiring another visit.
+- Live Scout data is always accepted when otherwise authorized; reward suppression never blocks useful faction-board updates.
+- Restricted Scout tokens gain temporary authorization for a system while their bound member has an active Scout Job claim.
+- Scout tokens can now be bound to a real website/Discord owner using the Frontier-connected CMDR list. Unbound tokens may still update data but cannot earn Scout Job rewards.
+- Wolf BGS Control includes Scout Job settings for a global default reward plus per-system bonus, reason, enable/disable state, and one-shot vs persistent bonus behavior.
+- One-shot priority bonuses clear after the next rewarded Scout completion while the winner retains the reward snapshot they were offered.
+- Mission Control includes a searchable/filterable Scout Board with Available, Priority, Claimed, Runner-up, Fresh, and winner states.
+- Verified Scout Job winners feed the existing Reward Engine as `scouting_job` obligations. Automatic ledger writes remain off; the existing READY → OWED admin action still controls debt creation.
+- Scout reward provenance stores the system, tick-cycle ID, winning observation ID, board timestamp, reward snapshot, and attribution mode.
+
 ## Reward ledger durable key registry repair — 2026-09-22
 
 A second persistence bug was found after the immediate-consistency UI repair: a newly created OWED entry could exist at its deterministic KV key while later ledger enumeration still missed it because the cached/rebuilt `KV list()` result did not contain that key.

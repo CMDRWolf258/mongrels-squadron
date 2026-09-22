@@ -152,7 +152,7 @@ new Function(ui);
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/site admin may explicitly promote a READY row into the actual ledger as OWED/i);
 assert.match(page,/server re-validates the evidence, rules, amount, and duplicate state/i);
-assert.match(page,/wolf-bgs-rewards\.js\?v=15/);
+assert.match(page,/wolf-bgs-rewards\.js\?v=16/);
 assert.match(page,/wolf-bgs-dry-run\.css\?v=4/);
 console.log('✓ BGS Control exposes the controlled READY-to-OWED action with explicit payment wording');
 

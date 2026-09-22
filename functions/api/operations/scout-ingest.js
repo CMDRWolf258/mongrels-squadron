@@ -1,4 +1,5 @@
 import { json } from '../../../lib/auth.js';
+import { hasActiveScoutClaim, recordScoutObservation } from '../../../lib/scout-jobs.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -42,7 +43,12 @@ export async function onRequestPost({ request, env }) {
     return reply({ok:false,error:'mongrels_not_present'}, 422);
   }
   if (!systemAuthorized(auth, snapshot.system)) {
-    return reply({ok:false,error:'system_not_authorized',system:snapshot.system}, 403);
+    const claimAuthorized=auth.ownerId
+      ? await hasActiveScoutClaim(env,{system:snapshot.system,ownerId:auth.ownerId,at:new Date()})
+      : false;
+    if(!claimAuthorized){
+      return reply({ok:false,error:'system_not_authorized',system:snapshot.system}, 403);
+    }
   }
 
   const state = await readSnapshots(env);
@@ -60,6 +66,31 @@ export async function onRequestPost({ request, env }) {
   }
 
   await noteTokenUse(env, auth.id, snapshot);
+  let scoutJob=null;
+  if(stored){
+    try{
+      const result=await recordScoutObservation(env,{
+        system:snapshot.system,
+        systemAddress:snapshot.systemAddress,
+        ownerId:auth.ownerId||'',
+        commander:auth.ownerCommander||auth.label||'Mongrel Scout',
+        tokenId:auth.id,
+        tokenLabel:auth.label,
+        observedAt:snapshot.updatedAt,
+        receivedAt:new Date().toISOString(),
+      });
+      scoutJob={
+        recorded:Boolean(result.recorded),
+        duplicate:Boolean(result.duplicate),
+        status:result.status||result.observation?.status||'',
+        rewardWinner:Boolean(result.winner&&result.winner.observationId===(result.observation?.id||'')),
+        cycleId:result.cycleId||'',
+      };
+    }catch(error){
+      console.error('Could not apply Scout Job observation',error);
+      scoutJob={recorded:false,status:'job_processing_failed'};
+    }
+  }
   return reply({
     ok:true,
     accepted:true,
@@ -67,6 +98,7 @@ export async function onRequestPost({ request, env }) {
     system:snapshot.system,
     updatedAt:snapshot.updatedAt,
     scout:auth.label,
+    scoutJob,
   }, 200);
 }
 
@@ -168,6 +200,8 @@ async function readTokens(env) {
       tokens[id] = {
         ...value,
         id:cleanText(value.id || id, '', 80),
+        ownerId:cleanText(value.ownerId, '', 120),
+        ownerCommander:cleanText(value.ownerCommander, '', 80),
         scope:normalizeScope(value.scope, 'trusted'),
         allowedSystems:normalizeAllowedSystems(value.allowedSystems),
       };

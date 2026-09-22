@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { listFrontierAccounts } from '../../../lib/frontier.js';
 
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
 const MAX_TOKENS = 24;
@@ -8,10 +9,14 @@ const DEFAULT_RATE_LIMIT_PER_HOUR = 120;
 export async function onRequestGet({ request, env }) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
-  const state = await readState(env);
+  const [state,accounts] = await Promise.all([readState(env),listFrontierAccounts(env)]);
   return json({
     ok:true,
     rateLimitPerHour:DEFAULT_RATE_LIMIT_PER_HOUR,
+    owners:accounts
+      .map(row=>({userId:String(row.userId||''),commander:String(row.account?.commander||'').slice(0,80)}))
+      .filter(row=>row.userId)
+      .sort((a,b)=>String(a.commander||a.userId).localeCompare(String(b.commander||b.userId))),
     tokens:Object.values(state.tokens)
       .sort((a,b) => String(a.label).localeCompare(String(b.label)))
       .map(publicToken),
@@ -43,6 +48,11 @@ export async function onRequestPost({ request, env }) {
     return json({ok:false,error:'token_limit_reached'}, {status:409,headers:privateHeaders()});
   }
 
+  const owner = await resolveOwner(env, body?.ownerId);
+  if (body?.ownerId && !owner) {
+    return json({ok:false,error:'scout_owner_not_found'}, {status:400,headers:privateHeaders()});
+  }
+
   const id = crypto.randomUUID();
   const token = 'mscout_' + randomBase64Url(32);
   const hash = await sha256Hex(token);
@@ -54,6 +64,8 @@ export async function onRequestPost({ request, env }) {
     hash,
     scope,
     allowedSystems:scope === 'trusted' ? [] : allowedSystems,
+    ownerId:owner?.userId||'',
+    ownerCommander:owner?.commander||'',
     createdAt:now,
     createdBy:actor,
     accessUpdatedAt:now,
@@ -98,10 +110,19 @@ export async function onRequestPatch({ request, env }) {
     return json({ok:false,error:'restricted_systems_required'}, {status:400,headers:privateHeaders()});
   }
 
+  const owner = body?.ownerId === undefined
+    ? {userId:existing.ownerId||'',commander:existing.ownerCommander||''}
+    : await resolveOwner(env, body.ownerId);
+  if (body?.ownerId && !owner) {
+    return json({ok:false,error:'scout_owner_not_found'}, {status:400,headers:privateHeaders()});
+  }
+
   const now = new Date().toISOString();
   state.tokens[id] = {
     ...existing,
     scope,
+    ownerId:owner?.userId||'',
+    ownerCommander:owner?.commander||'',
     allowedSystems:scope === 'trusted' ? [] : allowedSystems,
     accessUpdatedAt:now,
     accessUpdatedBy:auth.session.displayName || auth.session.username || 'CMDR Wolf258',
@@ -151,6 +172,8 @@ async function readState(env) {
         hash,
         scope,
         allowedSystems:scope === 'trusted' ? [] : normalizeAllowedSystems(value.allowedSystems),
+        ownerId:cleanText(value.ownerId, '', 120),
+        ownerCommander:cleanText(value.ownerCommander, '', 80),
         createdAt:value.createdAt || null,
         createdBy:cleanText(value.createdBy, '', 120),
         accessUpdatedAt:value.accessUpdatedAt || value.createdAt || null,
@@ -173,6 +196,8 @@ function publicToken(value) {
     label:value.label,
     scope:value.scope,
     allowedSystems:[...(value.allowedSystems || [])],
+    ownerId:value.ownerId||'',
+    ownerCommander:value.ownerCommander||'',
     rateLimitPerHour:DEFAULT_RATE_LIMIT_PER_HOUR,
     createdAt:value.createdAt,
     createdBy:value.createdBy,
@@ -182,6 +207,17 @@ function publicToken(value) {
     lastSystem:value.lastSystem,
     lastEventAt:value.lastEventAt,
   };
+}
+
+async function resolveOwner(env,value) {
+  const wanted=String(value||'').trim();
+  if(!wanted)return null;
+  const accounts=await listFrontierAccounts(env);
+  const found=accounts.find(row=>String(row?.userId||'')===wanted);
+  return found ? {
+    userId:String(found.userId),
+    commander:cleanText(found.account?.commander,'Mongrel CMDR',80),
+  } : null;
 }
 
 function normalizeScope(value, fallback = 'restricted') {
