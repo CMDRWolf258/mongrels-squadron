@@ -188,7 +188,7 @@ new Function(ui);
 const ops=readFileSync('operations/index.html','utf8');
 assert.match(ops,/data-mc-reward-preview/);
 assert.match(ops,/Open Reward Account/);
-assert.match(ops,/reward-preview\.js\?v=1/);
+assert.match(ops,/reward-preview\.js\?v=2/);
 const preview=readFileSync('js/reward-preview.js','utf8');
 assert.match(preview,/PAYOUT REQUESTED/);
 assert.match(preview,/\/api\/rewards\/status/);
