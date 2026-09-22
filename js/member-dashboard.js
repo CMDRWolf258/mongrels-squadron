@@ -175,7 +175,7 @@
     const paragraph = card.querySelector('p:not(.eyebrow)');
     if (paragraph) paragraph.textContent = 'Connect Elite for reward verification, and use Live Scout when you want fresh faction-board data sent directly into Wolf BGS Control.';
     const oldActions = card.querySelector('.member-scout-actions');
-    if (oldActions) oldActions.innerHTML = '<a class="btn btn-primary" href="/api/frontier/login" data-frontier-card-connect>Connect Elite Account</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Scout & Setup</a>';
+    if (oldActions) oldActions.innerHTML = '<a class="btn btn-primary" href="/api/frontier/login" data-frontier-card-connect>Connect Elite Account</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Scout & Setup</a><a class="btn btn-ghost" href="/operations/#scout-jobs">Scout Jobs</a>';
 
     panel.innerHTML = `
       <div class="member-panel-heading"><div><p class="eyebrow">Member Elite Tools</p><h3>Elite Connection & Live Scout</h3></div><span data-frontier-badge>Checking…</span></div>
@@ -196,7 +196,8 @@
         <h4 id="liveScoutHeading">Live Scout (EDMC)</h4>
         <p>Use Live Scout when you want Wolf BGS Control to receive a fresh faction board from the system you are visiting. <strong>Read the README first</strong>; it shows exactly which EDMC plugin folder to use and which folder to copy.</p>
         <div class="frontier-live-scout-actions">
-          <a class="btn btn-primary" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a>
+          <a class="btn btn-primary" href="/operations/#scout-jobs">Open Scout Jobs</a>
+          <a class="btn btn-ghost" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a>
           <a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a>
         </div>
       </section>
