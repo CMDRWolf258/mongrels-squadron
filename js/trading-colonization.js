@@ -12,6 +12,8 @@
   const shell=$('[data-colony-editor-shell]');
   const form=$('[data-colony-form]');
   let payload=null,editing=null,dirty=false;
+  const recentJobUpdates=new Map();
+  const RECENT_JOB_TTL_MS=120000;
 
   const n=value=>Number(value||0);
   const fmt=value=>Math.round(n(value)).toLocaleString();
@@ -27,6 +29,19 @@
   }
   async function copySystem(system,button){
     try{await navigator.clipboard.writeText(system);const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1000);}catch{}
+  }
+  function rememberJobUpdate(job){
+    if(!job?.id)return;
+    recentJobUpdates.set(String(job.id),{job:{...job},at:Date.now()});
+  }
+  function overlayRecentJobUpdates(rows=[]){
+    const now=Date.now();
+    for(const [id,record] of recentJobUpdates){
+      if(now-record.at>RECENT_JOB_TTL_MS){recentJobUpdates.delete(id);continue;}
+      const index=rows.findIndex(job=>String(job?.id||'')===id);
+      if(index>=0)rows[index]={...rows[index],...record.job};
+    }
+    return rows;
   }
   function fundingMeta(job){
     if(job.fundingMode==='none')return{label:'No Reward',className:'is-none',detail:'Volunteer hauling'};
@@ -51,10 +66,10 @@
     if(job.canEdit)actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="edit">Edit</button>');
     if(job.canEdit&&job.status==='active')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="pause">Pause</button>');
     if(job.canEdit&&job.status==='paused')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="resume">Resume</button>');
-    if(job.canEdit&&job.status!=='completed')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="complete">Complete</button>');
+    if(job.canEdit&&job.status!=='completed')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="complete">Complete & Archive</button>');
     if(job.canApproveFunding){actions.push('<button class="btn btn-primary btn-compact" type="button" data-colony-action="approve">Approve Funding</button>');actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="reject">Reject</button>');}
     article.innerHTML=
-      '<div class="colonization-job-head"><div><p class="colonization-job-kicker">'+safe(job.commodity||'All construction cargo')+'</p><h3>'+safe(job.title||'Colonization Job')+'</h3></div><div class="colonization-job-badges"><span class="colonization-job-badge '+safe(funding.className)+'">'+safe(funding.label)+'</span><span class="colonization-job-badge is-none">'+safe(job.status||'active')+'</span></div></div>'+
+      '<div class="colonization-job-head"><div><p class="colonization-job-kicker">'+safe(job.commodity||'All construction cargo')+'</p><h3>'+safe(job.title||'Colonization Job')+'</h3></div><div class="colonization-job-badges"><span class="colonization-job-badge '+safe(funding.className)+'">'+safe(funding.label)+'</span><span class="colonization-job-badge is-none">'+safe(job.status==='completed'?'archived':(job.status||'active'))+'</span></div></div>'+
       '<div class="colonization-system-line"><strong>'+safe(job.system)+'</strong><button class="copy-system-btn" type="button" data-copy-system aria-label="Copy system name">⧉</button></div>'+
       '<span class="colonization-build-line">'+safe(build)+'</span>'+
       '<div class="colonization-progress"><div><strong>'+fmt(tons)+' / '+fmt(target)+' t</strong><span>'+pct.toFixed(1)+'%</span></div><div class="colonization-progress-track"><i style="width:'+pct+'%"></i></div></div>'+
@@ -74,6 +89,7 @@
     if(mode==='active')rows=jobs.filter(job=>job.status==='active');
     if(mode==='mine')rows=jobs.filter(job=>job.isMine);
     if(mode==='pending')rows=jobs.filter(job=>job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending');
+    if(mode==='archived')rows=jobs.filter(job=>job.status==='completed');
     rows=[...rows].sort((a,b)=>(a.fundingApprovalStatus==='pending'?0:1)-(b.fundingApprovalStatus==='pending'?0:1)||String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
     list.replaceChildren();
     if(!rows.length){const empty=document.createElement('div');empty.className='data-empty-state';empty.innerHTML='<div><strong>No Colonization Jobs match this view.</strong><p>Post a construction hauling job when the squad has cargo to move.</p></div>';list.append(empty);}
@@ -92,7 +108,7 @@
         payload=null;if(privateView)privateView.hidden=true;if(createButton)createButton.hidden=true;if(signIn)signIn.hidden=false;if(status)status.textContent='Member sign-in required';return;
       }
       if(!result.response.ok)throw new Error(result.body.message||result.body.error||'Could not load Colonization Jobs');
-      payload=result.body;
+      payload={...result.body,jobs:overlayRecentJobUpdates([...(Array.isArray(result.body.jobs)?result.body.jobs:[])])};
       if(privateView)privateView.hidden=false;if(createButton)createButton.hidden=!result.body.canPost;if(signIn)signIn.hidden=Boolean(result.body.canPost);
       if(status)status.textContent=(result.body.jobs||[]).length.toLocaleString()+' job'+((result.body.jobs||[]).length===1?'':'s')+' · Frontier verification linked';
       render();
@@ -132,12 +148,25 @@
   async function mutate(job,action,button){
     if(button)button.disabled=true;let body={id:job.id};
     if(action==='pause')body={...body,action:'status',status:'paused'};if(action==='resume')body={...body,action:'status',status:'active'};if(action==='complete')body={...body,action:'status',status:'completed'};if(action==='approve')body={...body,action:'approve-funding'};if(action==='reject')body={...body,action:'reject-funding'};
-    try{const result=await api('/api/colonization-jobs',{method:'PUT',headers:{'Content-Type':'application/json','X-Mongrels-Request':'colonization-post-editor'},body:JSON.stringify(body)});if(!result.response.ok)throw new Error(result.body.message||friendlyError(result.body.error));await load();}
+    try{
+      const result=await api('/api/colonization-jobs',{method:'PUT',headers:{'Content-Type':'application/json','X-Mongrels-Request':'colonization-post-editor'},body:JSON.stringify(body)});
+      if(!result.response.ok)throw new Error(result.body.message||friendlyError(result.body.error));
+      if(result.body?.job){
+        rememberJobUpdate(result.body.job);
+        if(payload&&Array.isArray(payload.jobs)){
+          const index=payload.jobs.findIndex(row=>String(row?.id||'')===String(result.body.job.id||''));
+          if(index>=0)payload.jobs[index]={...payload.jobs[index],...result.body.job};
+          render();
+        }
+      }
+      if(action==='complete'&&status)status.textContent='Job completed and archived.';
+      setTimeout(()=>load(),1600);
+    }
     catch(error){if(status)status.textContent=String(error.message||error);if(button)button.disabled=false;}
   }
   function handleCardAction(job,action,button){
     if(action==='edit'){openEditor(job);return;}
-    if(action==='complete'&&!confirm('Close this Colonization Job? Existing verified work and any earned obligations remain preserved.'))return;
+    if(action==='complete'&&!confirm('Complete and archive this Colonization Job? It will leave the Active board and remain available under Archived. Existing verified work and any earned obligations remain preserved.'))return;
     if(action==='approve'&&!confirm('Approve the requested squad reward budget of '+moneyM(job.rewardBudgetMillions)+'?'))return;
     if(action==='reject'&&!confirm('Reject this squad funding request? The hauling job can remain visible, but no squad reward will be approved.'))return;
     mutate(job,action,button);

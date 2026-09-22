@@ -28,7 +28,7 @@
       <div class="colonization-board-toolbar">
         <div><strong>Active Colonization Board</strong><small data-colony-status>Loading Colonization Jobs…</small></div>
         <div class="colonization-board-filters">
-          <select data-colony-filter aria-label="Filter Colonization Jobs"><option value="active">Active</option><option value="mine">My Jobs</option><option value="pending">Funding Requests</option><option value="all">All</option></select>
+          <select data-colony-filter aria-label="Filter Colonization Jobs"><option value="active">Active</option><option value="mine">My Jobs</option><option value="pending">Funding Requests</option><option value="archived">Archived</option><option value="all">All</option></select>
           <button class="btn btn-secondary btn-compact" type="button" data-colony-refresh>Refresh</button>
         </div>
       </div>
@@ -59,7 +59,7 @@
 <label><span>Commodity Filter</span><input type="text" maxlength="100" data-colony-commodity placeholder="Optional · all commodities"></label>
 <label><span>Target Cargo (t)</span><input type="number" min="1" max="100000000" step="1" value="10000" required data-colony-target></label>
 <label><span>Funding</span><select data-colony-funding><option value="none">No reward · help requested</option><option value="member">Member funded · I will pay</option><option value="squad">Request squad funding</option></select></label>
-<label><span>Status</span><select data-colony-job-status><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></label>
+<label><span>Status</span><select data-colony-job-status><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed / Archived</option></select></label>
 <div class="project-editor-wide colony-funding-fields" data-colony-funding-fields hidden>
   <div class="project-editor-grid">
     <label><span>Reward Block (t)</span><input type="number" min="1" max="100000000" step="1" value="1000" data-colony-reward-tons></label>
@@ -70,7 +70,7 @@
   <p class="colony-funding-summary" data-colony-funding-summary></p>
 </div>
 <label class="project-editor-wide"><span>Instructions / Notes</span><textarea rows="4" maxlength="1000" data-colony-notes placeholder="Where to haul, priority commodities, timing, carrier support, or other instructions."></textarea></label>
-</div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Close Job</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
+</div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Complete &amp; Archive</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
 </main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=69"></script><script src="../js/trading-colonization.js?v=1"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=69"></script><script src="../js/trading-colonization.js?v=2"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
