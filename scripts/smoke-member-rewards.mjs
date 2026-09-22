@@ -159,6 +159,8 @@ for(const pattern of [
   /Member Account/,
   /Unsettled Rewards/,
   /Outstanding Rewards/,
+  /id="outstanding-rewards"/,
+  /id="payments-i-owe"/,
   /Squad Payout Status/,
   /Request Payout/,
   /Paid Rewards/,
