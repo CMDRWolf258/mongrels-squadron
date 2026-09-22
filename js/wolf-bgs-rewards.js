@@ -67,7 +67,7 @@
     if(!recent.size||!ledger||typeof ledger!=='object')return ledger;
     const entries=Array.isArray(ledger.entries)?ledger.entries.slice():[];
     const owedEntries=Array.isArray(ledger.owedEntries)?ledger.owedEntries.slice():entries.filter(entry=>entry?.status==='owed');
-    const members=Array.isArray(ledger.members)?ledger.members.map(member=>({...member}):[];
+    const members=Array.isArray(ledger.members)?ledger.members.map(member=>({...member})):[];
     const summary={...(ledger.summary||{})};
     const seen=new Set(entries.map(entry=>String(entry?.id||'')).filter(Boolean));
 
