@@ -306,6 +306,7 @@
       colonization_reward_rules_changed_during_job:'Reward rules changed while verified cargo spans multiple revisions',
       colonization_overlap_ambiguous:'Contribution matches multiple equally specific Colonization Jobs',
       existing_ledger_exceeds_entitlement:'Existing ledger credit exceeds current entitlement',
+      scout_evidence_missing:'Scout Job verification evidence is missing',
     }[value]||String(value||'').replaceAll('_',' '));
 
     try{
@@ -330,8 +331,10 @@
       const ds=dry.summary||{};
       const mode=consolePanel.querySelector('[data-reward-engine-mode]');
       if(mode){
-        const sources=Array.isArray(dry.sources)&&dry.sources.includes('colonization')?' · DAILY ORDERS + COLONIZATION':'';
-        mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+sources+' · AUTO WRITES OFF';
+        const sourceNames=['DAILY ORDERS'];
+        if(Array.isArray(dry.sources)&&dry.sources.includes('colonization'))sourceNames.push('COLONIZATION');
+        if(Array.isArray(dry.sources)&&dry.sources.includes('scouting'))sourceNames.push('SCOUTING');
+        mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+' · '+sourceNames.join(' + ')+' · AUTO WRITES OFF';
       }
       money('[data-reward-dryrun-create]',ds.wouldCreateCredits);
       num('[data-reward-dryrun-ready]',ds.readyObligations);
@@ -391,7 +394,7 @@
                 ? 'revs '+item.revisions.join('/')
                 : 'rev '+Number(item.revision||1);
               small.textContent=[
-                item.source==='colonization'?'COLONIZATION':'DAILY ORDER',
+                item.source==='colonization'?'COLONIZATION':item.source==='scouting'?'SCOUTING':'DAILY ORDER',
                 (member.commander||'Elite CMDR'),
                 item.system,
                 item.faction,
