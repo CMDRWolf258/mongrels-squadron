@@ -1,5 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { invalidateKeyListCache, listKeysCached } from '../../../lib/kv-list-cache.js';
+import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { orderWorkCycleId, workCycleForTimestamp } from '../../../lib/daily-order-cycle.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
 const MANAGER_ACCESS = new Set(['officer', 'site_admin']);
@@ -60,6 +62,9 @@ export async function onRequestPost({ request, env }) {
     reportId,
     storageKind:'submission',
     cycleId:cycleId(current),
+    workCycleId:orderWorkCycleId(order,cycleId(current)),
+    workCycleStartedAt:order?.workCycle?.cycleStartedAt||null,
+    workCycleEndsAt:order?.workCycle?.cycleEndsAt||null,
     orderId:order.id,
     system:order.system || '',
     faction:order.faction || '',
@@ -197,8 +202,7 @@ async function readBody(request) {
 }
 
 async function readCurrent(env) {
-  if (!env.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return null;
-  return env.DAILY_ORDERS.get(CURRENT_KEY, { type:'json' });
+  return readCurrentOrderCycle(env,{historyDepth:14});
 }
 
 function findOrder(current, id) {
@@ -292,7 +296,17 @@ async function listCurrentRecords(env, current) {
       createdAt:record.createdAt || record.updatedAt || null,
     }));
 
-  return [...legacyRecords, ...newRecords];
+  return [...legacyRecords, ...newRecords].filter(record=>recordBelongsToCurrentWorkCycle(record,current));
+}
+
+function recordBelongsToCurrentWorkCycle(record,current) {
+  const order=findOrder(current,record?.orderId);
+  if(!order)return false;
+  const currentId=orderWorkCycleId(order,cycleId(current));
+  const explicit=clean(record?.workCycleId);
+  if(explicit)return explicit===currentId;
+  const inferred=workCycleForTimestamp(order,record?.createdAt||record?.updatedAt||'');
+  return Boolean(inferred?.cycleId&&inferred.cycleId===currentId);
 }
 
 async function listRecords(env, prefix, cacheKey) {
@@ -351,6 +365,7 @@ function reportView(record, canEdit) {
     faction:record.faction || '',
     reportType:type || '',
     target:numberOrNull(record.target),
+    workCycleId:record.workCycleId||'',
     mode:record.mode === 'wing' ? 'wing' : 'solo',
     displayName:record.displayName || 'Mongrel CMDR',
     ownerId:record.ownerId || '',

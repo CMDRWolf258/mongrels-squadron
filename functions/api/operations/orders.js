@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
+import { decorateDailyOrdersForTiming } from '../../../lib/daily-order-cycle.js';
 import {
   ensureOrderHistoryBaseline,
   markOrderPublicationApplied,
@@ -114,7 +115,7 @@ export async function onRequestPut({ request, env }) {
       canManage: true,
       historyPublicationId:history.record.publicationId,
       historyState,
-      ...orders,
+      ...await decorateDailyOrdersForTiming(env,orders),
     },
     { headers: privateHeaders() },
   );
@@ -244,13 +245,13 @@ function validateSameOrigin(request) {
 async function readOrders(env) {
   if (env.DAILY_ORDERS && typeof env.DAILY_ORDERS.get === 'function') {
     const stored = await env.DAILY_ORDERS.get(KV_KEY, { type: 'json' });
-    if (stored) return normalizeOrders(stored);
+    if (stored) return decorateDailyOrdersForTiming(env,normalizeOrders(stored));
   }
 
   // Temporary fallback retained for anyone who used the v38 environment-variable method.
   if (env.DAILY_ORDERS_JSON) {
     try {
-      return normalizeOrders(JSON.parse(env.DAILY_ORDERS_JSON));
+      return decorateDailyOrdersForTiming(env,normalizeOrders(JSON.parse(env.DAILY_ORDERS_JSON)));
     } catch (error) {
       console.error('DAILY_ORDERS_JSON is not valid JSON', error);
     }
