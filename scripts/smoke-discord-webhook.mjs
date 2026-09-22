@@ -64,7 +64,7 @@ for(const pattern of [
   /data-discord-sync-orders/,
   /data-discord-sync-colonization/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=3/,
+  /wolf-bgs-discord\.js\?v=4/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
