@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { normalizeColonizationJob } from '../lib/colonization-jobs.js';
+import { normalizeColonizationJob, readColonizationJobs, writeColonizationJobStatusOverride } from '../lib/colonization-jobs.js';
 import { buildColonizationRewardDryRun } from '../lib/colonization-reward-dry-run.js';
 import {
   appendRewardEntryWithResult,
@@ -164,20 +164,39 @@ const ledger=await listRewardEntries(env,'hauler-user');
 assert.equal(ledger[0].status,'paid');
 console.log('✓ Member-funded settlement follows OWED → PAYMENT SENT → PAID');
 
+const statusEnv={DAILY_ORDERS:new MemoryKv()};
+await statusEnv.DAILY_ORDERS.put('colonization-jobs-v1',JSON.stringify({
+  version:1,
+  jobs:[{...memberJob,status:'active',endsAt:null}],
+  updatedAt:'2026-09-22T13:00:00.000Z',
+  updatedBy:'Payer',
+}));
+await writeColonizationJobStatusOverride(statusEnv,{
+  jobId:'member-job',
+  status:'completed',
+  endsAt:'2026-09-22T13:10:00.000Z',
+  actor:'Payer',
+  updatedAt:'2026-09-22T13:10:00.000Z',
+});
+const overlaidStore=await readColonizationJobs(statusEnv);
+assert.equal(overlaidStore.jobs[0].status,'completed','Completed status override must win over a stale active job blob');
+assert.equal(overlaidStore.jobs[0].endsAt,'2026-09-22T13:10:00.000Z');
+console.log('✓ Completed Colonization status remains authoritative over a stale active store read');
+
 const tradePage=readFileSync('trading/index.html','utf8');
 assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=2/);
+assert.match(tradePage,/trading-colonization\.js\?v=3/);
 assert.match(tradePage,/trading-colonization\.css\?v=1/);
 assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
 
 const colonyUi=readFileSync('js/trading-colonization.js','utf8');
-assert.match(colonyUi,/Complete & Archive/);
+assert.match(colonyUi,/data-colony-action="complete">Complete<\/button>/);
 assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must survive an immediately stale KV read');
 assert.match(colonyUi,/mode==='archived'/);
-assert.match(colonyUi,/Job completed and archived/);
+assert.match(colonyUi,/Job completed\. It is now in Archived/);
 new Function(colonyUi);
 
 const memberApi=readFileSync('functions/api/colonization-jobs/index.js','utf8');

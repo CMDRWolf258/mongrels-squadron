@@ -7,6 +7,7 @@ import {
   normalizeColonizationJob,
   readColonizationJobs,
   writeColonizationJobsStore,
+  writeColonizationJobStatusOverride,
 } from '../../../lib/colonization-jobs.js';
 import {
   ensureColonizationJobHistoryBaseline,
@@ -144,6 +145,7 @@ export async function onRequestPut({request,env}) {
   const jobs=[...store.jobs];
   const actor=auth.session.displayName||auth.session.username||'Wolf';
   let targetJobId='';
+  let statusOverride=null;
 
   try{
     await ensureColonizationJobHistoryBaseline(env,store);
@@ -175,6 +177,7 @@ export async function onRequestPut({request,env}) {
     if(!['active','paused','completed'].includes(status))return reply({ok:false,error:'colonization_status_invalid'},400);
     const endsAt=status==='active'?null:(jobs[index].endsAt||new Date().toISOString());
     jobs[index]=normalizeColonizationJob({...jobs[index],status,endsAt,updatedBy:actor},jobs[index]);
+    statusOverride={jobId:id,status:jobs[index].status,endsAt:jobs[index].endsAt,actor,updatedAt:jobs[index].updatedAt};
     targetJobId=id;
   } else if(action==='delete') {
     const id=clean(body?.id,80);
@@ -198,6 +201,7 @@ export async function onRequestPut({request,env}) {
   let saved;
   try{
     saved=await writeColonizationJobsStore(env,afterStore);
+    if(statusOverride)await writeColonizationJobStatusOverride(env,statusOverride);
   }catch(error){
     try{await markColonizationJobPublicationFailed(env,history,error);}
     catch(historyError){console.error('Could not mark failed Colonization Job publication history',historyError);}

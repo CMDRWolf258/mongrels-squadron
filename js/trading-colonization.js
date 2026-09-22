@@ -66,7 +66,7 @@
     if(job.canEdit)actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="edit">Edit</button>');
     if(job.canEdit&&job.status==='active')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="pause">Pause</button>');
     if(job.canEdit&&job.status==='paused')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="resume">Resume</button>');
-    if(job.canEdit&&job.status!=='completed')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="complete">Complete & Archive</button>');
+    if(job.canEdit&&job.status!=='completed')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="complete">Complete</button>');
     if(job.canApproveFunding){actions.push('<button class="btn btn-primary btn-compact" type="button" data-colony-action="approve">Approve Funding</button>');actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="reject">Reject</button>');}
     article.innerHTML=
       '<div class="colonization-job-head"><div><p class="colonization-job-kicker">'+safe(job.commodity||'All construction cargo')+'</p><h3>'+safe(job.title||'Colonization Job')+'</h3></div><div class="colonization-job-badges"><span class="colonization-job-badge '+safe(funding.className)+'">'+safe(funding.label)+'</span><span class="colonization-job-badge is-none">'+safe(job.status==='completed'?'archived':(job.status||'active'))+'</span></div></div>'+
@@ -148,6 +148,17 @@
   async function mutate(job,action,button){
     if(button)button.disabled=true;let body={id:job.id};
     if(action==='pause')body={...body,action:'status',status:'paused'};if(action==='resume')body={...body,action:'status',status:'active'};if(action==='complete')body={...body,action:'status',status:'completed'};if(action==='approve')body={...body,action:'approve-funding'};if(action==='reject')body={...body,action:'reject-funding'};
+    const prior={...job};
+    if(action==='complete'&&payload&&Array.isArray(payload.jobs)){
+      const index=payload.jobs.findIndex(row=>String(row?.id||'')===String(job.id||''));
+      if(index>=0){
+        const optimistic={...payload.jobs[index],status:'completed',endsAt:payload.jobs[index].endsAt||new Date().toISOString()};
+        payload.jobs[index]=optimistic;
+        rememberJobUpdate(optimistic);
+        render();
+      }
+      if(status)status.textContent='Completing job…';
+    }
     try{
       const result=await api('/api/colonization-jobs',{method:'PUT',headers:{'Content-Type':'application/json','X-Mongrels-Request':'colonization-post-editor'},body:JSON.stringify(body)});
       if(!result.response.ok)throw new Error(result.body.message||friendlyError(result.body.error));
@@ -159,14 +170,24 @@
           render();
         }
       }
-      if(action==='complete'&&status)status.textContent='Job completed and archived.';
+      if(action==='complete'&&status)status.textContent='Job completed. It is now in Archived.';
       setTimeout(()=>load(),1600);
     }
-    catch(error){if(status)status.textContent=String(error.message||error);if(button)button.disabled=false;}
+    catch(error){
+      if(action==='complete'&&payload&&Array.isArray(payload.jobs)){
+        const index=payload.jobs.findIndex(row=>String(row?.id||'')===String(job.id||''));
+        if(index>=0)payload.jobs[index]=prior;
+        recentJobUpdates.delete(String(job.id||''));
+        render();
+      }
+      if(status)status.textContent=String(error.message||error);
+      window.alert('The Colonization Job was not completed.\n\n'+String(error.message||error));
+      if(button)button.disabled=false;
+    }
   }
   function handleCardAction(job,action,button){
     if(action==='edit'){openEditor(job);return;}
-    if(action==='complete'&&!confirm('Complete and archive this Colonization Job? It will leave the Active board and remain available under Archived. Existing verified work and any earned obligations remain preserved.'))return;
+    if(action==='complete'&&!confirm('Complete this Colonization Job? It will leave the Active board and remain available under Archived. Existing verified work and any earned obligations remain preserved.'))return;
     if(action==='approve'&&!confirm('Approve the requested squad reward budget of '+moneyM(job.rewardBudgetMillions)+'?'))return;
     if(action==='reject'&&!confirm('Reject this squad funding request? The hauling job can remain visible, but no squad reward will be approved.'))return;
     mutate(job,action,button);
