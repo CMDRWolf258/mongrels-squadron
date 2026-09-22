@@ -169,8 +169,16 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=1/);
+assert.match(tradePage,/trading-colonization\.js\?v=2/);
 assert.match(tradePage,/trading-colonization\.css\?v=1/);
+assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
+
+const colonyUi=readFileSync('js/trading-colonization.js','utf8');
+assert.match(colonyUi,/Complete & Archive/);
+assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must survive an immediately stale KV read');
+assert.match(colonyUi,/mode==='archived'/);
+assert.match(colonyUi,/Job completed and archived/);
+new Function(colonyUi);
 
 const memberApi=readFileSync('functions/api/colonization-jobs/index.js','utf8');
 assert.match(memberApi,/requireMember/);
