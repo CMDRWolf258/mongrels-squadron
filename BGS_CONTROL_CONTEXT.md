@@ -924,6 +924,17 @@ Further integration was intentionally built without enabling automatic debt crea
 
 Trade verification was also tightened: only provenance-verified station-bought cargo can match a trade order. Mined cargo, Fleet Carrier market purchases and unknown purchase provenance remain visible as transaction history but do not feed automatic trade reward matching.
 
+## Reward ledger durable key registry repair — 2026-09-22
+
+A second persistence bug was found after the immediate-consistency UI repair: a newly created OWED entry could exist at its deterministic KV key while later ledger enumeration still missed it because the cached/rebuilt `KV list()` result did not contain that key.
+
+- Reward entries now maintain a separate cumulative durable key registry that is never rebuilt by replacing it with an eventually-consistent KV listing.
+- Every successful new write records its key in that registry.
+- Re-observing an already-existing deterministic reward entry also adopts that key into the registry, which repairs previously orphaned entries without creating duplicates.
+- Ledger reads union the normal cached key listing with the durable registry before fetching entries.
+- The ordinary reward-list cache key was version-bumped once so the first production read after deployment performs a fresh enumeration and backfills the registry with already-visible historical ledger entries.
+- This specifically prevents an OWED reward such as Ellis Landing from disappearing again after the temporary client overlay expires or the page is refreshed.
+
 ## Reward issue immediate-consistency repair — 2026-09-22
 
 The controlled **CREATE OWED ENTRY** action now stays coherent while Cloudflare KV key listings propagate.

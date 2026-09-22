@@ -74,10 +74,34 @@ await listAllRewardEntries(env);
 const candidateTwo={...candidate,id:'verified-test-obligation-two',sourceObligationId:'verified-test-obligation-two',sourceEventIds:['event-b'],evidenceDigest:'evidence-digest-two'};
 const third=await appendRewardEntryWithResult(env,candidateTwo);
 assert.equal(third.created,true);
-const cacheRecord=JSON.parse(env.DAILY_ORDERS.map.get('kv-list-cache:reward-ledger-v1'));
+const cacheRecord=JSON.parse(env.DAILY_ORDERS.map.get('kv-list-cache:reward-ledger-v2'));
 assert.ok(cacheRecord.keys.includes(third.key),'New reward keys must be written through to the cached ledger key list immediately');
 assert.equal((await listAllRewardEntries(env)).length,2,'Immediate ledger reads must include a just-created entry without waiting for KV list propagation');
-console.log('✓ Reward ledger deterministic issue is idempotent and write-through cache keeps immediate reads coherent');
+
+const orphanEnv={DAILY_ORDERS:fakeKv()};
+const orphanKey='reward-ledger:wolf:verified-test-obligation';
+orphanEnv.DAILY_ORDERS.map.set(orphanKey,JSON.stringify(normalized));
+orphanEnv.DAILY_ORDERS.map.set('kv-list-cache:reward-ledger-v2',JSON.stringify({
+  version:1,
+  prefix:'reward-ledger:',
+  cachedAt:new Date().toISOString(),
+  keys:[],
+}));
+const recovered=await appendRewardEntryWithResult(orphanEnv,candidate);
+assert.equal(recovered.created,false,'Direct deterministic lookup should find an existing orphan ledger entry');
+assert.ok(JSON.parse(orphanEnv.DAILY_ORDERS.map.get('reward-ledger-key-registry-v1')).keys.includes(orphanKey),'Re-observing an existing ledger entry must adopt its key into the durable registry');
+// Simulate a stale edge rebuilding the ordinary list cache without the entry.
+orphanEnv.DAILY_ORDERS.map.set('kv-list-cache:reward-ledger-v2',JSON.stringify({
+  version:1,
+  prefix:'reward-ledger:',
+  cachedAt:new Date().toISOString(),
+  keys:[],
+}));
+const recoveredRows=await listAllRewardEntries(orphanEnv);
+assert.equal(recoveredRows.length,1,'Durable reward key registry must keep an existing entry visible even when the normal KV list cache is stale');
+assert.equal(recoveredRows[0].id,candidate.id);
+
+console.log('✓ Reward ledger deterministic issue is idempotent and durable key registry survives stale KV enumeration');
 
 const issue=readFileSync('functions/api/rewards/issue.js','utf8');
 for(const pattern of [
