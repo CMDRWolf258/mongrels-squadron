@@ -210,6 +210,24 @@ try{
   assert.ok(state.summary?.messageId,'Persistent Scout Operations summary should be tracked');
   assert.equal(state.priorityCards['priority alpha'],undefined,'Completed priority card should leave tracked operations state');
   assert.ok(state.priorityCards['priority bravo']?.messageId,'Still-active priority card should remain tracked');
+
+  const nextCycleBoard={
+    ...completedBoard,
+    jobs:completedBoard.jobs.map(job=>job.system==='Priority Alpha'?{
+      ...priorityA,
+      latestScoutAt:'2026-09-22T23:05:00.000Z',
+    }:job),
+  };
+  const beforeReopen=requests.length;
+  const reopened=await syncScoutDiscordBoard(env,{
+    board:nextCycleBoard,
+    scoutBoardUrl:'https://mongrels-squadron.pages.dev/scout-jobs/',
+    setupUrl:'https://mongrels-squadron.pages.dev/member/?section=live-scout-setup#live-scout-setup',
+    createMissing:false,
+  });
+  assert.equal(reopened.created,1,'A recurring priority job should automatically regain its card after the Scout board has been seeded');
+  assert.equal(requests.length-beforeReopen,2,'Recurring priority return should update summary and create the returning priority card');
+  assert.equal(requests.slice(beforeReopen).filter(row=>row.method==='POST').length,1);
 }finally{
   globalThis.fetch=originalFetch;
 }
