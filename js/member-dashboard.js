@@ -147,6 +147,12 @@
     if(target.tagName==='DETAILS')target.open=true;
     requestAnimationFrame(()=>requestAnimationFrame(()=>target.scrollIntoView({block:'start',behavior:'auto'})));
   }
+  function restoreMemberDeepLink(){
+    if(!location.hash)return;
+    honorMemberDeepLink();
+  }
+  window.addEventListener('pageshow',restoreMemberDeepLink);
+  window.addEventListener('hashchange',restoreMemberDeepLink);
 
   function installFrontierScoutUi() {
     const card = document.querySelector('#mongrel-scout');
