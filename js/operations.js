@@ -78,6 +78,16 @@
     ).format(date);
   }
 
+  function newestTimestamp(...values) {
+    let best=null,bestMs=-Infinity;
+    for (const value of values) {
+      const date=parseDate(value);
+      if (!date) continue;
+      if (date.getTime()>bestMs){best=date.toISOString();bestMs=date.getTime();}
+    }
+    return best;
+  }
+
   function ageHours(value) {
     const date = parseDate(value);
     if (!date) return null;
@@ -95,12 +105,18 @@
 
   function freshness(system) {
     if (system.formerPresence || system.present === false) return { key: 'former', label: 'Former presence', detail: system.retiredAt ? `Removed ${ageLabel(system.retiredAt)}` : 'No longer in active presence feed', rank: 4 };
-    if (system.sourceUpdated) {
-      const hours = ageHours(system.sourceUpdated);
+    const stamp = system.freshestUpdatedAt || system.sourceUpdated;
+    const scoutSource = system.freshestSource === 'Mongrel Scout / EDMC' || system.sourceKind === 'scout';
+    if (stamp) {
+      const hours = ageHours(stamp);
       if (hours === null) return { key: 'unknown', label: 'Unknown', detail: 'Source timestamp unreadable', rank: 3 };
-      if (hours <= 6 && !system.stale) return { key: 'fresh', label: 'Fresh', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 0 };
-      if (hours <= 24 && !system.stale) return { key: 'aging', label: 'Aging', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 1 };
-      return { key: 'stale', label: 'Stale', detail: `Source ${ageLabel(system.sourceUpdated)}`, rank: 2 };
+      const sourceLabel = scoutSource
+        ? 'Live Scout'+(system.scoutLabel ? ' · '+system.scoutLabel : '')
+        : (system.freshestSource || system.source || 'EliteHub Vault / EDDN');
+      const detail = sourceLabel+' · '+ageLabel(stamp);
+      if (hours <= 6 && (!system.stale || scoutSource)) return { key: 'fresh', label: 'Fresh', detail, rank: 0 };
+      if (hours <= 24 && (!system.stale || scoutSource)) return { key: 'aging', label: 'Aging', detail, rank: 1 };
+      return { key: 'stale', label: 'Stale', detail, rank: 2 };
     }
     if (system.stale === true) return { key: 'stale', label: 'Last known', detail: 'Upstream source age unavailable', rank: 3 };
     const syncStamp = system.fetchedAt || system.lastSeen;
@@ -170,12 +186,14 @@
     if (summaryPriority) summaryPriority.textContent = (meta?.priorityCount ?? priorityCount).toLocaleString();
     if (summaryAttention) summaryAttention.textContent = (meta?.attentionCount ?? attentionCount).toLocaleString();
     if (summaryActiveOrders && !summaryActiveOrders.dataset.resolved) summaryActiveOrders.textContent = '—';
-    if (summaryUpdated) summaryUpdated.textContent = formatSnapshot(meta?.generatedAt, true) || 'Pending';
+    if (summaryUpdated) summaryUpdated.textContent = formatSnapshot(newestTimestamp(meta?.generatedAt,meta?.newestScoutAt), true) || 'Pending';
   }
 
   function renderLiveStatus() {
-    if (updatedEl) updatedEl.textContent = formatSnapshot(meta?.generatedAt, true) || 'Awaiting sync';
-    if (liveSourceEl) liveSourceEl.textContent = meta?.source || 'EliteHub Vault / EDDN';
+    if (updatedEl) updatedEl.textContent = formatSnapshot(newestTimestamp(meta?.generatedAt,meta?.newestScoutAt), true) || 'Awaiting sync';
+    if (liveSourceEl) liveSourceEl.textContent = Number(meta?.scoutSnapshotCount||0)>0
+      ? (meta?.source || 'EliteHub Vault / EDDN')+' + Live Scout'
+      : (meta?.source || 'EliteHub Vault / EDDN');
     if (!liveStatusEl) return;
     if (!meta?.generatedAt) {
       liveStatusEl.textContent = 'Awaiting first automatic sync';
