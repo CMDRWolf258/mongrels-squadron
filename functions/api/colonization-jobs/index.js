@@ -198,7 +198,7 @@ export async function onRequestPut({request,env}) {
     return reply({ok:false,error:'unsupported_action'},400);
   }
 
-  const validation=validateJob(next);
+  const validation=action==='status'?'':validateJob(next);
   if(validation)return reply({ok:false,error:validation},400);
   const statusChanged=next.status!==existing.status;
   jobs[index]=next;
