@@ -15,7 +15,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.0.0"
+PLUGIN_VERSION = "1.1.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -79,8 +79,9 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
 
     privacy = (
         "Only FSDJump / Location / CarrierJump BGS fields are sent, and only when "
-        "the Regiment of Imperial Mongrels is present. Commander name, cargo, credits, "
-        "ship build, materials, and general travel history are not transmitted."
+        "the Regiment of Imperial Mongrels is present. System coordinates are included "
+        "to support Scout distance sorting. Commander name, cargo, credits, ship build, "
+        "materials, and general travel history are not transmitted."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
         row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
@@ -198,6 +199,7 @@ def _build_payload(entry: Mapping[str, Any], fallback_system: str) -> Optional[d
         "timestamp": timestamp,
         "system": system_name,
         "systemAddress": entry.get("SystemAddress"),
+        "starPos": entry.get("StarPos"),
         "systemFaction": {
             "name": str(system_faction.get("Name") or ""),
             "state": str(system_faction.get("FactionState") or ""),
