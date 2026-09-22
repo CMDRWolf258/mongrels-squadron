@@ -232,6 +232,28 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+const scheduledEndpoint=readFileSync('functions/api/internal/scout-discord-refresh.js','utf8');
+for(const pattern of [
+  /SCOUT_DISCORD_CRON_TOKEN/,
+  /Authorization/,
+  /Bearer\\s\+/,
+  /secureEqual/,
+  /buildScoutJobBoard/,
+  /syncScoutDiscordBoard/,
+  /createMissing:false/,
+  /originSystem:'Diaba'/,
+  /ordinaryLimit:15/,
+])assert.match(scheduledEndpoint,pattern);
+
+const scheduledWorkflow=readFileSync('.github/workflows/refresh-scout-discord.yml','utf8');
+for(const pattern of [
+  /cron: '7,37 \* \* \* \*'/,
+  /SCOUT_DISCORD_CRON_TOKEN: \$\{\{ secrets\.SCOUT_DISCORD_CRON_TOKEN \}\}/,
+  /mongrels-squadron\.pages\.dev\/api\/internal\/scout-discord-refresh/,
+  /Authorization: Bearer \$SCOUT_DISCORD_CRON_TOKEN/,
+  /scheduled Scout Discord refresh is safely skipped/,
+])assert.match(scheduledWorkflow,pattern);
+
 const manualEndpoint=readFileSync('functions/api/operations/discord-scout-jobs.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -269,7 +291,7 @@ for(const pattern of [
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/data-discord-sync-scout/);
 assert.match(page,/15 ordinary systems needing scouting/);
-assert.match(page,/wolf-bgs-discord\.js\?v=5/);
+assert.match(page,/wolf-bgs-discord\.js\?v=6/);
 
 console.log('✓ Scout Discord shows every priority job, the 15 nearest ordinary needs-scouting systems from Diaba, and keeps individual cards priority-only');
 console.log('✓ Scout Discord claim/completion lifecycle edits in place and cleans completed priority cards on the next sync');
