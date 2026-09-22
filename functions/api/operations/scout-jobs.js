@@ -126,13 +126,25 @@ async function activeMongrelSystems(request){
     const data=await response.json();
     return (Array.isArray(data?.systems)?data.systems:[])
       .filter(row=>row?.name&&row.present!==false&&row.formerPresence!==true)
-      .map(row=>({name:clean(row.name).slice(0,140)}));
+      .map(row=>({
+        name:clean(row.name).slice(0,140),
+        coords:normalizeCoordinates(row.coords),
+        coordsSource:clean(row.coordsSource||'').slice(0,80),
+      }));
   }catch(error){
     console.error('Scout Jobs could not load active Mongrel systems',error);
     return[];
   }
 }
 
+function normalizeCoordinates(value){
+  const source=Array.isArray(value)
+    ? {x:value[0],y:value[1],z:value[2]}
+    : (value&&typeof value==='object'?value:null);
+  if(!source)return null;
+  const x=Number(source.x),y=Number(source.y),z=Number(source.z);
+  return Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z)?{x,y,z}:null;
+}
 function containsSystem(rows,system){
   const wanted=norm(system);
   return rows.some(row=>norm(row?.name)===wanted);
