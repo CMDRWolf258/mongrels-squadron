@@ -2,6 +2,7 @@ import { json, readSession } from '../../../lib/auth.js';
 import { deriveLogicalOrderKey, orderRevisionFingerprint } from '../../../lib/order-identity.js';
 import { decorateDailyOrdersForTiming } from '../../../lib/daily-order-cycle.js';
 import { buildOrderRewardPolicies, readRewardSettings } from '../../../lib/reward-rules.js';
+import { clearDailyOrdersDiscord, syncDailyOrdersDiscord } from '../../../lib/daily-orders-discord.js';
 import {
   ensureOrderHistoryBaseline,
   markOrderPublicationApplied,
@@ -109,6 +110,13 @@ export async function onRequestPut({ request, env }) {
     console.error('Daily Orders published but history finalization remained prepared',error);
   }
 
+  const discord=await syncDailyOrdersDiscord(env,{
+    document:orders,
+    actor,
+    missionControlUrl:missionControlUrlForRequest(request),
+    publicationId:history.record.publicationId,
+  });
+
   return json(
     {
       ok: true,
@@ -119,6 +127,7 @@ export async function onRequestPut({ request, env }) {
       canManage: true,
       historyPublicationId:history.record.publicationId,
       historyState,
+      discord,
       ...await decorateDailyOrdersForTiming(env,orders),
     },
     { headers: privateHeaders() },
@@ -175,6 +184,13 @@ export async function onRequestDelete({ request, env }) {
     console.error('Daily Orders deleted but history finalization remained prepared',error);
   }
 
+  const discord=await clearDailyOrdersDiscord(env,{
+    previous,
+    actor,
+    missionControlUrl:missionControlUrlForRequest(request),
+    publicationId:history.record.publicationId,
+  });
+
   return json(
     {
       ok: true,
@@ -185,6 +201,7 @@ export async function onRequestDelete({ request, env }) {
       canManage: true,
       historyPublicationId:history.record.publicationId,
       historyState,
+      discord,
       ...empty,
     },
     { headers: privateHeaders() },
@@ -262,6 +279,12 @@ async function readOrders(env) {
   }
 
   return emptyOrders();
+}
+
+function missionControlUrlForRequest(request) {
+  const url = new URL('/operations/', request.url);
+  url.hash = 'daily-orders';
+  return url.toString();
 }
 
 function privateHeaders() {
