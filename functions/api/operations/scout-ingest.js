@@ -1,5 +1,7 @@
 import { json } from '../../../lib/auth.js';
-import { hasActiveScoutClaim, recordScoutObservation } from '../../../lib/scout-jobs.js';
+import { buildScoutJobBoard, hasActiveScoutClaim, recordScoutObservation } from '../../../lib/scout-jobs.js';
+import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
+import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
@@ -103,6 +105,24 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
+  let scoutDiscord=null;
+  if(stored&&scoutJob?.recorded){
+    try{
+      const systems=await loadActiveMongrelSystems(request);
+      const board=await buildScoutJobBoard(env,{systems,viewer:null,now:new Date()});
+      scoutDiscord=await syncScoutDiscordBoard(env,{
+        board,
+        scoutBoardUrl:new URL('/scout-jobs/',request.url).toString(),
+        setupUrl:new URL('/member/?section=live-scout-setup#live-scout-setup',request.url).toString(),
+        createMissing:false,
+        originSystem:'Diaba',
+        ordinaryLimit:15,
+      });
+    }catch(error){
+      console.error('Live Scout observation saved but Scout Discord refresh failed',error);
+    }
+  }
+
   return reply({
     ok:true,
     accepted:true,
@@ -112,6 +132,7 @@ export async function onRequestPost({ request, env }) {
     scout:auth.label,
     scoutJob,
     automaticRewards,
+    scoutDiscord,
   }, 200);
 }
 
