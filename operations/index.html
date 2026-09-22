@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
   <title>Mission Control | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/mission-control-orders-v2.css?v=19">
+  <link rel="stylesheet" href="../css/mission-control-orders-v2.css?v=20">
   <link rel="stylesheet" href="../css/rewards.css?v=1">
   <link rel="stylesheet" href="../css/scout-jobs.css?v=5">
 </head>
@@ -83,7 +83,7 @@
           <article class="bgs-summary-card"><span>Priority</span><strong id="summaryPriority">—</strong><small>Current strategic focus</small></article>
           <article class="bgs-summary-card"><span>Needs Attention</span><strong id="summaryAttention">—</strong><small>Targets, states, risks, or stale data</small></article>
           <article class="bgs-summary-card"><span>Active Orders</span><strong id="summaryActiveOrders">—</strong><small>Current secure tasking</small></article>
-          <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest Vault/EDDN snapshot</small></article>
+          <article class="bgs-summary-card"><span>Data Updated</span><strong id="summaryUpdated">Pending</strong><small>Latest EDDN or Live Scout snapshot</small></article>
         </div>
         <aside class="mc-reward-preview" data-mc-reward-preview>
           <div class="mc-reward-preview-main">
@@ -122,7 +122,15 @@
 <h2 data-orders-title="">Squadron Daily Orders</h2>
 <p data-orders-briefing=""></p>
 </div>
-<div class="member-orders-security"><span>Authenticated</span><small data-orders-meta="">Secure member view</small></div>
+<div class="member-orders-security">
+  <span>Authenticated</span>
+  <small data-orders-meta="">Secure member view</small>
+  <div class="member-orders-frontier">
+    <a class="btn btn-secondary btn-compact is-attention" href="/api/frontier/login" data-orders-frontier-connect hidden>Connect Elite</a>
+    <button class="btn btn-secondary btn-compact" type="button" data-orders-frontier-sync hidden>Sync Activity</button>
+    <small data-orders-frontier-status hidden></small>
+  </div>
+</div>
 </div>
 <div class="private-orders-list" data-orders-list=""></div>
 <aside class="officer-note-card" data-orders-officer-note="" hidden="">
@@ -316,7 +324,7 @@
         </div>
         <div class="bgs-live-footnote">
           <div><span id="bgsLiveStatus" class="live-feed-pill waiting">Loading secure snapshot</span><span class="bgs-source-copy">Source: <strong id="bgsLiveSource">EliteHub Vault / EDDN</strong></span></div>
-          <p class="bgs-data-note">EDDN-backed data is not guaranteed to be real-time. Freshness depends on commander visits and journal uploads. Mission Control shows source age where available and retains former presences so a retreat does not silently erase history.</p>
+          <p class="bgs-data-note">EDDN-backed data is not guaranteed to be real-time. Mission Control also uses authenticated Live Scout faction-board snapshots when they are newer, and identifies the source and age in each system row. Former presences are retained so a retreat does not silently erase history.</p>
         </div>
       </div>
     </section>
@@ -339,10 +347,10 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
-<script src="../js/operations.js?v=66"></script>
+<script src="../js/operations.js?v=67"></script>
 <script src="../js/reward-preview.js?v=2"></script>
 <script src="../js/daily-orders.js?v=68"></script>
-<script src="../js/daily-orders-v2.js?v=18"></script>
+<script src="../js/daily-orders-v2.js?v=19"></script>
 <script src="../js/scout-jobs.js?v=3"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
