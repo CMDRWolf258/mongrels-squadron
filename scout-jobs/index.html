@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
   <title>Scout Jobs | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/scout-jobs.css?v=5">
+  <link rel="stylesheet" href="../css/scout-jobs.css?v=6">
 </head>
 <body class="visual-page page-command">
 <header class="site-header">
@@ -83,6 +83,17 @@
             <div><span>Fresh This Cycle</span><strong data-scout-summary="fresh">—</strong></div>
           </div>
           <div class="scout-jobs-rule" data-scout-binding-note hidden></div>
+          <div class="scout-route-tools">
+            <div class="scout-route-copy">
+              <span>SCOUT ROUTE FINDER</span>
+              <strong>Find the closest work from where you are.</strong>
+              <small>Select any tracked Mongrel system as your starting point. Distances are straight-line galactic distances in light-years.</small>
+            </div>
+            <label class="scout-route-source"><span>Start from</span><input type="search" data-scout-distance-source list="scout-distance-systems" placeholder="Search Mongrel system…" autocomplete="off"><datalist id="scout-distance-systems" data-scout-distance-options></datalist></label>
+            <label class="scout-route-sort"><span>Sort open work</span><select data-scout-jobs-sort><option value="priority" selected>Priority first</option><option value="distance">Nearest first</option><option value="priority-distance">Priority + distance</option><option value="reward">Highest reward</option><option value="name">System name</option></select></label>
+            <button type="button" class="btn btn-secondary btn-compact scout-use-last" data-scout-use-last hidden>Use My Last Scout Location</button>
+            <small class="scout-route-status" data-scout-distance-status>Select a starting system to calculate distances.</small>
+          </div>
           <div class="scout-jobs-tools">
             <input type="search" data-scout-jobs-search placeholder="Filter systems or priority reason…" autocomplete="off">
             <select data-scout-jobs-filter>
@@ -106,6 +117,6 @@
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
 <script src="../js/operations.js?v=66"></script>
-<script src="../js/scout-jobs.js?v=3"></script>
+<script src="../js/scout-jobs.js?v=4"></script>
 </body>
 </html>
