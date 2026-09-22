@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   appendRewardEntryWithResult,
+  listAllRewardEntries,
   normalizeRewardEntry,
 } from '../lib/reward-ledger.js';
 
@@ -68,7 +69,15 @@ assert.equal(first.created,true,'First deterministic obligation should create on
 const second=await appendRewardEntryWithResult(env,candidate);
 assert.equal(second.created,false,'Second attempt with same deterministic obligation must be idempotent');
 assert.equal(second.entry.id,candidate.id);
-console.log('✓ Reward ledger deterministic issue is idempotent and preserves approval audit');
+
+await listAllRewardEntries(env);
+const candidateTwo={...candidate,id:'verified-test-obligation-two',sourceObligationId:'verified-test-obligation-two',sourceEventIds:['event-b'],evidenceDigest:'evidence-digest-two'};
+const third=await appendRewardEntryWithResult(env,candidateTwo);
+assert.equal(third.created,true);
+const cacheRecord=JSON.parse(env.DAILY_ORDERS.map.get('kv-list-cache:reward-ledger-v1'));
+assert.ok(cacheRecord.keys.includes(third.key),'New reward keys must be written through to the cached ledger key list immediately');
+assert.equal((await listAllRewardEntries(env)).length,2,'Immediate ledger reads must include a just-created entry without waiting for KV list propagation');
+console.log('✓ Reward ledger deterministic issue is idempotent and write-through cache keeps immediate reads coherent');
 
 const issue=readFileSync('functions/api/rewards/issue.js','utf8');
 for(const pattern of [
