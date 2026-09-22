@@ -155,6 +155,29 @@ assert.equal(payload.systems[0].conflictScore.factionWonDays,1,'Mongrel score mu
 assert.equal(payload.systems[0].conflictScore.opponentWonDays,0);
 assert.equal(payload.systems[0].conflictScore.opponentFaction,'Opponent Faction');
 
+const mixedExternalBoard={
+  name:'Scout Test',
+  updatedAt:'2026-09-22T01:05:48.298000',
+  factions:[
+    {name:'Regiment of Imperial Mongrels',influence:44,state:'Boom',activeStates:['Boom'],pendingStates:[],recoveringStates:[],updatedAt:'2026-09-21T18:18:24.737000'},
+    {name:'Opponent Faction',influence:56,state:'None',activeStates:[],pendingStates:[],recoveringStates:[],updatedAt:'2026-09-22T01:05:48.298000'},
+  ],
+  ok:true,
+};
+payload=bgs.buildPayload(
+  {systems:[{name:'Scout Test',influence:44,control:'Regiment of Imperial Mongrels',state:'Boom',sourceUpdated:'2026-09-21T18:18:24.737000',present:true}],source:'test'},
+  {systems:{'Scout Test':mixedExternalBoard},syncOk:true,successfulSystems:1,requestedSystems:1},
+  control,
+  {displayName:'Wolf',access:'site_admin'},
+  {systems:{}}
+);
+assert.equal(payload.systems[0].externalBoardNewestAt,'2026-09-22T01:05:48.298Z');
+assert.equal(payload.systems[0].externalBoardOldestAt,'2026-09-21T18:18:24.737Z');
+assert.equal(payload.systems[0].activeSnapshotTime,'2026-09-21T18:18:24.737Z');
+assert.equal(payload.systems[0].boardMixedAge,true);
+assert.ok(payload.systems[0].boardAgeSpreadHours>6);
+console.log('✓ Mixed-age external boards expose complete-board freshness instead of newest-row freshness');
+
 const manualControl={
   ...control,
   manualSnapshots:{
@@ -207,7 +230,7 @@ for(const pattern of [
 ])assert.match(scoutCss,pattern);
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for(const pattern of [/wolf-scout-source-chip/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/])assert.match(baseClient,pattern);
+for(const pattern of [/wolf-scout-source-chip/,/wolf-mixed-source-chip/,/Active board complete through/,/External board oldest/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/,/parsedTime/])assert.match(baseClient,pattern);
 new Function(baseClient);
 
 

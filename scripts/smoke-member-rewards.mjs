@@ -202,7 +202,7 @@ assert.match(wolfCss,/animation:wolf-master-alert-flash/);
 assert.match(wolfCss,/@media \(prefers-reduced-motion: reduce\)\{[\s\S]*animation-duration:1\.6s/);
 assert.doesNotMatch(wolfCss,/wolf-master-alert-button\.is-active\{animation:none\}/,'Reduced-motion rule must not silently extinguish the critical alert blink');
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
-assert.match(wolfPage,/wolf-bgs\.css\?v=19/);
+assert.match(wolfPage,/wolf-bgs\.css\?v=20/);
 console.log('✓ Critical Faction Alert retains its visible blink while nonessential transitions remain reduced');
 
 console.log('\nAll member Reward Account and alert-blink smoke checks passed.');
