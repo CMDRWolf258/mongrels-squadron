@@ -6,6 +6,7 @@ import {
   listAllRewardEntries,
   normalizeRewardEntry,
 } from '../lib/reward-ledger.js';
+import { issueReadyRewardObligations } from '../lib/reward-engine-runtime.js';
 
 function fakeKv(){
   const map=new Map();
@@ -103,6 +104,68 @@ assert.equal(recoveredRows[0].id,candidate.id);
 
 console.log('✓ Reward ledger deterministic issue is idempotent and durable key registry survives stale KV enumeration');
 
+const autoEnv={DAILY_ORDERS:fakeKv()};
+const readyObligation={
+  id:'auto-ready-one',
+  ownerId:'wolf',
+  commander:'Wolf258',
+  deltaCredits:14_000_000,
+  readyForLive:true,
+  blockers:[],
+  fundingMode:'squad',
+  plannedEntry:{
+    version:3,
+    id:'auto-ready-one',
+    ownerId:'wolf',
+    displayName:'Wolf258',
+    kind:'verified_order',
+    amountCredits:14_000_000,
+    entitlementCredits:24_000_000,
+    existingVerifiedCredits:10_000_000,
+    reason:'Verified Daily Order reward',
+    sourceCycleId:'cycle-a',
+    sourceLogicalKey:'wolf-dynasty-inf',
+    sourceEventIds:['event-1'],
+    evidenceDigest:'evidence-auto-one',
+    rewardRuleDigest:'rules-auto-one',
+    rewardType:'inf',
+    verifiedContribution:24,
+    verifiedUnit:'INF',
+    fundingMode:'squad',
+    status:'owed',
+    createdBy:'reward-engine',
+  },
+};
+const blockedObligation={
+  ...readyObligation,
+  id:'blocked-one',
+  deltaCredits:5_000_000,
+  readyForLive:false,
+  blockers:['archive_provenance_missing'],
+  plannedEntry:{...readyObligation.plannedEntry,id:'blocked-one',amountCredits:5_000_000},
+};
+const memberFundedObligation={
+  ...readyObligation,
+  id:'member-funded-one',
+  fundingMode:'member',
+  plannedEntry:{...readyObligation.plannedEntry,id:'member-funded-one',fundingMode:'member',payerOwnerId:'payer'},
+};
+const autoDryRun={members:[{ownerId:'wolf',commander:'Wolf258',obligations:[readyObligation,blockedObligation,memberFundedObligation]}]};
+const automatic=await issueReadyRewardObligations(autoEnv,autoDryRun,{actor:'Reward Engine Test'});
+assert.equal(automatic.created,1,'Exactly one current READY squad obligation should auto-create debt');
+assert.equal(automatic.createdCredits,14_000_000);
+assert.equal(automatic.ready,1,'Blocked and member-funded obligations must not enter squad automatic issuance');
+const autoRows=await listAllRewardEntries(autoEnv);
+assert.equal(autoRows.length,1);
+assert.equal(autoRows[0].status,'owed');
+assert.equal(autoRows[0].approvalMode,'automatic_verified_issue');
+assert.equal(autoRows[0].approvedBy,'Reward Engine Test');
+const automaticRetry=await issueReadyRewardObligations(autoEnv,autoDryRun,{actor:'Reward Engine Test'});
+assert.equal(automaticRetry.created,0,'Repeating the same READY obligation must not duplicate debt');
+assert.equal(automaticRetry.duplicateSuppressed,1);
+assert.equal((await listAllRewardEntries(autoEnv)).length,1);
+console.log('✓ READY verified rewards auto-create OWED debt exactly once while blockers remain audit-only');
+
 const issue=readFileSync('functions/api/rewards/issue.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -129,31 +192,47 @@ assert.match(runtime,/buildRewardDryRun/);
 assert.match(runtime,/buildColonizationRewardDryRun/);
 assert.match(runtime,/mergeRewardDryRuns/);
 assert.match(runtime,/listAllRewardEntries/);
-console.log('✓ DRY RUN and manual issue share one unified reward-engine evaluation path');
+assert.match(runtime,/issueReadyRewardObligations/);
+assert.match(runtime,/automatic_verified_issue/);
+assert.match(runtime,/reconcileAutomaticRewardEntries/);
+console.log('✓ Unified Reward Engine can automatically reconcile READY obligations into OWED debt');
 
 const ui=readFileSync('js/wolf-bgs-rewards.js','utf8');
 for(const pattern of [
-  /CREATE OWED ENTRY/,
-  /data-issue-ready-reward/,
-  /canIssueReady===true/,
-  /\/api\/rewards\/issue/,
-  /expectedAmountCredits/,
-  /expectedEvidenceDigest/,
-  /expectedRewardRuleDigest/,
-  /does NOT mark any in-game payment as sent/,
-  /AUTO WRITES OFF/,
-  /recentlyIssuedRewardEntries/,
-  /overlayRecentlyIssuedLedger/,
-  /overlayRecentlyIssuedDryRun/,
-  /RECENT_ISSUE_OVERLAY_MS/,
+  /\/api\/rewards\/reconcile/,
+  /wolf-reward-auto-reconcile/,
+  /AUTO OWED ON/,
+  /automatic OWED issuance ON/,
 ]) assert.match(ui,pattern);
+assert.doesNotMatch(ui,/issue\.textContent='CREATE OWED ENTRY'/,'Reward audit must not require per-obligation issuance buttons');
+assert.doesNotMatch(ui,/if\(index===0\)details\.open=true/,'Reward audit member rows should stay collapsed until opened');
 new Function(ui);
 
-const page=readFileSync('wolf-bgs/index.html','utf8');
-assert.match(page,/site admin may explicitly promote a READY row into the actual ledger as OWED/i);
-assert.match(page,/server re-validates the evidence, rules, amount, and duplicate state/i);
-assert.match(page,/wolf-bgs-rewards\.js\?v=16/);
-assert.match(page,/wolf-bgs-dry-run\.css\?v=4/);
-console.log('✓ BGS Control exposes the controlled READY-to-OWED action with explicit payment wording');
+const reconcileApi=readFileSync('functions/api/rewards/reconcile.js','utf8');
+for(const pattern of [
+  /reconcileAutomaticRewardEntries/,
+  /wolf-reward-auto-reconcile/,
+  /automaticIssuance:true/,
+]) assert.match(reconcileApi,pattern);
 
-console.log('\nAll controlled reward-ledger issue smoke checks passed.');
+const frontierSync=readFileSync('functions/api/frontier/sync.js','utf8');
+assert.match(frontierSync,/reconcileAutomaticRewardEntries/);
+assert.match(frontierSync,/Reward Engine · Frontier Sync/);
+const scoutIngest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
+assert.match(scoutIngest,/reconcileAutomaticRewardEntries/);
+assert.match(scoutIngest,/Reward Engine · Live Scout/);
+
+const dryRunApi=readFileSync('functions/api/rewards/dry-run.js','utf8');
+assert.match(dryRunApi,/engineMode:'automatic_verified'/);
+assert.match(dryRunApi,/automaticLedgerWrites:true/);
+assert.match(dryRunApi,/canIssueReady:false/);
+
+const page=readFileSync('wolf-bgs/index.html','utf8');
+assert.match(page,/Reward Engine · AUTOMATIC/);
+assert.match(page,/Valid READY rewards now create OWED ledger entries automatically/i);
+assert.match(page,/blocked rows stay in this audit for review and never create debt automatically/i);
+assert.match(page,/wolf-bgs-rewards\.js\?v=17/);
+assert.match(page,/wolf-bgs-dry-run\.css\?v=4/);
+console.log('✓ BGS Control uses automatic READY-to-OWED issuance and keeps the audit collapsed');
+
+console.log('\nAll automatic reward-ledger issuance smoke checks passed.');
