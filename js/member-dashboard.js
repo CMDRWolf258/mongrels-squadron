@@ -139,6 +139,15 @@
   });
 
   const init=async()=>{try{const {response,payload:session}=await fetchJson('/api/auth/session');if(!response.ok||!session.authenticated)return;const isOfficer=['officer','site_admin'].includes(session.access);if(officerPanel)officerPanel.hidden=!isOfficer;if(memberNote)memberNote.hidden=isOfficer;siteAdminLinks.forEach(link=>{link.hidden=session.access!=='site_admin';});const [ordersResult,projectsResult,carrierResult,tradeResult,bountyResult,onboardingResultData,rewardsResult]=await Promise.all([fetchJson('/api/operations/orders'),fetchJson('/api/projects'),fetchJson('/api/carriers?resource=coordination'),fetchJson('/api/trades'),fetchJson('/api/bounties'),fetchJson('/api/member/onboarding'),fetchJson('/api/rewards/status')]);if(ordersResult.response.ok)renderOrders(ordersResult.payload);else renderUnavailable();if(projectsResult.response.ok)renderProjects(projectsResult.payload);if(carrierResult.response.ok)renderCarriers(carrierResult.payload);if(tradeResult.response.ok)renderTrades(tradeResult.payload);if(bountyResult.response.ok)renderBounties(bountyResult.payload);if(onboardingResultData.response.ok)renderOnboarding(onboardingResultData.payload);if(rewardsResult.response.ok)renderRewards(rewardsResult.payload);}catch(error){console.error('Could not load member dashboard',error);renderUnavailable();}};
+  function honorMemberDeepLink() {
+    const id=decodeURIComponent(location.hash.slice(1));
+    if(!['mongrel-scout','mongrel-scout-setup','live-scout-setup'].includes(id))return;
+    const target=document.getElementById(id);
+    if(!target)return;
+    if(target.tagName==='DETAILS')target.open=true;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>target.scrollIntoView({block:'start',behavior:'auto'})));
+  }
+
   function installFrontierScoutUi() {
     const card = document.querySelector('#mongrel-scout');
     const panel = document.querySelector('#mongrel-scout-setup');
@@ -242,6 +251,7 @@
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
       </details>
     `;
+    honorMemberDeepLink();
     return panel;
   }
 
