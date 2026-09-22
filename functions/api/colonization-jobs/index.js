@@ -10,6 +10,8 @@ import {
   writeColonizationJobStatusOverride,
 } from '../../../lib/colonization-jobs.js';
 import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
+import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
+import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import {
   ensureColonizationJobHistoryBaseline,
   markColonizationJobPublicationApplied,
@@ -127,7 +129,8 @@ export async function onRequestPost({request,env}) {
 
   const jobs=[job,...store.jobs];
   const saved=await commitMutation(env,{before:store,jobs,actor,action:'create',targetJobId:job.id});
-  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt},201);
+  const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation},201);
 }
 
 export async function onRequestPut({request,env}) {
@@ -260,7 +263,8 @@ export async function onRequestPut({request,env}) {
       updatedAt:next.updatedAt,
     });
   }
-  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt});
+  const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation});
 }
 
 export async function onRequestDelete({request,env}) {
@@ -374,6 +378,21 @@ function presentJob(job,session,progress={}){
     canModerate:manager,
     canApproveFunding:manager&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending',
   };
+}
+
+async function reconcileAfterJobChange(env,actor){
+  const result={memberFunded:null,squad:null};
+  try{
+    result.memberFunded=await reconcileMemberFundedColonizationRewards(env,{actor:'Reward Engine · '+actor});
+  }catch(error){
+    console.error('Could not reconcile member-funded rewards after Colonization Job change',error);
+  }
+  try{
+    result.squad=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · '+actor,baselineActor:'Colonization Job reward catch-up'});
+  }catch(error){
+    console.error('Could not reconcile squad rewards after Colonization Job change',error);
+  }
+  return result;
 }
 
 function normalizeRequestedStart(value){
