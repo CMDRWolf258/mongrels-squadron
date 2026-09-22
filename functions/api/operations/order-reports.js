@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { invalidateKeyListCache, listKeysCached } from '../../../lib/kv-list-cache.js';
-import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { aggregateVerifiedOrderTotals, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { getEvents, listFrontierAccounts } from '../../../lib/frontier.js';
 import { orderWorkCycleId, workCycleForTimestamp } from '../../../lib/daily-order-cycle.js';
 
 const ALLOWED_ACCESS = new Set(['member', 'officer', 'site_admin']);
@@ -17,9 +18,12 @@ export async function onRequestGet({ request, env }) {
   if (auth.response) return auth.response;
   const current = await readCurrent(env);
   const canManage = MANAGER_ACCESS.has(auth.session.access);
-  if (!current) return reply({ ok:true, cycleId:null, summaries:{}, reports:[], canManageReports:canManage });
+  if (!current) return reply({ ok:true, cycleId:null, summaries:{}, verifiedSummaries:{}, reports:[], canManageReports:canManage });
 
-  const records = await listCurrentRecords(env, current);
+  const [records,verifiedSummaries] = await Promise.all([
+    listCurrentRecords(env, current),
+    summarizeVerifiedCurrent(env,current),
+  ]);
   const summaries = summarizeCurrent(current, records, auth.session.sub);
   const wantsAdmin = new URL(request.url).searchParams.get('admin') === '1';
   const visible = wantsAdmin && canManage
@@ -30,6 +34,7 @@ export async function onRequestGet({ request, env }) {
     ok:true,
     cycleId:cycleId(current),
     summaries,
+    verifiedSummaries,
     reports:visible.map(record => reportView(record, canManage || String(record.ownerId) === String(auth.session.sub))),
     canManageReports:canManage,
   });
@@ -157,6 +162,26 @@ export async function onRequestDelete({ request, env }) {
       .map(record => reportView(record, true)),
     canManageReports:MANAGER_ACCESS.has(auth.session.access),
   });
+}
+
+async function summarizeVerifiedCurrent(env,current){
+  try{
+    const accounts=await listFrontierAccounts(env);
+    if(!accounts.length)return {};
+    const members=await Promise.all(accounts.map(async row=>{
+      try{
+        const events=await getEvents(env,row.userId);
+        return {userId:row.userId,matched:matchVerifiedActivity(events,current)};
+      }catch(error){
+        console.error('Could not read one member Scout activity for Daily Orders',error);
+        return null;
+      }
+    }));
+    return aggregateVerifiedOrderTotals(members.filter(Boolean));
+  }catch(error){
+    console.error('Could not aggregate squad Scout progress for Daily Orders',error);
+    return {};
+  }
 }
 
 async function mutationReply(env, current, session, record, action) {
