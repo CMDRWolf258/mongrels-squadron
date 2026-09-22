@@ -15,6 +15,7 @@ import {
   markColonizationJobPublicationFailed,
   prepareColonizationJobPublication,
 } from '../../../lib/colonization-job-history.js';
+import { archiveColonizationJobDiscord, syncColonizationJobDiscord } from '../../../lib/colonization-discord.js';
 
 export async function onRequestGet({request,env}) {
   const auth=await requireSiteAdmin(request,env);
@@ -145,6 +146,8 @@ export async function onRequestPut({request,env}) {
   const jobs=[...store.jobs];
   const actor=auth.session.displayName||auth.session.username||'Wolf';
   let targetJobId='';
+  let targetJob=null;
+  let removedJob=null;
   let statusOverride=null;
 
   try{
@@ -160,6 +163,7 @@ export async function onRequestPut({request,env}) {
     if(error)return reply({ok:false,error},400);
     jobs.unshift(job);
     targetJobId=job.id;
+    targetJob=job;
   } else if(action==='update') {
     const id=clean(body?.job?.id||body?.id,80);
     const index=jobs.findIndex(job=>String(job.id)===id);
@@ -169,6 +173,7 @@ export async function onRequestPut({request,env}) {
     if(error)return reply({ok:false,error},400);
     jobs[index]=job;
     targetJobId=id;
+    targetJob=job;
   } else if(action==='status') {
     const id=clean(body?.id,80);
     const status=clean(body?.status,20);
@@ -179,11 +184,13 @@ export async function onRequestPut({request,env}) {
     jobs[index]=normalizeColonizationJob({...jobs[index],status,endsAt,updatedBy:actor},jobs[index]);
     statusOverride={jobId:id,status:jobs[index].status,endsAt:jobs[index].endsAt,actor,updatedAt:jobs[index].updatedAt};
     targetJobId=id;
+    targetJob=jobs[index];
   } else if(action==='delete') {
     const id=clean(body?.id,80);
     const index=jobs.findIndex(job=>String(job.id)===id);
     if(index<0)return reply({ok:false,error:'colonization_job_not_found'},404);
     targetJobId=id;
+    removedJob=jobs[index];
     jobs.splice(index,1);
   } else {
     return reply({ok:false,error:'unsupported_action'},400);
@@ -216,6 +223,27 @@ export async function onRequestPut({request,env}) {
     console.error('Colonization Jobs changed but history finalization remained prepared',error);
   }
 
+  let discord=null;
+  try{
+    if(action==='delete'&&removedJob){
+      discord=await archiveColonizationJobDiscord(env,{
+        job:removedJob,
+        actor,
+        controlUrl:colonizationControlUrlForRequest(request),
+      });
+    }else if(targetJob){
+      discord=await syncColonizationJobDiscord(env,{
+        job:targetJob,
+        actor,
+        controlUrl:colonizationControlUrlForRequest(request),
+        createMissing:action==='create',
+      });
+    }
+  }catch(error){
+    console.error('Colonization Job saved but Discord sync failed',error);
+    discord={feature:'colonization_job',configured:true,attempted:true,ok:false,mode:'failed',error:'discord_colonization_sync_failed'};
+  }
+
   return reply({
     ok:true,
     jobs:saved.jobs,
@@ -223,6 +251,7 @@ export async function onRequestPut({request,env}) {
     updatedBy:saved.updatedBy,
     historyPublicationId:history.record.publicationId,
     historyState,
+    discord,
     automaticRewardIssuance:false,
   });
 }
@@ -232,6 +261,12 @@ async function requireSiteAdmin(request,env) {
   if(!session)return{response:reply({ok:false,error:'authentication_required'},401)};
   if(session.access!=='site_admin')return{response:reply({ok:false,error:'site_admin_required'},403)};
   return{session};
+}
+
+function colonizationControlUrlForRequest(request){
+  const url=new URL('/wolf-bgs/',request.url);
+  url.hash='colonization-jobs';
+  return url.toString();
 }
 
 function validateJob(job) {
