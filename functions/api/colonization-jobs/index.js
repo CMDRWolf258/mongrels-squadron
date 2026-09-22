@@ -10,6 +10,8 @@ import {
   writeColonizationJobStatusOverride,
 } from '../../../lib/colonization-jobs.js';
 import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
+import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
+import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import {
   ensureColonizationJobHistoryBaseline,
   markColonizationJobPublicationApplied,
@@ -58,6 +60,7 @@ export async function onRequestGet({request,env}) {
       rewardPreviewMillions,
       ambiguousEvents:previews.reduce((sum,row)=>sum+(Number(row.ambiguousEventCount)||0),0),
       fundingTermsLocked,
+      startTimeLocked:hasLedger,
     });
   });
 
@@ -116,15 +119,18 @@ export async function onRequestPost({request,env}) {
     postingCommander,
     createdBy:actor,
     updatedBy:actor,
-    startsAt:new Date().toISOString(),
+    startsAt:normalizeRequestedStart(body?.job?.startsAt)||new Date().toISOString(),
     status:'active',
   });
+  const startValidation=validateStartTime(job.startsAt);
+  if(startValidation)return reply({ok:false,error:startValidation},400);
   const validation=validateJob(job);
   if(validation)return reply({ok:false,error:validation},400);
 
   const jobs=[job,...store.jobs];
   const saved=await commitMutation(env,{before:store,jobs,actor,action:'create',targetJobId:job.id});
-  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt},201);
+  const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation},201);
 }
 
 export async function onRequestPut({request,env}) {
@@ -180,6 +186,7 @@ export async function onRequestPut({request,env}) {
       ...existing,
       title:requested.title??existing.title,
       targetTons:requested.targetTons??existing.targetTons,
+      startsAt:Object.prototype.hasOwnProperty.call(requested,'startsAt')?(normalizeRequestedStart(requested.startsAt)||existing.startsAt):existing.startsAt,
       notes:requested.notes??existing.notes,
       status:requestedStatus,
       endsAt:statusChanged?(requestedStatus==='active'?null:(existing.endsAt||new Date().toISOString())):existing.endsAt,
@@ -191,6 +198,27 @@ export async function onRequestPut({request,env}) {
       merged.marketId=requested.marketId??existing.marketId;
       merged.buildName=requested.buildName??existing.buildName;
       merged.commodity=requested.commodity??existing.commodity;
+    }
+
+    const startChanged=String(merged.startsAt||'')!==String(existing.startsAt||'');
+    if(startChanged){
+      const startValidation=validateStartTime(merged.startsAt);
+      if(startValidation)return reply({ok:false,error:startValidation},400);
+      const ledgerEntries=await listAllRewardEntries(env);
+      if(ledgerEntries.some(entry=>String(entry?.sourceJobId||'')===String(existing.id||''))){
+        return reply({
+          ok:false,
+          error:'colonization_start_time_locked',
+          message:'The reward start time is locked because this job already has reward-ledger activity.',
+        },409);
+      }
+      if(existing.fundingMode==='squad'&&existing.fundingApprovalStatus==='approved'&&!manager){
+        return reply({
+          ok:false,
+          error:'colonization_start_time_requires_manager',
+          message:'An approved squad-funded job can only have its reward start time changed by an Officer or Site Admin.',
+        },403);
+      }
     }
 
     if(fundingFieldsRequested(requested)&&fundingDefinitionChanged(existing,requested)){
@@ -235,7 +263,8 @@ export async function onRequestPut({request,env}) {
       updatedAt:next.updatedAt,
     });
   }
-  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt});
+  const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation});
 }
 
 export async function onRequestDelete({request,env}) {
@@ -343,10 +372,39 @@ function presentJob(job,session,progress={}){
     isMine:mine,
     canEdit:mine||manager,
     canEditFunding:(mine||manager)&&!Boolean(progress.fundingTermsLocked),
+    canEditStart:(mine||manager)&&!Boolean(progress.startTimeLocked)&&!(mine&&!manager&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='approved'),
     fundingTermsLocked:Boolean(progress.fundingTermsLocked),
+    startTimeLocked:Boolean(progress.startTimeLocked),
     canModerate:manager,
     canApproveFunding:manager&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending',
   };
+}
+
+async function reconcileAfterJobChange(env,actor){
+  const result={memberFunded:null,squad:null};
+  try{
+    result.memberFunded=await reconcileMemberFundedColonizationRewards(env,{actor:'Reward Engine · '+actor});
+  }catch(error){
+    console.error('Could not reconcile member-funded rewards after Colonization Job change',error);
+  }
+  try{
+    result.squad=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · '+actor,baselineActor:'Colonization Job reward catch-up'});
+  }catch(error){
+    console.error('Could not reconcile squad rewards after Colonization Job change',error);
+  }
+  return result;
+}
+
+function normalizeRequestedStart(value){
+  if(value===null||value===undefined||value==='')return'';
+  const ms=Date.parse(String(value));
+  return Number.isFinite(ms)?new Date(ms).toISOString():'';
+}
+function validateStartTime(value){
+  const ms=Date.parse(String(value||''));
+  if(!Number.isFinite(ms))return'colonization_start_time_invalid';
+  if(ms>Date.now()+5*60*1000)return'colonization_start_time_future';
+  return'';
 }
 
 function fundingFieldsRequested(source={}){

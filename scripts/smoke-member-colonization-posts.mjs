@@ -94,6 +94,25 @@ assert.deepEqual(memberObligation.blockers,['colonization_member_funded_payment_
 assert.equal(memberObligation.readyForLive,false,'Member-funded debt must not enter the squad manual issue path');
 console.log('✓ Member-funded verified work is separated from the squad issue queue');
 
+const retroMemberJob={
+  ...memberJob,
+  id:'retro-member-job',
+  startsAt:'2026-09-22T11:00:00.000Z',
+  createdAt:'2026-09-22T12:00:00.000Z',
+  revisionStartedAt:'2026-09-22T12:00:00.000Z',
+  updatedAt:'2026-09-22T12:00:00.000Z',
+};
+const retroMemberDry=await buildColonizationRewardDryRun({
+  accounts:[account('hauler-user','HaulerCMDR',[contribution('retro-member-event','2026-09-22T11:30:00.000Z',1000)])],
+  colonizationStore:{version:1,jobs:[retroMemberJob]},
+  historyRecords:[record({publicationId:'retro-member-create',appliedAt:'2026-09-22T12:00:01.000Z',after:[retroMemberJob]})],
+  ledgerEntries:[],
+});
+assert.equal(retroMemberDry.obligations.length,1,'A backdated member-funded start should include verified hauling from before the post was created');
+assert.equal(retroMemberDry.obligations[0].deltaCredits,10_000_000);
+assert.equal(retroMemberDry.obligations[0].retroactiveStartCredit,true);
+console.log('✓ Explicit backdated member-funded start can credit verified pre-post hauling');
+
 const selfDry=await buildColonizationRewardDryRun({
   accounts:[account('payer-user','PayerCMDR',[contribution('self-event','2026-09-22T12:25:00.000Z',1000)])],
   colonizationStore:{version:1,jobs:[memberJob]},
@@ -112,6 +131,34 @@ const pendingDry=await buildColonizationRewardDryRun({
 });
 assert.equal(pendingDry.obligations.length,0,'Pending squad funding must not accrue retroactive reward entitlement');
 console.log('✓ Squad-funded requests start reward eligibility only after approval');
+
+const retroApprovedSquad={
+  ...pendingSquad,
+  revision:2,
+  revisionStartedAt:'2026-09-22T12:40:00.000Z',
+  fundingApprovalStatus:'approved',
+  fundingApprovedAt:'2026-09-22T12:40:00.000Z',
+  fundingApprovedBy:'Officer',
+  updatedAt:'2026-09-22T12:40:00.000Z',
+};
+const retroApprovedHistory=[
+  record({publicationId:'retro-pending-create',appliedAt:'2026-09-22T12:00:01.000Z',after:[pendingSquad]}),
+  {
+    ...record({publicationId:'retro-pending-approve',appliedAt:'2026-09-22T12:40:01.000Z',after:[retroApprovedSquad]}),
+    action:'update',
+    before:{version:1,jobs:[pendingSquad],updatedAt:'2026-09-22T12:40:01.000Z',updatedBy:'Officer'},
+  },
+];
+const retroApprovedDry=await buildColonizationRewardDryRun({
+  accounts:[account('hauler-user','HaulerCMDR',[contribution('retro-approved-event','2026-09-22T12:30:00.000Z',1000)])],
+  colonizationStore:{version:1,jobs:[retroApprovedSquad]},
+  historyRecords:retroApprovedHistory,
+  ledgerEntries:[],
+});
+assert.equal(retroApprovedDry.summary.readyObligations,1,'Approval should honor the explicitly listed Reward Start boundary');
+assert.equal(retroApprovedDry.obligations[0].deltaCredits,10_000_000);
+assert.equal(retroApprovedDry.obligations[0].retroactiveStartCredit,true);
+console.log('✓ Approved squad funding can honor verified hauling from an explicit pre-approval start time');
 
 const approvedSquad={
   ...pendingSquad,
@@ -204,13 +251,16 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=6/);
+assert.match(tradePage,/trading-colonization\.js\?v=7/);
 assert.match(tradePage,/trading-colonization\.css\?v=2/);
 assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
 assert.match(tradePage,/Target Cargo \(t\)[\s\S]*placeholder="Optional · leave blank for open-ended"/,'Target cargo should be optional for open-ended jobs');
 assert.doesNotMatch(tradePage,/data-colony-target[^>]*required/,'Target cargo must not be required');
 assert.match(tradePage,/Maximum Pledge \(M Cr\)[\s\S]*Optional · leave blank for no cap/,'Maximum pledge should be optional');
 assert.doesNotMatch(tradePage,/data-colony-budget[^>]*required/,'Maximum pledge must not be required');
+assert.match(tradePage,/Reward Start Date \/ Time/);
+assert.match(tradePage,/type="datetime-local" data-colony-start/);
+assert.match(tradePage,/Backdate it to include recent hauling/);
 
 assert.match(tradePage,/Reward verification requires a current Elite connection/);
 assert.match(tradePage,/data-colony-frontier-connect/);
@@ -228,6 +278,11 @@ assert.match(colonyUi,/Manage Payments/,'Member-funded job owner should have a p
 assert.match(colonyUi,/\/rewards\/#payments-i-owe/);
 assert.match(colonyUi,/rewardBudgetUnlimited\?'No cap'/,'Uncapped funded jobs should display No cap');
 assert.match(colonyUi,/No maximum pledge/,'Funding summary should explain uncapped reward liability');
+assert.match(colonyUi,/toLocalInput/);
+assert.match(colonyUi,/fromLocalInput/);
+assert.match(colonyUi,/canEditStart/);
+assert.match(colonyUi,/Reward credit from/);
+assert.match(colonyUi,/intentional backdate/);
 assert.match(colonyUi,/mode==='archived'/);
 assert.match(colonyUi,/Job completed\. It is now in Archived/);
 new Function(colonyUi);
@@ -240,6 +295,13 @@ assert.match(memberApi,/approve-funding/);
 assert.match(memberApi,/not_colonization_job_owner/);
 assert.match(memberApi,/fundingTermsLocked/,'Member API must lock reward edits after verified hauling or issued rewards');
 assert.match(memberApi,/canEditFunding/,'Member API must expose whether reward terms are still safe to edit');
+assert.match(memberApi,/canEditStart/,'Member API must expose whether reward start time can still be edited');
+assert.match(memberApi,/normalizeRequestedStart/);
+assert.match(memberApi,/colonization_start_time_locked/);
+assert.match(memberApi,/colonization_start_time_requires_manager/);
+assert.match(memberApi,/reconcileAfterJobChange/,'Saving a Colonization Job should reconcile already-stored verified evidence');
+assert.match(memberApi,/reconcileAutomaticRewardEntries/);
+assert.match(memberApi,/reconcileMemberFundedColonizationRewards/);
 assert.doesNotMatch(memberApi,/colonization_target_required/,'Open-ended jobs must not require a target tonnage');
 assert.doesNotMatch(memberApi,/colonization_reward_budget_required/,'Funded Colonization jobs must not require a maximum pledge');
 assert.match(memberApi,/rewardBudgetUnlimited:unlimitedBudget/,'API should explicitly identify uncapped reward jobs');

@@ -22,6 +22,14 @@
   const fmt=value=>Math.round(n(value)).toLocaleString();
   const moneyM=value=>n(value).toLocaleString(undefined,{maximumFractionDigits:1})+'M Cr';
   const dateLabel=value=>{const d=new Date(value||'');return Number.isNaN(d.getTime())?'Unknown':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});};
+  const dateTimeLabel=value=>{const d=new Date(value||'');return Number.isNaN(d.getTime())?'Unknown':d.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});};
+  const toLocalInput=value=>{
+    const d=value?new Date(value):new Date();
+    if(Number.isNaN(d.getTime()))return'';
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
+  };
+  const fromLocalInput=value=>{const d=new Date(String(value||''));return Number.isNaN(d.getTime())?'':d.toISOString();};
   const safe=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
   async function api(url,options={}){
@@ -157,7 +165,7 @@
     const budget=job.fundingMode==='none'?'—':(job.rewardBudgetUnlimited?'No cap':moneyM(job.rewardBudgetMillions)+' max');
     const build=job.scope==='market'?(job.buildName||'Specific build · awaiting site link'):'Any construction in system';
     let extra='';
-    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> hauling can be tracked now, but cargo moved before approval does not earn the requested reward. Reward eligibility begins when leadership approves the funding request.</p>';
+    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> no squad debt is created until leadership approves it. If approved, verified hauling at or after the listed Reward Start time can become eligible, including an intentional backdate.</p>';
     if(job.fundingMode==='member')extra+='<p class="colonization-job-warning"><strong>Member pledge:</strong> '+safe(job.fundingPayerName||job.postingCommander||'The posting CMDR')+' is the payer. Verified rewards stay separate from the squad treasury.</p>';
     if(n(job.ambiguousEvents)>0)extra+='<p class="colonization-job-warning">'+fmt(job.ambiguousEvents)+' verified contribution event'+(n(job.ambiguousEvents)===1?'':'s')+' currently need arbitration before reward credit can be trusted.</p>';
     const actions=[];
@@ -171,6 +179,7 @@
       '<div class="colonization-job-head"><div><p class="colonization-job-kicker">'+safe(job.commodity||'All construction cargo')+'</p><h3>'+safe(job.title||'Colonization Job')+'</h3></div><div class="colonization-job-badges"><span class="colonization-job-badge '+safe(funding.className)+'">'+safe(funding.label)+'</span><span class="colonization-job-badge is-none">'+safe(job.status==='completed'?'archived':(job.status||'active'))+'</span></div></div>'+
       '<div class="colonization-system-line"><strong>'+safe(job.system)+'</strong><button class="copy-system-btn" type="button" data-copy-system aria-label="Copy system name">⧉</button></div>'+
       '<span class="colonization-build-line">'+safe(build)+'</span>'+
+      '<span class="colonization-build-line">Reward credit from '+safe(dateTimeLabel(job.startsAt))+'</span>'+
       '<div class="colonization-progress"><div><strong>'+(openEnded?fmt(tons)+' t hauled':fmt(tons)+' / '+fmt(target)+' t')+'</strong><span>'+(openEnded?'OPEN-ENDED':pct.toFixed(1)+'%')+'</span></div>'+(openEnded?'':'<div class="colonization-progress-track"><i style="width:'+pct+'%"></i></div>')+'</div>'+
       '<div class="colonization-job-metrics"><div><span>Reward</span><strong>'+safe(reward)+'</strong></div><div><span>Pledge / Budget</span><strong>'+safe(budget)+'</strong></div><div><span>Contributors</span><strong>'+fmt(job.contributorCount)+'</strong></div></div>'+
       (job.notes?'<p class="colonization-job-notes">'+safe(job.notes)+'</p>':'')+extra+
@@ -218,11 +227,15 @@
   function openEditor(job=null){
     editing=job;dirty=false;shell.hidden=false;document.body.classList.add('project-editor-open');
     $('[data-colony-form-title]').textContent=job?'Edit Colonization Job':'Post Colonization Job';
-    $('[data-colony-id]').value=job?.id||'';$('[data-colony-title]').value=job?.title||'';$('[data-colony-system]').value=job?.system||'';$('[data-colony-scope]').value=job?.scope||'system';$('[data-colony-build]').value=job?.buildName||'';$('[data-colony-commodity]').value=job?.commodity||'';$('[data-colony-target]').value=n(job?.targetTons)>0?job.targetTons:'';$('[data-colony-funding]').value=job?.fundingMode||'none';$('[data-colony-job-status]').value=job?.status||'active';$('[data-colony-reward-tons]').value=job?.rewardBlockTons||1000;$('[data-colony-reward-millions]').value=job?.rewardBlockMillions||10;$('[data-colony-budget]').value=n(job?.rewardBudgetMillions)>0?job.rewardBudgetMillions:'';$('[data-colony-personal-cap]').value=job?.personalCapMillions??'';$('[data-colony-notes]').value=job?.notes||'';$('[data-colony-form-status]').textContent='';$('[data-colony-close-job]').hidden=!job||job.status==='completed';
+    $('[data-colony-id]').value=job?.id||'';$('[data-colony-title]').value=job?.title||'';$('[data-colony-system]').value=job?.system||'';$('[data-colony-scope]').value=job?.scope||'system';$('[data-colony-build]').value=job?.buildName||'';$('[data-colony-commodity]').value=job?.commodity||'';$('[data-colony-target]').value=n(job?.targetTons)>0?job.targetTons:'';$('[data-colony-start]').value=toLocalInput(job?.startsAt);$('[data-colony-funding]').value=job?.fundingMode||'none';$('[data-colony-job-status]').value=job?.status||'active';$('[data-colony-reward-tons]').value=job?.rewardBlockTons||1000;$('[data-colony-reward-millions]').value=job?.rewardBlockMillions||10;$('[data-colony-budget]').value=n(job?.rewardBudgetMillions)>0?job.rewardBudgetMillions:'';$('[data-colony-personal-cap]').value=job?.personalCapMillions??'';$('[data-colony-notes]').value=job?.notes||'';$('[data-colony-form-status]').textContent='';$('[data-colony-close-job]').hidden=!job||job.status==='completed';
     const immutable=Boolean(job);$('[data-colony-system]').disabled=immutable&&!job?.canModerate;$('[data-colony-scope]').disabled=immutable&&!job?.canModerate;$('[data-colony-build]').disabled=immutable&&!job?.canModerate;$('[data-colony-commodity]').disabled=immutable&&!job?.canModerate;
+    $('[data-colony-start]').disabled=Boolean(job&&!job.canEditStart);
     const lockRewards=Boolean(job&&!job.canEditFunding);$('[data-colony-funding]').disabled=lockRewards;
     ['[data-colony-reward-tons]','[data-colony-reward-millions]','[data-colony-budget]','[data-colony-personal-cap]'].forEach(sel=>{const el=$(sel);if(el)el.disabled=lockRewards;});
-    if(lockRewards&&$('[data-colony-form-status]'))$('[data-colony-form-status]').textContent='Reward settings are locked because hauling, reward issuance, or squad approval has already started.';
+    if($('[data-colony-form-status]')){
+      if(lockRewards)$('[data-colony-form-status]').textContent='Reward settings are locked because hauling, reward issuance, or squad approval has already started.';
+      if(job&&!job.canEditStart)$('[data-colony-form-status]').textContent='Reward start time is locked because reward debt already exists or this approved squad-funded job requires leadership to change it.';
+    }
     syncEditor();
   }
   function closeEditor(force=false){if(!force&&dirty&&!confirm('Discard unsaved Colonization Job changes?'))return;shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
@@ -232,14 +245,16 @@
     fields.hidden=funding==='none';
     if(funding==='none'){summary.textContent='No credits are promised. Members can still use this as a coordinated hauling request.';return;}
     const blockTons=Math.max(1,n($('[data-colony-reward-tons]').value)),reward=n($('[data-colony-reward-millions]').value),budget=n($('[data-colony-budget]').value),target=Math.max(0,n($('[data-colony-target]').value)),theoretical=target>0?Math.ceil(target/blockTons)*reward:0;
+    const startValue=fromLocalInput($('[data-colony-start]').value);
+    const startCopy=startValue?' Reward eligibility begins '+safe(dateTimeLabel(startValue))+'.':'';
     const budgetCopy=budget>0?' Maximum pledged liability: <strong>'+safe(moneyM(budget))+'</strong>.':' <strong>No maximum pledge:</strong> verified reward blocks keep accruing until the job is completed.';
     if(funding==='member'){
       const commander=payload?.viewer?.commander||'';
       const targetCopy=target>0?' The listed cargo target is '+fmt(target)+' t.':' The hauling job itself is open-ended.';
-      summary.innerHTML=commander?'<strong>'+safe(commander)+'</strong> will be responsible for paying verified rewards.'+budgetCopy+targetCopy:'<strong>Elite connection required.</strong> Connect your Elite account before posting a member-funded reward so the payer CMDR can be verified.';
-    }else summary.innerHTML='This is a <strong>funding request</strong>, not an immediate squad debt. Leadership must approve it before reward-eligible hauling begins.'+budgetCopy+(target<=0?' The hauling job itself is open-ended.':'');
+      summary.innerHTML=commander?'<strong>'+safe(commander)+'</strong> will be responsible for paying verified rewards.'+budgetCopy+targetCopy+startCopy:'<strong>Elite connection required.</strong> Connect your Elite account before posting a member-funded reward so the payer CMDR can be verified.';
+    }else summary.innerHTML='This is a <strong>funding request</strong>, not an immediate squad debt. Leadership approval accepts the listed reward start time, including a deliberate backdate for recent verified hauling.'+budgetCopy+(target<=0?' The hauling job itself is open-ended.':'')+startCopy;
   }
-  function formPayload(){return{id:$('[data-colony-id]').value||undefined,title:$('[data-colony-title]').value,system:$('[data-colony-system]').value,scope:$('[data-colony-scope]').value,buildName:$('[data-colony-build]').value,commodity:$('[data-colony-commodity]').value,targetTons:$('[data-colony-target]').value===''?0:n($('[data-colony-target]').value),fundingMode:$('[data-colony-funding]').value,status:$('[data-colony-job-status]').value,rewardBlockTons:n($('[data-colony-reward-tons]').value),rewardBlockMillions:n($('[data-colony-reward-millions]').value),rewardBudgetMillions:$('[data-colony-budget]').value===''?0:n($('[data-colony-budget]').value),personalCapMillions:$('[data-colony-personal-cap]').value===''?null:n($('[data-colony-personal-cap]').value),notes:$('[data-colony-notes]').value};}
+  function formPayload(){return{id:$('[data-colony-id]').value||undefined,title:$('[data-colony-title]').value,system:$('[data-colony-system]').value,scope:$('[data-colony-scope]').value,buildName:$('[data-colony-build]').value,commodity:$('[data-colony-commodity]').value,targetTons:$('[data-colony-target]').value===''?0:n($('[data-colony-target]').value),startsAt:fromLocalInput($('[data-colony-start]').value),fundingMode:$('[data-colony-funding]').value,status:$('[data-colony-job-status]').value,rewardBlockTons:n($('[data-colony-reward-tons]').value),rewardBlockMillions:n($('[data-colony-reward-millions]').value),rewardBudgetMillions:$('[data-colony-budget]').value===''?0:n($('[data-colony-budget]').value),personalCapMillions:$('[data-colony-personal-cap]').value===''?null:n($('[data-colony-personal-cap]').value),notes:$('[data-colony-notes]').value};}
   async function save(event){
     event.preventDefault();const out=$('[data-colony-form-status]');out.textContent='Saving Colonization Job…';
     try{
@@ -296,7 +311,7 @@
     mutate(job,action,button);
   }
   function friendlyError(code){
-    const map={frontier_required_for_member_funding:'Connect your Elite account before posting a member-funded reward.',colonization_reward_required:'Enter a reward greater than 0 M Cr.',colonization_reward_budget_too_small:'The maximum pledge must cover at least one reward block.',colonization_system_required:'Enter the destination system.',colonization_funding_terms_locked:'Reward settings are locked because hauling, reward issuance, or squad approval has already started.'};
+    const map={frontier_required_for_member_funding:'Connect your Elite account before posting a member-funded reward.',colonization_reward_required:'Enter a reward greater than 0 M Cr.',colonization_reward_budget_too_small:'The maximum pledge must cover at least one reward block.',colonization_system_required:'Enter the destination system.',colonization_start_time_invalid:'Enter a valid reward start date and time.',colonization_start_time_future:'Reward start time cannot be in the future.',colonization_start_time_locked:'Reward start time is locked because this job already has reward-ledger activity.',colonization_start_time_requires_manager:'An approved squad-funded job requires an Officer or Site Admin to change the reward start time.',colonization_funding_terms_locked:'Reward settings are locked because hauling, reward issuance, or squad approval has already started.'};
     return map[code]||code||'Could not save Colonization Job.';
   }
   form?.addEventListener('keydown',event=>{
