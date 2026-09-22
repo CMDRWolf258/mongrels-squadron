@@ -44,7 +44,7 @@
     const budget=job.fundingMode==='none'?'—':moneyM(job.rewardBudgetMillions)+' max';
     const build=job.scope==='market'?(job.buildName||'Specific build · awaiting site link'):'Any construction in system';
     let extra='';
-    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> hauling can be tracked now, but the requested reward is not a squad obligation unless leadership approves it.</p>';
+    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> hauling can be tracked now, but cargo moved before approval does not earn the requested reward. Reward eligibility begins when leadership approves the funding request.</p>';
     if(job.fundingMode==='member')extra+='<p class="colonization-job-warning"><strong>Member pledge:</strong> '+safe(job.fundingPayerName||job.postingCommander||'The posting CMDR')+' is the payer. Verified rewards stay separate from the squad treasury.</p>';
     if(n(job.ambiguousEvents)>0)extra+='<p class="colonization-job-warning">'+fmt(job.ambiguousEvents)+' verified contribution event'+(n(job.ambiguousEvents)===1?'':'s')+' currently need arbitration before reward credit can be trusted.</p>';
     const actions=[];
@@ -118,7 +118,7 @@
     if(funding==='member'){
       const commander=payload?.viewer?.commander||'';
       summary.innerHTML=commander?'<strong>'+safe(commander)+'</strong> will be responsible for paying verified rewards. Maximum pledged liability: <strong>'+safe(moneyM(budget))+'</strong>. The target/rate would total '+safe(moneyM(theoretical))+' if every block is rewarded.':'<strong>Elite connection required.</strong> Connect your Elite account before posting a member-funded reward so the payer CMDR can be verified.';
-    }else summary.innerHTML='This is a <strong>funding request</strong>, not an immediate squad debt. Leadership must approve it. Requested maximum budget: <strong>'+safe(moneyM(budget))+'</strong>.';
+    }else summary.innerHTML='This is a <strong>funding request</strong>, not an immediate squad debt. Leadership must approve it before reward-eligible hauling begins. Requested maximum budget: <strong>'+safe(moneyM(budget))+'</strong>.';
   }
   function formPayload(){return{id:$('[data-colony-id]').value||undefined,title:$('[data-colony-title]').value,system:$('[data-colony-system]').value,scope:$('[data-colony-scope]').value,buildName:$('[data-colony-build]').value,commodity:$('[data-colony-commodity]').value,targetTons:n($('[data-colony-target]').value),fundingMode:$('[data-colony-funding]').value,status:$('[data-colony-job-status]').value,rewardBlockTons:n($('[data-colony-reward-tons]').value),rewardBlockMillions:n($('[data-colony-reward-millions]').value),rewardBudgetMillions:n($('[data-colony-budget]').value),personalCapMillions:$('[data-colony-personal-cap]').value===''?null:n($('[data-colony-personal-cap]').value),notes:$('[data-colony-notes]').value};}
   async function save(event){
