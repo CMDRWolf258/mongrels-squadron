@@ -1217,6 +1217,17 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## Live Scout onboarding refinement — 2026-09-22
+
+Member feedback identified two installation traps and one discoverability problem.
+
+- The Scout ZIP now places **README.md at the ZIP root** and keeps only plugin code inside the **MongrelScout** folder. Members should treat that folder as a black box.
+- Install instructions explicitly tell members to use **EDMC → File → Settings → Plugins → Open** to reveal the real plugin directory instead of guessing a Program Files path.
+- Members are told to copy the entire **MongrelScout FOLDER**, not the individual files inside it. Instructions no longer mention `load.py`.
+- The Member Portal now places a prominent **Live Scout (EDMC)** callout and installation/refresh steps above Frontier journal activity.
+- **Read README** is available directly from the site before download/install.
+- Frontier recent journal events and verified Daily Order matches are collapsed under **Recent verified activity** so they no longer bury the Live Scout setup.
+
 ## BGS active-board simplification / member Elite setup — 2026-09-22
 
 BGS Control now chooses one coherent active board and keeps the normal source UI simple.
