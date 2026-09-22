@@ -165,7 +165,7 @@
     const budget=job.fundingMode==='none'?'—':(job.rewardBudgetUnlimited?'No cap':moneyM(job.rewardBudgetMillions)+' max');
     const build=job.scope==='market'?(job.buildName||'Specific build · awaiting site link'):'Any construction in system';
     let extra='';
-    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> hauling can be tracked now, but cargo moved before approval does not earn the requested reward. Reward eligibility begins when leadership approves the funding request.</p>';
+    if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> no squad debt is created until leadership approves it. If approved, verified hauling at or after the listed Reward Start time can become eligible, including an intentional backdate.</p>';
     if(job.fundingMode==='member')extra+='<p class="colonization-job-warning"><strong>Member pledge:</strong> '+safe(job.fundingPayerName||job.postingCommander||'The posting CMDR')+' is the payer. Verified rewards stay separate from the squad treasury.</p>';
     if(n(job.ambiguousEvents)>0)extra+='<p class="colonization-job-warning">'+fmt(job.ambiguousEvents)+' verified contribution event'+(n(job.ambiguousEvents)===1?'':'s')+' currently need arbitration before reward credit can be trusted.</p>';
     const actions=[];
