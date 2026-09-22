@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { buildOrderRewardPolicies } from '../lib/reward-rules.js';
 import {
   DAILY_ORDER_TICK_TIMEZONE,
   decorateDailyOrdersForTiming,
@@ -117,6 +118,21 @@ assert.equal(squadVerified['trade-order'].commanderCount,2);
 assert.equal(squadVerified['trade-order'].sourceEventCount,2);
 console.log('✓ Squad Scout contributions aggregate across linked CMDRs for Daily Order progress');
 
+const rewardPolicies=buildOrderRewardPolicies([
+  {...baseOrder,id:'inf-reward',reporting:{type:'inf',target:25}},
+  {...baseOrder,id:'trade-reward',reporting:{type:'trade',target:20}},
+  {...baseOrder,id:'bounty-reward',reporting:{type:'bounties',target:20}},
+  {...baseOrder,id:'exploration-no-reward',reporting:{type:'exploration',target:20}},
+]);
+assert.equal(rewardPolicies['inf-reward'].goalRewardMillions,25);
+assert.equal(rewardPolicies['inf-reward'].capMillions,30);
+assert.equal(rewardPolicies['trade-reward'].goalRewardMillions,20);
+assert.equal(rewardPolicies['trade-reward'].rewardPerBlockMillions,10);
+assert.equal(rewardPolicies['bounty-reward'].goalRewardMillions,20);
+assert.equal(rewardPolicies['bounty-reward'].rewardPerRedeemedMillion,1);
+assert.equal(rewardPolicies['exploration-no-reward'].eligible,false);
+console.log('✓ Daily Order reward policies expose exact configured rates, target payout, and personal cap');
+
 const reports=readFileSync('functions/api/operations/order-reports.js','utf8');
 for(const pattern of [/workCycleId/,/recordBelongsToCurrentWorkCycle/,/workCycleForTimestamp/,/historyDepth:14/,/verifiedSummaries/,/listFrontierAccounts/,/getEvents/,/aggregateVerifiedOrderTotals/])assert.match(reports,pattern);
 
@@ -137,8 +153,8 @@ assert.match(wolfUi,/Custom tick \(CT\)/);
 assert.match(wolfUi,/\$\{html\(tick\)\} CT/);
 
 const page=readFileSync('operations/index.html','utf8');
-assert.match(page,/mission-control-orders-v2\.css\?v=18/);
-assert.match(page,/daily-orders-v2\.js\?v=17/);
+assert.match(page,/mission-control-orders-v2\.css\?v=19/);
+assert.match(page,/daily-orders-v2\.js\?v=18/);
 const css=readFileSync('css/mission-control-orders-v2.css','utf8');
 assert.match(css,/\.mc-manual-report/);
 assert.match(css,/font-size:1\.42rem/);
