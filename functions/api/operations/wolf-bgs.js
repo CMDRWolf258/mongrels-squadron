@@ -556,8 +556,10 @@ function alertCondition(system, family) {
   const pending = Array.isArray(system?.pendingStates) ? system.pendingStates : [];
   const find = (items, predicate) => items.find(item => predicate(norm(item))) || '';
   if (family === 'retreat') {
-    const detail = find(pending, value => value === 'retreat');
-    return detail ? { detail, phase:'pending' } : null;
+    const pendingDetail = find(pending, value => value === 'retreat');
+    if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
+    const activeDetail = find(active, value => value === 'retreat');
+    return activeDetail ? { detail:activeDetail, phase:'active' } : null;
   }
   if (family === 'conflict') {
     const pendingDetail = find(pending, value => CONFLICT_STATES.has(value));
