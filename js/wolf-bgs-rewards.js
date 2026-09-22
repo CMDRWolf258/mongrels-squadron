@@ -15,6 +15,12 @@
   let verificationLoading=false;
   let verificationLoadedAt=0;
   const VERIFICATION_FRESH_MS=5000;
+  let paymentEntriesById=new Map();
+  let paymentSelectedIds=new Set();
+  let paymentSelectionOwnerId='';
+  let paymentSelectionCommander='';
+  let paymentRequestId='';
+  let paymentCanConfirm=false;
 
   function getPath(obj,path){
     return String(path||'').split('.').reduce((value,key)=>value&&typeof value==='object'?value[key]:undefined,obj);
@@ -40,6 +46,56 @@
     if(!value)return'—';
     const d=new Date(value);
     return Number.isNaN(d.getTime())?String(value):d.toLocaleString();
+  }
+
+  const formatCredits=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+  const paymentSourceLabel=entry=>{
+    if(entry?.kind==='colonization_job'||entry?.rewardType==='colonization')return'COLONIZATION';
+    if(entry?.kind==='verified_order')return'DAILY ORDER';
+    if(entry?.kind==='manual_adjustment')return'MANUAL ADJUSTMENT';
+    return String(entry?.kind||'REWARD').replaceAll('_',' ').toUpperCase();
+  };
+
+  function clearPaymentSelection(){
+    paymentSelectedIds=new Set();
+    paymentSelectionOwnerId='';
+    paymentSelectionCommander='';
+    paymentRequestId='';
+    updatePaymentSelectionUi();
+  }
+
+  function updatePaymentSelectionUi(){
+    const consolePanel=document.querySelector('[data-reward-ledger-admin]');
+    if(!consolePanel)return;
+    let total=0;
+    for(const id of paymentSelectedIds){
+      const entry=paymentEntriesById.get(id);
+      if(entry)total+=Number(entry.amountCredits)||0;
+    }
+
+    consolePanel.querySelectorAll('[data-payment-entry-id]').forEach(input=>{
+      const id=String(input.dataset.paymentEntryId||'');
+      const owner=String(input.dataset.paymentOwnerId||'');
+      input.checked=paymentSelectedIds.has(id);
+      input.disabled=!paymentCanConfirm||(Boolean(paymentSelectionOwnerId)&&owner!==paymentSelectionOwnerId);
+    });
+    consolePanel.querySelectorAll('[data-payment-select-all]').forEach(button=>{
+      const owner=String(button.dataset.paymentOwnerId||'');
+      button.disabled=!paymentCanConfirm||(Boolean(paymentSelectionOwnerId)&&owner!==paymentSelectionOwnerId);
+    });
+
+    const bar=consolePanel.querySelector('[data-reward-payment-bar]');
+    if(!bar)return;
+    const count=paymentSelectedIds.size;
+    bar.hidden=count===0;
+    const commander=bar.querySelector('[data-payment-selected-commander]');
+    const selectedCount=bar.querySelector('[data-payment-selected-count]');
+    const selectedTotal=bar.querySelector('[data-payment-selected-total]');
+    const confirm=bar.querySelector('[data-payment-confirm]');
+    if(commander)commander.textContent=paymentSelectionCommander||'—';
+    if(selectedCount)selectedCount.textContent=count.toLocaleString();
+    if(selectedTotal)selectedTotal.textContent=formatCredits(total);
+    if(confirm)confirm.disabled=!paymentCanConfirm||count===0;
   }
 
   function fill(payload){
@@ -123,7 +179,7 @@
     if(refreshButton)refreshButton.disabled=true;
     if(checked)checked.textContent='Refreshing reward engine…';
 
-    const fmt=value=>Math.round(Number(value)||0).toLocaleString()+' Cr';
+    const fmt=formatCredits;
     const num=(selector,value)=>{const el=consolePanel.querySelector(selector);if(el)el.textContent=Number(value||0).toLocaleString();};
     const money=(selector,value)=>{const el=consolePanel.querySelector(selector);if(el)el.textContent=fmt(value);};
     const short=value=>{const text=String(value||'');return text.length>16?text.slice(0,10)+'…'+text.slice(-4):text||'—';};
@@ -287,25 +343,141 @@
       if(ledgerList){
         ledgerList.replaceChildren();
         const members=Array.isArray(ledger.members)?ledger.members:[];
+        const allEntries=Array.isArray(ledger.entries)?ledger.entries:[];
+        const owedEntries=Array.isArray(ledger.owedEntries)?ledger.owedEntries:allEntries.filter(entry=>entry?.status==='owed');
+        paymentCanConfirm=ledger.canConfirmPayments===true;
+        paymentEntriesById=new Map(owedEntries.map(entry=>[String(entry?.id||''),entry]).filter(([id])=>id));
+        paymentSelectedIds=new Set([...paymentSelectedIds].filter(id=>paymentEntriesById.has(id)));
+        if(paymentSelectionOwnerId&&!owedEntries.some(entry=>String(entry?.ownerId||'')===paymentSelectionOwnerId&&paymentSelectedIds.has(String(entry?.id||'')))){
+          paymentSelectionOwnerId='';
+          paymentSelectionCommander='';
+          paymentRequestId='';
+        }
+
         if(!members.length){
           const empty=document.createElement('div');empty.className='wolf-scout-empty';
           const strong=document.createElement('strong');strong.textContent='Actual reward ledger is empty.';
-          const small=document.createElement('small');small.textContent='DRY RUN is computing obligations without creating any stored debt.';
+          const small=document.createElement('small');small.textContent='READY obligations can be promoted to OWED before payment.';
           empty.append(strong,small);ledgerList.appendChild(empty);
         }else{
-          members.forEach(member=>{
-            const row=document.createElement('div');row.className='wolf-scout-token-row';
+          members.forEach((member,index)=>{
+            const ownerId=String(member.ownerId||'');
+            const memberOwed=owedEntries.filter(entry=>String(entry?.ownerId||'')===ownerId);
+            const memberPaid=allEntries.filter(entry=>String(entry?.ownerId||'')===ownerId&&entry?.status==='paid').slice(0,10);
+
+            const details=document.createElement('details');
+            details.className='wolf-payment-member';
+            details.dataset.paymentMemberOwner=ownerId;
+            if(index===0&&memberOwed.length)details.open=true;
+
+            const summary=document.createElement('summary');
             const main=document.createElement('div');
-            const strong=document.createElement('strong');strong.textContent=member.displayName||'Mongrel CMDR';
-            const small=document.createElement('small');small.textContent=fmt(member.owedCredits)+' owed · '+fmt(member.paidCredits)+' paid · '+(Number(member.entryCount)||0)+' ledger entr'+(Number(member.entryCount)===1?'y':'ies');
-            main.append(strong,small);row.append(main);ledgerList.appendChild(row);
+            const name=document.createElement('strong');name.textContent=member.displayName||'Mongrel CMDR';
+            const meta=document.createElement('small');
+            meta.textContent=fmt(member.owedCredits)+' owed · '+(Number(member.owedEntryCount)||0)+' outstanding · '+fmt(member.paidCredits)+' paid historically';
+            main.append(name,meta);
+            const balance=document.createElement('div');balance.className='wolf-payment-member-balance';
+            const amount=document.createElement('b');amount.textContent=fmt(member.owedCredits);
+            const label=document.createElement('small');label.textContent='OUTSTANDING';
+            balance.append(amount,label);
+            summary.append(main,balance);
+
+            const body=document.createElement('div');body.className='wolf-payment-member-body';
+            if(memberOwed.length){
+              const toolbar=document.createElement('div');toolbar.className='wolf-payment-toolbar';
+              const note=document.createElement('span');
+              note.textContent=paymentCanConfirm
+                ? 'Select any combination below. Selection is locked to one CMDR at a time.'
+                : 'Payment confirmation is restricted to site admins.';
+              toolbar.append(note);
+              if(paymentCanConfirm){
+                const selectAll=document.createElement('button');
+                selectAll.type='button';
+                selectAll.className='btn btn-secondary btn-compact';
+                selectAll.dataset.paymentSelectAll='1';
+                selectAll.dataset.paymentOwnerId=ownerId;
+                selectAll.dataset.paymentCommander=member.displayName||'Mongrel CMDR';
+                selectAll.textContent='SELECT ALL OWED';
+                toolbar.append(selectAll);
+              }
+              body.append(toolbar);
+
+              const owedList=document.createElement('div');owedList.className='wolf-payment-entry-list';
+              memberOwed.forEach(entry=>{
+                const row=document.createElement('label');row.className='wolf-payment-entry';
+                const select=document.createElement('input');
+                select.type='checkbox';
+                select.className='wolf-payment-check';
+                select.dataset.paymentEntryId=entry.id||'';
+                select.dataset.paymentOwnerId=ownerId;
+                select.dataset.paymentCommander=member.displayName||'Mongrel CMDR';
+                select.disabled=!paymentCanConfirm;
+
+                const info=document.createElement('span');info.className='wolf-payment-entry-info';
+                const reason=document.createElement('strong');reason.textContent=entry.reason||'Reward payment';
+                const detail=document.createElement('small');
+                const contribution=Number(entry.verifiedContribution)>0
+                  ? Number(entry.verifiedContribution).toLocaleString()+' '+String(entry.verifiedUnit||'')
+                  : '';
+                detail.textContent=[
+                  paymentSourceLabel(entry),
+                  contribution,
+                  entry.createdAt?'owed '+dateTime(entry.createdAt):'',
+                  entry.approvedBy?'approved by '+entry.approvedBy:'',
+                ].filter(Boolean).join(' · ');
+                info.append(reason,detail);
+
+                const amountBox=document.createElement('span');amountBox.className='wolf-payment-entry-amount';
+                amountBox.textContent=fmt(entry.amountCredits);
+                row.append(select,info,amountBox);
+                owedList.append(row);
+              });
+              body.append(owedList);
+            }else{
+              const clear=document.createElement('div');clear.className='wolf-scout-empty';
+              const strong=document.createElement('strong');strong.textContent='Nothing currently owed.';
+              const small=document.createElement('small');small.textContent='All ledger entries for this CMDR are settled.';
+              clear.append(strong,small);body.append(clear);
+            }
+
+            if(memberPaid.length){
+              const paidTitle=document.createElement('div');paidTitle.className='wolf-payment-history-title';
+              paidTitle.textContent='RECENT PAID HISTORY';
+              const paidList=document.createElement('div');paidList.className='wolf-payment-paid-list';
+              memberPaid.forEach(entry=>{
+                const paid=document.createElement('div');paid.className='wolf-payment-paid-entry';
+                const info=document.createElement('span');
+                const reason=document.createElement('strong');reason.textContent=entry.reason||'Reward payment';
+                const detail=document.createElement('small');
+                detail.textContent=[
+                  paymentSourceLabel(entry),
+                  entry.paidAt?'paid '+dateTime(entry.paidAt):'paid',
+                  entry.paidBy?'by '+entry.paidBy:'',
+                  entry.paymentBatchId?'batch '+short(entry.paymentBatchId):'',
+                ].filter(Boolean).join(' · ');
+                info.append(reason,detail);
+                const amount=document.createElement('b');amount.textContent=fmt(entry.amountCredits);
+                paid.append(info,amount);paidList.append(paid);
+              });
+              body.append(paidTitle,paidList);
+            }
+
+            details.append(summary,body);
+            details.addEventListener('toggle',()=>{
+              if(!details.open)return;
+              ledgerList.querySelectorAll('.wolf-payment-member[open]').forEach(other=>{
+                if(other!==details)other.open=false;
+              });
+            });
+            ledgerList.append(details);
           });
         }
+        updatePaymentSelectionUi();
       }
 
       ledgerLoaded=true;
       ledgerLoadedAt=Date.now();
-      if(checked)checked.textContent='Checked '+new Date(ledgerLoadedAt).toLocaleString()+' · automatic ledger writes OFF';
+      if(checked)checked.textContent='Checked '+new Date(ledgerLoadedAt).toLocaleString()+' · automatic issuance/payment OFF';
     }catch(error){
       console.error('Could not load reward dry run / payout console',error);
       if(dryList)dryList.innerHTML='<div class="wolf-scout-empty"><strong>Reward dry run unavailable.</strong><small>No ledger state was changed.</small></div>';
@@ -314,6 +486,100 @@
     }finally{
       ledgerLoading=false;
       if(refreshButton)refreshButton.disabled=false;
+    }
+  }
+
+  function selectAllPayments(button){
+    if(!button||button.disabled)return;
+    const ownerId=String(button.dataset.paymentOwnerId||'');
+    const commander=String(button.dataset.paymentCommander||'Mongrel CMDR');
+    if(paymentSelectionOwnerId&&paymentSelectionOwnerId!==ownerId)return;
+    paymentSelectionOwnerId=ownerId;
+    paymentSelectionCommander=commander;
+    paymentSelectedIds=new Set(
+      [...paymentEntriesById.values()]
+        .filter(entry=>String(entry?.ownerId||'')===ownerId)
+        .map(entry=>String(entry?.id||''))
+        .filter(Boolean)
+    );
+    paymentRequestId='';
+    updatePaymentSelectionUi();
+  }
+
+  async function confirmSelectedPayments(button){
+    if(!button||button.disabled||!paymentCanConfirm||!paymentSelectedIds.size)return;
+    const entries=[...paymentSelectedIds].map(id=>paymentEntriesById.get(id)).filter(Boolean);
+    if(!entries.length)return clearPaymentSelection();
+    const ownerIds=new Set(entries.map(entry=>String(entry.ownerId||'')));
+    if(ownerIds.size!==1||!paymentSelectionOwnerId||!ownerIds.has(paymentSelectionOwnerId)){
+      window.alert('Payment selection is invalid. Clear the selection and try again.');
+      return;
+    }
+    const total=Math.round(entries.reduce((sum,entry)=>sum+(Number(entry.amountCredits)||0),0));
+    const confirmed=window.confirm(
+      'Confirm payment to '+(paymentSelectionCommander||'this CMDR')+'?\n\n'
+      +entries.length+' ledger entr'+(entries.length===1?'y':'ies')+'\n'
+      +'TOTAL: '+formatCredits(total)+'\n\n'
+      +'Use this only after you have actually transferred these credits in Elite Dangerous. '
+      +'All selected ledger entries will be marked PAID.'
+    );
+    if(!confirmed)return;
+
+    paymentRequestId=paymentRequestId||(
+      crypto?.randomUUID?crypto.randomUUID():'payment-'+Date.now()+'-'+Math.random().toString(16).slice(2)
+    );
+    const bar=document.querySelector('[data-reward-payment-bar]');
+    const status=bar?.querySelector('[data-reward-payment-status]');
+    button.disabled=true;
+    button.textContent='CONFIRMING…';
+    if(status)status.textContent='Writing payment batch…';
+
+    try{
+      const response=await fetch('/api/rewards/pay',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{
+          Accept:'application/json',
+          'Content-Type':'application/json',
+          'X-Mongrels-Request':'wolf-reward-payment',
+        },
+        body:JSON.stringify({
+          ownerId:paymentSelectionOwnerId,
+          entryIds:[...paymentSelectedIds],
+          expectedTotalCredits:total,
+          paymentRequestId,
+        }),
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const error=new Error(payload.message||payload.error||('Payment confirmation failed ('+response.status+')'));
+        error.code=payload.error||'';
+        throw error;
+      }
+
+      const paidCommander=paymentSelectionCommander;
+      const paidCount=entries.length;
+      const paidTotal=total;
+      clearPaymentSelection();
+      ledgerLoaded=false;
+      ledgerLoadedAt=0;
+      if(status)status.textContent='Payment recorded.';
+      await loadLedgerPreview(true);
+      window.alert(
+        'Payment recorded for '+paidCommander+'.\n\n'
+        +paidCount+' ledger entr'+(paidCount===1?'y':'ies')+' marked PAID\n'
+        +formatCredits(paidTotal)
+      );
+    }catch(error){
+      console.error('Could not confirm reward payment',error);
+      if(['payment_selection_invalid','reward_entry_missing','reward_entry_not_owed','multiple_commanders_not_allowed','payment_selection_changed'].includes(error.code)){
+        paymentRequestId='';
+      }
+      button.disabled=false;
+      button.textContent='CONFIRM PAYMENT';
+      if(status)status.textContent='Payment not confirmed · '+String(error.message||error);
+      window.alert('Payment ledger was not fully confirmed.\n\n'+String(error.message||error));
     }
   }
 
@@ -380,9 +646,40 @@
     }
   }
 
-  document.querySelector('[data-reward-ledger-admin]')?.addEventListener('click',event=>{
-    const button=event.target.closest('[data-issue-ready-reward]');
-    if(button)issueReadyReward(button);
+  const rewardConsole=document.querySelector('[data-reward-ledger-admin]');
+  rewardConsole?.addEventListener('click',event=>{
+    const issue=event.target.closest('[data-issue-ready-reward]');
+    if(issue){issueReadyReward(issue);return;}
+    const selectAll=event.target.closest('[data-payment-select-all]');
+    if(selectAll){selectAllPayments(selectAll);return;}
+    const clear=event.target.closest('[data-payment-clear]');
+    if(clear){clearPaymentSelection();return;}
+    const confirm=event.target.closest('[data-payment-confirm]');
+    if(confirm){confirmSelectedPayments(confirm);return;}
+  });
+  rewardConsole?.addEventListener('change',event=>{
+    const input=event.target.closest('[data-payment-entry-id]');
+    if(!input)return;
+    const id=String(input.dataset.paymentEntryId||'');
+    const ownerId=String(input.dataset.paymentOwnerId||'');
+    const commander=String(input.dataset.paymentCommander||'Mongrel CMDR');
+    if(input.checked){
+      if(paymentSelectionOwnerId&&paymentSelectionOwnerId!==ownerId){
+        input.checked=false;
+        return;
+      }
+      paymentSelectionOwnerId=ownerId;
+      paymentSelectionCommander=commander;
+      paymentSelectedIds.add(id);
+    }else{
+      paymentSelectedIds.delete(id);
+      if(!paymentSelectedIds.size){
+        paymentSelectionOwnerId='';
+        paymentSelectionCommander='';
+      }
+    }
+    paymentRequestId='';
+    updatePaymentSelectionUi();
   });
 
   async function loadVerificationReview(force=false){
