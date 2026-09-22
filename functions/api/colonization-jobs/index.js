@@ -259,8 +259,7 @@ function normalizeFundingForCreate(source,{fundingMode,ownerId,payerName,actor})
   const blockTons=positiveInt(source.rewardBlockTons,5000);
   const blockMillions=fundingMode==='none'?0:nonNegative(source.rewardBlockMillions,0);
   const targetTons=nonNegativeInt(source.targetTons,0);
-  const defaultBudget=blockMillions>0&&targetTons>0?Math.ceil(targetTons/blockTons)*blockMillions:0;
-  const requestedBudget=nonNegative(source.rewardBudgetMillions,defaultBudget);
+  const requestedBudget=nonNegative(source.rewardBudgetMillions,0);
   if(fundingMode==='none'){
     return {
       fundingMode:'none',
@@ -306,8 +305,8 @@ function normalizeFundingForCreate(source,{fundingMode,ownerId,payerName,actor})
 function presentJob(job,session,progress={}){
   const manager=MANAGERS.has(session?.access);
   const mine=Boolean(job.postingOwnerId&&String(job.postingOwnerId)===String(session?.sub||''));
-  const theoreticalBudget=Number(job.rewardBlockMillions)>0?Math.ceil((Number(job.targetTons)||0)/Math.max(1,Number(job.rewardBlockTons)||1))*Number(job.rewardBlockMillions):0;
-  const budget=Number(job.rewardBudgetMillions)||theoreticalBudget;
+  const budget=Math.max(0,Number(job.rewardBudgetMillions)||0);
+  const unlimitedBudget=job.fundingMode!=='none'&&budget<=0;
   const preview=Number(progress.rewardPreviewMillions)||0;
   return {
     id:job.id,
@@ -325,6 +324,7 @@ function presentJob(job,session,progress={}){
     fundingMode:job.fundingMode||'squad',
     fundingApprovalStatus:job.fundingApprovalStatus||'approved',
     rewardBudgetMillions:budget,
+    rewardBudgetUnlimited:unlimitedBudget,
     fundingPayerName:job.fundingPayerName||'',
     fundingNote:job.fundingNote||'',
     postingOwnerName:job.postingOwnerName||job.createdBy||'Mongrel Member',
@@ -338,7 +338,7 @@ function presentJob(job,session,progress={}){
     squadTons:Number(progress.squadTons)||0,
     contributorCount:Number(progress.contributorCount)||0,
     rewardPreviewMillions:round1(preview),
-    remainingBudgetMillions:round1(Math.max(0,budget-preview)),
+    remainingBudgetMillions:unlimitedBudget?null:round1(Math.max(0,budget-preview)),
     ambiguousEvents:Number(progress.ambiguousEvents)||0,
     isMine:mine,
     canEdit:mine||manager,
@@ -466,8 +466,7 @@ function validateJob(job){
   if(!job.system)return'colonization_system_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockTons)>0))return'colonization_reward_block_required';
   if(job.fundingMode!=='none'&&!(Number(job.rewardBlockMillions)>0))return'colonization_reward_required';
-  if(job.fundingMode!=='none'&&!(Number(job.rewardBudgetMillions)>0))return'colonization_reward_budget_required';
-  if(job.fundingMode!=='none'&&Number(job.rewardBudgetMillions)<Number(job.rewardBlockMillions))return'colonization_reward_budget_too_small';
+  if(job.fundingMode!=='none'&&Number(job.rewardBudgetMillions)>0&&Number(job.rewardBudgetMillions)<Number(job.rewardBlockMillions))return'colonization_reward_budget_too_small';
   if(job.fundingMode==='member'&&!job.fundingPayerOwnerId)return'colonization_member_payer_required';
   return'';
 }

@@ -63,7 +63,15 @@ const openEndedJob=normalizeColonizationJob({
   createdAt:'2026-09-22T12:00:00.000Z',
 });
 assert.equal(openEndedJob.targetTons,0,'A blank/open-ended target must remain zero instead of defaulting to 10,000 t');
-console.log('✓ Member-funded Colonization metadata is durable and open-ended targets are preserved');
+const uncappedJob=normalizeColonizationJob({
+  ...memberJob,
+  id:'uncapped-member-job',
+  rewardBudgetMillions:0,
+  revision:1,
+  createdAt:'2026-09-22T12:00:00.000Z',
+});
+assert.equal(uncappedJob.rewardBudgetMillions,0,'Zero reward budget represents an uncapped pledge');
+console.log('✓ Member-funded Colonization metadata preserves open-ended targets and uncapped pledges');
 
 const memberHistory=[record({
   publicationId:'member-create',
@@ -196,11 +204,13 @@ assert.match(tradePage,/data-colonization-board/);
 assert.match(tradePage,/Post Colonization Job/);
 assert.match(tradePage,/value="member">Member funded/);
 assert.match(tradePage,/value="squad">Request squad funding/);
-assert.match(tradePage,/trading-colonization\.js\?v=4/);
+assert.match(tradePage,/trading-colonization\.js\?v=5/);
 assert.match(tradePage,/trading-colonization\.css\?v=1/);
 assert.match(tradePage,/value="archived">Archived/,'Trader\'s Outpost must expose completed Colonization Jobs as an archive');
 assert.match(tradePage,/Target Cargo \(t\)[\s\S]*placeholder="Optional · leave blank for open-ended"/,'Target cargo should be optional for open-ended jobs');
 assert.doesNotMatch(tradePage,/data-colony-target[^>]*required/,'Target cargo must not be required');
+assert.match(tradePage,/Maximum Pledge \(M Cr\)[\s\S]*Optional · leave blank for no cap/,'Maximum pledge should be optional');
+assert.doesNotMatch(tradePage,/data-colony-budget[^>]*required/,'Maximum pledge must not be required');
 
 const colonyUi=readFileSync('js/trading-colonization.js','utf8');
 assert.match(colonyUi,/data-colony-action="complete">Complete<\/button>/);
@@ -208,6 +218,8 @@ assert.match(colonyUi,/recentJobUpdates/,'Recent Colonization mutations must sur
 assert.match(colonyUi,/event\.key!=='Enter'/,'Enter in a Colonization form field must not submit the job');
 assert.match(colonyUi,/job\.canEditFunding/,'Funding inputs should use the server-provided safe-edit state');
 assert.match(colonyUi,/OPEN-ENDED/,'Open-ended jobs should render without a fake percentage target');
+assert.match(colonyUi,/rewardBudgetUnlimited\?'No cap'/,'Uncapped funded jobs should display No cap');
+assert.match(colonyUi,/No maximum pledge/,'Funding summary should explain uncapped reward liability');
 assert.match(colonyUi,/mode==='archived'/);
 assert.match(colonyUi,/Job completed\. It is now in Archived/);
 new Function(colonyUi);
@@ -221,6 +233,8 @@ assert.match(memberApi,/not_colonization_job_owner/);
 assert.match(memberApi,/fundingTermsLocked/,'Member API must lock reward edits after verified hauling or issued rewards');
 assert.match(memberApi,/canEditFunding/,'Member API must expose whether reward terms are still safe to edit');
 assert.doesNotMatch(memberApi,/colonization_target_required/,'Open-ended jobs must not require a target tonnage');
+assert.doesNotMatch(memberApi,/colonization_reward_budget_required/,'Funded Colonization jobs must not require a maximum pledge');
+assert.match(memberApi,/rewardBudgetUnlimited:unlimitedBudget/,'API should explicitly identify uncapped reward jobs');
 assert.match(memberApi,/const validation=action==='status'\?'':validateJob\(next\)/,'Status-only changes must not be blocked by legacy reward-budget validation');
 assert.match(memberApi,/marketId:body\?\.job\?\.scope==='market'\?'':undefined/,'Member specific-build posts must start unbound');
 assert.match(memberApi,/endsAt:statusChanged\?\(requestedStatus==='active'\?null:/,'Editor status changes must create the same pause\/complete earning boundary');
@@ -231,6 +245,10 @@ assert.match(paymentsApi,/confirm-received/);
 
 const rewardAdmin=readFileSync('functions/api/rewards/admin.js','utf8');
 assert.match(rewardAdmin,/entry=>entry\?\.fundingMode!=='member'/,'Member-funded debt must be excluded from the squad payment console');
+
+const memberReconciler=readFileSync('lib/member-funded-colonization.js','utf8');
+assert.match(memberReconciler,/unlimitedBudget=budgetCredits<=0/,'Zero maximum pledge must allow verified rewards to continue accruing');
+assert.match(memberReconciler,/unlimitedBudget[\s\S]*Number\.POSITIVE_INFINITY/,'Uncapped member-funded jobs must not be reduced to a zero award');
 
 const frontierSync=readFileSync('functions/api/frontier/sync.js','utf8');
 assert.match(frontierSync,/reconcileMemberFundedColonizationRewards/,'Verified Frontier sync must reconcile member-funded Colonization obligations');
