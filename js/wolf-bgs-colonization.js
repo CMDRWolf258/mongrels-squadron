@@ -39,6 +39,7 @@
       recreated:' Discord announcement recreated.',
       unchanged:' Discord announcement already current.',
       removed:' Discord announcement marked removed.',
+      deleted:' Discord operations card removed.',
     };
     if(labels[discord.mode])return labels[discord.mode];
     if(discord.configured===false)return' Discord webhook is not configured.';
