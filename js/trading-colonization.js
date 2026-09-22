@@ -9,6 +9,9 @@
   const refresh=board.querySelector('[data-colony-refresh]');
   const filter=board.querySelector('[data-colony-filter]');
   const status=board.querySelector('[data-colony-status]');
+  const frontierConnect=board.querySelector('[data-colony-frontier-connect]');
+  const frontierSync=board.querySelector('[data-colony-frontier-sync]');
+  const frontierStatus=board.querySelector('[data-colony-frontier-status]');
   const shell=$('[data-colony-editor-shell]');
   const form=$('[data-colony-form]');
   let payload=null,editing=null,dirty=false;
@@ -27,6 +30,101 @@
     const body=await response.json().catch(()=>({}));
     return{response,body};
   }
+  function frontierTime(value){
+    const d=new Date(value||'');
+    return Number.isNaN(d.getTime())?'never':d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  }
+  function setFrontierStatus(text,warning=false){
+    if(!frontierStatus)return;
+    frontierStatus.hidden=false;
+    frontierStatus.textContent=text;
+    frontierStatus.classList.toggle('is-warning',Boolean(warning));
+  }
+  function hideFrontierActions(){
+    if(frontierConnect)frontierConnect.hidden=true;
+    if(frontierSync)frontierSync.hidden=true;
+    if(frontierStatus)frontierStatus.hidden=true;
+  }
+  function renderFrontierAction(data={}){
+    if(!frontierConnect||!frontierSync)return;
+    if(!data.configured){
+      frontierConnect.hidden=false;
+      frontierConnect.textContent='Elite Connection Unavailable';
+      frontierConnect.removeAttribute('href');
+      frontierConnect.setAttribute('aria-disabled','true');
+      frontierConnect.classList.add('is-attention','is-disabled');
+      frontierSync.hidden=true;
+      setFrontierStatus('Frontier connection is not configured on the site.',true);
+      return;
+    }
+    const reauthDue=data?.account?.reauthDueAt&&Date.parse(data.account.reauthDueAt)<=Date.now();
+    if(!data.connected||reauthDue){
+      frontierConnect.hidden=false;
+      frontierConnect.href='/api/frontier/login';
+      frontierConnect.textContent=reauthDue?'Reconnect Elite Account':'Connect Elite Account';
+      frontierConnect.removeAttribute('aria-disabled');
+      frontierConnect.classList.remove('is-disabled');
+      frontierConnect.classList.add('is-attention');
+      frontierSync.hidden=true;
+      setFrontierStatus(reauthDue?'Elite connection needs re-authorization before reward verification.':'Elite is not connected. Connect before hauling for reward verification.',true);
+      return;
+    }
+    frontierConnect.hidden=true;
+    frontierSync.hidden=false;
+    frontierSync.classList.remove('is-attention');
+    const cooldown=data.cooldown||{};
+    if(cooldown.ready===false){
+      const seconds=Math.max(1,Number(cooldown.remainingSeconds)||0);
+      frontierSync.disabled=true;
+      frontierSync.textContent='Sync in '+(seconds<60?seconds+'s':Math.ceil(seconds/60)+'m');
+    }else{
+      frontierSync.disabled=false;
+      frontierSync.textContent='Sync Activity';
+    }
+    setFrontierStatus((data.account?.commander||'Elite CMDR')+' connected · last sync '+frontierTime(data.account?.lastSyncAt),false);
+  }
+  async function loadFrontierAction(){
+    if(!payload?.viewer){hideFrontierActions();return;}
+    try{
+      const result=await api('/api/frontier/status');
+      if(!result.response.ok)throw new Error(result.body?.error||'Elite status unavailable');
+      renderFrontierAction(result.body);
+    }catch(error){
+      console.error('Could not load Elite connection for Colonization Jobs',error);
+      if(frontierConnect)frontierConnect.hidden=true;
+      if(frontierSync)frontierSync.hidden=true;
+      setFrontierStatus('Could not check Elite connection right now.',true);
+    }
+  }
+  async function syncFrontierActivity(){
+    if(!frontierSync||frontierSync.disabled)return;
+    frontierSync.disabled=true;
+    frontierSync.textContent='Syncing…';
+    setFrontierStatus('Checking Frontier activity for verified Colonization deliveries…',false);
+    try{
+      const response=await fetch('/api/frontier/sync',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{Accept:'application/json','X-Mongrels-Request':'mongrel-frontier'},
+      });
+      const result=await response.json().catch(()=>({}));
+      if(response.status===429){
+        await loadFrontierAction();
+        return;
+      }
+      if(!response.ok||!result.ok)throw new Error(result.error||'Elite sync failed');
+      setFrontierStatus('Sync complete · '+Number(result.newEvents||0).toLocaleString()+' new verification event'+(Number(result.newEvents||0)===1?'':'s')+' retained.',false);
+      await load();
+      await loadFrontierAction();
+    }catch(error){
+      console.error('Colonization Frontier sync failed',error);
+      setFrontierStatus(String(error.message||error).includes('reauthorization')?'Elite connection needs to be reconnected.':'Elite sync failed. Try again shortly.',true);
+      frontierSync.disabled=false;
+      frontierSync.textContent='Sync Activity';
+    }
+  }
+
   async function copySystem(system,button){
     try{await navigator.clipboard.writeText(system);const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1000);}catch{}
   }
@@ -67,6 +165,7 @@
     if(job.canEdit&&job.status==='active')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="pause">Pause</button>');
     if(job.canEdit&&job.status==='paused')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="resume">Resume</button>');
     if(job.canEdit&&job.status!=='completed')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="complete">Complete</button>');
+    if(job.isMine&&job.fundingMode==='member')actions.push('<a class="btn btn-secondary btn-compact" href="/rewards/#payments-i-owe">Manage Payments</a>');
     if(job.canApproveFunding){actions.push('<button class="btn btn-primary btn-compact" type="button" data-colony-action="approve">Approve Funding</button>');actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="reject">Reject</button>');}
     article.innerHTML=
       '<div class="colonization-job-head"><div><p class="colonization-job-kicker">'+safe(job.commodity||'All construction cargo')+'</p><h3>'+safe(job.title||'Colonization Job')+'</h3></div><div class="colonization-job-badges"><span class="colonization-job-badge '+safe(funding.className)+'">'+safe(funding.label)+'</span><span class="colonization-job-badge is-none">'+safe(job.status==='completed'?'archived':(job.status||'active'))+'</span></div></div>'+
@@ -105,13 +204,14 @@
     try{
       const result=await api('/api/colonization-jobs');
       if(result.response.status===401||result.response.status===403){
-        payload=null;if(privateView)privateView.hidden=true;if(createButton)createButton.hidden=true;if(signIn)signIn.hidden=false;if(status)status.textContent='Member sign-in required';return;
+        payload=null;if(privateView)privateView.hidden=true;if(createButton)createButton.hidden=true;if(signIn)signIn.hidden=false;if(status)status.textContent='Member sign-in required';hideFrontierActions();return;
       }
       if(!result.response.ok)throw new Error(result.body.message||result.body.error||'Could not load Colonization Jobs');
       payload={...result.body,jobs:overlayRecentJobUpdates([...(Array.isArray(result.body.jobs)?result.body.jobs:[])])};
       if(privateView)privateView.hidden=false;if(createButton)createButton.hidden=!result.body.canPost;if(signIn)signIn.hidden=Boolean(result.body.canPost);
       if(status)status.textContent=(result.body.jobs||[]).length.toLocaleString()+' job'+((result.body.jobs||[]).length===1?'':'s')+' · Frontier verification linked';
       render();
+      loadFrontierAction();
       if(location.hash==='#colonization-jobs'&&!window.__colonyBoardAnchored){window.__colonyBoardAnchored=true;requestAnimationFrame(()=>document.getElementById('colonization-jobs')?.scrollIntoView({block:'start'}));}
     }catch(error){console.error('Could not load Colonization Job board',error);if(status)status.textContent=String(error.message||error);}
   }
@@ -203,6 +303,7 @@
     if(event.key!=='Enter'||event.target?.tagName!=='INPUT'||event.target?.type==='submit')return;
     event.preventDefault();
   });
+    frontierSync?.addEventListener('click',syncFrontierActivity);
     createButton?.addEventListener('click',()=>openEditor());refresh?.addEventListener('click',load);filter?.addEventListener('change',render);form?.addEventListener('submit',save);form?.addEventListener('input',()=>{dirty=true;syncEditor();});form?.addEventListener('change',syncEditor);document.querySelectorAll('[data-colony-cancel]').forEach(button=>button.addEventListener('click',()=>closeEditor()));$('[data-colony-close-job]')?.addEventListener('click',()=>{if(editing)handleCardAction(editing,'complete',$('[data-colony-close-job]'));});
   load();
 })();
