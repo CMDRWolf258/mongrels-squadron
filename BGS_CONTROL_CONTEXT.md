@@ -1217,6 +1217,19 @@ The Reward Engine now has an explicit **READY → OWED ledger** action while aut
 - DRY RUN and the controlled issue endpoint now share one server-side unified reward-engine evaluation path to prevent logic drift.
 - Automatic reward ledger writes remain OFF. Batch issue is not enabled.
 
+## BGS active-board simplification / member Elite setup — 2026-09-22
+
+BGS Control now chooses one coherent active board and keeps the normal source UI simple.
+
+- A complete **Mongrel Scout** board remains active until the external source has a board where **every faction row is newer than that Scout snapshot**. One freshly updated external faction can no longer displace a coherent Scout board.
+- The external complete-board time is the oldest required external faction-row timestamp. That value remains useful internally for arbitration/freshness, but normal BGS Control no longer exposes "newest / oldest / mixed" diagnostic chips.
+- Normal BGS Control shows one **Active board** chip, freshness, population, conflict information, and settings. The faction table shows source only, not per-row age diagnostics.
+- When Scout data exists, BGS Control gives the operational refresh instruction directly: Scout updates on FSDJump, Location, or CarrierJump; **jump out and back in** to force a fresh full faction board while parked in a system.
+- Member-facing Elite tools live at **/member/#mongrel-scout**. The member card exposes **Connect Elite Account** directly plus **Scout & Setup**.
+- The member setup explicitly separates the two paths: Frontier CAPI is for reward verification; Live Scout (EDMC) is for faction-board reporting.
+- Live Scout instructions remain visible after the Frontier UI initializes and explain the event-driven refresh procedure.
+- Mission Control Resources includes a direct **Connect Elite & Scout** card linking to the member setup.
+
 ## Daily Orders clarity / Scout-driven squad progress — 2026-09-22
 
 Mission Control now applies Scout verification directly to Daily Order progress instead of merely displaying it as a separate note.

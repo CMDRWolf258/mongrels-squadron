@@ -374,20 +374,29 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const externalFactions = normalizeExternalFactions(externalBoard?.factions);
   const scoutFactions = normalizeScoutFactions(scout?.factions, scoutUpdated);
   const externalUpdated = newestTimestamp(rowExternalUpdated, externalBoardUpdated);
-  const trustedSourceUpdated = newestTimestamp(externalUpdated, scoutUpdated);
-  const scoutIsNewer = Boolean(scoutUpdated) && compareTime(scoutUpdated, externalUpdated) > 0;
-  const manualIsNewer = Boolean(manualUpdated) && compareTime(manualUpdated, trustedSourceUpdated) > 0;
+  const externalFactionTimes=externalFactions.map(faction=>normalizeSourceTime(faction?.updatedAt)).filter(Boolean);
+  const externalBoardFullyTimed=Boolean(externalFactions.length) && externalFactionTimes.length===externalFactions.length;
+  const externalBoardCompleteThrough=externalBoardFullyTimed ? oldestTimestamp(externalFactionTimes) : null;
+  const externalBoardNewest=externalFactionTimes.reduce((latest,value)=>newestTimestamp(latest,value), null) || externalUpdated;
+  const scoutPreferred=Boolean(scoutUpdated&&scoutFactions.length)
+    && (!externalBoardCompleteThrough || compareTime(scoutUpdated,externalBoardCompleteThrough)>=0);
+  const baseSourceUpdated=scoutPreferred
+    ? scoutUpdated
+    : (externalBoardCompleteThrough || externalUpdated || scoutUpdated);
+  const manualIsNewer=Boolean(manualUpdated&&manual?.factions?.length)
+    && compareTime(manualUpdated,baseSourceUpdated)>0;
+  const activeSource=manualIsNewer
+    ? 'manual'
+    : (scoutPreferred ? 'scout' : (externalFactions.length ? 'external' : (scoutFactions.length ? 'scout' : 'fallback')));
 
   let factions;
-  if (manualIsNewer && manual?.factions?.length) {
+  if(activeSource==='manual'){
     factions = manual.factions.map(faction => ({ ...faction, source: 'Manual', updatedAt:manualUpdated }));
-  } else if (scoutIsNewer && scoutFactions.length) {
+  }else if(activeSource==='scout'){
     factions = scoutFactions;
-  } else if (externalFactions.length) {
+  }else if(activeSource==='external'){
     factions = externalFactions;
-  } else if (scoutFactions.length) {
-    factions = scoutFactions;
-  } else {
+  }else{
     factions = mergeFactionBoard(sourceFallbackFaction, manual?.factions || [], row.sourceUpdated, manual?.updatedAt);
   }
 
@@ -399,10 +408,12 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const pendingStates = factionStateArray(mongrel, 'pendingStates', 'pending');
   const recoveringStates = factionStateArray(mongrel, 'recoveringStates', 'recovering');
   const scoutController = cleanText(scout?.systemFaction?.name, '', 120);
-  const activeController = manualIsNewer && manual?.controller
+  const activeController = activeSource==='manual' && manual?.controller
     ? manual.controller
-    : (scoutIsNewer && scoutController ? scoutController : (row.control || scoutController || ''));
-  const newest = manualIsNewer ? manualUpdated : trustedSourceUpdated;
+    : (activeSource==='scout' && scoutController ? scoutController : (row.control || scoutController || ''));
+  const newest = activeSource==='manual'
+    ? manualUpdated
+    : (activeSource==='scout' ? scoutUpdated : (externalBoardCompleteThrough || externalUpdated || scoutUpdated));
   const factionTimes=factions.map(faction=>normalizeSourceTime(faction?.updatedAt)).filter(Boolean);
   const boardOldestUpdatedAt=oldestTimestamp(factionTimes) || newest;
   const boardNewestUpdatedAt=factionTimes.reduce((latest,value)=>newestTimestamp(latest,value), null) || newest;
@@ -410,9 +421,9 @@ function buildSystem(row, externalBoard, control, scout = null) {
   const boardMixedAge=boardAgeSpreadHours !== null && boardAgeSpreadHours >= 1;
   const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessLimit = settings.freshnessHours ?? control.defaults.freshnessHours;
-  const boardComplete = manualIsNewer
+  const boardComplete = activeSource==='manual'
     ? Boolean(manual?.factions?.length)
-    : (scoutIsNewer ? Boolean(scoutFactions.length) : Boolean(externalFactions.length || scoutFactions.length));
+    : (activeSource==='scout' ? Boolean(scoutFactions.length) : Boolean(externalFactions.length));
   const mongrelConflict = activeStates.some(item => ['war','civil war','election'].includes(norm(item)));
   const externalConflictScore = normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale);
   const directScoutConflictScore = scoutConflictScore(scout);
@@ -427,14 +438,16 @@ function buildSystem(row, externalBoard, control, scout = null) {
     activeStates,
     pendingStates,
     recoveringStates,
-    security: scoutIsNewer && scout?.security ? scout.security : (row.security || ''),
-    population: scoutIsNewer && scout?.population !== null && scout?.population !== undefined ? scout.population : (row.population || null),
-    sourceUpdated: boardOldestUpdatedAt || trustedSourceUpdated || null,
+    security: activeSource==='scout' && scout?.security ? scout.security : (row.security || ''),
+    population: activeSource==='scout' && scout?.population !== null && scout?.population !== undefined ? scout.population : (row.population || null),
+    sourceUpdated: activeSource==='manual' ? manualUpdated : (activeSource==='scout' ? scoutUpdated : (externalBoardCompleteThrough || boardOldestUpdatedAt || externalUpdated || null)),
     externalSourceUpdated:externalUpdated || null,
-    sourceFetchedAt: scoutIsNewer ? (normalizeSourceTime(scout?.receivedAt) || scoutUpdated) : (normalizeSourceTime(externalBoard?.fetchedAt) || normalizeSourceTime(row.fetchedAt) || liveFallbackTimestamp(row)),
+    sourceFetchedAt: activeSource==='scout'
+      ? (normalizeSourceTime(scout?.receivedAt) || scoutUpdated)
+      : (normalizeSourceTime(externalBoard?.fetchedAt) || normalizeSourceTime(row.fetchedAt) || liveFallbackTimestamp(row)),
     externalBoardUpdatedAt: externalBoardUpdated,
-    externalBoardOldestAt: externalFactions.length ? oldestTimestamp(externalFactions.map(faction=>faction.updatedAt).filter(Boolean)) : rowExternalUpdated,
-    externalBoardNewestAt: externalFactions.length ? externalFactions.map(faction=>faction.updatedAt).filter(Boolean).reduce((latest,value)=>newestTimestamp(latest,value), null) : externalUpdated,
+    externalBoardOldestAt: externalBoardCompleteThrough || (externalFactions.length ? oldestTimestamp(externalFactionTimes) : rowExternalUpdated),
+    externalBoardNewestAt: externalBoardNewest,
     externalBoardComplete: Boolean(externalFactions.length),
     scoutBoardComplete: Boolean(scoutFactions.length),
     scoutUpdatedAt:scoutUpdated,
@@ -444,9 +457,13 @@ function buildSystem(row, externalBoard, control, scout = null) {
     factionCount: factions.length,
     manualUpdatedAt: manualUpdated,
     manualUpdatedBy: manual?.updatedBy || null,
-    activeSnapshotTime: boardOldestUpdatedAt,
-    activeSnapshotNewestTime: boardNewestUpdatedAt,
-    activeSnapshotSource: manualIsNewer ? 'manual' : (scoutIsNewer ? 'scout' : 'external'),
+    activeSnapshotTime: activeSource==='manual'
+      ? manualUpdated
+      : (activeSource==='scout' ? scoutUpdated : (externalBoardCompleteThrough || boardOldestUpdatedAt || externalUpdated)),
+    activeSnapshotNewestTime: activeSource==='manual'
+      ? manualUpdated
+      : (activeSource==='scout' ? scoutUpdated : (externalBoardNewest || boardNewestUpdatedAt)),
+    activeSnapshotSource: activeSource,
     boardAgeSpreadHours,
     boardMixedAge,
     boardComplete,
@@ -460,7 +477,12 @@ function buildSystem(row, externalBoard, control, scout = null) {
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
-    dataCondition: dataCondition({ sourceUpdated: boardOldestUpdatedAt, manualUpdatedAt: null }, freshnessLimit),
+    dataCondition: dataCondition({
+      sourceUpdated: activeSource==='manual'
+        ? manualUpdated
+        : (activeSource==='scout' ? scoutUpdated : (externalBoardCompleteThrough || boardOldestUpdatedAt || externalUpdated)),
+      manualUpdatedAt:null,
+    }, freshnessLimit),
   };
 }
 

@@ -37,7 +37,7 @@ assert.ok(page.indexOf('wolf-bgs-order-preview.js') < page.indexOf('wolf-bgs-con
 assert.ok(page.indexOf('wolf-bgs-conflicts.js') < page.indexOf('wolf-bgs-lab.js'),'Lab interception must load after conflict controls');
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/ack-alerts/,/remove-alert/,/data-remove-faction-alert/,/setBoardView/,/matchesBoardView/,/freshnessStatus/,/parsedTime/,/Mixed \/ Stale/,/Conflict Score/,/conflictScoreText/,/conflictDayText/,/data-conflict-score-a/,/data-conflict-score-updated/,/data-conflict-day-source/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
+for (const pattern of [/submit-status/,/save-system/,/save-global/,/save-system-defaults/,/toggle-favorite/,/toggle-queue-selector/,/queueSelected/,/populateAlerts/,/ack-alerts/,/remove-alert/,/data-remove-faction-alert/,/setBoardView/,/matchesBoardView/,/freshnessStatus/,/parsedTime/,/Active board/,/Refresh with Scout:/,/Conflict Score/,/conflictScoreText/,/conflictDayText/,/data-conflict-score-a/,/data-conflict-score-updated/,/data-conflict-day-source/,/Programmed Automation/,/Advanced Intelligence Suggestion/,/data-faction-row/]) assert.match(baseClient,pattern);
 
 const inheritanceClient=readFileSync('js/wolf-bgs-inheritance.js','utf8');
 assert.match(inheritanceClient,/wolf-bgs-write/);

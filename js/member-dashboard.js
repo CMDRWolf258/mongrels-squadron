@@ -166,15 +166,15 @@
     }
 
     const badge = card.querySelector('.member-command-badge');
-    if (badge) badge.textContent = 'Frontier CAPI';
+    if (badge) badge.textContent = 'Frontier + EDMC';
     const paragraph = card.querySelector('p:not(.eyebrow)');
-    if (paragraph) paragraph.textContent = 'Connect your Elite account once, then let Mongrel Scout verify BGS work from Frontier journal data without requiring EDMC for normal reward tracking.';
+    if (paragraph) paragraph.textContent = 'Connect Elite for reward verification, and use Live Scout when you want fresh faction-board data sent directly into Wolf BGS Control.';
     const oldActions = card.querySelector('.member-scout-actions');
-    if (oldActions) oldActions.innerHTML = '<a class="btn btn-primary" href="#mongrel-scout-setup">Open Scout</a>';
+    if (oldActions) oldActions.innerHTML = '<a class="btn btn-primary" href="/api/frontier/login" data-frontier-card-connect>Connect Elite Account</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Scout & Setup</a>';
 
     panel.innerHTML = `
-      <div class="member-panel-heading"><div><p class="eyebrow">Mongrel Scout · Frontier CAPI</p><h3>Elite Account Uplink</h3></div><span data-frontier-badge>Checking…</span></div>
-      <p>Primary reward verification uses Frontier's authenticated journal feed. Live EDMC Scout remains available as an optional real-time telemetry mode.</p>
+      <div class="member-panel-heading"><div><p class="eyebrow">Member Elite Tools</p><h3>Elite Connection & Live Scout</h3></div><span data-frontier-badge>Checking…</span></div>
+      <p><strong>Connect Elite</strong> is used for reward verification. <strong>Live Scout (EDMC)</strong> is the separate tool that sends fresh faction-board snapshots to Wolf BGS Control.</p>
       <div class="frontier-scout-grid">
         <div class="frontier-scout-box"><strong>Elite connection</strong><span data-frontier-connection>Checking Frontier integration…</span></div>
         <div class="frontier-scout-box"><strong>Verification scope</strong><span data-frontier-system>Waiting for Daily Orders, Colonization Jobs, or claim tracking…</span></div>
@@ -203,7 +203,18 @@
         <div class="frontier-scout-events" data-frontier-diagnostic-events></div>
       </details>
       <p class="member-scout-note"><strong>Privacy:</strong> the server parses the Frontier journal in memory and keeps only BGS-relevant verification events for active Daily Order or Colonization Job systems plus colonization system-claim/release events. It does not retain your complete journal, credit balance, ship build, materials, or unrelated travel history.</p>
-      <details class="member-scout-note"><summary><strong>Optional Live Scout (EDMC)</strong></summary><p>EDMC Scout is still available for immediate faction-board reporting and future live telemetry. It is no longer required for the normal Frontier-based reward-verification path.</p><div class="member-scout-actions"><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div></details>
+      <details class="member-scout-note" id="live-scout-setup"><summary><strong>Live Scout (EDMC) · Faction-board setup</strong></summary>
+        <p>Live Scout is event-driven. It sends a complete faction board when Elite writes an <strong>FSDJump</strong>, <strong>Location</strong>, or <strong>CarrierJump</strong> journal event. It does not continuously poll influence while you remain parked in one system.</p>
+        <div class="member-scout-steps">
+          <div class="member-scout-step"><b>1. Install EDMC</b><span>Use Elite Dangerous Market Connector on the machine that can read your live Elite journal folder.</span></div>
+          <div class="member-scout-step"><b>2. Download Live Scout</b><span>Download the ZIP, extract it, and copy the <strong>MongrelScout</strong> folder into EDMC's plugin folder.</span></div>
+          <div class="member-scout-step"><b>3. Restart EDMC</b><span>Confirm the plugin loads in EDMC, then open Settings → Mongrel Scout.</span></div>
+          <div class="member-scout-step"><b>4. Enter your token</b><span>Paste the Scout token issued by leadership, leave the supplied endpoint unchanged, and enable Scout.</span></div>
+          <div class="member-scout-step"><b>5. Get a fresh board</b><span>Jump into the Mongrel system. If you are already sitting there and need a fresh post-tick board, <strong>jump out and back in</strong>.</span></div>
+          <div class="member-scout-step"><b>6. Confirm the upload</b><span>EDMC should show <strong>Updated &lt;system&gt;</strong>. Leaving Scout running is fine, but new influence only arrives when Elite emits another qualifying full-board event.</span></div>
+        </div>
+        <div class="member-scout-actions"><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div>
+      </details>
     `;
     return panel;
   }
@@ -297,6 +308,7 @@
     const connect=document.querySelector('[data-frontier-connect]');
     const sync=document.querySelector('[data-frontier-sync]');
     const disconnect=document.querySelector('[data-frontier-disconnect]');
+    const cardConnect=document.querySelector('[data-frontier-card-connect]');
     const kpis=document.querySelector('[data-frontier-kpis]');
     const events=document.querySelector('[data-frontier-events]');
     const orderMatches=document.querySelector('[data-frontier-order-matches]');
@@ -308,6 +320,7 @@
       if(connection) connection.textContent='Frontier developer client is not configured on the site yet.';
       if(result) result.textContent='The Scout UI is installed. Add the Frontier Client ID in Cloudflare after Frontier approves the application, then this button will become active.';
       if(connect){connect.setAttribute('aria-disabled','true');connect.classList.add('is-disabled');connect.removeAttribute('href');}
+      if(cardConnect){cardConnect.setAttribute('aria-disabled','true');cardConnect.classList.add('is-disabled');cardConnect.removeAttribute('href');}
       if(sync) sync.hidden=true;if(disconnect)disconnect.hidden=true;if(kpis)kpis.hidden=true;
       return;
     }
@@ -316,6 +329,7 @@
       if(connection) connection.textContent='No Elite account connected to this website member yet.';
       if(result) result.textContent='Connect once through Frontier. Mongrel Scout will then use refresh tokens between sessions until Frontier requires re-authorization.';
       if(connect){connect.href='/api/frontier/login';connect.hidden=false;connect.removeAttribute('aria-disabled');connect.classList.remove('is-disabled');}
+      if(cardConnect){cardConnect.href='/api/frontier/login';cardConnect.hidden=false;cardConnect.removeAttribute('aria-disabled');cardConnect.classList.remove('is-disabled');}
       if(sync)sync.hidden=true;if(disconnect)disconnect.hidden=true;if(kpis)kpis.hidden=true;
       if(events)events.replaceChildren();
       if(orderMatches){orderMatches.replaceChildren();orderMatches.hidden=true;}
@@ -331,7 +345,7 @@
     if(result) result.textContent=targetSystems.length
       ? `Frontier connection active. Scout is scoped automatically to ${targetSystems.length} verification system${targetSystems.length===1?'':'s'} from active Daily Orders and Colonization Jobs, while colonization system claims are tracked globally for this CMDR.`
       : 'Frontier connection active. System-claim tracking remains available even without an active Daily Order or Colonization Job.';
-    if(connect)connect.hidden=true;if(sync){sync.hidden=false;sync.dataset.claimTracking=String(payload.claimTrackingEnabled!==false);}if(disconnect)disconnect.hidden=false;
+    if(connect)connect.hidden=true;if(cardConnect)cardConnect.hidden=true;if(sync){sync.hidden=false;sync.dataset.claimTracking=String(payload.claimTrackingEnabled!==false);}if(disconnect)disconnect.hidden=false;
     applyFrontierCooldown(payload.cooldown);
     if(kpis)kpis.hidden=false;
     const s=payload.summary||{};
