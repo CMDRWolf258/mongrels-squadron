@@ -314,6 +314,20 @@
     }[value]||String(value||'').replaceAll('_',' '));
 
     try{
+      let autoReconcile=null;
+      try{
+        const reconcileResponse=await fetch('/api/rewards/reconcile',{
+          method:'POST',
+          credentials:'same-origin',
+          cache:'no-store',
+          headers:{Accept:'application/json','X-Mongrels-Request':'wolf-reward-auto-reconcile'},
+        });
+        autoReconcile=await reconcileResponse.json().catch(()=>({}));
+        if(!reconcileResponse.ok)console.error('Reward auto-reconcile catch-up failed',autoReconcile);
+      }catch(error){
+        console.error('Could not run reward auto-reconcile catch-up',error);
+      }
+
       const [ledgerResponse,dryResponse]=await Promise.all([
         fetch('/api/rewards/admin?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
         fetch('/api/rewards/dry-run?_='+Date.now(),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}}),
@@ -338,7 +352,7 @@
         const sourceNames=['DAILY ORDERS'];
         if(Array.isArray(dry.sources)&&dry.sources.includes('colonization'))sourceNames.push('COLONIZATION');
         if(Array.isArray(dry.sources)&&dry.sources.includes('scouting'))sourceNames.push('SCOUTING');
-        mode.textContent=String(dry.engineMode||dry.mode||'dry_run').replaceAll('_',' ').toUpperCase()+' · '+sourceNames.join(' + ')+' · AUTO WRITES OFF';
+        mode.textContent=String(dry.engineMode||dry.mode||'automatic_verified').replaceAll('_',' ').toUpperCase()+' · '+sourceNames.join(' + ')+' · AUTO OWED ON';
       }
       money('[data-reward-dryrun-create]',ds.wouldCreateCredits);
       num('[data-reward-dryrun-ready]',ds.readyObligations);
@@ -364,10 +378,9 @@
           const small=document.createElement('small');small.textContent='Verified Daily Order or Colonization Job activity will appear here automatically.';
           empty.append(strong,small);dryList.appendChild(empty);
         }else{
-          members.forEach((member,index)=>{
+          members.forEach(member=>{
             const details=document.createElement('details');
             details.className='wolf-dryrun-member';
-            if(index===0)details.open=true;
 
             const summary=document.createElement('summary');
             const main=document.createElement('div');
@@ -426,21 +439,6 @@
                 provenance.title=String(item.provenance.snapshotHash||item.provenance.afterHash||'');
                 stateBox.append(provenance);
               }
-              if(dry.canIssueReady===true&&item.readyForLive&&item.plannedEntry){
-                const issue=document.createElement('button');
-                issue.type='button';
-                issue.className='btn btn-secondary btn-compact wolf-dryrun-issue';
-                issue.textContent='CREATE OWED ENTRY';
-                issue.dataset.issueReadyReward=item.id||'';
-                issue.dataset.issueAmountCredits=String(Math.round(Number(item.deltaCredits)||0));
-                issue.dataset.issueEvidenceDigest=String(item.evidenceDigest||'');
-                issue.dataset.issueRewardRuleDigest=String(item.rewardRuleDigest||'');
-                issue.dataset.issueCommander=String(member.commander||'Elite CMDR');
-                issue.dataset.issueTask=String(item.task||'Reward obligation');
-                issue.title='Explicitly add this READY obligation to the actual reward ledger as OWED. This does not mark it paid.';
-                stateBox.append(issue);
-              }
-
               row.append(order,amountBox,stateBox);
               if(item.blockers?.length){
                 const blockers=document.createElement('div');blockers.className='wolf-dryrun-blockers';
@@ -610,7 +608,12 @@
 
       ledgerLoaded=true;
       ledgerLoadedAt=Date.now();
-      if(checked)checked.textContent='Checked '+new Date(ledgerLoadedAt).toLocaleString()+' · automatic issuance/payment OFF';
+      if(checked){
+        const autoNote=Number(autoReconcile?.created||0)>0
+          ? ' · '+Number(autoReconcile.created).toLocaleString()+' newly auto-owed'
+          : '';
+        checked.textContent='Checked '+new Date(ledgerLoadedAt).toLocaleString()+' · automatic OWED issuance ON'+autoNote+' · payment remains manual';
+      }
     }catch(error){
       console.error('Could not load reward dry run / payout console',error);
       if(dryList)dryList.innerHTML='<div class="wolf-scout-empty"><strong>Reward dry run unavailable.</strong><small>No ledger state was changed.</small></div>';
