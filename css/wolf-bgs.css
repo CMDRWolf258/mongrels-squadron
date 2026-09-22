@@ -358,6 +358,6 @@
 
 
 @media (prefers-reduced-motion: reduce){
-  .wolf-master-alert-button.is-active{animation:none}
+  .wolf-master-alert-button.is-active{animation-duration:1.6s}
   .wolf-master-alert-button,.wolf-expand{transition:none}
 }
