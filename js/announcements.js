@@ -230,6 +230,10 @@
 
   const closeEditor=async({cleanup=true}={})=>{
     if(!shell)return;
+    if(imageUploadBusy&&cleanup){
+      setEditorStatus('Wait for the image upload to finish.','error');
+      return;
+    }
     if(cleanup&&uploadedImageKey&&uploadedImageKey!==originalImageKey){
       await deleteTemporaryImage(uploadedImageKey);
     }
