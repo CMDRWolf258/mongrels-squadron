@@ -10,6 +10,7 @@
   const syncRewardsButton=panel.querySelector('[data-discord-sync-rewards]');
   const status=panel.querySelector('[data-discord-status]');
   let colonizationArchiveConfigured=false;
+  let colonizationJobsConfigured=false;
   let factionAlertsConfigured=false;
   let scoutNetworkConfigured=false;
   let squadPayoutsConfigured=false;
@@ -24,7 +25,7 @@
   function setButtons(disabled){
     if(testButton)testButton.disabled=disabled;
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
-    if(syncColonizationButton)syncColonizationButton.disabled=disabled;
+    if(syncColonizationButton)syncColonizationButton.disabled=disabled||!colonizationJobsConfigured;
     if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled||!colonizationArchiveConfigured;
     if(syncScoutButton)syncScoutButton.disabled=disabled||!scoutNetworkConfigured;
     if(syncBgsButton)syncBgsButton.disabled=disabled||!factionAlertsConfigured;
@@ -60,12 +61,16 @@
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
         colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
+        colonizationJobsConfigured=Boolean(data.colonizationJobsConfigured);
         factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
         scoutNetworkConfigured=Boolean(data.scoutNetworkConfigured);
         squadPayoutsConfigured=Boolean(data.squadPayoutsConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
+        const colonization=colonizationJobsConfigured
+          ? ' · Colonization Jobs webhook ready'
+          : ' · Colonization Jobs webhook not configured';
         const archive=colonizationArchiveConfigured
           ? ' · Colonization Archive webhook ready'
           : ' · Colonization Archive webhook not configured';
@@ -79,8 +84,8 @@
           ? ' · Squad Payouts webhook ready'
           : ' · Squad Payouts webhook not configured';
         setButtons(false);
-        setStatus('Operations webhook detected · Daily Orders and Colonization are ready'+archive+faction+scout+payouts+cycle+'.',
-          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured&&squadPayoutsConfigured?'success':'');
+        setStatus('System Testing webhook detected · Daily Orders currently remain on the legacy route'+colonization+archive+faction+scout+payouts+cycle+'.',
+          data.scoutCycleRefreshServerConfigured&&colonizationJobsConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured&&squadPayoutsConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -137,6 +142,7 @@
       try{
         const state=await api('/api/operations/discord-test','GET');
         colonizationArchiveConfigured=Boolean(state.colonizationArchiveConfigured);
+        colonizationJobsConfigured=Boolean(state.colonizationJobsConfigured);
         factionAlertsConfigured=Boolean(state.factionAlertsConfigured);
         scoutNetworkConfigured=Boolean(state.scoutNetworkConfigured);
         squadPayoutsConfigured=Boolean(state.squadPayoutsConfigured);
@@ -147,7 +153,7 @@
 
   syncColonizationButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Syncing current Colonization Jobs to Discord…','working');
+    setStatus('Syncing Colonization Jobs channel…','working');
     try{
       const data=await api('/api/operations/discord-colonization-jobs','POST');
       const summary=data.discord||{};
@@ -159,10 +165,11 @@
       if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
       else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
-      setStatus('Colonization Jobs synced'+(parts.length?' · '+parts.join(' · '):' · no current jobs')+'.',Number(summary.failed)>0?'error':'success');
+      setStatus('Colonization Jobs channel synced'+(parts.length?' · '+parts.join(' · '):' · no current jobs')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
       const messages={
-        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
+        discord_colonization_jobs_webhook_not_configured:'Colonization Jobs webhook secret is not configured in Cloudflare.',
+        discord_colonization_jobs_webhook_request_failed:'Discord rejected the Colonization Jobs webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
         discord_colonization_sync_failed:'Colonization Jobs remain unchanged on the site, but Discord sync failed.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
