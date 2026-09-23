@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import {
   createColonizationArchiveDiscordMessage,
   createFactionAlertsDiscordMessage,
+  createScoutNetworkDiscordMessage,
   discordColonizationArchiveConfigured,
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
+  discordScoutNetworkConfigured,
   sendOperationsDiscord,
 } from '../lib/discord-webhook.js';
 
@@ -20,6 +22,9 @@ assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_
 const factionWebhook='https://discord.com/api/webhooks/1357924680/faction_alerts_token_ABC_123';
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:factionWebhook}),true);
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:'https://example.com/nope'}),false);
+const scoutWebhook='https://discord.com/api/webhooks/1122334455/scout_network_token_ABC_123';
+assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:scoutWebhook}),true);
+assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:'https://example.com/nope'}),false);
 
 
 const originalFetch=globalThis.fetch;
@@ -65,6 +70,26 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+let scoutCaptured=null;
+globalThis.fetch=async(url,options)=>{
+  scoutCaptured={url,options};
+  return Response.json({id:'7766554433'},{status:200});
+};
+try{
+  const result=await createScoutNetworkDiscordMessage(
+    {DISCORD_SCOUT_NETWORK_WEBHOOK_URL:scoutWebhook},
+    {embeds:[{title:'Scout Network Test'}],content:'Scout routing test'}
+  );
+  assert.equal(result.messageId,'7766554433');
+  assert.match(scoutCaptured.url,/1122334455/);
+  assert.equal(scoutCaptured.options.method,'POST');
+  const body=JSON.parse(scoutCaptured.options.body);
+  assert.deepEqual(body.allowed_mentions,{parse:[]});
+  assert.equal(body.embeds[0].title,'Scout Network Test');
+}finally{
+  globalThis.fetch=originalFetch;
+}
+
 const endpoint=readFileSync('functions/api/operations/discord-test.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -75,6 +100,7 @@ for(const pattern of [
   /scoutCycleRefreshServerConfigured/,
   /colonizationArchiveConfigured/,
   /factionAlertsConfigured/,
+  /scoutNetworkConfigured/,
   /low-noise persistent\/update-in-place model/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
@@ -107,7 +133,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=10/,
+  /wolf-bgs-discord\.js\?v=11/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
