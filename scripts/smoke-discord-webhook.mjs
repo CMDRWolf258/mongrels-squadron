@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 
 import {
   createColonizationArchiveDiscordMessage,
+  createColonizationJobsDiscordMessage,
   createFactionAlertsDiscordMessage,
   createScoutNetworkDiscordMessage,
   createSquadPayoutsDiscordMessage,
   discordColonizationArchiveConfigured,
+  discordColonizationJobsConfigured,
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
@@ -21,6 +23,9 @@ assert.equal(discordOperationsConfigured({}),false);
 const archiveWebhook='https://discord.com/api/webhooks/2468135790/archive_token_ABC_123';
 assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:archiveWebhook}),true);
 assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:'https://example.com/nope'}),false);
+const colonizationJobsWebhook='https://discord.com/api/webhooks/6677889900/colonization_jobs_token_ABC_123';
+assert.equal(discordColonizationJobsConfigured({DISCORD_COLONIZATION_JOBS_WEBHOOK_URL:colonizationJobsWebhook}),true);
+assert.equal(discordColonizationJobsConfigured({DISCORD_COLONIZATION_JOBS_WEBHOOK_URL:'https://example.com/nope'}),false);
 const factionWebhook='https://discord.com/api/webhooks/1357924680/faction_alerts_token_ABC_123';
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:factionWebhook}),true);
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:'https://example.com/nope'}),false);
@@ -75,6 +80,26 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+let colonizationJobsCaptured=null;
+globalThis.fetch=async(url,options)=>{
+  colonizationJobsCaptured={url,options};
+  return Response.json({id:'9988776655'},{status:200});
+};
+try{
+  const result=await createColonizationJobsDiscordMessage(
+    {DISCORD_COLONIZATION_JOBS_WEBHOOK_URL:colonizationJobsWebhook},
+    {embeds:[{title:'Colonization Jobs Test'}],content:'Live colonization routing test'}
+  );
+  assert.equal(result.messageId,'9988776655');
+  assert.match(colonizationJobsCaptured.url,/6677889900/);
+  assert.equal(colonizationJobsCaptured.options.method,'POST');
+  const body=JSON.parse(colonizationJobsCaptured.options.body);
+  assert.deepEqual(body.allowed_mentions,{parse:[]});
+  assert.equal(body.embeds[0].title,'Colonization Jobs Test');
+}finally{
+  globalThis.fetch=originalFetch;
+}
+
 let scoutCaptured=null;
 globalThis.fetch=async(url,options)=>{
   scoutCaptured={url,options};
@@ -124,6 +149,7 @@ for(const pattern of [
   /Mission Control Link Test/,
   /scoutCycleRefreshServerConfigured/,
   /colonizationArchiveConfigured/,
+  /colonizationJobsConfigured/,
   /factionAlertsConfigured/,
   /scoutNetworkConfigured/,
   /squadPayoutsConfigured/,
@@ -159,7 +185,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=12/,
+  /wolf-bgs-discord\.js\?v=13/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
