@@ -66,7 +66,9 @@ for(const pattern of [
 
 const discord=readFileSync('lib/squad-structure-discord.js','utf8');
 for(const pattern of [
-  /squad-structure/,
+  /🏛️〡squad-structure/,
+  /squadStructureChannelName/,
+  /plain squad-structure is also accepted/,
   /DISCORD_SQUAD_STRUCTURE_CHANNEL_ID/,
   /View Full Squad Structure/,
   /Regiment Command/,
@@ -83,13 +85,14 @@ for(const pattern of [
   /Sync Discord Only/,
   /api\/squad-structure/,
   /location\.hash===\'#ranks\'/,
+  /Target channel: 🏛️〡squad-structure/,
 ])assert.match(client,pattern);
 new Function(client);
 
 const page=readFileSync('about/index.html','utf8');
 assert.match(page,/data-squad-structure/);
 assert.match(page,/data-squad-structure-admin/);
-assert.match(page,/squad-structure\.js\?v=2/);
+assert.match(page,/squad-structure\.js\?v=3/);
 assert.match(page,/squad-structure-admin\.css\?v=1/);
 assert.doesNotMatch(page,/CMDR Lennyshow/);
 
