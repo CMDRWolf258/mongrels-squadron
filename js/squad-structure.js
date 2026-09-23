@@ -129,7 +129,7 @@
       ?safe(discord.lastError)
       :discord.lastSyncedAt
         ?'Last sync '+safe(new Date(discord.lastSyncedAt).toLocaleString())
-        :'Target channel: #squad-structure';
+        :'Target channel: 🏛️〡squad-structure';
 
     adminRoot.hidden=false;
     adminRoot.innerHTML=
