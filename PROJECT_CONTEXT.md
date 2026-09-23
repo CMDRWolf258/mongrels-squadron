@@ -794,6 +794,37 @@ Architecture:
 
 This is the first feature in the broader Squad Communications direction. Future Events, Rules, Training Resources, Squadron Structure, role/job selection, and similar communication surfaces should reuse this source-of-truth + delivery pattern when appropriate rather than creating parallel Discord-only records.
 
+## Squad Events / RSVPs
+
+Primary files:
+- `projects/index.html`
+- `js/projects.js`
+- `css/projects-events-v2.css`
+- `functions/api/projects/index.js`
+- `functions/api/projects/rsvp.js`
+- `functions/api/discord/interactions.js`
+- `lib/squad-events.js`
+- `scripts/smoke-squad-events.mjs`
+
+Architecture:
+- Squad Events reuse the existing Projects & Events `board-v1` record in `PROJECTS`; do not create a parallel event database.
+- Officers / Site Admin create events through Projects & Events. Existing member Project behavior remains unchanged.
+- Event statuses include Planning, Active, Paused, Cancelled, and Complete.
+- Planning events remain website-only until activated.
+- Active events publish a bot-owned message to the configured `DISCORD_SQUAD_EVENTS_CHANNEL_ID`.
+- Event edits update the tracked Discord message instead of creating duplicates.
+- Cancelled / Complete events remain in website history and keep the Discord event card, but RSVP buttons become disabled.
+- A Discord-posted event cannot be hard-deleted through the ordinary Projects editor; cancel or complete it instead so communication history is preserved.
+- Website and Discord both support one RSVP per Discord user: Going, Maybe, or Can’t Make It. Changing the choice replaces that member's prior RSVP.
+- RSVP counts and member-name rosters are rendered on the website and Discord event card.
+- Discord buttons use the existing Imperial Mongrels Website interaction endpoint and existing Ed25519 verification / bot token. No second Discord app is needed.
+- `DISCORD_SQUAD_EVENTS_CHANNEL_ID` is the only new runtime configuration required for the event channel; the existing bot must be able to view/send/embed in that channel.
+- The event card uses legacy Action Row/Button message components, which remain supported by Discord; custom IDs route back to the existing `/api/discord/interactions` handler.
+- The website remains authoritative; Discord is an interaction and delivery surface.
+
+Concurrency note:
+- current RSVP state is stored inside the authoritative event record in `board-v1`. This is appropriate for current squad scale, but if RSVP traffic becomes highly concurrent, migrate RSVP writes to a stronger serialized store rather than creating silent last-write-wins behavior.
+
 ## Recruitment / Discord integration
 
 Use the existing Discord app/bot **Imperial Mongrels Website**.
