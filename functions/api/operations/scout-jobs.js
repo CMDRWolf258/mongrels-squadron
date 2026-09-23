@@ -20,7 +20,7 @@ export async function onRequestGet({request,env}){
   const admin=new URL(request.url).searchParams.get('admin')==='1'&&auth.session.access==='site_admin';
   const [systems,account]=await Promise.all([
     loadActiveMongrelSystems(request),
-    getAccount(env,auth.session.sub),
+    safeGetAccount(env,auth.session.sub),
   ]);
   const board=await buildScoutJobBoard(env,{
     systems,
@@ -61,7 +61,7 @@ export async function onRequestPost({request,env}){
       if(!system)return reply({ok:false,error:'system_required'},400);
       const [systems,account,boundTokens]=await Promise.all([
         loadActiveMongrelSystems(request),
-        getAccount(env,auth.session.sub),
+        safeGetAccount(env,auth.session.sub),
         listBoundScoutTokens(env,auth.session.sub),
       ]);
       if(!containsSystem(systems,system))return reply({ok:false,error:'scout_job_system_not_active'},409);
@@ -121,6 +121,14 @@ export async function onRequestPost({request,env}){
     const code=clean(error?.message)||'scout_job_action_failed';
     const status=['scout_job_claimed_by_another','scout_job_already_awarded','scout_job_disabled'].includes(code)?409:400;
     return reply({ok:false,error:code},status);
+  }
+}
+
+async function safeGetAccount(env,userId){
+  try{return await getAccount(env,userId);}
+  catch(error){
+    console.error('Scout Board could not read Frontier account; falling back to session identity',error);
+    return null;
   }
 }
 
