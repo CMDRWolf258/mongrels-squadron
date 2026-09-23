@@ -824,6 +824,30 @@ Architecture:
 - Controlled Gallery tags currently include AX, BGS, Carriers, Colonization, Combat, Community, Engineering, Events, Exobiology, Exploration, Mining, Operations, PvP, Scenic, Ships, and Trade.
 - Current KV/R2 concurrency is appropriate for squad scale. If the upload quota ever needs strict high-concurrency enforcement across many PoPs, move quota accounting to a serialized store rather than pretending KV is strongly consistent.
 
+## Squad Structure / Discord sync
+
+Primary files:
+- `about/index.html`
+- `js/squad-structure.js`
+- `css/squad-structure-admin.css`
+- `lib/squad-structure.js`
+- `lib/squad-structure-discord.js`
+- `functions/api/squad-structure/index.js`
+- `scripts/smoke-squad-structure.mjs`
+
+Architecture:
+- The existing About → Squad Structure section remains the public presentation, but its command/assignment/count data is now rendered from one authoritative structured model instead of hard-coded roster HTML.
+- Fixed role/rank names and descriptions live in `lib/squad-structure.js`; mutable assignments and pilot-rank counts use the existing `PROJECTS` KV binding under `squad-structure-v1`.
+- Defaults mirror the former hard-coded About-page structure so the public page remains useful before the first persisted edit.
+- Site Admin only may edit Regiment Command holders, Captain assignments/vacancies, Field Leadership assignments, Specialist holders/focus, and Pilot Rank counts through the About-page management panel.
+- Saving structure data attempts Discord sync but the website save remains authoritative even if Discord is unavailable.
+- Discord uses the existing Imperial Mongrels Website bot. It auto-discovers a text/announcement channel named exactly `squad-structure` using `GUILD_ID`; optional `DISCORD_SQUAD_STRUCTURE_CHANNEL_ID` overrides discovery.
+- Discord presentation is one persistent bot message containing four embeds: Regiment Command; Operational Commands / Captain Corps; Field Leadership & Specialist Corps; Pilot Rank Progression. Updates edit the tracked message rather than creating duplicates, and a deleted tracked message is recreated.
+- The Discord message includes a View Full Squad Structure link to `/about/#structure` and does not ping users/roles.
+- Recommended Discord permissions: bot View Channel, Send Messages, Embed Links, Read Message History; members should be denied Send Messages if the channel is intended to be read-only.
+- Leadership/rank assignments are controlled structure data. They are intentionally separate from the future member self-selected job/activity-role system.
+- Ask the Mongrels no longer carries a hard-coded leadership roster; leadership/rank queries read the shared Squad Structure model.
+
 ## Squad Events / RSVPs
 
 Primary files:
