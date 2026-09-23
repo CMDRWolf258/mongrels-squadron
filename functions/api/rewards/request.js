@@ -6,6 +6,7 @@ import {
   requestRewardPayout,
   rewardPayoutRequestView,
 } from '../../../lib/reward-payout-requests.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 const ALLOWED=new Set(['member','officer','site_admin']);
 
@@ -45,9 +46,11 @@ export async function onRequestPost({request,env}) {
       entries,
       actor,
     });
+    const discord=await syncRewardsDiscord(request,env,{createMissing:true});
     return reply({
       ok:true,
       payoutRequest:rewardPayoutRequestView(record,entries),
+      discord,
       message:'Payout requested. Leadership can now see that you are ready to collect.',
     });
   }
@@ -62,14 +65,33 @@ export async function onRequestPost({request,env}) {
       });
     }
     const record=await cancelRewardPayoutRequest(env,{ownerId:session.sub,actor});
+    const discord=await syncRewardsDiscord(request,env,{createMissing:false});
     return reply({
       ok:true,
       payoutRequest:rewardPayoutRequestView(record,entries),
+      discord,
       message:'Payout request cancelled. Your reward balance is still owed.',
     });
   }
 
   return reply({ok:false,error:'unsupported_action'},400);
+}
+
+async function syncRewardsDiscord(request,env,{createMissing=false}={}){
+  try{
+    const view=await loadRewardDiscordView(env);
+    const adminUrl=new URL('/wolf-bgs/',request.url);
+    adminUrl.hash='reward-engine';
+    return await syncRewardDiscordBoard(env,{
+      view,
+      adminUrl:adminUrl.toString(),
+      rewardsUrl:new URL('/rewards/',request.url).toString(),
+      createMissing,
+    });
+  }catch(error){
+    console.error('Payout request changed but Rewards Discord sync failed',error);
+    return {feature:'rewards',configured:true,error:'discord_rewards_sync_failed',failed:1};
+  }
 }
 
 function validateSameOrigin(request){
