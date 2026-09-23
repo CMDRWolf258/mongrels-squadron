@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 
 import {
   createColonizationArchiveDiscordMessage,
+  createFactionAlertsDiscordMessage,
   discordColonizationArchiveConfigured,
+  discordFactionAlertsConfigured,
   discordOperationsConfigured,
   sendOperationsDiscord,
 } from '../lib/discord-webhook.js';
@@ -15,6 +17,9 @@ assert.equal(discordOperationsConfigured({}),false);
 const archiveWebhook='https://discord.com/api/webhooks/2468135790/archive_token_ABC_123';
 assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:archiveWebhook}),true);
 assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:'https://example.com/nope'}),false);
+const factionWebhook='https://discord.com/api/webhooks/1357924680/faction_alerts_token_ABC_123';
+assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:factionWebhook}),true);
+assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:'https://example.com/nope'}),false);
 
 
 const originalFetch=globalThis.fetch;
@@ -69,6 +74,7 @@ for(const pattern of [
   /Mission Control Link Test/,
   /scoutCycleRefreshServerConfigured/,
   /colonizationArchiveConfigured/,
+  /factionAlertsConfigured/,
   /low-noise persistent\/update-in-place model/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
@@ -101,7 +107,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=9/,
+  /wolf-bgs-discord\.js\?v=10/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
