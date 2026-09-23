@@ -20,10 +20,25 @@ function fakeKv(seed={}){
   };
 }
 
-const syntheticWebhook='https://discord.com/api/webhooks/'+'1234567890/'+'unit_test_token';
+const systemTestingWebhook='https://discord.com/api/webhooks/'+'1234567890/'+'system_testing_unit_test';
+const missionControlWebhook='https://discord.com/api/webhooks/'+'2468135790/'+'mission_control_unit_test';
 const env={
-  DISCORD_OPERATIONS_WEBHOOK_URL:syntheticWebhook,
-  DAILY_ORDERS:fakeKv(),
+  DISCORD_OPERATIONS_WEBHOOK_URL:systemTestingWebhook,
+  DISCORD_MISSION_CONTROL_WEBHOOK_URL:missionControlWebhook,
+  DAILY_ORDERS:fakeKv({
+    'discord-daily-orders-v1':{
+      version:1,
+      current:{
+        cycleId:'legacy-cycle',
+        messageId:'111111',
+        webhookId:'1234567890',
+        publicationId:'legacy-publication',
+        lastSyncedAt:'2026-09-22T21:00:00.000Z',
+        lastMode:'edited',
+        cleared:false,
+      },
+    },
+  }),
 };
 const base={
   configured:true,
@@ -79,7 +94,7 @@ const requests=[];
 let nextMessage=111111;
 const originalFetch=globalThis.fetch;
 globalThis.fetch=async(url,options)=>{
-  requests.push({url:String(url),options,body:JSON.parse(options.body)});
+  requests.push({url:String(url),options,body:options.body?JSON.parse(options.body):null});
   if(options.method==='POST'){
     return Response.json({id:String(nextMessage++)},{status:200});
   }
@@ -96,9 +111,12 @@ try{
   });
   assert.equal(first.ok,true);
   assert.equal(first.mode,'created');
-  assert.equal(requests[0].options.method,'POST');
-  assert.match(requests[0].url,/wait=true/);
-  assert.deepEqual(requests[0].body.allowed_mentions,{parse:[]});
+  assert.equal(requests[0].options.method,'DELETE','Legacy Daily Orders message must be removed from System Testing first');
+  assert.match(requests[0].url,/\/api\/webhooks\/1234567890\/.*\/messages\/111111/);
+  assert.equal(requests[1].options.method,'POST');
+  assert.match(requests[1].url,/\/api\/webhooks\/2468135790\//,'Daily Orders must seed into the dedicated Mission Control webhook');
+  assert.match(requests[1].url,/wait=true/);
+  assert.deepEqual(requests[1].body.allowed_mentions,{parse:[]});
 
   const revised={...base,updatedAt:'2026-09-22T22:05:00.000Z',orders:[...base.orders,{id:'4',system:'Baldur',priority:'high',kind:'inf',task:'Complete 10 INF'}]};
   const second=await syncDailyOrdersDiscord(env,{
@@ -106,8 +124,8 @@ try{
   });
   assert.equal(second.ok,true);
   assert.equal(second.mode,'edited');
-  assert.equal(requests[1].options.method,'PATCH');
-  assert.match(requests[1].url,/\/messages\/111111/);
+  assert.equal(requests[3].options.method,'PATCH');
+  assert.match(requests[3].url,/\/messages\/111111/);
 
   const nextCycle={...base,cycleId:'cycle-b',updatedAt:'2026-09-23T22:00:00.000Z'};
   const third=await syncDailyOrdersDiscord(env,{
@@ -122,20 +140,20 @@ try{
   });
   assert.equal(cleared.ok,true);
   assert.equal(cleared.mode,'cleared');
-  assert.equal(requests[3].options.method,'PATCH');
-  assert.equal(requests[3].body.embeds[0].title,'Daily Orders Cleared');
+  assert.equal(requests[4].options.method,'PATCH');
+  assert.equal(requests[4].body.embeds[0].title,'Daily Orders Cleared');
 
   const stored=JSON.parse(env.DAILY_ORDERS.map.get('discord-daily-orders-v1'));
   assert.equal(stored.current.cycleId,'cycle-b');
   assert.equal(stored.current.messageId,'111111','The living Daily Orders message ID should survive cycle rollover');
   assert.equal(stored.current.cleared,true);
 
-  env.DISCORD_OPERATIONS_WEBHOOK_URL='https://discord.com/api/webhooks/'+'9876543210/'+'replacement_channel_token';
+  env.DISCORD_MISSION_CONTROL_WEBHOOK_URL='https://discord.com/api/webhooks/'+'9876543210/'+'replacement_mission_control_token';
   const changedWebhook=await syncDailyOrdersDiscord(env,{
     document:{...nextCycle,cycleId:'cycle-c'},actor:'Wolf',publicationId:'pub-5',missionControlUrl:missionControl,
   });
   assert.equal(changedWebhook.mode,'created','Changing webhook/channel should create the living message in the new destination');
-  assert.equal(requests[4].options.method,'POST');
+  assert.equal(requests[5].options.method,'POST');
 }finally{
   globalThis.fetch=originalFetch;
 }
@@ -154,9 +172,10 @@ for(const pattern of [
   /wolf-bgs-control/,
   /no_daily_orders_published/,
   /syncDailyOrdersDiscord/,
+  /discordMissionControlConfigured/,
 ])assert.match(manualEndpoint,pattern);
 
 const publisher=readFileSync('js/wolf-bgs-publish.js','utf8');
 for(const pattern of [/data\?\.discord\?\.ok/,/data\.discord\.mode==='edited'/,/announcement updated\./,/Discord sync failed/])assert.match(publisher,pattern);
 
-console.log('✓ Daily Orders use one living Discord announcement across cycle rollover, while webhook changes create a new destination message');
+console.log('✓ Daily Orders migrate the living announcement from System Testing to Mission Control, then reuse it across cycle rollover');
