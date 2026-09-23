@@ -4,6 +4,7 @@ import {
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
+  discordSquadPayoutsConfigured,
   sendOperationsDiscord,
 } from '../../../lib/discord-webhook.js';
 
@@ -16,6 +17,7 @@ export async function onRequestGet({request,env}){
     colonizationArchiveConfigured:discordColonizationArchiveConfigured(env),
     factionAlertsConfigured:discordFactionAlertsConfigured(env),
     scoutNetworkConfigured:discordScoutNetworkConfigured(env),
+    squadPayoutsConfigured:discordSquadPayoutsConfigured(env),
     scoutCycleRefreshServerConfigured:String(env?.SCOUT_DISCORD_CRON_TOKEN||'').trim().length>=24,
   });
 }
