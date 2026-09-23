@@ -1,6 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63"><title>Gallery | The Mongrels</title><meta name="description" content="Squadron screenshots from the Regiment of Imperial Mongrels in Elite Dangerous."><link rel="stylesheet" href="../css/global.css?v=70"></head><body class="visual-page page-gallery"><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/" aria-current="page">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607"><link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63"><title>Gallery | The Mongrels</title><meta name="description" content="Squadron screenshots from the Regiment of Imperial Mongrels in Elite Dangerous."><link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/gallery-contributions.css?v=1"></head><body class="visual-page page-gallery"><header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/" aria-current="page">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header><main>
 <section class="gallery-hero"><div class="gallery-hero-bg"><img src="../assets/images/gallery/milky-way-expedition.webp" alt="Mongrel commanders on the Milky Way Expedition"></div><div class="container gallery-hero-content"><p class="eyebrow">Squadron Media</p><h1>Gallery</h1><p>A visual archive of the Mongrels at work, at war, out exploring, building the frontier, and occasionally getting distracted along the way.</p></div></section>
+<section class="section gallery-contribute-section">
+  <div class="container">
+    <article class="gallery-member-signin" data-gallery-member-signin>
+      <div><p class="eyebrow">Mongrel Contributions</p><h2>Got a shot worth keeping?</h2><p>Squad members can submit screenshots to the Gallery. Every image is reviewed by leadership before it appears publicly.</p></div>
+      <a class="btn btn-primary" href="/api/auth/login?return=%2Fgallery%2F">Sign in to Submit</a>
+    </article>
+
+    <div class="gallery-member-tools" data-gallery-member-tools hidden>
+      <div class="gallery-contribution-head">
+        <div><p class="eyebrow">Mongrel Contributions</p><h2>Submit to the Gallery</h2><p>Drop in a screenshot, add a little context, and leadership will review it before publication.</p></div>
+        <div class="gallery-quota-card"><span>Today's uploads</span><strong data-gallery-quota>0 / 10</strong><small>Resets 00:00 UTC</small></div>
+      </div>
+      <div class="gallery-contribution-layout">
+        <form class="gallery-submit-card" data-gallery-submit-form>
+          <label><span>Title</span><input type="text" maxlength="120" required data-gallery-submit-title placeholder="Give this moment a name"></label>
+          <label><span>Caption</span><textarea rows="3" maxlength="600" data-gallery-submit-caption placeholder="Optional context for the screenshot"></textarea></label>
+          <fieldset class="gallery-submit-tags"><legend>Tags <small>Choose up to 3</small></legend><div class="gallery-tag-picker" data-gallery-tag-picker></div></fieldset>
+          <div class="gallery-upload-drop" data-gallery-upload-drop role="button" tabindex="0" aria-label="Choose or drop a Gallery image">
+            <input type="file" accept="image/png,image/jpeg,image/webp" data-gallery-upload-file hidden>
+            <div class="gallery-upload-empty" data-gallery-upload-empty><strong>Drop an image here</strong><span>or click to choose a PNG, JPG, or WebP</span></div>
+            <div class="gallery-upload-preview" data-gallery-upload-preview hidden><img data-gallery-upload-preview-img alt="Gallery submission preview"><span data-gallery-upload-preview-name></span></div>
+          </div>
+          <div class="gallery-submit-actions">
+            <button class="btn btn-secondary" type="button" data-gallery-upload-choose>Choose Image</button>
+            <button class="btn btn-primary" type="submit" data-gallery-submit>Submit for Review</button>
+            <span data-gallery-submit-status aria-live="polite"></span>
+          </div>
+        </form>
+
+        <aside class="gallery-my-submissions">
+          <div class="gallery-panel-head"><div><span>Your submissions</span><strong>Recent status</strong></div></div>
+          <div data-gallery-mine><p class="muted">No submissions yet.</p></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section gallery-review-section" data-gallery-review-section hidden>
+  <div class="container">
+    <div class="gallery-review-head"><div><p class="eyebrow">Leadership Review</p><h2>Gallery Approval Queue</h2><p>Nothing reaches the public Gallery until an Officer or Site Admin approves it.</p></div><span data-gallery-pending-count>0 pending</span></div>
+    <div class="gallery-review-grid" data-gallery-review-grid></div>
+  </div>
+</section>
 <section class="section gallery-section"><div class="container"><div class="gallery-toolbar"><div><p class="eyebrow">Browse the Archive</p><h2>Life in the Pack</h2></div><span class="gallery-count" data-gallery-count>Loading images…</span></div><div class="gallery-filters" data-gallery-filters aria-label="Gallery categories"></div><div class="gallery-grid" data-gallery-grid><div class="placeholder"><strong>Loading gallery.</strong><p class="muted">Preparing squadron screenshots…</p></div></div></div></section>
-</main><div class="gallery-lightbox" data-lightbox hidden><button class="gallery-lightbox-backdrop" type="button" data-lightbox-close aria-label="Close image"></button><div class="gallery-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="gallery-lightbox-title"><button class="gallery-lightbox-close" type="button" data-lightbox-close aria-label="Close">×</button><img data-lightbox-image src="" alt=""><div class="gallery-lightbox-copy"><strong id="gallery-lightbox-title" data-lightbox-title></strong><p data-lightbox-caption></p></div></div></div>
-<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js?v=63"></script><script src="../js/gallery.js?v=71"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+</main><div class="gallery-lightbox" data-lightbox hidden><button class="gallery-lightbox-backdrop" type="button" data-lightbox-close aria-label="Close image"></button><div class="gallery-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="gallery-lightbox-title"><button class="gallery-lightbox-close" type="button" data-lightbox-close aria-label="Close">×</button><img data-lightbox-image src="" alt=""><div class="gallery-lightbox-copy"><strong id="gallery-lightbox-title" data-lightbox-title></strong><p data-lightbox-caption></p><small data-lightbox-credit hidden></small></div></div></div>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer><script src="../js/site.js?v=63"></script><script src="../js/gallery.js?v=72"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
