@@ -53,6 +53,7 @@ const publicItem=publicGallerySubmission(approved,request);
 assert.equal(publicItem.contributorName,'CMDR Wolf258');
 assert.match(publicItem.url,/\/media\/gallery\/1727112345678-12345678-1234-1234-1234-123456789abc\.webp$/);
 assert.equal(publicGallerySubmission({...approved,status:'pending'},request),null);
+assert.equal(publicGallerySubmission({...approved,status:'removed'},request),null);
 
 const api=readFileSync('functions/api/gallery/index.js','utf8');
 for(const pattern of [
@@ -62,6 +63,11 @@ for(const pattern of [
   /status:'pending'/,
   /action==='approve'/,
   /action==='reject'/,
+  /action==='remove'/,
+  /session\.access!=='site_admin'/,
+  /site_admin_access_required/,
+  /status='removed'/,
+  /approvedManaged:admin\?/,
   /deleteGalleryImage/,
   /officer_access_required/,
   /fresh:true/,
@@ -96,6 +102,9 @@ for(const pattern of [
   /Submit for Review|submitGalleryImage/,
   /normalizeReviewTags/,
   /Submitted by/,
+  /renderAdminApproved/,
+  /removeApprovedSubmission/,
+  /Remove from Gallery/,
 ])assert.match(client,pattern);
 new Function(client);
 
@@ -106,8 +115,10 @@ for(const pattern of [
   /data-gallery-quota/,
   /data-gallery-review-section/,
   /data-gallery-review-grid/,
-  /gallery\.js\?v=72/,
-  /gallery-contributions\.css\?v=2/,
+  /data-gallery-admin-section/,
+  /data-gallery-admin-grid/,
+  /gallery\.js\?v=73/,
+  /gallery-contributions\.css\?v=3/,
 ])assert.match(page,pattern);
 
 const css=readFileSync('css/gallery-contributions.css','utf8');
@@ -115,7 +126,14 @@ for(const pattern of [
   /gallery-upload-drop/,
   /gallery-review-card/,
   /gallery-status\.approved/,
+  /gallery-status\.removed/,
   /gallery-review-card>img\{[^}]*object-fit:contain/,
+  /gallery-admin-card/,
 ])assert.match(css,pattern);
 
-console.log('✓ Gallery supports 10/day member uploads, private pending review, and leadership approval before publication');
+const galleryIndex=readFileSync('gallery/index.html','utf8');
+assert.ok(galleryIndex.indexOf('class="section gallery-section"') < galleryIndex.indexOf('class="section gallery-contribute-section"'));
+assert.ok(galleryIndex.indexOf('class="section gallery-contribute-section"') < galleryIndex.indexOf('data-gallery-review-section'));
+assert.ok(galleryIndex.indexOf('data-gallery-review-section') < galleryIndex.indexOf('data-gallery-admin-section'));
+
+console.log('✓ Gallery keeps images first, supports 10/day moderated uploads, and restricts approved removal to Site Admin');
