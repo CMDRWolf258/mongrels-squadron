@@ -33,7 +33,7 @@
   };
 
   const statusLabel = status => ({
-    planning: 'Planning', active: 'Active', paused: 'Paused', complete: 'Complete'
+    planning: 'Planning', active: 'Active', paused: 'Paused', cancelled: 'Cancelled', complete: 'Complete'
   }[status] || status);
 
   const formatDate = value => {
@@ -63,11 +63,75 @@
     return Number.isFinite(t) ? t : Number.MAX_SAFE_INTEGER;
   };
 
+  const eventClosed = item => ['cancelled','complete'].includes(item?.status);
+
+  const rsvpLabel = status => ({
+    going: 'Going',
+    maybe: 'Maybe',
+    cant: 'Can’t Make It',
+  }[status] || '');
+
+  function eventRsvpMarkup(item) {
+    if (item.kind !== 'event' || !item.rsvp) return '';
+    const counts = item.rsvp.counts || {};
+    const roster = item.rsvp.roster || {};
+    const current = item.rsvp.current || '';
+    const open = Boolean(item.rsvp.open);
+    const rosterLines = [
+      ['Going', roster.going || []],
+      ['Maybe', roster.maybe || []],
+      ['Can’t Make It', roster.cant || []],
+    ].filter(([,names]) => names.length).map(([label,names]) =>
+      `<div class="project-rsvp-roster-line"><strong>${safe(label)}:</strong> ${safe(names.join(', '))}</div>`
+    ).join('');
+
+    return `
+      <div class="project-rsvp" data-event-rsvp="${safe(item.id)}">
+        <div class="project-rsvp-head"><strong>RSVP</strong><span>${open ? 'Open' : 'Closed'}${current ? ` · You: ${safe(rsvpLabel(current))}` : ''}</span></div>
+        <div class="project-rsvp-counts">
+          <span>✅ Going <b>${Number(counts.going)||0}</b></span>
+          <span>🤔 Maybe <b>${Number(counts.maybe)||0}</b></span>
+          <span>❌ Can’t Make It <b>${Number(counts.cant)||0}</b></span>
+        </div>
+        <div class="project-rsvp-actions">
+          <button type="button" class="project-rsvp-button${current==='going'?' is-selected':''}" data-event-rsvp-choice="going" ${open?'':'disabled'}>✅ Going</button>
+          <button type="button" class="project-rsvp-button${current==='maybe'?' is-selected':''}" data-event-rsvp-choice="maybe" ${open?'':'disabled'}>🤔 Maybe</button>
+          <button type="button" class="project-rsvp-button${current==='cant'?' is-selected':''}" data-event-rsvp-choice="cant" ${open?'':'disabled'}>❌ Can’t Make It</button>
+        </div>
+        ${rosterLines ? `<details class="project-rsvp-roster"><summary>View RSVP roster</summary><div class="project-rsvp-roster-grid">${rosterLines}</div></details>` : ''}
+      </div>`;
+  }
+
+  async function setEventRsvp(item, status, button) {
+    if (!item?.id || !item?.rsvp?.open) return;
+    const buttons = button?.closest('[data-event-rsvp]')?.querySelectorAll('button') || [];
+    buttons.forEach(x => x.disabled = true);
+    try {
+      const { response, payload } = await apiFetch('/api/projects/rsvp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Mongrels-Request': 'project-event-rsvp',
+        },
+        body: JSON.stringify({ id: item.id, status }),
+      });
+      if (!response.ok) {
+        alert(payload.error === 'event_rsvp_closed' ? 'This event is no longer accepting RSVPs.' : (payload.error || 'Unable to update RSVP.'));
+        await load();
+        return;
+      }
+      await load();
+    } catch {
+      alert('Unable to update RSVP right now.');
+      buttons.forEach(x => x.disabled = false);
+    }
+  }
+
   function sortProjects(list) {
     return list.sort((a, b) => {
       if (filter === 'events') return eventDate(a) - eventDate(b) || timestamp(b.updatedAt) - timestamp(a.updatedAt);
       if (filter === 'official') return timestamp(b.updatedAt) - timestamp(a.updatedAt);
-      if (filter === 'mine') return (a.status === 'complete') - (b.status === 'complete') || timestamp(b.updatedAt) - timestamp(a.updatedAt);
+      if (filter === 'mine') return eventClosed(a) - eventClosed(b) || timestamp(b.updatedAt) - timestamp(a.updatedAt);
       if (filter === 'archive') return timestamp(b.updatedAt) - timestamp(a.updatedAt);
       if (a.official !== b.official) return a.official ? -1 : 1;
       if (a.status !== b.status) {
@@ -82,8 +146,8 @@
     const list = items.filter(item => {
       if (filter === 'all') return true;
       if (filter === 'mine') return item.isMine;
-      if (filter === 'archive') return item.status === 'complete';
-      if (filter === 'events') return item.kind === 'event' && item.status !== 'complete';
+      if (filter === 'archive') return ['complete','cancelled'].includes(item.status);
+      if (filter === 'events') return item.kind === 'event' && !eventClosed(item);
       if (filter === 'member') return item.kind === 'project' && !item.official && item.status !== 'complete';
       if (filter === 'official') return item.kind === 'project' && item.official && item.status !== 'complete';
       return item.kind === 'project' && item.status !== 'complete';
@@ -93,9 +157,9 @@
 
   function render() {
     const active = items.filter(i => i.kind === 'project' && i.status !== 'complete').length;
-    const events = items.filter(i => i.kind === 'event' && i.status !== 'complete').length;
-    const mine = items.filter(i => i.isMine && i.status !== 'complete').length;
-    const archive = items.filter(i => i.status === 'complete').length;
+    const events = items.filter(i => i.kind === 'event' && !eventClosed(i)).length;
+    const mine = items.filter(i => i.isMine && !eventClosed(i)).length;
+    const archive = items.filter(i => ['complete','cancelled'].includes(i.status)).length;
 
     $('[data-project-count-active]').textContent = active;
     $('[data-project-count-events]').textContent = events;
@@ -109,6 +173,8 @@
     list.forEach(item => {
       const card = document.createElement('article');
       card.className = `project-card${item.kind === 'event' ? ' project-card-event' : ''}${item.official ? ' project-card-official' : ''}`;
+      card.id = item.kind === 'event' ? `event-${item.id}` : `project-${item.id}`;
+      if (item.kind === 'event') card.dataset.eventStatus = item.status || 'active';
 
       const system = item.system
         ? `<div class="project-system"><span>${safe(item.system)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(item.system)}" aria-label="Copy system name">⧉</button></div>`
@@ -132,6 +198,15 @@
         : '';
       const eventType = item.kind === 'event' && item.eventType ? `<div class="project-event-type"><span>Event Type</span><strong>${safe(item.eventType)}</strong></div>` : '';
 
+      const rsvp = eventRsvpMarkup(item);
+      const eventDiscord = item.kind === 'event' && item.canEdit
+        ? `<div class="project-event-discord${item.eventDiscord?.lastError ? ' warning' : ''}">${item.eventDiscord?.lastError
+          ? `Discord sync needs attention: ${safe(item.eventDiscord.lastError)}`
+          : item.eventDiscord?.linked
+            ? `Discord event card synced${item.eventDiscord.lastSyncedAt ? ` · ${safe(new Date(item.eventDiscord.lastSyncedAt).toLocaleString())}` : ''}`
+            : 'Discord event card not yet published'}</div>`
+        : '';
+
       card.innerHTML = `
         <div class="project-card-top">
           <div class="project-badges">
@@ -149,10 +224,15 @@
         ${help}
         ${target}
         ${progress}
+        ${rsvp}
+        ${eventDiscord}
         <div class="project-card-meta"><span>Posted by <strong>${safe(item.ownerName)}</strong></span></div>`;
 
       card.querySelector('[data-copy-system]')?.addEventListener('click', e => copyText(item.system, e.currentTarget));
       card.querySelector('.project-edit-btn')?.addEventListener('click', () => openEditor(item));
+      card.querySelectorAll('[data-event-rsvp-choice]').forEach(button => {
+        button.addEventListener('click', () => setEventRsvp(item, button.dataset.eventRsvpChoice, button));
+      });
       grid.appendChild(card);
     });
   }
@@ -165,6 +245,12 @@
     $('[data-project-target]').closest('label').hidden = isEvent;
     $('[data-project-time-wrap]').hidden = !isEvent;
     $('[data-project-event-type-wrap]').hidden = !isEvent;
+    const cancelledOption = document.querySelector('[data-event-status-only]');
+    if (cancelledOption) {
+      cancelledOption.hidden = !isEvent;
+      cancelledOption.disabled = !isEvent;
+      if (!isEvent && $('[data-project-status]').value === 'cancelled') $('[data-project-status]').value = 'active';
+    }
     if (!editing) $('[data-project-form-title]').textContent = isEvent ? 'New Event' : 'New Project';
     const submit = $('[data-project-submit]'); if (submit) submit.textContent = isEvent ? 'Save Event' : 'Save Project';
   }
@@ -174,9 +260,10 @@
     dirty = false;
     shell.hidden = false;
     document.body.classList.add('project-editor-open');
-    $('[data-project-form-title]').textContent = item ? 'Edit Project' : 'New Project';
+    $('[data-project-form-title]').textContent = item ? (item.kind === 'event' ? 'Edit Event' : 'Edit Project') : 'New Project';
     $('[data-project-id]').value = item?.id || '';
     $('[data-project-kind]').value = item?.kind || 'project';
+    $('[data-project-kind]').disabled = Boolean(item);
     $('[data-project-title]').value = item?.title || '';
     $('[data-project-system]').value = item?.system || '';
     $('[data-project-category]').value = item?.category || 'Colonization';
@@ -200,6 +287,7 @@
     shell.hidden = true;
     document.body.classList.remove('project-editor-open');
     editing = null;
+    $('[data-project-kind]').disabled = false;
     dirty = false;
   }
 
@@ -241,7 +329,10 @@
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      target.textContent = result.error || 'Unable to save project.';
+      const errors = {
+        published_event_must_be_cancelled_or_completed: 'Published events must be cancelled or completed instead of deleted.',
+      };
+      target.textContent = errors[result.error] || result.error || 'Unable to save project.';
       return;
     }
     dirty = false;
@@ -257,7 +348,10 @@
       headers: { 'X-Mongrels-Request': 'projects-editor' },
     });
     if (!response.ok) {
-      $('[data-project-form-status]').textContent = result.error || 'Unable to delete project.';
+      const errors = {
+        published_event_must_be_cancelled_or_completed: 'This event has Discord history. Mark it Cancelled or Complete instead of deleting it.',
+      };
+      $('[data-project-form-status]').textContent = errors[result.error] || result.error || 'Unable to delete project.';
       return;
     }
     dirty = false;
@@ -302,6 +396,10 @@
       filter = 'events';
       document.querySelectorAll('[data-project-filter]').forEach(x => x.classList.toggle('active', x.dataset.projectFilter === 'events'));
       render();
+    }
+    if (!window.__projectHashHandled && location.hash && /^#(?:event|project)-/.test(location.hash)) {
+      window.__projectHashHandled = true;
+      requestAnimationFrame(() => document.querySelector(location.hash)?.scrollIntoView({block:'center'}));
     }
     if (!window.__projectPrefillHandled && params.get('create') === 'event' && ['officer','site_admin'].includes(session.access)) {
       window.__projectPrefillHandled = true;
