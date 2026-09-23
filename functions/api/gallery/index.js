@@ -22,7 +22,7 @@ const MANAGER_ACCESS=new Set(['officer','site_admin']);
 
 export async function onRequestGet({request,env}){
   const session=await readSession(request,env);
-  const items=await readGallerySubmissions(env);
+  const items=await readGallerySubmissions(env,{fresh:true});
   const approved=items
     .filter(item=>item.status==='approved')
     .sort((a,b)=>Date.parse(b.reviewedAt||b.submittedAt)-Date.parse(a.reviewedAt||a.submittedAt))
