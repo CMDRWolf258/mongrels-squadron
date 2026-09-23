@@ -8,6 +8,8 @@ const MEMBER_ACCESS=new Set(['member','officer','site_admin']);
 export async function onRequestGet({request,env}){
   const auth=await requireMember(request,env);
   if(auth.response)return auth.response;
+  const storageError=requireStorage(env);
+  if(storageError)return storageError;
   const document=await readDocument(env);
   const canManage=auth.session.access==='site_admin';
   const visible=document.items
@@ -83,6 +85,10 @@ export async function onRequestPut({request,env}){
   const existing=document.items[index];
   const action=clean(body.value?.action||'save').toLowerCase();
   const item={...existing};
+
+  if(action==='save'&&item.status==='archived'){
+    return reply({ok:false,error:'archived_announcements_are_read_only'},409);
+  }
 
   if(action==='save'||action==='publish'){
     const title=clean(body.value?.title??item.title).slice(0,180);
