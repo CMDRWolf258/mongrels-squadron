@@ -62,6 +62,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
           node --experimental-default-type=module scripts/smoke-mongrel-scout.mjs
           node --experimental-default-type=module scripts/smoke-scout-jobs.mjs
+          node --experimental-default-type=module scripts/smoke-frontier-diagnostics.mjs
           node --experimental-default-type=module scripts/smoke-scout-discord.mjs
           node --experimental-default-type=module scripts/smoke-bgs-discord.mjs
           node --experimental-default-type=module scripts/smoke-reward-discord.mjs
