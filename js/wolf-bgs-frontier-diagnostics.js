@@ -217,14 +217,14 @@
     loading=true;
     if(refresh)refresh.disabled=true;
     setStatus('Loading connected CMDRs…');
+    let remembered='';
     try{
       const data=await request();
       members=Array.isArray(data.members)?data.members:[];
       populateMembers();
       initialized=true;
-      const remembered=memberSelect.value;
-      if(remembered)await loadMember(remembered);
-      else{
+      remembered=memberSelect.value;
+      if(!remembered){
         selected=null;
         events=[];
         render();
@@ -236,6 +236,7 @@
       loading=false;
       if(refresh)refresh.disabled=false;
     }
+    if(remembered)loadMember(remembered);
   }
 
   async function loadMember(ownerId){
