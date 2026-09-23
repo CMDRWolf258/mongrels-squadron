@@ -12,6 +12,7 @@ import {
 import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
 import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
+import { syncColonizationMutationDiscord } from '../../../lib/colonization-discord.js';
 import {
   ensureColonizationJobHistoryBaseline,
   markColonizationJobPublicationApplied,
@@ -38,6 +39,7 @@ export async function onRequestGet({request,env}) {
 
   const memberRows=await Promise.all(accounts.map(async row=>({
     ownerId:row.userId,
+    commander:row.account?.commander||'Elite CMDR',
     events:await getEvents(env,row.userId),
   })));
   const verification=memberRows.map(member=>({
@@ -76,6 +78,7 @@ export async function onRequestGet({request,env}) {
     canPost:true,
     canModerate:MANAGERS.has(auth.session.access),
     jobs,
+    observedMarkets:buildObservedMarkets(memberRows),
     updatedAt:store.updatedAt||null,
     updatedBy:store.updatedBy||null,
   });
@@ -130,7 +133,13 @@ export async function onRequestPost({request,env}) {
   const jobs=[job,...store.jobs];
   const saved=await commitMutation(env,{before:store,jobs,actor,action:'create',targetJobId:job.id});
   const rewardReconciliation=await reconcileAfterJobChange(env,actor);
-  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation},201);
+  const discord=await syncMemberColonizationDiscord(env,{
+    request,
+    action:'create',
+    job,
+    actor,
+  });
+  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,discord},201);
 }
 
 export async function onRequestPut({request,env}) {
@@ -165,6 +174,30 @@ export async function onRequestPut({request,env}) {
     if(!['active','paused','completed'].includes(status))return reply({ok:false,error:'colonization_status_invalid'},400);
     const endsAt=status==='active'?null:(existing.endsAt||new Date().toISOString());
     next=normalizeColonizationJob({...existing,status,endsAt,updatedBy:actor},existing);
+  }else if(action==='link-site'){
+    if(existing.scope!=='market')return reply({ok:false,error:'colonization_site_link_not_required'},409);
+    if(existing.status==='completed')return reply({ok:false,error:'colonization_site_link_completed'},409);
+    if(existing.marketId&&!manager)return reply({ok:false,error:'colonization_site_already_linked'},409);
+
+    const marketId=clean(body?.marketId||body?.job?.marketId,40);
+    if(!marketId)return reply({ok:false,error:'colonization_site_required'},400);
+    const observed=await loadObservedMarkets(env);
+    const site=observed.find(row=>
+      String(row.marketId||'')===marketId
+      && normSystem(row.system)===normSystem(existing.system)
+    );
+    if(!site)return reply({
+      ok:false,
+      error:'colonization_site_not_verified',
+      message:'That construction site has not been verified by Frontier activity in this job system. Dock at the intended depot, Sync Activity, then try again.',
+    },409);
+
+    next=normalizeColonizationJob({
+      ...existing,
+      marketId,
+      buildName:existing.buildName||site.station||'Specific construction build',
+      updatedBy:actor,
+    },existing);
   }else if(action==='approve-funding'||action==='reject-funding'){
     if(!manager)return reply({ok:false,error:'colonization_funding_approval_required'},403);
     if(existing.fundingMode!=='squad')return reply({ok:false,error:'colonization_funding_not_squad'},409);
@@ -264,7 +297,13 @@ export async function onRequestPut({request,env}) {
     });
   }
   const rewardReconciliation=await reconcileAfterJobChange(env,actor);
-  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation});
+  const discord=await syncMemberColonizationDiscord(env,{
+    request,
+    action:action==='link-site'?'create':'update',
+    job:next,
+    actor,
+  });
+  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,discord});
 }
 
 export async function onRequestDelete({request,env}) {
@@ -278,10 +317,17 @@ export async function onRequestDelete({request,env}) {
   const jobs=[...store.jobs];
   const index=jobs.findIndex(job=>String(job.id)===id);
   if(index<0)return reply({ok:false,error:'colonization_job_not_found'},404);
+  const removedJob=jobs[index];
   jobs.splice(index,1);
   const actor=auth.session.displayName||auth.session.username||'Mongrel Officer';
   const saved=await commitMutation(env,{before:store,jobs,actor,action:'delete',targetJobId:id});
-  return reply({ok:true,updatedAt:saved.updatedAt});
+  const discord=await syncMemberColonizationDiscord(env,{
+    request,
+    action:'delete',
+    removedJob,
+    actor,
+  });
+  return reply({ok:true,updatedAt:saved.updatedAt,discord});
 }
 
 function normalizeFundingForCreate(source,{fundingMode,ownerId,payerName,actor}){
@@ -379,6 +425,69 @@ function presentJob(job,session,progress={}){
     canApproveFunding:manager&&job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending',
   };
 }
+
+function buildObservedMarkets(memberRows=[]){
+  const observed=new Map();
+  for(const member of Array.isArray(memberRows)?memberRows:[]){
+    for(const event of Array.isArray(member?.events)?member.events:[]){
+      if(!['colonization_depot','colonization_contribution'].includes(event?.type))continue;
+      if(!event.system||!event.marketId)continue;
+      const marketId=String(event.marketId);
+      const key=normSystem(event.system)+'|'+marketId;
+      const row=observed.get(key)||{
+        system:String(event.system||'').trim(),
+        marketId,
+        station:String(event.station||'').trim(),
+        lastObservedAt:null,
+        constructionProgress:null,
+        constructionComplete:false,
+        constructionFailed:false,
+      };
+      if(event.station)row.station=String(event.station).trim();
+      if(event.timestamp&&(!row.lastObservedAt||event.timestamp>row.lastObservedAt))row.lastObservedAt=event.timestamp;
+      if(event.type==='colonization_depot'){
+        if(Number.isFinite(Number(event.constructionProgress)))row.constructionProgress=Number(event.constructionProgress);
+        row.constructionComplete=Boolean(event.constructionComplete);
+        row.constructionFailed=Boolean(event.constructionFailed);
+      }
+      observed.set(key,row);
+    }
+  }
+  return [...observed.values()].sort((a,b)=>String(b.lastObservedAt||'').localeCompare(String(a.lastObservedAt||'')));
+}
+
+async function loadObservedMarkets(env){
+  const accounts=await listFrontierAccounts(env);
+  const rows=await Promise.all(accounts.map(async row=>({
+    ownerId:row.userId,
+    commander:row.account?.commander||'Elite CMDR',
+    events:await getEvents(env,row.userId),
+  })));
+  return buildObservedMarkets(rows);
+}
+
+async function syncMemberColonizationDiscord(env,{request,action='update',job=null,removedJob=null,actor='' }={}){
+  try{
+    return await syncColonizationMutationDiscord(env,{
+      action,
+      job,
+      removedJob,
+      actor:actor||'Mongrel Member',
+      controlUrl:colonizationControlUrlForRequest(request),
+    });
+  }catch(error){
+    console.error('Colonization Job saved but Discord sync failed',error);
+    return{ok:false,attempted:true,mode:'failed',error:'discord_colonization_sync_failed'};
+  }
+}
+
+function colonizationControlUrlForRequest(request){
+  const url=new URL('/trading/',request.url);
+  url.hash='colonization-jobs';
+  return url.toString();
+}
+
+function normSystem(value){return String(value||'').trim().toLowerCase()}
 
 async function reconcileAfterJobChange(env,actor){
   const result={memberFunded:null,squad:null};
