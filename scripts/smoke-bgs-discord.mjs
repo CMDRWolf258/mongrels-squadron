@@ -42,7 +42,7 @@ const ui=readFileSync('js/wolf-bgs-discord.js','utf8');
 assert.match(ui,/data-discord-sync-bgs/);
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/Sync BGS Alerts/);
-assert.match(page,/wolf-bgs-discord\.js\?v=8/);
+assert.match(page,/wolf-bgs-discord\.js\?v=9/);
 const bgsApi=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 assert.match(bgsApi,/activeDetail = find\(active, value => value === 'retreat'\)/);
 
