@@ -22,7 +22,7 @@ export async function onRequestPost({request,env}){
     const bgsView=await loadBgsDiscordView(request,env);
     const bgsDiscord=await syncBgsDiscordBoard(env,{
       view:bgsView,
-      missionControlUrl:new URL('/wolf-bgs/#faction-alerts',request.url).toString(),
+      missionControlUrl:new URL('/operations/#all-systems',request.url).toString(),
       createMissing:false,
     });
     return reply({
