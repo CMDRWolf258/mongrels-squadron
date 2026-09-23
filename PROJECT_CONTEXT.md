@@ -817,6 +817,8 @@ Architecture:
 - A Discord-posted event cannot be hard-deleted through the ordinary Projects editor; cancel or complete it instead so communication history is preserved.
 - Website and Discord both support one RSVP per Discord user: Going, Maybe, or Can’t Make It. Changing the choice replaces that member's prior RSVP.
 - RSVP counts and member-name rosters are rendered on the website and Discord event card.
+- Events may optionally store a public HTTPS `eventImageUrl`; when present it renders as a wide image on both the website event card and the Discord embed. No default image is currently forced, and blank remains a valid event presentation.
+- The Discord event card uses natural Discord field spacing; the earlier zero-width spacer fields were removed after visual review because Discord rendered them too tall.
 - Projects/Event KV reads explicitly use Cloudflare KV `cacheTtl:30` to reduce cross-location RSVP staleness from the previous default window.
 - The Projects & Events client checks quietly every 5 seconds while visible, but only rerenders when returned board data changes; Discord-originated RSVP updates should therefore surface automatically once the 30-second KV cache can see them.
 - Discord buttons use the existing Imperial Mongrels Website interaction endpoint and existing Ed25519 verification / bot token. No second Discord app is needed.
