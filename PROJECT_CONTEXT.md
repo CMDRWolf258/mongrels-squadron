@@ -817,6 +817,8 @@ Architecture:
 - A Discord-posted event cannot be hard-deleted through the ordinary Projects editor; cancel or complete it instead so communication history is preserved.
 - Website and Discord both support one RSVP per Discord user: Going, Maybe, or Can’t Make It. Changing the choice replaces that member's prior RSVP.
 - RSVP counts and member-name rosters are rendered on the website and Discord event card.
+- Projects/Event KV reads explicitly use Cloudflare KV `cacheTtl:30` to reduce cross-location RSVP staleness from the previous default window.
+- The Projects & Events client checks quietly every 5 seconds while visible, but only rerenders when returned board data changes; Discord-originated RSVP updates should therefore surface automatically once the 30-second KV cache can see them.
 - Discord buttons use the existing Imperial Mongrels Website interaction endpoint and existing Ed25519 verification / bot token. No second Discord app is needed.
 - By default the existing bot auto-discovers a Discord text/announcement channel named exactly `squad-events` using the existing `GUILD_ID`; no new Cloudflare value is required for that normal path.
 - `DISCORD_SQUAD_EVENTS_CHANNEL_ID` remains an optional explicit override if the event channel uses a different name or discovery should be bypassed.
