@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { resolveMemberProfile, publicMemberFilter } from '../../../lib/member-profile.js';
+import { deleteManagedEventImage, isManagedEventImageKey } from '../../../lib/event-images.js';
 import {
   applyDiscordState,
   eventRsvpView,
@@ -73,6 +74,7 @@ export async function onRequestPut({ request, env }) {
   const manager=MANAGER_ACCESS.has(auth.session.access);
   if (!manager && existing.ownerId !== auth.session.sub) return reply({ok:false,error:'not_project_owner'},403);
 
+  const priorEventImageKey=existing.kind==='event'&&isManagedEventImageKey(existing.eventImageKey)?existing.eventImageKey:'';
   items[idx] = normalizeItem(body.value, {
     id:existing.id,
     ownerId:existing.ownerId,
@@ -82,6 +84,10 @@ export async function onRequestPut({ request, env }) {
     updatedBy:auth.session.displayName,
   }, auth.session, existing);
   await writeProjectsBoard(env, items);
+  const nextEventImageKey=items[idx].kind==='event'&&isManagedEventImageKey(items[idx].eventImageKey)?items[idx].eventImageKey:'';
+  if(priorEventImageKey&&priorEventImageKey!==nextEventImageKey){
+    deleteManagedEventImage(env,priorEventImageKey).catch(error=>console.error('Could not clean up replaced Squad Event image',error));
+  }
 
   let discord=null;
   if(items[idx].kind==='event'){
@@ -112,6 +118,9 @@ export async function onRequestDelete({ request, env }) {
   }
   items.splice(idx,1);
   await writeProjectsBoard(env,items);
+  if(existing.kind==='event'&&isManagedEventImageKey(existing.eventImageKey)){
+    deleteManagedEventImage(env,existing.eventImageKey).catch(error=>console.error('Could not clean up deleted Squad Event image',error));
+  }
   return reply({ok:true});
 }
 
@@ -145,6 +154,7 @@ function normalizeItem(value, fixed, session, existing={}) {
     eventTime:clean(src.eventTime,existing.eventTime||'',20),
     eventType:clean(src.eventType,existing.eventType||'',80),
     eventImageUrl:kind==='event' ? normalizeEventImageUrl(src.eventImageUrl,existing.eventImageUrl||'') : '',
+    eventImageKey:kind==='event' ? normalizeEventImageKey(src.eventImageKey,existing.eventImageKey||'') : '',
     createdAt:fixed.createdAt,
     updatedAt:fixed.updatedAt,
     updatedBy:fixed.updatedBy,
@@ -168,6 +178,7 @@ function present(item, session){
     discordEventChannelId,
     discordEventLastSyncedAt,
     discordEventLastError,
+    eventImageKey,
     ...safe
   }=item;
   const canEdit=MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub;
@@ -176,6 +187,7 @@ function present(item, session){
   if(item.kind==='event'){
     presented.rsvp=eventRsvpView(item,session.sub);
     if(canEdit){
+      presented.eventImageKey=isManagedEventImageKey(eventImageKey)?eventImageKey:'';
       presented.eventDiscord={
         linked:Boolean(discordEventMessageId),
         lastSyncedAt:discordEventLastSyncedAt||'',
@@ -216,6 +228,14 @@ function normalizeStatus(value,kind,fallback='active'){
     :['planning','active','paused','complete'];
   return allowed.includes(x)?x:(allowed.includes(fallback)?fallback:'active');
 }
+function normalizeEventImageKey(value,fallback=''){
+  if(value===undefined)return isManagedEventImageKey(fallback)?fallback:'';
+  if(typeof value!=='string')return isManagedEventImageKey(fallback)?fallback:'';
+  const key=value.trim();
+  if(!key)return'';
+  return isManagedEventImageKey(key)?key:'';
+}
+
 function normalizeEventImageUrl(value,fallback=''){
   if(value===undefined)return fallback;
   if(typeof value!=='string')return fallback;
