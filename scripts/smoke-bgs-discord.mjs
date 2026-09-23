@@ -8,15 +8,17 @@ const live={systems:[
  {name:'War System',present:true,activeStates:['War'],pendingStates:[],sourceUpdated:'2026-09-22T20:00:00Z'},
  {name:'Market System',present:true,activeStates:['Boom','Civil Liberty'],pendingStates:['Pirate Attack'],sourceUpdated:'2026-09-22T20:00:00Z'},
 ]};
-const boards={systems:[
- {name:'Retreat System',factions:[faction(['Retreat'])]},
- {name:'War System',factions:[faction(['War'])],conflict:{opponentFaction:'Test Opposition',factionWonDays:2,opponentWonDays:1,type:'War',status:'Active',updatedAt:'2026-09-22T20:00:00Z'}},
- {name:'Market System',factions:[faction(['Boom','Civil Liberty'],['Pirate Attack'])]},
-]};
+const boards={systems:{
+ 'Retreat System':{name:'Retreat System',factions:[faction(['Retreat'])]},
+ 'War System':{name:'War System',factions:[faction(['War'])],conflict:{opponentFaction:'Test Opposition',factionWonDays:2,opponentWonDays:1,type:'War',status:'Active',updatedAt:'2026-09-22T20:00:00Z'}},
+ 'Market System':{name:'Market System',factions:[faction(['Boom','Civil Liberty'],['Pirate Attack'])]},
+}};
 const view=buildBgsDiscordView({live,boards,scouts:{systems:{}}});
 assert.equal(view.actions.length,2);
 assert.ok(view.actions.some(x=>x.family==='retreat'&&x.phase==='active'));
 assert.ok(view.actions.some(x=>x.family==='conflict'&&x.detail==='War'));
+assert.equal(view.actions.find(x=>x.system==='War System')?.opponent,'Test Opposition','Object-shaped full board must supply conflict opponent');
+assert.equal(view.actions.find(x=>x.system==='War System')?.score?.ours,2,'Object-shaped full board must supply conflict score');
 assert.equal(view.opportunities.length,1);
 assert.deepEqual(view.opportunities[0].states.map(x=>x.state),['Pirate Attack','Boom','Civil Liberty']);
 const payload=buildBgsSummaryDiscordPayload(view,{missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts'});
