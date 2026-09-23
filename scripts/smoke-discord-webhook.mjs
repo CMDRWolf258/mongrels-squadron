@@ -50,7 +50,9 @@ for(const pattern of [
   /data-discord-sync-orders/,
   /data-discord-sync-colonization/,
   /data-discord-sync-scout/,
+  /data-discord-sync-rewards/,
   /api\/operations\/discord-test/,
+  /api\/operations\/discord-rewards/,
   /api\/operations\/discord-scout-jobs/,
   /api\/operations\/discord-colonization-jobs/,
   /api\/operations\/discord-daily-orders/,
@@ -67,8 +69,9 @@ for(const pattern of [
   /data-discord-sync-orders/,
   /data-discord-sync-colonization/,
   /data-discord-sync-scout/,
+  /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=7/,
+  /wolf-bgs-discord\.js\?v=8/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
