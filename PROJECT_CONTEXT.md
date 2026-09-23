@@ -1,6 +1,6 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-09-18_
+_Last updated: 2026-09-23_
 
 ## Read this first
 
@@ -767,6 +767,32 @@ The Felicity path includes dedicated Deciat/Open safety guidance: rebuy, protect
 Wolf validated the card and Undo behavior on phone, but not the complete in-game sequence.
 
 ---
+
+## Squadron Announcements
+
+Primary files:
+- `announcements/index.html`
+- `css/announcements.css`
+- `js/announcements.js`
+- `functions/api/announcements/index.js`
+- `lib/announcements-discord.js`
+- `lib/discord-webhook.js`
+- `scripts/smoke-announcements.mjs`
+
+Architecture:
+- the website is the authoritative announcement record; Discord is the delivery surface;
+- announcements are member-only on the website;
+- initial authoring authority is **Site Admin only**;
+- storage uses the existing `PROJECTS` KV binding under `announcements-v1`;
+- drafts are private to Site Admin;
+- published announcements are visible to members and publish through the dedicated `DISCORD_ANNOUNCEMENTS_WEBHOOK_URL`;
+- editing a published announcement updates the tracked Discord message rather than creating a duplicate;
+- if the tracked Discord message was removed, a later sync may recreate it;
+- archiving preserves the website record and leaves the Discord historical post intact;
+- archived announcements are read-only until restored;
+- changing the configured announcements webhook creates future/tracked delivery in the newly configured channel; do not assume an old-channel message can be edited by a different webhook.
+
+This is the first feature in the broader Squad Communications direction. Future Events, Rules, Training Resources, Squadron Structure, role/job selection, and similar communication surfaces should reuse this source-of-truth + delivery pattern when appropriate rather than creating parallel Discord-only records.
 
 ## Recruitment / Discord integration
 
