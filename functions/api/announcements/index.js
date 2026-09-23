@@ -1,6 +1,13 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { discordAnnouncementsConfigured } from '../../../lib/discord-webhook.js';
 import { syncAnnouncementDiscord } from '../../../lib/announcements-discord.js';
+import {
+  announcementImagePreviewUrl,
+  announcementImagePublicUrl,
+  announcementImagesConfigured,
+  deleteManagedAnnouncementImage,
+  isManagedAnnouncementImageKey,
+} from '../../../lib/announcement-images.js';
 
 const KV_KEY='announcements-v1';
 const MEMBER_ACCESS=new Set(['member','officer','site_admin']);
@@ -15,12 +22,13 @@ export async function onRequestGet({request,env}){
   const visible=document.items
     .filter(item=>canManage||item.status==='published'||item.status==='archived')
     .sort(compareAnnouncements)
-    .map(item=>present(item,{canManage}));
+    .map(item=>present(item,{canManage,request}));
   return reply({
     ok:true,
     viewer:viewer(auth.session),
     canManage,
     discordConfigured:discordAnnouncementsConfigured(env),
+    imageStorageConfigured:canManage?announcementImagesConfigured(env):false,
     items:visible,
   });
 }
@@ -45,6 +53,7 @@ export async function onRequestPost({request,env}){
     title,
     body:content,
     priority:normalizePriority(body.value?.priority),
+    imageKey:normalizeImageKey(body.value?.imageKey),
     status:'draft',
     authorId:String(auth.session.sub||''),
     authorName:clean(auth.session.displayName||auth.session.username||'Site Admin').slice(0,120),
@@ -62,7 +71,7 @@ export async function onRequestPost({request,env}){
   document.items.unshift(item);
   document.updatedAt=now;
   await writeDocument(env,document);
-  return reply({ok:true,item:present(item,{canManage:true}),discordConfigured:discordAnnouncementsConfigured(env)},201);
+  return reply({ok:true,item:present(item,{canManage:true,request}),discordConfigured:discordAnnouncementsConfigured(env),imageStorageConfigured:announcementImagesConfigured(env)},201);
 }
 
 export async function onRequestPut({request,env}){
@@ -97,6 +106,7 @@ export async function onRequestPut({request,env}){
     item.title=title;
     item.body=content;
     item.priority=normalizePriority(body.value?.priority??item.priority);
+    if(Object.hasOwn(body.value||{},'imageKey'))item.imageKey=normalizeImageKey(body.value?.imageKey);
   }
 
   if(action==='publish'){
@@ -116,16 +126,24 @@ export async function onRequestPut({request,env}){
     return reply({ok:false,error:'invalid_action'},400);
   }
 
+  const replacedImageKey=existing.imageKey&&existing.imageKey!==item.imageKey?existing.imageKey:'';
   item.updatedAt=now;
   item.updatedBy=clean(auth.session.displayName||auth.session.username||'Site Admin').slice(0,120);
   document.items[index]=item;
   document.updatedAt=now;
   await writeDocument(env,document);
+  if(replacedImageKey){
+    try{await deleteManagedAnnouncementImage(env,replacedImageKey);}
+    catch(error){console.error('Could not clean up replaced announcement image',error);}
+  }
 
   let discord=null;
   if(item.status==='published'){
     discord=await syncAnnouncementDiscord(env,{
-      announcement:item,
+      announcement:{
+        ...item,
+        imageUrl:item.imageKey?announcementImagePublicUrl(request,item.imageKey):'',
+      },
       siteUrl:announcementUrl(request,item.id),
     });
     if(discord.ok){
@@ -144,9 +162,10 @@ export async function onRequestPut({request,env}){
 
   return reply({
     ok:true,
-    item:present(item,{canManage:true}),
+    item:present(item,{canManage:true,request}),
     discord,
     discordConfigured:discordAnnouncementsConfigured(env),
+    imageStorageConfigured:announcementImagesConfigured(env),
   });
 }
 
@@ -168,9 +187,14 @@ export async function onRequestDelete({request,env}){
   if(document.items[index].status!=='draft'){
     return reply({ok:false,error:'published_announcements_must_be_archived'},409);
   }
+  const imageKey=document.items[index].imageKey||'';
   document.items.splice(index,1);
   document.updatedAt=new Date().toISOString();
   await writeDocument(env,document);
+  if(imageKey){
+    try{await deleteManagedAnnouncementImage(env,imageKey);}
+    catch(error){console.error('Could not clean up deleted announcement image',error);}
+  }
   return reply({ok:true,deletedId:id});
 }
 
@@ -201,6 +225,7 @@ function normalizeStoredItem(value){
     title:clean(value.title).slice(0,180),
     body:clean(value.body).slice(0,3500),
     priority:normalizePriority(value.priority),
+    imageKey:normalizeImageKey(value.imageKey),
     status:['draft','published','archived'].includes(clean(value.status))?clean(value.status):'draft',
     authorId:clean(value.authorId).slice(0,100),
     authorName:clean(value.authorName).slice(0,120),
@@ -216,7 +241,7 @@ function normalizeStoredItem(value){
   };
 }
 
-function present(item,{canManage=false}={}){
+function present(item,{canManage=false,request=null}={}){
   const base={
     id:item.id,
     title:item.title,
@@ -229,8 +254,12 @@ function present(item,{canManage=false}={}){
     updatedBy:item.updatedBy,
     publishedAt:item.publishedAt,
     archivedAt:item.archivedAt,
+    imageUrl:item.imageKey&&request
+      ?(item.status==='draft'?announcementImagePreviewUrl(request,item.imageKey):announcementImagePublicUrl(request,item.imageKey))
+      :'',
   };
   if(canManage){
+    base.imageKey=item.imageKey||'';
     base.discordSynced=Boolean(item.discordMessageId&&item.discordLastSyncedAt&&!item.discordLastError);
     base.discordLastSyncedAt=item.discordLastSyncedAt;
     base.discordLastError=item.discordLastError;
@@ -245,6 +274,10 @@ function compareAnnouncements(a,b){
 }
 function emptyDocument(){return{version:1,updatedAt:'',items:[]}}
 function normalizePriority(value){return clean(value)==='important'?'important':'standard'}
+function normalizeImageKey(value){
+  const key=clean(value);
+  return isManagedAnnouncementImageKey(key)?key:'';
+}
 function viewer(session){return{id:String(session.sub||''),displayName:clean(session.displayName||session.username||'Member'),access:session.access}}
 function announcementUrl(request,id){
   const url=new URL('/announcements/',request.url);
