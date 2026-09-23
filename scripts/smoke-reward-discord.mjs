@@ -136,6 +136,8 @@ const summaryPayload=buildRewardSummaryDiscordPayload(loaded,{
   rewardsUrl:'https://mongrels-squadron.pages.dev/rewards/',
 });
 const summaryText=JSON.stringify(summaryPayload);
+assert.match(summaryText,/https:\/\/mongrels-squadron\.pages\.dev\/rewards\//);
+assert.doesNotMatch(summaryText,/\/wolf-bgs\//,'Squad Payouts Discord must never link members to Reward Administration');
 for(const pattern of [/Rewards & Payouts/,/CMDR Alpha/,/CMDR Bravo/,/35M Cr/,/20M Cr/,/PAYOUT REQUESTED/])assert.match(summaryText,pattern);
 assert.doesNotMatch(summaryText,/CMDR Charlie|99M Cr/,'Member-funded Colonization reward must stay out of squad Rewards Discord');
 
@@ -144,6 +146,8 @@ const requestPayload=buildPayoutRequestDiscordPayload(alpha,{
   rewardsUrl:'https://mongrels-squadron.pages.dev/rewards/',
 });
 const requestText=JSON.stringify(requestPayload);
+assert.match(requestText,/https:\/\/mongrels-squadron\.pages\.dev\/rewards\//);
+assert.doesNotMatch(requestText,/\/wolf-bgs\//,'Payout request cards must link to the member Rewards account');
 for(const pattern of [/PAYOUT REQUESTED · CMDR Alpha/,/30M Cr/,/35M Cr/,/5M Cr/,/not included in this payout request/])assert.match(requestText,pattern);
 
 const requests=[];
