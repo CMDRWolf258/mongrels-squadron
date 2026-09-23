@@ -11,6 +11,7 @@
   const status=panel.querySelector('[data-discord-status]');
   let colonizationArchiveConfigured=false;
   let factionAlertsConfigured=false;
+  let scoutNetworkConfigured=false;
 
   function setStatus(message,state=''){
     if(!status)return;
@@ -24,7 +25,7 @@
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
     if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled||!colonizationArchiveConfigured;
-    if(syncScoutButton)syncScoutButton.disabled=disabled;
+    if(syncScoutButton)syncScoutButton.disabled=disabled||!scoutNetworkConfigured;
     if(syncBgsButton)syncBgsButton.disabled=disabled||!factionAlertsConfigured;
     if(syncRewardsButton)syncRewardsButton.disabled=disabled;
   }
@@ -59,6 +60,7 @@
       if(data.configured){
         colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
         factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
+        scoutNetworkConfigured=Boolean(data.scoutNetworkConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
@@ -68,9 +70,12 @@
         const faction=factionAlertsConfigured
           ? ' · Faction Alerts webhook ready'
           : ' · Faction Alerts webhook not configured';
+        const scout=scoutNetworkConfigured
+          ? ' · Scout Network webhook ready'
+          : ' · Scout Network webhook not configured';
         setButtons(false);
-        setStatus('Operations webhook detected · Daily Orders, Colonization, Scout, and Rewards are ready'+archive+faction+cycle+'.',
-          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured?'success':'');
+        setStatus('Operations webhook detected · Daily Orders, Colonization, and Rewards are ready'+archive+faction+scout+cycle+'.',
+          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -128,6 +133,7 @@
         const state=await api('/api/operations/discord-test','GET');
         colonizationArchiveConfigured=Boolean(state.colonizationArchiveConfigured);
         factionAlertsConfigured=Boolean(state.factionAlertsConfigured);
+        scoutNetworkConfigured=Boolean(state.scoutNetworkConfigured);
         setButtons(false);
       }catch{}
     }
@@ -220,7 +226,7 @@
 
   syncScoutButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Syncing Scout Operations to Discord…','working');
+    setStatus('Syncing Scout Network to Discord…','working');
     try{
       const data=await api('/api/operations/discord-scout-jobs','POST');
       const summary=data.discord||{};
@@ -234,14 +240,15 @@
       if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
       else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
-      setStatus('Scout Operations synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+      setStatus('Scout Network synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
       const messages={
-        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
-        discord_scout_sync_failed:'Scout Board remains available on the site, but Discord sync failed.',
+        discord_scout_network_webhook_not_configured:'Scout Network webhook secret is not configured in Cloudflare.',
+        discord_scout_network_webhook_request_failed:'Discord rejected the Scout Network webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
+        discord_scout_sync_failed:'Scout Board remains available on the site, but Scout Network Discord sync failed.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
-      setStatus(messages[error.message]||'Scout Jobs Discord sync failed · '+String(error.message||error),'error');
+      setStatus(messages[error.message]||'Scout Network Discord sync failed · '+String(error.message||error),'error');
     }finally{
       setButtons(false);
     }
