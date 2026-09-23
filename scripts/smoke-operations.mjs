@@ -82,8 +82,10 @@ assert.doesNotMatch(activitiesSource, /Surface Operations/, 'Activities hub stil
 console.log('✓ Operations provider, naming, UI mount, client, Assistant context, and duplicate-card handling are wired');
 
 const missionPage=readFileSync('operations/index.html','utf8');
-assert.match(missionPage,/operations\.js\?v=68/);
+assert.match(missionPage,/operations\.js\?v=69/);
 const missionClient=readFileSync('js/operations.js','utf8');
+assert.match(missionClient,/new URLSearchParams\(window\.location\.search\)\.get\('system'\)/,'Mission Control must accept system deep links from Faction Alerts');
+assert.match(missionClient,/searchEl\.value = requestedSystem/,'Faction Alert system deep links must prefill the All Systems search');
 for(const pattern of [/freshestUpdatedAt/,/freshestSource/,/Mongrel Scout \/ EDMC/,/Live Scout/,/newestScoutAt/,/dataCondition === 'current'/,/current BGS cycle/,/before current cycle/])assert.match(missionClient,pattern);
 new Function(missionClient);
 const bgsOperations=readFileSync('lib/bgs-operations.js','utf8');
