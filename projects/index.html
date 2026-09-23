@@ -7,7 +7,7 @@
   <title>Projects & Events | The Mongrels</title>
   <meta name="description" content="Private Mongrel project board for squad initiatives, member help requests, and upcoming events.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/projects-events-v2.css?v=2">
+  <link rel="stylesheet" href="../css/projects-events-v2.css?v=3">
 </head>
 <body class="visual-page page-projects">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -66,7 +66,30 @@
         <label><span data-project-date-label>Deadline / Event date</span><input type="date" data-project-deadline></label>
         <label data-project-time-wrap hidden><span>UTC Time</span><input type="time" data-project-time><small>Displayed as UTC.</small></label>
         <label data-project-event-type-wrap hidden><span>Event Type</span><select data-project-event-type><option value="Training">Training</option><option value="Organized Fight">Organized Fight</option><option value="Tournament">Tournament</option><option value="Wing PvP">Wing PvP</option><option value="Open Play Patrol">Open Play Patrol</option><option value="Other">Other</option></select></label>
-        <label class="project-editor-wide" data-project-image-wrap hidden><span>Event Image (optional)</span><input type="url" inputmode="url" maxlength="900" pattern="https://.*" data-project-image-url placeholder="https://example.com/event-banner.jpg"><small>Use a public HTTPS image URL. It will appear on both the website event card and the Discord event embed.</small></label>
+        <div class="project-editor-wide project-event-image-editor" data-project-image-wrap hidden>
+          <div class="project-event-image-editor-head"><span>Event Image <small>Optional</small></span><small>PNG, JPG, or WebP · up to 8 MB after optimization</small></div>
+          <input type="hidden" data-project-image-key>
+          <input type="file" accept="image/png,image/jpeg,image/webp" data-project-image-file hidden>
+          <div class="project-event-image-drop" data-project-image-drop role="button" tabindex="0" aria-label="Choose or drop an event image">
+            <div class="project-event-image-empty" data-project-image-empty>
+              <strong>Drop an image here</strong>
+              <span>or click to choose a file</span>
+            </div>
+            <div class="project-event-image-preview" data-project-image-preview hidden>
+              <img data-project-image-preview-img alt="Event image preview">
+              <span data-project-image-preview-name></span>
+            </div>
+          </div>
+          <div class="project-event-image-actions">
+            <button class="btn btn-secondary" type="button" data-project-image-choose>Choose Image</button>
+            <button class="btn btn-ghost" type="button" data-project-image-remove hidden>Remove Image</button>
+            <span data-project-image-status aria-live="polite"></span>
+          </div>
+          <details class="project-event-image-external">
+            <summary>Use an external image URL instead</summary>
+            <label><span>Public HTTPS image URL</span><input type="url" inputmode="url" maxlength="900" pattern="https://.*" data-project-image-url placeholder="https://example.com/event-banner.jpg"></label>
+          </details>
+        </div>
         <label data-project-official-wrap hidden><span>Project Type</span><select data-project-official><option value="false">Member Project</option><option value="true">Official Squadron Project</option></select></label>
         <label class="project-editor-wide"><span>Description</span><textarea rows="4" maxlength="1600" required data-project-description placeholder="What are you working on and why?"></textarea></label>
         <label class="project-editor-wide"><span>Help Requested</span><textarea rows="3" maxlength="1200" data-project-help placeholder="What kind of help do you need from other members?"></textarea></label>
@@ -77,6 +100,6 @@
   </section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/projects.js?v=72"></script>
+<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/projects.js?v=73"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
