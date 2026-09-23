@@ -276,7 +276,7 @@
 
   syncOrdersButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Syncing current Daily Orders to Discord…','working');
+    setStatus('Syncing current Daily Orders to Mission Control…','working');
     try{
       const data=await api('/api/operations/discord-daily-orders','POST');
       const mode=data.discord?.mode||'updated';
@@ -285,17 +285,16 @@
         edited:'updated in place',
         recreated:'recreated after the previous Discord message was unavailable',
       }[mode]||'synced';
-      setStatus('Current Daily Orders '+label+'.','success');
+      setStatus('Mission Control Daily Orders '+label+'.','success');
     }catch(error){
       const messages={
         no_daily_orders_published:'There are no current Daily Orders to sync.',
         discord_mission_control_webhook_not_configured:'Mission Control webhook secret is not configured in Cloudflare.',
         discord_mission_control_webhook_request_failed:'Discord rejected the Mission Control webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
         discord_daily_orders_sync_failed:'Daily Orders remain published on the site, but Mission Control Discord sync failed.',
-        discord_daily_orders_sync_failed:'Daily Orders are still live in Mission Control, but Discord sync failed.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
-      setStatus(messages[error.message]||'Daily Orders Discord sync failed · '+String(error.message||error),'error');
+      setStatus(messages[error.message]||'Mission Control Daily Orders sync failed · '+String(error.message||error),'error');
     }finally{
       setButtons(false);
     }
