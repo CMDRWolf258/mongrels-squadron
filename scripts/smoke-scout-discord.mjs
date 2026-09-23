@@ -99,6 +99,14 @@ assert.match(summaryText,/Ordinary 01/);
 assert.match(summaryText,/Ordinary 15/);
 assert.doesNotMatch(summaryText,/Ordinary 16/);
 assert.match(summaryText,/Diaba/);
+const ordinaryField=summaryPayload.embeds[0].fields.find(field=>String(field.name).startsWith('Nearest Needs Scouting'));
+assert.ok(ordinaryField,'Nearest Needs Scouting field should exist');
+assert.match(ordinaryField.value,/^```text\nSYSTEM\s+DISTANCE\s+STATUS\n/);
+assert.match(ordinaryField.value,/AVAILABLE/);
+const ordinaryTableLines=ordinaryField.value.split('\n').slice(2,-1).filter(Boolean);
+const availableColumns=ordinaryTableLines.map(line=>line.indexOf('AVAILABLE')).filter(index=>index>=0);
+assert.ok(availableColumns.length>1,'Expected multiple AVAILABLE rows in ordinary Scout table');
+assert.equal(new Set(availableColumns).size,1,'AVAILABLE status must align to the same column for ordinary Scout rows');
 
 const env={
   DAILY_ORDERS:fakeKv({
