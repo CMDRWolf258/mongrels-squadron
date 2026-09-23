@@ -794,6 +794,34 @@ Architecture:
 
 This is the first feature in the broader Squad Communications direction. Future Events, Rules, Training Resources, Squadron Structure, role/job selection, and similar communication surfaces should reuse this source-of-truth + delivery pattern when appropriate rather than creating parallel Discord-only records.
 
+## Gallery Contributions / Moderation
+
+Primary files:
+- `gallery/index.html`
+- `js/gallery.js`
+- `css/gallery-contributions.css`
+- `functions/api/gallery/index.js`
+- `functions/api/gallery/image.js`
+- `functions/media/gallery/[file].js`
+- `lib/gallery-submissions.js`
+- `scripts/smoke-gallery-submissions.mjs`
+
+Architecture:
+- The existing curated `data/gallery.json` + repo image archive remains intact.
+- Authenticated Member / Officer / Site Admin users may submit screenshots from the Gallery page with drag/drop or file picker.
+- Submission metadata uses the existing `PROJECTS` KV binding under `gallery-submissions-v1`; do not create a second public Gallery database.
+- Image bytes reuse the existing private R2 bucket currently bound as `EVENT_IMAGES`, stored under the separate `gallery/` prefix.
+- Daily upload limit is **10 submissions per Discord user per UTC day**. Approved, rejected, and still-pending submissions all count because the limit is on uploads, not publications.
+- Accepted source formats: PNG, JPEG, WebP. Browser source limit: 25 MB. Files already <=8 MB upload directly; larger files are resized/compressed to WebP before the server hard 8 MB limit.
+- Every submission starts `pending`. Only Officer / Site Admin may approve or reject.
+- Pending images are not public media. The submitter and leadership preview them through authenticated `/api/gallery/image?key=...`.
+- Public `/media/gallery/<file>` checks current submission state and only serves an R2 object when its submission is `approved`.
+- Approved member submissions merge into the existing public Gallery filter/grid/lightbox at runtime; the lightbox credits the submitting CMDR.
+- Leadership review happens on the Gallery page and may correct title, caption, and up to three controlled tags before approval, with an optional review note.
+- Rejected images are removed from R2 after the rejected state is persisted; the metadata record remains so the submitter can see the result and the upload still counts toward that day's limit.
+- Controlled Gallery tags currently include AX, BGS, Carriers, Colonization, Combat, Community, Engineering, Events, Exobiology, Exploration, Mining, Operations, PvP, Scenic, Ships, and Trade.
+- Current KV/R2 concurrency is appropriate for squad scale. If the upload quota ever needs strict high-concurrency enforcement across many PoPs, move quota accounting to a serialized store rather than pretending KV is strongly consistent.
+
 ## Squad Events / RSVPs
 
 Primary files:
