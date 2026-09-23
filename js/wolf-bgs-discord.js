@@ -162,8 +162,8 @@
       if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
       if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' completed/removed card'+(Number(summary.deleted)===1?'':'s')+' cleaned up');
       if(Number(summary.unchanged)>0)parts.push(Number(summary.unchanged)+' unchanged');
-      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
-      else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('Colonization summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('Colonization summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
       setStatus('Colonization Jobs channel synced'+(parts.length?' · '+parts.join(' · '):' · no current jobs')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
@@ -251,8 +251,8 @@
       if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
       if(Number(summary.completionShown)>0)parts.push(Number(summary.completionShown)+' completion'+(Number(summary.completionShown)===1?'':'s')+' shown');
       if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' old card'+(Number(summary.deleted)===1?'':'s')+' cleaned up');
-      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('operations summary posted');
-      else if(summary.summary?.mode==='edited')parts.push('operations summary updated');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('Colonization summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('Colonization summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
       setStatus('Scout Network synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
