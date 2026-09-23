@@ -101,8 +101,25 @@ assert.doesNotMatch(summaryText,/Ordinary 16/);
 assert.match(summaryText,/Diaba/);
 
 const env={
-  DAILY_ORDERS:fakeKv(),
-  DISCORD_OPERATIONS_WEBHOOK_URL:'https://discord.com/api/webhooks/'+'1234567890/'+'scout_discord_unit_test',
+  DAILY_ORDERS:fakeKv({
+    'discord-scout-jobs-v1':{
+      version:1,
+      summary:{messageId:'600001',webhookId:'1234567890',fingerprint:'legacy-summary'},
+      priorityCards:{
+        'priority bravo':{
+          system:'Priority Bravo',
+          messageId:'600002',
+          webhookId:'1234567890',
+          fingerprint:'legacy-priority',
+          phase:'operational',
+          lastStatus:'available',
+          rewardSnapshot:priorityB.reward,
+        },
+      },
+    },
+  }),
+  DISCORD_OPERATIONS_WEBHOOK_URL:'https://discord.com/api/webhooks/'+'1234567890/'+'operations_unit_test',
+  DISCORD_SCOUT_NETWORK_WEBHOOK_URL:'https://discord.com/api/webhooks/'+'2468135790/'+'scout_network_unit_test',
 };
 const requests=[];
 let nextId=700001;
@@ -132,11 +149,20 @@ try{
   assert.equal(first.created,2,'Only priority Scout Jobs should receive individual cards');
   assert.equal(first.displayedPriority,2);
   assert.equal(first.displayedOrdinary,15);
-  assert.equal(requests.filter(row=>row.method==='POST').length,3,'Expected one summary plus two priority cards');
+  const migrationDeletes=requests.filter(row=>row.method==='DELETE');
+  assert.equal(migrationDeletes.length,2,'Legacy Scout summary/card must be removed from Operations before Scout Network seeds');
+  assert.ok(migrationDeletes.every(row=>row.url.includes('/api/webhooks/1234567890/')),'Legacy Scout cleanup must use Operations webhook');
+  const initialPosts=requests.filter(row=>row.method==='POST');
+  assert.equal(initialPosts.length,3,'Expected one Scout Network summary plus two priority cards');
+  assert.ok(initialPosts.every(row=>row.url.includes('/api/webhooks/2468135790/')),'All new Scout posts must use dedicated Scout Network webhook');
   assert.ok(
-    requests.filter(row=>row.method==='POST').every(row=>row.body.allowed_mentions?.parse?.length===0),
-    'Scout Discord messages must suppress mentions',
+    initialPosts.every(row=>row.body.allowed_mentions?.parse?.length===0),
+    'Scout Network messages must suppress mentions',
   );
+  assert.match(JSON.stringify(initialPosts[0].body),/Scout Network/);
+  const migratedState=JSON.parse(env.DAILY_ORDERS.map.get('discord-scout-jobs-v1'));
+  assert.equal(migratedState.summary.webhookId,'2468135790');
+  assert.ok(Object.values(migratedState.priorityCards).every(row=>row.webhookId==='2468135790'));
 
   const requestCountAfterFirst=requests.length;
   const unchanged=await syncScoutDiscordBoard(env,{
@@ -192,7 +218,7 @@ try{
   assert.equal(completion.completionShown,1,'A completed priority job should show completion once');
   assert.equal(requests.length-beforeCompletion,2,'Completion should update summary and the completed priority card');
   assert.match(JSON.stringify(requests.slice(beforeCompletion).map(row=>row.body)),/SCOUTED/);
-  assert.match(JSON.stringify(requests.slice(beforeCompletion).map(row=>row.body)),/leave the operations channel on the next Scout sync/);
+  assert.match(JSON.stringify(requests.slice(beforeCompletion).map(row=>row.body)),/leave this channel on the next Scout sync/);
 
   const beforeCleanup=requests.length;
   const cleanup=await syncScoutDiscordBoard(env,{
@@ -244,6 +270,7 @@ for(const pattern of [
   /originSystem:'Diaba'/,
   /ordinaryLimit:15/,
 ])assert.match(scheduledEndpoint,pattern);
+assert.doesNotMatch(scheduledEndpoint,/discordOperationsConfigured/,'Scheduled multi-channel refresh must not depend on Operations webhook');
 
 const scheduledWorkflow=readFileSync('.github/workflows/refresh-scout-discord.yml','utf8');
 for(const pattern of [
@@ -263,6 +290,7 @@ for(const pattern of [
   /originSystem:'Diaba'/,
   /ordinaryLimit:15/,
   /createMissing:true/,
+  /discordScoutNetworkConfigured/,
 ])assert.match(manualEndpoint,pattern);
 
 const scoutApi=readFileSync('functions/api/operations/scout-jobs.js','utf8');
@@ -291,7 +319,8 @@ for(const pattern of [
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/data-discord-sync-scout/);
 assert.match(page,/15 ordinary systems needing scouting/);
-assert.match(page,/wolf-bgs-discord\.js\?v=10/);
+assert.match(page,/wolf-bgs-discord\.js\?v=11/);
 
 console.log('✓ Scout Discord shows every priority job, the 15 nearest ordinary needs-scouting systems from Diaba, and keeps individual cards priority-only');
 console.log('✓ Scout Discord claim/completion lifecycle edits in place and cleans completed priority cards on the next sync');
+console.log('✓ Scout Network migrates tracked Operations messages into its dedicated webhook without duplicates');
