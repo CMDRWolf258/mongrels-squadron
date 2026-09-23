@@ -16,12 +16,30 @@
   const titleInput=document.querySelector('[data-announcement-title]');
   const priorityInput=document.querySelector('[data-announcement-priority]');
   const bodyInput=document.querySelector('[data-announcement-body]');
+  const imageWrap=document.querySelector('[data-announcement-image-wrap]');
+  const imageFile=document.querySelector('[data-announcement-image-file]');
+  const imageKeyInput=document.querySelector('[data-announcement-image-key]');
+  const imageUrlInput=document.querySelector('[data-announcement-image-url]');
+  const imageDrop=document.querySelector('[data-announcement-image-drop]');
+  const imageEmpty=document.querySelector('[data-announcement-image-empty]');
+  const imagePreview=document.querySelector('[data-announcement-image-preview]');
+  const imagePreviewImg=document.querySelector('[data-announcement-image-preview-img]');
+  const imagePreviewName=document.querySelector('[data-announcement-image-preview-name]');
+  const imageChoose=document.querySelector('[data-announcement-image-choose]');
+  const imageRemove=document.querySelector('[data-announcement-image-remove]');
+  const imageStatus=document.querySelector('[data-announcement-image-status]');
   const editorStatus=document.querySelector('[data-announcement-editor-status]');
   const deleteButton=document.querySelector('[data-announcement-delete]');
   const publishButton=document.querySelector('[data-announcement-publish]');
   const closeButtons=[...document.querySelectorAll('[data-announcement-close]')];
 
-  let state={items:[],canManage:false,discordConfigured:false,filter:'published'};
+  let state={items:[],canManage:false,discordConfigured:false,imageStorageConfigured:false,filter:'published'};
+  let originalImageKey='';
+  let uploadedImageKey='';
+  let imageUploadBusy=false;
+  const IMAGE_MAX_BYTES=8*1024*1024;
+  const IMAGE_MAX_SOURCE_BYTES=25*1024*1024;
+  const IMAGE_TYPES=new Set(['image/png','image/jpeg','image/webp']);
 
   const request=async(method='GET',body=null)=>{
     const response=await fetch('/api/announcements',{
@@ -46,6 +64,137 @@
     return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(date);
   };
 
+  const setImageStatus=(message='',isError=false)=>{
+    if(!imageStatus)return;
+    imageStatus.textContent=message;
+    imageStatus.classList.toggle('error',Boolean(isError));
+  };
+
+  const renderImageEditor=(displayName='')=>{
+    if(!imageDrop||!imageEmpty||!imagePreview||!imagePreviewImg||!imageRemove)return;
+    const url=imageUrlInput?.value?.trim()||'';
+    imageDrop.classList.toggle('is-uploading',imageUploadBusy);
+    imageEmpty.hidden=Boolean(url);
+    imagePreview.hidden=!url;
+    imageRemove.hidden=!url;
+    if(url){
+      imagePreviewImg.src=url;
+      const fallback=(()=>{
+        try{return decodeURIComponent(new URL(url,location.href).pathname.split('/').pop()||'Announcement image');}
+        catch{return'Announcement image';}
+      })();
+      if(imagePreviewName)imagePreviewName.textContent=displayName||fallback;
+    }else{
+      imagePreviewImg.removeAttribute('src');
+      if(imagePreviewName)imagePreviewName.textContent='';
+    }
+  };
+
+  const loadBrowserImage=file=>new Promise((resolve,reject)=>{
+    const objectUrl=URL.createObjectURL(file);
+    const image=new Image();
+    image.onload=()=>{URL.revokeObjectURL(objectUrl);resolve(image);};
+    image.onerror=()=>{URL.revokeObjectURL(objectUrl);reject(new Error('Unable to read this image.'));};
+    image.src=objectUrl;
+  });
+
+  const canvasBlob=(canvas,type,quality)=>new Promise((resolve,reject)=>{
+    canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Unable to optimize this image.')),type,quality);
+  });
+
+  async function prepareImage(file){
+    if(!file||!IMAGE_TYPES.has(file.type))throw new Error('Choose a PNG, JPG, or WebP image.');
+    if(file.size>IMAGE_MAX_SOURCE_BYTES)throw new Error('That image is too large. Choose an image under 25 MB.');
+    if(file.size<=IMAGE_MAX_BYTES)return file;
+
+    setImageStatus('Optimizing large image…');
+    const image=await loadBrowserImage(file);
+    const maxDimension=2400;
+    const scale=Math.min(1,maxDimension/Math.max(image.naturalWidth||image.width,image.naturalHeight||image.height));
+    const width=Math.max(1,Math.round((image.naturalWidth||image.width)*scale));
+    const height=Math.max(1,Math.round((image.naturalHeight||image.height)*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=width;
+    canvas.height=height;
+    canvas.getContext('2d',{alpha:true}).drawImage(image,0,0,width,height);
+    let blob=await canvasBlob(canvas,'image/webp',.88);
+    if(blob.size>IMAGE_MAX_BYTES)blob=await canvasBlob(canvas,'image/webp',.75);
+    if(blob.size>IMAGE_MAX_BYTES)throw new Error('The optimized image is still over 8 MB. Try a smaller image.');
+    const base=String(file.name||'announcement-image').replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'-').slice(0,70)||'announcement-image';
+    return new File([blob],base+'.webp',{type:'image/webp'});
+  }
+
+  async function deleteTemporaryImage(key){
+    if(!key)return;
+    try{
+      await fetch('/api/announcements/image',{
+        method:'DELETE',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'mongrels-announcement-image'},
+        body:JSON.stringify({key}),
+      });
+    }catch{}
+  }
+
+  async function uploadImage(file){
+    if(imageUploadBusy||!state.canManage)return;
+    imageUploadBusy=true;
+    renderImageEditor();
+    if(imageChoose)imageChoose.disabled=true;
+    if(imageRemove)imageRemove.disabled=true;
+    try{
+      const uploadFile=await prepareImage(file);
+      setImageStatus('Uploading image…');
+      const formData=new FormData();
+      formData.append('image',uploadFile,uploadFile.name);
+      const response=await fetch('/api/announcements/image',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{'X-Mongrels-Request':'mongrels-announcement-image'},
+        body:formData,
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const errors={
+          announcement_image_storage_not_configured:'Announcement image storage is not configured.',
+          announcement_image_too_large:'The optimized image is still too large.',
+          unsupported_announcement_image_type:'Choose a PNG, JPG, or WebP image.',
+          site_admin_required:'Only Site Admin can upload announcement images.',
+        };
+        throw new Error(errors[data.error]||data.error||'Unable to upload image.');
+      }
+      const previousPending=uploadedImageKey;
+      imageKeyInput.value=data.key||'';
+      imageUrlInput.value=data.previewUrl||'';
+      uploadedImageKey=data.key||'';
+      renderImageEditor(uploadFile.name);
+      setImageStatus('Image ready');
+      if(previousPending&&previousPending!==uploadedImageKey)deleteTemporaryImage(previousPending);
+    }catch(error){
+      setImageStatus(error?.message||'Unable to upload image.',true);
+    }finally{
+      imageUploadBusy=false;
+      if(imageChoose)imageChoose.disabled=false;
+      if(imageRemove)imageRemove.disabled=false;
+      if(imageFile)imageFile.value='';
+      renderImageEditor();
+    }
+  }
+
+  async function removeImage(){
+    const key=imageKeyInput?.value||'';
+    if(key&&key===uploadedImageKey){
+      await deleteTemporaryImage(key);
+      uploadedImageKey='';
+    }
+    if(imageKeyInput)imageKeyInput.value='';
+    if(imageUrlInput)imageUrlInput.value='';
+    setImageStatus('');
+    renderImageEditor();
+  }
+
   const setEditorStatus=(message,tone='')=>{
     if(!editorStatus)return;
     editorStatus.textContent=message||'';
@@ -63,6 +212,14 @@
     titleInput.value=draft?.title||'';
     priorityInput.value=draft?.priority||'standard';
     bodyInput.value=draft?.body||'';
+    imageKeyInput.value=draft?.imageKey||'';
+    imageUrlInput.value=draft?.imageUrl||'';
+    originalImageKey=draft?.imageKey||'';
+    uploadedImageKey='';
+    imageUploadBusy=false;
+    setImageStatus(state.imageStorageConfigured?'':(state.canManage?'Image storage is not configured.':''));
+    renderImageEditor(draft?.imageUrl?'Current announcement image':'');
+    if(imageWrap)imageWrap.hidden=!state.canManage;
     editorTitle.textContent=draft?'Edit Announcement':'New Announcement';
     deleteButton.hidden=!draft||draft.status!=='draft';
     publishButton.hidden=Boolean(draft&&draft.status==='archived');
@@ -71,12 +228,22 @@
     window.setTimeout(()=>titleInput?.focus(),30);
   };
 
-  const closeEditor=()=>{
+  const closeEditor=async({cleanup=true}={})=>{
     if(!shell)return;
+    if(cleanup&&uploadedImageKey&&uploadedImageKey!==originalImageKey){
+      await deleteTemporaryImage(uploadedImageKey);
+    }
+    uploadedImageKey='';
+    originalImageKey='';
+    imageUploadBusy=false;
     shell.hidden=true;
     document.body.classList.remove('announcement-editor-open');
     form?.reset();
     idInput.value='';
+    if(imageKeyInput)imageKeyInput.value='';
+    if(imageUrlInput)imageUrlInput.value='';
+    setImageStatus('');
+    renderImageEditor();
     setEditorStatus('');
   };
 
@@ -85,10 +252,15 @@
     title:titleInput.value,
     priority:priorityInput.value,
     body:bodyInput.value,
+    imageKey:imageKeyInput?.value||'',
   });
 
   async function saveEditor({publish=false}={}){
     if(!state.canManage)return;
+    if(imageUploadBusy){
+      setEditorStatus('Wait for the image upload to finish.','error');
+      return;
+    }
     const payload=payloadFromEditor();
     if(!payload.title.trim()||!payload.body.trim()){
       setEditorStatus('Title and announcement text are required.','error');
@@ -106,7 +278,9 @@
       const action=publish?'publish':'save';
       const updated=await request('PUT',{...payload,id:item.id,action});
       replaceItem(updated.item);
-      closeEditor();
+      uploadedImageKey='';
+      originalImageKey=updated.item.imageKey||'';
+      await closeEditor({cleanup:false});
       await load();
       if(publish&&updated.discord&&!updated.discord.ok){
         showBoardNotice('Published on the website, but Discord did not sync. Check the channel webhook status and publish again to retry.','warning');
@@ -140,7 +314,9 @@
     try{
       await request('DELETE',{id:item.id});
       state.items=state.items.filter(entry=>entry.id!==item.id);
-      closeEditor();
+      if(uploadedImageKey&&uploadedImageKey!==item.imageKey)await deleteTemporaryImage(uploadedImageKey);
+      uploadedImageKey='';
+      await closeEditor({cleanup:false});
       render();
     }catch(error){
       setEditorStatus(messageFor(error),'error');
@@ -185,6 +361,16 @@
       body.textContent=item.body;
 
       article.append(top,heading,body);
+      if(item.imageUrl){
+        const media=document.createElement('div');
+        media.className='announcement-card-image';
+        const image=document.createElement('img');
+        image.src=item.imageUrl;
+        image.alt='Image for '+item.title;
+        image.loading='lazy';
+        media.appendChild(image);
+        article.appendChild(media);
+      }
 
       if(state.canManage){
         const admin=document.createElement('div');
@@ -257,6 +443,7 @@
       state.items=Array.isArray(data.items)?data.items:[];
       state.canManage=Boolean(data.canManage);
       state.discordConfigured=Boolean(data.discordConfigured);
+      state.imageStorageConfigured=Boolean(data.imageStorageConfigured);
       gate.hidden=true;
       board.hidden=false;
       newButton.hidden=!state.canManage;
@@ -291,10 +478,31 @@
       archived_announcements_are_read_only:'Archived announcements are read-only. Restore it before making changes.',
       announcement_storage_not_configured:'The announcement storage binding is not available.',
       discord_announcements_webhook_not_configured:'The Discord announcements webhook is not configured yet.',
+      announcement_image_storage_not_configured:'Announcement image storage is not configured.',
+      announcement_image_too_large:'The image is too large.',
+      unsupported_announcement_image_type:'Choose a PNG, JPG, or WebP image.',
       request_validation_failed:'The secure request check failed. Reload the page and try again.',
     };
     return messages[code]||'The announcement could not be saved. Please try again.';
   }
+
+  imageChoose?.addEventListener('click',()=>imageFile?.click());
+  imageDrop?.addEventListener('click',()=>{if(!imageUploadBusy)imageFile?.click();});
+  imageDrop?.addEventListener('keydown',event=>{
+    if((event.key==='Enter'||event.key===' ')&&!imageUploadBusy){event.preventDefault();imageFile?.click();}
+  });
+  imageFile?.addEventListener('change',()=>{if(imageFile.files?.[0])uploadImage(imageFile.files[0]);});
+  imageRemove?.addEventListener('click',removeImage);
+  for(const type of ['dragenter','dragover']){
+    imageDrop?.addEventListener(type,event=>{event.preventDefault();if(!imageUploadBusy)imageDrop.classList.add('is-dragover');});
+  }
+  for(const type of ['dragleave','drop']){
+    imageDrop?.addEventListener(type,event=>{event.preventDefault();imageDrop.classList.remove('is-dragover');});
+  }
+  imageDrop?.addEventListener('drop',event=>{
+    const file=event.dataTransfer?.files?.[0];
+    if(file&&!imageUploadBusy)uploadImage(file);
+  });
 
   filters.forEach(filter=>filter.addEventListener('click',()=>{
     state.filter=filter.dataset.announcementFilter||'published';
