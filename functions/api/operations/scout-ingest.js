@@ -4,6 +4,7 @@ import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -106,6 +107,23 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
+  let rewardDiscord=null;
+  if(Number(automaticRewards?.created)>0){
+    try{
+      const rewardView=await loadRewardDiscordView(env);
+      const adminUrl=new URL('/wolf-bgs/',request.url);
+      adminUrl.hash='reward-engine';
+      rewardDiscord=await syncRewardDiscordBoard(env,{
+        view:rewardView,
+        adminUrl:adminUrl.toString(),
+        rewardsUrl:new URL('/rewards/',request.url).toString(),
+        createMissing:false,
+      });
+    }catch(error){
+      console.error('Scout reward was issued but Rewards Discord refresh failed',error);
+    }
+  }
+
   let bgsDiscord=null;
   if(stored){
     try{
@@ -147,6 +165,7 @@ export async function onRequestPost({ request, env }) {
     scout:auth.label,
     scoutJob,
     automaticRewards,
+    rewardDiscord,
     scoutDiscord,
     bgsDiscord,
   }, 200);
