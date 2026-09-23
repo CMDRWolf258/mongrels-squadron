@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="../css/wolf-bgs-order-preview.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-publish.css?v=8">
   <link rel="stylesheet" href="../css/wolf-bgs-reports.css?v=1">
+  <link rel="stylesheet" href="../css/wolf-bgs-frontier-diagnostics.css?v=1">
   <link rel="stylesheet" href="../css/wolf-bgs-conflicts.css?v=3">
   <link rel="stylesheet" href="../css/wolf-bgs-conflict-lab-v2.css?v=4">
   <link rel="stylesheet" href="../css/wolf-bgs-lab.css?v=1">
@@ -423,6 +424,42 @@
             </div>
             <div class="wolf-scout-token-list" data-verification-list><div class="wolf-scout-empty"><strong>Loading verification review…</strong></div></div>
             <div class="wolf-scout-token-list" data-verification-flags></div>
+
+            <div class="wolf-frontier-diagnostics" data-frontier-diagnostics>
+              <div class="wolf-frontier-diagnostics-head">
+                <div>
+                  <span>Site Admin Diagnostics</span>
+                  <h3>Stored Frontier Activity</h3>
+                  <p>Inspect what Mongrel Scout actually stored for a connected CMDR. This is independent of whether the activity matched a Daily Order or generated a reward.</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-compact" data-frontier-diagnostics-refresh>Refresh Activity</button>
+              </div>
+              <div class="wolf-frontier-diagnostics-toolbar">
+                <label><span>Commander</span><select data-frontier-diagnostics-member><option value="">Select a connected CMDR…</option></select></label>
+                <label><span>Activity</span><select data-frontier-diagnostics-type>
+                  <option value="all">All stored activity</option>
+                  <option value="market_sell">Trade sales</option>
+                  <option value="mission_inf">Mission INF</option>
+                  <option value="bounties_redeemed">Bounty vouchers</option>
+                  <option value="combat_bonds_redeemed">Combat bonds</option>
+                  <option value="exploration_sale">Exploration sales</option>
+                  <option value="colonization_contribution">Colonization contributions</option>
+                </select></label>
+                <label><span>System filter</span><input type="search" data-frontier-diagnostics-system placeholder="e.g. NGC 2546 Sector UZ-G d10-16"></label>
+              </div>
+              <div class="wolf-frontier-diagnostics-member" data-frontier-diagnostics-member-summary hidden>
+                <div><span>Last Sync</span><strong data-frontier-last-sync>—</strong></div>
+                <div><span>Latest Journal Event</span><strong data-frontier-last-event>—</strong></div>
+                <div><span>Last Known System</span><strong data-frontier-last-system>—</strong></div>
+                <div><span>Stored Events</span><strong data-frontier-event-count>0</strong></div>
+              </div>
+              <div class="wolf-rules-callout subtle wolf-frontier-diagnostics-note">
+                <strong>What this proves</strong>
+                <span>If a trade appears here, the sync collected it. <b>No Daily Order match</b> only means it did not attach to an active matching order. If it does not appear here at all, it was not stored by the Scout sync.</span>
+              </div>
+              <div class="wolf-frontier-diagnostics-status" data-frontier-diagnostics-status>Select a CMDR to inspect stored Frontier events.</div>
+              <div class="wolf-frontier-event-list" data-frontier-diagnostics-list></div>
+            </div>
           </div>
         </details>
       </div>
@@ -609,6 +646,7 @@
 <script src="../js/wolf-bgs-colonization.js?v=12"></script>
 <script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
 <script src="../js/wolf-bgs-rewards.js?v=17"></script>
+<script src="../js/wolf-bgs-frontier-diagnostics.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
