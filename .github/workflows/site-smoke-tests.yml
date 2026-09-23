@@ -67,5 +67,6 @@ jobs:
           node --experimental-default-type=module scripts/smoke-reward-discord.mjs
           node --experimental-default-type=module scripts/smoke-discord-webhook.mjs
           node --experimental-default-type=module scripts/smoke-announcements.mjs
+          node --experimental-default-type=module scripts/smoke-squad-events.mjs
           node --experimental-default-type=module scripts/smoke-daily-orders-discord.mjs
           python3 -m py_compile downloads/mongrel-scout/load.py
