@@ -5,11 +5,13 @@ import {
   createColonizationArchiveDiscordMessage,
   createColonizationJobsDiscordMessage,
   createFactionAlertsDiscordMessage,
+  createMissionControlDiscordMessage,
   createScoutNetworkDiscordMessage,
   createSquadPayoutsDiscordMessage,
   discordColonizationArchiveConfigured,
   discordColonizationJobsConfigured,
   discordFactionAlertsConfigured,
+  discordMissionControlConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
   discordSquadPayoutsConfigured,
@@ -29,6 +31,9 @@ assert.equal(discordColonizationJobsConfigured({DISCORD_COLONIZATION_JOBS_WEBHOO
 const factionWebhook='https://discord.com/api/webhooks/1357924680/faction_alerts_token_ABC_123';
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:factionWebhook}),true);
 assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:'https://example.com/nope'}),false);
+const missionControlWebhook='https://discord.com/api/webhooks/7788990011/mission_control_token_ABC_123';
+assert.equal(discordMissionControlConfigured({DISCORD_MISSION_CONTROL_WEBHOOK_URL:missionControlWebhook}),true);
+assert.equal(discordMissionControlConfigured({DISCORD_MISSION_CONTROL_WEBHOOK_URL:'https://example.com/nope'}),false);
 const scoutWebhook='https://discord.com/api/webhooks/1122334455/scout_network_token_ABC_123';
 assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:scoutWebhook}),true);
 assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:'https://example.com/nope'}),false);
@@ -100,6 +105,26 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+let missionControlCaptured=null;
+globalThis.fetch=async(url,options)=>{
+  missionControlCaptured={url,options};
+  return Response.json({id:'8877665544'},{status:200});
+};
+try{
+  const result=await createMissionControlDiscordMessage(
+    {DISCORD_MISSION_CONTROL_WEBHOOK_URL:missionControlWebhook},
+    {embeds:[{title:'Mission Control Test'}],content:'Daily Orders routing test'}
+  );
+  assert.equal(result.messageId,'8877665544');
+  assert.match(missionControlCaptured.url,/7788990011/);
+  assert.equal(missionControlCaptured.options.method,'POST');
+  const body=JSON.parse(missionControlCaptured.options.body);
+  assert.deepEqual(body.allowed_mentions,{parse:[]});
+  assert.equal(body.embeds[0].title,'Mission Control Test');
+}finally{
+  globalThis.fetch=originalFetch;
+}
+
 let scoutCaptured=null;
 globalThis.fetch=async(url,options)=>{
   scoutCaptured={url,options};
@@ -146,14 +171,15 @@ for(const pattern of [
   /X-Mongrels-Request/,
   /wolf-bgs-control/,
   /DISCORD_OPERATIONS_WEBHOOK_URL|discordOperationsConfigured/,
-  /Mission Control Link Test/,
+  /System Testing Link Test/,
   /scoutCycleRefreshServerConfigured/,
   /colonizationArchiveConfigured/,
   /colonizationJobsConfigured/,
   /factionAlertsConfigured/,
+  /missionControlConfigured/,
   /scoutNetworkConfigured/,
   /squadPayoutsConfigured/,
-  /low-noise persistent\/update-in-place model/i,
+  /reserved for System Testing/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
 
@@ -171,7 +197,7 @@ for(const pattern of [
   /api\/operations\/discord-colonization-jobs/,
   /api\/operations\/discord-daily-orders/,
   /X-Mongrels-Request/,
-  /Send Test Alert|Sending test alert/,
+  /Send System Test|Sending System Testing alert/,
 ])assert.match(client,pattern);
 new Function(client);
 
@@ -185,7 +211,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=13/,
+  /wolf-bgs-discord\.js\?v=14/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
