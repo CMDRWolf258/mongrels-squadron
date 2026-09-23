@@ -6,6 +6,7 @@ import { activeColonizationJobs, activeColonizationSystems, earliestColonization
 import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -168,6 +169,23 @@ export async function onRequestPost({request,env}) {
       console.error('Could not automatically issue verified rewards after Frontier sync',error);
     }
 
+    let rewardDiscord=null;
+    if(Number(automaticRewards?.created)>0){
+      try{
+        const rewardView=await loadRewardDiscordView(env);
+        const adminUrl=new URL('/wolf-bgs/',request.url);
+        adminUrl.hash='reward-engine';
+        rewardDiscord=await syncRewardDiscordBoard(env,{
+          view:rewardView,
+          adminUrl:adminUrl.toString(),
+          rewardsUrl:new URL('/rewards/',request.url).toString(),
+          createMissing:false,
+        });
+      }catch(error){
+        console.error('Verified rewards were issued but Rewards Discord refresh failed',error);
+      }
+    }
+
     const colonizationActivityChanged=hasNewColonizationActivity(parsed.events,{
       previousSyncAt,
       historicalReconciliation:Boolean(historicalText||backfillRows.length),
@@ -197,6 +215,7 @@ export async function onRequestPost({request,env}) {
       verifiedOrders:rewardPreview,
       memberFundedColonization,
       automaticRewards,
+      rewardDiscord,
       colonizationDiscord,
       colonizationDiscordRefreshTriggered:colonizationActivityChanged,
       recentEvents:matched.events.slice(-20).reverse(),
