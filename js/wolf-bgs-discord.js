@@ -9,6 +9,8 @@
   const syncBgsButton=panel.querySelector('[data-discord-sync-bgs]');
   const syncRewardsButton=panel.querySelector('[data-discord-sync-rewards]');
   const status=panel.querySelector('[data-discord-status]');
+  let colonizationArchiveConfigured=false;
+  let factionAlertsConfigured=false;
 
   function setStatus(message,state=''){
     if(!status)return;
@@ -21,9 +23,9 @@
     if(testButton)testButton.disabled=disabled;
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
-    if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled;
+    if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled||!colonizationArchiveConfigured;
     if(syncScoutButton)syncScoutButton.disabled=disabled;
-    if(syncBgsButton)syncBgsButton.disabled=disabled;
+    if(syncBgsButton)syncBgsButton.disabled=disabled||!factionAlertsConfigured;
     if(syncRewardsButton)syncRewardsButton.disabled=disabled;
   }
 
@@ -56,14 +58,20 @@
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
         setButtons(false);
+        colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
+        factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
-        const archive=data.colonizationArchiveConfigured
+        const archive=colonizationArchiveConfigured
           ? ' · Colonization Archive webhook ready'
           : ' · Colonization Archive webhook not configured';
-        if(syncColonizationArchiveButton&&!data.colonizationArchiveConfigured)syncColonizationArchiveButton.disabled=true;
-        setStatus('Operations webhook detected · Daily Orders, Colonization, Scout, BGS, and Rewards are ready'+archive+cycle+'.',data.scoutCycleRefreshServerConfigured&&data.colonizationArchiveConfigured?'success':'');
+        const faction=factionAlertsConfigured
+          ? ' · Faction Alerts webhook ready'
+          : ' · Faction Alerts webhook not configured';
+        setButtons(false);
+        setStatus('Operations webhook detected · Daily Orders, Colonization, Scout, and Rewards are ready'+archive+faction+cycle+'.',
+          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -119,7 +127,9 @@
       setButtons(false);
       try{
         const state=await api('/api/operations/discord-test','GET');
-        if(syncColonizationArchiveButton&&!state.colonizationArchiveConfigured)syncColonizationArchiveButton.disabled=true;
+        colonizationArchiveConfigured=Boolean(state.colonizationArchiveConfigured);
+        factionAlertsConfigured=Boolean(state.factionAlertsConfigured);
+        setButtons(false);
       }catch{}
     }
   });
@@ -182,7 +192,7 @@
 
   syncBgsButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Syncing BGS Alerts & Opportunities to Discord…','working');
+    setStatus('Syncing Faction Alerts & Opportunities to Discord…','working');
     try{
       const data=await api('/api/operations/discord-bgs-alerts','POST');
       const summary=data.discord||{};
@@ -197,9 +207,9 @@
       if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('summary posted');
       else if(summary.summary?.mode==='edited')parts.push('summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
-      setStatus('BGS Discord synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+      setStatus('Faction Alerts synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
-      setStatus('BGS Alerts Discord sync failed · '+String(error.message||error),'error');
+      setStatus('Faction Alerts Discord sync failed · '+String(error.message||error),'error');
     }finally{setButtons(false);}
   });
 
