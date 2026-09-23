@@ -55,6 +55,9 @@ for(const pattern of [
   /project event|event RSVP|RSVP/i,
 ])assert.match(interaction,pattern);
 
+const eventCore=readFileSync('lib/squad-events.js','utf8');
+assert.match(eventCore,/cacheTtl\s*:\s*30/);
+
 const projectApi=readFileSync('functions/api/projects/index.js','utf8');
 for(const pattern of [
   /normalizeEventRsvps/,
@@ -69,6 +72,8 @@ for(const pattern of [
   /project-event-rsvp/,
   /project-rsvp/,
   /Can.t Make It/,
+  /BACKGROUND_REFRESH_MS\s*=\s*5000/,
+  /refreshBoardQuietly/,
 ])assert.match(client,pattern);
 new Function(client);
 
