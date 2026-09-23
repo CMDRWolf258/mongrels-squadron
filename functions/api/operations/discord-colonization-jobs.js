@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { discordColonizationJobsConfigured } from '../../../lib/discord-webhook.js';
 import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
 
 export async function onRequestPost({request,env}){
@@ -7,7 +7,7 @@ export async function onRequestPost({request,env}){
   if(auth.response)return auth.response;
   const originError=validateSameOrigin(request);
   if(originError)return originError;
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
+  if(!discordColonizationJobsConfigured(env))return reply({ok:false,error:'discord_colonization_jobs_webhook_not_configured'},503);
 
   const actor=String(auth.session.displayName||auth.session.username||'Site Admin').trim().slice(0,120);
   try{
