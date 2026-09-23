@@ -7,6 +7,7 @@
   <title>Projects & Events | The Mongrels</title>
   <meta name="description" content="Private Mongrel project board for squad initiatives, member help requests, and upcoming events.">
   <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/projects-events-v2.css?v=1">
 </head>
 <body class="visual-page page-projects">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/" aria-current="page">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -60,7 +61,7 @@
         <label><span>Title</span><input type="text" maxlength="120" required data-project-title placeholder="Help finish my colony build"></label>
         <label><span>System / Location</span><input type="text" maxlength="120" data-project-system placeholder="Optional system name"></label>
         <label><span>Category</span><select data-project-category><option>Colonization</option><option>BGS</option><option>Trade / Hauling</option><option>Mining</option><option>Combat</option><option>PvP</option><option>Anti-Xeno</option><option>Exploration</option><option>Carrier Logistics</option><option>Community</option><option>Other</option></select></label>
-        <label><span>Status</span><select data-project-status><option value="planning">Planning</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="complete">Complete</option></select></label>
+        <label><span>Status</span><select data-project-status><option value="planning">Planning</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="cancelled" data-event-status-only hidden disabled>Cancelled</option><option value="complete">Complete</option></select></label>
         <label><span>Progress</span><input type="number" min="0" max="100" step="1" value="0" data-project-progress></label>
         <label><span data-project-date-label>Deadline / Event date</span><input type="date" data-project-deadline></label>
         <label data-project-time-wrap hidden><span>UTC Time</span><input type="time" data-project-time><small>Displayed as UTC.</small></label>
@@ -75,6 +76,6 @@
   </section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/projects.js?v=69"></script>
+<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/projects.js?v=70"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
