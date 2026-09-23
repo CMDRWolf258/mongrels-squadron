@@ -874,7 +874,7 @@ Architecture:
 - Defaults mirror the former hard-coded About-page structure so the public page remains useful before the first persisted edit.
 - Site Admin only may edit Regiment Command holders, Captain assignments/vacancies, Field Leadership assignments, Specialist holders/focus, and Pilot Rank counts through the About-page management panel.
 - Saving structure data attempts Discord sync but the website save remains authoritative even if Discord is unavailable.
-- Discord uses the existing Imperial Mongrels Website bot. It auto-discovers a text/announcement channel named exactly `squad-structure` using `GUILD_ID`; optional `DISCORD_SQUAD_STRUCTURE_CHANNEL_ID` overrides discovery.
+- Discord uses the existing Imperial Mongrels Website bot. It auto-discovers the existing decorated channel `🏛️〡squad-structure` using `GUILD_ID`; plain `squad-structure` remains an accepted fallback. Optional `DISCORD_SQUAD_STRUCTURE_CHANNEL_ID` still overrides discovery.
 - Discord presentation is one persistent bot message containing four embeds: Regiment Command; Operational Commands / Captain Corps; Field Leadership & Specialist Corps; Pilot Rank Progression. Updates edit the tracked message rather than creating duplicates, and a deleted tracked message is recreated.
 - The Discord message includes a View Full Squad Structure link to `/about/#structure` and does not ping users/roles.
 - Recommended Discord permissions: bot View Channel, Send Messages, Embed Links, Read Message History; members should be denied Send Messages if the channel is intended to be read-only.
