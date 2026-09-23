@@ -200,6 +200,9 @@
         ? `<div class="project-date-callout ${item.kind === 'event' ? 'event-date' : ''}"><span>${item.kind === 'event' ? 'Event Date' : 'Target Date'}</span><strong>${safe(formatDate(item.deadline))}${eventClock}</strong></div>`
         : '';
       const eventType = item.kind === 'event' && item.eventType ? `<div class="project-event-type"><span>Event Type</span><strong>${safe(item.eventType)}</strong></div>` : '';
+      const eventImage = item.kind === 'event' && item.eventImageUrl
+        ? `<div class="project-event-image"><img src="${safe(item.eventImageUrl)}" alt="Event image for ${safe(item.title)}" loading="lazy" referrerpolicy="no-referrer"></div>`
+        : '';
 
       const rsvp = eventRsvpMarkup(item);
       const eventDiscord = item.kind === 'event' && item.canEdit
@@ -224,6 +227,7 @@
         ${eventType}
         ${system}
         <p class="project-description">${safe(item.description)}</p>
+        ${eventImage}
         ${help}
         ${target}
         ${progress}
@@ -248,6 +252,7 @@
     $('[data-project-target]').closest('label').hidden = isEvent;
     $('[data-project-time-wrap]').hidden = !isEvent;
     $('[data-project-event-type-wrap]').hidden = !isEvent;
+    $('[data-project-image-wrap]').hidden = !isEvent;
     const cancelledOption = document.querySelector('[data-event-status-only]');
     if (cancelledOption) {
       cancelledOption.hidden = !isEvent;
@@ -275,6 +280,7 @@
     $('[data-project-deadline]').value = item?.deadline || '';
     $('[data-project-time]').value = item?.eventTime || '';
     $('[data-project-event-type]').value = item?.eventType || 'Training';
+    $('[data-project-image-url]').value = item?.eventImageUrl || '';
     $('[data-project-description]').value = item?.description || '';
     $('[data-project-help]').value = item?.helpRequested || '';
     $('[data-project-target]').value = item?.target || '';
@@ -313,6 +319,7 @@
       deadline: $('[data-project-deadline]').value,
       eventTime: $('[data-project-time]').value,
       eventType: $('[data-project-event-type]').value,
+      eventImageUrl: $('[data-project-image-url]').value,
       official: $('[data-project-official]').value === 'true',
       description: $('[data-project-description]').value,
       helpRequested: $('[data-project-help]').value,
