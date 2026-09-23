@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { discordSquadPayoutsConfigured } from '../../../lib/discord-webhook.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 export async function onRequestPost({request,env}){
@@ -7,7 +7,7 @@ export async function onRequestPost({request,env}){
   if(auth.response)return auth.response;
   const originError=validateSameOrigin(request);
   if(originError)return originError;
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
+  if(!discordSquadPayoutsConfigured(env))return reply({ok:false,error:'discord_squad_payouts_webhook_not_configured'},503);
 
   try{
     const view=await loadRewardDiscordView(env);
@@ -20,8 +20,8 @@ export async function onRequestPost({request,env}){
     if(discord.error)return reply({ok:false,error:discord.error,discord},502);
     return reply({ok:true,discord});
   }catch(error){
-    console.error('Manual Rewards Discord sync failed',error);
-    return reply({ok:false,error:'discord_rewards_sync_failed'},502);
+    console.error('Manual Squad Payouts Discord sync failed',error);
+    return reply({ok:false,error:'discord_squad_payouts_sync_failed'},502);
   }
 }
 
