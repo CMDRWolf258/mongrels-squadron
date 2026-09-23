@@ -203,8 +203,9 @@
         }
         const actions=document.createElement('div');
 
-        const edit=button('Edit',()=>openEditor(item),'btn btn-secondary btn-compact');
-        actions.appendChild(edit);
+        if(item.status!=='archived'){
+          actions.appendChild(button('Edit',()=>openEditor(item),'btn btn-secondary btn-compact'));
+        }
         if(item.status==='draft'){
           actions.appendChild(button('Publish',()=>mutate(item,'publish'),'btn btn-primary btn-compact'));
         }else if(item.status==='published'){
@@ -287,6 +288,8 @@
     const messages={
       title_and_body_required:'Title and announcement text are required.',
       announcement_not_found:'That announcement no longer exists.',
+      archived_announcements_are_read_only:'Archived announcements are read-only. Restore it before making changes.',
+      announcement_storage_not_configured:'The announcement storage binding is not available.',
       discord_announcements_webhook_not_configured:'The Discord announcements webhook is not configured yet.',
       request_validation_failed:'The secure request check failed. Reload the page and try again.',
     };
