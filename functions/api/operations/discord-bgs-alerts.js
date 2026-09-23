@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { discordFactionAlertsConfigured } from '../../../lib/discord-webhook.js';
 import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 
 export async function onRequestPost({request,env}){
@@ -7,7 +7,7 @@ export async function onRequestPost({request,env}){
   if(auth.response)return auth.response;
   const originError=validateSameOrigin(request);
   if(originError)return originError;
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
+  if(!discordFactionAlertsConfigured(env))return reply({ok:false,error:'discord_faction_alerts_webhook_not_configured'},503);
 
   try{
     const view=await loadBgsDiscordView(request,env);
@@ -19,8 +19,8 @@ export async function onRequestPost({request,env}){
     if(discord.error)return reply({ok:false,error:discord.error,discord},502);
     return reply({ok:true,discord});
   }catch(error){
-    console.error('Manual BGS Alerts Discord sync failed',error);
-    return reply({ok:false,error:'discord_bgs_alerts_sync_failed'},502);
+    console.error('Manual Faction Alerts Discord sync failed',error);
+    return reply({ok:false,error:'discord_faction_alerts_sync_failed'},502);
   }
 }
 
