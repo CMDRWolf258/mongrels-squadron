@@ -12,6 +12,7 @@
   let colonizationArchiveConfigured=false;
   let colonizationJobsConfigured=false;
   let factionAlertsConfigured=false;
+  let missionControlConfigured=false;
   let scoutNetworkConfigured=false;
   let squadPayoutsConfigured=false;
 
@@ -24,7 +25,7 @@
 
   function setButtons(disabled){
     if(testButton)testButton.disabled=disabled;
-    if(syncOrdersButton)syncOrdersButton.disabled=disabled;
+    if(syncOrdersButton)syncOrdersButton.disabled=disabled||!missionControlConfigured;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled||!colonizationJobsConfigured;
     if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled||!colonizationArchiveConfigured;
     if(syncScoutButton)syncScoutButton.disabled=disabled||!scoutNetworkConfigured;
@@ -63,6 +64,7 @@
         colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
         colonizationJobsConfigured=Boolean(data.colonizationJobsConfigured);
         factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
+        missionControlConfigured=Boolean(data.missionControlConfigured);
         scoutNetworkConfigured=Boolean(data.scoutNetworkConfigured);
         squadPayoutsConfigured=Boolean(data.squadPayoutsConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
@@ -74,6 +76,9 @@
         const archive=colonizationArchiveConfigured
           ? ' · Colonization Archive webhook ready'
           : ' · Colonization Archive webhook not configured';
+        const mission=missionControlConfigured
+          ? ' · Mission Control webhook ready'
+          : ' · Mission Control webhook not configured';
         const faction=factionAlertsConfigured
           ? ' · Faction Alerts webhook ready'
           : ' · Faction Alerts webhook not configured';
@@ -84,8 +89,8 @@
           ? ' · Squad Payouts webhook ready'
           : ' · Squad Payouts webhook not configured';
         setButtons(false);
-        setStatus('System Testing webhook detected · Daily Orders currently remain on the legacy route'+colonization+archive+faction+scout+payouts+cycle+'.',
-          data.scoutCycleRefreshServerConfigured&&colonizationJobsConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured&&squadPayoutsConfigured?'success':'');
+        setStatus('System Testing webhook detected'+mission+colonization+archive+faction+scout+payouts+cycle+'.',
+          data.scoutCycleRefreshServerConfigured&&missionControlConfigured&&colonizationJobsConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured&&squadPayoutsConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -100,14 +105,14 @@
 
   testButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Sending test alert to Discord…','working');
+    setStatus('Sending System Testing alert to Discord…','working');
     try{
       const data=await api('/api/operations/discord-test','POST');
       const time=data.sentAt?new Date(data.sentAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'now';
-      setStatus('Test alert sent successfully · '+time,'success');
+      setStatus('System Testing alert sent successfully · '+time,'success');
     }catch(error){
       const messages={
-        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
+        discord_webhook_not_configured:'System Testing webhook secret is missing or invalid in Cloudflare.',
         discord_webhook_request_failed:'Discord rejected the webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
@@ -144,6 +149,7 @@
         colonizationArchiveConfigured=Boolean(state.colonizationArchiveConfigured);
         colonizationJobsConfigured=Boolean(state.colonizationJobsConfigured);
         factionAlertsConfigured=Boolean(state.factionAlertsConfigured);
+        missionControlConfigured=Boolean(state.missionControlConfigured);
         scoutNetworkConfigured=Boolean(state.scoutNetworkConfigured);
         squadPayoutsConfigured=Boolean(state.squadPayoutsConfigured);
         setButtons(false);
@@ -283,8 +289,9 @@
     }catch(error){
       const messages={
         no_daily_orders_published:'There are no current Daily Orders to sync.',
-        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
-        discord_webhook_request_failed:'Discord rejected the Daily Orders sync'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
+        discord_mission_control_webhook_not_configured:'Mission Control webhook secret is not configured in Cloudflare.',
+        discord_mission_control_webhook_request_failed:'Discord rejected the Mission Control webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
+        discord_daily_orders_sync_failed:'Daily Orders remain published on the site, but Mission Control Discord sync failed.',
         discord_daily_orders_sync_failed:'Daily Orders are still live in Mission Control, but Discord sync failed.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
