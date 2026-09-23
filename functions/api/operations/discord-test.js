@@ -1,5 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { discordColonizationArchiveConfigured, discordOperationsConfigured, sendOperationsDiscord } from '../../../lib/discord-webhook.js';
+import {
+  discordColonizationArchiveConfigured,
+  discordFactionAlertsConfigured,
+  discordOperationsConfigured,
+  sendOperationsDiscord,
+} from '../../../lib/discord-webhook.js';
 
 export async function onRequestGet({request,env}){
   const auth=await requireSiteAdmin(request,env);
@@ -8,6 +13,7 @@ export async function onRequestGet({request,env}){
     ok:true,
     configured:discordOperationsConfigured(env),
     colonizationArchiveConfigured:discordColonizationArchiveConfigured(env),
+    factionAlertsConfigured:discordFactionAlertsConfigured(env),
     scoutCycleRefreshServerConfigured:String(env?.SCOUT_DISCORD_CRON_TOKEN||'').trim().length>=24,
   });
 }
