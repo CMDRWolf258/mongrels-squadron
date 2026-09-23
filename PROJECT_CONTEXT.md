@@ -824,6 +824,25 @@ Architecture:
 - Controlled Gallery tags currently include AX, BGS, Carriers, Colonization, Combat, Community, Engineering, Events, Exobiology, Exploration, Mining, Operations, PvP, Scenic, Ships, and Trade.
 - Current KV/R2 concurrency is appropriate for squad scale. If the upload quota ever needs strict high-concurrency enforcement across many PoPs, move quota accounting to a serialized store rather than pretending KV is strongly consistent.
 
+## Frontier Activity Diagnostics
+
+Primary files:
+- `functions/api/frontier/admin-events.js`
+- `js/wolf-bgs-frontier-diagnostics.js`
+- `css/wolf-bgs-frontier-diagnostics.css`
+- `wolf-bgs/index.html`
+- `scripts/smoke-frontier-diagnostics.mjs`
+
+Behavior:
+- Wolf BGS Control → Verification Review includes a **Site Admin-only Stored Frontier Activity** diagnostic panel.
+- The panel reads the production Frontier event store (`frontier-bgs-events:<userId>`) and is intentionally read-only.
+- Connected CMDR selector shows each account's last successful Sync time; the selected member summary also shows latest journal-event timestamp, last known system, and total stored-event count.
+- Recent stored events are shown independently of Daily Order and reward state. A stored event can exist with **No Daily Order Match**, which proves Scout collected it even if it did not attach to an active order or generate a reward.
+- Trade rows expose commodity, tons, sale value, profit, average purchase price, cargo provenance, BGS trade eligibility, explicit eligibility reason, system, station, station faction, and any Daily Order match.
+- Diagnostics currently returns up to 300 most-recent stored events for the selected connected member; client filters by activity type and system.
+- Only `site_admin` may call `/api/frontier/admin-events`; there are no write methods on this endpoint.
+- Important diagnostic distinction: **stored Frontier evidence → order match → reward obligation** are three separate stages. Never infer missing stored evidence solely from a missing reward or verification row.
+
 ## Scout Board refresh resilience
 
 Primary client/API:
