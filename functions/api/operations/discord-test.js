@@ -3,6 +3,7 @@ import {
   discordColonizationArchiveConfigured,
   discordColonizationJobsConfigured,
   discordFactionAlertsConfigured,
+  discordMissionControlConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
   discordSquadPayoutsConfigured,
@@ -18,6 +19,7 @@ export async function onRequestGet({request,env}){
     colonizationArchiveConfigured:discordColonizationArchiveConfigured(env),
     colonizationJobsConfigured:discordColonizationJobsConfigured(env),
     factionAlertsConfigured:discordFactionAlertsConfigured(env),
+    missionControlConfigured:discordMissionControlConfigured(env),
     scoutNetworkConfigured:discordScoutNetworkConfigured(env),
     squadPayoutsConfigured:discordSquadPayoutsConfigured(env),
     scoutCycleRefreshServerConfigured:String(env?.SCOUT_DISCORD_CRON_TOKEN||'').trim().length>=24,
@@ -37,15 +39,15 @@ export async function onRequestPost({request,env}){
   try{
     const result=await sendOperationsDiscord(env,{
       embeds:[{
-        title:'Mission Control Link Test',
-        description:'Discord webhook connectivity is working. This is a manual test from Wolf BGS Control; automated operations messages use the low-noise persistent/update-in-place model.',
+        title:'System Testing Link Test',
+        description:'Discord webhook connectivity is working. This is a manual test from Wolf BGS Control. Production feeds use their dedicated channel webhooks; this legacy webhook is reserved for System Testing.',
         color:0x22d3ee,
         fields:[
           {name:'Source',value:'Wolf BGS Control',inline:true},
           {name:'Status',value:'Webhook connected',inline:true},
           {name:'Triggered by',value:actor||'Site Admin',inline:false},
         ],
-        footer:{text:'Regiment of Imperial Mongrels · Mission Control'},
+        footer:{text:'Regiment of Imperial Mongrels · System Testing'},
         timestamp,
       }],
     });
