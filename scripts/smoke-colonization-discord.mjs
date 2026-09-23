@@ -63,13 +63,15 @@ const view={
   ],
 };
 
-const payload=buildColonizationJobDiscordPayload(view,{controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs'});
+const payload=buildColonizationJobDiscordPayload(view,{controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs'});
 assert.match(payload.embeds[0].title,/Eleven's Lighthouse/);
 assert.equal(payload.embeds[0].fields.find(row=>row.name==='Status')?.value,'ACTIVE');
 assert.match(payload.embeds[0].fields.find(row=>row.name==='Progress')?.value,/2,548 t \/ 10,000 t/);
 assert.match(payload.embeds[0].fields.find(row=>row.name==='Progress')?.value,/7,452 t remaining/);
 assert.match(payload.embeds[0].fields.find(row=>row.name==='Verified Contributors')?.value,/DarthDivider — 1,872 t/);
 assert.equal(payload.embeds[0].timestamp,'2026-09-22T14:00:00.000Z');
+assert.match(JSON.stringify(payload),/\/trading\/#colonization-jobs/);
+assert.doesNotMatch(JSON.stringify(payload),/\/wolf-bgs\//,'Live Colonization Discord cards must use the member board');
 
 const pausedView={
   ...base,
@@ -84,7 +86,7 @@ const pausedView={
 };
 const historicalCompleted={...base,id:'job-old',title:'Old Completed Job',status:'completed'};
 const summaryPayload=buildColonizationSummaryDiscordPayload([view,pausedView,historicalCompleted],{
-  controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+  controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
 });
 assert.equal(summaryPayload.embeds[0].title,'Colonization Jobs');
 assert.match(summaryPayload.embeds[0].fields[0].value,/1 active · 1 paused · 3,448 t verified hauling/);
@@ -137,13 +139,15 @@ try{
 
   const completedJob={...base,status:'completed',endsAt:'2026-09-22T16:00:00.000Z',updatedAt:'2026-09-22T16:00:00.000Z',revision:2};
   const archivePayload=buildColonizationArchiveDiscordPayload({...progressedView,...completedJob},{
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
   });
   assert.match(archivePayload.embeds[0].title,/^✓ COLONIZATION COMPLETE ·/);
   assert.equal(archivePayload.embeds[0].fields.find(row=>row.name==='Final Status')?.value,'COMPLETED');
   assert.match(archivePayload.embeds[0].fields.find(row=>row.name==='Verified Hauling')?.value,/3,200 t \/ 10,000 t/);
   assert.match(archivePayload.embeds[0].fields.find(row=>row.name==='Verified Contributors')?.value,/DarthDivider/);
   assert.match(archivePayload.embeds[0].footer.text,/Colonization Archive/);
+  assert.match(JSON.stringify(archivePayload),/\/trading\/#colonization-jobs/);
+  assert.doesNotMatch(JSON.stringify(archivePayload),/\/wolf-bgs\//,'Archived Colonization cards must use the member board');
 
   const completed=await syncColonizationJobDiscord(env,{
     job:completedJob,
@@ -160,7 +164,7 @@ try{
   const archived=await syncColonizationArchiveJobDiscord(env,{
     job:completedJob,
     view:{...progressedView,...completedJob},
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
   });
   assert.equal(archived.mode,'archived');
   assert.equal(requests.length,beforeArchive+1);
@@ -229,7 +233,7 @@ try{
   const beforeManual=requests.length;
   const manual=await syncAllColonizationJobsDiscord(env,{
     actor:'Wolf',
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
     createMissing:true,
   });
   const manualRequests=requests.slice(beforeManual);
@@ -250,7 +254,7 @@ try{
 
   const beforeArchiveBackfill=requests.length;
   const archiveBackfill=await syncAllCompletedColonizationArchiveDiscord(env,{
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
   });
   assert.equal(archiveBackfill.completedJobs,2);
   assert.equal(archiveBackfill.archived,1,'Historical completed job should be backfilled exactly once');
@@ -260,7 +264,7 @@ try{
 
   const beforeArchiveBackfillNoop=requests.length;
   const archiveBackfillNoop=await syncAllCompletedColonizationArchiveDiscord(env,{
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
   });
   assert.equal(archiveBackfillNoop.archived,0);
   assert.equal(archiveBackfillNoop.alreadyArchived,2);
@@ -278,7 +282,7 @@ try{
   const beforeNoop=requests.length;
   const noop=await syncAllColonizationJobsDiscord(env,{
     actor:'Wolf',
-    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+    controlUrl:'https://mongrels-squadron.pages.dev/trading/#colonization-jobs',
     createMissing:true,
   });
   assert.equal(noop.summary?.mode,'unchanged');
