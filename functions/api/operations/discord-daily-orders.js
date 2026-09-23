@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { discordMissionControlConfigured } from '../../../lib/discord-webhook.js';
 import { syncDailyOrdersDiscord } from '../../../lib/daily-orders-discord.js';
 
 const ORDERS_KEY='current';
@@ -9,7 +9,7 @@ export async function onRequestPost({request,env}){
   if(auth.response)return auth.response;
   const originError=validateSameOrigin(request);
   if(originError)return originError;
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
+  if(!discordMissionControlConfigured(env))return reply({ok:false,error:'discord_mission_control_webhook_not_configured'},503);
   if(!env?.DAILY_ORDERS||typeof env.DAILY_ORDERS.get!=='function'){
     return reply({ok:false,error:'orders_storage_not_configured'},503);
   }
