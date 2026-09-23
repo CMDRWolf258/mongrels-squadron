@@ -2,13 +2,11 @@ import { json } from '../../../lib/auth.js';
 import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
 import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 
 export async function onRequestPost({request,env}){
   const auth=await authenticateCron(request,env);
   if(!auth.ok)return reply({ok:false,error:auth.error},auth.status);
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
 
   try{
     const systems=await loadActiveMongrelSystems(request);
