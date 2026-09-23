@@ -19,11 +19,13 @@ const payload=buildAnnouncementDiscordPayload({
   priority:'important',
   authorName:'CMDR Wolf258',
   publishedAt:'2026-09-23T15:00:00.000Z',
+  imageUrl:'https://mongrels-squadron.pages.dev/media/announcements/test.webp',
 },{siteUrl:'https://mongrels-squadron.pages.dev/announcements/#announcement-a1'});
 assert.equal(payload.embeds[0].title,'Squad Update');
 assert.match(payload.embeds[0].description,/new announcement/);
 assert.match(payload.embeds[0].footer.text,/Official Announcement/);
 assert.equal(payload.embeds[0].fields[1].value,'Important');
+assert.equal(payload.embeds[0].image.url,'https://mongrels-squadron.pages.dev/media/announcements/test.webp');
 
 const originalFetch=globalThis.fetch;
 let captured=[];
@@ -62,6 +64,11 @@ for(const pattern of [
   /mongrels-announcements/,
   /discordAnnouncementsConfigured/,
   /syncAnnouncementDiscord/,
+  /announcementImagePublicUrl/,
+  /announcementImagePreviewUrl/,
+  /deleteManagedAnnouncementImage/,
+  /imageKey/,
+  /imageStorageConfigured/,
   /status='published'|status:'published'|item\.status='published'/,
   /published_announcements_must_be_archived/,
 ])assert.match(api,pattern);
@@ -74,6 +81,11 @@ for(const pattern of [
   /Publish to Squad \+ Discord/,
   /Discord announcements not connected/,
   /data-announcement-filter/,
+  /mongrels-announcement-image/,
+  /prepareImage/,
+  /uploadImage/,
+  /deleteTemporaryImage/,
+  /announcement-card-image/,
 ])assert.match(client,pattern);
 new Function(client);
 
@@ -83,8 +95,37 @@ for(const pattern of [
   /data-announcements-board/,
   /data-announcement-new/,
   /data-announcement-form/,
-  /announcements\.js\?v=1/,
-  /announcements\.css\?v=1/,
+  /data-announcement-image-drop/,
+  /data-announcement-image-file/,
+  /announcements\.js\?v=2/,
+  /announcements\.css\?v=2/,
 ])assert.match(page,pattern);
 
-console.log('✓ Announcements manager, PROJECTS storage, member board, and dedicated Discord webhook path are wired');
+const imageApi=readFileSync('functions/api/announcements/image.js','utf8');
+for(const pattern of [
+  /ANNOUNCEMENT_IMAGE_MAX_BYTES/,
+  /site_admin_required/,
+  /mongrels-announcement-image/,
+  /announcementImagePreviewUrl/,
+  /deleteManagedAnnouncementImage/,
+])assert.match(imageApi,pattern);
+
+const media=readFileSync('functions/media/announcements/[file].js','utf8');
+for(const pattern of [
+  /announcements-v1/,
+  /published/,
+  /archived/,
+  /EVENT_IMAGES\.get/,
+  /isManagedAnnouncementImageKey/,
+])assert.match(media,pattern);
+
+const imageLib=readFileSync('lib/announcement-images.js','utf8');
+for(const pattern of [
+  /8\*1024\*1024/,
+  /announcements\//,
+  /image\/png/,
+  /image\/jpeg/,
+  /image\/webp/,
+])assert.match(imageLib,pattern);
+
+console.log('✓ Announcements support managed R2 images on the website and persistent Discord embeds');
