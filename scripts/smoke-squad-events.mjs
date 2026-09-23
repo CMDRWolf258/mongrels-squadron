@@ -38,7 +38,11 @@ assert.equal(view.counts.maybe,1);
 
 const payload=buildSquadEventDiscordPayload(event,{origin:'https://mongrels-squadron.pages.dev'});
 assert.match(payload.embeds[0].title,/Mongrel Training Night/);
-assert.match(payload.embeds[0].fields.find(x=>x.name==='RSVP').value,/Going \*\*1\*\*/);
+assert.equal(payload.embeds[0].fields.find(x=>x.name==='📍 System / Location')?.inline,false);
+assert.equal(payload.embeds[0].fields.find(x=>x.name==='🎯 Event Type')?.inline,true);
+assert.equal(payload.embeds[0].fields.find(x=>x.name==='👤 Organizer')?.inline,true);
+assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/Going\*\* — 1|Going\*\* — 1/);
+assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/Maybe\*\* — 1/);
 assert.equal(payload.components[0].components.length,4);
 assert.match(payload.components[0].components[0].custom_id,/mongrels_event_rsvp/);
 assert.equal(payload.components[0].components[0].disabled,false);
