@@ -5,6 +5,11 @@ import {
   sendApplicantWelcomeOnce,
   verifyDiscordInteraction,
 } from '../../../lib/discord-onboarding.js';
+import {
+  applyEventRsvp,
+  isSquadEventInteractionMember,
+  parseEventRsvpCustomId,
+} from '../../../lib/squad-events.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
 const GUEST_CUSTOM_ID = 'mongrels_onboarding_guest';
@@ -36,6 +41,11 @@ export async function onRequestPost(context) {
   }
 
   const customId = interaction?.data?.custom_id;
+  const eventRsvp = parseEventRsvpCustomId(customId);
+  if (eventRsvp) {
+    return handleEventRsvpInteraction(context, interaction, eventRsvp);
+  }
+
   const choice = customId === APPLICANT_CUSTOM_ID
     ? 'applicant'
     : customId === GUEST_CUSTOM_ID
@@ -85,6 +95,90 @@ export async function onRequestPost(context) {
 
 export function onRequestGet() {
   return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+async function handleEventRsvpInteraction(context, interaction, eventRsvp) {
+  const { request, env } = context;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
+  const guildId = interaction?.guild_id || '';
+
+  if (!userId || !guildId) {
+    return response({
+      type: 4,
+      data: { content: 'This RSVP button can only be used inside the Mongrels Discord server.', flags: EPHEMERAL },
+    });
+  }
+
+  if (env.GUILD_ID && guildId !== env.GUILD_ID) {
+    return response({
+      type: 4,
+      data: { content: 'This event button is not configured for this server.', flags: EPHEMERAL },
+    });
+  }
+
+  if (!isSquadEventInteractionMember(interaction, env)) {
+    return response({
+      type: 4,
+      data: { content: 'Squad Event RSVPs are available to recognized Mongrel members.', flags: EPHEMERAL },
+    });
+  }
+
+  const user = interaction?.member?.user || interaction?.user || {};
+  const displayName = interaction?.member?.nick || user.global_name || user.username || 'Commander';
+  const origin = new URL(request.url).origin;
+  const work = handleEventRsvp({
+    interaction,
+    env,
+    eventId: eventRsvp.eventId,
+    status: eventRsvp.status,
+    userId,
+    displayName,
+    origin,
+  });
+  if (typeof context.waitUntil === 'function') context.waitUntil(work);
+  else await work;
+
+  return response({ type: 5, data: { flags: EPHEMERAL } });
+}
+
+async function handleEventRsvp({ interaction, env, eventId, status, userId, displayName, origin }) {
+  try {
+    const result = await applyEventRsvp(env, {
+      eventId,
+      status,
+      userId,
+      displayName,
+      origin,
+    });
+
+    if (!result.ok) {
+      const message = result.mode === 'event_rsvp_closed'
+        ? 'This event is no longer accepting RSVPs.'
+        : result.mode === 'event_not_found'
+          ? 'That Squad Event could not be found.'
+          : 'Your RSVP could not be recorded.';
+      await editDeferredInteraction(interaction, { content: message, components: [] });
+      return;
+    }
+
+    const labels = {
+      going: '✅ Going',
+      maybe: '🤔 Maybe',
+      cant: '❌ Can’t Make It',
+    };
+    const discordNote = result.discord?.ok === false
+      ? '\n\nYour RSVP was saved, but the event card could not refresh right now.'
+      : '';
+    await editDeferredInteraction(interaction, {
+      content: `RSVP updated: **${labels[status] || status}**.${discordNote}`,
+      components: [],
+    });
+  } catch (error) {
+    await editDeferredInteraction(interaction, {
+      content: `I couldn't update your event RSVP. Please try again or use the website.\n\nTechnical detail: ${safeError(error)}`,
+      components: [],
+    }).catch(() => {});
+  }
 }
 
 async function handleChoice({ interaction, env, guildId, userId, choice, origin }) {
