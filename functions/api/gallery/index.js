@@ -48,7 +48,7 @@ export async function onRequestPost({request,env}){
   const err=validateSameOrigin(request,'gallery-submission'); if(err)return err;
   if(!galleryImagesConfigured(env))return reply({ok:false,error:'gallery_image_storage_not_configured'},503);
 
-  const items=await readGallerySubmissions(env);
+  const items=await readGallerySubmissions(env,{fresh:true});
   const quota=galleryQuota(items,auth.session.sub);
   if(quota.remaining<=0)return reply({ok:false,error:'gallery_daily_upload_limit',quota},429);
 
@@ -126,7 +126,7 @@ export async function onRequestPatch({request,env}){
   const action=String(body?.action||'').trim().toLowerCase();
   if(!id||!['approve','reject'].includes(action))return reply({ok:false,error:'invalid_gallery_moderation'},400);
 
-  const items=await readGallerySubmissions(env);
+  const items=await readGallerySubmissions(env,{fresh:true});
   const index=items.findIndex(item=>item.id===id);
   if(index<0)return reply({ok:false,error:'gallery_submission_not_found'},404);
   const item=items[index];
