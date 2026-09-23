@@ -3,6 +3,7 @@ import {
   discordColonizationArchiveConfigured,
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
+  discordScoutNetworkConfigured,
   sendOperationsDiscord,
 } from '../../../lib/discord-webhook.js';
 
@@ -14,6 +15,7 @@ export async function onRequestGet({request,env}){
     configured:discordOperationsConfigured(env),
     colonizationArchiveConfigured:discordColonizationArchiveConfigured(env),
     factionAlertsConfigured:discordFactionAlertsConfigured(env),
+    scoutNetworkConfigured:discordScoutNetworkConfigured(env),
     scoutCycleRefreshServerConfigured:String(env?.SCOUT_DISCORD_CRON_TOKEN||'').trim().length>=24,
   });
 }
