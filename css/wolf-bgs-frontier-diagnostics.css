@@ -1,0 +1,44 @@
+.wolf-frontier-diagnostics{margin-top:1.15rem;padding:1rem;border:1px solid rgba(92,210,255,.18);background:linear-gradient(145deg,rgba(10,17,21,.9),rgba(6,9,11,.96))}
+.wolf-frontier-diagnostics-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.9rem}
+.wolf-frontier-diagnostics-head>div>span{display:block;color:#71dfff;font-size:.62rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.wolf-frontier-diagnostics-head h3{margin:.15rem 0 .25rem;font-size:1.05rem}
+.wolf-frontier-diagnostics-head p{margin:0;color:var(--muted);font-size:.76rem;line-height:1.45;max-width:780px}
+.wolf-frontier-diagnostics-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,.7fr) minmax(240px,1fr);gap:.65rem;margin-bottom:.75rem}
+.wolf-frontier-diagnostics-toolbar label{display:grid;gap:.32rem}
+.wolf-frontier-diagnostics-toolbar label>span{color:var(--muted);font-size:.62rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.wolf-frontier-diagnostics-toolbar select,.wolf-frontier-diagnostics-toolbar input{width:100%}
+.wolf-frontier-diagnostics-member{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;margin:.7rem 0}
+.wolf-frontier-diagnostics-member>div{display:grid;gap:.12rem;padding:.55rem .62rem;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.018);min-width:0}
+.wolf-frontier-diagnostics-member span{color:#77939a;font-size:.56rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.wolf-frontier-diagnostics-member strong{font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wolf-frontier-diagnostics-note{margin:.75rem 0}
+.wolf-frontier-diagnostics-status{min-height:1.1rem;margin:.55rem 0;color:var(--muted);font-size:.68rem}
+.wolf-frontier-diagnostics-status.error{color:#ffabab}
+.wolf-frontier-event-list{display:grid;gap:.55rem}
+.wolf-frontier-event{border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.014);padding:.72rem}
+.wolf-frontier-event.is-trade{border-color:rgba(73,205,159,.16)}
+.wolf-frontier-event-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}
+.wolf-frontier-event-head>div{display:grid;gap:.08rem;min-width:0}
+.wolf-frontier-event-head>div>span{color:#78949b;font-size:.57rem;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.wolf-frontier-event-head strong{font-size:.83rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wolf-frontier-event-type,.wolf-frontier-eligibility{flex:0 0 auto;border:1px solid rgba(92,210,255,.2);padding:.26rem .42rem;font-size:.56rem;letter-spacing:.06em}
+.wolf-frontier-eligibility.is-eligible{border-color:rgba(73,205,159,.36);color:#bff7df;background:rgba(73,205,159,.055)}
+.wolf-frontier-eligibility.is-ineligible{border-color:rgba(255,176,74,.3);color:#ffd8a2;background:rgba(64,42,12,.22)}
+.wolf-frontier-event-type{color:#b7d6dc}
+.wolf-frontier-event-context{display:flex;gap:.45rem;flex-wrap:wrap;margin:.42rem 0 .55rem;color:var(--muted);font-size:.64rem}
+.wolf-frontier-event-context strong{color:#dbe9ec}
+.wolf-frontier-trade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem}
+.wolf-frontier-trade-grid>div{display:grid;gap:.1rem;padding:.42rem .48rem;border:1px solid rgba(255,255,255,.055);background:rgba(0,0,0,.14);min-width:0}
+.wolf-frontier-trade-grid span{color:#769198;font-size:.54rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.wolf-frontier-trade-grid strong{font-size:.68rem;overflow-wrap:anywhere}
+.wolf-frontier-order-match{display:grid;gap:.12rem;margin-top:.52rem;padding:.42rem .5rem;border-left:3px solid rgba(92,210,255,.28);background:rgba(92,210,255,.035)}
+.wolf-frontier-order-match strong{font-size:.57rem;letter-spacing:.07em}
+.wolf-frontier-order-match span{color:var(--muted);font-size:.64rem;line-height:1.35}
+.wolf-frontier-order-match.is-matched{border-left-color:rgba(73,205,159,.58)}
+.wolf-frontier-order-match.is-matched strong{color:#bff7df}
+.wolf-frontier-order-match.is-ambiguous{border-left-color:rgba(255,176,74,.6)}
+.wolf-frontier-order-match.is-ambiguous strong{color:#ffd8a2}
+.wolf-frontier-order-match.is-unmatched{border-left-color:rgba(137,155,162,.34)}
+.wolf-frontier-order-match.is-unmatched strong{color:#aebec3}
+@media(max-width:900px){.wolf-frontier-diagnostics-toolbar{grid-template-columns:1fr 1fr}.wolf-frontier-diagnostics-toolbar label:last-child{grid-column:1/-1}.wolf-frontier-diagnostics-member{grid-template-columns:repeat(2,minmax(0,1fr))}.wolf-frontier-trade-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.wolf-frontier-diagnostics-head{flex-direction:column}.wolf-frontier-diagnostics-head .btn{width:100%}.wolf-frontier-diagnostics-toolbar,.wolf-frontier-diagnostics-member,.wolf-frontier-trade-grid{grid-template-columns:1fr}.wolf-frontier-diagnostics-toolbar label:last-child{grid-column:auto}.wolf-frontier-event-head{align-items:stretch;flex-direction:column}.wolf-frontier-event-type,.wolf-frontier-eligibility{width:max-content;max-width:100%}}
