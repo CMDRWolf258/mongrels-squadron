@@ -817,8 +817,10 @@ Architecture:
 - Pending images are not public media. The submitter and leadership preview them through authenticated `/api/gallery/image?key=...`.
 - Public `/media/gallery/<file>` checks current submission state and only serves an R2 object when its submission is `approved`.
 - Approved member submissions merge into the existing public Gallery filter/grid/lightbox at runtime; the lightbox credits the submitting CMDR.
+- Gallery page order is intentionally visitor-first: hero → public image archive → member submission tools → leadership review → Site Admin published-member-image management. Do not move the upload drop zone above the public Gallery.
 - Leadership review happens on the Gallery page and may correct title, caption, and up to three controlled tags before approval, with an optional review note.
 - Rejected images are removed from R2 after the rejected state is persisted; the metadata record remains so the submitter can see the result and the upload still counts toward that day's limit.
+- Post-approval removal is **Site Admin only**. Officers may approve/reject pending submissions but cannot remove an already-approved image. Site Admin removal first marks the record `removed` (immediately unpublishing it), then deletes its R2 object and preserves lightweight submission/review/removal history; it continues to count toward the original daily upload quota.
 - Controlled Gallery tags currently include AX, BGS, Carriers, Colonization, Combat, Community, Engineering, Events, Exobiology, Exploration, Mining, Operations, PvP, Scenic, Ships, and Trade.
 - Current KV/R2 concurrency is appropriate for squad scale. If the upload quota ever needs strict high-concurrency enforcement across many PoPs, move quota accounting to a serialized store rather than pretending KV is strongly consistent.
 
