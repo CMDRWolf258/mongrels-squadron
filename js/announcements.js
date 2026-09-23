@@ -274,6 +274,8 @@
         item=created.item;
         state.items.unshift(item);
         idInput.value=item.id;
+        originalImageKey=item.imageKey||'';
+        uploadedImageKey='';
       }
       const action=publish?'publish':'save';
       const updated=await request('PUT',{...payload,id:item.id,action});
