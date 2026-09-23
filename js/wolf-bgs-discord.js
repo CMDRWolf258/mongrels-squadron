@@ -57,7 +57,6 @@
     try{
       const data=await api('/api/operations/discord-test','GET');
       if(data.configured){
-        setButtons(false);
         colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
         factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
@@ -209,7 +208,13 @@
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
       setStatus('Faction Alerts synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
-      setStatus('Faction Alerts Discord sync failed · '+String(error.message||error),'error');
+      const messages={
+        discord_faction_alerts_webhook_not_configured:'Faction Alerts webhook secret is not configured in Cloudflare.',
+        discord_faction_alerts_sync_failed:'Faction state remains unchanged on the site, but Discord sync failed.',
+        discord_faction_alerts_webhook_request_failed:'Discord rejected the Faction Alerts webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
+        request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
+      };
+      setStatus(messages[error.message]||'Faction Alerts Discord sync failed · '+String(error.message||error),'error');
     }finally{setButtons(false);}
   });
 
