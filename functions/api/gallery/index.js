@@ -31,6 +31,7 @@ export async function onRequestGet({request,env}){
 
   const member=Boolean(session&&MEMBER_ACCESS.has(session.access));
   const manager=Boolean(session&&MANAGER_ACCESS.has(session.access));
+  const admin=Boolean(session&&session.access==='site_admin');
   return reply({
     ok:true,
     approved,
@@ -40,6 +41,8 @@ export async function onRequestGet({request,env}){
     mine:member?items.filter(item=>item.ownerId===session.sub).sort(newestFirst).slice(0,20).map(item=>memberGallerySubmission(item,request)):[],
     canModerate:manager,
     pending:manager?items.filter(item=>item.status==='pending').sort(oldestFirst).map(item=>managerGallerySubmission(item,request)):[],
+    canRemoveApproved:admin,
+    approvedManaged:admin?items.filter(item=>item.status==='approved').sort(newestReviewedFirst).map(item=>managerGallerySubmission(item,request)):[],
   });
 }
 
@@ -116,7 +119,8 @@ export async function onRequestPost({request,env}){
 }
 
 export async function onRequestPatch({request,env}){
-  const auth=await requireManager(request,env); if(auth.response)return auth.response;
+  const session=await readSession(request,env);
+  if(!session)return reply({ok:false,error:'authentication_required'},401);
   const err=validateSameOrigin(request,'gallery-moderation'); if(err)return err;
 
   let body;
@@ -124,12 +128,41 @@ export async function onRequestPatch({request,env}){
   catch{return reply({ok:false,error:'invalid_json'},400);}
   const id=cleanGalleryText(body?.id,100);
   const action=String(body?.action||'').trim().toLowerCase();
-  if(!id||!['approve','reject'].includes(action))return reply({ok:false,error:'invalid_gallery_moderation'},400);
+  if(!id||!['approve','reject','remove'].includes(action))return reply({ok:false,error:'invalid_gallery_moderation'},400);
+  if(action==='remove'){
+    if(session.access!=='site_admin')return reply({ok:false,error:'site_admin_access_required'},403);
+  }else if(!MANAGER_ACCESS.has(session.access)){
+    return reply({ok:false,error:'officer_access_required'},403);
+  }
 
   const items=await readGallerySubmissions(env,{fresh:true});
   const index=items.findIndex(item=>item.id===id);
   if(index<0)return reply({ok:false,error:'gallery_submission_not_found'},404);
   const item=items[index];
+
+  if(action==='remove'){
+    if(item.status!=='approved')return reply({ok:false,error:'gallery_submission_not_approved'},409);
+    const oldKey=item.imageKey;
+    item.status='removed';
+    item.removedAt=new Date().toISOString();
+    item.removedBy=session.displayName||'Site Admin';
+    item.reviewNote=cleanGalleryText(body?.reviewNote,300)||item.reviewNote;
+    items[index]=item;
+    await writeGallerySubmissions(env,items);
+
+    if(oldKey){
+      try{
+        await deleteGalleryImage(env,oldKey);
+        item.imageKey='';
+        items[index]=item;
+        await writeGallerySubmissions(env,items);
+      }catch(error){
+        console.error('Could not clean up removed Gallery image',error);
+      }
+    }
+    return reply({ok:true,submission:managerGallerySubmission(item,request)});
+  }
+
   if(item.status!=='pending')return reply({ok:false,error:'gallery_submission_already_reviewed'},409);
 
   const title=cleanGalleryText(body?.title,120)||item.title;
@@ -142,7 +175,7 @@ export async function onRequestPatch({request,env}){
   item.tags=tags.length?tags:item.tags;
   item.status=action==='approve'?'approved':'rejected';
   item.reviewedAt=new Date().toISOString();
-  item.reviewedBy=auth.session.displayName||'Squadron Leadership';
+  item.reviewedBy=session.displayName||'Squadron Leadership';
   item.reviewNote=cleanGalleryText(body?.reviewNote,300);
   items[index]=item;
   await writeGallerySubmissions(env,items);
@@ -183,5 +216,6 @@ function validateSameOrigin(request,marker){
 }
 function newestFirst(a,b){return Date.parse(b.submittedAt||0)-Date.parse(a.submittedAt||0)}
 function oldestFirst(a,b){return Date.parse(a.submittedAt||0)-Date.parse(b.submittedAt||0)}
+function newestReviewedFirst(a,b){return Date.parse(b.reviewedAt||b.submittedAt||0)-Date.parse(a.reviewedAt||a.submittedAt||0)}
 function headers(){return {'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache',Vary:'Cookie','X-Content-Type-Options':'nosniff'}}
 function reply(data,status=200){return json(data,{status,headers:headers()})}
