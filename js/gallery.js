@@ -29,6 +29,9 @@
   const reviewSection = document.querySelector('[data-gallery-review-section]');
   const reviewGrid = document.querySelector('[data-gallery-review-grid]');
   const pendingCount = document.querySelector('[data-gallery-pending-count]');
+  const adminSection = document.querySelector('[data-gallery-admin-section]');
+  const adminGrid = document.querySelector('[data-gallery-admin-grid]');
+  const adminCount = document.querySelector('[data-gallery-admin-count]');
 
   const base = '../assets/images/gallery/';
   const imageVersion = 'hq-20260915-1';
@@ -118,11 +121,11 @@
   }
 
   function statusClass(status) {
-    return ['pending','approved','rejected'].includes(status) ? status : 'pending';
+    return ['pending','approved','rejected','removed'].includes(status) ? status : 'pending';
   }
 
   function statusLabel(status) {
-    return ({ pending:'Pending Review', approved:'Approved', rejected:'Rejected' })[status] || status;
+    return ({ pending:'Pending Review', approved:'Approved', rejected:'Rejected', removed:'Removed by Admin' })[status] || status;
   }
 
   function renderMine() {
@@ -181,12 +184,38 @@
     </article>`).join('');
   }
 
+  function renderAdminApproved() {
+    if (!adminSection || !adminGrid || !adminCount) return;
+    const canRemove = Boolean(apiState?.canRemoveApproved);
+    adminSection.hidden = !canRemove;
+    if (!canRemove) return;
+
+    const approved = Array.isArray(apiState?.approvedManaged) ? apiState.approvedManaged : [];
+    adminCount.textContent = `${approved.length} published`;
+    if (!approved.length) {
+      adminGrid.innerHTML = '<div class="gallery-review-empty">No approved member submissions are currently published.</div>';
+      return;
+    }
+
+    adminGrid.innerHTML = approved.map(item => `<article class="gallery-admin-card" data-gallery-admin-id="${safe(item.id)}">
+      <img src="${safe(item.url)}" alt="${safe(item.title)}">
+      <div class="gallery-admin-body">
+        <div><strong>${safe(item.title)}</strong><span>Submitted by ${safe(item.ownerName || 'Mongrel Commander')}</span></div>
+        <div class="gallery-admin-tags">${(item.tags || []).map(tag => `<span>${safe(tag)}</span>`).join('')}</div>
+        <label><span>Removal note · optional</span><textarea rows="2" maxlength="300" data-gallery-remove-note placeholder="Reason for removal"></textarea></label>
+        <button class="btn btn-secondary" type="button" data-gallery-remove-approved>Remove from Gallery</button>
+        <span class="gallery-review-status" data-gallery-remove-status aria-live="polite"></span>
+      </div>
+    </article>`).join('');
+  }
+
   function renderMemberState() {
     const viewer = apiState?.viewer;
     if (memberSignin) memberSignin.hidden = Boolean(viewer);
     if (memberTools) memberTools.hidden = !viewer;
     if (!viewer) {
       if (reviewSection) reviewSection.hidden = true;
+      if (adminSection) adminSection.hidden = true;
       return;
     }
 
@@ -198,6 +227,7 @@
     renderTagPicker();
     renderMine();
     renderReviewQueue();
+    renderAdminApproved();
   }
 
   function renderTagPicker() {
@@ -315,6 +345,7 @@
       if (memberSignin) memberSignin.hidden = false;
       if (memberTools) memberTools.hidden = true;
       if (reviewSection) reviewSection.hidden = true;
+      if (adminSection) adminSection.hidden = true;
       rebuildGallery();
     }
   }
@@ -412,6 +443,47 @@
     }
   }
 
+  async function removeApprovedSubmission(card) {
+    const id = card?.dataset.galleryAdminId;
+    if (!id || !confirm('Remove this approved image from the public Gallery? The R2 image file will also be deleted.')) return;
+    const button = card.querySelector('[data-gallery-remove-approved]');
+    const status = card.querySelector('[data-gallery-remove-status]');
+    if (button) button.disabled = true;
+    if (status) {
+      status.textContent = 'Removing…';
+      status.classList.remove('error');
+    }
+
+    try {
+      const { response, payload } = await apiFetch('/api/gallery', {
+        method:'PATCH',
+        headers:{
+          'Content-Type':'application/json',
+          'X-Mongrels-Request':'gallery-moderation',
+        },
+        body:JSON.stringify({
+          id,
+          action:'remove',
+          reviewNote:card.querySelector('[data-gallery-remove-note]')?.value || '',
+        }),
+      });
+      if (!response.ok) {
+        const errors = {
+          site_admin_access_required:'Only Site Admin can remove approved Gallery images.',
+          gallery_submission_not_approved:'This image is no longer an approved Gallery submission.',
+        };
+        throw new Error(errors[payload.error] || payload.error || 'Unable to remove Gallery image.');
+      }
+      await refreshApiState();
+    } catch (error) {
+      if (button) button.disabled = false;
+      if (status) {
+        status.textContent = error?.message || 'Unable to remove Gallery image.';
+        status.classList.add('error');
+      }
+    }
+  }
+
   async function loadStaticGallery() {
     try {
       const response = await fetch('../data/gallery.json', { cache:'no-store' });
@@ -471,6 +543,12 @@
     const button = event.target.closest('[data-gallery-review-action]');
     if (!button) return;
     moderateSubmission(button.closest('[data-gallery-review-id]'), button.dataset.galleryReviewAction);
+  });
+
+  adminGrid?.addEventListener('click', event => {
+    const button = event.target.closest('[data-gallery-remove-approved]');
+    if (!button) return;
+    removeApprovedSubmission(button.closest('[data-gallery-admin-id]'));
   });
 
   Promise.all([loadStaticGallery(), refreshApiState()]);
