@@ -802,6 +802,9 @@ Primary files:
 - `css/projects-events-v2.css`
 - `functions/api/projects/index.js`
 - `functions/api/projects/rsvp.js`
+- `functions/api/projects/event-image.js`
+- `functions/media/events/[file].js`
+- `lib/event-images.js`
 - `functions/api/discord/interactions.js`
 - `lib/squad-events.js`
 - `scripts/smoke-squad-events.mjs`
@@ -818,6 +821,9 @@ Architecture:
 - Website and Discord both support one RSVP per Discord user: Going, Maybe, or Can’t Make It. Changing the choice replaces that member's prior RSVP.
 - RSVP counts and member-name rosters are rendered on the website and Discord event card.
 - Events may optionally store a public HTTPS `eventImageUrl`; when present it renders as a wide image on both the website event card and the Discord embed. No default image is currently forced, and blank remains a valid event presentation.
+- The normal event-image workflow is now drag/drop or file picker in the Event editor. Authenticated Officers/Site Admin upload PNG/JPG/WebP through `/api/projects/event-image` into the private Cloudflare R2 binding `EVENT_IMAGES`; managed images are served publicly through `/media/events/<file>` so Discord can fetch them without making the bucket public.
+- Browser uploads accept source images up to 25 MB; files already <=8 MB upload directly, while larger files are resized to a maximum 2400 px dimension and WebP-compressed before the server's hard 8 MB upload cap.
+- Managed R2 images persist `eventImageKey` only for editable event records. Replacing/removing a saved managed image cleans up the prior object after save; abandoning an editor session cleans up a newly uploaded unsaved image when possible. External public HTTPS URLs remain available as an advanced fallback.
 - The Discord event card uses natural Discord field spacing; the earlier zero-width spacer fields were removed after visual review because Discord rendered them too tall.
 - Projects/Event KV reads explicitly use Cloudflare KV `cacheTtl:30` to reduce cross-location RSVP staleness from the previous default window.
 - The Projects & Events client checks quietly every 5 seconds while visible, but only rerenders when returned board data changes; Discord-originated RSVP updates should therefore surface automatically once the 30-second KV cache can see them.
