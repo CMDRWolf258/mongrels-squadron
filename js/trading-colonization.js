@@ -168,6 +168,21 @@
     if(job.fundingMode==='squad'&&job.fundingApprovalStatus==='pending')extra+='<p class="colonization-job-warning"><strong>Funding request:</strong> no squad debt is created until leadership approves it. If approved, verified hauling at or after the listed Reward Start time can become eligible, including an intentional backdate.</p>';
     if(job.fundingMode==='member')extra+='<p class="colonization-job-warning"><strong>Member pledge:</strong> '+safe(job.fundingPayerName||job.postingCommander||'The posting CMDR')+' is the payer. Verified rewards stay separate from the squad treasury.</p>';
     if(n(job.ambiguousEvents)>0)extra+='<p class="colonization-job-warning">'+fmt(job.ambiguousEvents)+' verified contribution event'+(n(job.ambiguousEvents)===1?'':'s')+' currently need arbitration before reward credit can be trusted.</p>';
+    if(job.isMine&&job.scope==='market'&&!job.marketId&&job.status!=='completed'){
+      const sites=(Array.isArray(payload?.observedMarkets)?payload.observedMarkets:[])
+        .filter(site=>String(site?.system||'').trim().toLowerCase()===String(job.system||'').trim().toLowerCase())
+        .filter(site=>!site?.constructionFailed);
+      if(!sites.length){
+        extra+='<div class="colonization-site-linker"><strong>Construction site not linked</strong><span>Dock at the intended construction depot, then use <b>Sync Activity</b>. Once Frontier verifies the depot, it will appear here for linking.</span></div>';
+      }else{
+        const options=sites.map(site=>{
+          const name=site.station||'Construction depot';
+          const state=site.constructionComplete?' · complete':'';
+          return '<option value="'+safe(site.marketId)+'">'+safe(name+state)+'</option>';
+        }).join('');
+        extra+='<div class="colonization-site-linker"><strong>Link verified construction site</strong><span>Select the depot this job belongs to. This determines which verified deliveries count toward the job.</span><div class="colonization-site-linker-actions"><select data-colony-site-select aria-label="Verified construction site">'+options+'</select><button class="btn btn-primary btn-compact" type="button" data-colony-link-site>Link Site</button></div></div>';
+      }
+    }
     const actions=[];
     if(job.canEdit)actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="edit">Edit</button>');
     if(job.canEdit&&job.status==='active')actions.push('<button class="btn btn-secondary btn-compact" type="button" data-colony-action="pause">Pause</button>');
@@ -186,6 +201,7 @@
       '<div class="colonization-job-foot"><small>'+safe(funding.detail)+' · Posted by '+safe(job.postingCommander||job.postingOwnerName||'Mongrel Member')+' · '+dateLabel(job.createdAt)+'</small><div class="colonization-job-actions">'+actions.join('')+'</div></div>';
     article.querySelector('[data-copy-system]')?.addEventListener('click',event=>copySystem(job.system,event.currentTarget));
     article.querySelectorAll('[data-colony-action]').forEach(button=>button.addEventListener('click',()=>handleCardAction(job,button.dataset.colonyAction,button)));
+    article.querySelector('[data-colony-link-site]')?.addEventListener('click',event=>linkVerifiedSite(job,article,event.currentTarget));
     return article;
   }
   function setStat(key,value){const el=board.querySelector('[data-colony-stat="'+key+'"]');if(el)el.textContent=String(value);}
@@ -263,6 +279,31 @@
       dirty=false;closeEditor(true);await load();
     }catch(error){out.textContent=String(error.message||error);}
   }
+  async function linkVerifiedSite(job,article,button){
+    const select=article?.querySelector('[data-colony-site-select]');
+    const marketId=String(select?.value||'').trim();
+    if(!marketId){if(status)status.textContent='Choose a verified construction site first.';return;}
+    const option=select?.selectedOptions?.[0];
+    const label=String(option?.textContent||'this construction site').trim();
+    if(!confirm('Link '+label+' to '+(job.title||job.buildName||'this Colonization Job')+'? Verified deliveries at this depot will be attributed to the job.'))return;
+    if(button)button.disabled=true;
+    if(status)status.textContent='Linking verified construction site…';
+    try{
+      const result=await api('/api/colonization-jobs',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'colonization-post-editor'},
+        body:JSON.stringify({action:'link-site',id:job.id,marketId}),
+      });
+      if(!result.response.ok)throw new Error(result.body.message||friendlyError(result.body.error));
+      if(result.body?.job)rememberJobUpdate(result.body.job);
+      if(status)status.textContent='Construction site linked. Discord and reward matching are updating.';
+      await load();
+    }catch(error){
+      if(status)status.textContent=String(error.message||error);
+      if(button)button.disabled=false;
+    }
+  }
+
   async function mutate(job,action,button){
     if(button)button.disabled=true;let body={id:job.id};
     if(action==='pause')body={...body,action:'status',status:'paused'};if(action==='resume')body={...body,action:'status',status:'active'};if(action==='complete')body={...body,action:'status',status:'completed'};if(action==='approve')body={...body,action:'approve-funding'};if(action==='reject')body={...body,action:'reject-funding'};
@@ -311,7 +352,7 @@
     mutate(job,action,button);
   }
   function friendlyError(code){
-    const map={frontier_required_for_member_funding:'Connect your Elite account before posting a member-funded reward.',colonization_reward_required:'Enter a reward greater than 0 M Cr.',colonization_reward_budget_too_small:'The maximum pledge must cover at least one reward block.',colonization_system_required:'Enter the destination system.',colonization_start_time_invalid:'Enter a valid reward start date and time.',colonization_start_time_future:'Reward start time cannot be in the future.',colonization_start_time_locked:'Reward start time is locked because this job already has reward-ledger activity.',colonization_start_time_requires_manager:'An approved squad-funded job requires an Officer or Site Admin to change the reward start time.',colonization_funding_terms_locked:'Reward settings are locked because hauling, reward issuance, or squad approval has already started.'};
+    const map={frontier_required_for_member_funding:'Connect your Elite account before posting a member-funded reward.',colonization_reward_required:'Enter a reward greater than 0 M Cr.',colonization_reward_budget_too_small:'The maximum pledge must cover at least one reward block.',colonization_system_required:'Enter the destination system.',colonization_start_time_invalid:'Enter a valid reward start date and time.',colonization_start_time_future:'Reward start time cannot be in the future.',colonization_start_time_locked:'Reward start time is locked because this job already has reward-ledger activity.',colonization_start_time_requires_manager:'An approved squad-funded job requires an Officer or Site Admin to change the reward start time.',colonization_funding_terms_locked:'Reward settings are locked because hauling, reward issuance, or squad approval has already started.',colonization_site_required:'Choose a verified construction site.',colonization_site_not_verified:'That construction site has not been verified in this system yet. Dock there and Sync Activity first.',colonization_site_already_linked:'This job is already linked to a construction site. Ask leadership if the site needs to be changed.',colonization_site_link_not_required:'This job applies to the whole system and does not need a site link.',colonization_site_link_completed:'Completed jobs cannot be relinked.'};
     return map[code]||code||'Could not save Colonization Job.';
   }
   form?.addEventListener('keydown',event=>{
