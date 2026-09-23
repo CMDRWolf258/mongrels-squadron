@@ -6,6 +6,7 @@
   const syncColonizationButton=panel.querySelector('[data-discord-sync-colonization]');
   const syncScoutButton=panel.querySelector('[data-discord-sync-scout]');
   const syncBgsButton=panel.querySelector('[data-discord-sync-bgs]');
+  const syncRewardsButton=panel.querySelector('[data-discord-sync-rewards]');
   const status=panel.querySelector('[data-discord-status]');
 
   function setStatus(message,state=''){
@@ -21,6 +22,7 @@
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
     if(syncScoutButton)syncScoutButton.disabled=disabled;
     if(syncBgsButton)syncBgsButton.disabled=disabled;
+    if(syncRewardsButton)syncRewardsButton.disabled=disabled;
   }
 
   async function api(path,method='GET'){
@@ -55,7 +57,7 @@
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
-        setStatus('Webhook secret detected · Daily Orders, Colonization, and Scout automation are ready'+cycle+'.',data.scoutCycleRefreshServerConfigured?'success':'');
+        setStatus('Webhook secret detected · Daily Orders, Colonization, Scout, BGS, and Rewards automation are ready'+cycle+'.',data.scoutCycleRefreshServerConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -112,6 +114,35 @@
     }finally{
       setButtons(false);
     }
+  });
+
+  syncRewardsButton?.addEventListener('click',async()=>{
+    setButtons(true);
+    setStatus('Syncing Rewards & Payouts to Discord…','working');
+    try{
+      const data=await api('/api/operations/discord-rewards','POST');
+      const summary=data.discord||{};
+      const parts=[
+        Number(summary.outstandingMembers||0)+' CMDR'+(Number(summary.outstandingMembers||0)===1?'':'s')+' owed',
+        Number(summary.activeRequests||0)+' payout request'+(Number(summary.activeRequests||0)===1?'':'s'),
+      ];
+      if(Number(summary.created)>0)parts.push(Number(summary.created)+' request card'+(Number(summary.created)===1?'':'s')+' posted');
+      if(Number(summary.edited)>0)parts.push(Number(summary.edited)+' updated');
+      if(Number(summary.paidShown)>0)parts.push(Number(summary.paidShown)+' paid');
+      if(Number(summary.cancelledShown)>0)parts.push(Number(summary.cancelledShown)+' cancelled');
+      if(Number(summary.deleted)>0)parts.push(Number(summary.deleted)+' old card'+(Number(summary.deleted)===1?'':'s')+' cleaned up');
+      if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('summary posted');
+      else if(summary.summary?.mode==='edited')parts.push('summary updated');
+      if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
+      setStatus('Rewards Discord synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+    }catch(error){
+      const messages={
+        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
+        discord_rewards_sync_failed:'Reward ledger remains unchanged, but Discord sync failed.',
+        request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
+      };
+      setStatus(messages[error.message]||'Rewards Discord sync failed · '+String(error.message||error),'error');
+    }finally{setButtons(false);}
   });
 
   syncBgsButton?.addEventListener('click',async()=>{
