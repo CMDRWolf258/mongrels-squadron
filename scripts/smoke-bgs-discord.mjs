@@ -26,16 +26,19 @@ assert.equal(view.actions.find(x=>x.system==='War System')?.opponent,'Test Oppos
 assert.equal(view.actions.find(x=>x.system==='War System')?.score?.ours,2,'Object-shaped full board must supply conflict score');
 assert.equal(view.actions.find(x=>x.system==='War System')?.dataFresh,false,'Old conflict state must be marked stale against the current tick-aware cycle');
 assert.equal(view.actions.find(x=>x.system==='Retreat System')?.dataFresh,true,'Same-cycle state should remain current');
-const staleActionPayload=buildBgsActionDiscordPayload(view.actions.find(x=>x.system==='War System'),{missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts'});
+const staleActionPayload=buildBgsActionDiscordPayload(view.actions.find(x=>x.system==='War System'),{missionControlUrl:'https://mongrels-squadron.pages.dev/operations/#all-systems'});
+assert.match(staleActionPayload.embeds[0].url,/\/operations\/\?system=War\+System#all-systems/,'Faction card must deep-link to the affected system');
 const staleActionText=JSON.stringify(staleActionPayload);
 for(const pattern of [/STALE STATE DATA/,/STALE DATA · SCOUTING NEEDED/,/Live Scout/,/Last state observation/])assert.match(staleActionText,pattern);
 
 assert.equal(view.opportunities.length,1);
 assert.deepEqual(view.opportunities[0].states.map(x=>x.state),['Pirate Attack','Boom','Civil Liberty']);
-const payload=buildBgsSummaryDiscordPayload(view,{missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts'});
+const payload=buildBgsSummaryDiscordPayload(view,{missionControlUrl:'https://mongrels-squadron.pages.dev/operations/#all-systems'});
 const text=JSON.stringify(payload);
 for(const pattern of [/Faction Alerts & Opportunities/,/Retreat System/,/War System/,/Boom/,/Civil Liberty/,/Pirate Attack/])assert.match(text,pattern);
 assert.match(text,/STALE · SCOUT NEEDED/,'Persistent BGS summary must flag stale operational state data');
+assert.match(text,/\/operations\/#all-systems/,'Faction summary must link to member Mission Control');
+assert.doesNotMatch(text,/\/wolf-bgs\//,'Faction Discord summary must never link members to Wolf BGS Control');
 
 class MemoryKv{
   constructor(seed={}){this.map=new Map(Object.entries(seed).map(([key,value])=>[key,typeof value==='string'?value:JSON.stringify(value)]));}
@@ -73,7 +76,7 @@ globalThis.fetch=async(url,options)=>{
 try{
   const migrated=await syncBgsDiscordBoard(env,{
     view,
-    missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts',
+    missionControlUrl:'https://mongrels-squadron.pages.dev/operations/#all-systems',
     createMissing:true,
   });
   assert.equal(migrated.summary.mode,'created');
@@ -93,7 +96,7 @@ try{
   const beforeNoop=requests.length;
   const noop=await syncBgsDiscordBoard(env,{
     view,
-    missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts',
+    missionControlUrl:'https://mongrels-squadron.pages.dev/operations/#all-systems',
     createMissing:false,
   });
   assert.equal(noop.summary.mode,'unchanged');
