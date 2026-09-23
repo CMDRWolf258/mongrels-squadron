@@ -91,7 +91,7 @@ const embedChars=(embed.title||'').length+(embed.description||'').length+(embed.
 assert.ok(embedChars<6000,'Daily Orders embed must remain below Discord total embed text limit');
 
 const requests=[];
-let nextMessage=111111;
+let nextMessage=222222;
 const originalFetch=globalThis.fetch;
 globalThis.fetch=async(url,options)=>{
   requests.push({url:String(url),options,body:options.body?JSON.parse(options.body):null});
@@ -124,16 +124,16 @@ try{
   });
   assert.equal(second.ok,true);
   assert.equal(second.mode,'edited');
-  assert.equal(requests[3].options.method,'PATCH');
-  assert.match(requests[3].url,/\/messages\/111111/);
+  assert.equal(requests[2].options.method,'PATCH');
+  assert.match(requests[2].url,/\/messages\/222222/);
 
   const nextCycle={...base,cycleId:'cycle-b',updatedAt:'2026-09-23T22:00:00.000Z'};
   const third=await syncDailyOrdersDiscord(env,{
     document:nextCycle,actor:'Wolf',publicationId:'pub-3',missionControlUrl:missionControl,
   });
   assert.equal(third.mode,'edited','A new Daily Orders publication cycle must reuse the living Discord announcement');
-  assert.equal(requests[2].options.method,'PATCH');
-  assert.match(requests[2].url,/\/messages\/111111/);
+  assert.equal(requests[3].options.method,'PATCH');
+  assert.match(requests[3].url,/\/messages\/222222/);
 
   const cleared=await clearDailyOrdersDiscord(env,{
     previous:nextCycle,actor:'Wolf',publicationId:'pub-4',missionControlUrl:missionControl,
@@ -145,7 +145,7 @@ try{
 
   const stored=JSON.parse(env.DAILY_ORDERS.map.get('discord-daily-orders-v1'));
   assert.equal(stored.current.cycleId,'cycle-b');
-  assert.equal(stored.current.messageId,'111111','The living Daily Orders message ID should survive cycle rollover');
+  assert.equal(stored.current.messageId,'222222','The living Mission Control Daily Orders message ID should survive cycle rollover');
   assert.equal(stored.current.cleared,true);
 
   env.DISCORD_MISSION_CONTROL_WEBHOOK_URL='https://discord.com/api/webhooks/'+'9876543210/'+'replacement_mission_control_token';
