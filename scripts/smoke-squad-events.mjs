@@ -26,6 +26,7 @@ const event={
   eventType:'Training',
   system:'Diaba',
   ownerName:'CMDR Wolf258',
+  eventImageUrl:'https://example.com/mongrel-event.jpg',
   rsvps:{
     '1':{status:'going',displayName:'Wolf',updatedAt:'2026-09-23T10:00:00Z'},
     '2':{status:'maybe',displayName:'Lucky',updatedAt:'2026-09-23T10:01:00Z'},
@@ -41,7 +42,8 @@ assert.match(payload.embeds[0].title,/Mongrel Training Night/);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='📍 System / Location')?.inline,false);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='🎯 Event Type')?.inline,true);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='👤 Organizer')?.inline,true);
-assert.equal(payload.embeds[0].fields.filter(x=>x.name==='\u200b'&&x.value==='\u200b').length,2);
+assert.equal(payload.embeds[0].fields.filter(x=>x.name==='\u200b'&&x.value==='\u200b').length,0);
+assert.equal(payload.embeds[0].image?.url,'https://example.com/mongrel-event.jpg');
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/✅ \*\*Going\*\* — 1/);
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/🤔 \*\*Maybe\*\* — 1/);
 assert.equal(payload.components[0].components.length,4);
@@ -62,12 +64,16 @@ for(const pattern of [
 
 const eventCore=readFileSync('lib/squad-events.js','utf8');
 assert.match(eventCore,/cacheTtl\s*:\s*30/);
+assert.match(eventCore,/embed\.image=\{url:eventImageUrl\}/);
+assert.doesNotMatch(eventCore,/discordSpacerField/);
 
 const projectApi=readFileSync('functions/api/projects/index.js','utf8');
 for(const pattern of [
   /normalizeEventRsvps/,
   /syncSquadEventDiscord/,
   /discordEventMessageId/,
+  /eventImageUrl/,
+  /normalizeEventImageUrl/,
   /cancelled/,
 ])assert.match(projectApi,pattern);
 
@@ -79,7 +85,15 @@ for(const pattern of [
   /Can.t Make It/,
   /BACKGROUND_REFRESH_MS\s*=\s*5000/,
   /refreshBoardQuietly/,
+  /data-project-image-url/,
+  /project-event-image/,
 ])assert.match(client,pattern);
 new Function(client);
+
+const page=readFileSync('projects/index.html','utf8');
+assert.match(page,/data-project-image-wrap/);
+assert.match(page,/data-project-image-url/);
+assert.match(page,/projects\.js\?v=72/);
+assert.match(page,/projects-events-v2\.css\?v=2/);
 
 console.log('✓ Squad Events reuse Projects board state and support website + Discord RSVP interactions');
