@@ -34,7 +34,7 @@ assert.equal(view.opportunities.length,1);
 assert.deepEqual(view.opportunities[0].states.map(x=>x.state),['Pirate Attack','Boom','Civil Liberty']);
 const payload=buildBgsSummaryDiscordPayload(view,{missionControlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#faction-alerts'});
 const text=JSON.stringify(payload);
-for(const pattern of [/BGS Alerts & Opportunities/,/Retreat System/,/War System/,/Boom/,/Civil Liberty/,/Pirate Attack/])assert.match(text,pattern);
+for(const pattern of [/Faction Alerts & Opportunities/,/Retreat System/,/War System/,/Boom/,/Civil Liberty/,/Pirate Attack/])assert.match(text,pattern);
 assert.match(text,/STALE · SCOUT NEEDED/,'Persistent BGS summary must flag stale operational state data');
 
 class MemoryKv{
