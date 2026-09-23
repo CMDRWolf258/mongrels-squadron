@@ -5,10 +5,12 @@ import {
   createColonizationArchiveDiscordMessage,
   createFactionAlertsDiscordMessage,
   createScoutNetworkDiscordMessage,
+  createSquadPayoutsDiscordMessage,
   discordColonizationArchiveConfigured,
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
+  discordSquadPayoutsConfigured,
   sendOperationsDiscord,
 } from '../lib/discord-webhook.js';
 
@@ -25,6 +27,9 @@ assert.equal(discordFactionAlertsConfigured({DISCORD_FACTION_ALERTS_WEBHOOK_URL:
 const scoutWebhook='https://discord.com/api/webhooks/1122334455/scout_network_token_ABC_123';
 assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:scoutWebhook}),true);
 assert.equal(discordScoutNetworkConfigured({DISCORD_SCOUT_NETWORK_WEBHOOK_URL:'https://example.com/nope'}),false);
+const payoutsWebhook='https://discord.com/api/webhooks/5566778899/squad_payouts_token_ABC_123';
+assert.equal(discordSquadPayoutsConfigured({DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL:payoutsWebhook}),true);
+assert.equal(discordSquadPayoutsConfigured({DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL:'https://example.com/nope'}),false);
 
 
 const originalFetch=globalThis.fetch;
@@ -90,6 +95,26 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+let payoutsCaptured=null;
+globalThis.fetch=async(url,options)=>{
+  payoutsCaptured={url,options};
+  return Response.json({id:'6655443322'},{status:200});
+};
+try{
+  const result=await createSquadPayoutsDiscordMessage(
+    {DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL:payoutsWebhook},
+    {embeds:[{title:'Squad Payouts Test'}],content:'Payout routing test'}
+  );
+  assert.equal(result.messageId,'6655443322');
+  assert.match(payoutsCaptured.url,/5566778899/);
+  assert.equal(payoutsCaptured.options.method,'POST');
+  const body=JSON.parse(payoutsCaptured.options.body);
+  assert.deepEqual(body.allowed_mentions,{parse:[]});
+  assert.equal(body.embeds[0].title,'Squad Payouts Test');
+}finally{
+  globalThis.fetch=originalFetch;
+}
+
 const endpoint=readFileSync('functions/api/operations/discord-test.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -101,6 +126,7 @@ for(const pattern of [
   /colonizationArchiveConfigured/,
   /factionAlertsConfigured/,
   /scoutNetworkConfigured/,
+  /squadPayoutsConfigured/,
   /low-noise persistent\/update-in-place model/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
@@ -133,7 +159,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=11/,
+  /wolf-bgs-discord\.js\?v=12/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
