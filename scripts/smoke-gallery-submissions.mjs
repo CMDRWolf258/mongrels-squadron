@@ -107,7 +107,7 @@ for(const pattern of [
   /data-gallery-review-section/,
   /data-gallery-review-grid/,
   /gallery\.js\?v=72/,
-  /gallery-contributions\.css\?v=1/,
+  /gallery-contributions\.css\?v=2/,
 ])assert.match(page,pattern);
 
 const css=readFileSync('css/gallery-contributions.css','utf8');
@@ -115,6 +115,7 @@ for(const pattern of [
   /gallery-upload-drop/,
   /gallery-review-card/,
   /gallery-status\.approved/,
+  /gallery-review-card>img\{[^}]*object-fit:contain/,
 ])assert.match(css,pattern);
 
 console.log('✓ Gallery supports 10/day member uploads, private pending review, and leadership approval before publication');
