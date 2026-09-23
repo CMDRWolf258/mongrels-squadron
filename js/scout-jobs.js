@@ -16,6 +16,12 @@
   const SORT_STORAGE='mongrels-scout-sort-v1';
   let payload=null;
   let routePreferencesLoaded=false;
+  let refreshInFlight=false;
+  let refreshTimer=null;
+  let consecutiveRefreshFailures=0;
+  let lastSuccessfulRefreshAt=0;
+  const AUTO_REFRESH_MS=60000;
+  const MAX_REFRESH_BACKOFF_MS=180000;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const fmtCredits=millions=>Math.round((Number(millions)||0)*1_000_000).toLocaleString()+' Cr';
@@ -57,19 +63,29 @@
   const forget=key=>{try{localStorage.removeItem(key);}catch{}};
 
   async function api(method='GET',body=null){
-    const response=await fetch('/api/operations/scout-jobs'+(method==='GET'?'?_='+Date.now():'') ,{
-      method,
-      credentials:'same-origin',
-      cache:'no-store',
-      headers:{
-        Accept:'application/json',
-        ...(body?{'Content-Type':'application/json','X-Mongrels-Request':'scout-jobs'}:{}),
-      },
-      body:body?JSON.stringify(body):undefined,
-    });
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error||'Scout Job request failed ('+response.status+')');
-    return data;
+    const controller=new AbortController();
+    const timeout=window.setTimeout(()=>controller.abort(),20000);
+    try{
+      const response=await fetch('/api/operations/scout-jobs'+(method==='GET'?'?_='+Date.now():'') ,{
+        method,
+        credentials:'same-origin',
+        cache:'no-store',
+        signal:controller.signal,
+        headers:{
+          Accept:'application/json',
+          ...(body?{'Content-Type':'application/json','X-Mongrels-Request':'scout-jobs'}:{}),
+        },
+        body:body?JSON.stringify(body):undefined,
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||'Scout Job request failed ('+response.status+')');
+      return data;
+    }catch(error){
+      if(error?.name==='AbortError')throw new Error('Scout Job request timed out');
+      throw error;
+    }finally{
+      window.clearTimeout(timeout);
+    }
   }
 
   function statusInfo(job){
@@ -248,23 +264,54 @@
     }).join('');
   }
 
-  async function load(){
-    if(refresh)refresh.disabled=true;
-    if(status)status.textContent='Refreshing Scout Board…';
+  async function load({background=false}={}){
+    if(refreshInFlight)return false;
+    refreshInFlight=true;
+    if(refresh&&!background)refresh.disabled=true;
+    if(status&&!background)status.textContent='Refreshing Scout Board…';
     try{
-      payload=await api();
+      const next=await api();
+      payload=next;
+      lastSuccessfulRefreshAt=Date.now();
+      consecutiveRefreshFailures=0;
       render();
       if(status){
         const bound=payload.viewer?.scoutBound?'Live Scout reward identity linked':'Reward identity not linked';
-        status.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · '+bound;
+        status.textContent='Updated '+new Date(lastSuccessfulRefreshAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · '+bound;
       }
+      return true;
     }catch(error){
       console.error('Could not load Scout Jobs',error);
-      if(status)status.textContent='Scout Board unavailable · '+String(error.message||error);
-      if(list)list.innerHTML='<div class="scout-job-empty"><strong>Scout Board unavailable.</strong><br>No claim or reward state was changed.</div>';
+      consecutiveRefreshFailures+=1;
+      const message=String(error.message||error);
+      if(payload){
+        if(status){
+          const last=lastSuccessfulRefreshAt
+            ?new Date(lastSuccessfulRefreshAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+            :'earlier';
+          status.textContent='Live refresh delayed · showing last good board from '+last+' · '+message;
+        }
+      }else{
+        if(status)status.textContent='Scout Board unavailable · '+message;
+        if(list)list.innerHTML='<div class="scout-job-empty"><strong>Scout Board unavailable.</strong><br>No claim or reward state was changed.</div>';
+      }
+      return false;
     }finally{
+      refreshInFlight=false;
       if(refresh)refresh.disabled=false;
     }
+  }
+
+  function scheduleAutoRefresh(){
+    if(refreshTimer)window.clearTimeout(refreshTimer);
+    const delay=Math.min(
+      AUTO_REFRESH_MS*Math.max(1,consecutiveRefreshFailures+1),
+      MAX_REFRESH_BACKOFF_MS
+    );
+    refreshTimer=window.setTimeout(async()=>{
+      if(document.visibilityState==='visible')await load({background:true});
+      scheduleAutoRefresh();
+    },delay);
   }
 
   async function mutate(action,system,button){
@@ -326,7 +373,9 @@
     remember(SORT_STORAGE,'distance');
     render();
   });
-  refresh?.addEventListener('click',load);
-  load();
-  window.setInterval(()=>{if(document.visibilityState==='visible')load();},60000);
+  refresh?.addEventListener('click',()=>load({background:false}));
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&payload&&!refreshInFlight)load({background:true});
+  });
+  load({background:false}).finally(scheduleAutoRefresh);
 })();
