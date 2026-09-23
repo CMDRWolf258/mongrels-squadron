@@ -83,6 +83,7 @@
       '<div class="specialist-grid">'+specialists+'</div>'+
       '<div class="structure-subheading rank-heading" id="ranks"><p class="eyebrow">Pilot Ranks</p><h3>The regular squadron progression.</h3><p>The public site keeps the leadership roster concise. The detailed squadron roster and member profiles are available inside the private Discord-authenticated member network.</p></div>'+
       '<div class="rank-ladder">'+ranks+'</div>';
+    if(location.hash==='#ranks')requestAnimationFrame(()=>document.getElementById('ranks')?.scrollIntoView({block:'start'}));
   }
 
   function assignmentLines(assignments){
