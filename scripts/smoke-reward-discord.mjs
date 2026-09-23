@@ -92,8 +92,35 @@ const env={
     'reward-ledger:user-b:b1':otherEntry,
     'reward-ledger:user-c:c1':memberFunded,
     'reward-payout-request:user-a':payoutRequest,
+    'discord-rewards-v1':{
+      version:1,
+      summary:{messageId:'710001',webhookId:'1234567890',fingerprint:'legacy-summary'},
+      requestCards:{
+        'user-a':{
+          ownerId:'user-a',
+          displayName:'CMDR Alpha',
+          messageId:'710002',
+          webhookId:'1234567890',
+          fingerprint:'legacy-request',
+          phase:'operational',
+          request:{
+            state:'requested',
+            active:true,
+            requestId:'payout-request-alpha',
+            requestedAt:'2026-09-23T00:04:00Z',
+            requestedCredits:30_000_000,
+            requestedRemainingCredits:30_000_000,
+            requestedEntryCount:1,
+            currentAvailableCredits:35_000_000,
+            newSinceRequestCredits:5_000_000,
+          },
+          currentAvailableCredits:35_000_000,
+        },
+      },
+    },
   }),
-  DISCORD_OPERATIONS_WEBHOOK_URL:'https://discord.com/api/webhooks/1234567890/reward_discord_unit_test',
+  DISCORD_OPERATIONS_WEBHOOK_URL:'https://discord.com/api/webhooks/1234567890/operations_unit_test',
+  DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL:'https://discord.com/api/webhooks/2468135790/squad_payouts_unit_test',
 };
 
 const loaded=await loadRewardDiscordView(env);
@@ -143,8 +170,16 @@ try{
   });
   assert.equal(first.summary.mode,'created');
   assert.equal(first.created,1,'Only active payout requests get individual cards');
-  assert.equal(requests.filter(row=>row.method==='POST').length,2,'Expected one summary plus one payout request card');
-  assert.ok(requests.filter(row=>row.method==='POST').every(row=>row.body.allowed_mentions?.parse?.length===0));
+  const migrationDeletes=requests.filter(row=>row.method==='DELETE');
+  assert.equal(migrationDeletes.length,2,'Legacy Rewards summary/request card must be removed from Operations before Squad Payouts seeds');
+  assert.ok(migrationDeletes.every(row=>row.url.includes('/api/webhooks/1234567890/')),'Legacy Rewards cleanup must use Operations webhook');
+  const firstPosts=requests.filter(row=>row.method==='POST');
+  assert.equal(firstPosts.length,2,'Expected one Squad Payouts summary plus one payout request card');
+  assert.ok(firstPosts.every(row=>row.url.includes('/api/webhooks/2468135790/')),'All new payout posts must use dedicated Squad Payouts webhook');
+  assert.ok(firstPosts.every(row=>row.body.allowed_mentions?.parse?.length===0));
+  const migratedState=JSON.parse(env.DAILY_ORDERS.map.get('discord-rewards-v1'));
+  assert.equal(migratedState.summary.webhookId,'2468135790');
+  assert.ok(Object.values(migratedState.requestCards).every(row=>row.webhookId==='2468135790'));
 
   const beforeUnchanged=requests.length;
   const unchanged=await syncRewardDiscordBoard(env,{
@@ -269,7 +304,7 @@ try{
 }
 
 const manual=readFileSync('functions/api/operations/discord-rewards.js','utf8');
-for(const pattern of [/site_admin/,/syncRewardDiscordBoard/,/createMissing:true/,/reward-engine/])assert.match(manual,pattern);
+for(const pattern of [/site_admin/,/syncRewardDiscordBoard/,/createMissing:true/,/reward-engine/,/discordSquadPayoutsConfigured/])assert.match(manual,pattern);
 const payoutApi=readFileSync('functions/api/rewards/request.js','utf8');
 for(const pattern of [/syncRewardsDiscord/,/createMissing:true/,/discord/])assert.match(payoutApi,pattern);
 const payApi=readFileSync('functions/api/rewards/pay.js','utf8');
@@ -285,9 +320,10 @@ assert.match(scout,/rewardDiscord/);
 const client=readFileSync('js/wolf-bgs-discord.js','utf8');
 for(const pattern of [/data-discord-sync-rewards/,/discord-rewards/,/Syncing Rewards & Payouts/])assert.match(client,pattern);
 const page=readFileSync('wolf-bgs/index.html','utf8');
-assert.match(page,/Sync Rewards/);
+assert.match(page,/Sync Squad Payouts/);
 assert.match(page,/id="reward-engine"/);
-assert.match(page,/wolf-bgs-discord\.js\?v=11/);
+assert.match(page,/wolf-bgs-discord\.js\?v=12/);
 
 console.log('✓ Rewards Discord excludes member-funded debt and separates new rewards from frozen payout requests');
 console.log('✓ Rewards Discord keeps earning summary-only and gives payout requests a REQUESTED → PAID/CANCELLED → cleanup lifecycle');
+console.log('✓ Squad Payouts migrates tracked Operations messages into its dedicated webhook without duplicates');
