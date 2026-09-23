@@ -26,7 +26,8 @@ const event={
   eventType:'Training',
   system:'Diaba',
   ownerName:'CMDR Wolf258',
-  eventImageUrl:'https://example.com/mongrel-event.jpg',
+  eventImageUrl:'https://mongrels-squadron.pages.dev/assets/images/events/mongrel-event.jpg',
+  updatedAt:'2026-09-23T16:00:00Z',
   rsvps:{
     '1':{status:'going',displayName:'Wolf',updatedAt:'2026-09-23T10:00:00Z'},
     '2':{status:'maybe',displayName:'Lucky',updatedAt:'2026-09-23T10:01:00Z'},
@@ -43,7 +44,7 @@ assert.equal(payload.embeds[0].fields.find(x=>x.name==='📍 System / Location')
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='🎯 Event Type')?.inline,true);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='👤 Organizer')?.inline,true);
 assert.equal(payload.embeds[0].fields.filter(x=>x.name==='\u200b'&&x.value==='\u200b').length,0);
-assert.equal(payload.embeds[0].image?.url,'https://example.com/mongrel-event.jpg');
+assert.match(payload.embeds[0].image?.url||'',/^https:\/\/mongrels-squadron\.pages\.dev\/assets\/images\/events\/mongrel-event\.jpg\?v=\d+$/);
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/✅ \*\*Going\*\* — 1/);
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/🤔 \*\*Maybe\*\* — 1/);
 assert.equal(payload.components[0].components.length,4);
@@ -65,6 +66,8 @@ for(const pattern of [
 const eventCore=readFileSync('lib/squad-events.js','utf8');
 assert.match(eventCore,/cacheTtl\s*:\s*30/);
 assert.match(eventCore,/embed\.image=\{url:eventImageUrl\}/);
+assert.match(eventCore,/discordEmbedImageUrl/);
+assert.match(eventCore,/searchParams\.set\('v'/);
 assert.doesNotMatch(eventCore,/discordSpacerField/);
 
 const projectApi=readFileSync('functions/api/projects/index.js','utf8');
