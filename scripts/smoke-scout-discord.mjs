@@ -319,7 +319,7 @@ for(const pattern of [
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/data-discord-sync-scout/);
 assert.match(page,/15 ordinary systems needing scouting/);
-assert.match(page,/wolf-bgs-discord\.js\?v=13/);
+assert.match(page,/wolf-bgs-discord\.js\?v=14/);
 
 console.log('✓ Scout Discord shows every priority job, the 15 nearest ordinary needs-scouting systems from Diaba, and keeps individual cards priority-only');
 console.log('✓ Scout Discord claim/completion lifecycle edits in place and cleans completed priority cards on the next sync');
