@@ -818,7 +818,9 @@ Architecture:
 - Website and Discord both support one RSVP per Discord user: Going, Maybe, or Can’t Make It. Changing the choice replaces that member's prior RSVP.
 - RSVP counts and member-name rosters are rendered on the website and Discord event card.
 - Discord buttons use the existing Imperial Mongrels Website interaction endpoint and existing Ed25519 verification / bot token. No second Discord app is needed.
-- `DISCORD_SQUAD_EVENTS_CHANNEL_ID` is the only new runtime configuration required for the event channel; the existing bot must be able to view/send/embed in that channel.
+- By default the existing bot auto-discovers a Discord text/announcement channel named exactly `squad-events` using the existing `GUILD_ID`; no new Cloudflare value is required for that normal path.
+- `DISCORD_SQUAD_EVENTS_CHANNEL_ID` remains an optional explicit override if the event channel uses a different name or discovery should be bypassed.
+- The existing bot must be able to view the channel, send messages, and embed links.
 - The event card uses legacy Action Row/Button message components, which remain supported by Discord; custom IDs route back to the existing `/api/discord/interactions` handler.
 - The website remains authoritative; Discord is an interaction and delivery surface.
 
