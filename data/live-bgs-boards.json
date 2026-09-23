@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-23T02:29:42Z",
+  "generatedAt": "2026-09-23T04:30:09Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
-  "sourcePresenceGeneratedAt": "2026-09-23T02:28:04Z",
+  "sourcePresenceGeneratedAt": "2026-09-23T04:28:31Z",
   "syncOk": true,
   "successfulSystems": 244,
   "requestedSystems": 244,
@@ -51,8 +51,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -137,8 +137,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -195,8 +195,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -255,8 +255,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -351,8 +351,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": {
         "id": "23bd9060-3621-436c-b987-5c2e10323803",
@@ -451,8 +451,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -509,8 +509,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -569,8 +569,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -627,8 +627,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -685,8 +685,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -745,8 +745,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -805,8 +805,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -865,8 +865,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -925,8 +925,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -985,8 +985,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1045,8 +1045,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1105,8 +1105,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1165,8 +1165,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1225,8 +1225,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1281,8 +1281,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1331,8 +1331,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1391,8 +1391,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1451,8 +1451,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1511,8 +1511,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1569,8 +1569,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1627,8 +1627,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1689,8 +1689,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1743,8 +1743,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1803,8 +1803,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1863,8 +1863,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1923,8 +1923,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -1983,8 +1983,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2041,8 +2041,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2099,8 +2099,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2157,8 +2157,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2215,8 +2215,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2273,8 +2273,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2329,8 +2329,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2397,8 +2397,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2463,8 +2463,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2531,8 +2531,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2587,8 +2587,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2645,8 +2645,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2703,8 +2703,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2751,8 +2751,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2797,8 +2797,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2861,8 +2861,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2917,8 +2917,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -2981,8 +2981,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3039,8 +3039,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3087,8 +3087,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3096,59 +3096,59 @@
     "Col 285 Sector DF-W b16-0": {
       "name": "Col 285 Sector DF-W b16-0",
       "systemId": "5e834993-3892-44b6-944a-9aa8f1c36594",
-      "updatedAt": "2026-09-19T07:45:30.754000",
+      "updatedAt": "2026-09-23T04:07:10.852000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 24.83,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-19T07:45:30.754000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Sui Ren Boys",
-          "influence": 8.08,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-19T07:45:30.754000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "The Imperial Inquisition",
-          "influence": 46.86,
+          "influence": 23.85,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-19T07:45:30.754000",
+          "updatedAt": "2026-09-23T04:07:10.852000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Sui Ren Boys",
+          "influence": 9.38,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-09-23T04:07:10.852000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "The Imperial Inquisition",
+          "influence": 46.11,
+          "state": "Expansion",
+          "activeStates": [
+            "Expansion"
+          ],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-09-23T04:07:10.852000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Tigurd Shared",
-          "influence": 20.24,
+          "influence": 20.66,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [
+          "pendingStates": [
             "Expansion"
           ],
-          "updatedAt": "2026-09-19T07:45:30.754000",
+          "recoveringStates": [],
+          "updatedAt": "2026-09-23T04:07:10.852000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3156,19 +3156,19 @@
     "Col 285 Sector DF-W b16-1": {
       "name": "Col 285 Sector DF-W b16-1",
       "systemId": "feeece93-008c-4964-b839-889e78f4b49b",
-      "updatedAt": "2026-09-22T13:27:18.616000",
+      "updatedAt": "2026-09-23T03:50:57.214000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 60.41,
+          "influence": 60.32,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-22T13:27:18.616000",
+          "updatedAt": "2026-09-23T03:50:57.214000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3185,12 +3185,12 @@
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 19.15,
+          "influence": 19.25,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-22T13:27:18.616000",
+          "updatedAt": "2026-09-23T03:50:57.214000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3207,8 +3207,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3263,8 +3263,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3319,8 +3319,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3377,8 +3377,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3425,8 +3425,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3469,8 +3469,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3523,8 +3523,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3579,8 +3579,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3633,8 +3633,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3689,8 +3689,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3698,47 +3698,47 @@
     "Col 285 Sector FA-W b16-6": {
       "name": "Col 285 Sector FA-W b16-6",
       "systemId": "74e1615c-d50d-49af-bdba-c6e32d3b3565",
-      "updatedAt": "2026-09-22T07:24:04.055000",
+      "updatedAt": "2026-09-23T04:13:06.716000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 62.06,
+          "influence": 61.76,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-22T07:24:04.055000",
+          "updatedAt": "2026-09-23T04:13:06.716000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 21.62,
+          "influence": 21.52,
           "state": "None",
           "activeStates": [],
           "pendingStates": [
             "Expansion"
           ],
           "recoveringStates": [],
-          "updatedAt": "2026-09-22T07:24:04.055000",
+          "updatedAt": "2026-09-23T04:13:06.716000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 16.32,
+          "influence": 16.72,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-22T07:24:04.055000",
+          "updatedAt": "2026-09-23T04:13:06.716000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3793,8 +3793,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3841,8 +3841,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3850,59 +3850,59 @@
     "Col 285 Sector HL-U b17-5": {
       "name": "Col 285 Sector HL-U b17-5",
       "systemId": "08fae631-7ea9-436c-bb1a-dc70115abc36",
-      "updatedAt": "2026-09-21T02:25:08.040000",
+      "updatedAt": "2026-09-23T02:31:24.726000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 57.11,
+          "influence": 57.37,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-21T02:25:08.040000",
+          "updatedAt": "2026-09-23T02:31:24.726000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Anti Xeno Initiative",
-          "influence": 10.62,
+          "influence": 11.84,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-21T02:25:08.040000",
+          "updatedAt": "2026-09-23T02:31:24.726000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 8.22,
+          "influence": 7.82,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-21T02:25:08.040000",
+          "updatedAt": "2026-09-23T02:31:24.726000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 24.05,
+          "influence": 22.97,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-17T19:41:03.800000",
+          "updatedAt": "2026-09-23T02:31:24.726000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -3959,8 +3959,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4019,8 +4019,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4073,8 +4073,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4131,8 +4131,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4203,8 +4203,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4259,8 +4259,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4315,8 +4315,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4361,8 +4361,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4417,8 +4417,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4471,8 +4471,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4529,8 +4529,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4577,8 +4577,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4625,8 +4625,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4673,8 +4673,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4729,8 +4729,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4777,8 +4777,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4833,8 +4833,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4889,8 +4889,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -4947,8 +4947,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5001,8 +5001,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5059,8 +5059,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5127,8 +5127,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5183,8 +5183,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5249,8 +5249,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5323,8 +5323,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5381,8 +5381,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5439,8 +5439,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5495,8 +5495,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5541,8 +5541,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5599,8 +5599,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5672,8 +5672,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": {
         "id": "8c58e4bc-4ad0-4bc7-9ca9-6381ce419121",
@@ -5743,8 +5743,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5799,8 +5799,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5889,8 +5889,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -5975,8 +5975,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6033,8 +6033,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6091,8 +6091,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6149,8 +6149,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6209,8 +6209,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6267,8 +6267,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6325,8 +6325,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6383,8 +6383,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6441,8 +6441,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6501,8 +6501,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6561,8 +6561,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6617,8 +6617,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6675,8 +6675,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6755,8 +6755,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6818,8 +6818,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6868,8 +6868,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -6926,8 +6926,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7014,8 +7014,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7063,8 +7063,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": {
         "id": "9c4f9e30-f0ce-4add-a3d2-d6e36b00ba7b",
@@ -7128,8 +7128,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7184,8 +7184,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7242,8 +7242,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7288,8 +7288,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7336,8 +7336,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7390,8 +7390,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7446,8 +7446,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7506,8 +7506,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7566,8 +7566,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7626,8 +7626,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7686,8 +7686,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7746,8 +7746,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7806,8 +7806,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7856,8 +7856,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -7944,8 +7944,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8022,8 +8022,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8112,8 +8112,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8168,8 +8168,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8224,8 +8224,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8284,8 +8284,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8328,8 +8328,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8372,8 +8372,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8428,8 +8428,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8486,8 +8486,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8554,8 +8554,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8614,8 +8614,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8670,8 +8670,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8728,8 +8728,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8788,8 +8788,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8850,8 +8850,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8910,8 +8910,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -8970,8 +8970,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9030,8 +9030,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9090,8 +9090,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9148,8 +9148,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9210,8 +9210,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9270,8 +9270,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9320,8 +9320,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9382,8 +9382,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9442,8 +9442,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9502,8 +9502,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9562,8 +9562,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9620,8 +9620,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9680,8 +9680,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9740,8 +9740,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9800,8 +9800,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9860,8 +9860,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9916,8 +9916,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -9974,8 +9974,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10034,8 +10034,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10094,8 +10094,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10154,8 +10154,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10214,8 +10214,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10270,8 +10270,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10328,8 +10328,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10390,8 +10390,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10450,8 +10450,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10512,8 +10512,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10562,8 +10562,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10622,8 +10622,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10682,8 +10682,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10743,8 +10743,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10801,8 +10801,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10863,8 +10863,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10923,8 +10923,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -10979,8 +10979,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11041,8 +11041,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11101,8 +11101,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11161,8 +11161,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11217,8 +11217,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11277,8 +11277,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11335,8 +11335,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11395,8 +11395,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11443,8 +11443,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11501,8 +11501,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11563,8 +11563,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11611,8 +11611,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11671,8 +11671,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11731,8 +11731,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11781,8 +11781,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11829,8 +11829,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11889,8 +11889,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -11945,8 +11945,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12001,8 +12001,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12061,8 +12061,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12121,8 +12121,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12169,8 +12169,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12230,8 +12230,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12290,8 +12290,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12350,8 +12350,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12410,8 +12410,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12470,8 +12470,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12530,8 +12530,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12590,8 +12590,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12653,8 +12653,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12703,8 +12703,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12763,8 +12763,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12823,8 +12823,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12883,8 +12883,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -12943,8 +12943,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13001,8 +13001,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13061,8 +13061,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13121,8 +13121,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13181,8 +13181,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13241,8 +13241,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13301,8 +13301,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13359,8 +13359,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13419,8 +13419,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13479,8 +13479,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13565,8 +13565,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13623,8 +13623,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13711,8 +13711,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13795,8 +13795,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13853,8 +13853,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13909,8 +13909,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -13967,8 +13967,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14023,8 +14023,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14077,8 +14077,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14137,8 +14137,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14193,8 +14193,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14263,8 +14263,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14347,8 +14347,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14409,8 +14409,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14465,8 +14465,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
@@ -14521,8 +14521,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-09-23T02:29:42Z",
-      "lastAttemptAt": "2026-09-23T02:29:42Z",
+      "fetchedAt": "2026-09-23T04:30:09Z",
+      "lastAttemptAt": "2026-09-23T04:30:09Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false
