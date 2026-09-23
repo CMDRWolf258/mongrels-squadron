@@ -260,7 +260,7 @@ function hasNewColonizationActivity(events,{previousSyncAt=null,historicalReconc
 }
 
 function colonizationControlUrlForRequest(request){
-  const url=new URL('/wolf-bgs/',request.url);
+  const url=new URL('/trading/',request.url);
   url.hash='colonization-jobs';
   return url.toString();
 }
