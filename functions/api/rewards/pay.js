@@ -7,6 +7,7 @@ import {
   prepareRewardPaymentBatch,
   readRewardPaymentBatch,
 } from '../../../lib/reward-payment-batches.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 const MAX_BATCH_ENTRIES=100;
 
@@ -116,12 +117,14 @@ export async function onRequestPost({request,env}) {
       console.error('Could not reconcile member payout request after payment',requestError);
     }
 
+    const discord=await syncRewardsDiscord(request,env);
     return reply({
       ok:true,
       alreadyApplied:false,
       batch:publicBatch(applied),
       paidEntries:paid.map(publicEntry),
       payoutRequestState:payoutRequest?.state||null,
+      discord,
       message:'Selected reward entries were marked PAID.',
     });
   }catch(error){
@@ -144,6 +147,23 @@ export async function onRequestPost({request,env}) {
         ? 'Payment confirmation stopped after some ledger entries were updated. Review this batch before any retry.'
         : 'Payment confirmation failed before any selected ledger entry was updated.',
     },503);
+  }
+}
+
+async function syncRewardsDiscord(request,env){
+  try{
+    const view=await loadRewardDiscordView(env);
+    const adminUrl=new URL('/wolf-bgs/',request.url);
+    adminUrl.hash='reward-engine';
+    return await syncRewardDiscordBoard(env,{
+      view,
+      adminUrl:adminUrl.toString(),
+      rewardsUrl:new URL('/rewards/',request.url).toString(),
+      createMissing:false,
+    });
+  }catch(error){
+    console.error('Reward payment succeeded but Rewards Discord sync failed',error);
+    return {feature:'rewards',configured:true,error:'discord_rewards_sync_failed',failed:1};
   }
 }
 
