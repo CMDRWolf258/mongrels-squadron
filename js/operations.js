@@ -53,8 +53,11 @@
   const controlled = system => system.controlled === true || /regiment of imperial mongrels|mongrels/i.test(String(system.control || ''));
   const activePresence = system => system.present === true && !system.formerPresence;
 
+  const requestedSystem = new URLSearchParams(window.location.search).get('system')?.trim() || '';
+  if (searchEl && requestedSystem) searchEl.value = requestedSystem;
+
   if (loginLink) {
-    const returnPath = `/operations/${window.location.hash || ''}`;
+    const returnPath = `/operations/${window.location.search || ''}${window.location.hash || ''}`;
     loginLink.href = `/api/auth/login?return=${encodeURIComponent(returnPath)}`;
   }
 
