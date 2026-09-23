@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { buildUnifiedRewardEngineState, flattenRewardObligations } from '../../../lib/reward-engine-runtime.js';
 import { appendRewardEntryWithResult } from '../../../lib/reward-ledger.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 export async function onRequestPost({request,env}) {
   const session=await readSession(request,env);
@@ -92,9 +93,11 @@ export async function onRequestPost({request,env}) {
   };
 
   const result=await appendRewardEntryWithResult(env,entry);
+  const discord=result.created?await syncRewardsDiscord(request,env):null;
   return reply({
     ok:true,
     created:result.created,
+    discord,
     duplicateSuppressed:!result.created,
     obligationId,
     entry:result.entry,
@@ -104,6 +107,23 @@ export async function onRequestPost({request,env}) {
       ? 'READY obligation added to the actual reward ledger as OWED.'
       : 'The same deterministic obligation already exists in the reward ledger.',
   });
+}
+
+async function syncRewardsDiscord(request,env){
+  try{
+    const view=await loadRewardDiscordView(env);
+    const adminUrl=new URL('/wolf-bgs/',request.url);
+    adminUrl.hash='reward-engine';
+    return await syncRewardDiscordBoard(env,{
+      view,
+      adminUrl:adminUrl.toString(),
+      rewardsUrl:new URL('/rewards/',request.url).toString(),
+      createMissing:false,
+    });
+  }catch(error){
+    console.error('Reward entry was issued but Rewards Discord sync failed',error);
+    return {feature:'rewards',configured:true,error:'discord_rewards_sync_failed',failed:1};
+  }
 }
 
 function validateSameOrigin(request){
