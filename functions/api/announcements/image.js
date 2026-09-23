@@ -9,6 +9,27 @@ import {
   isManagedAnnouncementImageKey,
 } from '../../../lib/announcement-images.js';
 
+export async function onRequestGet({request,env}){
+  const auth=await requireAdmin(request,env); if(auth.response)return auth.response;
+  if(!announcementImagesConfigured(env))return new Response('Not found',{status:404});
+  const key=String(new URL(request.url).searchParams.get('key')||'').trim();
+  if(!isManagedAnnouncementImageKey(key))return new Response('Not found',{status:404});
+
+  let object;
+  try{object=await env.EVENT_IMAGES.get(key);}
+  catch(error){
+    console.error('Could not read announcement image preview',error);
+    return new Response('Image unavailable',{status:503});
+  }
+  if(!object)return new Response('Not found',{status:404});
+
+  const headers=new Headers();
+  headers.set('Content-Type',object.httpMetadata?.contentType||contentTypeForKey(key));
+  headers.set('Cache-Control','private, no-store, no-cache, must-revalidate');
+  headers.set('X-Content-Type-Options','nosniff');
+  return new Response(object.body,{status:200,headers});
+}
+
 export async function onRequestPost({request,env}){
   const auth=await requireAdmin(request,env); if(auth.response)return auth.response;
   const err=validateRequest(request,'POST'); if(err)return err;
@@ -88,6 +109,12 @@ function validateRequest(request,method){
   return null;
 }
 
+function contentTypeForKey(key){
+  const lower=String(key||'').toLowerCase();
+  if(lower.endsWith('.png'))return'image/png';
+  if(lower.endsWith('.webp'))return'image/webp';
+  return'image/jpeg';
+}
 function headers(){
   return {'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache',Vary:'Cookie','X-Content-Type-Options':'nosniff'};
 }
