@@ -4,6 +4,7 @@
   const testButton=panel.querySelector('[data-discord-test]');
   const syncOrdersButton=panel.querySelector('[data-discord-sync-orders]');
   const syncColonizationButton=panel.querySelector('[data-discord-sync-colonization]');
+  const syncColonizationArchiveButton=panel.querySelector('[data-discord-sync-colonization-archive]');
   const syncScoutButton=panel.querySelector('[data-discord-sync-scout]');
   const syncBgsButton=panel.querySelector('[data-discord-sync-bgs]');
   const syncRewardsButton=panel.querySelector('[data-discord-sync-rewards]');
@@ -20,6 +21,7 @@
     if(testButton)testButton.disabled=disabled;
     if(syncOrdersButton)syncOrdersButton.disabled=disabled;
     if(syncColonizationButton)syncColonizationButton.disabled=disabled;
+    if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled;
     if(syncScoutButton)syncScoutButton.disabled=disabled;
     if(syncBgsButton)syncBgsButton.disabled=disabled;
     if(syncRewardsButton)syncRewardsButton.disabled=disabled;
@@ -57,7 +59,11 @@
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
-        setStatus('Webhook secret detected · Daily Orders, Colonization, Scout, BGS, and Rewards automation are ready'+cycle+'.',data.scoutCycleRefreshServerConfigured?'success':'');
+        const archive=data.colonizationArchiveConfigured
+          ? ' · Colonization Archive webhook ready'
+          : ' · Colonization Archive webhook not configured';
+        if(syncColonizationArchiveButton&&!data.colonizationArchiveConfigured)syncColonizationArchiveButton.disabled=true;
+        setStatus('Operations webhook detected · Daily Orders, Colonization, Scout, BGS, and Rewards are ready'+archive+cycle+'.',data.scoutCycleRefreshServerConfigured&&data.colonizationArchiveConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -86,6 +92,35 @@
       setStatus(messages[error.message]||'Discord test failed · '+String(error.message||error),'error');
     }finally{
       setButtons(false);
+    }
+  });
+
+  syncColonizationArchiveButton?.addEventListener('click',async()=>{
+    setButtons(true);
+    setStatus('Syncing completed Colonization Jobs to the archive channel…','working');
+    try{
+      const data=await api('/api/operations/discord-colonization-archive','POST');
+      const summary=data.discord||{};
+      const parts=[
+        Number(summary.completedJobs||0)+' completed job'+(Number(summary.completedJobs||0)===1?'':'s')+' checked',
+      ];
+      if(Number(summary.archived)>0)parts.push(Number(summary.archived)+' newly archived');
+      if(Number(summary.alreadyArchived)>0)parts.push(Number(summary.alreadyArchived)+' already archived');
+      if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
+      setStatus('Colonization Archive synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+    }catch(error){
+      const messages={
+        discord_colonization_archive_webhook_not_configured:'Colonization Archive webhook secret is not configured in Cloudflare.',
+        discord_colonization_archive_sync_failed:'Completed jobs remain in Mission Control history, but the Discord archive sync failed.',
+        request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
+      };
+      setStatus(messages[error.message]||'Colonization Archive Discord sync failed · '+String(error.message||error),'error');
+    }finally{
+      setButtons(false);
+      try{
+        const state=await api('/api/operations/discord-test','GET');
+        if(syncColonizationArchiveButton&&!state.colonizationArchiveConfigured)syncColonizationArchiveButton.disabled=true;
+      }catch{}
     }
   });
 
