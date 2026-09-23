@@ -824,6 +824,20 @@ Architecture:
 - Controlled Gallery tags currently include AX, BGS, Carriers, Colonization, Combat, Community, Engineering, Events, Exobiology, Exploration, Mining, Operations, PvP, Scenic, Ships, and Trade.
 - Current KV/R2 concurrency is appropriate for squad scale. If the upload quota ever needs strict high-concurrency enforcement across many PoPs, move quota accounting to a serialized store rather than pretending KV is strongly consistent.
 
+## Scout Board refresh resilience
+
+Primary client/API:
+- `js/scout-jobs.js`
+- `functions/api/operations/scout-jobs.js`
+
+Behavior:
+- Scout Board performs background refreshes, but a transient GET failure must **never replace an already-rendered good board with an unavailable/empty state**.
+- The last successful payload remains visible and the status line reports that live refresh is delayed.
+- Automatic polling uses recursive `setTimeout` with a single in-flight request guard and short failure backoff instead of overlapping `setInterval` requests.
+- GET requests use a 20-second client timeout.
+- Frontier account lookup is non-critical for Scout Board rendering; if it fails, the API falls back to the authenticated session identity rather than failing the board request.
+- If the initial request itself fails and no good payload exists yet, the normal Scout Board unavailable state is still shown.
+
 ## Squad Structure / Discord sync
 
 Primary files:
