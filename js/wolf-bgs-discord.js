@@ -132,6 +132,7 @@
         Number(summary.completedJobs||0)+' completed job'+(Number(summary.completedJobs||0)===1?'':'s')+' checked',
       ];
       if(Number(summary.archived)>0)parts.push(Number(summary.archived)+' newly archived');
+      if(Number(summary.updated)>0)parts.push(Number(summary.updated)+' archive link'+(Number(summary.updated)===1?'':'s')+' updated');
       if(Number(summary.alreadyArchived)>0)parts.push(Number(summary.alreadyArchived)+' already archived');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
       setStatus('Colonization Archive synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
