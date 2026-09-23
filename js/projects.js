@@ -15,6 +15,9 @@
   let dirty = false;
   const memberParam = new URLSearchParams(location.search).get('member') || '';
   let memberFilter = null;
+  let lastBoardSignature = '';
+  let backgroundRefreshRunning = false;
+  const BACKGROUND_REFRESH_MS = 5000;
 
   const $ = sel => document.querySelector(sel);
   const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -374,6 +377,48 @@
     container.insertBefore(banner, anchor);
   }
 
+  function boardSignature(nextItems, nextMemberFilter) {
+    return JSON.stringify({
+      items: Array.isArray(nextItems) ? nextItems : [],
+      memberFilter: nextMemberFilter || null,
+    });
+  }
+
+  async function refreshBoardQuietly() {
+    if (backgroundRefreshRunning || document.hidden || dirty || (shell && !shell.hidden) || !session) return;
+    backgroundRefreshRunning = true;
+    try {
+      const memberQuery = memberParam ? `?member=${encodeURIComponent(memberParam)}` : '';
+      const { response, payload } = await apiFetch(`/api/projects${memberQuery}`);
+      if (!response.ok) return;
+
+      const nextItems = Array.isArray(payload.items) ? payload.items : [];
+      const nextMemberFilter = payload.memberFilter || null;
+      const nextSignature = boardSignature(nextItems, nextMemberFilter);
+      if (nextSignature === lastBoardSignature) return;
+
+      const openRosters = new Set(
+        [...document.querySelectorAll('.project-rsvp-roster[open]')]
+          .map(details => details.closest('[data-event-rsvp]')?.dataset?.eventRsvp)
+          .filter(Boolean)
+      );
+
+      items = nextItems;
+      memberFilter = nextMemberFilter;
+      lastBoardSignature = nextSignature;
+      renderMemberFilter();
+      render();
+
+      openRosters.forEach(id => {
+        document.querySelector(`[data-event-rsvp="${CSS.escape(id)}"] .project-rsvp-roster`)?.setAttribute('open','');
+      });
+    } catch {
+      // Background freshness is best-effort; the normal board remains usable.
+    } finally {
+      backgroundRefreshRunning = false;
+    }
+  }
+
   async function load() {
     const memberQuery = memberParam ? `?member=${encodeURIComponent(memberParam)}` : '';
     const { response, payload } = await apiFetch(`/api/projects${memberQuery}`);
@@ -384,6 +429,7 @@
     session = payload.viewer;
     items = Array.isArray(payload.items) ? payload.items : [];
     memberFilter = payload.memberFilter || null;
+    lastBoardSignature = boardSignature(items, memberFilter);
     if (memberParam && memberFilter && !window.__memberProjectFilterHandled) { filter = 'all'; window.__memberProjectFilterHandled = true; document.querySelectorAll('[data-project-filter]').forEach(x => x.classList.remove('active')); }
     renderMemberFilter();
     signedOut.hidden = true;
@@ -441,4 +487,9 @@
       board.hidden = true;
     }
   }).catch(() => {});
+
+  window.setInterval(refreshBoardQuietly, BACKGROUND_REFRESH_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshBoardQuietly();
+  });
 })();
