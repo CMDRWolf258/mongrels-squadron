@@ -1,10 +1,14 @@
-import { galleryImagesConfigured, isGalleryImageKey } from '../../../lib/gallery-submissions.js';
+import { galleryImagesConfigured, isGalleryImageKey, readGallerySubmissions } from '../../../lib/gallery-submissions.js';
 
 export async function onRequestGet({request,env,params}){
   if(!galleryImagesConfigured(env))return new Response('Not found',{status:404});
   const file=decodeURIComponent(String(params?.file||'')).trim();
   const key=`gallery/${file}`;
   if(!isGalleryImageKey(key))return new Response('Not found',{status:404});
+  const submissions=await readGallerySubmissions(env);
+  if(!submissions.some(item=>item.status==='approved'&&item.imageKey===key)){
+    return new Response('Not found',{status:404});
+  }
 
   let object;
   try{object=await env.EVENT_IMAGES.get(key);}
