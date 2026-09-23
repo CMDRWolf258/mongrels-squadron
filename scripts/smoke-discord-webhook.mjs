@@ -1,12 +1,21 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { discordOperationsConfigured, sendOperationsDiscord } from '../lib/discord-webhook.js';
+import {
+  createColonizationArchiveDiscordMessage,
+  discordColonizationArchiveConfigured,
+  discordOperationsConfigured,
+  sendOperationsDiscord,
+} from '../lib/discord-webhook.js';
 
 const webhook='https://discord.com/api/webhooks/1234567890/test_token-ABC_123';
 assert.equal(discordOperationsConfigured({DISCORD_OPERATIONS_WEBHOOK_URL:webhook}),true);
 assert.equal(discordOperationsConfigured({DISCORD_OPERATIONS_WEBHOOK_URL:'https://example.com/not-discord'}),false);
 assert.equal(discordOperationsConfigured({}),false);
+const archiveWebhook='https://discord.com/api/webhooks/2468135790/archive_token_ABC_123';
+assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:archiveWebhook}),true);
+assert.equal(discordColonizationArchiveConfigured({DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:'https://example.com/nope'}),false);
+
 
 const originalFetch=globalThis.fetch;
 let captured=null;
@@ -31,6 +40,26 @@ try{
   globalThis.fetch=originalFetch;
 }
 
+let archiveCaptured=null;
+globalThis.fetch=async(url,options)=>{
+  archiveCaptured={url,options};
+  return Response.json({id:'9876543210'},{status:200});
+};
+try{
+  const result=await createColonizationArchiveDiscordMessage(
+    {DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:archiveWebhook},
+    {embeds:[{title:'Archive Test'}],content:'Completed colonization'}
+  );
+  assert.equal(result.messageId,'9876543210');
+  assert.match(archiveCaptured.url,/2468135790/);
+  assert.equal(archiveCaptured.options.method,'POST');
+  const body=JSON.parse(archiveCaptured.options.body);
+  assert.deepEqual(body.allowed_mentions,{parse:[]});
+  assert.equal(body.embeds[0].title,'Archive Test');
+}finally{
+  globalThis.fetch=originalFetch;
+}
+
 const endpoint=readFileSync('functions/api/operations/discord-test.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -39,6 +68,7 @@ for(const pattern of [
   /DISCORD_OPERATIONS_WEBHOOK_URL|discordOperationsConfigured/,
   /Mission Control Link Test/,
   /scoutCycleRefreshServerConfigured/,
+  /colonizationArchiveConfigured/,
   /low-noise persistent\/update-in-place model/i,
 ])assert.match(endpoint,pattern);
 assert.doesNotMatch(endpoint,/webhookUrl\s*:/i,'Webhook URL must never be included in the browser response');
@@ -71,7 +101,7 @@ for(const pattern of [
   /data-discord-sync-scout/,
   /data-discord-sync-rewards/,
   /data-discord-status/,
-  /wolf-bgs-discord\.js\?v=8/,
+  /wolf-bgs-discord\.js\?v=9/,
   /wolf-bgs\.css\?v=23/,
 ])assert.match(page,pattern);
 
