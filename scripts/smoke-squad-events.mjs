@@ -41,6 +41,7 @@ assert.match(payload.embeds[0].title,/Mongrel Training Night/);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='📍 System / Location')?.inline,false);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='🎯 Event Type')?.inline,true);
 assert.equal(payload.embeds[0].fields.find(x=>x.name==='👤 Organizer')?.inline,true);
+assert.equal(payload.embeds[0].fields.filter(x=>x.name==='\u200b'&&x.value==='\u200b').length,2);
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/✅ \*\*Going\*\* — 1/);
 assert.match(payload.embeds[0].fields.find(x=>x.name==='🐺 RSVP').value,/🤔 \*\*Maybe\*\* — 1/);
 assert.equal(payload.components[0].components.length,4);
