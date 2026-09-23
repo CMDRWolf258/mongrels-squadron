@@ -5,7 +5,7 @@ export async function onRequestGet({request,env,params}){
   const file=decodeURIComponent(String(params?.file||'')).trim();
   const key=`gallery/${file}`;
   if(!isGalleryImageKey(key))return new Response('Not found',{status:404});
-  const submissions=await readGallerySubmissions(env);
+  const submissions=await readGallerySubmissions(env,{fresh:true});
   if(!submissions.some(item=>item.status==='approved'&&item.imageKey===key)){
     return new Response('Not found',{status:404});
   }
