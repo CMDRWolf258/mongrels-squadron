@@ -322,7 +322,7 @@ for(const pattern of [/data-discord-sync-rewards/,/discord-rewards/,/Syncing Squ
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/Sync Squad Payouts/);
 assert.match(page,/id="reward-engine"/);
-assert.match(page,/wolf-bgs-discord\.js\?v=13/);
+assert.match(page,/wolf-bgs-discord\.js\?v=14/);
 
 console.log('✓ Rewards Discord excludes member-funded debt and separates new rewards from frozen payout requests');
 console.log('✓ Rewards Discord keeps earning summary-only and gives payout requests a REQUESTED → PAID/CANCELLED → cleanup lifecycle');
