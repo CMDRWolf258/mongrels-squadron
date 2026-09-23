@@ -12,6 +12,7 @@
   let colonizationArchiveConfigured=false;
   let factionAlertsConfigured=false;
   let scoutNetworkConfigured=false;
+  let squadPayoutsConfigured=false;
 
   function setStatus(message,state=''){
     if(!status)return;
@@ -27,7 +28,7 @@
     if(syncColonizationArchiveButton)syncColonizationArchiveButton.disabled=disabled||!colonizationArchiveConfigured;
     if(syncScoutButton)syncScoutButton.disabled=disabled||!scoutNetworkConfigured;
     if(syncBgsButton)syncBgsButton.disabled=disabled||!factionAlertsConfigured;
-    if(syncRewardsButton)syncRewardsButton.disabled=disabled;
+    if(syncRewardsButton)syncRewardsButton.disabled=disabled||!squadPayoutsConfigured;
   }
 
   async function api(path,method='GET'){
@@ -61,6 +62,7 @@
         colonizationArchiveConfigured=Boolean(data.colonizationArchiveConfigured);
         factionAlertsConfigured=Boolean(data.factionAlertsConfigured);
         scoutNetworkConfigured=Boolean(data.scoutNetworkConfigured);
+        squadPayoutsConfigured=Boolean(data.squadPayoutsConfigured);
         const cycle=data.scoutCycleRefreshServerConfigured
           ? ' · Scout cycle refresh token detected on server'
           : ' · scheduled Scout cycle refresh token not configured yet';
@@ -73,9 +75,12 @@
         const scout=scoutNetworkConfigured
           ? ' · Scout Network webhook ready'
           : ' · Scout Network webhook not configured';
+        const payouts=squadPayoutsConfigured
+          ? ' · Squad Payouts webhook ready'
+          : ' · Squad Payouts webhook not configured';
         setButtons(false);
-        setStatus('Operations webhook detected · Daily Orders, Colonization, and Rewards are ready'+archive+faction+scout+cycle+'.',
-          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured?'success':'');
+        setStatus('Operations webhook detected · Daily Orders and Colonization are ready'+archive+faction+scout+payouts+cycle+'.',
+          data.scoutCycleRefreshServerConfigured&&colonizationArchiveConfigured&&factionAlertsConfigured&&scoutNetworkConfigured&&squadPayoutsConfigured?'success':'');
       }else{
         setStatus('DISCORD_OPERATIONS_WEBHOOK_URL is not configured in this deployment.','error');
       }
@@ -134,6 +139,7 @@
         colonizationArchiveConfigured=Boolean(state.colonizationArchiveConfigured);
         factionAlertsConfigured=Boolean(state.factionAlertsConfigured);
         scoutNetworkConfigured=Boolean(state.scoutNetworkConfigured);
+        squadPayoutsConfigured=Boolean(state.squadPayoutsConfigured);
         setButtons(false);
       }catch{}
     }
@@ -168,7 +174,7 @@
 
   syncRewardsButton?.addEventListener('click',async()=>{
     setButtons(true);
-    setStatus('Syncing Rewards & Payouts to Discord…','working');
+    setStatus('Syncing Squad Payouts to Discord…','working');
     try{
       const data=await api('/api/operations/discord-rewards','POST');
       const summary=data.discord||{};
@@ -184,14 +190,15 @@
       if(summary.summary?.mode==='created'||summary.summary?.mode==='recreated')parts.push('summary posted');
       else if(summary.summary?.mode==='edited')parts.push('summary updated');
       if(Number(summary.failed)>0)parts.push(Number(summary.failed)+' failed');
-      setStatus('Rewards Discord synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
+      setStatus('Squad Payouts synced · '+parts.join(' · ')+'.',Number(summary.failed)>0?'error':'success');
     }catch(error){
       const messages={
-        discord_webhook_not_configured:'Webhook secret is missing or invalid in Cloudflare.',
-        discord_rewards_sync_failed:'Reward ledger remains unchanged, but Discord sync failed.',
+        discord_squad_payouts_webhook_not_configured:'Squad Payouts webhook secret is not configured in Cloudflare.',
+        discord_squad_payouts_webhook_request_failed:'Discord rejected the Squad Payouts webhook request'+(error.discordStatus?' · HTTP '+error.discordStatus:'')+'.',
+        discord_squad_payouts_sync_failed:'Reward ledger remains unchanged on the site, but Squad Payouts Discord sync failed.',
         request_validation_failed:'Request validation failed. Refresh Wolf BGS Control and try again.',
       };
-      setStatus(messages[error.message]||'Rewards Discord sync failed · '+String(error.message||error),'error');
+      setStatus(messages[error.message]||'Squad Payouts Discord sync failed · '+String(error.message||error),'error');
     }finally{setButtons(false);}
   });
 
