@@ -313,7 +313,7 @@ const discordClient=readFileSync('js/wolf-bgs-discord.js','utf8');
 for(const pattern of [
   /data-discord-sync-scout/,
   /discord-scout-jobs/,
-  /Syncing Scout Operations/,
+  /Syncing Scout Network/,
 ])assert.match(discordClient,pattern);
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
