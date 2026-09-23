@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+  buildColonizationArchiveDiscordPayload,
   buildColonizationJobDiscordPayload,
   buildColonizationSummaryDiscordPayload,
   syncAllColonizationJobsDiscord,
+  syncAllCompletedColonizationArchiveDiscord,
+  syncColonizationArchiveJobDiscord,
   syncColonizationJobDiscord,
 } from '../lib/colonization-discord.js';
 
@@ -28,6 +31,7 @@ class MemoryKv {
 const env={
   DAILY_ORDERS:new MemoryKv(),
   DISCORD_OPERATIONS_WEBHOOK_URL:'https://discord.com/api/webhooks/'+'1234567890/'+'colonization_unit_test',
+  DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL:'https://discord.com/api/webhooks/'+'2468135790/'+'colonization_archive_unit_test',
 };
 const base={
   id:'job-1',
@@ -130,6 +134,15 @@ try{
   assert.match(requests[1].url,/\/messages\/555555/);
 
   const completedJob={...base,status:'completed',endsAt:'2026-09-22T16:00:00.000Z',updatedAt:'2026-09-22T16:00:00.000Z',revision:2};
+  const archivePayload=buildColonizationArchiveDiscordPayload({...progressedView,...completedJob},{
+    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+  });
+  assert.match(archivePayload.embeds[0].title,/^✓ COLONIZATION COMPLETE ·/);
+  assert.equal(archivePayload.embeds[0].fields.find(row=>row.name==='Final Status')?.value,'COMPLETED');
+  assert.match(archivePayload.embeds[0].fields.find(row=>row.name==='Verified Hauling')?.value,/3,200 t \/ 10,000 t/);
+  assert.match(archivePayload.embeds[0].fields.find(row=>row.name==='Verified Contributors')?.value,/DarthDivider/);
+  assert.match(archivePayload.embeds[0].footer.text,/Colonization Archive/);
+
   const completed=await syncColonizationJobDiscord(env,{
     job:completedJob,
     view:{...progressedView,...completedJob},
@@ -140,6 +153,28 @@ try{
   assert.equal(requests[2].method,'PATCH');
   assert.match(requests[2].body.embeds[0].title,/^✓ /);
   assert.match(requests[2].body.embeds[0].description,/leave the operations channel on the next Colonization sync/);
+
+  const beforeArchive=requests.length;
+  const archived=await syncColonizationArchiveJobDiscord(env,{
+    job:completedJob,
+    view:{...progressedView,...completedJob},
+    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+  });
+  assert.equal(archived.mode,'archived');
+  assert.equal(requests.length,beforeArchive+1);
+  assert.equal(requests.at(-1).method,'POST');
+  assert.match(requests.at(-1).url,/\/api\/webhooks\/2468135790\//,'Archive post must use the separate archive webhook');
+  assert.match(requests.at(-1).body.embeds[0].title,/COLONIZATION COMPLETE/);
+  assert.deepEqual(requests.at(-1).body.allowed_mentions,{parse:[]});
+
+  const beforeArchiveNoop=requests.length;
+  const archivedAgain=await syncColonizationArchiveJobDiscord(env,{
+    job:completedJob,
+    view:{...progressedView,...completedJob},
+  });
+  assert.equal(archivedAgain.mode,'already_archived');
+  assert.equal(requests.length,beforeArchiveNoop,'Completed job must never duplicate its permanent archive post');
+
 
   const newActive={
     ...base,
@@ -184,6 +219,28 @@ try{
   );
   assert.ok(!manual.results.some(row=>row.jobId==='job-old'),'Historical completed jobs must remain website-only');
 
+  const beforeArchiveBackfill=requests.length;
+  const archiveBackfill=await syncAllCompletedColonizationArchiveDiscord(env,{
+    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+  });
+  assert.equal(archiveBackfill.completedJobs,2);
+  assert.equal(archiveBackfill.archived,1,'Historical completed job should be backfilled exactly once');
+  assert.equal(archiveBackfill.alreadyArchived,1,'Already archived completion must remain deduplicated');
+  assert.equal(requests.length,beforeArchiveBackfill+1);
+  assert.match(requests.at(-1).body.embeds[0].title,/Already Finished Before Discord/);
+
+  const beforeArchiveBackfillNoop=requests.length;
+  const archiveBackfillNoop=await syncAllCompletedColonizationArchiveDiscord(env,{
+    controlUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#colonization-jobs',
+  });
+  assert.equal(archiveBackfillNoop.archived,0);
+  assert.equal(archiveBackfillNoop.alreadyArchived,2);
+  assert.equal(requests.length,beforeArchiveBackfillNoop,'Repeated archive backfill must make zero Discord requests');
+
+  const archiveState=JSON.parse(env.DAILY_ORDERS.map.get('discord-colonization-archive-v1'));
+  assert.ok(archiveState.jobs['job-1']?.messageId);
+  assert.ok(archiveState.jobs['job-old']?.messageId);
+
   const stateAfterManual=JSON.parse(env.DAILY_ORDERS.map.get('discord-colonization-jobs-v1'));
   assert.ok(stateAfterManual.summary?.messageId,'Persistent Colonization summary message ID was not stored');
   assert.equal(stateAfterManual.jobs['job-1'],undefined,'Completed job tracking should be removed after Discord cleanup');
@@ -198,6 +255,12 @@ try{
   assert.equal(noop.summary?.mode,'unchanged');
   assert.equal(noop.unchanged,1);
   assert.equal(requests.length,beforeNoop,'A fully unchanged Colonization sync should make zero Discord requests');
+
+  env.DISCORD_COLONIZATION_ARCHIVE_WEBHOOK_URL='https://discord.com/api/webhooks/'+'1357924680/'+'new_archive_channel_unit_test';
+  const beforeArchiveWebhookChange=requests.length;
+  const archivedAfterWebhookChange=await syncColonizationArchiveJobDiscord(env,{job:completedJob,view:{...progressedView,...completedJob}});
+  assert.equal(archivedAfterWebhookChange.mode,'already_archived','Changing archive destination must not duplicate permanent history');
+  assert.equal(requests.length,beforeArchiveWebhookChange);
 
   env.DISCORD_OPERATIONS_WEBHOOK_URL='https://discord.com/api/webhooks/'+'9876543210/'+'new_channel_unit_test';
   const completedInNewDestination=await syncColonizationJobDiscord(env,{job:oldCompleted,view:oldCompleted,createMissing:true});
@@ -223,6 +286,14 @@ for(const pattern of [
   /createMissing:false/,
 ])assert.match(frontierSync,pattern);
 
+const archiveApi=readFileSync('functions/api/operations/discord-colonization-archive.js','utf8');
+for(const pattern of [
+  /session\.access!=='site_admin'/,
+  /discordColonizationArchiveConfigured/,
+  /syncAllCompletedColonizationArchiveDiscord/,
+  /wolf-bgs-control/,
+])assert.match(archiveApi,pattern);
+
 const manualApi=readFileSync('functions/api/operations/discord-colonization-jobs.js','utf8');
 for(const pattern of [
   /session\.access!=='site_admin'/,
@@ -235,13 +306,17 @@ for(const pattern of [
 const discordClient=readFileSync('js/wolf-bgs-discord.js','utf8');
 for(const pattern of [
   /data-discord-sync-colonization/,
+  /data-discord-sync-colonization-archive/,
   /discord-colonization-jobs/,
+  /discord-colonization-archive/,
   /completed\/removed card/,
   /operations summary/,
 ])assert.match(discordClient,pattern);
 
 const page=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(page,/data-discord-sync-colonization/);
+assert.match(page,/data-discord-sync-colonization-archive/);
 assert.match(page,/id="colonization-jobs"/);
 
 console.log('✓ Colonization Discord keeps active cards, shows completion once, cleans completed cards on the next sync, and maintains one persistent operations summary');
+console.log('✓ Colonization Archive posts completed jobs once to a separate webhook, backfills safely, and suppresses duplicates across retries or webhook changes');
