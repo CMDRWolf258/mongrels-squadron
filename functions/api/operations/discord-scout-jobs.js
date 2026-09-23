@@ -2,14 +2,14 @@ import { json, readSession } from '../../../lib/auth.js';
 import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { syncScoutDiscordBoard } from '../../../lib/scout-discord.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
-import { discordOperationsConfigured } from '../../../lib/discord-webhook.js';
+import { discordScoutNetworkConfigured } from '../../../lib/discord-webhook.js';
 
 export async function onRequestPost({request,env}){
   const auth=await requireSiteAdmin(request,env);
   if(auth.response)return auth.response;
   const originError=validateSameOrigin(request);
   if(originError)return originError;
-  if(!discordOperationsConfigured(env))return reply({ok:false,error:'discord_webhook_not_configured'},503);
+  if(!discordScoutNetworkConfigured(env))return reply({ok:false,error:'discord_scout_network_webhook_not_configured'},503);
 
   try{
     const systems=await loadActiveMongrelSystems(request);
@@ -25,7 +25,7 @@ export async function onRequestPost({request,env}){
     if(discord.error)return reply({ok:false,error:discord.error,discord},502);
     return reply({ok:true,discord});
   }catch(error){
-    console.error('Manual Scout Jobs Discord sync failed',error);
+    console.error('Manual Scout Network Discord sync failed',error);
     return reply({ok:false,error:'discord_scout_sync_failed'},502);
   }
 }
