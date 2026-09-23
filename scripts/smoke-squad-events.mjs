@@ -8,8 +8,15 @@ import {
   parseEventRsvpCustomId,
   squadEventsConfig,
 } from '../lib/squad-events.js';
+import { eventImageExtension, isManagedEventImageKey } from '../lib/event-images.js';
 
 const id='12345678-1234-1234-1234-123456789abc';
+assert.equal(eventImageExtension('image/png'),'png');
+assert.equal(eventImageExtension('image/jpeg'),'jpg');
+assert.equal(eventImageExtension('image/webp'),'webp');
+assert.equal(eventImageExtension('image/gif'),'');
+assert.equal(isManagedEventImageKey('events/1727112345678-12345678-1234-1234-1234-123456789abc.png'),true);
+assert.equal(isManagedEventImageKey('../secrets.png'),false);
 assert.deepEqual(parseEventRsvpCustomId(eventRsvpCustomId(id,'going')),{eventId:id,status:'going'});
 assert.equal(parseEventRsvpCustomId('mongrels_onboarding_guest'),null);
 assert.equal(squadEventsConfig({DISCORD_BOT_TOKEN:'x',DISCORD_SQUAD_EVENTS_CHANNEL_ID:'123'}).configured,true);
@@ -76,7 +83,10 @@ for(const pattern of [
   /syncSquadEventDiscord/,
   /discordEventMessageId/,
   /eventImageUrl/,
+  /eventImageKey/,
   /normalizeEventImageUrl/,
+  /normalizeEventImageKey/,
+  /deleteManagedEventImage/,
   /cancelled/,
 ])assert.match(projectApi,pattern);
 
@@ -89,14 +99,40 @@ for(const pattern of [
   /BACKGROUND_REFRESH_MS\s*=\s*5000/,
   /refreshBoardQuietly/,
   /data-project-image-url/,
+  /data-project-image-key/,
+  /data-project-image-drop/,
   /project-event-image/,
+  /FormData/,
+  /EVENT_IMAGE_MAX_BYTES/,
+  /prepareEventImage/,
+  /deleteTemporaryEventImage/,
 ])assert.match(client,pattern);
 new Function(client);
 
 const page=readFileSync('projects/index.html','utf8');
 assert.match(page,/data-project-image-wrap/);
 assert.match(page,/data-project-image-url/);
-assert.match(page,/projects\.js\?v=72/);
-assert.match(page,/projects-events-v2\.css\?v=2/);
+assert.match(page,/data-project-image-file/);
+assert.match(page,/data-project-image-drop/);
+assert.match(page,/data-project-image-key/);
+assert.match(page,/projects\.js\?v=73/);
+assert.match(page,/projects-events-v2\.css\?v=3/);
 
-console.log('✓ Squad Events reuse Projects board state and support website + Discord RSVP interactions');
+const imageUpload=readFileSync('functions/api/projects/event-image.js','utf8');
+for(const pattern of [
+  /EVENT_IMAGES/,
+  /request\.formData\(\)/,
+  /EVENT_IMAGE_MAX_BYTES/,
+  /event_manager_access_required/,
+  /project-event-image/,
+])assert.match(imageUpload,pattern);
+
+const imageMedia=readFileSync('functions/media/events/[file].js','utf8');
+for(const pattern of [
+  /EVENT_IMAGES\.get/,
+  /Cache-Control/,
+  /immutable/,
+  /X-Content-Type-Options/,
+])assert.match(imageMedia,pattern);
+
+console.log('✓ Squad Events reuse Projects board state and support website + Discord RSVP + R2 image uploads');
