@@ -144,6 +144,7 @@ function normalizeItem(value, fixed, session, existing={}) {
     deadline:clean(src.deadline,existing.deadline||'',40),
     eventTime:clean(src.eventTime,existing.eventTime||'',20),
     eventType:clean(src.eventType,existing.eventType||'',80),
+    eventImageUrl:kind==='event' ? normalizeEventImageUrl(src.eventImageUrl,existing.eventImageUrl||'') : '',
     createdAt:fixed.createdAt,
     updatedAt:fixed.updatedAt,
     updatedBy:fixed.updatedBy,
@@ -215,6 +216,17 @@ function normalizeStatus(value,kind,fallback='active'){
     :['planning','active','paused','complete'];
   return allowed.includes(x)?x:(allowed.includes(fallback)?fallback:'active');
 }
+function normalizeEventImageUrl(value,fallback=''){
+  if(value===undefined)return fallback;
+  if(typeof value!=='string')return fallback;
+  const text=value.trim();
+  if(!text)return'';
+  try{
+    const url=new URL(text);
+    return url.protocol==='https:'&&url.hostname ? url.toString().slice(0,900) : '';
+  }catch{return'';}
+}
+
 function clampNumber(v,min,max,fallback){
   const n=Number(v);
   return Number.isFinite(n)?Math.min(max,Math.max(min,Math.round(n))):fallback;
