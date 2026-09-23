@@ -1,6 +1,7 @@
 import { json, readSession } from '../../../lib/auth.js';
 import {
   discordColonizationArchiveConfigured,
+  discordColonizationJobsConfigured,
   discordFactionAlertsConfigured,
   discordOperationsConfigured,
   discordScoutNetworkConfigured,
@@ -15,6 +16,7 @@ export async function onRequestGet({request,env}){
     ok:true,
     configured:discordOperationsConfigured(env),
     colonizationArchiveConfigured:discordColonizationArchiveConfigured(env),
+    colonizationJobsConfigured:discordColonizationJobsConfigured(env),
     factionAlertsConfigured:discordFactionAlertsConfigured(env),
     scoutNetworkConfigured:discordScoutNetworkConfigured(env),
     squadPayoutsConfigured:discordSquadPayoutsConfigured(env),
