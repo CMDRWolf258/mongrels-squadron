@@ -17,7 +17,13 @@
   let memberFilter = null;
   let lastBoardSignature = '';
   let backgroundRefreshRunning = false;
+  let uploadedEventImageKey = '';
+  let originalEventImageKey = '';
+  let imageUploadBusy = false;
   const BACKGROUND_REFRESH_MS = 5000;
+  const EVENT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+  const EVENT_IMAGE_MAX_SOURCE_BYTES = 25 * 1024 * 1024;
+  const EVENT_IMAGE_TYPES = new Set(['image/png','image/jpeg','image/webp']);
 
   const $ = sel => document.querySelector(sel);
   const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -34,6 +40,162 @@
     const payload = await response.json().catch(() => ({}));
     return { response, payload };
   };
+
+  const setEventImageStatus = (message = '', isError = false) => {
+    const target = $('[data-project-image-status]');
+    if (!target) return;
+    target.textContent = message;
+    target.classList.toggle('error', Boolean(isError));
+  };
+
+  function renderEventImageEditor(displayName = '') {
+    const url = $('[data-project-image-url]')?.value?.trim() || '';
+    const drop = $('[data-project-image-drop]');
+    const emptyState = $('[data-project-image-empty]');
+    const preview = $('[data-project-image-preview]');
+    const image = $('[data-project-image-preview-img]');
+    const name = $('[data-project-image-preview-name]');
+    const remove = $('[data-project-image-remove]');
+    if (!drop || !emptyState || !preview || !image || !remove) return;
+
+    drop.classList.toggle('is-uploading', imageUploadBusy);
+    emptyState.hidden = Boolean(url);
+    preview.hidden = !url;
+    remove.hidden = !url;
+    if (url) {
+      image.src = url;
+      const fallbackName = (() => {
+        try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'Event image'); }
+        catch { return 'Event image'; }
+      })();
+      name.textContent = displayName || fallbackName;
+    } else {
+      image.removeAttribute('src');
+      name.textContent = '';
+    }
+  }
+
+  function loadBrowserImage(file) {
+    return new Promise((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Unable to read this image.'));
+      };
+      image.src = objectUrl;
+    });
+  }
+
+  function canvasBlob(canvas, type, quality) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Unable to optimize this image.')), type, quality);
+    });
+  }
+
+  async function prepareEventImage(file) {
+    if (!file || !EVENT_IMAGE_TYPES.has(file.type)) throw new Error('Choose a PNG, JPG, or WebP image.');
+    if (file.size > EVENT_IMAGE_MAX_SOURCE_BYTES) throw new Error('That image is too large. Choose an image under 25 MB.');
+    if (file.size <= EVENT_IMAGE_MAX_BYTES) return file;
+
+    setEventImageStatus('Optimizing large image…');
+    const image = await loadBrowserImage(file);
+    const maxDimension = 2400;
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d', { alpha: true }).drawImage(image, 0, 0, width, height);
+
+    let blob = await canvasBlob(canvas, 'image/webp', .88);
+    if (blob.size > EVENT_IMAGE_MAX_BYTES) blob = await canvasBlob(canvas, 'image/webp', .75);
+    if (blob.size > EVENT_IMAGE_MAX_BYTES) throw new Error('The optimized image is still over 8 MB. Try a smaller image.');
+    const base = String(file.name || 'event-image').replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 70) || 'event-image';
+    return new File([blob], `${base}.webp`, { type: 'image/webp' });
+  }
+
+  async function deleteTemporaryEventImage(key) {
+    if (!key) return;
+    try {
+      await apiFetch('/api/projects/event-image', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Mongrels-Request': 'project-event-image',
+        },
+        body: JSON.stringify({ key }),
+      });
+    } catch {}
+  }
+
+  async function uploadEventImage(file) {
+    if (imageUploadBusy) return;
+    imageUploadBusy = true;
+    renderEventImageEditor();
+    const choose = $('[data-project-image-choose]');
+    const remove = $('[data-project-image-remove]');
+    if (choose) choose.disabled = true;
+    if (remove) remove.disabled = true;
+    try {
+      const uploadFile = await prepareEventImage(file);
+      setEventImageStatus('Uploading image…');
+      const formData = new FormData();
+      formData.append('image', uploadFile, uploadFile.name);
+      const { response, payload } = await apiFetch('/api/projects/event-image', {
+        method: 'POST',
+        headers: { 'X-Mongrels-Request': 'project-event-image' },
+        body: formData,
+      });
+      if (!response.ok) {
+        const errors = {
+          event_image_storage_not_configured: 'Event image storage is not configured.',
+          event_image_too_large: 'The optimized image is still too large.',
+          unsupported_event_image_type: 'Choose a PNG, JPG, or WebP image.',
+          event_manager_access_required: 'Only event creators can upload event images.',
+        };
+        throw new Error(errors[payload.error] || payload.error || 'Unable to upload image.');
+      }
+
+      const previousPending = uploadedEventImageKey;
+      $('[data-project-image-key]').value = payload.key || '';
+      $('[data-project-image-url]').value = payload.url || '';
+      uploadedEventImageKey = payload.key || '';
+      dirty = true;
+      renderEventImageEditor(uploadFile.name);
+      setEventImageStatus('Image ready');
+      if (previousPending && previousPending !== uploadedEventImageKey) deleteTemporaryEventImage(previousPending);
+    } catch (error) {
+      setEventImageStatus(error?.message || 'Unable to upload image.', true);
+    } finally {
+      imageUploadBusy = false;
+      if (choose) choose.disabled = false;
+      if (remove) remove.disabled = false;
+      const input = $('[data-project-image-file]');
+      if (input) input.value = '';
+      renderEventImageEditor();
+    }
+  }
+
+  async function removeEventImage() {
+    const keyInput = $('[data-project-image-key]');
+    const urlInput = $('[data-project-image-url]');
+    const key = keyInput?.value || '';
+    if (key && key === uploadedEventImageKey) {
+      await deleteTemporaryEventImage(key);
+      uploadedEventImageKey = '';
+    }
+    if (keyInput) keyInput.value = '';
+    if (urlInput) urlInput.value = '';
+    dirty = true;
+    setEventImageStatus('');
+    renderEventImageEditor();
+  }
 
   const statusLabel = status => ({
     planning: 'Planning', active: 'Active', paused: 'Paused', cancelled: 'Cancelled', complete: 'Complete'
@@ -281,6 +443,12 @@
     $('[data-project-time]').value = item?.eventTime || '';
     $('[data-project-event-type]').value = item?.eventType || 'Training';
     $('[data-project-image-url]').value = item?.eventImageUrl || '';
+    $('[data-project-image-key]').value = item?.eventImageKey || '';
+    originalEventImageKey = item?.eventImageKey || '';
+    uploadedEventImageKey = '';
+    imageUploadBusy = false;
+    setEventImageStatus('');
+    renderEventImageEditor(item?.eventImageUrl ? 'Current event image' : '');
     $('[data-project-description]').value = item?.description || '';
     $('[data-project-help]').value = item?.helpRequested || '';
     $('[data-project-target]').value = item?.target || '';
@@ -291,8 +459,14 @@
     updateEditorLabels();
   }
 
-  function closeEditor() {
+  async function closeEditor() {
     if (dirty && !confirm('Discard unsaved project changes?')) return;
+    if (uploadedEventImageKey && uploadedEventImageKey !== originalEventImageKey) {
+      await deleteTemporaryEventImage(uploadedEventImageKey);
+    }
+    uploadedEventImageKey = '';
+    originalEventImageKey = '';
+    imageUploadBusy = false;
     shell.hidden = true;
     document.body.classList.remove('project-editor-open');
     editing = null;
@@ -320,6 +494,7 @@
       eventTime: $('[data-project-time]').value,
       eventType: $('[data-project-event-type]').value,
       eventImageUrl: $('[data-project-image-url]').value,
+      eventImageKey: $('[data-project-image-key]').value,
       official: $('[data-project-official]').value === 'true',
       description: $('[data-project-description]').value,
       helpRequested: $('[data-project-help]').value,
@@ -330,6 +505,10 @@
   async function save(event) {
     event.preventDefault();
     const target = $('[data-project-form-status]');
+    if (imageUploadBusy) {
+      target.textContent = 'Wait for the event image upload to finish.';
+      return;
+    }
     target.textContent = 'Saving…';
     const body = payload();
     const method = editing ? 'PUT' : 'POST';
@@ -346,6 +525,8 @@
       return;
     }
     dirty = false;
+    uploadedEventImageKey = '';
+    originalEventImageKey = '';
     await load();
     shell.hidden = true;
     document.body.classList.remove('project-editor-open');
@@ -477,6 +658,48 @@
   form?.addEventListener('input', () => { dirty = true; });
   $('[data-project-kind]')?.addEventListener('change', () => { dirty = true; updateEditorLabels(); });
   $('[data-project-delete]')?.addEventListener('click', remove);
+
+  const imageDrop = $('[data-project-image-drop]');
+  const imageFile = $('[data-project-image-file]');
+  $('[data-project-image-choose]')?.addEventListener('click', () => {
+    if (!imageUploadBusy) imageFile?.click();
+  });
+  imageDrop?.addEventListener('click', () => {
+    if (!imageUploadBusy) imageFile?.click();
+  });
+  imageDrop?.addEventListener('keydown', event => {
+    if ((event.key === 'Enter' || event.key === ' ') && !imageUploadBusy) {
+      event.preventDefault();
+      imageFile?.click();
+    }
+  });
+  imageDrop?.addEventListener('dragover', event => {
+    event.preventDefault();
+    if (!imageUploadBusy) imageDrop.classList.add('is-dragover');
+  });
+  imageDrop?.addEventListener('dragleave', () => imageDrop.classList.remove('is-dragover'));
+  imageDrop?.addEventListener('drop', event => {
+    event.preventDefault();
+    imageDrop.classList.remove('is-dragover');
+    if (!imageUploadBusy) uploadEventImage(event.dataTransfer?.files?.[0]);
+  });
+  imageFile?.addEventListener('change', () => {
+    const file = imageFile.files?.[0];
+    if (file) uploadEventImage(file);
+  });
+  $('[data-project-image-remove]')?.addEventListener('click', removeEventImage);
+  $('[data-project-image-url]')?.addEventListener('change', async event => {
+    const keyInput = $('[data-project-image-key]');
+    const currentKey = keyInput?.value || '';
+    if (currentKey && currentKey === uploadedEventImageKey) {
+      await deleteTemporaryEventImage(currentKey);
+      uploadedEventImageKey = '';
+    }
+    if (keyInput) keyInput.value = '';
+    dirty = true;
+    setEventImageStatus(event.currentTarget.value.trim() ? 'External image URL selected' : '');
+    renderEventImageEditor('External event image');
+  });
 
   window.addEventListener('beforeunload', event => {
     if (dirty) {
