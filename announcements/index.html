@@ -8,7 +8,7 @@
   <title>Squadron Announcements | The Mongrels</title>
   <meta name="description" content="Official internal announcements for members of the Regiment of Imperial Mongrels.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/announcements.css?v=1">
+  <link rel="stylesheet" href="../css/announcements.css?v=2">
 </head>
 <body class="visual-page page-announcements">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../announcements/" aria-current="page">Announcements</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -68,6 +68,30 @@
         <label><span>Title</span><input type="text" maxlength="180" required data-announcement-title placeholder="Squadron update"></label>
         <label><span>Priority</span><select data-announcement-priority><option value="standard">Standard</option><option value="important">Important</option></select></label>
         <label class="announcement-editor-wide"><span>Announcement</span><textarea rows="12" maxlength="3500" required data-announcement-body placeholder="Write the announcement exactly as members should receive it."></textarea><small>Published edits update the existing Discord message instead of creating a duplicate.</small></label>
+        <div class="announcement-editor-wide announcement-image-editor" data-announcement-image-wrap>
+          <div class="announcement-image-editor-head">
+            <span>Photo <small>Optional</small></span>
+            <small>PNG, JPG, or WebP · up to 25 MB source · large images are optimized automatically</small>
+          </div>
+          <input type="hidden" data-announcement-image-key>
+          <input type="hidden" data-announcement-image-url>
+          <input type="file" accept="image/png,image/jpeg,image/webp" data-announcement-image-file hidden>
+          <div class="announcement-image-drop" data-announcement-image-drop tabindex="0" role="button" aria-label="Choose announcement image">
+            <div class="announcement-image-empty" data-announcement-image-empty>
+              <strong>Drop an announcement image here</strong>
+              <span>or click to browse</span>
+            </div>
+            <div class="announcement-image-preview" data-announcement-image-preview hidden>
+              <img alt="Announcement image preview" data-announcement-image-preview-img>
+              <span data-announcement-image-preview-name></span>
+            </div>
+          </div>
+          <div class="announcement-image-actions">
+            <button class="btn btn-secondary btn-compact" type="button" data-announcement-image-choose>Choose Image</button>
+            <button class="btn btn-secondary btn-compact" type="button" data-announcement-image-remove hidden>Remove Image</button>
+            <span data-announcement-image-status aria-live="polite"></span>
+          </div>
+        </div>
       </div>
       <div class="announcement-editor-actions">
         <span data-announcement-editor-status aria-live="polite"></span>
@@ -83,7 +107,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=64"></script>
-<script src="../js/announcements.js?v=1"></script>
+<script src="../js/announcements.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body>
 </html>
