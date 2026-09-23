@@ -857,6 +857,27 @@ Behavior:
 - Frontier account lookup is non-critical for Scout Board rendering; if it fails, the API falls back to the authenticated session identity rather than failing the board request.
 - If the initial request itself fails and no good payload exists yet, the normal Scout Board unavailable state is still shown.
 
+## Announcements images / R2
+
+Primary files:
+- `functions/api/announcements/index.js`
+- `functions/api/announcements/image.js`
+- `functions/media/announcements/[file].js`
+- `lib/announcement-images.js`
+- `lib/announcements-discord.js`
+- `js/announcements.js`
+- `css/announcements.css`
+
+Behavior:
+- Site Admin may attach one optional image to each announcement through drag/drop or file browse.
+- PNG/JPEG/WebP sources up to 25 MB are accepted by the browser; files over the 8 MB server limit are resized to max 2400 px and compressed to WebP before upload.
+- Reuse existing private R2 binding `EVENT_IMAGES`; announcement objects use the `announcements/` prefix. No new Cloudflare resource is required.
+- Draft image previews are authenticated through `/api/announcements/image?key=...` and are not exposed through the public media route.
+- Published or archived announcement images are served through `/media/announcements/<file>` only when the R2 key is attached to an announcement in published/archived state. This public URL is required for Discord embed image rendering.
+- Replacing/removing a saved image deletes the old managed R2 object after the announcement record is updated. Deleting a draft cleans its saved image. Abandoning a newly uploaded unsaved image attempts to delete the temporary R2 object.
+- Published announcement edits continue editing the same tracked Discord webhook message; the embed image is added, replaced, or removed with the same edit.
+- Website announcement cards display the attached image with `object-fit:contain` so banners and screenshots are not aggressively cropped.
+
 ## Squad Structure / Discord sync
 
 Primary files:
