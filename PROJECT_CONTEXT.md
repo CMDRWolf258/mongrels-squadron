@@ -187,6 +187,19 @@ Public groups:
 - Join Us
 - logo = Home
 
+Learning / resource architecture:
+- **Activities** = discovery: “what do I want to do?”
+- **My Pathway** = personalized progression: “what should I practice next?”
+- **Mongrel Field Manual** = learning/reference umbrella at `/guides/`.
+  - Guides = learn an activity / understand why.
+  - Reference Database = exact mechanics and dense lookups.
+  - Glossary = terminology and acronyms.
+  - **Mongrel Toolbox** = curated external sites, apps, databases and specialist community tools; URL remains `/guides/resources/`.
+- **Member Portal → Quick Links** is navigation to member tools, not another training/resource library.
+- Resources top-level menu remains; submenu wording is **Learn & Look Up** plus **Build & Tools**.
+- Command → Coordination includes Combat Escort Network.
+- Do not create a separate Training Hub page unless the architecture is deliberately changed later; Discord training-resources should route into the Field Manual rather than duplicate it.
+
 Authenticated member menu:
 - My Pathway
 - Member Portal
