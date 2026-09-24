@@ -39,12 +39,12 @@ for(const [label,path] of expected){
   assert.equal(button.style,5,`${label} should be a Discord link button`);
   assert.ok(button.url.endsWith(path),`${label} points to wrong destination`);
 }
-const chat=buttons.find(item=>item.label==='Training Chat');
-assert.ok(chat,'Training Chat button is missing when an existing chat channel is resolved');
+const chat=buttons.find(item=>item.label==='Training Grounds');
+assert.ok(chat,'Training Grounds button is missing when an existing chat channel is resolved');
 assert.equal(chat.url,'https://discord.com/channels/123456789012345678/987654321098765432');
 
 const noChat=buildTrainingResourcesDiscordPayload({origin,guildId:'123',chatChannelId:''});
-assert.ok(!noChat.components.flatMap(row=>row.components).some(item=>item.label==='Training Chat'),'Training Chat button should be omitted when no existing channel is found');
+assert.ok(!noChat.components.flatMap(row=>row.components).some(item=>item.label==='Training Grounds'),'Training Grounds button should be omitted when no existing channel is found');
 
 assert.equal(trainingResourcesDiscordConfig({DISCORD_BOT_TOKEN:'x',GUILD_ID:'1'}).configured,true);
 assert.equal(trainingResourcesDiscordConfig({}).configured,false);
@@ -55,6 +55,8 @@ for(const pattern of [
   /DISCORD_TRAINING_RESOURCES_CHANNEL_ID/,
   /DISCORD_TRAINING_CHAT_CHANNEL_ID/,
   /training-resources/,
+  /☕〡training-grounds/,
+  /training-grounds/,
   /training-chat/,
   /method:'PATCH'/,
   /Mongrel Toolbox/,
@@ -76,7 +78,7 @@ new Function(admin);
 for(const pattern of [
   /\/api\/training-resources/,
   /Publish \/ Sync Discord Card/,
-  /training-chat/,
+  /training-grounds/,
 ])assert.match(admin,pattern);
 
 const manual=readFileSync('guides/index.html','utf8');
@@ -86,4 +88,4 @@ for(const pattern of [
   /training-resources-admin\.js\?v=1/,
 ])assert.match(manual,pattern);
 
-console.log('✓ Training Resources Discord index, existing training-chat reuse, and admin sync wiring are sound');
+console.log('✓ Training Resources Discord index, existing Training Grounds reuse, and admin sync wiring are sound');
