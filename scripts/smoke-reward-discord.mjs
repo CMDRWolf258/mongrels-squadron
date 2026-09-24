@@ -145,20 +145,38 @@ const summaryPayload=buildRewardSummaryDiscordPayload(loaded,{
 const summaryText=JSON.stringify(summaryPayload);
 assert.match(summaryText,/https:\/\/mongrels-squadron\.pages\.dev\/rewards\//);
 assert.doesNotMatch(summaryText,/\/wolf-bgs\//,'Squad Payouts Discord must never link members to Reward Administration');
+assert.equal(summaryPayload.embeds.length,2,'Squad and personal rewards must render as separate Discord embeds');
+
+const squadEmbedText=JSON.stringify(summaryPayload.embeds[0]);
+const personalEmbedText=JSON.stringify(summaryPayload.embeds[1]);
+
 for(const pattern of [
-  /Rewards & Payouts/,
+  /Squad-Funded Rewards/,
+  /Squad Treasury/,
+  /Squad Payout Requests/,
+  /Squad-Funded Outstanding Balances/,
   /CMDR Alpha/,
   /CMDR Bravo/,
   /35M Cr/,
   /20M Cr/,
   /PAYOUT REQUESTED/,
+  /squad treasury only/,
+])assert.match(squadEmbedText,pattern);
+assert.doesNotMatch(squadEmbedText,/CMDR Charlie|99M Cr|CMDR Payer|Personal Build Run/,'Personal rewards must not appear in the Squad Treasury embed');
+
+for(const pattern of [
   /Personal Job Rewards/,
+  /Separate from the Squad Treasury/,
+  /Outstanding Personal Jobs/,
   /CMDR Charlie/,
   /99M Cr/,
+  /Paid by/,
   /CMDR Payer/,
   /Personal Build Run/,
   /OWED/,
-])assert.match(summaryText,pattern);
+  /individually funded jobs/,
+])assert.match(personalEmbedText,pattern);
+assert.doesNotMatch(personalEmbedText,/CMDR Alpha|CMDR Bravo|Squad Payout Requests/,'Squad-funded balances must not appear in the Personal Job Rewards embed');
 
 const requestPayload=buildPayoutRequestDiscordPayload(alpha,{
   adminUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#reward-engine',
@@ -354,6 +372,6 @@ assert.match(page,/Sync Squad Payouts/);
 assert.match(page,/id="reward-engine"/);
 assert.match(page,/wolf-bgs-discord\.js\?v=14/);
 
-console.log('✓ Rewards Discord exposes personal job rewards without mixing them into Squad Treasury balances');
+console.log('✓ Rewards Discord renders squad-funded and personal-job rewards as separate embeds with separate accounting');
 console.log('✓ Rewards Discord keeps earning summary-only and gives payout requests a REQUESTED → PAID/CANCELLED → cleanup lifecycle');
 console.log('✓ Squad Payouts migrates tracked Operations messages into its dedicated webhook without duplicates');
