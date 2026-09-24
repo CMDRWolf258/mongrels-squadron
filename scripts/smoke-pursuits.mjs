@@ -59,9 +59,12 @@ assert.equal(payload.components[0].components[0].custom_id,PURSUITS_MANAGE_CUSTO
 assert.equal(payload.components[0].components[0].label,'Manage My Pursuits');
 assert.match(payload.components[1].components[0].url,/\/pursuits\/$/);
 assert.equal(payload.embeds[0].fields.length,4);
-for(const field of payload.embeds[0].fields){
+for(const [index,field] of payload.embeds[0].fields.entries()){
   assert.ok(field.value.length<=1024,'Pursuits Discord category field must stay within Discord field limits');
   assert.ok(field.value.includes('↳ '),'Pursuit descriptions should use the readable second-line format');
+  if(index<payload.embeds[0].fields.length-1){
+    assert.ok(field.value.endsWith('\n\n\u200b'),'Discord categories should keep a visible spacer between sections');
+  }
 }
 for(const pursuit of MONGREL_PURSUITS){
   const field=payload.embeds[0].fields.find(entry=>entry.name===pursuit.group);
