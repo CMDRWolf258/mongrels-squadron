@@ -17,6 +17,15 @@ import {
   buildMemberPursuitSelector,
   syncMemberPursuitRoles,
 } from '../../../lib/mongrel-pursuits-discord.js';
+import {
+  readEscortRequests,
+  setEscortResponse,
+  writeEscortRequests,
+} from '../../../lib/combat-escort.js';
+import {
+  parseEscortInteractionCustomId,
+  syncCombatEscortDiscord,
+} from '../../../lib/combat-escort-discord.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
 const GUEST_CUSTOM_ID = 'mongrels_onboarding_guest';
@@ -58,6 +67,11 @@ export async function onRequestPost(context) {
   }
   if (customId === PURSUITS_SELECT_CUSTOM_ID) {
     return handlePursuitsInteraction(context, interaction);
+  }
+
+  const escortAction = parseEscortInteractionCustomId(customId);
+  if (escortAction) {
+    return handleEscortInteraction(context, interaction, escortAction);
   }
 
   const choice = customId === APPLICANT_CUSTOM_ID
@@ -192,6 +206,94 @@ async function handlePursuitsSelection({ interaction, env, userId, displayName, 
       content: `I couldn't update your Mongrel Pursuits. Please try again or use the website.\n\nTechnical detail: ${safeError(error)}`,
       components: [],
     }).catch(() => {});
+  }
+}
+
+async function handleEscortInteraction(context, interaction, escortAction) {
+  const { request, env } = context;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
+  const guildId = interaction?.guild_id || '';
+
+  if (!userId || !guildId) {
+    return response({ type: 4, data: { content: 'Combat Escort responses can only be changed inside the Mongrels Discord server.', flags: EPHEMERAL } });
+  }
+  if (env.GUILD_ID && guildId !== env.GUILD_ID) {
+    return response({ type: 4, data: { content: 'This Combat Escort control is not configured for this server.', flags: EPHEMERAL } });
+  }
+  if (!isSquadEventInteractionMember(interaction, env)) {
+    return response({ type: 4, data: { content: 'Combat Escort responses are available to recognized squadron members.', flags: EPHEMERAL } });
+  }
+
+  const user = interaction?.member?.user || interaction?.user || {};
+  const displayName = interaction?.member?.nick || user.global_name || user.username || 'Commander';
+  const origin = new URL(request.url).origin;
+  const work = handleEscortResponse({
+    interaction,
+    env,
+    id:escortAction.id,
+    state:escortAction.action,
+    userId,
+    displayName,
+    origin,
+  });
+  if (typeof context.waitUntil === 'function') context.waitUntil(work);
+  else await work;
+  return response({ type: 5, data: { flags: EPHEMERAL } });
+}
+
+async function handleEscortResponse({ interaction, env, id, state, userId, displayName, origin }) {
+  try {
+    const items = await readEscortRequests(env);
+    const index = items.findIndex(item => item.id === id);
+    if (index < 0) {
+      await editDeferredInteraction(interaction, { content:'That Combat Escort request could not be found.', components:[] });
+      return;
+    }
+
+    let item;
+    try {
+      item = setEscortResponse(items[index], { userId, displayName, state });
+    } catch (error) {
+      const code = String(error?.message || '');
+      const message = code === 'escort_request_closed'
+        ? 'That Combat Escort request is already closed.'
+        : code === 'requester_cannot_respond'
+          ? 'You created this request, so you do not need to volunteer as your own escort.'
+          : 'Your Combat Escort response could not be recorded.';
+      await editDeferredInteraction(interaction, { content:message, components:[] });
+      return;
+    }
+
+    items[index] = item;
+    await writeEscortRequests(env, items);
+    const discord = await syncCombatEscortDiscord(env, { request:item, origin });
+    item.discord = {
+      ...item.discord,
+      messageId:discord.messageId || item.discord?.messageId || '',
+      channelId:discord.channelId || item.discord?.channelId || '',
+      lastSyncedAt:discord.lastSyncedAt || item.discord?.lastSyncedAt || '',
+      lastError:discord.ok ? '' : (discord.error || ''),
+    };
+    items[index] = item;
+    await writeEscortRequests(env, items);
+
+    const labels = {
+      available:'🛡️ I Can Help',
+      on_my_way:'🚀 On My Way',
+      withdraw:'↩️ Stood Down',
+    };
+    const note = discord.ok === false
+      ? '\n\nYour response was saved, but the public Escort card could not refresh right now.'
+      : '';
+    await editDeferredInteraction(interaction, {
+      content:'Combat Escort response updated: **'+(labels[state]||state)+'**.'+note,
+      components:[],
+    });
+  } catch (error) {
+    await editDeferredInteraction(interaction, {
+      content:`I couldn't update that Combat Escort request. Please try again or use the website.\n\nTechnical detail: ${safeError(error)}`,
+      components:[],
+    }).catch(()=>{});
   }
 }
 
