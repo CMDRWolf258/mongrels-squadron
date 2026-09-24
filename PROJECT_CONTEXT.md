@@ -894,7 +894,7 @@ Primary files:
 Concept:
 - **Mongrel Pursuits** answers “what Elite activities do you enjoy, specialize in, or want to participate in with other Mongrels?”
 - Pursuits are interests, not duties, rank, authority, leadership appointments, or Specialist Corps status.
-- Discord channel target: `🐺〡mongrel-pursuits`; plain `mongrel-pursuits` is accepted as a fallback. Optional explicit override: `DISCORD_MONGREL_PURSUITS_CHANNEL_ID`.
+- Discord channel target: `🐺〡mongrel-pursuit`; plain `mongrel-pursuit` is accepted as a fallback. Optional explicit override: `DISCORD_MONGREL_PURSUITS_CHANNEL_ID`. The old `job-selection` channel is not discovered, renamed, edited, or otherwise managed by this feature.
 - Current catalog has 16 pursuits grouped under Squad & Strategic, Combat, Industry & Logistics, and Discovery & Community.
 
 Storage / synchronization:
@@ -912,7 +912,7 @@ Discord:
 - Discord selections write the same website record, mirror activities to the member profile when present, and add/remove the managed Pursuit roles.
 - Website saves also attempt to add/remove the matching Discord roles.
 - Website selection remains authoritative and saved even when Discord role synchronization fails; Discord errors do not roll back the member's Pursuits.
-- Bot permissions needed for full Discord setup: View Channel, Send Messages, Embed Links, Read Message History, and Manage Roles. The bot's Discord role must be above the generated Pursuit roles.
+- Bot permissions needed for full Discord setup: View Channel, Send Messages, Embed Links, Read Message History, and Manage Roles. The bot's Discord role must be above the generated Pursuit roles. Manage Channels is not required because Pursuits never renames channels.
 
 Current v1 deliberately excludes Trainer/Mentor or leadership-style roles because those imply qualification/authority rather than simple activity interest. Add approval-controlled capability roles later as a separate layer if desired.
 
