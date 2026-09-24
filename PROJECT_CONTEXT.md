@@ -132,6 +132,30 @@ Important KV bindings:
 Do not create a new KV namespace casually when an existing binding is appropriate.
 
 
+### Discord channel naming / rename safety
+
+Current decorated operational labels include:
+- 🧪〡system-testing
+- 📢〡announcements
+- 📅〡squad-events
+- 🎯〡mission-control
+- 🚨〡faction-alerts
+- 📡〡scout-network
+- 🏗️〡colonization-jobs
+- 🗃️〡colonization-archive
+- 💰〡squad-payouts
+- 🐺〡mongrel-pursuits
+- 🛡️〡combat-escort-requests
+- 📚〡training-resources
+- ☕〡training-grounds
+- 🏛️〡squad-structure
+- 📕〡squad-rules
+
+Rename behavior:
+- system-testing, announcements, mission-control, faction-alerts, scout-network, colonization-jobs, colonization-archive, and squad-payouts are webhook-bound; renaming the Discord channel does not break the existing webhook connection.
+- bot-owned/name-discovered channels must accept their decorated name plus a sensible plain fallback. Squad Events, Training Resources, Pursuits, Combat Escort, Squad Structure, and Squad Rules follow this pattern.
+- do not create replacement channels solely because of a label/emoji change; preserve channel IDs/history where possible.
+
 ### Mission Control Daily Orders and reporting
 
 Member-facing Daily Orders live under `/operations/#daily-orders`.
@@ -979,7 +1003,7 @@ Authority:
 ## Training Resources Discord Integration
 
 Purpose:
-- Discord `training-resources` is an index/doorway into the existing website learning system, not a duplicate content library.
+- Discord **📚〡training-resources** is an index/doorway into the existing website learning system, not a duplicate content library.
 - The existing Discord conversation channel is **☕〡training-grounds** and is intentionally reused for questions, mentoring, builds, screenshots, troubleshooting, and member-to-member help. The integration never creates, renames, clears, or replaces it.
 
 Primary files:
@@ -994,7 +1018,7 @@ Storage:
 - no new Cloudflare resources.
 
 Discord channel discovery:
-- resources channel: exact `training-resources` or any decorated name ending in `〡training-resources`
+- resources channel: preferred **`📚〡training-resources`**; plain `training-resources` or another decorated name ending in `〡training-resources` also works
 - conversation channel: preferred existing **`☕〡training-grounds`** (plain `training-grounds` or any decorated name ending in `〡training-grounds` also accepted). Legacy `training-chat` matching remains as fallback.
 - optional explicit overrides: `DISCORD_TRAINING_RESOURCES_CHANNEL_ID`, `DISCORD_TRAINING_CHAT_CHANNEL_ID`
 
@@ -1106,7 +1130,7 @@ Architecture:
 - Projects/Event KV reads explicitly use Cloudflare KV `cacheTtl:30` to reduce cross-location RSVP staleness from the previous default window.
 - The Projects & Events client checks quietly every 5 seconds while visible, but only rerenders when returned board data changes; Discord-originated RSVP updates should therefore surface automatically once the 30-second KV cache can see them.
 - Discord buttons use the existing Imperial Mongrels Website interaction endpoint and existing Ed25519 verification / bot token. No second Discord app is needed.
-- By default the existing bot auto-discovers a Discord text/announcement channel named exactly `squad-events` using the existing `GUILD_ID`; no new Cloudflare value is required for that normal path.
+- By default the existing bot auto-discovers **📅〡squad-events** using the existing `GUILD_ID`; plain `squad-events` remains a fallback. No new Cloudflare value is required for that normal path.
 - `DISCORD_SQUAD_EVENTS_CHANNEL_ID` remains an optional explicit override if the event channel uses a different name or discovery should be bypassed.
 - The existing bot must be able to view the channel, send messages, and embed links.
 - The event card uses legacy Action Row/Button message components, which remain supported by Discord; custom IDs route back to the existing `/api/discord/interactions` handler.
