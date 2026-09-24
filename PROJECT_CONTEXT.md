@@ -162,9 +162,11 @@ Channel:
 - **💰〡squad-payouts** is webhook-bound through `DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL`.
 
 Public payout board behavior:
-- the persistent **Rewards & Payouts** card shows squad-funded balances and personally funded job rewards in separate accounting sections;
+- the persistent Rewards message uses **two separate Discord embeds** so the two funding systems are visually distinct:
+  - **💰 Squad-Funded Rewards** — Regiment treasury total, squad payout requests, and squad-funded outstanding balances;
+  - **🐺 Personal Job Rewards** — individually funded work with recipient, amount, named payer, payment state, and job/reward description;
 - **Squad Treasury** totals remain squad-funded only. Personal/member-funded obligations must never inflate the Regiment treasury balance;
-- **Personal Job Rewards** shows unsettled member-funded ledger rewards with recipient, amount, payer, status, and a concise job/reward reason;
+- **Personal Job Rewards** is explicitly labeled **Separate from the Squad Treasury** and uses a stacked recipient/amount → Paid by/Status → job-description layout for clarity;
 - member-funded entries in `OWED` and `PAYMENT_SENT` states are public on the board; `PAYMENT_SENT` is shown as awaiting recipient confirmation;
 - personal rewards are grouped by payer + recipient + source job so repeated verified reward entries do not create noisy duplicate lines;
 - individual Discord payout-request cards remain reserved for the existing squad-funded collection-request lifecycle;
