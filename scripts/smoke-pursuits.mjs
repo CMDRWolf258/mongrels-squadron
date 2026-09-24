@@ -84,11 +84,29 @@ for(const pattern of [
   /handlePursuitsInteraction/,
   /setMemberPursuits/,
   /syncMemberPursuitRoles/,
+  /buildMemberPursuitSelector/,
+  /getMemberPursuitIds/,
 ])assert.match(interactions,pattern);
 
 const profiles=readFileSync('functions/api/profiles/index.js','utf8');
-assert.match(profiles,/seedProfileActivitiesFromPursuits/);
-assert.match(profiles,/Mongrel Pursuits is the authoritative editor for member activities/);
+for(const pattern of [
+  /readPursuitsState/,
+  /normalizePursuitIds/,
+  /pursuitIdsFromLabels/,
+  /pursuitLabels/,
+  /MONGREL_PURSUITS\.map/,
+  /Mongrel Pursuits is the authoritative editor for member activities/,
+])assert.match(profiles,pattern);
+
+const discord=readFileSync('lib/mongrel-pursuits-discord.js','utf8');
+for(const pattern of [
+  /🐺〡mongrel-pursuits/,
+  /job-selection/,
+  /Pursuit · /,
+  /Manage My Pursuits/,
+  /current choices are preselected/,
+  /Manage Roles/,
+])assert.match(discord,pattern);
 
 const client=readFileSync('js/pursuits.js','utf8');
 new Function(client);
