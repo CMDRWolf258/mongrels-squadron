@@ -68,13 +68,20 @@ assert.doesNotMatch(manual, />Resources<\/a>/);
 for (const path of [
   'guides/reference/index.html',
   'guides/glossary/index.html',
+]) {
+  const source = readFileSync(path, 'utf8');
+  assert.match(source, />Toolbox<\/a>/, `${path} should expose the Mongrel Toolbox sibling destination`);
+}
+for (const path of [
+  'guides/reference/index.html',
+  'guides/glossary/index.html',
   'guides/bgs/index.html',
   'guides/engineering/index.html',
   'guides/mining/index.html',
   'guides/operations/index.html',
 ]) {
   const source = readFileSync(path, 'utf8');
-  assert.match(source, />Toolbox<\/a>/, `${path} should use Toolbox instead of a second Resources label`);
+  assert.doesNotMatch(source, />Resources<\/a>/, `${path} should not present the Toolbox as another Resources destination`);
 }
 
 const activities = readFileSync('activities/index.html', 'utf8');
