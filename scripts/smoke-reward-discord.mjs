@@ -64,6 +64,7 @@ const memberFunded={
   fundingMode:'member',
   payerOwnerId:'payer-x',
   payerDisplayName:'CMDR Payer',
+  reason:'Verified Colonization Job reward · 5,000 t · Personal Build Run',
   status:'owed',
   createdAt:'2026-09-23T00:03:00Z',
 };
@@ -124,9 +125,15 @@ const env={
 };
 
 const loaded=await loadRewardDiscordView(env);
-assert.equal(loaded.summary.totalOwedCredits,55_000_000,'Squad treasury total must exclude member-funded rewards');
-assert.equal(loaded.summary.memberCount,2,'Member-funded-only recipient must not appear in squad payout board');
+assert.equal(loaded.summary.totalOwedCredits,55_000_000,'Squad treasury total must remain squad-funded only');
+assert.equal(loaded.summary.memberCount,2,'Squad treasury member count must remain squad-funded only');
 assert.equal(loaded.summary.activeRequestCount,1);
+assert.equal(loaded.summary.personalOutstandingCredits,99_000_000,'Personal job rewards should be visible without entering the treasury total');
+assert.equal(loaded.summary.personalRecipientCount,1);
+assert.equal(loaded.summary.personalPayerCount,1);
+assert.equal(loaded.personalOutstanding.length,1);
+assert.equal(loaded.personalOutstanding[0].displayName,'CMDR Charlie');
+assert.equal(loaded.personalOutstanding[0].payerDisplayName,'CMDR Payer');
 const alpha=loaded.members.find(row=>row.ownerId==='user-a');
 assert.equal(alpha.payoutRequest.requestedRemainingCredits,30_000_000);
 assert.equal(alpha.payoutRequest.newSinceRequestCredits,5_000_000,'New rewards after request must remain outside frozen payout request');
@@ -138,8 +145,20 @@ const summaryPayload=buildRewardSummaryDiscordPayload(loaded,{
 const summaryText=JSON.stringify(summaryPayload);
 assert.match(summaryText,/https:\/\/mongrels-squadron\.pages\.dev\/rewards\//);
 assert.doesNotMatch(summaryText,/\/wolf-bgs\//,'Squad Payouts Discord must never link members to Reward Administration');
-for(const pattern of [/Rewards & Payouts/,/CMDR Alpha/,/CMDR Bravo/,/35M Cr/,/20M Cr/,/PAYOUT REQUESTED/])assert.match(summaryText,pattern);
-assert.doesNotMatch(summaryText,/CMDR Charlie|99M Cr/,'Member-funded Colonization reward must stay out of squad Rewards Discord');
+for(const pattern of [
+  /Rewards & Payouts/,
+  /CMDR Alpha/,
+  /CMDR Bravo/,
+  /35M Cr/,
+  /20M Cr/,
+  /PAYOUT REQUESTED/,
+  /Personal Job Rewards/,
+  /CMDR Charlie/,
+  /99M Cr/,
+  /CMDR Payer/,
+  /Personal Build Run/,
+  /OWED/,
+])assert.match(summaryText,pattern);
 
 const requestPayload=buildPayoutRequestDiscordPayload(alpha,{
   adminUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#reward-engine',
@@ -313,6 +332,13 @@ const payoutApi=readFileSync('functions/api/rewards/request.js','utf8');
 for(const pattern of [/syncRewardsDiscord/,/createMissing:true/,/discord/])assert.match(payoutApi,pattern);
 const payApi=readFileSync('functions/api/rewards/pay.js','utf8');
 assert.match(payApi,/syncRewardsDiscord/);
+const memberPaymentsApi=readFileSync('functions/api/rewards/member-payments.js','utf8');
+for(const pattern of [
+  /loadRewardDiscordView/,
+  /syncRewardDiscordBoard/,
+  /Payment marked SENT/,
+  /Payment confirmed received and marked PAID/,
+])assert.match(memberPaymentsApi,pattern);
 const reconcileApi=readFileSync('functions/api/rewards/reconcile.js','utf8');
 assert.match(reconcileApi,/result\.created>0\?await syncRewardsDiscord/);
 const issueApi=readFileSync('functions/api/rewards/issue.js','utf8');
@@ -328,6 +354,6 @@ assert.match(page,/Sync Squad Payouts/);
 assert.match(page,/id="reward-engine"/);
 assert.match(page,/wolf-bgs-discord\.js\?v=14/);
 
-console.log('✓ Rewards Discord excludes member-funded debt and separates new rewards from frozen payout requests');
+console.log('✓ Rewards Discord exposes personal job rewards without mixing them into Squad Treasury balances');
 console.log('✓ Rewards Discord keeps earning summary-only and gives payout requests a REQUESTED → PAID/CANCELLED → cleanup lifecycle');
 console.log('✓ Squad Payouts migrates tracked Operations messages into its dedicated webhook without duplicates');
