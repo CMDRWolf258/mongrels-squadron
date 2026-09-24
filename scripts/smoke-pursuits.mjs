@@ -100,13 +100,14 @@ for(const pattern of [
 
 const discord=readFileSync('lib/mongrel-pursuits-discord.js','utf8');
 for(const pattern of [
-  /🐺〡mongrel-pursuits/,
-  /job-selection/,
+  /🐺〡mongrel-pursuit/,
   /Pursuit · /,
   /Manage My Pursuits/,
   /current choices are preselected/,
   /Manage Roles/,
 ])assert.match(discord,pattern);
+assert.doesNotMatch(discord,/job-selection/);
+assert.doesNotMatch(discord,/Manage Channels/);
 
 const client=readFileSync('js/pursuits.js','utf8');
 new Function(client);
