@@ -4,6 +4,7 @@ import {
   listAllRewardEntries,
   markMemberRewardPaymentSent,
 } from '../../../lib/reward-ledger.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 
 const ALLOWED=new Set(['member','officer','site_admin']);
 
@@ -62,7 +63,8 @@ export async function onRequestPost({request,env}) {
         entryId,
         actor,
       });
-      return reply({ok:true,entry:publicEntry(entry),message:'Payment marked SENT. The recipient can now confirm receipt.'});
+      const discord=await syncRewardsDiscord(request,env);
+      return reply({ok:true,entry:publicEntry(entry),discord,message:'Payment marked SENT. The recipient can now confirm receipt.'});
     }
     if(action==='confirm-received'){
       const entry=await confirmMemberRewardPayment(env,{
@@ -70,13 +72,31 @@ export async function onRequestPost({request,env}) {
         entryId:clean(body?.entryId),
         actor,
       });
-      return reply({ok:true,entry:publicEntry(entry),message:'Payment confirmed received and marked PAID.'});
+      const discord=await syncRewardsDiscord(request,env);
+      return reply({ok:true,entry:publicEntry(entry),discord,message:'Payment confirmed received and marked PAID.'});
     }
     return reply({ok:false,error:'unsupported_action'},400);
   }catch(error){
     const code=String(error?.message||error||'member_payment_failed').split(':')[0];
     const status=code.includes('not_payer')||code.includes('not_recipient')?403:code.includes('not_owed')||code.includes('not_sent')?409:code.includes('missing')?404:400;
     return reply({ok:false,error:code,message:messageFor(code)},status);
+  }
+}
+
+async function syncRewardsDiscord(request,env){
+  try{
+    const view=await loadRewardDiscordView(env);
+    const adminUrl=new URL('/wolf-bgs/',request.url);
+    adminUrl.hash='reward-engine';
+    return await syncRewardDiscordBoard(env,{
+      view,
+      adminUrl:adminUrl.toString(),
+      rewardsUrl:new URL('/rewards/',request.url).toString(),
+      createMissing:false,
+    });
+  }catch(error){
+    console.error('Member-funded payment updated but Rewards Discord sync failed',error);
+    return {feature:'rewards',configured:true,error:'discord_rewards_sync_failed',failed:1};
   }
 }
 
