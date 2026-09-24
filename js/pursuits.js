@@ -78,13 +78,13 @@
     if(!discordBox)return;
     if(discord.cardLinked&&discord.roleCount===state.pursuits.length){
       discordBox.dataset.tone='ok';
-      discordTitle.textContent='🐺〡mongrel-pursuit connected';
+      discordTitle.textContent='🐺〡mongrel-pursuits connected';
       discordCopy.textContent='Discord card and '+discord.roleCount+' Pursuit roles are initialized.';
     }else if(discord.configured){
       discordBox.dataset.tone='warning';
       discordTitle.textContent='Discord Pursuits ready to initialize';
       discordCopy.textContent=state.canManage
-        ?'Publish / Sync will create any missing Pursuit roles and maintain one persistent selector card in 🐺〡mongrel-pursuit.'
+        ?'Publish / Sync will create any missing Pursuit roles and maintain one persistent selector card in 🐺〡mongrel-pursuits.'
         :'Your website pursuits will save normally. Discord role synchronization will begin once leadership initializes the Pursuits card.';
     }else{
       discordBox.dataset.tone='warning';
