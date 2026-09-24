@@ -878,6 +878,44 @@ Behavior:
 - Published announcement edits continue editing the same tracked Discord webhook message; the embed image is added, replaced, or removed with the same edit.
 - Website announcement cards display the attached image with `object-fit:contain` so banners and screenshots are not aggressively cropped.
 
+## Mongrel Pursuits
+
+Primary files:
+- `pursuits/index.html`
+- `js/pursuits.js`
+- `css/pursuits.css`
+- `lib/mongrel-pursuits.js`
+- `lib/mongrel-pursuits-discord.js`
+- `functions/api/pursuits/index.js`
+- `functions/api/discord/interactions.js`
+- `functions/api/profiles/index.js`
+- `scripts/smoke-pursuits.mjs`
+
+Concept:
+- **Mongrel Pursuits** answers “what Elite activities do you enjoy, specialize in, or want to participate in with other Mongrels?”
+- Pursuits are interests, not duties, rank, authority, leadership appointments, or Specialist Corps status.
+- Discord channel target: `🐺〡mongrel-pursuits`; plain `mongrel-pursuits` is accepted as a fallback. Optional explicit override: `DISCORD_MONGREL_PURSUITS_CHANNEL_ID`.
+- Current catalog has 16 pursuits grouped under Squad & Strategic, Combat, Industry & Logistics, and Discovery & Community.
+
+Storage / synchronization:
+- Existing `PROJECTS` KV is reused under `mongrel-pursuits-v1`; no new Cloudflare resource is required.
+- Website and Discord use one canonical per-member selection record keyed by Discord user ID.
+- If a member has no Pursuits record yet, the website may derive an initial selection from legacy Member Profile activity labels without writing on GET.
+- Saving Pursuits updates the member's `profiles-v1` activity labels when a profile exists. The Profile editor no longer edits activities independently.
+- Creating a new profile imports existing canonical Pursuit selections when available.
+- Roster/profile presentation labels member activities as **Mongrel Pursuits** and the roster remains filterable by them.
+
+Discord:
+- Existing Imperial Mongrels Website bot and existing `/api/discord/interactions` endpoint are reused.
+- Site Admin **Publish / Sync Discord Card** initializes one persistent selector message and creates any missing unhoisted/non-mentionable Discord roles named `Pursuit · <label>`.
+- The persistent Discord selector uses custom ID `mongrels_pursuits_select`. Members choose every pursuit they want active; submitting replaces the current selection because a static Discord select menu cannot show per-user default choices.
+- Discord selections write the same website record, mirror activities to the member profile when present, and add/remove the managed Pursuit roles.
+- Website saves also attempt to add/remove the matching Discord roles.
+- Website selection remains authoritative and saved even when Discord role synchronization fails; Discord errors do not roll back the member's Pursuits.
+- Bot permissions needed for full Discord setup: View Channel, Send Messages, Embed Links, Read Message History, and Manage Roles. The bot's Discord role must be above the generated Pursuit roles.
+
+Current v1 deliberately excludes Trainer/Mentor or leadership-style roles because those imply qualification/authority rather than simple activity interest. Add approval-controlled capability roles later as a separate layer if desired.
+
 ## Squad Structure / Discord sync
 
 Primary files:
