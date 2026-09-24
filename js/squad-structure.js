@@ -87,12 +87,12 @@
   }
 
   function realignDynamicAnchor(){
-    const hash=location.hash;
-    if(hash!=='#ranks'&&hash!=='#squad-rules')return;
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const target=document.querySelector(hash);
-      target?.scrollIntoView({block:'start'});
-    }));
+    if(location.hash==='#ranks'||location.hash==='#squad-rules'){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        const target=document.querySelector(location.hash);
+        target?.scrollIntoView({block:'start'});
+      }));
+    }
   }
 
   function assignmentLines(assignments){
