@@ -10,6 +10,7 @@ import {
 } from '../lib/combat-escort.js';
 import {
   buildCombatEscortDiscordPayload,
+  buildCombatEscortLauncherPayload,
   escortInteractionCustomId,
   parseEscortInteractionCustomId,
 } from '../lib/combat-escort-discord.js';
@@ -75,14 +76,27 @@ const payload=buildCombatEscortDiscordPayload({
 assert.equal(payload.embeds.length,1);
 assert.match(payload.embeds[0].title,/Protect the hauler/);
 assert.match(payload.embeds[0].description,/OPEN/);
-assert.equal(payload.components[0].components.length,3);
+assert.equal(payload.components[0].components.length,5);
 assert.match(payload.components[0].components[0].custom_id,/mongrels_escort:/);
+assert.equal(payload.components[0].components[3].label,'New Escort Request');
+assert.match(payload.components[0].components[3].url,/\/escort\/#request-form$/);
+assert.equal(payload.components[0].components[4].label,'Open Escort Network');
+assert.match(payload.components[0].components[4].url,/\/escort\/$/);
 assert.match(payload.embeds[0].fields.find(field=>field.name==='Responders').value,/CMDR Lenny/);
 assert.match(payload.embeds[0].fields.find(field=>field.name==='Responders').value,/CMDR Two/);
 
 const closedPayload=buildCombatEscortDiscordPayload(completed,{origin:'https://mongrels-squadron.pages.dev'});
-assert.equal(closedPayload.components.length,0);
+assert.equal(closedPayload.components.length,1);
+assert.equal(closedPayload.components[0].components.length,2);
+assert.equal(closedPayload.components[0].components[0].label,'New Escort Request');
+assert.equal(closedPayload.components[0].components[1].label,'Open Escort Network');
 assert.match(closedPayload.embeds[0].description,/COMPLETE/);
+
+const launcher=buildCombatEscortLauncherPayload({origin:'https://mongrels-squadron.pages.dev'});
+assert.match(launcher.embeds[0].title,/Combat Escort Network/);
+assert.equal(launcher.components[0].components[0].label,'New Escort Request');
+assert.match(launcher.components[0].components[0].url,/\/escort\/#request-form$/);
+assert.equal(launcher.components[0].components[1].label,'Open Escort Network');
 
 const api=readFileSync('functions/api/combat-escort/index.js','utf8');
 for(const pattern of [
@@ -108,6 +122,11 @@ for(const pattern of [
   /I Can Help/,
   /On My Way/,
   /Stand Down/,
+  /New Escort Request/,
+  /Open Escort Network/,
+  /combat-escort-discord-launcher-v1/,
+  /\/pins\//,
+  /Pin Messages permission/,
   /allowed_mentions/,
 ])assert.match(discord,pattern);
 
@@ -120,6 +139,8 @@ for(const pattern of [
   /on_my_way/,
   /complete/,
   /cancel/,
+  /#request-form/,
+  /scrollIntoView/,
 ])assert.match(client,pattern);
 
 const page=readFileSync('escort/index.html','utf8');
@@ -127,7 +148,9 @@ for(const pattern of [
   /Combat Escort Network/,
   /data-escort-form/,
   /data-escort-board/,
-  /combat-escort\.js\?v=1/,
+  /id="request-form"/,
+  /return=%2Fescort%2F%23request-form/,
+  /combat-escort\.js\?v=2/,
   /combat-escort\.css\?v=1/,
 ])assert.match(page,pattern);
 
