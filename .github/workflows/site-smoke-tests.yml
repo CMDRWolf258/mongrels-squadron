@@ -73,6 +73,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-pursuits.mjs
           node --experimental-default-type=module scripts/smoke-combat-escort.mjs
           node --experimental-default-type=module scripts/smoke-training-resources-discord.mjs
+          node --experimental-default-type=module scripts/smoke-squad-rules.mjs
           node --experimental-default-type=module scripts/smoke-pursuits.mjs
           node --experimental-default-type=module scripts/smoke-gallery-submissions.mjs
           node --experimental-default-type=module scripts/smoke-daily-orders-discord.mjs
