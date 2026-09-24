@@ -54,6 +54,7 @@ for(const pattern of [
   /training-resources-discord-v1/,
   /DISCORD_TRAINING_RESOURCES_CHANNEL_ID/,
   /DISCORD_TRAINING_CHAT_CHANNEL_ID/,
+  /📚〡training-resources/,
   /training-resources/,
   /☕〡training-grounds/,
   /training-grounds/,
