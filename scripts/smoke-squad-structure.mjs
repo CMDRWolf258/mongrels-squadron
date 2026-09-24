@@ -92,7 +92,7 @@ new Function(client);
 const page=readFileSync('about/index.html','utf8');
 assert.match(page,/data-squad-structure/);
 assert.match(page,/data-squad-structure-admin/);
-assert.match(page,/squad-structure\.js\?v=3/);
+assert.match(page,/squad-structure\.js\?v=4/);
 assert.match(page,/squad-structure-admin\.css\?v=1/);
 assert.doesNotMatch(page,/CMDR Lennyshow/);
 
