@@ -878,6 +878,54 @@ Behavior:
 - Published announcement edits continue editing the same tracked Discord webhook message; the embed image is added, replaced, or removed with the same edit.
 - Website announcement cards display the attached image with `object-fit:contain` so banners and screenshots are not aggressively cropped.
 
+## Combat Escort Network
+
+Primary files:
+- `escort/index.html`
+- `js/combat-escort.js`
+- `css/combat-escort.css`
+- `lib/combat-escort.js`
+- `lib/combat-escort-discord.js`
+- `functions/api/combat-escort/index.js`
+- shared Discord interaction endpoint: `functions/api/discord/interactions.js`
+- focused regression suite: `scripts/smoke-combat-escort.mjs`
+
+Storage / authority:
+- Existing `PROJECTS` KV is reused under `combat-escort-requests-v1`; no new Cloudflare resource is required.
+- The website record is authoritative. Discord delivery/update failure never rolls back a saved request or member response.
+- Member/Officer/Site Admin may create requests.
+- Request owner, Officer, or Site Admin may Complete or Cancel an open request.
+- Request owners cannot volunteer as their own escort.
+
+Request fields:
+- title
+- system
+- optional destination / area
+- timing
+- urgency: Routine / Priority / Immediate
+- objective
+- optional notes
+- responder state
+
+Responder lifecycle:
+- `I Can Help` → `available`
+- `On My Way` → `on_my_way`
+- `Stand Down` removes that member's response
+- Complete/Cancelled requests retain history but no longer accept responses.
+
+Discord:
+- One live Discord message per Escort Request; edits happen in place as responders/status change.
+- Existing Imperial Mongrels Website bot and existing `/api/discord/interactions` endpoint are reused.
+- Channel discovery accepts `🛡️〡combat-escort-requests`, `combat-escort-requests`, or `combat-escort-request`.
+- Optional exact override: `DISCORD_COMBAT_ESCORT_CHANNEL_ID`.
+- Cards never ping roles automatically in v1. Pursuit-based notification opt-ins remain a future layer so activity interest does not imply notification consent.
+- Required channel permissions: View Channel, Send Messages, Embed Links, Read Message History.
+
+Member surfaces:
+- dedicated member page at `/escort/`
+- Member Portal primary card + Quick Access link
+- Ask the Mongrels navigation knows how to direct members to the Escort Network.
+
 ## Mongrel Pursuits
 
 Primary files:
