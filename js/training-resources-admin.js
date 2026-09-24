@@ -29,13 +29,13 @@
       panel.dataset.tone='ok';
       title.textContent='Training Resources Discord card connected';
       copy.textContent=(discord.chatLinked
-        ?'The persistent training-resources index is linked to the existing training-chat channel.'
-        :'The persistent training-resources index is live. The training-chat shortcut will appear once that channel can be discovered.')
+        ?'The persistent training-resources index is linked to the existing ☕〡training-grounds channel.'
+        :'The persistent training-resources index is live. The Training Grounds shortcut will appear once that channel can be discovered.')
         +(discord.lastSyncedAt?' Last synced '+new Date(discord.lastSyncedAt).toLocaleString()+'.':'');
     }else if(discord?.configured){
       panel.dataset.tone='warning';
       title.textContent='Training Resources Discord card ready to publish';
-      copy.textContent='Publish / Sync will maintain one persistent index message in training-resources and link the existing training-chat when found.';
+      copy.textContent='Publish / Sync will maintain one persistent index message in training-resources and link the existing ☕〡training-grounds channel when found.';
     }else{
       panel.dataset.tone='warning';
       title.textContent='Training Resources Discord integration not configured';
@@ -69,8 +69,8 @@
       render(data.discord||{});
       if(data.sync?.ok){
         copy.textContent=(data.sync.chatChannelId
-          ?'Discord index synchronized and linked to the existing training-chat channel.'
-          :'Discord index synchronized. training-chat was not found, so that shortcut is omitted for now.');
+          ?'Discord index synchronized and linked to the existing ☕〡training-grounds channel.'
+          :'Discord index synchronized. ☕〡training-grounds was not found, so that shortcut is omitted for now.');
       }
     }catch(error){
       panel.dataset.tone='warning';
