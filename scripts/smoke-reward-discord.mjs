@@ -218,11 +218,14 @@ try{
   assert.equal(migrationDeletes.length,2,'Legacy Rewards summary/request card must be removed from Operations before Squad Payouts seeds');
   assert.ok(migrationDeletes.every(row=>row.url.includes('/api/webhooks/1234567890/')),'Legacy Rewards cleanup must use Operations webhook');
   const firstPosts=requests.filter(row=>row.method==='POST');
-  assert.equal(firstPosts.length,2,'Expected one Squad Payouts summary plus one payout request card');
+  assert.equal(firstPosts.length,3,'Expected squad summary, personal-job summary, and one payout request card');
   assert.ok(firstPosts.every(row=>row.url.includes('/api/webhooks/2468135790/')),'All new payout posts must use dedicated Squad Payouts webhook');
   assert.ok(firstPosts.every(row=>row.body.allowed_mentions?.parse?.length===0));
   const migratedState=JSON.parse(env.DAILY_ORDERS.map.get('discord-rewards-v1'));
+  assert.equal(migratedState.version,2);
   assert.equal(migratedState.summary.webhookId,'2468135790');
+  assert.equal(migratedState.personalSummary.webhookId,'2468135790');
+  assert.notEqual(migratedState.summary.messageId,migratedState.personalSummary.messageId);
   assert.ok(Object.values(migratedState.requestCards).every(row=>row.webhookId==='2468135790'));
 
   const beforeUnchanged=requests.length;
@@ -375,6 +378,6 @@ assert.match(page,/Sync Squad Payouts/);
 assert.match(page,/id="reward-engine"/);
 assert.match(page,/wolf-bgs-discord\.js\?v=14/);
 
-console.log('✓ Rewards Discord renders squad-funded and personal-job rewards as separate embeds with separate accounting');
+console.log('✓ Rewards Discord renders squad-funded and personal-job rewards as separate tracked messages');
 console.log('✓ Rewards Discord keeps earning summary-only and gives payout requests a REQUESTED → PAID/CANCELLED → cleanup lifecycle');
 console.log('✓ Squad Payouts migrates tracked Operations messages into its dedicated webhook without duplicates');
