@@ -211,6 +211,7 @@
         <summary><span class="member-access-dot" aria-hidden="true"></span><span class="member-access-name">${displayName} · ${accessLabel}</span></summary>
         <div class="member-access-menu-panel">
           <a class="member-access-pathway" href="${root('pathway/')}"><strong>My Pathway</strong><small>Personal goals, interests and next steps</small></a>
+          <a href="${root('pursuits/')}"><strong>Mongrel Pursuits</strong><small>Activities you enjoy and want to fly with the pack</small></a>
           <a href="${root('member/')}"><strong>Member Portal</strong><small>Tasking, projects and private squad tools</small></a>
           <a href="${root('profile/')}"><strong>My Profile</strong><small>Roster identity, specialties and showcase</small></a>
           <a class="member-access-signout" href="/api/auth/logout?return=%2F">Sign Out</a>
