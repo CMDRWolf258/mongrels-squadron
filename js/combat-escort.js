@@ -179,6 +179,12 @@
       app.hidden=false;
       renderDiscord();
       render();
+      if(location.hash==='#request-form'){
+        requestAnimationFrame(()=>{
+          document.getElementById('request-form')?.scrollIntoView({behavior:'smooth',block:'start'});
+          setTimeout(()=>form?.elements?.system?.focus({preventScroll:true}),250);
+        });
+      }
     }catch(error){
       if(error.status===401||error.status===403){
         gate.hidden=false;
