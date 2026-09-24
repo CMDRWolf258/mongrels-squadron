@@ -894,7 +894,7 @@ Primary files:
 Concept:
 - **Mongrel Pursuits** answers “what Elite activities do you enjoy, specialize in, or want to participate in with other Mongrels?”
 - Pursuits are interests, not duties, rank, authority, leadership appointments, or Specialist Corps status.
-- Discord channel target: `🐺〡mongrel-pursuit`; plain `mongrel-pursuit` is accepted as a fallback. Optional explicit override: `DISCORD_MONGREL_PURSUITS_CHANNEL_ID`. The old `job-selection` channel is not discovered, renamed, edited, or otherwise managed by this feature.
+- Discord channel target: `🐺〡mongrel-pursuits`; plain `mongrel-pursuits` is accepted as a fallback. Optional explicit override: `DISCORD_MONGREL_PURSUITS_CHANNEL_ID`. The old `job-selection` channel is not discovered, renamed, edited, or otherwise managed by this feature.
 - Current catalog has 16 pursuits grouped under Squad & Strategic, Combat, Industry & Logistics, and Discovery & Community.
 
 Storage / synchronization:
