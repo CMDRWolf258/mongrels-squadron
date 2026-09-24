@@ -942,6 +942,40 @@ Member surfaces:
 - Member Portal primary card + Quick Access link
 - Ask the Mongrels navigation knows how to direct members to the Escort Network.
 
+## Squad Rules / ROE Discord Integration
+
+Purpose:
+- The website `/about/#squad-rules` remains the authoritative full Rules & ROE source.
+- Discord **📕〡squad-rules** gets one concise persistent summary card with **View Full Rules & ROE** linking back to the website.
+- Existing legacy embeds from RIMM/Carl Bot are not managed or deleted by the website bot. Wolf may remove those manually after validating the replacement card.
+
+Primary files:
+- `lib/squad-rules-discord.js`
+- `functions/api/squad-rules/index.js`
+- `js/squad-rules-admin.js`
+- Site Admin control lives inside the existing About → Standards & Rules of Engagement section.
+- focused smoke suite: `scripts/smoke-squad-rules.mjs`
+
+Storage:
+- existing `PROJECTS` KV under `squad-rules-discord-v1`
+- no new Cloudflare resources.
+
+Discord:
+- preferred channel: **📕〡squad-rules**
+- plain `squad-rules` fallback accepted.
+- optional explicit override: `DISCORD_SQUAD_RULES_CHANNEL_ID`
+- one bot-owned message is created once and edited in place on later syncs.
+- concise fields: Open Play standard, BGS Open-only rule, no combat logging, combat/ROE summary, Mongrel conduct standard.
+- no pings, no interactions, no automatic pinning.
+- required permissions: View Channel, Send Messages, Embed Links, Read Message History.
+
+Authority:
+- Publish / Sync is Site Admin-only in both UI and server API.
+- Website remains authoritative even if Discord sync fails.
+- Bot never searches for or removes Carl Bot / RIMM legacy messages.
+
+---
+
 ## Training Resources Discord Integration
 
 Purpose:
