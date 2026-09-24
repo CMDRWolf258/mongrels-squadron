@@ -946,7 +946,7 @@ Member surfaces:
 
 Purpose:
 - Discord `training-resources` is an index/doorway into the existing website learning system, not a duplicate content library.
-- The existing `training-chat` channel is intentionally reused for conversation, mentoring, builds, screenshots, troubleshooting, and member-to-member help. The integration never creates, renames, clears, or replaces that chat channel.
+- The existing Discord conversation channel is **☕〡training-grounds** and is intentionally reused for questions, mentoring, builds, screenshots, troubleshooting, and member-to-member help. The integration never creates, renames, clears, or replaces it.
 
 Primary files:
 - `lib/training-resources-discord.js`
@@ -961,12 +961,12 @@ Storage:
 
 Discord channel discovery:
 - resources channel: exact `training-resources` or any decorated name ending in `〡training-resources`
-- conversation channel: exact `training-chat` or any decorated name ending in `〡training-chat`
+- conversation channel: preferred existing **`☕〡training-grounds`** (plain `training-grounds` or any decorated name ending in `〡training-grounds` also accepted). Legacy `training-chat` matching remains as fallback.
 - optional explicit overrides: `DISCORD_TRAINING_RESOURCES_CHANNEL_ID`, `DISCORD_TRAINING_CHAT_CHANNEL_ID`
 
 Persistent card:
 - one bot-owned message maintained in place by message/channel ID.
-- links to Mongrel Field Manual, My Pathway, Reference Database, Mongrel Toolbox, Ship Catalogue, Glossary, Ask the Mongrels, and the existing training-chat when discoverable.
+- links to Mongrel Field Manual, My Pathway, Reference Database, Mongrel Toolbox, Ship Catalogue, Glossary, Ask the Mongrels, and **Training Grounds** when discoverable.
 - website remains the organized source of truth; Discord remains discovery + conversation.
 - link-only buttons; no Discord interaction handler required.
 - no automatic channel creation and no automatic pin management. Leadership may pin the index manually.
