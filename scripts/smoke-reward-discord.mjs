@@ -146,11 +146,8 @@ const summaryPayload=buildSquadRewardSummaryDiscordPayload(loaded,{
 const summaryText=JSON.stringify(summaryPayload);
 assert.match(summaryText,/https:\/\/mongrels-squadron\.pages\.dev\/rewards\//);
 assert.doesNotMatch(summaryText,/\/wolf-bgs\//,'Squad Payouts Discord must never link members to Reward Administration');
-assert.equal(summaryPayload.embeds.length,2,'Squad and personal rewards must render as separate Discord embeds');
-
+assert.equal(summaryPayload.embeds.length,1,'Squad summary should be one dedicated Discord message');
 const squadEmbedText=JSON.stringify(summaryPayload.embeds[0]);
-const personalEmbedText=JSON.stringify(summaryPayload.embeds[1]);
-
 for(const pattern of [
   /Squad-Funded Rewards/,
   /Squad Treasury/,
@@ -163,8 +160,13 @@ for(const pattern of [
   /PAYOUT REQUESTED/,
   /squad treasury only/,
 ])assert.match(squadEmbedText,pattern);
-assert.doesNotMatch(squadEmbedText,/CMDR Charlie|99M Cr|CMDR Payer|Personal Build Run/,'Personal rewards must not appear in the Squad Treasury embed');
+assert.doesNotMatch(squadEmbedText,/CMDR Charlie|99M Cr|CMDR Payer|Personal Build Run/);
 
+const personalPayload=buildPersonalRewardSummaryDiscordPayload(loaded,{
+  rewardsUrl:'https://mongrels-squadron.pages.dev/rewards/',
+});
+assert.equal(personalPayload.embeds.length,1,'Personal jobs should be one dedicated Discord message');
+const personalEmbedText=JSON.stringify(personalPayload.embeds[0]);
 for(const pattern of [
   /Personal Job Rewards/,
   /Separate from the Squad Treasury/,
@@ -177,7 +179,7 @@ for(const pattern of [
   /OWED/,
   /individually funded jobs/,
 ])assert.match(personalEmbedText,pattern);
-assert.doesNotMatch(personalEmbedText,/CMDR Alpha|CMDR Bravo|Squad Payout Requests/,'Squad-funded balances must not appear in the Personal Job Rewards embed');
+assert.doesNotMatch(personalEmbedText,/CMDR Alpha|CMDR Bravo|Squad Payout Requests/);
 
 const requestPayload=buildPayoutRequestDiscordPayload(alpha,{
   adminUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#reward-engine',
