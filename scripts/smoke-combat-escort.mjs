@@ -125,10 +125,11 @@ for(const pattern of [
   /New Escort Request/,
   /Open Escort Network/,
   /combat-escort-discord-launcher-v1/,
-  /\/pins\//,
-  /Pin Messages permission/,
   /allowed_mentions/,
 ])assert.match(discord,pattern);
+assert.doesNotMatch(discord,/\/pins\//);
+assert.doesNotMatch(discord,/Pin Messages permission/);
+assert.doesNotMatch(discord,/pinWarning/);
 
 const client=readFileSync('js/combat-escort.js','utf8');
 new Function(client);
@@ -142,7 +143,6 @@ for(const pattern of [
   /#request-form/,
   /scrollIntoView/,
   /launcherWarning/,
-  /pinWarning/,
 ])assert.match(client,pattern);
 
 const page=readFileSync('escort/index.html','utf8');
