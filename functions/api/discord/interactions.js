@@ -10,6 +10,11 @@ import {
   isSquadEventInteractionMember,
   parseEventRsvpCustomId,
 } from '../../../lib/squad-events.js';
+import { setMemberPursuits } from '../../../lib/mongrel-pursuits.js';
+import {
+  PURSUITS_SELECT_CUSTOM_ID,
+  syncMemberPursuitRoles,
+} from '../../../lib/mongrel-pursuits-discord.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
 const GUEST_CUSTOM_ID = 'mongrels_onboarding_guest';
@@ -44,6 +49,10 @@ export async function onRequestPost(context) {
   const eventRsvp = parseEventRsvpCustomId(customId);
   if (eventRsvp) {
     return handleEventRsvpInteraction(context, interaction, eventRsvp);
+  }
+
+  if (customId === PURSUITS_SELECT_CUSTOM_ID) {
+    return handlePursuitsInteraction(context, interaction);
   }
 
   const choice = customId === APPLICANT_CUSTOM_ID
@@ -95,6 +104,50 @@ export async function onRequestPost(context) {
 
 export function onRequestGet() {
   return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+async function handlePursuitsInteraction(context, interaction) {
+  const { env } = context;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
+  const guildId = interaction?.guild_id || '';
+
+  if (!userId || !guildId) {
+    return response({ type: 4, data: { content: 'Mongrel Pursuits can only be changed inside the Mongrels Discord server.', flags: EPHEMERAL } });
+  }
+  if (env.GUILD_ID && guildId !== env.GUILD_ID) {
+    return response({ type: 4, data: { content: 'This Pursuits selector is not configured for this server.', flags: EPHEMERAL } });
+  }
+  if (!isSquadEventInteractionMember(interaction, env)) {
+    return response({ type: 4, data: { content: 'Mongrel Pursuits are available to recognized squadron members.', flags: EPHEMERAL } });
+  }
+
+  const values = Array.isArray(interaction?.data?.values) ? interaction.data.values : [];
+  const user = interaction?.member?.user || interaction?.user || {};
+  const displayName = interaction?.member?.nick || user.global_name || user.username || 'Commander';
+  const work = handlePursuitsSelection({ interaction, env, userId, displayName, pursuits: values });
+  if (typeof context.waitUntil === 'function') context.waitUntil(work);
+  else await work;
+  return response({ type: 5, data: { flags: EPHEMERAL } });
+}
+
+async function handlePursuitsSelection({ interaction, env, userId, displayName, pursuits }) {
+  try {
+    const saved = await setMemberPursuits(env, { ownerId:userId, displayName, pursuits, source:'discord' });
+    const roleSync = await syncMemberPursuitRoles(env, { userId, pursuits:saved.member.pursuits, state:saved.state });
+    const count = saved.member.pursuits.length;
+    const note = roleSync.ok
+      ? ''
+      : '\n\nYour interests were saved, but Discord role synchronization needs attention. The website record is still correct.';
+    await editDeferredInteraction(interaction, {
+      content: `🐺 **Mongrel Pursuits updated.** ${count ? `${count} pursuit${count===1?'':'s'} selected` : 'No pursuits selected'}.${note}`,
+      components: [],
+    });
+  } catch (error) {
+    await editDeferredInteraction(interaction, {
+      content: `I couldn't update your Mongrel Pursuits. Please try again or use the website.\n\nTechnical detail: ${safeError(error)}`,
+      components: [],
+    }).catch(() => {});
+  }
 }
 
 async function handleEventRsvpInteraction(context, interaction, eventRsvp) {
