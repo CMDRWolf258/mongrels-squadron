@@ -9,7 +9,9 @@ import {
   setMemberPursuits,
 } from '../lib/mongrel-pursuits.js';
 import {
+  PURSUITS_MANAGE_CUSTOM_ID,
   PURSUITS_SELECT_CUSTOM_ID,
+  buildMemberPursuitSelector,
   buildMongrelPursuitsDiscordPayload,
 } from '../lib/mongrel-pursuits-discord.js';
 
@@ -53,10 +55,17 @@ assert.deepEqual(await getMemberPursuitIds(env,'user-1',{profileFallback:true}),
 const payload=buildMongrelPursuitsDiscordPayload({origin:'https://mongrels-squadron.pages.dev'});
 assert.equal(payload.embeds[0].title,'🐺 Mongrel Pursuits');
 assert.match(payload.embeds[0].description,/interests, not obligations/i);
-assert.equal(payload.components[0].components[0].custom_id,PURSUITS_SELECT_CUSTOM_ID);
-assert.equal(payload.components[0].components[0].options.length,MONGREL_PURSUITS.length);
-assert.equal(payload.components[0].components[0].max_values,MONGREL_PURSUITS.length);
+assert.equal(payload.components[0].components[0].custom_id,PURSUITS_MANAGE_CUSTOM_ID);
+assert.equal(payload.components[0].components[0].label,'Manage My Pursuits');
 assert.match(payload.components[1].components[0].url,/\/pursuits\/$/);
+
+const selector=buildMemberPursuitSelector(['bgs','mining']);
+assert.equal(selector.components[0].components[0].custom_id,PURSUITS_SELECT_CUSTOM_ID);
+assert.equal(selector.components[0].components[0].options.length,MONGREL_PURSUITS.length);
+assert.equal(selector.components[0].components[0].max_values,MONGREL_PURSUITS.length);
+assert.equal(selector.components[0].components[0].options.find(x=>x.value==='bgs').default,true);
+assert.equal(selector.components[0].components[0].options.find(x=>x.value==='mining').default,true);
+assert.equal(Boolean(selector.components[0].components[0].options.find(x=>x.value==='pvp').default),false);
 
 const api=readFileSync('functions/api/pursuits/index.js','utf8');
 for(const pattern of [
@@ -69,7 +78,9 @@ for(const pattern of [
 
 const interactions=readFileSync('functions/api/discord/interactions.js','utf8');
 for(const pattern of [
+  /PURSUITS_MANAGE_CUSTOM_ID/,
   /PURSUITS_SELECT_CUSTOM_ID/,
+  /handlePursuitsManager/,
   /handlePursuitsInteraction/,
   /setMemberPursuits/,
   /syncMemberPursuitRoles/,
