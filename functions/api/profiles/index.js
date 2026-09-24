@@ -1,25 +1,35 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { MONGREL_PURSUITS, seedProfileActivitiesFromPursuits } from '../../../lib/mongrel-pursuits.js';
+import {
+  MONGREL_PURSUITS,
+  normalizePursuitIds,
+  pursuitIdsFromLabels,
+  pursuitLabels,
+  readPursuitsState,
+} from '../../../lib/mongrel-pursuits.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
 const PROFILE_KEY = 'profiles-v1';
 const DEFAULT_SPECIALTIES = ['BGS','Combat','PvP','AX','Mining','Exploration','Exobiology','Trade','Colonization','Carriers','Engineering','Powerplay','Surface Warfare','Logistics','Ship Building','Faction Relations'];
-const LEGACY_ACTIVITIES = ['BGS Operations','Bounty Hunting','Combat Zones','PvP','AX Combat','Mining','Exploration','Exobiology','Trade','Colonization','Carrier Logistics','Engineering','Powerplay','Surface Operations','Expeditions','Community Events'];
-const DEFAULT_ACTIVITIES = [...new Set([...MONGREL_PURSUITS.map(item=>item.label),...LEGACY_ACTIVITIES])];
+const DEFAULT_ACTIVITIES = MONGREL_PURSUITS.map(item=>item.label);
 const AVAILABILITY_STATUSES = ['none','Available to Help','Looking for Group','Busy','Away'];
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env); if (auth.response) return auth.response;
   const profiles = await readProfiles(env);
-  const contributions = await buildContributions(env);
+  const [contributions,pursuitsState] = await Promise.all([buildContributions(env),readPursuitsState(env)]);
   const canModerate = MANAGER_ACCESS.has(auth.session.access);
   const mineRaw = profiles.find(p => p.ownerId === auth.session.sub) || null;
+  const activitiesFor = profile => {
+    const stored=pursuitsState.members?.[profile.ownerId];
+    const ids=stored?normalizePursuitIds(stored.pursuits):pursuitIdsFromLabels(profile.activities||[]);
+    return pursuitLabels(ids);
+  };
   const visible = profiles
     .filter(p => p.directoryVisible || p.ownerId === auth.session.sub || canModerate)
-    .map(p => present(p, auth.session, contributions.get(p.ownerId)))
+    .map(p => present(p, auth.session, contributions.get(p.ownerId),activitiesFor(p)))
     .sort(profileSort);
-  return reply({ok:true,viewer:viewer(auth.session),canModerate,specialties:DEFAULT_SPECIALTIES,activities:DEFAULT_ACTIVITIES,availabilityStatuses:AVAILABILITY_STATUSES,mine:mineRaw?present(mineRaw,auth.session,contributions.get(mineRaw.ownerId)):null,profiles:visible});
+  return reply({ok:true,viewer:viewer(auth.session),canModerate,specialties:DEFAULT_SPECIALTIES,activities:DEFAULT_ACTIVITIES,availabilityStatuses:AVAILABILITY_STATUSES,mine:mineRaw?present(mineRaw,auth.session,contributions.get(mineRaw.ownerId),activitiesFor(mineRaw)):null,profiles:visible});
 }
 
 export async function onRequestPost({ request, env }) {
@@ -32,8 +42,11 @@ export async function onRequestPost({ request, env }) {
   const now = new Date().toISOString();
   const defaults = auth.session.access === 'site_admin' ? {squadRank:'Admiral',leadershipRole:'Commanding Officer'} : {squadRank:'Pilot',leadershipRole:''};
   const item = normalizeProfile(body.value,{id:crypto.randomUUID(),ownerId:auth.session.sub,ownerName:auth.session.displayName,createdAt:now,updatedAt:now,updatedBy:auth.session.displayName},auth.session,defaults);
-  const pursuitActivities=await seedProfileActivitiesFromPursuits(env,auth.session.sub);
-  if(pursuitActivities.length)item.activities=pursuitActivities;
+  const pursuitsState=await readPursuitsState(env);
+  const stored=pursuitsState.members?.[auth.session.sub];
+  item.activities=stored
+    ?pursuitLabels(normalizePursuitIds(stored.pursuits))
+    :pursuitLabels(pursuitIdsFromLabels(item.activities||[]));
   profiles.push(item); await writeProfiles(env,profiles);
   const contributions = await buildContributions(env);
   return reply({ok:true,profile:present(item,auth.session,contributions.get(item.ownerId))},201);
@@ -51,7 +64,11 @@ export async function onRequestPut({ request, env }) {
   if(!manager && existing.ownerId!==auth.session.sub) return reply({ok:false,error:'not_profile_owner'},403);
   profiles[idx]=normalizeProfile(body.value,{id:existing.id,ownerId:existing.ownerId,ownerName:existing.ownerName,createdAt:existing.createdAt,updatedAt:new Date().toISOString(),updatedBy:auth.session.displayName},auth.session,existing);
   // Mongrel Pursuits is the authoritative editor for member activities.
-  profiles[idx].activities=Array.isArray(existing.activities)?existing.activities:[];
+  const pursuitsState=await readPursuitsState(env);
+  const stored=pursuitsState.members?.[existing.ownerId];
+  profiles[idx].activities=stored
+    ?pursuitLabels(normalizePursuitIds(stored.pursuits))
+    :pursuitLabels(pursuitIdsFromLabels(existing.activities||[]));
   await writeProfiles(env,profiles);
   const contributions = await buildContributions(env);
   return reply({ok:true,profile:present(profiles[idx],auth.session,contributions.get(existing.ownerId))});
@@ -78,7 +95,7 @@ function normalizeProfile(value,fixed,session,existing={}) {
 }
 
 function normalizeShips(value,fallback){const list=Array.isArray(value)?value:fallback; return list.slice(0,6).map(item=>({name:clean(item?.name,'',80),type:clean(item?.type,'',80),role:clean(item?.role,'',80),edsy:cleanUrl(item?.edsy)})).filter(x=>x.name||x.type);}
-function present(item,session,contribution={}){const mine=item.ownerId===session.sub; const canEdit=mine||MANAGER_ACCESS.has(session.access); const profile={id:item.id,commanderName:item.commanderName,squadRank:item.squadRank,leadershipRole:item.leadershipRole,tagline:item.tagline,homeSystem:item.homeSystem,specialties:item.specialties,activities:item.activities,availabilityStatus:item.availabilityStatus||'none',availability:item.availability,directoryVisible:item.directoryVisible,updatedAt:item.updatedAt,canEdit,isMine:mine,privacy:{showDiscord:item.showDiscord,showBio:item.showBio,showCarrier:item.showCarrier,showShips:item.showShips},contributions:contribution?.summary||{projects:0,trades:0,bounties:0,carriers:0}}; if(item.showDiscord||mine||canEdit)profile.discordName=item.ownerName; if(item.showBio||mine||canEdit)profile.bio=item.bio; if(item.showCarrier||mine||canEdit){profile.carrierCallsign=item.carrierCallsign;profile.registeredCarriers=contribution?.carriers||[];} if(item.showShips||mine||canEdit)profile.featuredShips=item.featuredShips; return profile;}
+function present(item,session,contribution={},activitiesOverride=null){const mine=item.ownerId===session.sub; const canEdit=mine||MANAGER_ACCESS.has(session.access); const profile={id:item.id,commanderName:item.commanderName,squadRank:item.squadRank,leadershipRole:item.leadershipRole,tagline:item.tagline,homeSystem:item.homeSystem,specialties:item.specialties,activities:Array.isArray(activitiesOverride)?activitiesOverride:item.activities,availabilityStatus:item.availabilityStatus||'none',availability:item.availability,directoryVisible:item.directoryVisible,updatedAt:item.updatedAt,canEdit,isMine:mine,privacy:{showDiscord:item.showDiscord,showBio:item.showBio,showCarrier:item.showCarrier,showShips:item.showShips},contributions:contribution?.summary||{projects:0,trades:0,bounties:0,carriers:0}}; if(item.showDiscord||mine||canEdit)profile.discordName=item.ownerName; if(item.showBio||mine||canEdit)profile.bio=item.bio; if(item.showCarrier||mine||canEdit){profile.carrierCallsign=item.carrierCallsign;profile.registeredCarriers=contribution?.carriers||[];} if(item.showShips||mine||canEdit)profile.featuredShips=item.featuredShips; return profile;}
 async function buildContributions(env){const [projects,trades,bounties,carriers]=await Promise.all([readKv(env.PROJECTS,'board-v1',[]),readKv(env.TRADES,'trade-board-v1',[]),readKv(env.BOUNTIES,'board-v1',[]),readKv(env.CARRIERS,'registry-v1',[])]); const map=new Map(); const get=id=>{if(!map.has(id))map.set(id,{summary:{projects:0,trades:0,bounties:0,carriers:0},carriers:[]}); return map.get(id);}; for(const x of projects)if(x?.ownerId)get(x.ownerId).summary.projects++; for(const x of trades)if(x?.ownerId)get(x.ownerId).summary.trades++; for(const x of bounties)if(x?.ownerId)get(x.ownerId).summary.bounties++; for(const x of carriers)if(x?.ownerId){const v=get(x.ownerId);v.summary.carriers++;v.carriers.push({name:x.name||'Fleet Carrier',callsign:x.callsign||'',role:x.role||'',currentSystem:x.currentSystem||''});} return map;}
 async function readProfiles(env){if(!env.PROJECTS||typeof env.PROJECTS.get!=='function')return[]; const v=await env.PROJECTS.get(PROFILE_KEY,{type:'json'}); return Array.isArray(v)?v:[];}
 async function writeProfiles(env,items){await env.PROJECTS.put(PROFILE_KEY,JSON.stringify(items.slice(0,500)));}
