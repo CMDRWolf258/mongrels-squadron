@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=68" sizes="32x32" type="image/png">
+  <title>Combat Escort Network | The Mongrels</title>
+  <meta name="description" content="Request or answer live combat escort support from Regiment of Imperial Mongrels members.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/combat-escort.css?v=1">
+</head>
+<body class="visual-page page-combat-escort">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../members/">Roster</a><a href="../recruitment/">Join Us</a></nav></div></header>
+
+<main>
+  <section class="page-hero escort-hero hero-flare">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">Member Support Network</p>
+        <h1>Combat Escort Network</h1>
+        <p>Need another Mongrel watching your six? Post the system, objective, timing, and urgency. Members can check in from the website or Discord and the same live request stays synchronized.</p>
+      </div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section" data-escort-gate>
+    <div class="container"><article class="escort-gate-card"><p class="eyebrow">Members Only</p><h2>Combat Escort Requests</h2><p>Sign in with Discord to request support or answer another Mongrel's call.</p><a class="btn btn-primary" href="/api/auth/login?return=%2Fescort%2F">Sign in with Discord</a><small data-escort-gate-status>Checking secure session…</small></article></div>
+  </section>
+
+  <section class="section escort-app" data-escort-app hidden>
+    <div class="container">
+      <div class="escort-intro">
+        <div><p class="eyebrow">Live Support</p><h2>Request an Escort</h2><p>Use this for protection, hostile-area movement, risky hauling, rescue support, or any situation where another combat-capable Mongrel would help.</p></div>
+        <div class="escort-discord-state" data-escort-discord-state><span>Discord</span><strong data-escort-discord-title>Checking…</strong><small data-escort-discord-copy></small></div>
+      </div>
+
+      <article class="escort-create-card">
+        <form data-escort-form>
+          <div class="escort-form-grid">
+            <label class="field"><span>Request Title <small>optional</small></span><input name="title" maxlength="100" placeholder="Combat Escort Requested"></label>
+            <label class="field"><span>System</span><input name="system" maxlength="100" required placeholder="e.g. Diaba"></label>
+            <label class="field"><span>Destination / Area <small>optional</small></span><input name="destination" maxlength="120" placeholder="Station, system, route, settlement…"></label>
+            <label class="field"><span>Timing</span><input name="timing" maxlength="120" value="As soon as available" placeholder="Now, 20 minutes, 0200 UTC…"></label>
+            <label class="field"><span>Urgency</span><select name="urgency"><option value="routine">Routine</option><option value="priority">Priority</option><option value="immediate">Immediate</option></select></label>
+            <label class="field escort-span-2"><span>Objective</span><input name="objective" maxlength="180" required placeholder="What are you doing and what kind of escort do you need?"></label>
+            <label class="field escort-span-2"><span>Notes <small>optional</small></span><textarea name="notes" rows="4" maxlength="700" placeholder="Ship, threat, route details, wing instructions, contact notes…"></textarea></label>
+          </div>
+          <div class="escort-form-actions"><span data-escort-form-status aria-live="polite"></span><button class="btn btn-primary" type="submit" data-escort-submit>Post Escort Request</button></div>
+        </form>
+      </article>
+
+      <div class="escort-board-head">
+        <div><p class="eyebrow">Current Board</p><h2>Escort Requests</h2></div>
+        <div class="escort-filters" role="group" aria-label="Escort request filters"><button type="button" class="is-active" data-escort-filter="open">Open</button><button type="button" data-escort-filter="all">All</button></div>
+      </div>
+      <div class="escort-board" data-escort-board></div>
+      <div class="escort-empty" data-escort-empty hidden><strong>No escort requests here.</strong><span>When a Mongrel calls for support, it will appear here.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=72"></script>
+<script src="../js/combat-escort.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=69"></script>
+</body>
+</html>
