@@ -31,7 +31,7 @@ export async function onRequestGet({request,env}){
       lastSyncedAt:state.discord?.lastSyncedAt||'',
       lastError:canManage?(state.discord?.lastError||''):'',
       roleCount:Object.keys(state.discord?.roleIds||{}).length,
-      target:'🐺〡mongrel-pursuits',
+      target:'🐺〡mongrel-pursuit',
     },
   });
 }
