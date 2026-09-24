@@ -29,13 +29,13 @@
       panel.dataset.tone='ok';
       title.textContent='Training Resources Discord card connected';
       copy.textContent=(discord.chatLinked
-        ?'The persistent training-resources index is linked to the existing ☕〡training-grounds channel.'
-        :'The persistent training-resources index is live. The Training Grounds shortcut will appear once that channel can be discovered.')
+        ?'The persistent 📚〡training-resources index is linked to the existing ☕〡training-grounds channel.'
+        :'The persistent 📚〡training-resources index is live. The Training Grounds shortcut will appear once that channel can be discovered.')
         +(discord.lastSyncedAt?' Last synced '+new Date(discord.lastSyncedAt).toLocaleString()+'.':'');
     }else if(discord?.configured){
       panel.dataset.tone='warning';
       title.textContent='Training Resources Discord card ready to publish';
-      copy.textContent='Publish / Sync will maintain one persistent index message in training-resources and link the existing ☕〡training-grounds channel when found.';
+      copy.textContent='Publish / Sync will maintain one persistent index message in 📚〡training-resources and link the existing ☕〡training-grounds channel when found.';
     }else{
       panel.dataset.tone='warning';
       title.textContent='Training Resources Discord integration not configured';
