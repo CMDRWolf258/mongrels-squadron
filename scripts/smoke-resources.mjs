@@ -35,3 +35,70 @@ assert.match(client, /data\/resources\.json/, 'Toolbox client is not loading str
 assert.match(client, /Mongrel use/, 'Toolbox client lost the Mongrel use guidance block');
 
 console.log('✓ Mongrel Toolbox data, approved resources, filters, and UI wiring are intact');
+
+const site = readFileSync('js/site.js', 'utf8');
+for (const pattern of [
+  /Start Here/,
+  /navGroup\('Activities'/,
+  /navGroup\('Command'/,
+  /navGroup\('Resources'/,
+  /navGroup\('Community'/,
+  /Join Us/,
+  /Learn & Look Up/,
+  /Build & Tools/,
+  /Mongrel Toolbox/,
+  /Combat Escort Network/,
+]) assert.match(site, pattern);
+assert.doesNotMatch(site, /External Resources/);
+assert.doesNotMatch(site, /Build & Ask/);
+
+const manual = readFileSync('guides/index.html', 'utf8');
+for (const pattern of [
+  /<h1>Mongrel Field Manual<\/h1>/,
+  />LEARN</,
+  />LOOK UP</,
+  />TOOLS</,
+  /Mongrel Toolbox/,
+  /Discover → Progress → Learn/,
+  /Browse Activities/,
+  /Open My Pathway/,
+]) assert.match(manual, pattern);
+assert.doesNotMatch(manual, />Resources<\/a>/);
+
+for (const path of [
+  'guides/reference/index.html',
+  'guides/glossary/index.html',
+  'guides/bgs/index.html',
+  'guides/engineering/index.html',
+  'guides/mining/index.html',
+  'guides/operations/index.html',
+]) {
+  const source = readFileSync(path, 'utf8');
+  assert.match(source, />Toolbox<\/a>/, `${path} should use Toolbox instead of a second Resources label`);
+}
+
+const activities = readFileSync('activities/index.html', 'utf8');
+for (const pattern of [
+  /Learn<\/strong> for the Field Manual/,
+  /Progress<\/strong> for My Pathway/,
+  /Do<\/strong> for live squad activity/,
+  /Build<\/strong> for ships and loadouts/,
+  /Progress · My Pathway/,
+  /Learn · Mining Manual/,
+  /Do · Mission Control/,
+]) assert.match(activities, pattern);
+
+const member = readFileSync('member/index.html', 'utf8');
+assert.match(member, /<h3>Quick Links<\/h3>/);
+assert.doesNotMatch(member, /<h3>Member Resources<\/h3>/);
+
+const assistant = readFileSync('lib/assistant-context.js', 'utf8');
+for (const pattern of [
+  /id:'mongrel-toolbox'/,
+  /label:'Mongrel Toolbox'/,
+  /Resources → Build & Tools → Mongrel Toolbox/,
+  /Resources → Learn & Look Up → Mongrel Field Manual/,
+  /Command → Combat Escort Network/,
+]) assert.match(assistant, pattern);
+
+console.log('✓ learning architecture is consolidated without changing top-level navigation categories');
