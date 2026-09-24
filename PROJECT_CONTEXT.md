@@ -942,6 +942,40 @@ Member surfaces:
 - Member Portal primary card + Quick Access link
 - Ask the Mongrels navigation knows how to direct members to the Escort Network.
 
+## Training Resources Discord Integration
+
+Purpose:
+- Discord `training-resources` is an index/doorway into the existing website learning system, not a duplicate content library.
+- The existing `training-chat` channel is intentionally reused for conversation, mentoring, builds, screenshots, troubleshooting, and member-to-member help. The integration never creates, renames, clears, or replaces that chat channel.
+
+Primary files:
+- `lib/training-resources-discord.js`
+- `functions/api/training-resources/index.js`
+- `js/training-resources-admin.js`
+- Site Admin control lives on `/guides/`
+- focused smoke suite: `scripts/smoke-training-resources-discord.mjs`
+
+Storage:
+- existing `PROJECTS` KV under `training-resources-discord-v1`
+- no new Cloudflare resources.
+
+Discord channel discovery:
+- resources channel: exact `training-resources` or any decorated name ending in `〡training-resources`
+- conversation channel: exact `training-chat` or any decorated name ending in `〡training-chat`
+- optional explicit overrides: `DISCORD_TRAINING_RESOURCES_CHANNEL_ID`, `DISCORD_TRAINING_CHAT_CHANNEL_ID`
+
+Persistent card:
+- one bot-owned message maintained in place by message/channel ID.
+- links to Mongrel Field Manual, My Pathway, Reference Database, Mongrel Toolbox, Ship Catalogue, Glossary, Ask the Mongrels, and the existing training-chat when discoverable.
+- website remains the organized source of truth; Discord remains discovery + conversation.
+- link-only buttons; no Discord interaction handler required.
+- no automatic channel creation and no automatic pin management. Leadership may pin the index manually.
+- required permissions in training-resources: View Channel, Send Messages, Embed Links, Read Message History.
+
+Admin:
+- Site Admin sees a hidden-by-default **Publish / Sync Discord Card** control on the Mongrel Field Manual page.
+- regular members/public visitors do not see the control.
+
 ## Mongrel Pursuits
 
 Primary files:
