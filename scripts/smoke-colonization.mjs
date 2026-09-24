@@ -74,7 +74,7 @@ assert.match(assignmentsSource, /pathway-colonization/, 'Shared assignment API i
 assert.match(assignmentsSource, /seedVersion:'colonization-v1'/, 'Shared assignment API is missing the Colonization provider');
 const activitiesHtml = readFileSync('activities/index.html', 'utf8');
 assert.match(activitiesHtml, /Pathway Available[\s\S]{0,300}<h3>Colonization<\/h3>/, 'Activities hub does not mark Colonization as Pathway Available');
-assert.match(activitiesHtml, /<h3>Colonization<\/h3>[\s\S]{0,900}Open My Pathway/, 'Activities hub Colonization card is missing the My Pathway link');
+assert.match(activitiesHtml, /<h3>Colonization<\/h3>[\s\S]{0,900}Progress · My Pathway/, 'Activities hub Colonization card is missing the Progress · My Pathway link');
 console.log('✓ Colonization provider, UI mount, public hub, client, Assistant context, and duplicate-card handling are wired');
 
 console.log('\nAll Colonization smoke checks passed.');
