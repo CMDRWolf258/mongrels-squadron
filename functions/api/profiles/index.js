@@ -1,10 +1,12 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { MONGREL_PURSUITS, seedProfileActivitiesFromPursuits } from '../../../lib/mongrel-pursuits.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
 const PROFILE_KEY = 'profiles-v1';
 const DEFAULT_SPECIALTIES = ['BGS','Combat','PvP','AX','Mining','Exploration','Exobiology','Trade','Colonization','Carriers','Engineering','Powerplay','Surface Warfare','Logistics','Ship Building','Faction Relations'];
-const DEFAULT_ACTIVITIES = ['BGS Operations','Bounty Hunting','Combat Zones','PvP','AX Combat','Mining','Exploration','Exobiology','Trade','Colonization','Carrier Logistics','Engineering','Powerplay','Surface Operations','Expeditions','Community Events'];
+const LEGACY_ACTIVITIES = ['BGS Operations','Bounty Hunting','Combat Zones','PvP','AX Combat','Mining','Exploration','Exobiology','Trade','Colonization','Carrier Logistics','Engineering','Powerplay','Surface Operations','Expeditions','Community Events'];
+const DEFAULT_ACTIVITIES = [...new Set([...MONGREL_PURSUITS.map(item=>item.label),...LEGACY_ACTIVITIES])];
 const AVAILABILITY_STATUSES = ['none','Available to Help','Looking for Group','Busy','Away'];
 
 export async function onRequestGet({ request, env }) {
@@ -30,6 +32,8 @@ export async function onRequestPost({ request, env }) {
   const now = new Date().toISOString();
   const defaults = auth.session.access === 'site_admin' ? {squadRank:'Admiral',leadershipRole:'Commanding Officer'} : {squadRank:'Pilot',leadershipRole:''};
   const item = normalizeProfile(body.value,{id:crypto.randomUUID(),ownerId:auth.session.sub,ownerName:auth.session.displayName,createdAt:now,updatedAt:now,updatedBy:auth.session.displayName},auth.session,defaults);
+  const pursuitActivities=await seedProfileActivitiesFromPursuits(env,auth.session.sub);
+  if(pursuitActivities.length)item.activities=pursuitActivities;
   profiles.push(item); await writeProfiles(env,profiles);
   const contributions = await buildContributions(env);
   return reply({ok:true,profile:present(item,auth.session,contributions.get(item.ownerId))},201);
@@ -46,6 +50,8 @@ export async function onRequestPut({ request, env }) {
   const existing=profiles[idx]; const manager=MANAGER_ACCESS.has(auth.session.access);
   if(!manager && existing.ownerId!==auth.session.sub) return reply({ok:false,error:'not_profile_owner'},403);
   profiles[idx]=normalizeProfile(body.value,{id:existing.id,ownerId:existing.ownerId,ownerName:existing.ownerName,createdAt:existing.createdAt,updatedAt:new Date().toISOString(),updatedBy:auth.session.displayName},auth.session,existing);
+  // Mongrel Pursuits is the authoritative editor for member activities.
+  profiles[idx].activities=Array.isArray(existing.activities)?existing.activities:[];
   await writeProfiles(env,profiles);
   const contributions = await buildContributions(env);
   return reply({ok:true,profile:present(profiles[idx],auth.session,contributions.get(existing.ownerId))});
