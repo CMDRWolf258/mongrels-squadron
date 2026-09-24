@@ -30,7 +30,7 @@
     const path = window.location.pathname.toLowerCase();
     if (/\/start\//.test(path)) return 'start';
     if (/\/(activities|pvp|trading)\//.test(path)) return 'activities';
-    if (/\/(operations|projects|carriers)\//.test(path)) return 'command';
+    if (/\/(operations|projects|carriers|escort)\//.test(path)) return 'command';
     if (/\/(guides|ships|assistant)\//.test(path)) return 'resources';
     if (/\/(about|members|gallery|announcements)\//.test(path)) return 'community';
     if (/\/(recruitment|apply)\//.test(path)) return 'join';
@@ -84,21 +84,22 @@
         ]},
         { label:'Coordination', links:[
           { href:root('carriers/#carrier-coordination'), title:'Carrier Coordination', note:'Fleet carriers, movement and logistics' },
+          { href:root('escort/'), title:'Combat Escort Network', note:'Live protection and support requests' },
           { href:root('guides/operations/'), title:'Operations Field Manual', note:'Prepare for squad operations' },
           { href:root('member/'), title:'Member Portal', note:'Private member starting point' },
         ]},
       ])}
       ${navGroup('Resources', 'resources', [
-        { label:'Learn', links:[
-          { href:root('guides/'), title:'Field Manual', note:'Guides for activities and mechanics' },
+        { label:'Learn & Look Up', links:[
+          { href:root('guides/'), title:'Mongrel Field Manual', note:'Guides for activities and mechanics' },
           { href:root('guides/engineering/'), title:'Engineering', note:'Build philosophy and module modification' },
           { href:root('guides/reference/'), title:'Reference Database', note:'Dense lookups and exact mechanics' },
           { href:root('guides/glossary/'), title:'Glossary', note:'Acronyms and Elite terminology' },
         ]},
-        { label:'Build & Ask', links:[
+        { label:'Build & Tools', links:[
           { href:root('ships/'), title:'Ship Catalogue', note:'Mongrel builds and EDSY links' },
-          { href:root('assistant/'), title:'Ask the Mongrels', note:'Get routed to the right knowledge' },
-          { href:root('guides/resources/'), title:'External Resources', note:'Trusted specialist tools and sources' },
+          { href:root('guides/resources/'), title:'Mongrel Toolbox', note:'Trusted specialist tools, apps and databases' },
+          { href:root('assistant/'), title:'Ask the Mongrels', note:'Ask questions and get routed to the right knowledge' },
         ]},
       ])}
       ${navGroup('Community', 'community', [
