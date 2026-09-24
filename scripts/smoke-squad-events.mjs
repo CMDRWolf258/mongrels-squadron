@@ -76,6 +76,10 @@ assert.match(eventCore,/embed\.image=\{url:eventImageUrl\}/);
 assert.match(eventCore,/discordEmbedImageUrl/);
 assert.match(eventCore,/searchParams\.set\('v'/);
 assert.doesNotMatch(eventCore,/discordSpacerField/);
+assert.match(eventCore,/📅〡squad-events/);
+assert.match(eventCore,/squadEventsChannelName/);
+assert.match(eventCore,/endsWith\('〡squad-events'\)/);
+assert.match(eventCore,/plain squad-events is also accepted/);
 
 const projectApi=readFileSync('functions/api/projects/index.js','utf8');
 for(const pattern of [
