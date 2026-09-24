@@ -28,6 +28,7 @@ export async function onRequestGet({request,env}){
     viewer:viewer(auth.session),
     canManage,
     discordConfigured:discordAnnouncementsConfigured(env),
+    mongrelsRoleConfigured:isDiscordRoleId(env?.MEMBER_ROLE_ID),
     imageStorageConfigured:canManage?announcementImagesConfigured(env):false,
     items:visible,
   });
@@ -93,6 +94,7 @@ export async function onRequestPut({request,env}){
   const now=new Date().toISOString();
   const existing=document.items[index];
   const action=clean(body.value?.action||'save').toLowerCase();
+  const notifyMongrels=action==='publish'&&existing.status==='draft'&&body.value?.notifyMongrels===true;
   const item={...existing};
 
   if(action==='save'&&item.status==='archived'){
@@ -145,6 +147,7 @@ export async function onRequestPut({request,env}){
         imageUrl:item.imageKey?announcementImagePublicUrl(request,item.imageKey):'',
       },
       siteUrl:announcementUrl(request,item.id),
+      notifyMongrels,
     });
     if(discord.ok){
       item.discordMessageId=discord.messageId||item.discordMessageId||'';
@@ -274,6 +277,7 @@ function compareAnnouncements(a,b){
 }
 function emptyDocument(){return{version:1,updatedAt:'',items:[]}}
 function normalizePriority(value){return clean(value)==='important'?'important':'standard'}
+function isDiscordRoleId(value){return /^\d{5,30}$/.test(clean(value))}
 function normalizeImageKey(value){
   const key=clean(value);
   return isManagedAnnouncementImageKey(key)?key:'';

@@ -16,6 +16,8 @@
   const titleInput=document.querySelector('[data-announcement-title]');
   const priorityInput=document.querySelector('[data-announcement-priority]');
   const bodyInput=document.querySelector('[data-announcement-body]');
+  const notifyWrap=document.querySelector('[data-announcement-notify-wrap]');
+  const notifyInput=document.querySelector('[data-announcement-notify]');
   const imageWrap=document.querySelector('[data-announcement-image-wrap]');
   const imageFile=document.querySelector('[data-announcement-image-file]');
   const imageKeyInput=document.querySelector('[data-announcement-image-key]');
@@ -33,7 +35,7 @@
   const publishButton=document.querySelector('[data-announcement-publish]');
   const closeButtons=[...document.querySelectorAll('[data-announcement-close]')];
 
-  let state={items:[],canManage:false,discordConfigured:false,imageStorageConfigured:false,filter:'published'};
+  let state={items:[],canManage:false,discordConfigured:false,mongrelsRoleConfigured:false,imageStorageConfigured:false,filter:'published'};
   let originalImageKey='';
   let uploadedImageKey='';
   let imageUploadBusy=false;
@@ -220,6 +222,9 @@
     setImageStatus(state.imageStorageConfigured?'':(state.canManage?'Image storage is not configured.':''));
     renderImageEditor(draft?.imageUrl?'Current announcement image':'');
     if(imageWrap)imageWrap.hidden=!state.canManage;
+    const canNotify=state.mongrelsRoleConfigured&&(!draft||draft.status==='draft');
+    if(notifyWrap)notifyWrap.hidden=!canNotify;
+    if(notifyInput){notifyInput.checked=false;notifyInput.disabled=!canNotify;}
     editorTitle.textContent=draft?'Edit Announcement':'New Announcement';
     deleteButton.hidden=!draft||draft.status!=='draft';
     publishButton.hidden=Boolean(draft&&draft.status==='archived');
@@ -257,6 +262,7 @@
     priority:priorityInput.value,
     body:bodyInput.value,
     imageKey:imageKeyInput?.value||'',
+    notifyMongrels:Boolean(notifyInput?.checked),
   });
 
   async function saveEditor({publish=false}={}){
@@ -449,6 +455,7 @@
       state.items=Array.isArray(data.items)?data.items:[];
       state.canManage=Boolean(data.canManage);
       state.discordConfigured=Boolean(data.discordConfigured);
+      state.mongrelsRoleConfigured=Boolean(data.mongrelsRoleConfigured);
       state.imageStorageConfigured=Boolean(data.imageStorageConfigured);
       gate.hidden=true;
       board.hidden=false;

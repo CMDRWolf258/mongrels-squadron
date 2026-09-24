@@ -20,12 +20,14 @@ const payload=buildAnnouncementDiscordPayload({
   authorName:'CMDR Wolf258',
   publishedAt:'2026-09-23T15:00:00.000Z',
   imageUrl:'https://mongrels-squadron.pages.dev/media/announcements/test.webp',
-},{siteUrl:'https://mongrels-squadron.pages.dev/announcements/#announcement-a1'});
+},{siteUrl:'https://mongrels-squadron.pages.dev/announcements/#announcement-a1',notifyRoleId:'777777777777777777'});
 assert.equal(payload.embeds[0].title,'Squad Update');
 assert.match(payload.embeds[0].description,/new announcement/);
 assert.match(payload.embeds[0].footer.text,/Official Announcement/);
 assert.equal(payload.embeds[0].fields[1].value,'Important');
 assert.equal(payload.embeds[0].image.url,'https://mongrels-squadron.pages.dev/media/announcements/test.webp');
+assert.equal(payload.content,'<@&777777777777777777>');
+assert.deepEqual(payload.allowedRoleMentions,['777777777777777777']);
 
 const originalFetch=globalThis.fetch;
 let captured=[];
@@ -36,11 +38,14 @@ globalThis.fetch=async(url,options)=>{
 try{
   const created=await createAnnouncementsDiscordMessage(
     {DISCORD_ANNOUNCEMENTS_WEBHOOK_URL:webhook},
-    {embeds:[{title:'Create'}]}
+    {embeds:[{title:'Create'}],content:'<@&777777777777777777>',allowedRoleMentions:['777777777777777777']}
   );
   assert.equal(created.messageId,'123456789012345678');
   assert.equal(captured[0].options.method,'POST');
   assert.match(captured[0].url,/wait=true/);
+  const createBody=JSON.parse(captured[0].options.body);
+  assert.equal(createBody.content,'<@&777777777777777777>');
+  assert.deepEqual(createBody.allowed_mentions,{parse:[],roles:['777777777777777777']});
 
   const edited=await editAnnouncementsDiscordMessage(
     {DISCORD_ANNOUNCEMENTS_WEBHOOK_URL:webhook},
@@ -69,6 +74,9 @@ for(const pattern of [
   /deleteManagedAnnouncementImage/,
   /imageKey/,
   /imageStorageConfigured/,
+  /mongrelsRoleConfigured/,
+  /notifyMongrels=action==='publish'&&existing\.status==='draft'/,
+  /MEMBER_ROLE_ID/,
   /status='published'|status:'published'|item\.status='published'/,
   /published_announcements_must_be_archived/,
 ])assert.match(api,pattern);
@@ -86,6 +94,8 @@ for(const pattern of [
   /uploadImage/,
   /deleteTemporaryImage/,
   /announcement-card-image/,
+  /data-announcement-notify/,
+  /notifyMongrels/,
 ])assert.match(client,pattern);
 new Function(client);
 
@@ -97,8 +107,10 @@ for(const pattern of [
   /data-announcement-form/,
   /data-announcement-image-drop/,
   /data-announcement-image-file/,
-  /announcements\.js\?v=2/,
-  /announcements\.css\?v=2/,
+  /data-announcement-notify/,
+  /Notify @Mongrels/,
+  /announcements\.js\?v=3/,
+  /announcements\.css\?v=3/,
 ])assert.match(page,pattern);
 
 const imageApi=readFileSync('functions/api/announcements/image.js','utf8');
@@ -128,4 +140,4 @@ for(const pattern of [
   /image\/webp/,
 ])assert.match(imageLib,pattern);
 
-console.log('✓ Announcements support managed R2 images on the website and persistent Discord embeds');
+console.log('✓ Announcements support managed R2 images, persistent Discord embeds, and opt-in first-publish @Mongrels notifications');

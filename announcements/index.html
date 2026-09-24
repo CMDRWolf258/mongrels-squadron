@@ -8,7 +8,7 @@
   <title>Squadron Announcements | The Mongrels</title>
   <meta name="description" content="Official internal announcements for members of the Regiment of Imperial Mongrels.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/announcements.css?v=2">
+  <link rel="stylesheet" href="../css/announcements.css?v=3">
 </head>
 <body class="visual-page page-announcements">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../announcements/" aria-current="page">Announcements</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -68,6 +68,10 @@
         <label><span>Title</span><input type="text" maxlength="180" required data-announcement-title placeholder="Squadron update"></label>
         <label><span>Priority</span><select data-announcement-priority><option value="standard">Standard</option><option value="important">Important</option></select></label>
         <label class="announcement-editor-wide"><span>Announcement</span><textarea rows="12" maxlength="3500" required data-announcement-body placeholder="Write the announcement exactly as members should receive it."></textarea><small>Published edits update the existing Discord message instead of creating a duplicate.</small></label>
+        <label class="announcement-editor-wide announcement-notify-option" data-announcement-notify-wrap>
+          <input type="checkbox" data-announcement-notify>
+          <span class="announcement-notify-copy"><strong>Notify @Mongrels</strong><small>Ping the Mongrels role when this announcement is first published to Discord. Later edits will not ping again.</small></span>
+        </label>
         <div class="announcement-editor-wide announcement-image-editor" data-announcement-image-wrap>
           <div class="announcement-image-editor-head">
             <span>Photo <small>Optional</small></span>
@@ -107,7 +111,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=64"></script>
-<script src="../js/announcements.js?v=2"></script>
+<script src="../js/announcements.js?v=3"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body>
 </html>
