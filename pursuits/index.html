@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=68" sizes="32x32" type="image/png">
+  <title>Mongrel Pursuits | The Mongrels</title>
+  <meta name="description" content="Choose the Elite Dangerous activities you enjoy and want to participate in with the Regiment of Imperial Mongrels.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/pursuits.css?v=1">
+</head>
+<body class="visual-page page-pursuits">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../members/">Roster</a><a href="../recruitment/">Join Us</a></nav></div></header>
+
+<main>
+  <section class="page-hero pursuits-hero hero-flare">
+    <div class="container page-hero-grid">
+      <div><p class="eyebrow">Member Interests</p><h1>Mongrel Pursuits</h1><p>What do you enjoy doing in Elite? Choose the activities you like, specialize in, or want to join other Mongrels for. These are interests—not assignments, obligations, rank, or leadership positions.</p></div>
+      <img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt="">
+    </div>
+  </section>
+
+  <section class="section" data-pursuits-gate>
+    <div class="container"><article class="pursuits-gate-card"><p class="eyebrow">Members Only</p><h2>Choose Your Pursuits</h2><p>Sign in with Discord to manage your Mongrel Pursuits.</p><a class="btn btn-primary" href="/api/auth/login?return=%2Fpursuits%2F">Sign in with Discord</a><small data-pursuits-gate-status>Checking secure session…</small></article></div>
+  </section>
+
+  <section class="section pursuits-app" data-pursuits-app hidden>
+    <div class="container">
+      <div class="pursuits-intro">
+        <div><p class="eyebrow">Your Activity Profile</p><h2>What are you into?</h2><p>Select as many as you want. Your choices are used by the private member roster and synchronized with the matching Discord Pursuit roles.</p></div>
+        <div class="pursuits-actions"><a class="btn btn-ghost" href="../members/">Squadron Roster</a><a class="btn btn-ghost" href="../profile/">My Profile</a></div>
+      </div>
+
+      <aside class="pursuits-status" data-pursuits-status>
+        <div><span>Discord</span><strong data-pursuits-discord-title>Checking…</strong><small data-pursuits-discord-copy></small></div>
+        <button class="btn btn-secondary" type="button" data-pursuits-discord-sync hidden>Publish / Sync Discord Card</button>
+      </aside>
+
+      <form data-pursuits-form>
+        <div class="pursuits-groups" data-pursuits-groups></div>
+        <div class="pursuits-savebar">
+          <div><strong data-pursuits-selected-count>0 selected</strong><span data-pursuits-save-status aria-live="polite">Choose any activities that sound like you.</span></div>
+          <div><button class="btn btn-secondary" type="button" data-pursuits-clear>Clear All</button><button class="btn btn-primary" type="submit" data-pursuits-save>Save My Pursuits</button></div>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=68"></script>
+<script src="../js/pursuits.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=68"></script>
+</body>
+</html>
