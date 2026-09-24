@@ -161,7 +161,7 @@
       state.filter='open';
       filters.forEach(filter=>filter.classList.toggle('is-active',filter.dataset.escortFilter==='open'));
       render();
-      const launcherWarning=data.discord?.launcher?.pinWarning||data.discord?.launcher?.error||'';
+      const launcherWarning=data.discord?.launcher?.error||'';
       if(data.discord?.ok===false){
         setFormStatus('Request posted. Discord delivery needs attention, but the website request is live.','error');
       }else if(launcherWarning){
