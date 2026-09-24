@@ -141,6 +141,8 @@ for(const pattern of [
   /cancel/,
   /#request-form/,
   /scrollIntoView/,
+  /launcherWarning/,
+  /pinWarning/,
 ])assert.match(client,pattern);
 
 const page=readFileSync('escort/index.html','utf8');
@@ -151,7 +153,7 @@ for(const pattern of [
   /id="request-form"/,
   /return=%2Fescort%2F%23request-form/,
   /combat-escort\.js\?v=2/,
-  /combat-escort\.css\?v=1/,
+  /combat-escort\.css\?v=2/,
 ])assert.match(page,pattern);
 
 const portal=readFileSync('member/index.html','utf8');
