@@ -918,8 +918,11 @@ Discord:
 - Existing Imperial Mongrels Website bot and existing `/api/discord/interactions` endpoint are reused.
 - Channel discovery accepts `🛡️〡combat-escort-requests`, `combat-escort-requests`, or `combat-escort-request`.
 - Optional exact override: `DISCORD_COMBAT_ESCORT_CHANNEL_ID`.
+- Every request card keeps persistent website shortcuts: **New Escort Request** → `/escort/#request-form` and **Open Escort Network** → `/escort/`. Open requests show these alongside responder controls; Complete/Cancelled history cards retain the two shortcuts after response controls disappear.
+- One persistent **Combat Escort Network** launcher card is maintained in the Discord channel and stored under `combat-escort-discord-launcher-v1` in `PROJECTS`. It is edited/recreated instead of duplicated.
+- The bot attempts to pin the launcher card. Pin failure is non-fatal: requests and request cards still work, and the website surfaces a warning so leadership can grant the bot Discord pin permission or pin the launcher manually.
 - Cards never ping roles automatically in v1. Pursuit-based notification opt-ins remain a future layer so activity interest does not imply notification consent.
-- Required channel permissions: View Channel, Send Messages, Embed Links, Read Message History.
+- Required request-card permissions: View Channel, Send Messages, Embed Links, Read Message History. Automatic launcher pinning additionally requires Discord permission to pin messages.
 
 Member surfaces:
 - dedicated member page at `/escort/`
