@@ -58,6 +58,24 @@ assert.match(payload.embeds[0].description,/interests, not obligations/i);
 assert.equal(payload.components[0].components[0].custom_id,PURSUITS_MANAGE_CUSTOM_ID);
 assert.equal(payload.components[0].components[0].label,'Manage My Pursuits');
 assert.match(payload.components[1].components[0].url,/\/pursuits\/$/);
+assert.equal(payload.embeds[0].fields.length,4);
+for(const field of payload.embeds[0].fields){
+  assert.ok(field.value.length<=1024,'Pursuits Discord category field must stay within Discord field limits');
+  assert.ok(field.value.includes('↳ '),'Pursuit descriptions should use the readable second-line format');
+}
+for(const pursuit of MONGREL_PURSUITS){
+  const field=payload.embeds[0].fields.find(entry=>entry.name===pursuit.group);
+  assert.ok(field,'Every Pursuit must belong to a rendered Discord category');
+  assert.ok(field.value.includes(pursuit.label),'Discord card should show each Pursuit label');
+  assert.ok(field.value.includes(pursuit.description),'Discord card should show each Pursuit description');
+}
+const embedText=[
+  payload.embeds[0].title,
+  payload.embeds[0].description,
+  payload.embeds[0].footer?.text,
+  ...payload.embeds[0].fields.flatMap(field=>[field.name,field.value]),
+].filter(Boolean).join('');
+assert.ok(embedText.length<=6000,'Pursuits Discord embed must stay within Discord total text limits');
 
 const selector=buildMemberPursuitSelector(['bgs','mining']);
 assert.equal(selector.components[0].components[0].custom_id,PURSUITS_SELECT_CUSTOM_ID);
