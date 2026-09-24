@@ -61,6 +61,14 @@ for(const pattern of [
   /📕〡squad-rules/,
 ]) assert.match(admin,pattern);
 
+const structureClient=readFileSync('js/squad-structure.js','utf8');
+for(const pattern of [
+  /#squad-rules/,
+  /realignDynamicAnchor/,
+  /requestAnimationFrame\(\(\)=>requestAnimationFrame/,
+  /scrollIntoView\(\{block:'start'\}\)/,
+]) assert.match(structureClient,pattern);
+
 const about=readFileSync('about/index.html','utf8');
 for(const pattern of [
   /id="squad-rules"/,
