@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 
 import {
   buildPayoutRequestDiscordPayload,
-  buildRewardSummaryDiscordPayload,
+  buildPersonalRewardSummaryDiscordPayload,
+  buildSquadRewardSummaryDiscordPayload,
   loadRewardDiscordView,
   syncRewardDiscordBoard,
 } from '../lib/reward-discord.js';
@@ -138,7 +139,7 @@ const alpha=loaded.members.find(row=>row.ownerId==='user-a');
 assert.equal(alpha.payoutRequest.requestedRemainingCredits,30_000_000);
 assert.equal(alpha.payoutRequest.newSinceRequestCredits,5_000_000,'New rewards after request must remain outside frozen payout request');
 
-const summaryPayload=buildRewardSummaryDiscordPayload(loaded,{
+const summaryPayload=buildSquadRewardSummaryDiscordPayload(loaded,{
   adminUrl:'https://mongrels-squadron.pages.dev/wolf-bgs/#reward-engine',
   rewardsUrl:'https://mongrels-squadron.pages.dev/rewards/',
 });
