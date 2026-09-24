@@ -100,7 +100,7 @@ for(const pattern of [
 
 const discord=readFileSync('lib/mongrel-pursuits-discord.js','utf8');
 for(const pattern of [
-  /🐺〡mongrel-pursuit/,
+  /🐺〡mongrel-pursuits/,
   /Pursuit · /,
   /Manage My Pursuits/,
   /current choices are preselected/,
