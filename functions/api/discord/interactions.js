@@ -10,9 +10,11 @@ import {
   isSquadEventInteractionMember,
   parseEventRsvpCustomId,
 } from '../../../lib/squad-events.js';
-import { setMemberPursuits } from '../../../lib/mongrel-pursuits.js';
+import { getMemberPursuitIds, setMemberPursuits } from '../../../lib/mongrel-pursuits.js';
 import {
+  PURSUITS_MANAGE_CUSTOM_ID,
   PURSUITS_SELECT_CUSTOM_ID,
+  buildMemberPursuitSelector,
   syncMemberPursuitRoles,
 } from '../../../lib/mongrel-pursuits-discord.js';
 
@@ -51,6 +53,9 @@ export async function onRequestPost(context) {
     return handleEventRsvpInteraction(context, interaction, eventRsvp);
   }
 
+  if (customId === PURSUITS_MANAGE_CUSTOM_ID) {
+    return handlePursuitsManager(context, interaction);
+  }
   if (customId === PURSUITS_SELECT_CUSTOM_ID) {
     return handlePursuitsInteraction(context, interaction);
   }
@@ -106,6 +111,41 @@ export function onRequestGet() {
   return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
 }
 
+async function handlePursuitsManager(context, interaction) {
+  const { env } = context;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
+  const guildId = interaction?.guild_id || '';
+
+  if (!userId || !guildId) {
+    return response({ type: 4, data: { content: 'Mongrel Pursuits can only be changed inside the Mongrels Discord server.', flags: EPHEMERAL } });
+  }
+  if (env.GUILD_ID && guildId !== env.GUILD_ID) {
+    return response({ type: 4, data: { content: 'This Pursuits control is not configured for this server.', flags: EPHEMERAL } });
+  }
+  if (!isSquadEventInteractionMember(interaction, env)) {
+    return response({ type: 4, data: { content: 'Mongrel Pursuits are available to recognized squadron members.', flags: EPHEMERAL } });
+  }
+
+  try {
+    const selected = await getMemberPursuitIds(env, userId, { profileFallback:true });
+    return response({
+      type: 4,
+      data: {
+        ...buildMemberPursuitSelector(selected),
+        flags: EPHEMERAL,
+      },
+    });
+  } catch (error) {
+    return response({
+      type: 4,
+      data: {
+        content: `I couldn't open your Mongrel Pursuits selector. Please try again or use the website.\n\nTechnical detail: ${safeError(error)}`,
+        flags: EPHEMERAL,
+      },
+    });
+  }
+}
+
 async function handlePursuitsInteraction(context, interaction) {
   const { env } = context;
   const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
@@ -133,7 +173,12 @@ async function handlePursuitsInteraction(context, interaction) {
 async function handlePursuitsSelection({ interaction, env, userId, displayName, pursuits }) {
   try {
     const saved = await setMemberPursuits(env, { ownerId:userId, displayName, pursuits, source:'discord' });
-    const roleSync = await syncMemberPursuitRoles(env, { userId, pursuits:saved.member.pursuits, state:saved.state });
+    const roleSync = await syncMemberPursuitRoles(env, {
+      userId,
+      pursuits:saved.member.pursuits,
+      state:saved.state,
+      currentRoleIds:Array.isArray(interaction?.member?.roles)?interaction.member.roles:null,
+    });
     const count = saved.member.pursuits.length;
     const note = roleSync.ok
       ? ''
