@@ -156,6 +156,30 @@ Rename behavior:
 - bot-owned/name-discovered channels must accept their decorated name plus a sensible plain fallback. Squad Events, Training Resources, Pursuits, Combat Escort, Squad Structure, and Squad Rules follow this pattern.
 - do not create replacement channels solely because of a label/emoji change; preserve channel IDs/history where possible.
 
+### Squad Payouts Discord visibility
+
+Channel:
+- **💰〡squad-payouts** is webhook-bound through `DISCORD_SQUAD_PAYOUTS_WEBHOOK_URL`.
+
+Public payout board behavior:
+- the persistent **Rewards & Payouts** card shows squad-funded balances and personally funded job rewards in separate accounting sections;
+- **Squad Treasury** totals remain squad-funded only. Personal/member-funded obligations must never inflate the Regiment treasury balance;
+- **Personal Job Rewards** shows unsettled member-funded ledger rewards with recipient, amount, payer, status, and a concise job/reward reason;
+- member-funded entries in `OWED` and `PAYMENT_SENT` states are public on the board; `PAYMENT_SENT` is shown as awaiting recipient confirmation;
+- personal rewards are grouped by payer + recipient + source job so repeated verified reward entries do not create noisy duplicate lines;
+- individual Discord payout-request cards remain reserved for the existing squad-funded collection-request lifecycle;
+- member-funded payment actions now refresh the Discord board immediately when the payer marks **SENT** or the recipient confirms **PAID**;
+- the member-funded payment authority model is unchanged: only the recorded payer can mark sent, and only the reward recipient can confirm receipt.
+
+Rationale:
+- leadership/member-funded jobs should be visible so the squad can see that personal work is being rewarded;
+- payer attribution keeps personal obligations transparent without making them look like Regiment treasury debt.
+
+Primary files:
+- `lib/reward-discord.js`
+- `functions/api/rewards/member-payments.js`
+- `scripts/smoke-reward-discord.mjs`
+
 ### Mission Control Daily Orders and reporting
 
 Member-facing Daily Orders live under `/operations/#daily-orders`.
