@@ -12,3 +12,5 @@
 .escort-empty{display:grid;place-items:center;text-align:center;gap:5px;border:1px dashed var(--line);border-radius:14px;padding:34px;color:var(--muted)}.escort-empty strong{color:var(--text)}
 @media(max-width:820px){.escort-intro{align-items:stretch;flex-direction:column}.escort-discord-state{min-width:0}.escort-detail-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.escort-form-grid,.escort-detail-grid{grid-template-columns:1fr}.escort-span-2{grid-column:auto}.escort-form-actions,.escort-board-head,.escort-card-head{align-items:stretch;flex-direction:column}.escort-form-actions .btn{width:100%}.escort-card-actions{display:grid;grid-template-columns:1fr 1fr}.escort-card-actions .btn{width:100%}.escort-card-status{grid-column:1/-1;margin-left:0}}
+
+#request-form{scroll-margin-top:96px}
