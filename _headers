@@ -1,5 +1,26 @@
+/trading
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /trading/
   Cache-Control: no-cache, no-store, must-revalidate
 
-/trading/index.html
+/trading/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/trade-market.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/trading.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/trading-colonization.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/css/trade-market.css
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/css/trade-control.css
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/css/trading-colonization.css
   Cache-Control: no-cache, no-store, must-revalidate
