@@ -75,6 +75,7 @@ const payload=buildTradeWatchDiscordPayload(watch,{
   subscriberCount:2,
 });
 assert.equal(payload.allowed_mentions.parse.length,0);
+assert.equal(payload.content,'','expanded Watch payload must explicitly clear compact PAUSED/REMOVED content');
 assert.match(payload.embeds[0].title,/Soontil Relics Trigger/);
 assert.match(payload.embeds[0].description,/Automated Market Watch/);
 assert.match(payload.embeds[0].fields.map(field=>field.value).join('\n'),/No qualifying market currently matches/);
