@@ -189,7 +189,7 @@ Discord lifecycle:
 - until Wolf explicitly approves launch, Trade Control remains locked to TESTING; the web UI does not expose the live switch.
 - website-owned trade cards use the existing Imperial Mongrels Website bot and tracked Discord message IDs. Edits update the same message instead of posting duplicates.
 - ordinary automated cards are created with Discord's suppress-notifications flag and routine edits remain non-notifying.
-- each active Discord trade card has **🔔 Alert Me**. Clicking it toggles that Discord user’s subscription for that one post and returns an ephemeral confirmation; no per-watch Discord role is created.
+- each active Discord trade card has **🔔 Alert Settings**. Because a shared Discord message cannot display a different button label to each viewer, clicking it opens a personalized ephemeral panel showing **Alerts Enabled ✓** or **Alerts Disabled** with an explicit Enable/Disable action; no per-watch Discord role is created.
 - threshold events should remain visible but silent in the shared trade channel; subscribed users receive the opt-in alert privately. Discord/user notification settings may still prevent delivery.
 - old/closed/superseded cards should normally be compacted to short history instead of deleted.
 - ordinary Discord conversation in trader’s-outpost is never treated as website data and is never modified by the website.
