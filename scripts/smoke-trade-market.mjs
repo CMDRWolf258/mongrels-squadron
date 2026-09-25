@@ -232,12 +232,16 @@ assert.match(html,/Standard and rare commodities use the same searchable list/);
 assert.match(html,/Spansh Adapter Ready/);
 assert.match(html,/Spansh → normalized Mongrel market cache/);
 assert.match(html,/data-market-result-tools/);
+assert.match(html,/inputmode="numeric"[^>]*data-market-price/);
+assert.match(html,/inputmode="numeric"[^>]*data-market-volume/);
+assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-price/);
+assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-volume/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=6/);
-assert.match(html,/trade-market\.js\?v=8/);
-assert.match(html,/trading\.js\?v=78/);
+assert.match(html,/trade-market\.js\?v=9/);
+assert.match(html,/trading\.js\?v=79/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -251,6 +255,10 @@ assert.match(client,/function rareSourceSearch\(commodityValue,directionValue\)/
 assert.match(client,/Rare source search · all distances/);
 assert.match(client,/trade-commodity-rare-badge/);
 assert.match(client,/const PAGE_SIZE=10/);
+assert.match(client,/function bindFormattedInteger\(input\)/);
+assert.match(client,/const integerValue=value=>/);
+assert.match(client,/maximumFractionDigits:2/);
+assert.match(client,/fmtLy\(item\.distanceLy\)/);
 assert.match(client,/limit:100/);
 assert.match(client,/function sortedResults\(\)/);
 assert.match(client,/arrival:\(a,b\)=>arrivalOf\(a\)-arrivalOf\(b\)/);
@@ -258,6 +266,8 @@ assert.match(client,/Showing '\+first\+'–'\+last\+' of /);
 
 const tradeClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(tradeClient,/Spansh Adapter Ready/);
+assert.match(tradeClient,/const fmtLy = value =>/);
+assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
 
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');

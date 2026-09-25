@@ -24,6 +24,10 @@
 
   const n = value => Number(value || 0);
   const fmt = value => n(value).toLocaleString();
+  const fmtLy = value => {
+    const distance=Number(value);
+    return Number.isFinite(distance)?distance.toLocaleString(undefined,{maximumFractionDigits:2}):'—';
+  };
   const safe = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const dateLabel = value => { if (!value) return 'Not dated'; const d = new Date(value); return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); };
   const ageLabel = value => { const t=Date.parse(value||''); if(!Number.isFinite(t)) return 'Unknown age'; const hours=Math.max(0,(Date.now()-t)/3600000); if(hours<1)return 'Updated <1h ago'; if(hours<24)return `Updated ${Math.floor(hours)}h ago`; const days=Math.floor(hours/24); return `Updated ${days}d ago`; };
@@ -50,7 +54,7 @@
     article.innerHTML = `
       <div class="trade-card-head"><div><p class="trade-kicker">${safe(route.commodity || 'Commodity')}</p><h3>${safe(route.title || `${route.originSystem || ''} → ${route.destinationSystem || ''}`)}</h3></div><div class="trade-card-actions">${priority}${edit}</div></div>
       <div class="trade-route-line"><div><span>Buy / Load</span><strong>${safe(route.originStation || '—')}</strong><small>${originSystem}</small></div><div class="trade-arrow">→</div><div><span>Sell / Deliver</span><strong>${safe(route.destinationStation || '—')}</strong><small>${destSystem}</small></div></div>
-      <div class="trade-metrics"><div><span>Profit</span><strong>${profit}</strong>${total?`<small>${total}</small>`:''}</div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Distance</span><strong>${route.distanceLy?`${safe(route.distanceLy)} ly`:'—'}</strong></div>${quantity}</div>
+      <div class="trade-metrics"><div><span>Profit</span><strong>${profit}</strong>${total?`<small>${total}</small>`:''}</div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Distance</span><strong>${route.distanceLy?`${fmtLy(route.distanceLy)} ly`:'—'}</strong></div>${quantity}</div>
       ${route.objective?`<p class="trade-objective"><strong>Objective:</strong> ${safe(route.objective)}</p>`:''}
       ${route.notes?`<p class="trade-notes">${safe(route.notes)}</p>`:''}
       <div class="trade-card-foot"><div class="trade-tags">${tags}</div><small>${owner} · ${freshness}${route.expires?` · Expires ${dateLabel(route.expires)}`:''}</small></div>`;
@@ -216,8 +220,8 @@
           <span>Next due <strong>${watch.status==='paused'?'Paused':safe(watchTimeLabel(evaluation.nextEvaluationAt))}</strong></span>
           <span>Discord <strong>${safe(discordLabel)}</strong></span>
         </div>
-        ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':safe(String(best.distanceLy))+' ly'}</strong></div></div>`:''}
-        ${ranked.length>1?`<div class="trade-watch-alternatives"><div class="trade-watch-alternatives-head"><span>Fallback Markets</span><strong>Next ${Math.min(4,ranked.length-1)} qualifying market${ranked.length-1===1?'':'s'}</strong></div>${ranked.slice(1,5).map((market,index)=>`<div class="trade-watch-alternative"><b>#${index+2}</b><span><strong>${safe(market.stationName||'Unknown station')}</strong><small>${safe(market.systemName||'Unknown system')}</small></span><span>${fmt(market.price)} Cr/t</span><span>${fmt(market.volume)} t</span><span>${market.distanceLy===null||market.distanceLy===undefined?'—':safe(String(market.distanceLy))+' ly'}</span></div>`).join('')}</div>`:''}
+        ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':fmtLy(best.distanceLy)+' ly'}</strong></div></div>`:''}
+        ${ranked.length>1?`<div class="trade-watch-alternatives"><div class="trade-watch-alternatives-head"><span>Fallback Markets</span><strong>Next ${Math.min(4,ranked.length-1)} qualifying market${ranked.length-1===1?'':'s'}</strong></div>${ranked.slice(1,5).map((market,index)=>`<div class="trade-watch-alternative"><b>#${index+2}</b><span><strong>${safe(market.stationName||'Unknown station')}</strong><small>${safe(market.systemName||'Unknown system')}</small></span><span>${fmt(market.price)} Cr/t</span><span>${fmt(market.volume)} t</span><span>${market.distanceLy===null||market.distanceLy===undefined?'—':fmtLy(market.distanceLy)+' ly'}</span></div>`).join('')}</div>`:''}
         ${evaluation.lastError?`<p class="trade-watch-evaluation-message is-error">Last check: ${safe(evaluation.lastError)}</p>`:evaluation.warning?`<p class="trade-watch-evaluation-message is-warning">${safe(evaluation.warning)}</p>`:''}
         ${watch.discord?.lastError?`<p class="trade-watch-evaluation-message is-error">Discord: ${safe(watch.discord.lastError)}</p>`:''}
         ${transition?`<p class="trade-watch-transition">${safe(transition)} · ${safe(watchTimeLabel(evaluation.lastTransition?.at))}</p>`:''}`;

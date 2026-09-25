@@ -72,6 +72,8 @@ assert.match(html,/data-trade-watch-form/);
 assert.match(html,/data-trade-watch-commodity/);
 assert.match(html,/data-trade-watch-price/);
 assert.match(html,/data-trade-watch-volume/);
+assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-price/);
+assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-volume/);
 assert.match(html,/data-trade-watch-radius/);
 assert.match(html,/data-trade-watch-age/);
 assert.match(html,/data-trade-watch-carriers/);
@@ -80,8 +82,8 @@ assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
 assert.match(html,/trade-market\.css\?v=6/);
 assert.match(html,/trade-control\.css\?v=7/);
-assert.match(html,/trade-market\.js\?v=8/);
-assert.match(html,/trading\.js\?v=78/);
+assert.match(html,/trade-market\.js\?v=9/);
+assert.match(html,/trading\.js\?v=79/);
 
 const marketClient=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(marketClient,/data-trade-watch-editor/);
@@ -97,6 +99,7 @@ assert.match(marketClient,/if\(summaryRow\)summaryRow\.hidden=false/,'Save as Wa
 
 const tradingClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(tradingClient,/loadTradeWatches/);
+assert.match(tradingClient,/const fmtLy = value =>/);
 assert.match(tradingClient,/Pending Scheduler/);
 assert.match(tradingClient,/Run Now/);
 assert.match(tradingClient,/data-watch-edit/);
