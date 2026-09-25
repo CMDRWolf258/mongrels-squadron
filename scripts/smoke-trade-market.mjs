@@ -66,6 +66,7 @@ assert.equal(rareBuy.radiusLy,25,'reference radius value may remain stored for l
 const rareBody=buildSpanshSearchBody(rareBuy,fixedNow);
 assert.equal(rareBody.reference_system,'Diaba');
 assert.equal('distance' in rareBody.filters,false,'rare-source Spansh query must not include a distance filter');
+assert.equal('market_updated_at' in rareBody.filters,false,'rare-source Spansh query must not exclude the unique source by market age');
 assert.deepEqual(rareBody.filters.marketplace[0].supply.value,[1,2147483647]);
 assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontill Relics'));
 assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontil Relics'),'Spansh query should search both common Soontill spellings');
@@ -83,7 +84,7 @@ const aliasRows=[{
   system_name:'Ngurii',
   system_x:10,system_y:20,system_z:30,
   carrier_docking_access:null,
-  market_updated_at:new Date(aliasNow-10*60*1000).toISOString(),
+  market_updated_at:new Date(aliasNow-8*60*60*1000).toISOString(),
   distance:250,
   market:[{commodity:'Soontil Relics',category:'Consumer Items',buy_price:19700,sell_price:0,supply:12,demand:0}],
 }];
@@ -102,6 +103,8 @@ const aliasSearch=await searchTradeMarkets(aliasEnv,{
 assert.equal(aliasSearch.results.length,1,'two-L Soontill query must match a one-L Spansh market row');
 assert.equal(aliasSearch.results[0].stationName,'Cheranovsky City');
 assert.equal(aliasSearch.results[0].supply,12);
+assert.equal(aliasSearch.results[0].freshness,'stale','unique rare source should remain visible even when its market observation is older than the selected profile cutoff');
+assert.match(aliasSearch.warning,/market-age cutoffs do not exclude the unique source/);
 
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
@@ -112,6 +115,7 @@ const rareSell=normalizeMarketSearch({
 },control);
 assert.equal(rareSell.radiusLimited,true,'selling a rare remains a destination search and should respect radius');
 assert.equal(buildSpanshSearchBody(rareSell,fixedNow).filters.distance.max,'25');
+assert.ok(buildSpanshSearchBody(rareSell,fixedNow).filters.market_updated_at,'rare destination searches should still respect market freshness');
 
 const catalogNames=extractSpanshCommodityNames({
   marketplace:{
