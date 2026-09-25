@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  buildEdDataNearbySearchUrl,
-  buildEdDataSearchUrl,
+  buildSpanshSearchBody,
   normalizeMarketSearch,
   searchTradeMarkets,
 } from '../lib/trade-market.js';
@@ -28,80 +27,78 @@ const normalized=normalizeMarketSearch({
   radiusLy:999,
   priority:'critical',
 },control);
-assert.equal(normalized.commodity,'soontilrelics');
+assert.equal(normalized.commodity,'Soontil Relics');
+assert.equal(normalized.commodityKey,'soontilrelics');
 assert.equal(normalized.radiusLy,500);
 assert.equal(normalized.maxAgeMinutes,90,'blank max age should inherit Critical aging cutoff');
 
-const url=buildEdDataSearchUrl(normalized);
-assert.match(url,/soontilrelics\/imports/);
-assert.doesNotMatch(url,/\/nearby\//,'Best Price should use the lighter price-ranked commodity endpoint');
-assert.match(url,/systemName=Diaba/);
-assert.match(url,/maxDistance=500/);
-assert.match(url,/maxDaysAgo=1/);
-assert.match(url,/fleetCarriers=false/);
+const fixedNow=new Date('2026-09-25T17:30:00.000Z');
+const body=buildSpanshSearchBody(normalized,fixedNow);
+assert.equal(body.reference_system,'Diaba');
+assert.equal(body.filters.distance.max,'500');
+assert.ok(body.filters.type.value.includes('Orbis Starport'));
+assert.ok(!body.filters.type.value.includes('Drake-Class Carrier'));
+assert.ok(body.filters.marketplace[0].commodity.includes('Soontil Relics'));
+assert.deepEqual(body.filters.marketplace[0].demand.value,[1,2147483647]);
+assert.deepEqual(body.filters.marketplace[0].sell_price.value,[1,2147483647]);
+assert.equal(body.filters.market_updated_at.comparison,'<=>');
+assert.equal(body.filters.market_updated_at.value[1],fixedNow.toISOString());
 
 const now=Date.now();
 const rows=[
   {
-    commodityName:'gold',
-    marketId:1001,
-    stationName:'Fresh Large Port',
-    stationType:'Coriolis',
-    distanceToArrival:400,
-    maxLandingPadSize:3,
-    systemAddress:'123',
-    systemName:'Alpha',
-    systemX:1,systemY:2,systemZ:3,
-    carrierDockingAccess:'',
-    buyPrice:42000,
-    demand:25000,
-    sellPrice:70000,
-    stock:5000,
-    updatedAt:new Date(now-25*60*1000).toISOString(),
+    id:'1001',
+    market_id:'1001',
+    name:'Fresh Large Port',
+    type:'Coriolis Starport',
+    distance_to_arrival:400,
+    large_pads:4,medium_pads:6,small_pads:8,
+    system_id64:'123',
+    system_name:'Alpha',
+    system_x:1,system_y:2,system_z:3,
+    carrier_docking_access:null,
+    market_updated_at:new Date(now-25*60*1000).toISOString(),
     distance:12,
+    market:[{commodity:'Gold',buy_price:42000,sell_price:70000,supply:5000,demand:25000}],
   },
   {
-    commodityName:'gold',
-    marketId:1002,
-    stationName:'Too Old Port',
-    stationType:'Orbis',
-    distanceToArrival:1200,
-    maxLandingPadSize:3,
-    systemAddress:'124',
-    systemName:'Beta',
-    systemX:4,systemY:5,systemZ:6,
-    carrierDockingAccess:'',
-    buyPrice:41000,
-    demand:50000,
-    sellPrice:75000,
-    stock:9000,
-    updatedAt:new Date(now-120*60*1000).toISOString(),
+    id:'1002',
+    market_id:'1002',
+    name:'Too Old Port',
+    type:'Orbis Starport',
+    distance_to_arrival:1200,
+    large_pads:2,medium_pads:4,small_pads:6,
+    system_id64:'124',
+    system_name:'Beta',
+    system_x:4,system_y:5,system_z:6,
+    carrier_docking_access:null,
+    market_updated_at:new Date(now-120*60*1000).toISOString(),
     distance:20,
+    market:[{commodity:'Gold',buy_price:41000,sell_price:75000,supply:9000,demand:50000}],
   },
   {
-    commodityName:'gold',
-    marketId:1003,
-    stationName:'Medium Port',
-    stationType:'Outpost',
-    distanceToArrival:300,
-    maxLandingPadSize:2,
-    systemAddress:'125',
-    systemName:'Gamma',
-    systemX:7,systemY:8,systemZ:9,
-    carrierDockingAccess:'',
-    buyPrice:40000,
-    demand:60000,
-    sellPrice:80000,
-    stock:12000,
-    updatedAt:new Date(now-10*60*1000).toISOString(),
+    id:'1003',
+    market_id:'1003',
+    name:'Medium Port',
+    type:'Outpost',
+    distance_to_arrival:300,
+    large_pads:0,medium_pads:1,small_pads:2,
+    system_id64:'125',
+    system_name:'Gamma',
+    system_x:7,system_y:8,system_z:9,
+    carrier_docking_access:null,
+    market_updated_at:new Date(now-10*60*1000).toISOString(),
     distance:8,
+    market:[{commodity:'Gold',buy_price:40000,sell_price:80000,supply:12000,demand:60000}],
   },
 ];
 
 let requestedUrl='';
-const fetchImpl=async input=>{
+let requestedOptions=null;
+const fetchImpl=async (input,options={})=>{
   requestedUrl=String(input);
-  return new Response(JSON.stringify(rows),{status:200,headers:{'Content-Type':'application/json'}});
+  requestedOptions=options;
+  return new Response(JSON.stringify({count:3,results:rows}),{status:200,headers:{'Content-Type':'application/json'}});
 };
 
 const env={TRADES:new FakeKV()};
@@ -120,8 +117,14 @@ const sell=await searchTradeMarkets(env,{
   limit:50,
 },{fetchImpl});
 
-assert.match(requestedUrl,/gold\/imports/);
-assert.doesNotMatch(requestedUrl,/\/nearby\//);
+assert.equal(requestedUrl,'https://spansh.co.uk/api/stations/search');
+assert.equal(requestedOptions.method,'POST');
+const sent=JSON.parse(requestedOptions.body);
+assert.equal(sent.reference_system,'Diaba');
+assert.equal(sent.filters.distance.max,'100');
+assert.deepEqual(sent.filters.marketplace[0].demand.value,[10000,2147483647]);
+assert.deepEqual(sent.filters.marketplace[0].sell_price.value,[65000,2147483647]);
+assert.equal(sell.source,'Spansh');
 assert.equal(sell.sourceResultCount,3);
 assert.equal(sell.results.length,1);
 assert.equal(sell.results[0].stationName,'Fresh Large Port');
@@ -133,7 +136,7 @@ assert.equal(cache.items.length,3,'all source observations should be retained in
 const health=await env.TRADES.get('trade-market-health-v1',{type:'json'});
 assert.equal(health.lastReturnedCount,1);
 assert.equal(health.lastStoredCount,3);
-assert.equal(health.source,'EDData / EDDN');
+assert.equal(health.source,'Spansh');
 
 const buy=await searchTradeMarkets(env,{
   commodity:'Gold',
@@ -148,78 +151,56 @@ const buy=await searchTradeMarkets(env,{
   priority:'standard',
   sort:'price',
 },{fetchImpl});
-assert.match(requestedUrl,/gold\/exports/);
-assert.doesNotMatch(requestedUrl,/\/nearby\//);
-assert.match(requestedUrl,/maxPrice=43000/);
-assert.doesNotMatch(requestedUrl,/fleetCarriers=/,'include should leave the Fleet Carrier filter unset');
-assert.equal(buy.results[0].stationName,'Medium Port','buy results should sort by lowest buy price');
+const buyBody=JSON.parse(requestedOptions.body);
+assert.ok(buyBody.filters.type.value.includes('Drake-Class Carrier'));
+assert.deepEqual(buyBody.filters.marketplace[0].supply.value,[4000,2147483647]);
+assert.deepEqual(buyBody.filters.marketplace[0].buy_price.value,[1,43000]);
+assert.equal(buy.results[0].stationName,'Medium Port','buy results should sort by lowest commander buy price');
 
-const distanceQuery=normalizeMarketSearch({
-  commodity:'Gold',
-  direction:'sell',
-  referenceSystem:'Diaba',
-  radiusLy:200,
-  minVolume:1,
-  carrierMode:'exclude',
-  maxAgeMinutes:20160,
-  priority:'standard',
-  sort:'distance',
-},control);
-const nearbyUrl=buildEdDataNearbySearchUrl(distanceQuery);
-assert.match(nearbyUrl,/gold\/nearby\/imports/);
-assert.match(nearbyUrl,/sort=distance/);
-
-let calls=0;
-const fallbackFetch=async input=>{
-  calls+=1;
-  if(calls===1){
-    const error=new Error('aborted');
-    error.name='AbortError';
-    throw error;
-  }
-  return new Response(JSON.stringify(rows),{status:200,headers:{'Content-Type':'application/json'}});
+let timeoutCalls=0;
+const timeoutFetch=async ()=>{
+  timeoutCalls+=1;
+  const error=new Error('aborted');
+  error.name='AbortError';
+  throw error;
 };
-const fallback=await searchTradeMarkets({TRADES:new FakeKV()},{
+const cached=await searchTradeMarkets(env,{
   commodity:'Gold',
   direction:'sell',
   referenceSystem:'Diaba',
-  radiusLy:200,
-  minVolume:1,
+  radiusLy:100,
+  minVolume:10000,
+  price:65000,
+  minPad:3,
   carrierMode:'exclude',
-  maxAgeMinutes:20160,
-  priority:'standard',
-  sort:'distance',
-},{fetchImpl:fallbackFetch});
-assert.equal(calls,2,'slow broad searches should retry through the lighter price-ranked endpoint');
-assert.equal(fallback.partial,true);
-assert.equal(fallback.sourceMode,'price-ranked-fallback');
-assert.match(fallback.warning,/top price-ranked candidates/);
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:timeoutFetch});
+assert.equal(timeoutCalls,1);
+assert.equal(cached.cached,true);
+assert.equal(cached.source,'Mongrel Market Cache');
+assert.match(cached.warning,/Mongrel market cache/);
+assert.equal(cached.results[0].stationName,'Fresh Large Port');
 
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/Live Market Intelligence/);
 assert.match(html,/data-trade-market-form/);
-assert.match(html,/data-market-commodity/);
-assert.match(html,/Maximum data age/);
-assert.match(html,/trade-market\.css\?v=1/);
-assert.match(html,/trade-market\.js\?v=1/);
+assert.match(html,/Spansh Adapter Ready/);
+assert.match(html,/Spansh → normalized Mongrel market cache/);
+assert.match(html,/trading\.js\?v=72/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
-assert.match(client,/\/api\/trade-market\/commodities/);
 assert.match(client,/mongrels-trade-market-search-v1/);
 assert.match(client,/MongrelTradeMarket/);
-assert.match(client,/Partial \/ fallback results/);
 
 const tradeClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
-assert.match(tradeClient,/MongrelTradeMarket\?\.activate/);
-assert.match(tradeClient,/mongrels:trade-market-search/);
+assert.match(tradeClient,/Spansh Adapter Ready/);
+assert.match(tradeClient,/health\.source/);
 
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');
 assert.match(searchApi,/member','officer','site_admin/);
 assert.match(searchApi,/searchTradeMarkets/);
-
-const controlApi=readFileSync(new URL('../functions/api/trade-control/index.js',import.meta.url),'utf8');
-assert.match(controlApi,/readTradeMarketHealth/);
-assert.match(controlApi,/marketData/);
 
 console.log('Trade market search smoke checks passed.');
