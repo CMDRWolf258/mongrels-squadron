@@ -376,6 +376,17 @@
     }
   }
 
+  function ensureAgeOption(value){
+    const text=String(value||'');
+    if(!text)return;
+    if([...age.options].some(option=>option.value===text))return;
+    const option=document.createElement('option');
+    option.value=text;
+    option.textContent=text+' minutes (saved)';
+    option.dataset.savedAge='true';
+    age.append(option);
+  }
+
   function loadQuery(query){
     if(!query||typeof query!=='object')return;
     commodity.value=query.commodity||'';
@@ -387,6 +398,7 @@
     pad.value=String(query.minPad??0);
     carriers.value=['include','exclude','only'].includes(query.carrierMode)?query.carrierMode:'exclude';
     priority.value=['critical','high','standard','low'].includes(query.priority)?query.priority:'';
+    if(query.maxAgeMinutes)ensureAgeOption(query.maxAgeMinutes);
     age.value=query.maxAgeMinutes?String(query.maxAgeMinutes):'';
     sort.value=['price','distance','freshness','volume'].includes(query.sort)?query.sort:'price';
     updateLabels();
@@ -588,6 +600,9 @@
   });
   saveWatchButton?.addEventListener('click',openWatchEditor);
   watchForm?.addEventListener('submit',saveWatch);
+  watchPriority?.addEventListener('change',()=>{
+    if(currentPayload?.query&&watchPreview)watchPreview.innerHTML=watchQueryPreview({...currentPayload.query,priority:watchPriority.value});
+  });
   document.querySelectorAll('[data-trade-watch-cancel]').forEach(button=>button.addEventListener('click',closeWatchEditor));
   direction.addEventListener('change',updateLabels);
   resultSort?.addEventListener('change',()=>{
