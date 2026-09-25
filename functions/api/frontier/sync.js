@@ -7,6 +7,7 @@ import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-fu
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
+import { archivedRemovedOrders, listOrderPublications } from '../../../lib/order-history.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -41,7 +42,14 @@ export async function syncFrontierAccount({
   const currentOrders = await readCurrentOrderCycle(env);
   const colonizationStore = await readColonizationJobs(env);
   const colonizationJobs = activeColonizationJobs(colonizationStore);
-  const targetSystems = [...new Set([...activeOrderSystems(currentOrders),...activeColonizationSystems(colonizationJobs)])];
+  const orderHistory=await listOrderPublications(env,{limit:250});
+  const archivedOrders=archivedRemovedOrders(orderHistory,currentOrders?.orders);
+  const archivedOrderSystems=archivedOrders.map(order=>String(order?.system||'').trim()).filter(Boolean);
+  const targetSystems = [...new Set([
+    ...activeOrderSystems(currentOrders),
+    ...archivedOrderSystems,
+    ...activeColonizationSystems(colonizationJobs),
+  ])];
   const cooldown = syncCooldown(account);
   if (respectCooldown && !cooldown.ready) {
     return json({
@@ -162,10 +170,11 @@ export async function syncFrontierAccount({
       ...account,
       lastSyncAt:syncedAt,
       lastSyncSource:syncSource==='auto'?'auto':'manual',
+      lastAutoSyncError:'',
+      autoSyncReauthRequired:false,
       ...(syncSource==='auto'?{
         lastAutoSyncAt:syncedAt,
-        lastAutoSyncError:'',
-        autoSyncReauthRequired:false,
+        lastAutoSyncAttemptAt:syncedAt,
       }:{}),
       lastJournalEventAt:parsed.lastEventAt || account.lastJournalEventAt,
       lastSystem:parsed.lastSystem || account.lastSystem,
