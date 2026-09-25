@@ -18,6 +18,8 @@
   let dirty = false;
   const memberParam = new URLSearchParams(location.search).get('member') || '';
   let memberFilter = null;
+  let tradeControlLoaded = false;
+  let tradeControlState = null;
 
   const n = value => Number(value || 0);
   const fmt = value => n(value).toLocaleString();
@@ -43,6 +45,7 @@
     const quantity = route.quantity ? `<div><span>Quantity</span><strong>${safe(route.quantity)}</strong></div>` : '';
     const article = document.createElement('article');
     article.className = `trade-card${route.official?' trade-card-official':''}`;
+    if (route.id) article.id = `trade-${route.id}`;
     article.innerHTML = `
       <div class="trade-card-head"><div><p class="trade-kicker">${safe(route.commodity || 'Commodity')}</p><h3>${safe(route.title || `${route.originSystem || ''} → ${route.destinationSystem || ''}`)}</h3></div><div class="trade-card-actions">${priority}${edit}</div></div>
       <div class="trade-route-line"><div><span>Buy / Load</span><strong>${safe(route.originStation || '—')}</strong><small>${originSystem}</small></div><div class="trade-arrow">→</div><div><span>Sell / Deliver</span><strong>${safe(route.destinationStation || '—')}</strong><small>${destSystem}</small></div></div>
@@ -75,6 +78,108 @@
   }
 
   function manager(){return session&&['officer','site_admin'].includes(session.access);}
+
+  function controlFields(priority) {
+    const root=document.querySelector(`[data-trade-priority="${priority}"]`);
+    if(!root)return null;
+    const read=name=>root.querySelector(`[data-priority-field="${name}"]`);
+    return {
+      root,
+      refreshMinutes:read('refreshMinutes'),
+      freshMinutes:read('freshMinutes'),
+      agingMinutes:read('agingMinutes'),
+    };
+  }
+
+  function renderTradeControl(payload) {
+    const section=$('[data-trade-control]');
+    if(!section||!payload?.control)return;
+    tradeControlState=payload;
+    section.hidden=false;
+    const control=payload.control;
+    $('[data-trade-control-default]').value=control.defaultPriority||'standard';
+    for(const key of ['critical','high','standard','low']){
+      const inputs=controlFields(key);
+      const profile=control.priorities?.[key];
+      if(!inputs||!profile)continue;
+      inputs.refreshMinutes.value=profile.refreshMinutes;
+      inputs.freshMinutes.value=profile.freshMinutes;
+      inputs.agingMinutes.value=profile.agingMinutes;
+    }
+    $('[data-trade-discord-auto]').checked=control.discord?.autoPublish!==false;
+    $('[data-trade-discord-threshold]').checked=control.discord?.thresholdMessages!==false;
+    $('[data-trade-discord-compact]').checked=control.discord?.compactSuperseded!==false;
+    const target=$('[data-trade-discord-target]');
+    const mode=$('[data-trade-discord-mode]');
+    if(target)target.textContent=payload.discord?.targetLabel||'🧪〡system-testing';
+    if(mode)mode.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · production routing is locked during development.`;
+    const summary=$('[data-trade-control-summary]');
+    if(summary)summary.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · ${control.priorities?.critical?.refreshMinutes||5} min fastest`;
+  }
+
+  async function loadTradeControl(force=false) {
+    if(!manager())return;
+    if(tradeControlLoaded&&!force)return;
+    const section=$('[data-trade-control]');
+    if(section)section.hidden=false;
+    const status=$('[data-trade-control-status]');
+    if(status)status.textContent='Loading Trade Control…';
+    try{
+      const {response,payload}=await apiFetch('/api/trade-control');
+      if(!response.ok)throw new Error(payload.error||'Unable to load Trade Control.');
+      tradeControlLoaded=true;
+      renderTradeControl(payload);
+      if(status)status.textContent='';
+    }catch(error){
+      if(status)status.textContent=error.message||'Unable to load Trade Control.';
+      const summary=$('[data-trade-control-summary]');
+      if(summary)summary.textContent='Control unavailable';
+    }
+  }
+
+  function tradeControlPayload() {
+    const priorities={};
+    for(const key of ['critical','high','standard','low']){
+      const inputs=controlFields(key);
+      if(!inputs)continue;
+      priorities[key]={
+        ...(tradeControlState?.control?.priorities?.[key]||{}),
+        refreshMinutes:Number(inputs.refreshMinutes.value)||5,
+        freshMinutes:Number(inputs.freshMinutes.value)||1,
+        agingMinutes:Number(inputs.agingMinutes.value)||1,
+      };
+    }
+    return {
+      defaultPriority:$('[data-trade-control-default]').value,
+      priorities,
+      discord:{
+        autoPublish:$('[data-trade-discord-auto]').checked,
+        thresholdMessages:$('[data-trade-discord-threshold]').checked,
+        compactSuperseded:$('[data-trade-discord-compact]').checked,
+      },
+    };
+  }
+
+  async function saveTradeControl(event) {
+    event.preventDefault();
+    if(!manager())return;
+    const status=$('[data-trade-control-status]');
+    status.textContent='Saving…';
+    try{
+      const {response,payload}=await apiFetch('/api/trade-control',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-control'},
+        body:JSON.stringify(tradeControlPayload()),
+      });
+      if(!response.ok)throw new Error(payload.error||'Unable to save Trade Control.');
+      tradeControlLoaded=true;
+      renderTradeControl(payload);
+      status.textContent='Saved.';
+      setTimeout(()=>{if(status.textContent==='Saved.')status.textContent='';},1800);
+    }catch(error){
+      status.textContent=error.message||'Unable to save Trade Control.';
+    }
+  }
   function openEditor(route=null){editing=route;dirty=false;shell.hidden=false;document.body.classList.add('project-editor-open'); $('[data-trade-form-title]').textContent=route?'Edit Trade Route':'Post Trade Route'; $('[data-trade-id]').value=route?.id||''; $('[data-trade-category]').value=route?.category||'credits'; $('[data-trade-official]').value=route?.official?'true':'false'; $('[data-trade-title]').value=route?.title||''; $('[data-trade-commodity]').value=route?.commodity||''; $('[data-trade-origin-system]').value=route?.originSystem||''; $('[data-trade-origin-station]').value=route?.originStation||''; $('[data-trade-destination-system]').value=route?.destinationSystem||''; $('[data-trade-destination-station]').value=route?.destinationStation||''; $('[data-trade-profit]').value=route?.profitPerTon||''; $('[data-trade-loop-profit]').value=route?.estimatedLoopProfit||''; $('[data-trade-pad]').value=String(route?.padSize||'large').toLowerCase(); $('[data-trade-distance]').value=route?.distanceLy||''; $('[data-trade-quantity]').value=route?.quantity||''; $('[data-trade-expires]').value=route?.expires||''; $('[data-trade-status]').value=route?.status||'active'; $('[data-trade-tags]').value=(route?.tags||[]).join(', '); $('[data-trade-objective]').value=route?.objective||''; $('[data-trade-notes]').value=route?.notes||''; $('[data-trade-delete]').hidden=!route; $('[data-trade-form-status]').textContent=''; $('[data-trade-official-wrap]').hidden=!manager();}
   function closeEditor(){if(dirty&&!confirm('Discard unsaved trade changes?'))return;shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
   function payload(){return{id:$('[data-trade-id]').value||undefined,category:$('[data-trade-category]').value,official:$('[data-trade-official]').value==='true',title:$('[data-trade-title]').value,commodity:$('[data-trade-commodity]').value,originSystem:$('[data-trade-origin-system]').value,originStation:$('[data-trade-origin-station]').value,destinationSystem:$('[data-trade-destination-system]').value,destinationStation:$('[data-trade-destination-station]').value,profitPerTon:Number($('[data-trade-profit]').value)||0,estimatedLoopProfit:Number($('[data-trade-loop-profit]').value)||0,padSize:$('[data-trade-pad]').value,distanceLy:$('[data-trade-distance]').value,quantity:$('[data-trade-quantity]').value,expires:$('[data-trade-expires]').value,status:$('[data-trade-status]').value,tags:$('[data-trade-tags]').value,objective:$('[data-trade-objective]').value,notes:$('[data-trade-notes]').value};}
@@ -96,8 +201,8 @@
   }
 
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
-  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}}}catch{}render();}
+  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(manager())loadTradeControl();}}catch{}render();}
 
-  [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+  [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); $('[data-trade-control-form]')?.addEventListener('submit',saveTradeControl); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);
 })();
