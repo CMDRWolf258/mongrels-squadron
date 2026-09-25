@@ -22,10 +22,21 @@
   const summary=$('[data-market-summary]');
   const results=$('[data-market-results]');
   const empty=$('[data-market-empty]');
+  const resultTools=$('[data-market-result-tools]');
+  const resultSort=$('[data-market-result-sort]');
+  const resultRange=$('[data-market-result-range]');
+  const pagination=$('[data-market-pagination]');
+  const pageNumbers=$('[data-market-page-numbers]');
+  const pageLabel=$('[data-market-page-label]');
+  const prevPage=$('[data-market-page-prev]');
+  const nextPage=$('[data-market-page-next]');
   const STORAGE_KEY='mongrels-trade-market-search-v1';
+  const PAGE_SIZE=10;
 
   let activated=false;
   let searching=false;
+  let currentPayload=null;
+  let currentPage=1;
 
   const safe=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const fmt=value=>Number(value||0).toLocaleString();
@@ -101,7 +112,7 @@
       priority:priority.value,
       maxAgeMinutes:age.value?Number(age.value):null,
       sort:sort.value,
-      limit:50,
+      limit:100,
     };
   }
 
@@ -173,11 +184,115 @@
     return article;
   }
 
-  function renderResults(payload){
-    const list=Array.isArray(payload.results)?payload.results:[];
-    results.replaceChildren(...list.map(item=>resultCard(item,payload.query||{})));
+  function sortedResults(){
+    const list=Array.isArray(currentPayload?.results)?[...currentPayload.results]:[];
+    const q=currentPayload?.query||{};
+    const mode=resultSort?.value||q.sort||'price';
+    const buying=q.direction==='buy';
+    const priceOf=item=>buying?Number(item.buyPrice||0):Number(item.sellPrice||0);
+    const volumeOf=item=>buying?Number(item.supply||0):Number(item.demand||0);
+    const distanceOf=item=>{
+      const value=Number(item.distanceLy);
+      return Number.isFinite(value)?value:Number.MAX_SAFE_INTEGER;
+    };
+    const arrivalOf=item=>{
+      const value=Number(item.distanceToArrivalLs);
+      return Number.isFinite(value)?value:Number.MAX_SAFE_INTEGER;
+    };
+    const observedOf=item=>{
+      const value=Date.parse(item.observedAt||'');
+      return Number.isFinite(value)?value:0;
+    };
+
+    const compare={
+      price:(a,b)=>buying?priceOf(a)-priceOf(b):priceOf(b)-priceOf(a),
+      distance:(a,b)=>distanceOf(a)-distanceOf(b),
+      freshness:(a,b)=>observedOf(b)-observedOf(a),
+      volume:(a,b)=>volumeOf(b)-volumeOf(a),
+      arrival:(a,b)=>arrivalOf(a)-arrivalOf(b),
+    }[mode]||(()=>0);
+
+    return list.sort((a,b)=>
+      compare(a,b)
+      || distanceOf(a)-distanceOf(b)
+      || String(a.stationName||'').localeCompare(String(b.stationName||''))
+    );
+  }
+
+  function pageButtons(totalPages){
+    if(!pageNumbers)return;
+    const values=[];
+    if(totalPages<=7){
+      for(let page=1;page<=totalPages;page++)values.push(page);
+    }else{
+      values.push(1);
+      const start=Math.max(2,currentPage-1);
+      const end=Math.min(totalPages-1,currentPage+1);
+      if(start>2)values.push('ellipsis-left');
+      for(let page=start;page<=end;page++)values.push(page);
+      if(end<totalPages-1)values.push('ellipsis-right');
+      values.push(totalPages);
+    }
+
+    pageNumbers.replaceChildren(...values.map(value=>{
+      if(typeof value!=='number'){
+        const span=document.createElement('span');
+        span.className='trade-market-page-ellipsis';
+        span.textContent='…';
+        return span;
+      }
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='trade-market-page-number'+(value===currentPage?' is-active':'');
+      button.textContent=String(value);
+      button.setAttribute('aria-label','Go to page '+value);
+      if(value===currentPage)button.setAttribute('aria-current','page');
+      button.addEventListener('click',()=>{
+        currentPage=value;
+        renderCurrentPage({scroll:true});
+      });
+      return button;
+    }));
+  }
+
+  function renderCurrentPage({scroll=false}={}){
+    if(!currentPayload)return;
+    const list=sortedResults();
+    const totalPages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));
+    currentPage=Math.min(Math.max(1,currentPage),totalPages);
+    const start=(currentPage-1)*PAGE_SIZE;
+    const page=list.slice(start,start+PAGE_SIZE);
+
+    results.replaceChildren(...page.map(item=>resultCard(item,currentPayload.query||{})));
     empty.hidden=list.length>0;
+    resultTools.hidden=list.length===0;
+    pagination.hidden=list.length<=PAGE_SIZE;
+
+    if(resultRange){
+      const first=list.length?start+1:0;
+      const last=Math.min(start+PAGE_SIZE,list.length);
+      resultRange.textContent=list.length
+        ?'Showing '+first+'–'+last+' of '+fmt(list.length)+' results'
+        :'Showing 0 results';
+    }
+    if(pageLabel)pageLabel.textContent='Page '+currentPage+' of '+totalPages;
+    if(prevPage)prevPage.disabled=currentPage<=1;
+    if(nextPage)nextPage.disabled=currentPage>=totalPages;
+    pageButtons(totalPages);
+
+    if(scroll&&resultTools){
+      resultTools.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  }
+
+  function renderResults(payload){
+    currentPayload=payload;
+    currentPage=1;
+    if(resultSort)resultSort.value=['price','distance','freshness','volume'].includes(payload?.query?.sort)
+      ?payload.query.sort
+      :'price';
     renderSummary(payload);
+    renderCurrentPage();
   }
 
   async function submit(event){
@@ -192,6 +307,10 @@
     status.textContent='Searching live market data…';
     summary.hidden=true;
     empty.hidden=true;
+    resultTools.hidden=true;
+    pagination.hidden=true;
+    currentPayload=null;
+    currentPage=1;
     results.replaceChildren();
 
     remember(query);
@@ -211,6 +330,9 @@
       results.replaceChildren();
       summary.hidden=true;
       empty.hidden=true;
+      resultTools.hidden=true;
+      pagination.hidden=true;
+      currentPayload=null;
     }finally{
       searching=false;
       if(button)button.disabled=false;
@@ -226,6 +348,21 @@
   }
 
   direction.addEventListener('change',updateLabels);
+  resultSort?.addEventListener('change',()=>{
+    currentPage=1;
+    renderCurrentPage();
+  });
+  prevPage?.addEventListener('click',()=>{
+    if(currentPage<=1)return;
+    currentPage-=1;
+    renderCurrentPage({scroll:true});
+  });
+  nextPage?.addEventListener('click',()=>{
+    const total=Math.max(1,Math.ceil(sortedResults().length/PAGE_SIZE));
+    if(currentPage>=total)return;
+    currentPage+=1;
+    renderCurrentPage({scroll:true});
+  });
   form.addEventListener('submit',submit);
 
   window.MongrelTradeMarket={activate};
