@@ -27,7 +27,7 @@
 .trade-priority-profile>div:first-child{align-self:center}
 .trade-priority-profile>div:first-child strong{display:block;color:#e7faff}
 .trade-priority-profile>div:first-child small{display:block;margin-top:3px;color:var(--muted);font-size:.62rem;line-height:1.35}
-.trade-priority-profile label>div{display:flex;align-items:center}
+.trade-priority-profile label{min-width:0}.trade-priority-profile label>div{display:flex;align-items:center;min-width:0}
 .trade-priority-profile label input{border-radius:8px 0 0 8px;min-width:0}
 .trade-priority-profile label em{display:grid;place-items:center;min-height:38px;padding:0 8px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;color:var(--muted);font-style:normal;font-size:.61rem;background:#0a0e11}
 .trade-control-hint{margin:10px 0 0;color:#b8c9cf;font-size:.68rem;line-height:1.5}
@@ -50,6 +50,6 @@
 .trade-engine-state strong{font-size:.8rem}
 .trade-control-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-top:15px;border-top:1px solid var(--line)}
 .trade-control-actions>span{margin-right:auto;color:var(--muted);font-size:.7rem}
-@media(max-width:1050px){.trade-priority-grid{grid-template-columns:1fr}.trade-priority-profile{grid-template-columns:minmax(160px,1.3fr) repeat(3,minmax(100px,.7fr))}}
+@media(max-width:1250px){.trade-priority-grid{grid-template-columns:1fr}.trade-priority-profile{grid-template-columns:minmax(160px,1.3fr) repeat(3,minmax(100px,.7fr))}}
 @media(max-width:760px){.trade-control>summary{align-items:flex-start;flex-wrap:wrap}.trade-control-summary-status{order:3}.trade-control-body{padding:16px}.trade-control-banner,.trade-toggle-grid,.trade-channel-route{grid-template-columns:1fr}.trade-control-heading{align-items:stretch;flex-direction:column}.trade-default-priority{min-width:0}.trade-priority-profile{grid-template-columns:1fr 1fr}.trade-priority-profile>div:first-child{grid-column:1/-1}.trade-control-actions{align-items:stretch;flex-direction:column}.trade-control-actions .btn{width:100%}}
 @media(max-width:500px){.trade-priority-profile{grid-template-columns:1fr}.trade-priority-profile>div:first-child{grid-column:auto}.trade-control>summary{padding:16px}.trade-control-body{padding:13px}}
