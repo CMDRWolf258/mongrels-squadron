@@ -69,7 +69,7 @@ assert.match(html,/data-trade-watch-radius/);
 assert.match(html,/data-trade-watch-age/);
 assert.match(html,/data-trade-watch-carriers/);
 assert.match(html,/data-trade-watch-sort/);
-assert.match(html,/Pending Scheduler/);
+assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
 assert.match(html,/trade-market\.css\?v=5/);
 assert.match(html,/trade-control\.css\?v=5/);
