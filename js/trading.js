@@ -118,7 +118,7 @@
     const healthTitle=$('[data-trade-market-health-title]');
     const healthDetail=$('[data-trade-market-health-detail]');
     const health=payload.marketData||{};
-    if(healthTitle)healthTitle.textContent=health.lastSuccessfulFetchAt?'EDData / EDDN Connected':'EDData Adapter Ready';
+    if(healthTitle)healthTitle.textContent=health.lastSuccessfulFetchAt?(String(health.source||'Market Source')+' Connected'):'Spansh Adapter Ready';
     if(healthDetail){
       if(health.lastWarning)healthDetail.textContent=health.lastWarning+' · '+fmt(health.lastReturnedCount||0)+' matches.';
       else if(health.lastError)healthDetail.textContent='Last market query error: '+health.lastError;
