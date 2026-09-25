@@ -120,7 +120,8 @@
     const health=payload.marketData||{};
     if(healthTitle)healthTitle.textContent=health.lastSuccessfulFetchAt?'EDData / EDDN Connected':'EDData Adapter Ready';
     if(healthDetail){
-      if(health.lastError)healthDetail.textContent='Last market query error: '+health.lastError;
+      if(health.lastWarning)healthDetail.textContent=health.lastWarning+' · '+fmt(health.lastReturnedCount||0)+' matches.';
+      else if(health.lastError)healthDetail.textContent='Last market query error: '+health.lastError;
       else if(health.lastSuccessfulFetchAt)healthDetail.textContent='Last live fetch '+ageLabel(health.lastSuccessfulFetchAt).replace('Updated ','')+' · '+fmt(health.lastReturnedCount||0)+' matches · '+fmt(health.lastStoredCount||0)+' cached observations for that commodity.';
       else healthDetail.textContent='Waiting for the first live market query.';
     }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  buildEdDataNearbySearchUrl,
   buildEdDataSearchUrl,
   normalizeMarketSearch,
   searchTradeMarkets,
@@ -32,7 +33,9 @@ assert.equal(normalized.radiusLy,500);
 assert.equal(normalized.maxAgeMinutes,90,'blank max age should inherit Critical aging cutoff');
 
 const url=buildEdDataSearchUrl(normalized);
-assert.match(url,/soontilrelics\/nearby\/imports/);
+assert.match(url,/soontilrelics\/imports/);
+assert.doesNotMatch(url,/\/nearby\//,'Best Price should use the lighter price-ranked commodity endpoint');
+assert.match(url,/systemName=Diaba/);
 assert.match(url,/maxDistance=500/);
 assert.match(url,/maxDaysAgo=1/);
 assert.match(url,/fleetCarriers=false/);
@@ -117,7 +120,8 @@ const sell=await searchTradeMarkets(env,{
   limit:50,
 },{fetchImpl});
 
-assert.match(requestedUrl,/gold\/nearby\/imports/);
+assert.match(requestedUrl,/gold\/imports/);
+assert.doesNotMatch(requestedUrl,/\/nearby\//);
 assert.equal(sell.sourceResultCount,3);
 assert.equal(sell.results.length,1);
 assert.equal(sell.results[0].stationName,'Fresh Large Port');
@@ -144,10 +148,52 @@ const buy=await searchTradeMarkets(env,{
   priority:'standard',
   sort:'price',
 },{fetchImpl});
-assert.match(requestedUrl,/gold\/nearby\/exports/);
+assert.match(requestedUrl,/gold\/exports/);
+assert.doesNotMatch(requestedUrl,/\/nearby\//);
 assert.match(requestedUrl,/maxPrice=43000/);
 assert.doesNotMatch(requestedUrl,/fleetCarriers=/,'include should leave the Fleet Carrier filter unset');
 assert.equal(buy.results[0].stationName,'Medium Port','buy results should sort by lowest buy price');
+
+const distanceQuery=normalizeMarketSearch({
+  commodity:'Gold',
+  direction:'sell',
+  referenceSystem:'Diaba',
+  radiusLy:200,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:20160,
+  priority:'standard',
+  sort:'distance',
+},control);
+const nearbyUrl=buildEdDataNearbySearchUrl(distanceQuery);
+assert.match(nearbyUrl,/gold\/nearby\/imports/);
+assert.match(nearbyUrl,/sort=distance/);
+
+let calls=0;
+const fallbackFetch=async input=>{
+  calls+=1;
+  if(calls===1){
+    const error=new Error('aborted');
+    error.name='AbortError';
+    throw error;
+  }
+  return new Response(JSON.stringify(rows),{status:200,headers:{'Content-Type':'application/json'}});
+};
+const fallback=await searchTradeMarkets({TRADES:new FakeKV()},{
+  commodity:'Gold',
+  direction:'sell',
+  referenceSystem:'Diaba',
+  radiusLy:200,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:20160,
+  priority:'standard',
+  sort:'distance',
+},{fetchImpl:fallbackFetch});
+assert.equal(calls,2,'slow broad searches should retry through the lighter price-ranked endpoint');
+assert.equal(fallback.partial,true);
+assert.equal(fallback.sourceMode,'price-ranked-fallback');
+assert.match(fallback.warning,/top price-ranked candidates/);
 
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/Live Market Intelligence/);
@@ -162,6 +208,7 @@ assert.match(client,/\/api\/trade-market\/search/);
 assert.match(client,/\/api\/trade-market\/commodities/);
 assert.match(client,/mongrels-trade-market-search-v1/);
 assert.match(client,/MongrelTradeMarket/);
+assert.match(client,/Partial \/ fallback results/);
 
 const tradeClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(tradeClient,/MongrelTradeMarket\?\.activate/);

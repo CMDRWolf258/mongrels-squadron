@@ -126,7 +126,8 @@
       '<span>Profile&nbsp;<strong>'+safe(q.priority||'standard')+'</strong></span>',
       '<span>Max age&nbsp;<strong>'+safe(ageText)+'</strong></span>',
       '<span><strong>'+fmt(payload.results?.length||0)+'</strong>&nbsp;matches from '+fmt(payload.sourceResultCount||0)+' source candidates</span>',
-    ].join('');
+      payload.partial?'<span><strong>Partial / fallback results</strong></span>':'',
+    ].filter(Boolean).join('');
   }
 
   function resultCard(item,query){
@@ -199,9 +200,11 @@
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||'Market search failed.');
       renderResults(payload);
-      status.textContent=payload.results?.length
-        ?'Live market search complete.'
-        :'Search complete — no matching markets.';
+      status.textContent=payload.warning
+        ?payload.warning
+        :payload.results?.length
+          ?'Live market search complete.'
+          :'Search complete — no matching markets.';
       window.dispatchEvent(new CustomEvent('mongrels:trade-market-search',{detail:payload}));
     }catch(error){
       status.textContent=error.message||'Market search failed.';
