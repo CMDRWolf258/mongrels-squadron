@@ -90,7 +90,7 @@ const bestWatch=normalizeTradeWatch({
   ...watch,
   evaluation:{
     ...watch.evaluation,
-    matchCount:3,
+    matchCount:5,
     currentBest:{
       rank:1,
       marketId:'555',
@@ -103,9 +103,11 @@ const bestWatch=normalizeTradeWatch({
       source:'Spansh',
     },
     rankedMarkets:[
-      {rank:1,marketId:'555',stationName:'Cheranovsky City',systemName:'Ngurii',price:19880,volume:512,distanceLy:12.3,observedAt:'2026-09-25T18:29:00.000Z',source:'Spansh'},
-      {rank:2,marketId:'556',stationName:'Fallback One',systemName:'Beta',price:20100,volume:480,distanceLy:18.5,observedAt:'2026-09-25T18:28:00.000Z',source:'Spansh'},
-      {rank:3,marketId:'557',stationName:'Fallback Two',systemName:'Gamma',price:20350,volume:450,distanceLy:22.1,observedAt:'2026-09-25T18:27:00.000Z',source:'Spansh'},
+      {rank:1,marketId:'555',stationName:'Cheranovsky City',systemName:'Ngurii',price:19880,volume:512,distanceLy:12.34567,observedAt:'2026-09-25T18:29:00.000Z',source:'Spansh'},
+      {rank:2,marketId:'556',stationName:'Fallback One',systemName:'Beta',price:20100,volume:480,distanceLy:18.5678,observedAt:'2026-09-25T18:28:00.000Z',source:'Spansh'},
+      {rank:3,marketId:'557',stationName:'Fallback Two',systemName:'Gamma',price:20350,volume:450,distanceLy:22.1234,observedAt:'2026-09-25T18:27:00.000Z',source:'Spansh'},
+      {rank:4,marketId:'558',stationName:'Fallback Three',systemName:'Delta',price:20500,volume:425,distanceLy:25.6789,observedAt:'2026-09-25T18:26:00.000Z',source:'Spansh'},
+      {rank:5,marketId:'559',stationName:'Fallback Four',systemName:'Epsilon',price:20700,volume:400,distanceLy:29.9876,observedAt:'2026-09-25T18:25:00.000Z',source:'Spansh'},
     ],
   },
 });
@@ -114,6 +116,8 @@ assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Ch
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/19,880 Cr\/t/);
 assert.match(bestPayload.embeds[0].fields.map(field=>field.name).join('\n'),/Next Best Markets/);
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Fallback One/);
+assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Fallback Four/,'Discord Watch card should show rank #5');
+assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/12\.35 ly/,'Discord distance should be capped at two decimals');
 
 const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
   ...watch,
