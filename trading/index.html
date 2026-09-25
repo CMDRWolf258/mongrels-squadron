@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3">
+  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-control.css?v=1">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -49,7 +49,54 @@
 
 <section class="section trading-priority-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">Squad Priority</p><h2>Support the Mongrels</h2></div><p>Hauling tied to BGS, colonization, construction, carrier logistics, or another squad goal. Profit is secondary to the objective.</p></div><div id="squadTradeGrid" class="trade-grid"></div><div id="squadTradeEmpty" class="data-empty-state" hidden><div class="data-empty-icon">↔</div><div><strong>No squad trade objective is posted.</strong><p>Member and leadership logistics posts will appear here when active.</p></div></div></div></section>
 <section class="section trading-profit-section" id="member-trade-board"><div class="container"><div class="section-heading"><div><p class="eyebrow">Make Some Credits</p><h2>Member Trade Board</h2></div><p>Current opportunities discovered by Mongrels. Market prices move quickly, so always check the freshness stamp before committing a carrier-load of cargo.</p></div><div class="trade-toolbar"><label><span>Search routes</span><input id="tradeSearch" type="search" placeholder="Commodity, station, system…"></label><label><span>Pad size</span><select id="tradePadFilter"><option value="all">All pads</option><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option></select></label><label><span>Sort</span><select id="tradeSort"><option value="profit-desc">Profit: high to low</option><option value="updated-desc">Recently updated</option><option value="commodity-asc">Commodity A–Z</option></select></label></div><div id="creditTradeGrid" class="trade-grid"></div><div id="creditTradeEmpty" class="data-empty-state" hidden><div class="data-empty-icon">₡</div><div><strong>No member routes match the current filters.</strong><p>Post a route when you find something worth sharing.</p></div></div></div></section>
-<section class="section-sm"><div class="container trade-info-panel"><div><p class="eyebrow">Trust the timestamp</p><h2>Member-posted, not guaranteed live.</h2><p>Route cards show when they were updated and who posted them. Live market automation can be layered in later; until then, treat old market prices as leads rather than guarantees.</p></div><div class="trade-info-tags"><span>Owner-managed posts</span><span>Freshness stamps</span><span>System copy buttons</span><span>Officer moderation</span></div></div></section>
+<section class="section-sm"><div class="container trade-info-panel"><div><p class="eyebrow">Trust the timestamp</p><h2>Know how current the market observation is.</h2><p>Member-posted routes remain useful leads while Trade Intelligence is being connected. Automated observations will use scenario-specific freshness rules instead of pretending every old price has the same value.</p></div><div class="trade-info-tags"><span>Owner-managed posts</span><span>Scenario freshness</span><span>Silent Discord cards</span><span>Officer controls</span></div></div></section>
+<section class="section trade-control-section" data-trade-control hidden>
+  <div class="container">
+    <details class="trade-control" data-trade-control-details>
+      <summary><span><span class="eyebrow">Officer Tools</span><strong>Trade Operations Control</strong><small>Priority, freshness, alerts, Discord delivery, and data-source health.</small></span><span class="trade-control-summary-status" data-trade-control-summary>Loading…</span></summary>
+      <div class="trade-control-body">
+        <div class="trade-control-banner" data-trade-control-banner>
+          <div><span>Discord Target</span><strong data-trade-discord-target>🧪〡system-testing</strong><small data-trade-discord-mode>TESTING · production routing is locked during development.</small></div>
+          <div><span>Market Data Engine</span><strong>Framework Ready</strong><small>External market search and scheduled watch evaluation are not connected yet.</small></div>
+        </div>
+
+        <form data-trade-control-form>
+          <section class="trade-control-group">
+            <div class="trade-control-heading"><div><h3>Priority & Freshness Profiles</h3><p>Each watch interprets the same observation timestamp according to its assigned profile. Refresh intervals cannot be set below 5 minutes.</p></div><label class="trade-default-priority"><span>Default priority</span><select data-trade-control-default><option value="critical">Critical</option><option value="high">High</option><option value="standard">Standard</option><option value="low">Low</option></select></label></div>
+            <div class="trade-priority-grid">
+              <article class="trade-priority-profile" data-trade-priority="critical"><div><strong>Critical</strong><small>Fast-moving CGs / rapidly depleting markets</small></div><label><span>Refresh</span><div><input type="number" min="5" max="10080" step="1" data-priority-field="refreshMinutes"><em>min</em></div></label><label><span>Fresh through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="freshMinutes"><em>min</em></div></label><label><span>Aging through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="agingMinutes"><em>min</em></div></label></article>
+              <article class="trade-priority-profile" data-trade-priority="high"><div><strong>High</strong><small>Important short-lived opportunities</small></div><label><span>Refresh</span><div><input type="number" min="5" max="10080" step="1" data-priority-field="refreshMinutes"><em>min</em></div></label><label><span>Fresh through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="freshMinutes"><em>min</em></div></label><label><span>Aging through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="agingMinutes"><em>min</em></div></label></article>
+              <article class="trade-priority-profile" data-trade-priority="standard"><div><strong>Standard</strong><small>Normal trade routes and routine market leads</small></div><label><span>Refresh</span><div><input type="number" min="5" max="10080" step="1" data-priority-field="refreshMinutes"><em>min</em></div></label><label><span>Fresh through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="freshMinutes"><em>min</em></div></label><label><span>Aging through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="agingMinutes"><em>min</em></div></label></article>
+              <article class="trade-priority-profile" data-trade-priority="low"><div><strong>Low</strong><small>Long-term or low-volatility watches</small></div><label><span>Refresh</span><div><input type="number" min="5" max="10080" step="1" data-priority-field="refreshMinutes"><em>min</em></div></label><label><span>Fresh through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="freshMinutes"><em>min</em></div></label><label><span>Aging through</span><div><input type="number" min="1" max="43200" step="1" data-priority-field="agingMinutes"><em>min</em></div></label></article>
+            </div>
+            <p class="trade-control-hint">Example: Critical defaults to Fresh ≤30 min, Aging ≤90 min. Standard defaults to Fresh ≤24 hr, Aging ≤48 hr. Anything older than the Aging cutoff is Stale.</p>
+          </section>
+
+          <section class="trade-control-group">
+            <div class="trade-control-heading"><div><h3>Discord & Card Lifecycle</h3><p>Website-owned cards update in place. Routine automation stays silent; subscribers opt into alerts per trade card.</p></div></div>
+            <div class="trade-toggle-grid">
+              <label><input type="checkbox" data-trade-discord-auto><span><strong>Auto-publish website trade posts</strong><small>Publish/edit the website-owned Discord card automatically.</small></span></label>
+              <label class="is-locked"><input type="checkbox" checked disabled><span><strong>Silent routine cards</strong><small>Always on during this framework: routine creates/updates do not notify everyone.</small></span></label>
+              <label><input type="checkbox" data-trade-discord-threshold><span><strong>Threshold alert messages</strong><small>Create a new message when a configured watch crosses its trigger.</small></span></label>
+              <label><input type="checkbox" data-trade-discord-compact><span><strong>Compact old cards</strong><small>Keep superseded/closed history as a short reference instead of deleting it.</small></span></label>
+            </div>
+            <div class="trade-channel-route">
+              <div><span>Development</span><strong>🧪〡system-testing</strong><code>1552127291234983956</code><small>Current destination</small></div>
+              <div class="is-locked"><span>Production</span><strong>💰〡trader’s-outpost</strong><code>1029221573988720722</code><small>Locked until Wolf explicitly moves Trade Intelligence live</small></div>
+            </div>
+          </section>
+
+          <section class="trade-control-group trade-control-future">
+            <div class="trade-control-heading"><div><h3>Live Watches & Data Health</h3><p>This section is reserved for the market-source adapter, saved searches, watch states, last-evaluation times, cache health, and MongrelScout observations.</p></div></div>
+            <div class="trade-engine-state"><span>Next framework connection</span><strong>Galaxy market source → normalized Mongrel market cache → watch evaluator</strong><small>No live market query or scheduled threshold evaluation is enabled by this build.</small></div>
+          </section>
+
+          <div class="trade-control-actions"><span data-trade-control-status aria-live="polite"></span><button class="btn btn-primary" type="submit">Save Trade Control</button></div>
+        </form>
+      </div>
+    </details>
+  </div>
+</section>
 <section class="project-editor-shell" data-trade-editor-shell hidden aria-label="Trade route editor"><div class="project-editor-backdrop" data-trade-cancel></div><form class="project-editor-panel" data-trade-form><div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost</p><h2 data-trade-form-title>Post Trade Route</h2></div><button class="btn btn-secondary" type="button" data-trade-cancel>Close</button></div><input type="hidden" data-trade-id><div class="project-editor-grid">
 <label><span>Route Type</span><select data-trade-category><option value="credits">Make Some Credits</option><option value="squad">Support the Mongrels</option></select></label>
 <label data-trade-official-wrap hidden><span>Posting Type</span><select data-trade-official><option value="false">Member Posting</option><option value="true">Official Squadron Route</option></select></label>
@@ -83,5 +130,5 @@
 <label class="project-editor-wide"><span>Instructions / Notes</span><textarea rows="4" maxlength="1000" data-colony-notes placeholder="Where to haul, priority commodities, timing, carrier support, or other instructions."></textarea></label>
 </div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Complete</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
 </main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=69"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trading.js?v=70"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
