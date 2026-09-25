@@ -1,6 +1,6 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-09-23_
+_Last updated: 2026-09-25_
 
 ## Read this first
 
@@ -155,6 +155,51 @@ Rename behavior:
 - system-testing, announcements, mission-control, faction-alerts, scout-network, colonization-jobs, colonization-archive, and squad-payouts are webhook-bound; renaming the Discord channel does not break the existing webhook connection.
 - bot-owned/name-discovered channels must accept their decorated name plus a sensible plain fallback. Squad Events, Training Resources, Pursuits, Combat Escort, Squad Structure, and Squad Rules follow this pattern.
 - do not create replacement channels solely because of a label/emoji change; preserve channel IDs/history where possible.
+
+### Trader's Outpost / Trade Intelligence
+
+Primary framework files:
+- `trading/index.html`
+- `js/trading.js`
+- `css/trade-control.css`
+- `functions/api/trades/index.js`
+- `functions/api/trade-control/index.js`
+- `functions/api/discord/interactions.js`
+- `lib/trade-intelligence.js`
+- `lib/trade-discord.js`
+- `scripts/smoke-trade-intelligence.mjs`
+
+Authority / storage:
+- ordinary authenticated Members may continue creating and maintaining their own trade posts; Officers/Site Admin retain board moderation.
+- the advanced **Trade Operations Control** at the bottom of Trader's Outpost is Officer/Site Admin only; backend authorization is authoritative.
+- reuse the existing `TRADES` KV binding. The route board remains `trade-board-v1`; Trade Control configuration is `trade-control-v1`; per-user alert subscriptions use isolated `trade-alert-sub-v1:<routeId>:<discordUserId>` keys.
+- do not persist a global Fresh/Aging/Stale label on a market observation. Persist its observation timestamp and classify age against the priority profile of the search/watch/card viewing it.
+
+Priority / freshness:
+- four starting profiles are **Critical, High, Standard, Low** and are Officer-configurable.
+- no refresh cadence may be configured below **5 minutes**.
+- initial Critical defaults: refresh 5 min, Fresh <=30 min, Aging <=90 min, Stale >90 min.
+- initial Standard defaults: refresh 60 min, Fresh <=24 h, Aging <=48 h, Stale >48 h.
+- profile cutoffs are scenario-specific; the same 73-minute-old observation can be Aging in a CG watch and Fresh in an ordinary route.
+- monitoring priority and alert severity/delivery are separate concepts.
+
+Discord lifecycle:
+- development/test destination is **🧪〡system-testing**, channel ID `1552127291234983956`.
+- intended production destination is **💰〡trader’s-outpost**, channel ID `1029221573988720722`.
+- until Wolf explicitly approves launch, Trade Control remains locked to TESTING; the web UI does not expose the live switch.
+- website-owned trade cards use the existing Imperial Mongrels Website bot and tracked Discord message IDs. Edits update the same message instead of posting duplicates.
+- ordinary automated cards are created with Discord's suppress-notifications flag and routine edits remain non-notifying.
+- each active Discord trade card has **🔔 Alert Me**. Clicking it toggles that Discord user’s subscription for that one post and returns an ephemeral confirmation; no per-watch Discord role is created.
+- threshold events should remain visible but silent in the shared trade channel; subscribed users receive the opt-in alert privately. Discord/user notification settings may still prevent delivery.
+- old/closed/superseded cards should normally be compacted to short history instead of deleted.
+- ordinary Discord conversation in trader’s-outpost is never treated as website data and is never modified by the website.
+
+Market-data direction:
+- the framework deliberately separates market observations, priority profiles, watches/searches, route cards, trigger state, and Discord delivery.
+- broad public market data should enter through a backend adapter/cache rather than browser-direct queries; current preferred direction is a queryable EDDN-backed source such as EDData, normalized into a Mongrel market cache.
+- MongrelScout/EDMC observations can later update the same normalized cache and supersede older public observations.
+- the initial framework does **not** yet enable an external market source, all-system search, scheduled watch evaluator, BGS enrichment, automatic source promotion, or live threshold polling. Do not label those features live until they are wired and production-validated.
+- future market-source changes must not require Trader's Outpost UI/card code to know whether an observation came from EDData, MongrelScout, or another adapter.
 
 ### Squad Payouts Discord visibility
 
