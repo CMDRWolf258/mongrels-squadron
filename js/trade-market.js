@@ -383,8 +383,11 @@
     const carrier=item.carrier?'Fleet Carrier':item.stationType||'Station';
     const distance=Number.isFinite(Number(item.distanceLy))?fmtLy(item.distanceLy)+' ly':'Distance unknown';
     const freshness=['fresh','aging','stale'].includes(item.freshness)?item.freshness:'unknown';
+    const bgs=item.bgs&&typeof item.bgs==='object'?item.bgs:{};
+    const economies=[bgs.stationPrimaryEconomy,bgs.stationSecondaryEconomy].filter(Boolean);
+    const bgsAge=Number.isFinite(Number(bgs.metadataAgeMinutes))?ageLabel(bgs.metadataAgeMinutes):'Unknown BGS age';
     const article=document.createElement('article');
-    article.className='trade-market-result is-'+freshness;
+    article.className='trade-market-result is-'+freshness+(bgs.infrastructureFailureMetalOpportunity?' has-infra-metal-signal':'');
     article.innerHTML=`
       <div class="trade-market-result-head">
         <div><p>${safe(item.systemName)}</p><h3>${safe(item.stationName)}</h3></div>
@@ -401,6 +404,14 @@
         <span>${safe(arrivalLabel(item.distanceToArrivalLs))} arrival</span>
         ${item.carrier&&item.carrierDockingAccess?`<span>${safe(item.carrierDockingAccess)} access</span>`:''}
       </div>
+      ${bgs.infrastructureFailureMetalOpportunity?`<div class="trade-market-signal"><strong>⚠ Infrastructure Failure metal source</strong><span>${safe(bgs.controllingFaction||'Unknown controller')} · ${fmt(item.supply)} t supply at ${fmt(item.buyPrice)} Cr/t</span></div>`:''}
+      ${bgs.controllingFaction||bgs.factionState||economies.length?`<div class="trade-market-bgs">
+        <div><span>Port controller</span><strong>${safe(bgs.controllingFaction||'Unknown')}</strong></div>
+        <div><span>Faction state</span><strong>${safe(bgs.factionState||'Unknown')}</strong></div>
+        <div><span>Economy</span><strong>${safe(economies.join(' / ')||'Unknown')}</strong></div>
+        <div><span>Ownership / BGS data</span><strong>${safe(bgsAge)} · ${safe(bgs.metadataFreshness||'unknown')}</strong></div>
+      </div>`:''}
+      ${bgs.ownershipNeedsConfirmation?`<p class="trade-market-ownership-warning">Ownership needs confirmation — market data is newer or fresher than the station ownership/BGS metadata, so a recent port-control change may not be reflected yet.</p>`:''}
       <div class="trade-market-result-foot">
         <small>${safe(ageLabel(item.ageMinutes))} · ${safe(item.source||'EDData / EDDN')}</small>
         <button class="btn btn-secondary" type="button" data-copy-market-system>Copy System</button>

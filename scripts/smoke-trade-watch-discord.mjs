@@ -126,6 +126,69 @@ const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
 }),{origin:'https://mongrels-squadron.pages.dev',control});
 assert.match(rareBuyPayload.embeds[0].fields.map(field=>field.value).join('\n'),/all distances \(rare source\)/);
 
+const infraWatch=normalizeTradeWatch({
+  ...watch,
+  id:'77777777-abcd-4321-abcd-777777777777',
+  name:'Infrastructure Failure Metals',
+  query:{...watch.query,commodity:'Silver',direction:'buy',minVolume:1000},
+  evaluation:{
+    ...watch.evaluation,
+    matchCount:1,
+    currentBest:{
+      rank:1,
+      marketId:'888',
+      stationName:'Low Price Metals Port',
+      systemName:'Delta',
+      price:3500,
+      volume:25000,
+      distanceLy:42.123,
+      observedAt:'2026-09-25T18:29:00.000Z',
+      source:'Spansh',
+      bgs:{
+        controllingFaction:'Delta Metals Cooperative',
+        factionState:'Infrastructure Failure',
+        stationPrimaryEconomy:'Industrial',
+        stationSecondaryEconomy:'Refinery',
+        stationEconomies:[{name:'Industrial',share:0.6},{name:'Refinery',share:0.4}],
+        systemPrimaryEconomy:'Industrial',
+        systemSecondaryEconomy:'Refinery',
+        metadataAt:'2026-09-25T12:00:00.000Z',
+        metadataAgeMinutes:390,
+        metadataLagMinutes:389,
+        metadataFreshness:'fresh',
+        infrastructureFailure:true,
+        metalCommodity:true,
+        infrastructureFailureMetalOpportunity:true,
+        ownershipNeedsConfirmation:false,
+        source:'Spansh station metadata',
+      },
+    },
+    rankedMarkets:[],
+  },
+});
+const infraPayload=buildTradeWatchDiscordPayload(infraWatch,{origin:'https://mongrels-squadron.pages.dev',control});
+assert.match(infraPayload.embeds[0].fields.map(field=>field.name).join('\n'),/Infrastructure Failure Metal Source/);
+assert.match(infraPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Delta Metals Cooperative/);
+
+const staleInfraWatch=normalizeTradeWatch({
+  ...infraWatch,
+  id:'66666666-abcd-4321-abcd-666666666666',
+  evaluation:{
+    ...infraWatch.evaluation,
+    currentBest:{
+      ...infraWatch.evaluation.currentBest,
+      bgs:{
+        ...infraWatch.evaluation.currentBest.bgs,
+        metadataFreshness:'stale',
+        metadataAgeMinutes:6000,
+        ownershipNeedsConfirmation:true,
+      },
+    },
+  },
+});
+const staleInfraPayload=buildTradeWatchDiscordPayload(staleInfraWatch,{origin:'https://mongrels-squadron.pages.dev',control});
+assert.match(staleInfraPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Ownership needs confirmation/);
+
 const compact=buildCompactTradeWatchDiscordPayload(watch,{control,reason:'Removed'});
 assert.match(compact.content,/REMOVED/);
 assert.deepEqual(compact.components,[]);

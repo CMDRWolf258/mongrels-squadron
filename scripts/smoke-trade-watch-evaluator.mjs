@@ -64,9 +64,14 @@ let rows=[
     system_name:'Alpha',
     system_x:1,system_y:2,system_z:3,
     carrier_docking_access:null,
+    controlling_minor_faction:'Alpha Trade Cooperative',
+    controlling_minor_faction_state:'Boom',
+    primary_economy:'Industrial',
+    secondary_economy:'Refinery',
+    updated_at:new Date(baseNow-30*60*1000).toISOString(),
     market_updated_at:new Date(baseNow-60000).toISOString(),
     distance:12,
-    market:[{commodity:'Gold',buy_price:42000,sell_price:70000,supply:5000,demand:25000}],
+    market:[{commodity:'Gold',category:'Metals',buy_price:42000,sell_price:70000,supply:5000,demand:25000}],
   },
   {
     id:'1002',
@@ -123,6 +128,9 @@ assert.equal(stored.evaluation.matchCount,3);
 assert.equal(stored.evaluation.currentBest.marketId,'1001');
 assert.equal(stored.evaluation.currentBest.price,70000);
 assert.equal(stored.evaluation.currentBest.volume,25000);
+assert.equal(stored.evaluation.currentBest.bgs.controllingFaction,'Alpha Trade Cooperative');
+assert.equal(stored.evaluation.currentBest.bgs.factionState,'Boom');
+assert.equal(stored.evaluation.currentBest.bgs.metalCommodity,true);
 assert.equal(stored.evaluation.rankedMarkets.length,3);
 assert.deepEqual(stored.evaluation.rankedMarkets.map(item=>item.marketId),['1001','1002','1003']);
 assert.equal(stored.evaluation.rankedMarkets[1].rank,2);
@@ -201,14 +209,16 @@ assert.match(client,/\/api\/trade-watches\/evaluate/);
 assert.match(client,/Current Best/);
 assert.match(client,/Fallback Markets/);
 assert.match(client,/rankedMarkets/);
+assert.match(client,/Infrastructure Failure metal source/);
+assert.match(client,/Ownership needs confirmation/);
 assert.match(client,/condition_met/);
 assert.match(client,/setInterval\(\(\)=>\{if\(manager\(\)&&!document\.hidden\)loadTradeWatches\(\);\},60000\)/);
 
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
-assert.match(html,/trade-control\.css\?v=8/);
-assert.match(html,/trade-market\.js\?v=9/);
-assert.match(html,/trading\.js\?v=81/);
+assert.match(html,/trade-control\.css\?v=9/);
+assert.match(html,/trade-market\.js\?v=10/);
+assert.match(html,/trading\.js\?v=82/);
 
 console.log('Trade Watch evaluator smoke checks passed.');
