@@ -144,6 +144,29 @@
     return key.charAt(0).toUpperCase()+key.slice(1);
   }
 
+  function watchTimeLabel(value){
+    const timestamp=Date.parse(value||'');
+    if(!Number.isFinite(timestamp))return'Never';
+    const delta=timestamp-Date.now();
+    const absolute=Math.abs(delta);
+    if(absolute<60000)return delta>0?'Due <1m':'<1m ago';
+    const minutes=Math.round(absolute/60000);
+    if(minutes<60)return delta>0?'in '+minutes+'m':minutes+'m ago';
+    const hours=Math.round(absolute/3600000);
+    if(hours<48)return delta>0?'in '+hours+'h':hours+'h ago';
+    const days=Math.round(absolute/86400000);
+    return delta>0?'in '+days+'d':days+'d ago';
+  }
+
+  function watchTransitionLabel(value){
+    const type=String(value?.type||'');
+    if(type==='baseline')return'Baseline established';
+    if(type==='condition_met')return'Condition met';
+    if(type==='condition_cleared')return'Condition cleared';
+    if(type==='best_market_changed')return'Best market changed';
+    return'';
+  }
+
   function renderTradeWatches(){
     const list=$('[data-trade-watch-list]');
     const count=$('[data-trade-watch-count]');
@@ -161,10 +184,15 @@
       const profile=tradeControlState?.control?.priorities?.[q.priority]||{};
       const refresh=profile.refreshMinutes?profile.refreshMinutes+' min':'Profile';
       const state=watchStatusLabel(watch);
+      const evaluation=watch.evaluation||{};
+      const best=evaluation.currentBest||null;
+      const volumeLabel=q.direction==='buy'?'supply':'demand';
+      const transition=watchTransitionLabel(evaluation.lastTransition);
       article.innerHTML=`
         <div class="trade-watch-card-head">
           <div><span>${safe(watchPriorityLabel(q.priority))} · ${safe(state)}</span><strong>${safe(watch.name||'Saved Watch')}</strong><small>${safe(watch.summary||'')}</small></div>
           <div class="trade-watch-card-actions">
+            <button class="btn btn-secondary btn-compact" type="button" data-watch-run ${watch.status==='paused'?'disabled title="Resume this watch before running it"':''}>Run Now</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-edit>Edit</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-load>Load Search</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-toggle>${watch.status==='paused'?'Resume':'Pause'}</button>
@@ -173,11 +201,16 @@
         </div>
         <div class="trade-watch-meta">
           <span>Refresh <strong>${safe(refresh)}</strong></span>
-          <span>Max age <strong>${q.maxAgeMinutes?fmt(q.maxAgeMinutes)+' min':'—'}</strong></span>
-          <span>Discord <strong>${watch.discord?.publish?'On start':'Off'}</strong></span>
-          <span>Evaluator <strong>${safe(state)}</strong></span>
-        </div>`;
+          <span>Matches <strong>${evaluation.matchCount===null||evaluation.matchCount===undefined?'—':fmt(evaluation.matchCount)}</strong></span>
+          <span>Last check <strong>${safe(watchTimeLabel(evaluation.lastAttemptAt||evaluation.lastEvaluatedAt))}</strong></span>
+          <span>Next due <strong>${watch.status==='paused'?'Paused':safe(watchTimeLabel(evaluation.nextEvaluationAt))}</strong></span>
+          <span>Discord <strong>${watch.discord?.publish?'Prepared':'Off'}</strong></span>
+        </div>
+        ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':safe(String(best.distanceLy))+' ly'}</strong></div></div>`:''}
+        ${evaluation.lastError?`<p class="trade-watch-evaluation-message is-error">Last check: ${safe(evaluation.lastError)}</p>`:evaluation.warning?`<p class="trade-watch-evaluation-message is-warning">${safe(evaluation.warning)}</p>`:''}
+        ${transition?`<p class="trade-watch-transition">${safe(transition)} · ${safe(watchTimeLabel(evaluation.lastTransition?.at))}</p>`:''}`;
 
+      article.querySelector('[data-watch-run]')?.addEventListener('click',event=>runTradeWatch(watch,event.currentTarget));
       article.querySelector('[data-watch-edit]')?.addEventListener('click',()=>{
         window.MongrelTradeMarket?.editWatch(watch);
       });
@@ -200,6 +233,33 @@
     }catch(error){
       const list=$('[data-trade-watch-list]');
       if(list)list.innerHTML='<div class="trade-engine-state"><span>Saved Watches</span><strong>Unable to load watches</strong><small>'+safe(error.message||'Unknown error')+'</small></div>';
+    }
+  }
+
+  async function runTradeWatch(watch,button){
+    if(!manager()||watch?.status==='paused')return;
+    const status=$('[data-trade-control-status]');
+    const original=button?.textContent||'Run Now';
+    if(button){button.disabled=true;button.textContent='Checking…';}
+    if(status)status.textContent='Evaluating '+(watch.name||'Trade Watch')+'…';
+    try{
+      const {response,payload}=await apiFetch('/api/trade-watches/evaluate',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-watch-evaluate'},
+        body:JSON.stringify({id:watch.id}),
+      });
+      if(!response.ok)throw new Error(payload.error||'Unable to evaluate watch.');
+      await loadTradeWatches();
+      loadTradeControl(true);
+      const row=Array.isArray(payload.results)?payload.results[0]:null;
+      if(status)status.textContent=row?.ok===false
+        ?'Watch check completed with an error.'
+        :'Watch evaluated'+(row?.matchCount===null||row?.matchCount===undefined?'.':': '+fmt(row.matchCount)+' matching market'+(Number(row.matchCount)===1?'':'s')+'.');
+      setTimeout(()=>{if(status&&status.textContent.startsWith('Watch '))status.textContent='';},3500);
+    }catch(error){
+      if(status)status.textContent=error.message||'Unable to evaluate watch.';
+    }finally{
+      if(button){button.disabled=false;button.textContent=original;}
     }
   }
 
@@ -324,6 +384,7 @@
 
   window.addEventListener('mongrels:trade-market-search',()=>{if(manager())loadTradeControl(true);});
   window.addEventListener('mongrels:trade-watch-saved',()=>{if(manager())loadTradeWatches();});
+  setInterval(()=>{if(manager()&&!document.hidden)loadTradeWatches();},60000);
   [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); $('[data-trade-control-form]')?.addEventListener('submit',saveTradeControl); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);
 })();

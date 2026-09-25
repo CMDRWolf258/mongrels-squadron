@@ -204,8 +204,8 @@ assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=5/);
-assert.match(html,/trade-market\.js\?v=5/);
-assert.match(html,/trading\.js\?v=74/);
+assert.match(html,/trade-market\.js\?v=6/);
+assert.match(html,/trading\.js\?v=75/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);

@@ -86,10 +86,18 @@ export async function onRequestPut({request,env}){
     current.discord={...current.discord,publish:body.value?.publishDiscord!==false};
     current.evaluation={
       state:'pending_scheduler',
+      lastAttemptAt:'',
       lastEvaluatedAt:'',
+      lastSuccessfulAt:'',
       nextEvaluationAt:'',
       lastError:'',
+      warning:'',
+      matchCount:null,
+      source:'',
+      sourceMode:'',
+      partial:false,
       currentBest:null,
+      lastTransition:null,
     };
   }else if(action==='rename'){
     const name=String(body.value?.name||'').trim().slice(0,160);

@@ -1,0 +1,55 @@
+name: Evaluate Trader's Outpost watches
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Wake on the five-minute floor without relying on exact execution time.
+    # The endpoint itself decides which watches are due from their priority profile.
+    - cron: '2-57/5 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trade-watch-evaluator
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      TRADE_WATCH_CRON_TOKEN: ${{ secrets.TRADE_WATCH_CRON_TOKEN || secrets.SCOUT_DISCORD_CRON_TOKEN }}
+    steps:
+      - name: Evaluate due Trade Watches
+        shell: bash
+        run: |
+          if [ -z "$TRADE_WATCH_CRON_TOKEN" ]; then
+            echo "No Trade Watch/Scout cron token is configured; scheduled Trade Watch evaluation is safely skipped."
+            exit 0
+          fi
+
+          response_file="$(mktemp)"
+          status="$(
+            curl \
+              --silent \
+              --show-error \
+              --retry 1 \
+              --retry-delay 5 \
+              --connect-timeout 15 \
+              --max-time 120 \
+              --output "$response_file" \
+              --write-out "%{http_code}" \
+              --request POST \
+              --header "Authorization: Bearer $TRADE_WATCH_CRON_TOKEN" \
+              --header "Accept: application/json" \
+              "https://mongrels-squadron.pages.dev/api/internal/trade-watch-evaluate"
+          )"
+
+          cat "$response_file"
+          echo
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Scheduled Trade Watch evaluation failed with HTTP $status."
+            exit 1
+          fi

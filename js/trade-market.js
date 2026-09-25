@@ -404,7 +404,7 @@
     if(noteTitle)noteTitle.textContent=editing?'Criteria change':'Saved Watch only';
     if(note)note.textContent=editing
       ?'Updating these criteria keeps the same watch but resets its evaluation state so the next scheduler run starts from the new rules.'
-      :'The recurring evaluator is not enabled yet. These criteria will be stored now and marked Pending Scheduler until the next automation layer is connected.';
+      :'The evaluator wakes on a five-minute floor and checks this watch when its selected priority cadence is due. Use Run Now from Saved Watches to test it immediately.';
     updateWatchLabels();
     if(watchStatus)watchStatus.textContent='';
   }
