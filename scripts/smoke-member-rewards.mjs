@@ -200,6 +200,21 @@ console.log('✓ Dedicated member Rewards page and Mission Control balance previ
 const ledger=readFileSync('lib/reward-ledger.js','utf8');
 assert.match(ledger,/scouting_job/,'Reward ledger should preserve future scouting reward entries');
 
+const frontierSync=readFileSync('functions/api/frontier/sync.js','utf8');
+assert.match(
+  frontierSync,
+  /Number\(automaticRewards\?\.created\|\|0\)\+Number\(memberFundedColonization\?\.created\|\|0\)/,
+  'Frontier sync must refresh Rewards Discord when either squad-funded or member-funded rewards are created',
+);
+const colonizationJobsApi=readFileSync('functions/api/colonization-jobs/index.js','utf8');
+for(const pattern of [
+  /syncRewardsDiscordIfCreated/,
+  /reconciliation\?\.memberFunded\?\.created/,
+  /reconciliation\?\.squad\?\.created/,
+  /syncRewardDiscordBoard/,
+])assert.match(colonizationJobsApi,pattern,'Colonization reconciliation must refresh the Rewards Discord board when it creates reward entries');
+console.log('✓ Rewards Discord automatically refreshes for both squad-funded and member-funded reward issuance paths');
+
 const wolfCss=readFileSync('css/wolf-bgs.css','utf8');
 assert.match(wolfCss,/animation:wolf-master-alert-flash/);
 assert.match(wolfCss,/@media \(prefers-reduced-motion: reduce\)\{[\s\S]*animation-duration:1\.6s/);

@@ -170,7 +170,8 @@ export async function onRequestPost({request,env}) {
     }
 
     let rewardDiscord=null;
-    if(Number(automaticRewards?.created)>0){
+    const rewardEntriesCreated=Number(automaticRewards?.created||0)+Number(memberFundedColonization?.created||0);
+    if(rewardEntriesCreated>0){
       try{
         const rewardView=await loadRewardDiscordView(env);
         const adminUrl=new URL('/wolf-bgs/',request.url);
