@@ -12,6 +12,7 @@ import {
   buildCompactTradeDiscordPayload,
   buildTradeDiscordPayload,
   parseTradeAlertCustomId,
+  tradeAlertActionCustomId,
   tradeAlertCustomId,
 } from '../lib/trade-discord.js';
 
@@ -59,14 +60,17 @@ const route={
   intelligence:{priority:'critical'},
 };
 const customId=tradeAlertCustomId(route.id);
-assert.deepEqual(parseTradeAlertCustomId(customId),{routeId:route.id});
+assert.deepEqual(parseTradeAlertCustomId(customId),{routeId:route.id,action:'settings'});
+assert.deepEqual(parseTradeAlertCustomId('mongrels_trade_alert:'+route.id),{routeId:route.id,action:'settings'},'legacy Alert Me buttons should still open settings');
+const disableId=tradeAlertActionCustomId(route.id,'disable');
+assert.deepEqual(parseTradeAlertCustomId(disableId),{routeId:route.id,action:'disable'});
 
 const payload=buildTradeDiscordPayload(route,{origin:'https://mongrels-squadron.pages.dev',control,subscriberCount:3});
 assert.equal(payload.allowed_mentions.parse.length,0);
 assert.match(payload.embeds[0].description,/TEST FEED/);
 assert.match(payload.embeds[0].footer.text,/3 watching/);
 assert.equal(payload.components[0].components[0].custom_id,customId);
-assert.match(payload.components[0].components[0].label,/Alert Me/);
+assert.equal(payload.components[0].components[0].label,'Alert Settings');
 
 const compact=buildCompactTradeDiscordPayload({...route,status:'expired'},{control,reason:'Superseded'});
 assert.equal(compact.embeds.length,0);
@@ -97,7 +101,10 @@ assert.match(controlApi,/mode:current\.discord\.mode/);
 
 const interactions=readFileSync(new URL('../functions/api/discord/interactions.js',import.meta.url),'utf8');
 assert.match(interactions,/parseTradeAlertCustomId/);
+assert.match(interactions,/hasTradeAlertSubscription/);
 assert.match(interactions,/toggleTradeAlertSubscription/);
+assert.match(interactions,/Alerts Enabled ✓/);
+assert.match(interactions,/Disable Alerts/);
 assert.match(interactions,/Trader’s Outpost alerts are available to recognized Mongrel members/);
 
 const discord=readFileSync(new URL('../lib/trade-discord.js',import.meta.url),'utf8');
