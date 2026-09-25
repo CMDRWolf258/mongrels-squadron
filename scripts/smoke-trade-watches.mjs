@@ -52,6 +52,13 @@ assert.equal(watch.discord.publish,true);
 assert.match(watchQuerySummary(watch),/Soontil Relics/);
 assert.match(watchQuerySummary(watch),/400 t demand/);
 
+const rareBuyWatch=normalizeTradeWatch({
+  ...watch,
+  id:'87654321-abcd-4321-abcd-210987654321',
+  query:{...query,direction:'buy',radiusLy:5,minVolume:1},
+});
+assert.match(watchQuerySummary(rareBuyWatch),/all distances/,'rare buy Watch summary must not imply a limiting radius');
+
 const env={TRADES:new FakeKV()};
 await writeTradeWatches(env,[watch]);
 const stored=await readTradeWatches(env);
@@ -71,10 +78,10 @@ assert.match(html,/data-trade-watch-carriers/);
 assert.match(html,/data-trade-watch-sort/);
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
-assert.match(html,/trade-market\.css\?v=5/);
-assert.match(html,/trade-control\.css\?v=6/);
-assert.match(html,/trade-market\.js\?v=7/);
-assert.match(html,/trading\.js\?v=77/);
+assert.match(html,/trade-market\.css\?v=6/);
+assert.match(html,/trade-control\.css\?v=7/);
+assert.match(html,/trade-market\.js\?v=8/);
+assert.match(html,/trading\.js\?v=78/);
 
 const marketClient=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(marketClient,/data-trade-watch-editor/);
