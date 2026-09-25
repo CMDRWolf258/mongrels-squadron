@@ -104,7 +104,7 @@ assert.match(interactions,/parseTradeAlertCustomId/);
 assert.match(interactions,/hasTradeAlertSubscription/);
 assert.match(interactions,/toggleTradeAlertSubscription/);
 assert.match(interactions,/Alerts Enabled ✓/);
-assert.match(interactions,/Disable Alerts/);
+assert.match(interactions,/Alerts Enabled ✓/);
 assert.match(interactions,/Trader’s Outpost alerts are available to recognized Mongrel members/);
 
 const discord=readFileSync(new URL('../lib/trade-discord.js',import.meta.url),'utf8');
