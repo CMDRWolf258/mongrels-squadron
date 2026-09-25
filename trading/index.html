@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-market.css?v=3"><link rel="stylesheet" href="../css/trade-control.css?v=2">
+  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-market.css?v=4"><link rel="stylesheet" href="../css/trade-control.css?v=3">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -34,7 +34,10 @@
       </div>
       <div class="trade-market-actions"><span data-market-status aria-live="polite">Ready.</span><button class="btn btn-primary" type="submit">Search Markets</button></div>
     </form>
-    <div class="trade-market-summary" data-market-summary hidden></div>
+    <div class="trade-market-summary-row" data-market-summary-row hidden>
+      <div class="trade-market-summary" data-market-summary></div>
+      <button class="btn btn-secondary btn-compact" type="button" data-market-save-watch hidden>Save as Watch</button>
+    </div>
     <div class="trade-market-result-tools" data-market-result-tools hidden>
       <div><strong data-market-result-range>Showing 0 results</strong><small>10 markets per page · sorting below does not run another live search.</small></div>
       <label><span>Sort displayed results</span><select data-market-result-sort><option value="price">Best price</option><option value="distance">Nearest system</option><option value="freshness">Freshest data</option><option value="volume">Highest supply / demand</option><option value="arrival">Shortest arrival</option></select></label>
@@ -123,9 +126,14 @@
             </div>
           </section>
 
+          <section class="trade-control-group">
+            <div class="trade-control-heading"><div><h3>Saved Watches</h3><p>Officer-created market searches waiting for or participating in automated evaluation. Saving is live now; scheduled evaluation is the next layer.</p></div><span class="trade-watch-count" data-trade-watch-count>0 saved</span></div>
+            <div class="trade-watch-list" data-trade-watch-list><div class="trade-engine-state"><span>Saved Watches</span><strong>No watches saved yet</strong><small>Run a Commodity Search, then use Save as Watch.</small></div></div>
+          </section>
+
           <section class="trade-control-group trade-control-future">
-            <div class="trade-control-heading"><div><h3>Live Watches & Data Health</h3><p>This section is reserved for the market-source adapter, saved searches, watch states, last-evaluation times, cache health, and MongrelScout observations.</p></div></div>
-            <div class="trade-engine-state"><span>Market Pipeline</span><strong>Spansh → normalized Mongrel market cache</strong><small data-trade-market-pipeline>Live member search is connected. Saved searches, scheduled watch evaluation, BGS enrichment, and automatic source promotion are still pending.</small></div>
+            <div class="trade-control-heading"><div><h3>Data Health & Automation</h3><p>Market source health, watch evaluation, cache health, and future MongrelScout observations.</p></div></div>
+            <div class="trade-engine-state"><span>Market Pipeline</span><strong>Spansh → normalized Mongrel market cache</strong><small data-trade-market-pipeline>Live member search and saved watches are connected. Scheduled evaluation, BGS enrichment, and automatic source promotion are still pending.</small></div>
           </section>
 
           <div class="trade-control-actions"><span data-trade-control-status aria-live="polite"></span><button class="btn btn-primary" type="submit">Save Trade Control</button></div>
@@ -133,6 +141,20 @@
       </div>
     </details>
   </div>
+</section>
+<section class="project-editor-shell trade-watch-editor-shell" data-trade-watch-editor hidden aria-label="Save Trade Watch">
+  <div class="project-editor-backdrop" data-trade-watch-cancel></div>
+  <form class="project-editor-panel trade-watch-editor" data-trade-watch-form>
+    <div class="project-editor-head"><div><p class="eyebrow">Trade Intelligence</p><h2>Save as Watch</h2></div><button class="btn btn-secondary" type="button" data-trade-watch-cancel>Close</button></div>
+    <div class="project-editor-grid">
+      <label class="project-editor-wide"><span>Watch Name</span><input type="text" maxlength="160" required data-trade-watch-name placeholder="Example: Gold CG supply near LHS 20"></label>
+      <label><span>Monitoring Priority</span><select data-trade-watch-priority><option value="critical">Critical</option><option value="high">High</option><option value="standard">Standard</option><option value="low">Low</option></select></label>
+      <label><span>Discord Card</span><select data-trade-watch-discord><option value="true">Publish when monitoring starts</option><option value="false">Website watch only</option></select></label>
+      <div class="project-editor-wide trade-watch-query-preview" data-trade-watch-preview></div>
+      <div class="project-editor-wide trade-watch-pending-note"><strong>Saved Watch only</strong><span>The recurring evaluator is not enabled yet. This watch will be stored now and marked Pending Scheduler until the next automation layer is connected.</span></div>
+    </div>
+    <div class="project-editor-actions"><span data-trade-watch-status aria-live="polite"></span><div><button class="btn btn-primary" type="submit">Save Watch</button></div></div>
+  </form>
 </section>
 <section class="project-editor-shell" data-trade-editor-shell hidden aria-label="Trade route editor"><div class="project-editor-backdrop" data-trade-cancel></div><form class="project-editor-panel" data-trade-form><div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost</p><h2 data-trade-form-title>Post Trade Route</h2></div><button class="btn btn-secondary" type="button" data-trade-cancel>Close</button></div><input type="hidden" data-trade-id><div class="project-editor-grid">
 <label><span>Route Type</span><select data-trade-category><option value="credits">Make Some Credits</option><option value="squad">Support the Mongrels</option></select></label>
@@ -167,5 +189,5 @@
 <label class="project-editor-wide"><span>Instructions / Notes</span><textarea rows="4" maxlength="1000" data-colony-notes placeholder="Where to haul, priority commodities, timing, carrier support, or other instructions."></textarea></label>
 </div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Complete</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
 </main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=3"></script><script src="../js/trading.js?v=72"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=4"></script><script src="../js/trading.js?v=73"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>

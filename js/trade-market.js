@@ -22,7 +22,9 @@
   const priceLabel=$('[data-market-price-label]');
   const volumeLabel=$('[data-market-volume-label]');
   const status=$('[data-market-status]');
+  const summaryRow=$('[data-market-summary-row]');
   const summary=$('[data-market-summary]');
+  const saveWatchButton=$('[data-market-save-watch]');
   const results=$('[data-market-results]');
   const empty=$('[data-market-empty]');
   const resultTools=$('[data-market-result-tools]');
@@ -33,11 +35,19 @@
   const pageLabel=$('[data-market-page-label]');
   const prevPage=$('[data-market-page-prev]');
   const nextPage=$('[data-market-page-next]');
+  const watchEditor=document.querySelector('[data-trade-watch-editor]');
+  const watchForm=document.querySelector('[data-trade-watch-form]');
+  const watchName=document.querySelector('[data-trade-watch-name]');
+  const watchPriority=document.querySelector('[data-trade-watch-priority]');
+  const watchDiscord=document.querySelector('[data-trade-watch-discord]');
+  const watchPreview=document.querySelector('[data-trade-watch-preview]');
+  const watchStatus=document.querySelector('[data-trade-watch-status]');
   const STORAGE_KEY='mongrels-trade-market-search-v1';
   const PAGE_SIZE=10;
 
   let activated=false;
   let searching=false;
+  let viewerAccess='';
   let currentPayload=null;
   let currentPage=1;
   let commodityCatalog=[];
@@ -242,7 +252,8 @@
     const q=payload.query||{};
     const action=q.direction==='buy'?'BUY':'SELL';
     const ageText=q.maxAgeMinutes?ageLabel(q.maxAgeMinutes).replace(' old',''):'Profile limit';
-    summary.hidden=false;
+    if(summaryRow)summaryRow.hidden=false;
+    if(saveWatchButton)saveWatchButton.hidden=!['officer','site_admin'].includes(viewerAccess);
     summary.innerHTML=[
       '<span><strong>'+safe(action)+'</strong>&nbsp;'+safe(q.commodity||'')+'</span>',
       '<span>Near&nbsp;<strong>'+safe(q.referenceSystem||'')+'</strong></span>',
@@ -295,6 +306,105 @@
       }catch{}
     });
     return article;
+  }
+
+  function defaultWatchName(query){
+    const action=query.direction==='buy'?'Buy':'Sell';
+    return action+' '+(query.commodity||'Commodity')+' near '+(query.referenceSystem||'System');
+  }
+
+  function watchQueryPreview(query){
+    const action=query.direction==='buy'?'Buy':'Sell';
+    const volumeLabel=query.direction==='buy'?'supply':'demand';
+    const priceText=Number(query.price)>0
+      ?(query.direction==='buy'?'≤ ':'≥ ')+fmt(query.price)+' Cr/t'
+      :'Any price';
+    return '<div><span>Saved Search</span><strong>'+safe(action+' '+query.commodity)+'</strong></div>'
+      +'<div><span>Area</span><strong>'+safe(query.referenceSystem)+' · '+fmt(query.radiusLy)+' ly</strong></div>'
+      +'<div><span>Thresholds</span><strong>'+safe(priceText)+' · ≥ '+fmt(query.minVolume)+' t '+volumeLabel+'</strong></div>'
+      +'<div><span>Freshness</span><strong>'+safe(String(query.priority||'standard'))+' · max '+safe(ageLabel(query.maxAgeMinutes).replace(' old',''))+'</strong></div>';
+  }
+
+  function openWatchEditor(){
+    if(!currentPayload?.query||!['officer','site_admin'].includes(viewerAccess)||!watchEditor)return;
+    const q=currentPayload.query;
+    watchName.value=defaultWatchName(q);
+    watchPriority.value=['critical','high','standard','low'].includes(q.priority)?q.priority:'standard';
+    watchDiscord.value='true';
+    watchPreview.innerHTML=watchQueryPreview(q);
+    watchStatus.textContent='';
+    watchEditor.hidden=false;
+    document.body.classList.add('project-editor-open');
+    requestAnimationFrame(()=>watchName.focus());
+  }
+
+  function closeWatchEditor(){
+    if(!watchEditor)return;
+    watchEditor.hidden=true;
+    document.body.classList.remove('project-editor-open');
+    if(watchStatus)watchStatus.textContent='';
+  }
+
+  async function saveWatch(event){
+    event.preventDefault();
+    if(!currentPayload?.query||!['officer','site_admin'].includes(viewerAccess))return;
+    const button=watchForm?.querySelector('button[type="submit"]');
+    if(button)button.disabled=true;
+    watchStatus.textContent='Saving watch…';
+    const query={...currentPayload.query,priority:watchPriority.value,limit:100};
+    try{
+      const response=await fetch('/api/trade-watches',{
+        method:'POST',
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-watch-editor'},
+        body:JSON.stringify({
+          name:watchName.value.trim(),
+          query,
+          publishDiscord:watchDiscord.value==='true',
+        }),
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.error||'Unable to save watch.');
+      watchStatus.textContent='Saved.';
+      window.dispatchEvent(new CustomEvent('mongrels:trade-watch-saved',{detail:payload.watch}));
+      setTimeout(closeWatchEditor,450);
+    }catch(error){
+      watchStatus.textContent=error.message||'Unable to save watch.';
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
+  function ensureAgeOption(value){
+    const text=String(value||'');
+    if(!text)return;
+    if([...age.options].some(option=>option.value===text))return;
+    const option=document.createElement('option');
+    option.value=text;
+    option.textContent=text+' minutes (saved)';
+    option.dataset.savedAge='true';
+    age.append(option);
+  }
+
+  function loadQuery(query){
+    if(!query||typeof query!=='object')return;
+    commodity.value=query.commodity||'';
+    direction.value=query.direction==='buy'?'buy':'sell';
+    system.value=query.referenceSystem||'';
+    radius.value=query.radiusLy||100;
+    price.value=Number(query.price)>0?query.price:'';
+    volume.value=query.minVolume??1;
+    pad.value=String(query.minPad??0);
+    carriers.value=['include','exclude','only'].includes(query.carrierMode)?query.carrierMode:'exclude';
+    priority.value=['critical','high','standard','low'].includes(query.priority)?query.priority:'';
+    if(query.maxAgeMinutes)ensureAgeOption(query.maxAgeMinutes);
+    age.value=query.maxAgeMinutes?String(query.maxAgeMinutes):'';
+    sort.value=['price','distance','freshness','volume'].includes(query.sort)?query.sort:'price';
+    updateLabels();
+    remember(queryFromForm());
+    section.scrollIntoView({behavior:'smooth',block:'start'});
+    status.textContent='Saved watch loaded. Review the filters, then Search Markets.';
   }
 
   function sortedResults(){
@@ -419,7 +529,8 @@
     const button=form.querySelector('button[type="submit"]');
     if(button)button.disabled=true;
     status.textContent='Searching live market data…';
-    summary.hidden=true;
+    if(summaryRow)summaryRow.hidden=true;
+    if(saveWatchButton)saveWatchButton.hidden=true;
     empty.hidden=true;
     resultTools.hidden=true;
     pagination.hidden=true;
@@ -442,7 +553,8 @@
     }catch(error){
       status.textContent=error.message||'Market search failed.';
       results.replaceChildren();
-      summary.hidden=true;
+      if(summaryRow)summaryRow.hidden=true;
+      if(saveWatchButton)saveWatchButton.hidden=true;
       empty.hidden=true;
       resultTools.hidden=true;
       pagination.hidden=true;
@@ -453,8 +565,12 @@
     }
   }
 
-  function activate(){
-    if(activated)return;
+  function activate(viewer={}){
+    viewerAccess=String(viewer?.access||viewerAccess||'');
+    if(activated){
+      if(saveWatchButton&&currentPayload?.query)saveWatchButton.hidden=!['officer','site_admin'].includes(viewerAccess);
+      return;
+    }
     activated=true;
     section.hidden=false;
     restore();
@@ -482,6 +598,12 @@
   document.addEventListener('pointerdown',event=>{
     if(commodityMenuOpen&&commodityBox&&!commodityBox.contains(event.target))closeCommodityMenu();
   });
+  saveWatchButton?.addEventListener('click',openWatchEditor);
+  watchForm?.addEventListener('submit',saveWatch);
+  watchPriority?.addEventListener('change',()=>{
+    if(currentPayload?.query&&watchPreview)watchPreview.innerHTML=watchQueryPreview({...currentPayload.query,priority:watchPriority.value});
+  });
+  document.querySelectorAll('[data-trade-watch-cancel]').forEach(button=>button.addEventListener('click',closeWatchEditor));
   direction.addEventListener('change',updateLabels);
   resultSort?.addEventListener('change',()=>{
     currentPage=1;
@@ -500,5 +622,5 @@
   });
   form.addEventListener('submit',submit);
 
-  window.MongrelTradeMarket={activate};
+  window.MongrelTradeMarket={activate,loadQuery};
 })();
