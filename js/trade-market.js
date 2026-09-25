@@ -74,6 +74,42 @@
 
   const safe=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const fmt=value=>Number(value||0).toLocaleString();
+  const fmtLy=value=>{
+    const n=Number(value);
+    return Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:2}):'—';
+  };
+  const integerValue=value=>{
+    const digits=String(value??'').replace(/[^0-9]/g,'');
+    return digits?Number(digits):0;
+  };
+  const formattedInteger=value=>{
+    const n=integerValue(value);
+    return n?n.toLocaleString('en-US'):'';
+  };
+  function bindFormattedInteger(input){
+    if(!input)return;
+    const max=Number(input.dataset.numberMax)||Number.MAX_SAFE_INTEGER;
+    input.addEventListener('input',()=>{
+      const raw=String(input.value||'');
+      const caret=input.selectionStart??raw.length;
+      const digitsBefore=raw.slice(0,caret).replace(/\D/g,'').length;
+      let digits=raw.replace(/\D/g,'').replace(/^0+(?=\d)/,'');
+      if(!digits){input.value='';return;}
+      let n=Math.min(Number(digits),max);
+      if(!Number.isFinite(n))n=0;
+      const normalized=String(Math.trunc(n));
+      const formatted=Number(normalized).toLocaleString('en-US');
+      input.value=formatted;
+      const targetDigits=Math.min(digitsBefore,normalized.length);
+      let seen=0;
+      let pos=formatted.length;
+      for(let i=0;i<formatted.length;i++){
+        if(/\d/.test(formatted[i]))seen+=1;
+        if(seen>=targetDigits){pos=i+1;break;}
+      }
+      try{input.setSelectionRange(pos,pos);}catch{}
+    });
+  }
   const padLabel=value=>({1:'Small',2:'Medium',3:'Large'})[Number(value)]||'Unknown';
   const ageLabel=minutes=>{
     const n=Number(minutes);
@@ -247,8 +283,8 @@
     direction.value=saved.direction==='buy'?'buy':'sell';
     system.value=saved.referenceSystem||'Diaba';
     radius.value=saved.radiusLy||100;
-    price.value=saved.price||'';
-    volume.value=saved.minVolume??1;
+    price.value=Number(saved.price)>0?formattedInteger(saved.price):'';
+    volume.value=formattedInteger(saved.minVolume??1)||'1';
     pad.value=String(saved.minPad??0);
     carriers.value=['include','exclude','only'].includes(saved.carrierMode)?saved.carrierMode:'exclude';
     priority.value=['critical','high','standard','low'].includes(saved.priority)?saved.priority:'';
@@ -301,8 +337,8 @@
       direction:direction.value,
       referenceSystem:system.value.trim(),
       radiusLy:Number(radius.value)||100,
-      price:Number(price.value)||0,
-      minVolume:Number(volume.value)||0,
+      price:integerValue(price.value),
+      minVolume:integerValue(volume.value),
       minPad:Number(pad.value)||0,
       carrierMode:carriers.value,
       priority:priority.value,
@@ -345,7 +381,7 @@
       ?fmt(item.supply)+' t supply'
       :(Number(item.demand)===0?'∞ demand':fmt(item.demand)+' t demand');
     const carrier=item.carrier?'Fleet Carrier':item.stationType||'Station';
-    const distance=Number.isFinite(Number(item.distanceLy))?fmt(item.distanceLy)+' ly':'Distance unknown';
+    const distance=Number.isFinite(Number(item.distanceLy))?fmtLy(item.distanceLy)+' ly':'Distance unknown';
     const freshness=['fresh','aging','stale'].includes(item.freshness)?item.freshness:'unknown';
     const article=document.createElement('article');
     article.className='trade-market-result is-'+freshness;
@@ -399,8 +435,8 @@
       direction:watchDirection.value==='buy'?'buy':'sell',
       referenceSystem:watchSystem.value.trim(),
       radiusLy:Number(watchRadius.value)||100,
-      price:Number(watchPrice.value)||0,
-      minVolume:Number(watchVolume.value)||0,
+      price:integerValue(watchPrice.value),
+      minVolume:integerValue(watchVolume.value),
       minPad:Number(watchPad.value)||0,
       carrierMode:['include','exclude','only'].includes(watchCarriers.value)?watchCarriers.value:'exclude',
       maxAgeMinutes:Number(watchAge.value)||1,
@@ -441,8 +477,8 @@
     watchDirection.value=q.direction==='buy'?'buy':'sell';
     watchSystem.value=q.referenceSystem||'';
     watchRadius.value=q.radiusLy||100;
-    watchPrice.value=Number(q.price)>0?q.price:'';
-    watchVolume.value=q.minVolume??1;
+    watchPrice.value=Number(q.price)>0?formattedInteger(q.price):'';
+    watchVolume.value=formattedInteger(q.minVolume??1)||'1';
     watchPad.value=String(q.minPad??0);
     watchCarriers.value=['include','exclude','only'].includes(q.carrierMode)?q.carrierMode:'exclude';
     watchAge.value=q.maxAgeMinutes||2880;
@@ -555,8 +591,8 @@
     direction.value=query.direction==='buy'?'buy':'sell';
     system.value=query.referenceSystem||'';
     radius.value=query.radiusLy||100;
-    price.value=Number(query.price)>0?query.price:'';
-    volume.value=query.minVolume??1;
+    price.value=Number(query.price)>0?formattedInteger(query.price):'';
+    volume.value=formattedInteger(query.minVolume??1)||'1';
     pad.value=String(query.minPad??0);
     carriers.value=['include','exclude','only'].includes(query.carrierMode)?query.carrierMode:'exclude';
     priority.value=['critical','high','standard','low'].includes(query.priority)?query.priority:'';
@@ -764,6 +800,7 @@
   document.addEventListener('pointerdown',event=>{
     if(commodityMenuOpen&&commodityBox&&!commodityBox.contains(event.target))closeCommodityMenu();
   });
+  [price,volume,watchPrice,watchVolume].forEach(bindFormattedInteger);
   saveWatchButton?.addEventListener('click',openWatchEditor);
   watchForm?.addEventListener('submit',saveWatch);
   watchDirection?.addEventListener('change',updateWatchLabels);
