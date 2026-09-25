@@ -128,10 +128,14 @@
   };
 
   const normalizeCommodityText=value=>String(value??'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const commodityAliasKey=value=>{
+    const normalized=normalizeCommodityText(value);
+    return normalized==='soontil relics'?'soontill relics':normalized;
+  };
 
   function commodityCatalogItem(value){
-    const normalized=normalizeCommodityText(value);
-    return commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===normalized)||null;
+    const normalized=commodityAliasKey(value);
+    return commodityCatalog.find(item=>commodityAliasKey(item.label||item.name)===normalized)||null;
   }
 
   function rareSourceSearch(commodityValue,directionValue){
@@ -163,10 +167,10 @@
   }
 
   function commodityMatches(term){
-    const q=normalizeCommodityText(term);
+    const q=commodityAliasKey(term);
     const ranked=commodityCatalog.map(item=>{
       const label=item.label||item.name||'';
-      const normalized=normalizeCommodityText(label);
+      const normalized=commodityAliasKey(label);
       let rank=3;
       if(!q)rank=2;
       else if(normalized===q)rank=0;
@@ -251,8 +255,8 @@
 
   function validateCommoditySelection(){
     if(!commodityCatalog.length||!commodityCatalogComplete)return true;
-    const entered=normalizeCommodityText(commodity.value);
-    const exact=commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===entered);
+    const entered=commodityAliasKey(commodity.value);
+    const exact=commodityCatalog.find(item=>commodityAliasKey(item.label||item.name)===entered);
     if(exact){
       commodity.value=exact.label||exact.name;
       return true;
@@ -367,6 +371,9 @@
       '<span><strong>'+safe(action)+'</strong>&nbsp;'+safe(q.commodity||'')+'</span>',
       '<span>Near&nbsp;<strong>'+safe(q.referenceSystem||'')+'</strong></span>',
       '<span>Radius&nbsp;<strong>'+(q.radiusLimited===false?'All distances · rare source':fmt(q.radiusLy)+' ly')+'</strong></span>',
+      q.rareSource?.stationName&&q.rareSource?.systemName
+        ?'<span>Rare source&nbsp;<strong>'+safe(q.rareSource.stationName)+' · '+safe(q.rareSource.systemName)+'</strong></span>'
+        :'',
       '<span>Profile&nbsp;<strong>'+safe(q.priority||'standard')+'</strong></span>',
       '<span>Max age&nbsp;<strong>'+safe(ageText)+'</strong></span>',
       '<span><strong>'+fmt(payload.results?.length||0)+'</strong>&nbsp;matches from '+fmt(payload.sourceResultCount||0)+' source candidates</span>',
