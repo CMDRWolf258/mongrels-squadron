@@ -278,7 +278,7 @@ function alertToggleComponents(routeId,subscribed){
       type:2,
       style:subscribed?4:3,
       custom_id:tradeAlertActionCustomId(routeId,subscribed?'disable':'enable'),
-      label:subscribed?'Disable Alerts':'Enable Alerts',
+      label:subscribed?'Alerts Enabled ✓':'Enable Alerts',
       emoji:{name:subscribed?'🔕':'🔔'},
     }],
   };
