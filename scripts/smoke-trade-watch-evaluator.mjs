@@ -52,21 +52,53 @@ const watch=normalizeTradeWatch({
 });
 await writeTradeWatches(env,[watch]);
 
-let rows=[{
-  id:'1001',
-  market_id:'1001',
-  name:'Best Gold Port',
-  type:'Coriolis Starport',
-  distance_to_arrival:400,
-  large_pads:4,medium_pads:4,small_pads:4,
-  system_id64:'123',
-  system_name:'Alpha',
-  system_x:1,system_y:2,system_z:3,
-  carrier_docking_access:null,
-  market_updated_at:new Date(baseNow-60000).toISOString(),
-  distance:12,
-  market:[{commodity:'Gold',buy_price:42000,sell_price:70000,supply:5000,demand:25000}],
-}];
+let rows=[
+  {
+    id:'1001',
+    market_id:'1001',
+    name:'Best Gold Port',
+    type:'Coriolis Starport',
+    distance_to_arrival:400,
+    large_pads:4,medium_pads:4,small_pads:4,
+    system_id64:'123',
+    system_name:'Alpha',
+    system_x:1,system_y:2,system_z:3,
+    carrier_docking_access:null,
+    market_updated_at:new Date(baseNow-60000).toISOString(),
+    distance:12,
+    market:[{commodity:'Gold',buy_price:42000,sell_price:70000,supply:5000,demand:25000}],
+  },
+  {
+    id:'1002',
+    market_id:'1002',
+    name:'Second Gold Port',
+    type:'Orbis Starport',
+    distance_to_arrival:600,
+    large_pads:4,medium_pads:4,small_pads:4,
+    system_id64:'124',
+    system_name:'Beta',
+    system_x:4,system_y:5,system_z:6,
+    carrier_docking_access:null,
+    market_updated_at:new Date(baseNow-90000).toISOString(),
+    distance:18,
+    market:[{commodity:'Gold',buy_price:41000,sell_price:68000,supply:4000,demand:20000}],
+  },
+  {
+    id:'1003',
+    market_id:'1003',
+    name:'Third Gold Port',
+    type:'Coriolis Starport',
+    distance_to_arrival:800,
+    large_pads:4,medium_pads:4,small_pads:4,
+    system_id64:'125',
+    system_name:'Gamma',
+    system_x:7,system_y:8,system_z:9,
+    carrier_docking_access:null,
+    market_updated_at:new Date(baseNow-120000).toISOString(),
+    distance:24,
+    market:[{commodity:'Gold',buy_price:40000,sell_price:66000,supply:3000,demand:15000}],
+  },
+];
 
 const fetchImpl=async ()=>new Response(JSON.stringify({count:rows.length,results:rows}),{
   status:200,
@@ -83,14 +115,17 @@ assert.equal(first.attempted,1);
 assert.equal(first.succeeded,1);
 assert.equal(first.failed,0);
 assert.equal(first.results[0].transition,'baseline');
-assert.equal(first.results[0].matchCount,1);
+assert.equal(first.results[0].matchCount,3);
 
 let stored=(await readTradeWatches(env))[0];
 assert.equal(stored.evaluation.state,'healthy');
-assert.equal(stored.evaluation.matchCount,1);
+assert.equal(stored.evaluation.matchCount,3);
 assert.equal(stored.evaluation.currentBest.marketId,'1001');
 assert.equal(stored.evaluation.currentBest.price,70000);
 assert.equal(stored.evaluation.currentBest.volume,25000);
+assert.equal(stored.evaluation.rankedMarkets.length,3);
+assert.deepEqual(stored.evaluation.rankedMarkets.map(item=>item.marketId),['1001','1002','1003']);
+assert.equal(stored.evaluation.rankedMarkets[1].rank,2);
 assert.equal(stored.evaluation.lastTransition.type,'baseline');
 assert.equal(Date.parse(stored.evaluation.nextEvaluationAt),baseNow+5*60*1000);
 
@@ -150,14 +185,16 @@ const client=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(client,/Run Now/);
 assert.match(client,/\/api\/trade-watches\/evaluate/);
 assert.match(client,/Current Best/);
+assert.match(client,/Fallback Markets/);
+assert.match(client,/rankedMarkets/);
 assert.match(client,/condition_met/);
 assert.match(client,/setInterval\(\(\)=>\{if\(manager\(\)&&!document\.hidden\)loadTradeWatches\(\);\},60000\)/);
 
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
-assert.match(html,/trade-control\.css\?v=6/);
-assert.match(html,/trade-market\.js\?v=7/);
-assert.match(html,/trading\.js\?v=77/);
+assert.match(html,/trade-control\.css\?v=7/);
+assert.match(html,/trade-market\.js\?v=8/);
+assert.match(html,/trading\.js\?v=78/);
 
 console.log('Trade Watch evaluator smoke checks passed.');
