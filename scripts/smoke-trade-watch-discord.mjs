@@ -117,7 +117,7 @@ assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/19
 assert.match(bestPayload.embeds[0].fields.map(field=>field.name).join('\n'),/Next Best Markets/);
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Fallback One/);
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Fallback Four/,'Discord Watch card should show rank #5');
-assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/12\.35 ly/,'Discord distance should be capped at two decimals');
+assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/18\.57 ly/,'Discord fallback distance should be capped at two decimals');
 
 const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
   ...watch,
