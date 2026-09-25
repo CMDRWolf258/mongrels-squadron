@@ -7,6 +7,7 @@ import {
   searchTradeMarkets,
 } from '../lib/trade-market.js';
 import { defaultTradeControl } from '../lib/trade-intelligence.js';
+import { isRareTradeCommodity } from '../lib/trade-rares.js';
 
 class FakeKV {
   constructor(){this.map=new Map();}
@@ -44,6 +45,37 @@ assert.deepEqual(body.filters.marketplace[0].demand.value,[1,2147483647]);
 assert.deepEqual(body.filters.marketplace[0].sell_price.value,[1,2147483647]);
 assert.equal(body.filters.market_updated_at.comparison,'<=>');
 assert.equal(body.filters.market_updated_at.value[1],fixedNow.toISOString());
+
+assert.equal(isRareTradeCommodity('Soontill Relics'),true);
+assert.equal(isRareTradeCommodity('Lavian Brandy'),true);
+assert.equal(isRareTradeCommodity('Gold'),false);
+
+const rareBuy=normalizeMarketSearch({
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:25,
+  minVolume:1,
+  priority:'critical',
+},control);
+assert.equal(rareBuy.rareCommodity,true);
+assert.equal(rareBuy.rareSourceSearch,true);
+assert.equal(rareBuy.radiusLimited,false,'buying a unique-source rare must ignore the user radius');
+assert.equal(rareBuy.radiusLy,25,'reference radius value may remain stored for later ordinary searches');
+const rareBody=buildSpanshSearchBody(rareBuy,fixedNow);
+assert.equal(rareBody.reference_system,'Diaba');
+assert.equal('distance' in rareBody.filters,false,'rare-source Spansh query must not include a distance filter');
+assert.deepEqual(rareBody.filters.marketplace[0].supply.value,[1,2147483647]);
+
+const rareSell=normalizeMarketSearch({
+  commodity:'Soontill Relics',
+  direction:'sell',
+  referenceSystem:'Diaba',
+  radiusLy:25,
+  priority:'critical',
+},control);
+assert.equal(rareSell.radiusLimited,true,'selling a rare remains a destination search and should respect radius');
+assert.equal(buildSpanshSearchBody(rareSell,fixedNow).filters.distance.max,'25');
 
 const catalogNames=extractSpanshCommodityNames({
   marketplace:{
@@ -203,9 +235,9 @@ assert.match(html,/data-market-result-tools/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=5/);
-assert.match(html,/trade-market\.js\?v=7/);
-assert.match(html,/trading\.js\?v=77/);
+assert.match(html,/trade-market\.css\?v=6/);
+assert.match(html,/trade-market\.js\?v=8/);
+assert.match(html,/trading\.js\?v=78/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -215,6 +247,9 @@ assert.match(client,/function commodityMatches\(term\)/);
 assert.match(client,/function validateCommoditySelection\(\)/);
 assert.match(client,/ArrowDown/);
 assert.match(client,/includesRares/);
+assert.match(client,/function rareSourceSearch\(commodityValue,directionValue\)/);
+assert.match(client,/Rare source search · all distances/);
+assert.match(client,/trade-commodity-rare-badge/);
 assert.match(client,/const PAGE_SIZE=10/);
 assert.match(client,/limit:100/);
 assert.match(client,/function sortedResults\(\)/);
