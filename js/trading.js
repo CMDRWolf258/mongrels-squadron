@@ -201,6 +201,7 @@
           <div><span>${safe(watchPriorityLabel(q.priority))} · ${safe(state)}</span><strong>${safe(watch.name||'Saved Watch')}</strong><small>${safe(watch.summary||'')}</small></div>
           <div class="trade-watch-card-actions">
             <button class="btn btn-secondary btn-compact" type="button" data-watch-run ${watch.status==='paused'?'disabled title="Resume this watch before running it"':''}>Run Now</button>
+            <button class="btn btn-secondary btn-compact" type="button" data-watch-test-alert ${(watch.status==='paused'||watch.discord?.publish===false)?'disabled title="Resume this Watch and enable Discord publishing before testing alerts"':''}>Test Alert</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-edit>Edit</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-load>Load Search</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-toggle>${watch.status==='paused'?'Resume':'Pause'}</button>
@@ -220,6 +221,7 @@
         ${transition?`<p class="trade-watch-transition">${safe(transition)} · ${safe(watchTimeLabel(evaluation.lastTransition?.at))}</p>`:''}`;
 
       article.querySelector('[data-watch-run]')?.addEventListener('click',event=>runTradeWatch(watch,event.currentTarget));
+      article.querySelector('[data-watch-test-alert]')?.addEventListener('click',event=>testTradeWatchAlert(watch,event.currentTarget));
       article.querySelector('[data-watch-edit]')?.addEventListener('click',()=>{
         window.MongrelTradeMarket?.editWatch(watch);
       });
@@ -267,6 +269,39 @@
       setTimeout(()=>{if(status&&status.textContent.startsWith('Watch '))status.textContent='';},3500);
     }catch(error){
       if(status)status.textContent=error.message||'Unable to evaluate watch.';
+    }finally{
+      if(button){button.disabled=false;button.textContent=original;}
+    }
+  }
+
+  async function testTradeWatchAlert(watch,button){
+    if(!manager()||watch?.status==='paused'||watch?.discord?.publish===false)return;
+    if(!confirm('Send a TEST alert for “'+(watch.name||'this Watch')+'” to everyone currently subscribed to it?\n\nThis uses the real Discord/DM delivery path but will not change the Watch state.'))return;
+
+    const status=$('[data-trade-control-status]');
+    const original=button?.textContent||'Test Alert';
+    if(button){button.disabled=true;button.textContent='Sending…';}
+    if(status)status.textContent='Sending test alert for '+(watch.name||'Trade Watch')+'…';
+
+    try{
+      const {response,payload}=await apiFetch('/api/trade-watches/test-alert',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-watch-test-alert'},
+        body:JSON.stringify({id:watch.id}),
+      });
+      if(!response.ok)throw new Error(payload.error||'Unable to send test alert.');
+
+      const subscribers=Number(payload.subscriberCount)||0;
+      const delivered=Number(payload.delivered)||0;
+      const failed=Number(payload.failed)||0;
+      if(status){
+        status.textContent=subscribers
+          ?'Test alert sent: '+delivered+' of '+subscribers+' subscriber DM'+(subscribers===1?'':'s')+' delivered'+(failed?' · '+failed+' failed':'')+'.'
+          :'Test alert posted to the test channel. This Watch currently has no alert subscribers.';
+      }
+      setTimeout(()=>{if(status&&status.textContent.startsWith('Test alert'))status.textContent='';},5000);
+    }catch(error){
+      if(status)status.textContent=error.message||'Unable to send test alert.';
     }finally{
       if(button){button.disabled=false;button.textContent=original;}
     }
