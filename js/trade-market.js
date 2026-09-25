@@ -37,11 +37,26 @@
   const nextPage=$('[data-market-page-next]');
   const watchEditor=document.querySelector('[data-trade-watch-editor]');
   const watchForm=document.querySelector('[data-trade-watch-form]');
+  const watchTitle=document.querySelector('[data-trade-watch-title]');
+  const watchId=document.querySelector('[data-trade-watch-id]');
   const watchName=document.querySelector('[data-trade-watch-name]');
+  const watchCommodity=document.querySelector('[data-trade-watch-commodity]');
+  const watchCommodityList=document.querySelector('[data-trade-watch-commodity-list]');
+  const watchDirection=document.querySelector('[data-trade-watch-direction]');
+  const watchSystem=document.querySelector('[data-trade-watch-system]');
+  const watchRadius=document.querySelector('[data-trade-watch-radius]');
+  const watchPrice=document.querySelector('[data-trade-watch-price]');
+  const watchPriceLabel=document.querySelector('[data-trade-watch-price-label]');
+  const watchVolume=document.querySelector('[data-trade-watch-volume]');
+  const watchVolumeLabel=document.querySelector('[data-trade-watch-volume-label]');
+  const watchPad=document.querySelector('[data-trade-watch-pad]');
+  const watchCarriers=document.querySelector('[data-trade-watch-carriers]');
+  const watchAge=document.querySelector('[data-trade-watch-age]');
   const watchPriority=document.querySelector('[data-trade-watch-priority]');
+  const watchSort=document.querySelector('[data-trade-watch-sort]');
   const watchDiscord=document.querySelector('[data-trade-watch-discord]');
-  const watchPreview=document.querySelector('[data-trade-watch-preview]');
   const watchStatus=document.querySelector('[data-trade-watch-status]');
+  const watchSubmit=document.querySelector('[data-trade-watch-submit]');
   const STORAGE_KEY='mongrels-trade-market-search-v1';
   const PAGE_SIZE=10;
 
