@@ -83,7 +83,7 @@ assert.match(html,/data-trade-watch-list/);
 assert.match(html,/trade-market\.css\?v=6/);
 assert.match(html,/trade-control\.css\?v=8/);
 assert.match(html,/trade-market\.js\?v=9/);
-assert.match(html,/trading\.js\?v=80/);
+assert.match(html,/trading\.js\?v=81/);
 
 const marketClient=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(marketClient,/data-trade-watch-editor/);
