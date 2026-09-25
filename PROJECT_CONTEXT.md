@@ -196,14 +196,16 @@ Discord lifecycle:
 
 Market-data direction:
 - the framework deliberately separates market observations, priority profiles, watches/searches, route cards, trigger state, and Discord delivery.
-- authenticated Members now have **Live Market Intelligence → Commodity Search** on Trader's Outpost. The browser calls the Mongrels backend only; it never queries EDData directly.
-- current public market source is **EDData / EDDN** through `lib/trade-market.js` and `/api/trade-market/search`. Best Price uses EDData's lighter commodity importer/exporter endpoint (top 100 price-ranked candidates with system/radius filters); Nearest/Freshest/Volume use the broader nearby endpoint. If a broad query times out, the backend may fall back to the lighter price-ranked candidate set and must mark the response/UI as partial. If EDData is temporarily unavailable and matching same-reference-system observations already exist in the Mongrel cache, the backend may return those with an explicit cache-fallback warning. Search supports commodity, buy/sell intent, reference system, radius, price threshold, supply/demand threshold, Fleet Carrier mode, minimum pad, priority profile, exact local maximum age, and sort.
-- EDData's external age filter is day-granular. The backend requests the narrowest whole-day window needed, then applies the Mongrels profile / exact minute cutoff locally against each observation timestamp.
+- authenticated Members now have **Live Market Intelligence → Commodity Search** on Trader's Outpost. The browser calls the Mongrels backend only; it never queries public galaxy sources directly.
+- the interactive search primary is **Spansh station search** through `lib/trade-market.js` and `/api/trade-market/search`. The backend sends one station-index query with reference system, radius, commodity market-side filters, supply/demand, price, station/carrier types, and an exact market-update timestamp range, then normalizes returned station-market rows into the Mongrel observation model.
+- Spansh market results are locally filtered again for exact pad, carrier, freshness, price, and volume semantics, then sorted for Best Price / Nearest / Freshest / Highest Volume. The interactive candidate page is capped; if Spansh reports more matches than the returned candidate page, the UI must mark the result as partial rather than imply exhaustive galaxy ranking.
+- **EDData is no longer the blocking interactive market search source** after repeated production timeouts during Gold/Diaba testing. It remains available for lightweight commodity-catalog data and as a future secondary/cache-feeding source.
+- if the live source is temporarily unavailable and matching same-reference-system observations already exist in the Mongrel cache, the backend may return those with an explicit cache-fallback warning.
 - every successful search normalizes returned records and merges them into the existing `TRADES` KV under per-commodity `trade-market-observations-v1:<commodity>` records (capped working cache). Source health is stored under `trade-market-health-v1` and appears in Officer Trade Control.
-- the commodity catalog is fetched server-side and cached in `TRADES` under `trade-market-commodities-v1`; no new Cloudflare binding is required.
+- the commodity catalog is currently fetched server-side from EDData when available and cached in `TRADES` under `trade-market-commodities-v1`; catalog failure does not block typed commodity searches. No new Cloudflare binding is required.
 - MongrelScout/EDMC observations can later update the same normalized observation model and supersede older public observations.
 - **not yet enabled:** saved searches/watches, scheduled watch evaluator, BGS enrichment, automatic best-source promotion, live threshold polling, or MongrelScout market writes. Do not label those pieces live until they are wired and production-validated.
-- future market-source changes must not require Trader's Outpost UI/card code to know whether an observation came from EDData, MongrelScout, or another adapter.
+- future market-source changes must not require Trader's Outpost UI/card code to know whether an observation came from Spansh, EDData, MongrelScout, or another adapter.
 
 ### Squad Payouts Discord visibility
 
