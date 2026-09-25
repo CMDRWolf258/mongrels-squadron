@@ -5,7 +5,10 @@
 
   const $=sel=>section.querySelector(sel);
   const commodity=$('[data-market-commodity]');
-  const commodityList=$('[data-market-commodity-list]');
+  const commodityBox=$('[data-market-commodity-box]');
+  const commodityToggle=$('[data-market-commodity-toggle]');
+  const commodityMenu=$('[data-market-commodity-menu]');
+  const commodityHelp=$('[data-market-commodity-help]');
   const direction=$('[data-market-direction]');
   const system=$('[data-market-system]');
   const radius=$('[data-market-radius]');
@@ -37,6 +40,9 @@
   let searching=false;
   let currentPayload=null;
   let currentPage=1;
+  let commodityCatalog=[];
+  let commodityMenuOpen=false;
+  let commodityActiveIndex=-1;
 
   const safe=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const fmt=value=>Number(value||0).toLocaleString();
@@ -56,6 +62,105 @@
     if(!Number.isFinite(n)||n<0)return'Arrival unknown';
     return fmt(Math.round(n))+' ls';
   };
+
+  const normalizeCommodityText=value=>String(value??'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+  function commodityMatches(term){
+    const q=normalizeCommodityText(term);
+    const ranked=commodityCatalog.map(item=>{
+      const label=item.label||item.name||'';
+      const normalized=normalizeCommodityText(label);
+      let rank=3;
+      if(!q)rank=2;
+      else if(normalized===q)rank=0;
+      else if(normalized.startsWith(q))rank=1;
+      else if(normalized.includes(q))rank=2;
+      else return null;
+      return {item,label,rank};
+    }).filter(Boolean);
+    ranked.sort((a,b)=>a.rank-b.rank||a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
+    return ranked.slice(0,80);
+  }
+
+  function closeCommodityMenu(){
+    if(!commodityMenu)return;
+    commodityMenu.hidden=true;
+    commodityMenuOpen=false;
+    commodityActiveIndex=-1;
+    commodity.setAttribute('aria-expanded','false');
+    commodity.removeAttribute('aria-activedescendant');
+  }
+
+  function chooseCommodity(label){
+    commodity.value=label;
+    closeCommodityMenu();
+    commodity.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+
+  function renderCommodityMenu(){
+    if(!commodityMenu)return;
+    const matches=commodityMatches(commodity.value);
+    commodityMenu.replaceChildren();
+    commodityActiveIndex=-1;
+    if(!matches.length){
+      const emptyItem=document.createElement('div');
+      emptyItem.className='trade-commodity-empty';
+      emptyItem.textContent=commodityCatalog.length
+        ?'No matching commodity. Check the spelling or choose from the list.'
+        :'Commodity catalog is unavailable; you can still type an exact commodity name.';
+      commodityMenu.append(emptyItem);
+    }else{
+      matches.forEach(({label},index)=>{
+        const button=document.createElement('button');
+        button.type='button';
+        button.className='trade-commodity-option';
+        button.id='tradeCommodityOption'+index;
+        button.setAttribute('role','option');
+        button.dataset.commodityIndex=String(index);
+        button.textContent=label;
+        button.addEventListener('mousedown',event=>event.preventDefault());
+        button.addEventListener('click',()=>chooseCommodity(label));
+        commodityMenu.append(button);
+      });
+    }
+    commodityMenu.hidden=false;
+    commodityMenuOpen=true;
+    commodity.setAttribute('aria-expanded','true');
+  }
+
+  function moveCommoditySelection(delta){
+    if(!commodityMenuOpen)renderCommodityMenu();
+    const options=[...commodityMenu.querySelectorAll('.trade-commodity-option')];
+    if(!options.length)return;
+    commodityActiveIndex=(commodityActiveIndex+delta+options.length)%options.length;
+    options.forEach((option,index)=>{
+      const active=index===commodityActiveIndex;
+      option.classList.toggle('is-active',active);
+      option.setAttribute('aria-selected',active?'true':'false');
+    });
+    const active=options[commodityActiveIndex];
+    commodity.setAttribute('aria-activedescendant',active.id);
+    active.scrollIntoView({block:'nearest'});
+  }
+
+  function validateCommoditySelection(){
+    if(!commodityCatalog.length)return true;
+    const entered=normalizeCommodityText(commodity.value);
+    const exact=commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===entered);
+    if(exact){
+      commodity.value=exact.label||exact.name;
+      return true;
+    }
+    const matches=commodityMatches(commodity.value);
+    if(matches.length===1){
+      commodity.value=matches[0].label;
+      return true;
+    }
+    status.textContent='Choose a commodity from the matching list to avoid spelling errors.';
+    renderCommodityMenu();
+    commodity.focus();
+    return false;
+  }
 
   function updateLabels(){
     const buying=direction.value==='buy';
@@ -90,13 +195,18 @@
       const response=await fetch('/api/trade-market/commodities',{credentials:'same-origin',cache:'no-store'});
       const payload=await response.json().catch(()=>({}));
       if(!response.ok||!Array.isArray(payload.items))return;
-      commodityList.replaceChildren(...payload.items.slice(0,500).map(item=>{
-        const option=document.createElement('option');
-        option.value=item.label||item.name;
-        option.dataset.marketCommodityName=item.name;
-        return option;
-      }));
-    }catch{}
+      commodityCatalog=payload.items
+        .map(item=>({name:String(item.name||item.label||'').trim(),label:String(item.label||item.name||'').trim()}))
+        .filter(item=>item.label)
+        .sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
+      if(commodityHelp){
+        commodityHelp.textContent=payload.includesRares===false
+          ?'Commodity suggestions are using a fallback catalog right now.'
+          :'Standard and rare commodities use the same searchable list · '+commodityCatalog.length+' available.';
+      }
+    }catch{
+      if(commodityHelp)commodityHelp.textContent='Commodity suggestions are temporarily unavailable; exact names can still be typed.';
+    }
   }
 
   function queryFromForm(){
@@ -298,8 +408,9 @@
   async function submit(event){
     event.preventDefault();
     if(searching)return;
+    if(!commodity.value.trim()){status.textContent='Enter a commodity.';commodity.focus();return;}
+    if(!validateCommoditySelection())return;
     const query=queryFromForm();
-    if(!query.commodity){status.textContent='Enter a commodity.';commodity.focus();return;}
     if(!query.referenceSystem){status.textContent='Enter a reference system.';system.focus();return;}
     searching=true;
     const button=form.querySelector('button[type="submit"]');
@@ -347,6 +458,27 @@
     loadCommodityCatalog();
   }
 
+  commodity.addEventListener('focus',renderCommodityMenu);
+  commodity.addEventListener('click',renderCommodityMenu);
+  commodity.addEventListener('input',renderCommodityMenu);
+  commodity.addEventListener('keydown',event=>{
+    if(event.key==='ArrowDown'){event.preventDefault();moveCommoditySelection(1);}
+    else if(event.key==='ArrowUp'){event.preventDefault();moveCommoditySelection(-1);}
+    else if(event.key==='Enter'&&commodityMenuOpen&&commodityActiveIndex>=0){
+      event.preventDefault();
+      const option=commodityMenu.querySelectorAll('.trade-commodity-option')[commodityActiveIndex];
+      if(option)chooseCommodity(option.textContent);
+    }else if(event.key==='Escape'){
+      closeCommodityMenu();
+    }
+  });
+  commodityToggle?.addEventListener('click',()=>{
+    if(commodityMenuOpen)closeCommodityMenu();
+    else{commodity.focus();renderCommodityMenu();}
+  });
+  document.addEventListener('pointerdown',event=>{
+    if(commodityMenuOpen&&commodityBox&&!commodityBox.contains(event.target))closeCommodityMenu();
+  });
   direction.addEventListener('change',updateLabels);
   resultSort?.addEventListener('change',()=>{
     currentPage=1;
