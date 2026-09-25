@@ -187,6 +187,7 @@
       const state=watchStatusLabel(watch);
       const evaluation=watch.evaluation||{};
       const best=evaluation.currentBest||null;
+      const ranked=Array.isArray(evaluation.rankedMarkets)?evaluation.rankedMarkets.filter(Boolean).slice(0,5):[];
       const volumeLabel=q.direction==='buy'?'supply':'demand';
       const transition=watchTransitionLabel(evaluation.lastTransition);
       const discordLabel=watch.discord?.publish===false
@@ -216,6 +217,7 @@
           <span>Discord <strong>${safe(discordLabel)}</strong></span>
         </div>
         ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':safe(String(best.distanceLy))+' ly'}</strong></div></div>`:''}
+        ${ranked.length>1?`<div class="trade-watch-alternatives"><div class="trade-watch-alternatives-head"><span>Fallback Markets</span><strong>Next ${Math.min(4,ranked.length-1)} qualifying market${ranked.length-1===1?'':'s'}</strong></div>${ranked.slice(1,5).map((market,index)=>`<div class="trade-watch-alternative"><b>#${index+2}</b><span><strong>${safe(market.stationName||'Unknown station')}</strong><small>${safe(market.systemName||'Unknown system')}</small></span><span>${fmt(market.price)} Cr/t</span><span>${fmt(market.volume)} t</span><span>${market.distanceLy===null||market.distanceLy===undefined?'—':safe(String(market.distanceLy))+' ly'}</span></div>`).join('')}</div>`:''}
         ${evaluation.lastError?`<p class="trade-watch-evaluation-message is-error">Last check: ${safe(evaluation.lastError)}</p>`:evaluation.warning?`<p class="trade-watch-evaluation-message is-warning">${safe(evaluation.warning)}</p>`:''}
         ${watch.discord?.lastError?`<p class="trade-watch-evaluation-message is-error">Discord: ${safe(watch.discord.lastError)}</p>`:''}
         ${transition?`<p class="trade-watch-transition">${safe(transition)} · ${safe(watchTimeLabel(evaluation.lastTransition?.at))}</p>`:''}`;

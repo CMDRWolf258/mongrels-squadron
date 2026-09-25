@@ -12,6 +12,7 @@
   const direction=$('[data-market-direction]');
   const system=$('[data-market-system]');
   const radius=$('[data-market-radius]');
+  const radiusHelp=$('[data-market-radius-help]');
   const price=$('[data-market-price]');
   const volume=$('[data-market-volume]');
   const pad=$('[data-market-pad]');
@@ -45,6 +46,7 @@
   const watchDirection=document.querySelector('[data-trade-watch-direction]');
   const watchSystem=document.querySelector('[data-trade-watch-system]');
   const watchRadius=document.querySelector('[data-trade-watch-radius]');
+  const watchRadiusHelp=document.querySelector('[data-trade-watch-radius-help]');
   const watchPrice=document.querySelector('[data-trade-watch-price]');
   const watchPriceLabel=document.querySelector('[data-trade-watch-price-label]');
   const watchVolume=document.querySelector('[data-trade-watch-volume]');
@@ -90,6 +92,39 @@
   };
 
   const normalizeCommodityText=value=>String(value??'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+
+  function commodityCatalogItem(value){
+    const normalized=normalizeCommodityText(value);
+    return commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===normalized)||null;
+  }
+
+  function rareSourceSearch(commodityValue,directionValue){
+    const item=commodityCatalogItem(commodityValue);
+    return Boolean(item?.rare)&&directionValue==='buy';
+  }
+
+  function updateRadiusMode(){
+    const rareSource=rareSourceSearch(commodity.value,direction.value);
+    radius.disabled=rareSource;
+    radius.closest('label')?.classList.toggle('is-rare-source',rareSource);
+    if(radiusHelp){
+      radiusHelp.textContent=rareSource
+        ?'Rare source search · all distances. Distance is still measured from the reference system.'
+        :'Maximum distance from the reference system.';
+    }
+  }
+
+  function updateWatchRadiusMode(){
+    if(!watchRadius)return;
+    const rareSource=rareSourceSearch(watchCommodity?.value,watchDirection?.value);
+    watchRadius.disabled=rareSource;
+    watchRadius.closest('label')?.classList.toggle('is-rare-source',rareSource);
+    if(watchRadiusHelp){
+      watchRadiusHelp.textContent=rareSource
+        ?'Rare source search · all distances. The stored radius is ignored while buying this rare commodity.'
+        :'Maximum distance from the reference system.';
+    }
+  }
 
   function commodityMatches(term){
     const q=normalizeCommodityText(term);
@@ -143,7 +178,16 @@
         button.id='tradeCommodityOption'+index;
         button.setAttribute('role','option');
         button.dataset.commodityIndex=String(index);
-        button.textContent=label;
+        button.dataset.commodityLabel=label;
+        const text=document.createElement('span');
+        text.textContent=label;
+        button.append(text);
+        if(matches[index]?.item?.rare){
+          const badge=document.createElement('small');
+          badge.className='trade-commodity-rare-badge';
+          badge.textContent='RARE';
+          button.append(badge);
+        }
         button.addEventListener('mousedown',event=>event.preventDefault());
         button.addEventListener('click',()=>chooseCommodity(label));
         commodityMenu.append(button);
@@ -193,6 +237,7 @@
     priceLabel.textContent=buying?'Maximum buy price':'Minimum sell price';
     volumeLabel.textContent=buying?'Minimum supply':'Minimum demand';
     price.placeholder='Any';
+    updateRadiusMode();
   }
 
   function restore(){
@@ -222,7 +267,11 @@
       const payload=await response.json().catch(()=>({}));
       if(!response.ok||!Array.isArray(payload.items))return;
       commodityCatalog=payload.items
-        .map(item=>({name:String(item.name||item.label||'').trim(),label:String(item.label||item.name||'').trim()}))
+        .map(item=>({
+          name:String(item.name||item.label||'').trim(),
+          label:String(item.label||item.name||'').trim(),
+          rare:Boolean(item.rare),
+        }))
         .filter(item=>item.label)
         .sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
       commodityCatalogComplete=payload.includesRares!==false;
@@ -238,6 +287,8 @@
           ?'Commodity suggestions are using a fallback catalog right now.'
           :'Standard and rare commodities use the same searchable list · '+commodityCatalog.length+' available.';
       }
+      updateLabels();
+      updateWatchLabels();
     }catch{
       commodityCatalogComplete=false;
       if(commodityHelp)commodityHelp.textContent='Commodity suggestions are temporarily unavailable; exact names can still be typed.';
@@ -279,7 +330,7 @@
     summary.innerHTML=[
       '<span><strong>'+safe(action)+'</strong>&nbsp;'+safe(q.commodity||'')+'</span>',
       '<span>Near&nbsp;<strong>'+safe(q.referenceSystem||'')+'</strong></span>',
-      '<span>Radius&nbsp;<strong>'+fmt(q.radiusLy)+' ly</strong></span>',
+      '<span>Radius&nbsp;<strong>'+(q.radiusLimited===false?'All distances · rare source':fmt(q.radiusLy)+' ly')+'</strong></span>',
       '<span>Profile&nbsp;<strong>'+safe(q.priority||'standard')+'</strong></span>',
       '<span>Max age&nbsp;<strong>'+safe(ageText)+'</strong></span>',
       '<span><strong>'+fmt(payload.results?.length||0)+'</strong>&nbsp;matches from '+fmt(payload.sourceResultCount||0)+' source candidates</span>',
@@ -339,6 +390,7 @@
     const buying=watchDirection?.value==='buy';
     if(watchPriceLabel)watchPriceLabel.textContent=buying?'Maximum buy price':'Minimum sell price';
     if(watchVolumeLabel)watchVolumeLabel.textContent=buying?'Minimum supply':'Minimum demand';
+    updateWatchRadiusMode();
   }
 
   function watchQueryFromEditor(){
@@ -689,14 +741,18 @@
 
   commodity.addEventListener('focus',renderCommodityMenu);
   commodity.addEventListener('click',renderCommodityMenu);
-  commodity.addEventListener('input',renderCommodityMenu);
+  commodity.addEventListener('input',()=>{
+    renderCommodityMenu();
+    updateRadiusMode();
+  });
+  commodity.addEventListener('change',updateRadiusMode);
   commodity.addEventListener('keydown',event=>{
     if(event.key==='ArrowDown'){event.preventDefault();moveCommoditySelection(1);}
     else if(event.key==='ArrowUp'){event.preventDefault();moveCommoditySelection(-1);}
     else if(event.key==='Enter'&&commodityMenuOpen&&commodityActiveIndex>=0){
       event.preventDefault();
       const option=commodityMenu.querySelectorAll('.trade-commodity-option')[commodityActiveIndex];
-      if(option)chooseCommodity(option.textContent);
+      if(option)chooseCommodity(option.dataset.commodityLabel||option.textContent);
     }else if(event.key==='Escape'){
       closeCommodityMenu();
     }
@@ -711,6 +767,8 @@
   saveWatchButton?.addEventListener('click',openWatchEditor);
   watchForm?.addEventListener('submit',saveWatch);
   watchDirection?.addEventListener('change',updateWatchLabels);
+  watchCommodity?.addEventListener('input',updateWatchLabels);
+  watchCommodity?.addEventListener('change',updateWatchLabels);
   document.querySelectorAll('[data-trade-watch-cancel]').forEach(button=>button.addEventListener('click',closeWatchEditor));
   direction.addEventListener('change',updateLabels);
   resultSort?.addEventListener('change',()=>{

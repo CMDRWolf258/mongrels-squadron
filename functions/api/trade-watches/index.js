@@ -105,6 +105,7 @@ export async function onRequestPut({request,env}){
       sourceMode:'',
       partial:false,
       currentBest:null,
+      rankedMarkets:[],
       lastTransition:null,
     };
   }else if(action==='rename'){
