@@ -423,8 +423,18 @@ assert.match(tradeClient,/const fmtLy = value =>/);
 assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
 
+assert.match(html,/data-trading-build="84"/);
+assert.match(html,/__mongrel_build_check/);
+assert.match(html,/pageshow/);
+assert.match(html,/event\.persisted/);
+
 const headersFile=readFileSync(new URL('../_headers',import.meta.url),'utf8');
+assert.match(headersFile,/\/trading\n/);
 assert.match(headersFile,/\/trading\//);
+assert.match(headersFile,/\/trading\/\*/);
+assert.match(headersFile,/\/js\/trade-market\.js/);
+assert.match(headersFile,/\/js\/trading\.js/);
+assert.match(headersFile,/\/css\/trade-market\.css/);
 assert.match(headersFile,/Cache-Control: no-cache, no-store, must-revalidate/);
 
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');
