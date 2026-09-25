@@ -115,6 +115,15 @@
     if(mode)mode.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · production routing is locked during development.`;
     const summary=$('[data-trade-control-summary]');
     if(summary)summary.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · ${control.priorities?.critical?.refreshMinutes||5} min fastest`;
+    const healthTitle=$('[data-trade-market-health-title]');
+    const healthDetail=$('[data-trade-market-health-detail]');
+    const health=payload.marketData||{};
+    if(healthTitle)healthTitle.textContent=health.lastSuccessfulFetchAt?'EDData / EDDN Connected':'EDData Adapter Ready';
+    if(healthDetail){
+      if(health.lastError)healthDetail.textContent='Last market query error: '+health.lastError;
+      else if(health.lastSuccessfulFetchAt)healthDetail.textContent='Last live fetch '+ageLabel(health.lastSuccessfulFetchAt).replace('Updated ','')+' · '+fmt(health.lastReturnedCount||0)+' matches · '+fmt(health.lastStoredCount||0)+' cached observations for that commodity.';
+      else healthDetail.textContent='Waiting for the first live market query.';
+    }
   }
 
   async function loadTradeControl(force=false) {
@@ -201,8 +210,9 @@
   }
 
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
-  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(manager())loadTradeControl();}}catch{}render();}
+  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer)window.MongrelTradeMarket?.activate(payload.viewer);if(manager())loadTradeControl();}}catch{}render();}
 
+  window.addEventListener('mongrels:trade-market-search',()=>{if(manager())loadTradeControl(true);});
   [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); $('[data-trade-control-form]')?.addEventListener('submit',saveTradeControl); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);
 })();

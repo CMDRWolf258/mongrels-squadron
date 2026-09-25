@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { readTradeMarketHealth } from '../../../lib/trade-market.js';
 import {
   normalizeTradeControl,
   readTradeControl,
@@ -11,10 +12,11 @@ const MANAGER_ACCESS=new Set(['officer','site_admin']);
 export async function onRequestGet({request,env}) {
   const auth=await requireManager(request,env);
   if(auth.response)return auth.response;
-  const control=await readTradeControl(env);
+  const [control,marketData]=await Promise.all([readTradeControl(env),readTradeMarketHealth(env)]);
   return reply({
     ok:true,
     control,
+    marketData,
     discord:{
       mode:control.discord.mode,
       targetChannelId:tradeDiscordChannelId(control),
@@ -57,9 +59,11 @@ export async function onRequestPut({request,env}) {
 
   try{
     const saved=await writeTradeControl(env,requested);
+    const marketData=await readTradeMarketHealth(env);
     return reply({
       ok:true,
       control:saved,
+      marketData,
       discord:{
         mode:saved.discord.mode,
         targetChannelId:tradeDiscordChannelId(saved),
