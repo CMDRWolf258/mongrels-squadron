@@ -134,6 +134,47 @@ assert.equal(rareCached.results.length,1,'old alias-key cache should keep the kn
 assert.equal(rareCached.results[0].stationName,'Cheranovsky City');
 assert.match(rareCached.warning,/known rare source station/);
 
+const sourceWithoutCommodity=[{
+  ...aliasRows[0],
+  market_updated_at:new Date(aliasNow-2*60*1000).toISOString(),
+  market:[{commodity:'Gold',category:'Metals',buy_price:45000,sell_price:70000,supply:9999,demand:9999}],
+}];
+const commodityOmitted=await searchTradeMarkets(legacyRareEnv,{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:sourceWithoutCommodity}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(commodityOmitted.source,'Mongrel Rare Source Cache');
+assert.equal(commodityOmitted.results.length,1,'known source station with an omitted rare commodity row should retain the last valid observation');
+assert.equal(commodityOmitted.results[0].stationName,'Cheranovsky City');
+assert.match(commodityOmitted.warning,/omitted the rare commodity market row/);
+
+const explicitZeroRows=[{
+  ...aliasRows[0],
+  market_updated_at:new Date(aliasNow-1*60*1000).toISOString(),
+  market:[{commodity:'Soontill Relics',category:'Consumer Items',buy_price:19700,sell_price:0,supply:0,demand:0}],
+}];
+const explicitZero=await searchTradeMarkets(legacyRareEnv,{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:explicitZeroRows}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(explicitZero.source,'Spansh','a live rare commodity row should remain authoritative even when it does not meet Min Supply');
+assert.equal(explicitZero.results.length,0,'fresh explicit supply=0 must not be replaced by older cached stock');
+assert.equal(explicitZero.query.rareSource.stationName,'Cheranovsky City','known source metadata should remain available even with zero qualifying stock');
+
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
   direction:'sell',
