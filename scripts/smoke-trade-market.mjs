@@ -188,12 +188,23 @@ assert.match(html,/Live Market Intelligence/);
 assert.match(html,/data-trade-market-form/);
 assert.match(html,/Spansh Adapter Ready/);
 assert.match(html,/Spansh → normalized Mongrel market cache/);
+assert.match(html,/data-market-result-tools/);
+assert.match(html,/Sort displayed results/);
+assert.match(html,/Shortest arrival/);
+assert.match(html,/data-market-pagination/);
+assert.match(html,/trade-market\.css\?v=2/);
+assert.match(html,/trade-market\.js\?v=2/);
 assert.match(html,/trading\.js\?v=72/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
 assert.match(client,/mongrels-trade-market-search-v1/);
 assert.match(client,/MongrelTradeMarket/);
+assert.match(client,/const PAGE_SIZE=10/);
+assert.match(client,/limit:100/);
+assert.match(client,/function sortedResults\(\)/);
+assert.match(client,/arrival:\(a,b\)=>arrivalOf\(a\)-arrivalOf\(b\)/);
+assert.match(client,/Showing '\+first\+'–'\+last\+' of /);
 
 const tradeClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(tradeClient,/Spansh Adapter Ready/);
