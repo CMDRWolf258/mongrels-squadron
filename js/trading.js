@@ -126,6 +126,7 @@
       else if(health.lastSuccessfulFetchAt)healthDetail.textContent='Last live fetch '+ageLabel(health.lastSuccessfulFetchAt).replace('Updated ','')+' · '+fmt(health.lastReturnedCount||0)+' matches · '+fmt(health.lastStoredCount||0)+' cached observations for that commodity.';
       else healthDetail.textContent='Waiting for the first live market query.';
     }
+    if(tradeWatches.length)renderTradeWatches();
   }
 
   function watchStatusLabel(watch){
