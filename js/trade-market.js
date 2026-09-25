@@ -41,6 +41,7 @@
   let currentPayload=null;
   let currentPage=1;
   let commodityCatalog=[];
+  let commodityCatalogComplete=false;
   let commodityMenuOpen=false;
   let commodityActiveIndex=-1;
 
@@ -144,7 +145,7 @@
   }
 
   function validateCommoditySelection(){
-    if(!commodityCatalog.length)return true;
+    if(!commodityCatalog.length||!commodityCatalogComplete)return true;
     const entered=normalizeCommodityText(commodity.value);
     const exact=commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===entered);
     if(exact){
@@ -199,12 +200,14 @@
         .map(item=>({name:String(item.name||item.label||'').trim(),label:String(item.label||item.name||'').trim()}))
         .filter(item=>item.label)
         .sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
+      commodityCatalogComplete=payload.includesRares!==false;
       if(commodityHelp){
         commodityHelp.textContent=payload.includesRares===false
           ?'Commodity suggestions are using a fallback catalog right now.'
           :'Standard and rare commodities use the same searchable list · '+commodityCatalog.length+' available.';
       }
     }catch{
+      commodityCatalogComplete=false;
       if(commodityHelp)commodityHelp.textContent='Commodity suggestions are temporarily unavailable; exact names can still be typed.';
     }
   }
