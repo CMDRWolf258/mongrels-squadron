@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildSpanshSearchBody,
+  extractSpanshCommodityNames,
   normalizeMarketSearch,
   searchTradeMarkets,
 } from '../lib/trade-market.js';
@@ -43,6 +44,13 @@ assert.deepEqual(body.filters.marketplace[0].demand.value,[1,2147483647]);
 assert.deepEqual(body.filters.marketplace[0].sell_price.value,[1,2147483647]);
 assert.equal(body.filters.market_updated_at.comparison,'<=>');
 assert.equal(body.filters.market_updated_at.value[1],fixedNow.toISOString());
+
+const catalogNames=extractSpanshCommodityNames({
+  marketplace:{
+    commodity:['Gold','Platinum','Lavian Brandy','Soontil Relics','Eden Apples of Aerial'],
+  },
+});
+assert.deepEqual(catalogNames,['Eden Apples of Aerial','Gold','Lavian Brandy','Platinum','Soontil Relics']);
 
 const now=Date.now();
 const rows=[
@@ -186,20 +194,27 @@ assert.equal(cached.results[0].stationName,'Fresh Large Port');
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/Live Market Intelligence/);
 assert.match(html,/data-trade-market-form/);
+assert.match(html,/role="combobox"/);
+assert.match(html,/data-market-commodity-menu/);
+assert.match(html,/Standard and rare commodities use the same searchable list/);
 assert.match(html,/Spansh Adapter Ready/);
 assert.match(html,/Spansh → normalized Mongrel market cache/);
 assert.match(html,/data-market-result-tools/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=2/);
-assert.match(html,/trade-market\.js\?v=2/);
+assert.match(html,/trade-market\.css\?v=3/);
+assert.match(html,/trade-market\.js\?v=3/);
 assert.match(html,/trading\.js\?v=72/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
 assert.match(client,/mongrels-trade-market-search-v1/);
 assert.match(client,/MongrelTradeMarket/);
+assert.match(client,/function commodityMatches\(term\)/);
+assert.match(client,/function validateCommoditySelection\(\)/);
+assert.match(client,/ArrowDown/);
+assert.match(client,/includesRares/);
 assert.match(client,/const PAGE_SIZE=10/);
 assert.match(client,/limit:100/);
 assert.match(client,/function sortedResults\(\)/);
