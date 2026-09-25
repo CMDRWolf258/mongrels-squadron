@@ -70,7 +70,7 @@ assert.equal(payload.allowed_mentions.parse.length,0);
 assert.match(payload.embeds[0].description,/TEST FEED/);
 assert.match(payload.embeds[0].footer.text,/3 watching/);
 assert.equal(payload.components[0].components[0].custom_id,customId);
-assert.equal(payload.components[0].components[0].label,'Alert Settings');
+assert.equal(payload.components[0].components[0].label,'Alert Me');
 
 const compact=buildCompactTradeDiscordPayload({...route,status:'expired'},{control,reason:'Superseded'});
 assert.equal(compact.embeds.length,0);
