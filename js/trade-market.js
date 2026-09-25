@@ -37,11 +37,26 @@
   const nextPage=$('[data-market-page-next]');
   const watchEditor=document.querySelector('[data-trade-watch-editor]');
   const watchForm=document.querySelector('[data-trade-watch-form]');
+  const watchTitle=document.querySelector('[data-trade-watch-title]');
+  const watchId=document.querySelector('[data-trade-watch-id]');
   const watchName=document.querySelector('[data-trade-watch-name]');
+  const watchCommodity=document.querySelector('[data-trade-watch-commodity]');
+  const watchCommodityList=document.querySelector('[data-trade-watch-commodity-list]');
+  const watchDirection=document.querySelector('[data-trade-watch-direction]');
+  const watchSystem=document.querySelector('[data-trade-watch-system]');
+  const watchRadius=document.querySelector('[data-trade-watch-radius]');
+  const watchPrice=document.querySelector('[data-trade-watch-price]');
+  const watchPriceLabel=document.querySelector('[data-trade-watch-price-label]');
+  const watchVolume=document.querySelector('[data-trade-watch-volume]');
+  const watchVolumeLabel=document.querySelector('[data-trade-watch-volume-label]');
+  const watchPad=document.querySelector('[data-trade-watch-pad]');
+  const watchCarriers=document.querySelector('[data-trade-watch-carriers]');
+  const watchAge=document.querySelector('[data-trade-watch-age]');
   const watchPriority=document.querySelector('[data-trade-watch-priority]');
+  const watchSort=document.querySelector('[data-trade-watch-sort]');
   const watchDiscord=document.querySelector('[data-trade-watch-discord]');
-  const watchPreview=document.querySelector('[data-trade-watch-preview]');
   const watchStatus=document.querySelector('[data-trade-watch-status]');
+  const watchSubmit=document.querySelector('[data-trade-watch-submit]');
   const STORAGE_KEY='mongrels-trade-market-search-v1';
   const PAGE_SIZE=10;
 
@@ -211,6 +226,13 @@
         .filter(item=>item.label)
         .sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
       commodityCatalogComplete=payload.includesRares!==false;
+      if(watchCommodityList){
+        watchCommodityList.replaceChildren(...commodityCatalog.map(item=>{
+          const option=document.createElement('option');
+          option.value=item.label;
+          return option;
+        }));
+      }
       if(commodityHelp){
         commodityHelp.textContent=payload.includesRares===false
           ?'Commodity suggestions are using a fallback catalog right now.'
@@ -313,29 +335,101 @@
     return action+' '+(query.commodity||'Commodity')+' near '+(query.referenceSystem||'System');
   }
 
-  function watchQueryPreview(query){
-    const action=query.direction==='buy'?'Buy':'Sell';
-    const volumeLabel=query.direction==='buy'?'supply':'demand';
-    const priceText=Number(query.price)>0
-      ?(query.direction==='buy'?'≤ ':'≥ ')+fmt(query.price)+' Cr/t'
-      :'Any price';
-    return '<div><span>Saved Search</span><strong>'+safe(action+' '+query.commodity)+'</strong></div>'
-      +'<div><span>Area</span><strong>'+safe(query.referenceSystem)+' · '+fmt(query.radiusLy)+' ly</strong></div>'
-      +'<div><span>Thresholds</span><strong>'+safe(priceText)+' · ≥ '+fmt(query.minVolume)+' t '+volumeLabel+'</strong></div>'
-      +'<div><span>Freshness</span><strong>'+safe(String(query.priority||'standard'))+' · max '+safe(ageLabel(query.maxAgeMinutes).replace(' old',''))+'</strong></div>';
+  function updateWatchLabels(){
+    const buying=watchDirection?.value==='buy';
+    if(watchPriceLabel)watchPriceLabel.textContent=buying?'Maximum buy price':'Minimum sell price';
+    if(watchVolumeLabel)watchVolumeLabel.textContent=buying?'Minimum supply':'Minimum demand';
+  }
+
+  function watchQueryFromEditor(){
+    return{
+      commodity:watchCommodity.value.trim(),
+      direction:watchDirection.value==='buy'?'buy':'sell',
+      referenceSystem:watchSystem.value.trim(),
+      radiusLy:Number(watchRadius.value)||100,
+      price:Number(watchPrice.value)||0,
+      minVolume:Number(watchVolume.value)||0,
+      minPad:Number(watchPad.value)||0,
+      carrierMode:['include','exclude','only'].includes(watchCarriers.value)?watchCarriers.value:'exclude',
+      maxAgeMinutes:Number(watchAge.value)||1,
+      priority:['critical','high','standard','low'].includes(watchPriority.value)?watchPriority.value:'standard',
+      sort:['price','distance','freshness','volume'].includes(watchSort.value)?watchSort.value:'price',
+      limit:100,
+    };
+  }
+
+  function validateWatchCommodity(){
+    const entered=normalizeCommodityText(watchCommodity.value);
+    if(!entered){
+      watchStatus.textContent='Choose a commodity.';
+      watchCommodity.focus();
+      return false;
+    }
+    if(!commodityCatalog.length||!commodityCatalogComplete)return true;
+    const exact=commodityCatalog.find(item=>normalizeCommodityText(item.label||item.name)===entered);
+    if(exact){
+      watchCommodity.value=exact.label||exact.name;
+      return true;
+    }
+    const matches=commodityMatches(watchCommodity.value);
+    if(matches.length===1){
+      watchCommodity.value=matches[0].label;
+      return true;
+    }
+    watchStatus.textContent='Choose a valid commodity from the suggestions.';
+    watchCommodity.focus();
+    return false;
+  }
+
+  function populateWatchEditor(query,{id='',name='',publishDiscord=true,editing=false}={}){
+    const q=query&&typeof query==='object'?query:{};
+    watchId.value=id||'';
+    watchName.value=name||defaultWatchName(q);
+    watchCommodity.value=q.commodity||'';
+    watchDirection.value=q.direction==='buy'?'buy':'sell';
+    watchSystem.value=q.referenceSystem||'';
+    watchRadius.value=q.radiusLy||100;
+    watchPrice.value=Number(q.price)>0?q.price:'';
+    watchVolume.value=q.minVolume??1;
+    watchPad.value=String(q.minPad??0);
+    watchCarriers.value=['include','exclude','only'].includes(q.carrierMode)?q.carrierMode:'exclude';
+    watchAge.value=q.maxAgeMinutes||2880;
+    watchPriority.value=['critical','high','standard','low'].includes(q.priority)?q.priority:'standard';
+    watchSort.value=['price','distance','freshness','volume'].includes(q.sort)?q.sort:'price';
+    watchDiscord.value=publishDiscord?'true':'false';
+    if(watchTitle)watchTitle.textContent=editing?'Edit Watch':'Save as Watch';
+    if(watchSubmit)watchSubmit.textContent=editing?'Update Watch':'Save Watch';
+    const noteTitle=document.querySelector('[data-trade-watch-note-title]');
+    const note=document.querySelector('[data-trade-watch-note]');
+    if(noteTitle)noteTitle.textContent=editing?'Criteria change':'Saved Watch only';
+    if(note)note.textContent=editing
+      ?'Updating these criteria keeps the same watch but resets its evaluation state so the next scheduler run starts from the new rules.'
+      :'The recurring evaluator is not enabled yet. These criteria will be stored now and marked Pending Scheduler until the next automation layer is connected.';
+    updateWatchLabels();
+    if(watchStatus)watchStatus.textContent='';
+  }
+
+  function showWatchEditor(){
+    watchEditor.hidden=false;
+    document.body.classList.add('project-editor-open');
+    requestAnimationFrame(()=>watchName.focus());
   }
 
   function openWatchEditor(){
     if(!currentPayload?.query||!['officer','site_admin'].includes(viewerAccess)||!watchEditor)return;
-    const q=currentPayload.query;
-    watchName.value=defaultWatchName(q);
-    watchPriority.value=['critical','high','standard','low'].includes(q.priority)?q.priority:'standard';
-    watchDiscord.value='true';
-    watchPreview.innerHTML=watchQueryPreview(q);
-    watchStatus.textContent='';
-    watchEditor.hidden=false;
-    document.body.classList.add('project-editor-open');
-    requestAnimationFrame(()=>watchName.focus());
+    populateWatchEditor(currentPayload.query,{publishDiscord:true,editing:false});
+    showWatchEditor();
+  }
+
+  function editWatch(watch){
+    if(!watch?.id||!watch?.query||!['officer','site_admin'].includes(viewerAccess)||!watchEditor)return;
+    populateWatchEditor(watch.query,{
+      id:watch.id,
+      name:watch.name||'',
+      publishDiscord:watch.discord?.publish!==false,
+      editing:true,
+    });
+    showWatchEditor();
   }
 
   function closeWatchEditor(){
@@ -343,22 +437,38 @@
     watchEditor.hidden=true;
     document.body.classList.remove('project-editor-open');
     if(watchStatus)watchStatus.textContent='';
+    if(watchId)watchId.value='';
   }
 
   async function saveWatch(event){
     event.preventDefault();
-    if(!currentPayload?.query||!['officer','site_admin'].includes(viewerAccess))return;
-    const button=watchForm?.querySelector('button[type="submit"]');
+    if(!['officer','site_admin'].includes(viewerAccess))return;
+    if(!watchName.value.trim()){
+      watchStatus.textContent='Enter a watch name.';
+      watchName.focus();
+      return;
+    }
+    if(!validateWatchCommodity())return;
+    if(!watchSystem.value.trim()){
+      watchStatus.textContent='Enter a reference system.';
+      watchSystem.focus();
+      return;
+    }
+
+    const editingId=watchId.value.trim();
+    const query=watchQueryFromEditor();
+    const button=watchSubmit||watchForm?.querySelector('button[type="submit"]');
     if(button)button.disabled=true;
-    watchStatus.textContent='Saving watch…';
-    const query={...currentPayload.query,priority:watchPriority.value,limit:100};
+    watchStatus.textContent=editingId?'Updating watch…':'Saving watch…';
+
     try{
       const response=await fetch('/api/trade-watches',{
-        method:'POST',
+        method:editingId?'PUT':'POST',
         credentials:'same-origin',
         cache:'no-store',
         headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-watch-editor'},
         body:JSON.stringify({
+          ...(editingId?{id:editingId,action:'edit'}:{}),
           name:watchName.value.trim(),
           query,
           publishDiscord:watchDiscord.value==='true',
@@ -366,7 +476,7 @@
       });
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||'Unable to save watch.');
-      watchStatus.textContent='Saved.';
+      watchStatus.textContent=editingId?'Updated.':'Saved.';
       window.dispatchEvent(new CustomEvent('mongrels:trade-watch-saved',{detail:payload.watch}));
       setTimeout(closeWatchEditor,450);
     }catch(error){
@@ -600,9 +710,7 @@
   });
   saveWatchButton?.addEventListener('click',openWatchEditor);
   watchForm?.addEventListener('submit',saveWatch);
-  watchPriority?.addEventListener('change',()=>{
-    if(currentPayload?.query&&watchPreview)watchPreview.innerHTML=watchQueryPreview({...currentPayload.query,priority:watchPriority.value});
-  });
+  watchDirection?.addEventListener('change',updateWatchLabels);
   document.querySelectorAll('[data-trade-watch-cancel]').forEach(button=>button.addEventListener('click',closeWatchEditor));
   direction.addEventListener('change',updateLabels);
   resultSort?.addEventListener('change',()=>{
@@ -622,5 +730,5 @@
   });
   form.addEventListener('submit',submit);
 
-  window.MongrelTradeMarket={activate,loadQuery};
+  window.MongrelTradeMarket={activate,loadQuery,editWatch};
 })();
