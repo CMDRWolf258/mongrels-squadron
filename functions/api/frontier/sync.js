@@ -19,7 +19,7 @@ export async function onRequestPost({request,env}) {
   return syncFrontierAccount({
     request,
     env,
-    userId:userId,
+    userId:auth.session.sub,
     diagnostics:auth.session.access==='site_admin',
     respectCooldown:true,
     syncSource:'manual',
