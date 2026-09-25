@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildOrderRewardPolicies } from '../lib/reward-rules.js';
+import { buildOrderRewardPolicies, DEFAULT_REWARD_SETTINGS } from '../lib/reward-rules.js';
 import {
   DAILY_ORDER_TICK_TIMEZONE,
   decorateDailyOrdersForTiming,
   resolveOrderWorkCycle,
   workCycleForTimestamp,
 } from '../lib/daily-order-cycle.js';
+import { archivedRemovedOrders } from '../lib/order-history.js';
+import { buildRewardDryRun } from '../lib/reward-dry-run.js';
 import {
   aggregateVerifiedOrderTotals,
   matchVerifiedActivity,
@@ -140,6 +142,92 @@ assert.equal(historical.orderTotals.reduce((sum,row)=>sum+row.contribution,0),8)
 assert.equal(new Set(historical.orderTotals.map(row=>row.sourceCycleId)).size,2);
 console.log('✓ Current Mission Control progress resets while Reward Engine can still see recent prior-cycle evidence');
 
+const archivedOrder={
+  ...baseOrder,
+  id:'removed-order',
+  logicalKey:'manual|default system|archived faction|inf|removed',
+  system:'Default System',
+  faction:'Archived Faction',
+  task:'Complete 25 INF for Archived Faction',
+  createdAt:'2026-09-21T02:00:00.000Z',
+  revisedAt:'2026-09-21T02:00:00.000Z',
+};
+const publishedArchiveRecord={
+  state:'applied',
+  action:'reconcile',
+  cycleId:'publication-cycle',
+  previousCycleId:'publication-cycle',
+  publicationId:'publish-removed-order',
+  preparedAt:'2026-09-21T02:00:00.000Z',
+  appliedAt:'2026-09-21T02:00:01.000Z',
+  afterHash:'archive-publish-hash',
+  before:{cycleId:'publication-cycle',orders:[]},
+  after:{cycleId:'publication-cycle',orders:[archivedOrder]},
+};
+const removalArchiveRecord={
+  state:'applied',
+  action:'reconcile',
+  cycleId:'publication-cycle',
+  previousCycleId:'publication-cycle',
+  publicationId:'remove-removed-order',
+  preparedAt:'2026-09-23T02:00:00.000Z',
+  appliedAt:'2026-09-23T02:00:01.000Z',
+  afterHash:'archive-remove-hash',
+  before:{cycleId:'publication-cycle',orders:[archivedOrder]},
+  after:{cycleId:'publication-cycle',orders:[]},
+};
+const replacementOrder={
+  ...archivedOrder,
+  id:'replacement-order',
+  logicalKey:'manual|default system|archived faction|inf|replacement',
+  createdAt:'2026-09-24T03:00:00.000Z',
+  revisedAt:'2026-09-24T03:00:00.000Z',
+};
+const recoveredArchivedOrders=archivedRemovedOrders(
+  [publishedArchiveRecord,removalArchiveRecord],
+  [replacementOrder],
+);
+assert.equal(recoveredArchivedOrders.length,1);
+assert.equal(recoveredArchivedOrders[0].id,'removed-order');
+assert.equal(recoveredArchivedOrders[0].rewardHistoryRemovedAt,'2026-09-23T02:00:00.000Z');
+
+const lateSyncDocument=await decorateDailyOrdersForTiming(fakeEnv,{
+  configured:true,
+  cycleId:'publication-cycle',
+  cycleStartedAt:'2026-09-21T02:00:00.000Z',
+  orders:[replacementOrder,...recoveredArchivedOrders],
+},{now:new Date('2026-09-24T06:00:00.000Z'),historyDepth:3});
+const cycleOneLateEvent={
+  id:'cycle-one-late-sync',
+  type:'mission_inf',
+  timestamp:'2026-09-22T10:00:00.000Z',
+  effects:[{infUnits:5,faction:'Archived Faction',system:'Default System'}],
+};
+const afterRemovalEvent={
+  id:'after-removal',
+  type:'mission_inf',
+  timestamp:'2026-09-23T03:00:00.000Z',
+  effects:[{infUnits:4,faction:'Archived Faction',system:'Default System'}],
+};
+const recoveredLate=matchVerifiedActivityHistory([cycleOneLateEvent],lateSyncDocument,{depth:3});
+assert.equal(recoveredLate.orderTotals.length,1,'Archived order should recover work from its original prior cycle');
+assert.equal(recoveredLate.orderTotals[0].orderId,'removed-order','A newly published replacement must not steal older-cycle work');
+assert.equal(recoveredLate.orderTotals[0].contribution,5);
+assert.equal(matchVerifiedActivityHistory([afterRemovalEvent],lateSyncDocument,{depth:3}).orderTotals.length,0,'Removed orders must not absorb work performed after removal');
+
+const recoveredReward=await buildRewardDryRun({
+  current:lateSyncDocument,
+  accounts:[{userId:'wolf',account:{commander:'Wolf258'},matched:recoveredLate}],
+  rewardSettings:DEFAULT_REWARD_SETTINGS,
+  historyRecords:[publishedArchiveRecord,removalArchiveRecord],
+  ledgerEntries:[],
+});
+assert.equal(recoveredReward.summary.readyObligations,1,'Late-synced archived work should become a live reward obligation');
+assert.equal(recoveredReward.summary.wouldCreateCredits,5_000_000);
+assert.equal(recoveredReward.members[0].obligations[0].sourceCycleId,recoveredLate.orderTotals[0].sourceCycleId);
+assert.deepEqual(recoveredReward.members[0].obligations[0].blockers,[]);
+console.log('✓ Cycle 1 work can be recovered and rewarded after its order is removed before a later Elite sync');
+
 const squadVerified=aggregateVerifiedOrderTotals([
   {userId:'wolf',matched:{orderTotals:[{orderId:'trade-order',sourceCycleId:'cycle-a',type:'trade',target:20,contribution:9.2,unit:'M Cr',eventCount:1,sourceEventIds:['trade-1']}]}},
   {userId:'wingmate',matched:{orderTotals:[{orderId:'trade-order',sourceCycleId:'cycle-a',type:'trade',target:20,contribution:4.8,unit:'M Cr',eventCount:1,sourceEventIds:['trade-2']}]}},
@@ -172,6 +260,9 @@ for(const pattern of [/preview\.sourceCycleId/,/wantedCycle/,/sourceCycleId/])as
 const runtime=readFileSync('lib/reward-engine-runtime.js','utf8');
 assert.match(runtime,/matchVerifiedActivityHistory/);
 assert.match(runtime,/historyDepth:7/);
+assert.match(runtime,/archivedRemovedOrders/);
+assert.match(runtime,/listOrderPublications\(env,\{limit:250\}\)/);
+assert.match(runtime,/rewardCurrent/);
 
 const client=readFileSync('js/daily-orders-v2.js','utf8');
 for(const pattern of [/PER-SYSTEM DAILY CYCLES/,/EST TICK/,/TRANSITION/,/UTC/,/localStamp/,/data-cycle-target/,/TICK IN/,/MANUAL REPORTING/,/Only report work Scout did not capture/,/OPEN IF NEEDED/,/MISSION REWARD POINTS · \+\+\+\+\+ = 5 INF/,/TRACKED /,/Scout verified squad/,/YOUR SCOUT VERIFIED/])assert.match(client,pattern);
