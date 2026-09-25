@@ -12,6 +12,7 @@ export async function onRequestPost({request,env}){
     const result=await evaluateTradeWatches(env,{
       maxWatches:TRADE_WATCH_EVALUATION_BATCH_SIZE,
       concurrency:2,
+      origin:new URL(request.url).origin,
     });
     return reply(result);
   }catch(error){
