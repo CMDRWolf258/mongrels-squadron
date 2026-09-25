@@ -165,6 +165,7 @@
         <div class="trade-watch-card-head">
           <div><span>${safe(watchPriorityLabel(q.priority))} · ${safe(state)}</span><strong>${safe(watch.name||'Saved Watch')}</strong><small>${safe(watch.summary||'')}</small></div>
           <div class="trade-watch-card-actions">
+            <button class="btn btn-secondary btn-compact" type="button" data-watch-edit>Edit</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-load>Load Search</button>
             <button class="btn btn-secondary btn-compact" type="button" data-watch-toggle>${watch.status==='paused'?'Resume':'Pause'}</button>
             <button class="btn btn-ghost btn-compact" type="button" data-watch-remove>Remove</button>
@@ -177,6 +178,9 @@
           <span>Evaluator <strong>${safe(state)}</strong></span>
         </div>`;
 
+      article.querySelector('[data-watch-edit]')?.addEventListener('click',()=>{
+        window.MongrelTradeMarket?.editWatch(watch);
+      });
       article.querySelector('[data-watch-load]')?.addEventListener('click',()=>{
         window.MongrelTradeMarket?.loadQuery(q);
       });
