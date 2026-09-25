@@ -22,6 +22,7 @@ export async function onRequestPost({request,env}){
       watchIds:[id],
       maxWatches:1,
       concurrency:1,
+      origin:new URL(request.url).origin,
     });
     if(!result.attempted)return reply({ok:false,error:'watch_not_found_or_inactive'},404);
     return reply(result);
