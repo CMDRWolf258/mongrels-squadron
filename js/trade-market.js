@@ -226,6 +226,13 @@
         .filter(item=>item.label)
         .sort((a,b)=>a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
       commodityCatalogComplete=payload.includesRares!==false;
+      if(watchCommodityList){
+        watchCommodityList.replaceChildren(...commodityCatalog.map(item=>{
+          const option=document.createElement('option');
+          option.value=item.label;
+          return option;
+        }));
+      }
       if(commodityHelp){
         commodityHelp.textContent=payload.includesRares===false
           ?'Commodity suggestions are using a fallback catalog right now.'
