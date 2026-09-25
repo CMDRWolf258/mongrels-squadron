@@ -29,6 +29,10 @@ export async function onRequestPost({request,env}){
           results.push({commander,ok:false,error:'frontier_account_missing'});
           continue;
         }
+        if(!autoSyncDue(before,Date.now())){
+          results.push({commander,ok:true,skipped:true,reason:'no_longer_due'});
+          continue;
+        }
         await saveAccount(env,userId,{...before,lastAutoSyncAttemptAt:attemptAt});
         const response=await syncFrontierAccount({
           request,
