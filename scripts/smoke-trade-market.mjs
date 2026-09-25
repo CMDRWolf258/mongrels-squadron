@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildSpanshSearchBody,
+  buildTradeBgsContext,
   extractSpanshCommodityNames,
   normalizeMarketSearch,
   searchTradeMarkets,
@@ -127,9 +128,17 @@ const rows=[
     system_name:'Gamma',
     system_x:7,system_y:8,system_z:9,
     carrier_docking_access:null,
+    controlling_minor_faction:'Gamma Metals Cooperative',
+    controlling_minor_faction_state:'Infrastructure Failure',
+    primary_economy:'Industrial',
+    secondary_economy:'Refinery',
+    economies:[{name:'Industrial',share:0.7},{name:'Refinery',share:0.3}],
+    system_primary_economy:'Industrial',
+    system_secondary_economy:'Refinery',
+    updated_at:new Date(now-30*60*1000).toISOString(),
     market_updated_at:new Date(now-10*60*1000).toISOString(),
     distance:8,
-    market:[{commodity:'Gold',buy_price:40000,sell_price:80000,supply:12000,demand:60000}],
+    market:[{commodity:'Gold',category:'Metals',buy_price:40000,sell_price:80000,supply:12000,demand:60000}],
   },
 ];
 
@@ -196,6 +205,36 @@ assert.ok(buyBody.filters.type.value.includes('Drake-Class Carrier'));
 assert.deepEqual(buyBody.filters.marketplace[0].supply.value,[4000,2147483647]);
 assert.deepEqual(buyBody.filters.marketplace[0].buy_price.value,[1,43000]);
 assert.equal(buy.results[0].stationName,'Medium Port','buy results should sort by lowest commander buy price');
+assert.equal(buy.results[0].bgs.controllingFaction,'Gamma Metals Cooperative');
+assert.equal(buy.results[0].bgs.factionState,'Infrastructure Failure');
+assert.equal(buy.results[0].bgs.infrastructureFailure,true);
+assert.equal(buy.results[0].bgs.metalCommodity,true);
+assert.equal(buy.results[0].bgs.infrastructureFailureMetalOpportunity,true,'Infrastructure Failure should be highlighted for any Metals-category buy source');
+assert.equal(buy.results[0].bgs.ownershipNeedsConfirmation,false,'fresh ownership metadata should not be warned');
+
+for(const commodity of ['Gold','Silver','Palladium']){
+  const signal=buildTradeBgsContext({
+    commodity,
+    commodityCategory:'Metals',
+    stationControllingFaction:'Test Metals Faction',
+    stationControllingFactionState:'InfrastructureFailure',
+    stationMetadataAt:new Date().toISOString(),
+    observedAt:new Date().toISOString(),
+    source:'Spansh',
+  },{direction:'buy'});
+  assert.equal(signal.infrastructureFailureMetalOpportunity,true,commodity+' should use the generic Metals-category Infrastructure Failure signal');
+}
+const staleOwnership=buildTradeBgsContext({
+  commodity:'Silver',
+  commodityCategory:'Metals',
+  stationControllingFaction:'Potential New Owner',
+  stationControllingFactionState:'Infrastructure Failure',
+  stationMetadataAt:new Date(Date.now()-4*24*60*60*1000).toISOString(),
+  observedAt:new Date().toISOString(),
+  source:'Spansh',
+},{direction:'buy'});
+assert.equal(staleOwnership.metadataFreshness,'stale');
+assert.equal(staleOwnership.ownershipNeedsConfirmation,true,'stale port ownership must warn on an Infrastructure Failure metal opportunity');
 
 let timeoutCalls=0;
 const timeoutFetch=async ()=>{
@@ -239,9 +278,9 @@ assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-volume/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=6/);
-assert.match(html,/trade-market\.js\?v=9/);
-assert.match(html,/trading\.js\?v=81/);
+assert.match(html,/trade-market\.css\?v=7/);
+assert.match(html,/trade-market\.js\?v=10/);
+assert.match(html,/trading\.js\?v=82/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -259,6 +298,9 @@ assert.match(client,/function bindFormattedInteger\(input\)/);
 assert.match(client,/const integerValue=value=>/);
 assert.match(client,/maximumFractionDigits:2/);
 assert.match(client,/fmtLy\(item\.distanceLy\)/);
+assert.match(client,/Infrastructure Failure metal source/);
+assert.match(client,/Ownership needs confirmation/);
+assert.match(client,/Port controller/);
 assert.match(client,/limit:100/);
 assert.match(client,/function sortedResults\(\)/);
 assert.match(client,/arrival:\(a,b\)=>arrivalOf\(a\)-arrivalOf\(b\)/);
