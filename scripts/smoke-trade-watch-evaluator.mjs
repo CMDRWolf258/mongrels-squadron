@@ -140,9 +140,22 @@ const early=await evaluateTradeWatches(env,{
 });
 assert.equal(early.attempted,0,'Critical watch must not rerun before its 5-minute cadence');
 
+rows=rows.slice(1);
+const promoted=await evaluateTradeWatches(env,{
+  now:baseNow+5*60*1000,
+  fetchImpl,
+  concurrency:1,
+});
+assert.equal(promoted.attempted,1);
+assert.equal(promoted.results[0].transition,'best_market_changed');
+stored=(await readTradeWatches(env))[0];
+assert.equal(stored.evaluation.currentBest.marketId,'1002','next ranked market should automatically promote when #1 disappears');
+assert.deepEqual(stored.evaluation.rankedMarkets.map(item=>item.marketId),['1002','1003']);
+assert.equal(stored.evaluation.lastTransition.type,'best_market_changed');
+
 rows=[];
 const cleared=await evaluateTradeWatches(env,{
-  now:baseNow+5*60*1000,
+  now:baseNow+10*60*1000,
   fetchImpl,
   concurrency:1,
 });
@@ -151,6 +164,7 @@ assert.equal(cleared.results[0].transition,'condition_cleared');
 stored=(await readTradeWatches(env))[0];
 assert.equal(stored.evaluation.matchCount,0);
 assert.equal(stored.evaluation.currentBest,null);
+assert.deepEqual(stored.evaluation.rankedMarkets,[]);
 assert.equal(stored.evaluation.lastTransition.type,'condition_cleared');
 
 const transition=detectTradeWatchTransition({
