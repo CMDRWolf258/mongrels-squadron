@@ -173,7 +173,7 @@
         <div class="trade-watch-meta">
           <span>Refresh <strong>${safe(refresh)}</strong></span>
           <span>Max age <strong>${q.maxAgeMinutes?fmt(q.maxAgeMinutes)+' min':'—'}</strong></span>
-          <span>Discord <strong>${watch.discord?.publish?'Prepared':'Off'}</strong></span>
+          <span>Discord <strong>${watch.discord?.publish?'On start':'Off'}</strong></span>
           <span>Evaluator <strong>${safe(state)}</strong></span>
         </div>`;
 
