@@ -108,6 +108,32 @@ assert.equal(aliasSearch.query.rareSource.systemName,'Ngurii');
 assert.equal(aliasSearch.query.rareSource.stationName,'Cheranovsky City');
 assert.match(aliasSearch.warning,/market-age cutoffs do not exclude the unique source/);
 
+const legacyRareEnv={TRADES:new FakeKV()};
+await legacyRareEnv.TRADES.put('trade-market-observations-v1:soontilrelics',JSON.stringify({
+  commodity:'soontilrelics',
+  updatedAt:new Date().toISOString(),
+  items:[{
+    ...aliasSearch.results[0],
+    source:'Spansh',
+    distanceFromSystem:'Diaba',
+  }],
+}));
+const rareCached=await searchTradeMarkets(legacyRareEnv,{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:0,results:[]}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(rareCached.source,'Mongrel Rare Source Cache');
+assert.equal(rareCached.results.length,1,'old alias-key cache should keep the known rare source visible when Spansh omits the station');
+assert.equal(rareCached.results[0].stationName,'Cheranovsky City');
+assert.match(rareCached.warning,/known rare source station/);
+
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
   direction:'sell',
