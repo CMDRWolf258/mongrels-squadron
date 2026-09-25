@@ -382,6 +382,10 @@ assert.match(tradeClient,/const fmtLy = value =>/);
 assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
 
+const headersFile=readFileSync(new URL('../_headers',import.meta.url),'utf8');
+assert.match(headersFile,/\/trading\//);
+assert.match(headersFile,/Cache-Control: no-cache, no-store, must-revalidate/);
+
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');
 assert.match(searchApi,/member','officer','site_admin/);
 assert.match(searchApi,/searchTradeMarkets/);
