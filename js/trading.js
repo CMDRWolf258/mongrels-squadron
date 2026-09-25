@@ -20,6 +20,7 @@
   let memberFilter = null;
   let tradeControlLoaded = false;
   let tradeControlState = null;
+  let tradeWatches = [];
 
   const n = value => Number(value || 0);
   const fmt = value => n(value).toLocaleString();
@@ -127,6 +128,109 @@
     }
   }
 
+  function watchStatusLabel(watch){
+    if(watch.status==='paused')return'Paused';
+    const state=watch.evaluation?.state||'pending_scheduler';
+    if(state==='pending_scheduler')return'Pending Scheduler';
+    if(state==='healthy')return'Healthy';
+    if(state==='warning')return'Warning';
+    if(state==='error')return'Error';
+    return'Active';
+  }
+
+  function watchPriorityLabel(value){
+    const key=String(value||'standard');
+    return key.charAt(0).toUpperCase()+key.slice(1);
+  }
+
+  function renderTradeWatches(){
+    const list=$('[data-trade-watch-list]');
+    const count=$('[data-trade-watch-count]');
+    if(!list)return;
+    if(count)count.textContent=tradeWatches.length+' saved';
+    if(!tradeWatches.length){
+      list.innerHTML='<div class="trade-engine-state"><span>Saved Watches</span><strong>No watches saved yet</strong><small>Run a Commodity Search, then use Save as Watch.</small></div>';
+      return;
+    }
+
+    list.replaceChildren(...tradeWatches.map(watch=>{
+      const article=document.createElement('article');
+      article.className='trade-watch-card'+(watch.status==='paused'?' is-paused':'');
+      const q=watch.query||{};
+      const profile=tradeControlState?.control?.priorities?.[q.priority]||{};
+      const refresh=profile.refreshMinutes?profile.refreshMinutes+' min':'Profile';
+      const state=watchStatusLabel(watch);
+      article.innerHTML=`
+        <div class="trade-watch-card-head">
+          <div><span>${safe(watchPriorityLabel(q.priority))} · ${safe(state)}</span><strong>${safe(watch.name||'Saved Watch')}</strong><small>${safe(watch.summary||'')}</small></div>
+          <div class="trade-watch-card-actions">
+            <button class="btn btn-secondary btn-compact" type="button" data-watch-load>Load Search</button>
+            <button class="btn btn-secondary btn-compact" type="button" data-watch-toggle>${watch.status==='paused'?'Resume':'Pause'}</button>
+            <button class="btn btn-ghost btn-compact" type="button" data-watch-remove>Remove</button>
+          </div>
+        </div>
+        <div class="trade-watch-meta">
+          <span>Refresh <strong>${safe(refresh)}</strong></span>
+          <span>Max age <strong>${q.maxAgeMinutes?fmt(q.maxAgeMinutes)+' min':'—'}</strong></span>
+          <span>Discord <strong>${watch.discord?.publish?'Prepared':'Off'}</strong></span>
+          <span>Evaluator <strong>${safe(state)}</strong></span>
+        </div>`;
+
+      article.querySelector('[data-watch-load]')?.addEventListener('click',()=>{
+        window.MongrelTradeMarket?.loadQuery(q);
+      });
+      article.querySelector('[data-watch-toggle]')?.addEventListener('click',()=>updateTradeWatch(watch,watch.status==='paused'?'resume':'pause'));
+      article.querySelector('[data-watch-remove]')?.addEventListener('click',()=>removeTradeWatch(watch));
+      return article;
+    }));
+  }
+
+  async function loadTradeWatches(){
+    if(!manager())return;
+    try{
+      const {response,payload}=await apiFetch('/api/trade-watches');
+      if(!response.ok)throw new Error(payload.error||'Unable to load saved watches.');
+      tradeWatches=Array.isArray(payload.watches)?payload.watches:[];
+      renderTradeWatches();
+    }catch(error){
+      const list=$('[data-trade-watch-list]');
+      if(list)list.innerHTML='<div class="trade-engine-state"><span>Saved Watches</span><strong>Unable to load watches</strong><small>'+safe(error.message||'Unknown error')+'</small></div>';
+    }
+  }
+
+  async function updateTradeWatch(watch,action){
+    try{
+      const {response,payload}=await apiFetch('/api/trade-watches',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-watch-editor'},
+        body:JSON.stringify({id:watch.id,action}),
+      });
+      if(!response.ok)throw new Error(payload.error||'Unable to update watch.');
+      const index=tradeWatches.findIndex(item=>item.id===watch.id);
+      if(index>=0)tradeWatches[index]=payload.watch;
+      renderTradeWatches();
+    }catch(error){
+      const status=$('[data-trade-control-status]');
+      if(status)status.textContent=error.message||'Unable to update watch.';
+    }
+  }
+
+  async function removeTradeWatch(watch){
+    if(!confirm('Remove saved watch “'+(watch.name||'this watch')+'”?'))return;
+    try{
+      const {response,payload}=await apiFetch('/api/trade-watches?id='+encodeURIComponent(watch.id),{
+        method:'DELETE',
+        headers:{'X-Mongrels-Request':'trade-watch-editor'},
+      });
+      if(!response.ok)throw new Error(payload.error||'Unable to remove watch.');
+      tradeWatches=tradeWatches.filter(item=>item.id!==watch.id);
+      renderTradeWatches();
+    }catch(error){
+      const status=$('[data-trade-control-status]');
+      if(status)status.textContent=error.message||'Unable to remove watch.';
+    }
+  }
+
   async function loadTradeControl(force=false) {
     if(!manager())return;
     if(tradeControlLoaded&&!force)return;
@@ -211,9 +315,10 @@
   }
 
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
-  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer)window.MongrelTradeMarket?.activate(payload.viewer);if(manager())loadTradeControl();}}catch{}render();}
+  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer)window.MongrelTradeMarket?.activate(payload.viewer);if(manager()){loadTradeControl();loadTradeWatches();}}}catch{}render();}
 
   window.addEventListener('mongrels:trade-market-search',()=>{if(manager())loadTradeControl(true);});
+  window.addEventListener('mongrels:trade-watch-saved',()=>{if(manager())loadTradeWatches();});
   [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); $('[data-trade-control-form]')?.addEventListener('submit',saveTradeControl); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);
 })();
