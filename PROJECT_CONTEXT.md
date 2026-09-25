@@ -196,9 +196,13 @@ Discord lifecycle:
 
 Market-data direction:
 - the framework deliberately separates market observations, priority profiles, watches/searches, route cards, trigger state, and Discord delivery.
-- broad public market data should enter through a backend adapter/cache rather than browser-direct queries; current preferred direction is a queryable EDDN-backed source such as EDData, normalized into a Mongrel market cache.
-- MongrelScout/EDMC observations can later update the same normalized cache and supersede older public observations.
-- the initial framework does **not** yet enable an external market source, all-system search, scheduled watch evaluator, BGS enrichment, automatic source promotion, or live threshold polling. Do not label those features live until they are wired and production-validated.
+- authenticated Members now have **Live Market Intelligence → Commodity Search** on Trader's Outpost. The browser calls the Mongrels backend only; it never queries EDData directly.
+- current public market source is **EDData / EDDN** through `lib/trade-market.js` and `/api/trade-market/search`. Nearby importer/exporter queries support commodity, buy/sell intent, reference system, radius (capped at the source's current 500 ly limit), price threshold, supply/demand threshold, Fleet Carrier mode, minimum pad, priority profile, exact local maximum age, and sort.
+- EDData's external age filter is day-granular. The backend requests the narrowest whole-day window needed, then applies the Mongrels profile / exact minute cutoff locally against each observation timestamp.
+- every successful search normalizes returned records and merges them into the existing `TRADES` KV under per-commodity `trade-market-observations-v1:<commodity>` records (capped working cache). Source health is stored under `trade-market-health-v1` and appears in Officer Trade Control.
+- the commodity catalog is fetched server-side and cached in `TRADES` under `trade-market-commodities-v1`; no new Cloudflare binding is required.
+- MongrelScout/EDMC observations can later update the same normalized observation model and supersede older public observations.
+- **not yet enabled:** saved searches/watches, scheduled watch evaluator, BGS enrichment, automatic best-source promotion, live threshold polling, or MongrelScout market writes. Do not label those pieces live until they are wired and production-validated.
 - future market-source changes must not require Trader's Outpost UI/card code to know whether an observation came from EDData, MongrelScout, or another adapter.
 
 ### Squad Payouts Discord visibility
