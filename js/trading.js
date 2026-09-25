@@ -204,7 +204,7 @@
           <span>Matches <strong>${evaluation.matchCount===null||evaluation.matchCount===undefined?'—':fmt(evaluation.matchCount)}</strong></span>
           <span>Last check <strong>${safe(watchTimeLabel(evaluation.lastAttemptAt||evaluation.lastEvaluatedAt))}</strong></span>
           <span>Next due <strong>${watch.status==='paused'?'Paused':safe(watchTimeLabel(evaluation.nextEvaluationAt))}</strong></span>
-          <span>Discord <strong>${watch.discord?.publish?'On start':'Off'}</strong></span>
+          <span>Discord <strong>${watch.discord?.publish?'Prepared':'Off'}</strong></span>
         </div>
         ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':safe(String(best.distanceLy))+' ly'}</strong></div></div>`:''}
         ${evaluation.lastError?`<p class="trade-watch-evaluation-message is-error">Last check: ${safe(evaluation.lastError)}</p>`:evaluation.warning?`<p class="trade-watch-evaluation-message is-warning">${safe(evaluation.warning)}</p>`:''}
