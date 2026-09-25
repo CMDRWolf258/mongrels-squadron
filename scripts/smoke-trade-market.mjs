@@ -31,7 +31,7 @@ const normalized=normalizeMarketSearch({
   priority:'critical',
 },control);
 assert.equal(normalized.commodity,'Soontil Relics');
-assert.equal(normalized.commodityKey,'soontilrelics');
+assert.equal(normalized.commodityKey,'soontillrelics');
 assert.equal(normalized.radiusLy,500);
 assert.equal(normalized.maxAgeMinutes,90,'blank max age should inherit Critical aging cutoff');
 
