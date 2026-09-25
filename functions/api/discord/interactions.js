@@ -26,6 +26,17 @@ import {
   parseEscortInteractionCustomId,
   syncCombatEscortDiscord,
 } from '../../../lib/combat-escort-discord.js';
+import {
+  isTradeRouteActive,
+  readTradeRoutes,
+  toggleTradeAlertSubscription,
+  writeTradeRoutes,
+} from '../../../lib/trade-intelligence.js';
+import {
+  applyTradeDiscordState,
+  parseTradeAlertCustomId,
+  syncTradeDiscord,
+} from '../../../lib/trade-discord.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
 const GUEST_CUSTOM_ID = 'mongrels_onboarding_guest';
@@ -60,6 +71,11 @@ export async function onRequestPost(context) {
   const eventRsvp = parseEventRsvpCustomId(customId);
   if (eventRsvp) {
     return handleEventRsvpInteraction(context, interaction, eventRsvp);
+  }
+
+  const tradeAlert = parseTradeAlertCustomId(customId);
+  if (tradeAlert) {
+    return handleTradeAlertInteraction(context, interaction, tradeAlert);
   }
 
   if (customId === PURSUITS_MANAGE_CUSTOM_ID) {
@@ -123,6 +139,75 @@ export async function onRequestPost(context) {
 
 export function onRequestGet() {
   return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+async function handleTradeAlertInteraction(context, interaction, tradeAlert) {
+  const { request, env } = context;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || '';
+  const guildId = interaction?.guild_id || '';
+
+  if (!userId || !guildId) {
+    return response({ type:4, data:{ content:'Trade alerts can only be changed inside the Mongrels Discord server.', flags:EPHEMERAL } });
+  }
+  if (env.GUILD_ID && guildId !== env.GUILD_ID) {
+    return response({ type:4, data:{ content:'This Trade Alert control is not configured for this server.', flags:EPHEMERAL } });
+  }
+  if (!isSquadEventInteractionMember(interaction, env)) {
+    return response({ type:4, data:{ content:'Trader’s Outpost alerts are available to recognized Mongrel members.', flags:EPHEMERAL } });
+  }
+
+  const user = interaction?.member?.user || interaction?.user || {};
+  const displayName = interaction?.member?.nick || user.global_name || user.username || 'Commander';
+  const origin = new URL(request.url).origin;
+  const work = handleTradeAlertSubscription({
+    interaction,
+    env,
+    routeId:tradeAlert.routeId,
+    userId,
+    displayName,
+    origin,
+  });
+  if (typeof context.waitUntil === 'function') context.waitUntil(work);
+  else await work;
+  return response({ type:5, data:{ flags:EPHEMERAL } });
+}
+
+async function handleTradeAlertSubscription({ interaction, env, routeId, userId, displayName, origin }) {
+  try {
+    const items = await readTradeRoutes(env);
+    const index = items.findIndex(item => String(item?.id) === String(routeId));
+    if (index < 0) {
+      await editDeferredInteraction(interaction, { content:'That Trader’s Outpost post could not be found.', components:[] });
+      return;
+    }
+
+    const route = items[index];
+    if (!isTradeRouteActive(route)) {
+      await editDeferredInteraction(interaction, { content:'That trade post is no longer active, so its alert subscription is closed.', components:[] });
+      return;
+    }
+
+    const subscription = await toggleTradeAlertSubscription(env,{routeId,userId,displayName});
+    const discord = await syncTradeDiscord(env,{route,origin});
+    applyTradeDiscordState(route,discord);
+    items[index]=route;
+    await writeTradeRoutes(env,items);
+
+    const note=discord.ok
+      ?''
+      :'\n\nYour subscription was saved, but the shared Discord card could not refresh its watcher count right now.';
+    await editDeferredInteraction(interaction,{
+      content:subscription.subscribed
+        ?'🔔 **Alerts enabled.** You are now watching this specific trade post. Click **Alert Me** again any time to unsubscribe.'+note
+        :'🔕 **Alerts disabled.** You will no longer be targeted by alerts for this trade post.'+note,
+      components:[],
+    });
+  } catch (error) {
+    await editDeferredInteraction(interaction,{
+      content:`I couldn't update that trade alert subscription. Please try again.\n\nTechnical detail: ${safeError(error)}`,
+      components:[],
+    }).catch(()=>{});
+  }
 }
 
 async function handlePursuitsManager(context, interaction) {
