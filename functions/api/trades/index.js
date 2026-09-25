@@ -135,7 +135,7 @@ function normalizeRoute(value, fixed, session, existing={}) {
   const manager = MANAGER_ACCESS.has(session.access);
   let category = clean(src.category, existing.category || 'credits', 20).toLowerCase();
   if (!['squad','credits'].includes(category)) category = 'credits';
-  const official = manager ? Boolean(src.official) : Boolean(existing.official && manager);
+  const official = manager ? Boolean(src.official) : Boolean(existing.official);
   const existingIntelligence=existing.intelligence&&typeof existing.intelligence==='object'?existing.intelligence:{};
 
   return {
