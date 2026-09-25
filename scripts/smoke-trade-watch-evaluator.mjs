@@ -208,6 +208,7 @@ assert.match(client,/Run Now/);
 assert.match(client,/\/api\/trade-watches\/evaluate/);
 assert.match(client,/Current Best/);
 assert.match(client,/Fallback Markets/);
+assert.match(client,/Known Rare Source/);
 assert.match(client,/rankedMarkets/);
 assert.match(client,/Infrastructure Failure metal source/);
 assert.match(client,/Ownership needs confirmation/);
@@ -217,8 +218,8 @@ assert.match(client,/setInterval\(\(\)=>\{if\(manager\(\)&&!document\.hidden\)lo
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
-assert.match(html,/trade-control\.css\?v=9/);
-assert.match(html,/trade-market\.js\?v=10/);
-assert.match(html,/trading\.js\?v=82/);
+assert.match(html,/trade-control\.css\?v=10/);
+assert.match(html,/trade-market\.js\?v=11/);
+assert.match(html,/trading\.js\?v=83/);
 
 console.log('Trade Watch evaluator smoke checks passed.');

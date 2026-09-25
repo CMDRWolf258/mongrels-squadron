@@ -68,6 +68,11 @@
 .trade-watch-best span{color:var(--muted);font-size:.54rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
 .trade-watch-best strong{margin-top:3px;color:#e8f8fc;font-size:.7rem;overflow-wrap:anywhere}
 .trade-watch-best small{margin-top:2px;color:var(--muted);font-size:.59rem}
+.trade-watch-known-source{margin-top:10px;border:1px solid var(--line-accent);border-radius:8px;padding:9px 10px;background:rgba(34,211,238,.045)}
+.trade-watch-known-source span,.trade-watch-known-source strong,.trade-watch-known-source small{display:block}
+.trade-watch-known-source span{color:var(--accent);font-size:.54rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.trade-watch-known-source strong{margin-top:3px;color:#e8f8fc;font-size:.72rem}
+.trade-watch-known-source small{margin-top:2px;color:var(--muted);font-size:.59rem}
 .trade-watch-bgs{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
 .trade-watch-bgs span{border:1px solid var(--line);border-radius:999px;padding:5px 7px;color:var(--muted);font-size:.56rem}
 .trade-watch-bgs strong{color:#dceef3}

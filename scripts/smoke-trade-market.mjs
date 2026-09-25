@@ -67,9 +67,9 @@ const rareBody=buildSpanshSearchBody(rareBuy,fixedNow);
 assert.equal(rareBody.reference_system,'Diaba');
 assert.equal('distance' in rareBody.filters,false,'rare-source Spansh query must not include a distance filter');
 assert.equal('market_updated_at' in rareBody.filters,false,'rare-source Spansh query must not exclude the unique source by market age');
-assert.deepEqual(rareBody.filters.marketplace[0].supply.value,[1,2147483647]);
-assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontill Relics'));
-assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontil Relics'),'Spansh query should search both common Soontill spellings');
+assert.equal(rareBody.filters.system_name.value,'Ngurii','known unique rare sources should query their source system directly');
+assert.equal('marketplace' in rareBody.filters,false,'known source-system lookup should inspect the returned market locally instead of depending on Spansh commodity indexing');
+assert.equal(rareBuy.rareSource.stationName,'Cheranovsky City');
 assert.equal(rareBuy.commodityKey,'soontillrelics','rare spelling aliases should share one cache key');
 
 const aliasNow=Date.now();
@@ -104,7 +104,35 @@ assert.equal(aliasSearch.results.length,1,'two-L Soontill query must match a one
 assert.equal(aliasSearch.results[0].stationName,'Cheranovsky City');
 assert.equal(aliasSearch.results[0].supply,12);
 assert.equal(aliasSearch.results[0].freshness,'stale','unique rare source should remain visible even when its market observation is older than the selected profile cutoff');
+assert.equal(aliasSearch.query.rareSource.systemName,'Ngurii');
+assert.equal(aliasSearch.query.rareSource.stationName,'Cheranovsky City');
 assert.match(aliasSearch.warning,/market-age cutoffs do not exclude the unique source/);
+
+const legacyRareEnv={TRADES:new FakeKV()};
+await legacyRareEnv.TRADES.put('trade-market-observations-v1:soontilrelics',JSON.stringify({
+  commodity:'soontilrelics',
+  updatedAt:new Date().toISOString(),
+  items:[{
+    ...aliasSearch.results[0],
+    source:'Spansh',
+    distanceFromSystem:'Diaba',
+  }],
+}));
+const rareCached=await searchTradeMarkets(legacyRareEnv,{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:0,results:[]}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(rareCached.source,'Mongrel Rare Source Cache');
+assert.equal(rareCached.results.length,1,'old alias-key cache should keep the known rare source visible when Spansh omits the station');
+assert.equal(rareCached.results[0].stationName,'Cheranovsky City');
+assert.match(rareCached.warning,/known rare source station/);
 
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
@@ -318,8 +346,8 @@ assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=7/);
-assert.match(html,/trade-market\.js\?v=10/);
-assert.match(html,/trading\.js\?v=82/);
+assert.match(html,/trade-market\.js\?v=11/);
+assert.match(html,/trading\.js\?v=83/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -330,6 +358,9 @@ assert.match(client,/function validateCommoditySelection\(\)/);
 assert.match(client,/ArrowDown/);
 assert.match(client,/includesRares/);
 assert.match(client,/function rareSourceSearch\(commodityValue,directionValue\)/);
+assert.match(client,/commodityAliasKey/);
+assert.match(client,/soontil relics/);
+assert.match(client,/Rare source&nbsp;/);
 assert.match(client,/Rare source search · all distances/);
 assert.match(client,/trade-commodity-rare-badge/);
 assert.match(client,/const PAGE_SIZE=10/);
@@ -350,6 +381,10 @@ assert.match(tradeClient,/Spansh Adapter Ready/);
 assert.match(tradeClient,/const fmtLy = value =>/);
 assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
+
+const headersFile=readFileSync(new URL('../_headers',import.meta.url),'utf8');
+assert.match(headersFile,/\/trading\//);
+assert.match(headersFile,/Cache-Control: no-cache, no-store, must-revalidate/);
 
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');
 assert.match(searchApi,/member','officer','site_admin/);

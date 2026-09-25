@@ -58,6 +58,8 @@ const rareBuyWatch=normalizeTradeWatch({
   query:{...query,direction:'buy',radiusLy:5,minVolume:1},
 });
 assert.match(watchQuerySummary(rareBuyWatch),/all distances/,'rare buy Watch summary must not imply a limiting radius');
+assert.equal(rareBuyWatch.query.rareSource.systemName,'Ngurii');
+assert.equal(rareBuyWatch.query.rareSource.stationName,'Cheranovsky City');
 
 const env={TRADES:new FakeKV()};
 await writeTradeWatches(env,[watch]);
@@ -81,9 +83,9 @@ assert.match(html,/data-trade-watch-sort/);
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
 assert.match(html,/trade-market\.css\?v=7/);
-assert.match(html,/trade-control\.css\?v=9/);
-assert.match(html,/trade-market\.js\?v=10/);
-assert.match(html,/trading\.js\?v=82/);
+assert.match(html,/trade-control\.css\?v=10/);
+assert.match(html,/trade-market\.js\?v=11/);
+assert.match(html,/trading\.js\?v=83/);
 
 const marketClient=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(marketClient,/data-trade-watch-editor/);
@@ -108,6 +110,8 @@ assert.match(tradingClient,/Load Search/);
 assert.match(tradingClient,/Pause/);
 assert.match(tradingClient,/Resume/);
 assert.match(tradingClient,/Remove/);
+assert.match(tradingClient,/Known Rare Source/);
+assert.match(tradingClient,/no current qualifying market observation/);
 
 const api=readFileSync(new URL('../functions/api/trade-watches/index.js',import.meta.url),'utf8');
 assert.match(api,/const MANAGER_ACCESS=new Set\(\['officer','site_admin'\]\)/);
