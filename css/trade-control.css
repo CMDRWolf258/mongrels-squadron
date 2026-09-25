@@ -1,0 +1,55 @@
+.trade-control-section{border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(34,211,238,.025),rgba(0,0,0,.1))}
+.trade-control{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:linear-gradient(145deg,rgba(12,18,22,.96),rgba(6,10,13,.99));box-shadow:var(--shadow)}
+.trade-control>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;user-select:none}
+.trade-control>summary::-webkit-details-marker{display:none}
+.trade-control>summary>span:first-child{display:grid;gap:3px}
+.trade-control>summary strong{font-size:1.12rem}
+.trade-control>summary small{color:var(--muted);line-height:1.45}
+.trade-control>summary::after{content:"＋";font-size:1.15rem;color:var(--accent);margin-left:auto}
+.trade-control[open]>summary::after{content:"−"}
+.trade-control-summary-status{white-space:nowrap;border:1px solid var(--line-accent);border-radius:999px;padding:6px 9px;color:#aef4fc;font-size:.61rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+.trade-control-body{border-top:1px solid var(--line);padding:20px}
+.trade-control-banner{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.trade-control-banner>div,.trade-engine-state{border:1px solid var(--line);border-radius:10px;padding:14px;background:rgba(2,7,10,.35)}
+.trade-control-banner span,.trade-engine-state>span{display:block;color:var(--muted);font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em}
+.trade-control-banner strong,.trade-engine-state strong{display:block;margin-top:5px;color:#e7faff}
+.trade-control-banner small,.trade-engine-state small{display:block;margin-top:4px;color:var(--muted);line-height:1.45}
+.trade-control-group{padding:19px 0;border-top:1px solid var(--line)}
+.trade-control-group:first-child{border-top:0;padding-top:0}
+.trade-control-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:13px}
+.trade-control-heading h3{margin:0;font-size:1rem}
+.trade-control-heading p{margin:5px 0 0;color:var(--muted);font-size:.72rem;line-height:1.55;max-width:760px}
+.trade-default-priority{min-width:180px}
+.trade-default-priority span,.trade-priority-profile label>span{display:block;margin-bottom:5px;color:var(--muted);font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.trade-default-priority select,.trade-priority-profile input{width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#0b1013;color:var(--text);padding:0 10px}
+.trade-priority-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.trade-priority-profile{display:grid;grid-template-columns:minmax(150px,1.25fr) repeat(3,minmax(105px,.7fr));gap:10px;align-items:end;border:1px solid var(--line);border-radius:10px;padding:13px;background:rgba(2,7,10,.28)}
+.trade-priority-profile>div:first-child{align-self:center}
+.trade-priority-profile>div:first-child strong{display:block;color:#e7faff}
+.trade-priority-profile>div:first-child small{display:block;margin-top:3px;color:var(--muted);font-size:.62rem;line-height:1.35}
+.trade-priority-profile label>div{display:flex;align-items:center}
+.trade-priority-profile label input{border-radius:8px 0 0 8px;min-width:0}
+.trade-priority-profile label em{display:grid;place-items:center;min-height:38px;padding:0 8px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;color:var(--muted);font-style:normal;font-size:.61rem;background:#0a0e11}
+.trade-control-hint{margin:10px 0 0;color:#b8c9cf;font-size:.68rem;line-height:1.5}
+.trade-toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.trade-toggle-grid>label{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-radius:9px;padding:12px;background:rgba(2,7,10,.3);cursor:pointer}
+.trade-toggle-grid>label.is-locked{opacity:.72;cursor:default}
+.trade-toggle-grid input{margin-top:2px;accent-color:var(--accent)}
+.trade-toggle-grid strong,.trade-toggle-grid small{display:block}
+.trade-toggle-grid strong{font-size:.76rem}
+.trade-toggle-grid small{margin-top:3px;color:var(--muted);font-size:.63rem;line-height:1.45}
+.trade-channel-route{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.trade-channel-route>div{border:1px solid var(--line);border-radius:9px;padding:12px;background:rgba(2,7,10,.24)}
+.trade-channel-route>div.is-locked{opacity:.7}
+.trade-channel-route span,.trade-channel-route strong,.trade-channel-route code,.trade-channel-route small{display:block}
+.trade-channel-route span{color:var(--muted);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em}
+.trade-channel-route strong{margin-top:4px}
+.trade-channel-route code{margin-top:5px;color:#9adce6;font-size:.66rem;word-break:break-all}
+.trade-channel-route small{margin-top:5px;color:var(--muted);font-size:.62rem;line-height:1.4}
+.trade-control-future{padding-bottom:8px}
+.trade-engine-state strong{font-size:.8rem}
+.trade-control-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-top:15px;border-top:1px solid var(--line)}
+.trade-control-actions>span{margin-right:auto;color:var(--muted);font-size:.7rem}
+@media(max-width:1050px){.trade-priority-grid{grid-template-columns:1fr}.trade-priority-profile{grid-template-columns:minmax(160px,1.3fr) repeat(3,minmax(100px,.7fr))}}
+@media(max-width:760px){.trade-control>summary{align-items:flex-start;flex-wrap:wrap}.trade-control-summary-status{order:3}.trade-control-body{padding:16px}.trade-control-banner,.trade-toggle-grid,.trade-channel-route{grid-template-columns:1fr}.trade-control-heading{align-items:stretch;flex-direction:column}.trade-default-priority{min-width:0}.trade-priority-profile{grid-template-columns:1fr 1fr}.trade-priority-profile>div:first-child{grid-column:1/-1}.trade-control-actions{align-items:stretch;flex-direction:column}.trade-control-actions .btn{width:100%}}
+@media(max-width:500px){.trade-priority-profile{grid-template-columns:1fr}.trade-priority-profile>div:first-child{grid-column:auto}.trade-control>summary{padding:16px}.trade-control-body{padding:13px}}
