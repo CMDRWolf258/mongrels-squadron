@@ -90,8 +90,9 @@ const bestWatch=normalizeTradeWatch({
   ...watch,
   evaluation:{
     ...watch.evaluation,
-    matchCount:1,
+    matchCount:3,
     currentBest:{
+      rank:1,
       marketId:'555',
       stationName:'Cheranovsky City',
       systemName:'Ngurii',
@@ -101,11 +102,25 @@ const bestWatch=normalizeTradeWatch({
       observedAt:'2026-09-25T18:29:00.000Z',
       source:'Spansh',
     },
+    rankedMarkets:[
+      {rank:1,marketId:'555',stationName:'Cheranovsky City',systemName:'Ngurii',price:19880,volume:512,distanceLy:12.3,observedAt:'2026-09-25T18:29:00.000Z',source:'Spansh'},
+      {rank:2,marketId:'556',stationName:'Fallback One',systemName:'Beta',price:20100,volume:480,distanceLy:18.5,observedAt:'2026-09-25T18:28:00.000Z',source:'Spansh'},
+      {rank:3,marketId:'557',stationName:'Fallback Two',systemName:'Gamma',price:20350,volume:450,distanceLy:22.1,observedAt:'2026-09-25T18:27:00.000Z',source:'Spansh'},
+    ],
   },
 });
 const bestPayload=buildTradeWatchDiscordPayload(bestWatch,{origin:'https://mongrels-squadron.pages.dev',control});
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Cheranovsky City/);
 assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/19,880 Cr\/t/);
+assert.match(bestPayload.embeds[0].fields.map(field=>field.name).join('\n'),/Next Best Markets/);
+assert.match(bestPayload.embeds[0].fields.map(field=>field.value).join('\n'),/Fallback One/);
+
+const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
+  ...watch,
+  id:'99999999-abcd-4321-abcd-999999999999',
+  query:{...watch.query,direction:'buy',radiusLy:5,minVolume:1},
+}),{origin:'https://mongrels-squadron.pages.dev',control});
+assert.match(rareBuyPayload.embeds[0].fields.map(field=>field.value).join('\n'),/all distances \(rare source\)/);
 
 const compact=buildCompactTradeWatchDiscordPayload(watch,{control,reason:'Removed'});
 assert.match(compact.content,/REMOVED/);
@@ -280,5 +295,7 @@ const evaluator=readFileSync(new URL('../lib/trade-watch-evaluator.js',import.me
 assert.match(evaluator,/sendTradeWatchTransitionAlert/);
 assert.match(evaluator,/condition_met','condition_cleared','best_market_changed/);
 assert.match(evaluator,/syncEvaluatedWatchDiscord/);
+assert.match(evaluator,/TRADE_WATCH_SHORTLIST_SIZE=5/);
+assert.match(evaluator,/rankedMarkets/);
 
 console.log('Trade Watch Discord smoke checks passed.');
