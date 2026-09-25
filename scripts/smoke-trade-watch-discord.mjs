@@ -4,6 +4,7 @@ import {
   buildCompactTradeWatchDiscordPayload,
   buildTradeWatchDiscordPayload,
   parseTradeAlertCustomId,
+  sendTradeWatchTestAlert,
   tradeAlertActionCustomId,
   tradeAlertCustomId,
 } from '../lib/trade-discord.js';
@@ -184,6 +185,18 @@ try{
     displayName:'CMDR Tester',
   });
 
+  const beforeTestAlert=JSON.stringify((await readTradeWatches(env))[0]);
+  const testAlert=await sendTradeWatchTestAlert(env,{
+    watch:(await readTradeWatches(env))[0],
+    origin:'https://mongrels-squadron.pages.dev',
+    control,
+  });
+  assert.equal(testAlert.ok,true);
+  assert.equal(testAlert.subscriberCount,1);
+  assert.equal(testAlert.delivered,1);
+  assert.equal(testAlert.failed,0);
+  assert.equal(JSON.stringify((await readTradeWatches(env))[0]),beforeTestAlert,'Test Alert must not mutate Watch state or alert history');
+
   const now=Date.now();
   marketRows=[{
     id:'555',
@@ -221,9 +234,11 @@ try{
     call.url.includes('/channels/1552127291234983956/messages')
     &&call.method==='POST'
   );
-  assert.equal(alertChannelPosts.length,2,'baseline card + transition alert should be separate channel posts');
+  assert.equal(alertChannelPosts.length,3,'baseline card + test alert + transition alert should be separate channel posts');
   assert.match(alertChannelPosts[0].body,/"flags":4096/,'routine Watch card must suppress channel notifications');
-  assert.match(alertChannelPosts[1].body,/"flags":4096/,'transition channel alert must also stay silent for everyone');
+  assert.match(alertChannelPosts[1].body,/TEST ALERT/,'Officer Test Alert must be unmistakably labeled');
+  assert.match(alertChannelPosts[1].body,/"flags":4096/,'Test Alert channel message must stay silent for everyone');
+  assert.match(alertChannelPosts[2].body,/"flags":4096/,'transition channel alert must also stay silent for everyone');
   assert.ok(discordCalls.some(call=>call.url.includes('/users/@me/channels')),'subscriber should receive the DM delivery path');
 
   const noChange=await evaluateTradeWatches(env,{
@@ -242,6 +257,18 @@ const interactions=readFileSync(new URL('../functions/api/discord/interactions.j
 assert.match(interactions,/readTradeWatches/);
 assert.match(interactions,/syncTradeWatchDiscord/);
 assert.match(interactions,/Alerts Enabled ✓/);
+
+const testAlertApi=readFileSync(new URL('../functions/api/trade-watches/test-alert.js',import.meta.url),'utf8');
+assert.match(testAlertApi,/officer','site_admin/);
+assert.match(testAlertApi,/trade-watch-test-alert/);
+assert.match(testAlertApi,/sendTradeWatchTestAlert/);
+assert.match(testAlertApi,/watch_not_active/);
+assert.match(testAlertApi,/watch_discord_disabled/);
+
+const tradingClient=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
+assert.match(tradingClient,/Test Alert/);
+assert.match(tradingClient,/\/api\/trade-watches\/test-alert/);
+assert.match(tradingClient,/will not change the Watch state/);
 
 const watchApi=readFileSync(new URL('../functions/api/trade-watches/index.js',import.meta.url),'utf8');
 assert.match(watchApi,/closeTradeWatchDiscord/);

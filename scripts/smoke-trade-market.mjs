@@ -205,7 +205,7 @@ assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=5/);
 assert.match(html,/trade-market\.js\?v=7/);
-assert.match(html,/trading\.js\?v=76/);
+assert.match(html,/trading\.js\?v=77/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
