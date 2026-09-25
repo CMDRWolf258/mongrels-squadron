@@ -7,6 +7,7 @@ import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-fu
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
+import { archivedRemovedOrders, listOrderPublications } from '../../../lib/order-history.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -16,17 +17,41 @@ export async function onRequestPost({request,env}) {
   const auth = await requireMember(request, env);
   if (auth.response) return auth.response;
   if (!sameOrigin(request)) return json({ok:false,error:'request_validation_failed'}, {status:403,headers:privateHeaders()});
+  return syncFrontierAccount({
+    request,
+    env,
+    userId:auth.session.sub,
+    diagnostics:auth.session.access==='site_admin',
+    respectCooldown:true,
+    syncSource:'manual',
+  });
+}
 
-  let account = await getAccount(env, auth.session.sub);
+export async function syncFrontierAccount({
+  request,
+  env,
+  userId,
+  diagnostics=false,
+  respectCooldown=true,
+  syncSource='manual',
+}={}) {
+  let account = await getAccount(env, userId);
   if (!account) return json({ok:false,error:'frontier_not_connected'}, {status:409,headers:privateHeaders()});
   const previousSyncAt=account.lastSyncAt||null;
 
   const currentOrders = await readCurrentOrderCycle(env);
   const colonizationStore = await readColonizationJobs(env);
   const colonizationJobs = activeColonizationJobs(colonizationStore);
-  const targetSystems = [...new Set([...activeOrderSystems(currentOrders),...activeColonizationSystems(colonizationJobs)])];
+  const orderHistory=await listOrderPublications(env,{limit:250});
+  const archivedOrders=archivedRemovedOrders(orderHistory,currentOrders?.orders);
+  const archivedOrderSystems=archivedOrders.map(order=>String(order?.system||'').trim()).filter(Boolean);
+  const targetSystems = [...new Set([
+    ...activeOrderSystems(currentOrders),
+    ...archivedOrderSystems,
+    ...activeColonizationSystems(colonizationJobs),
+  ])];
   const cooldown = syncCooldown(account);
-  if (!cooldown.ready) {
+  if (respectCooldown && !cooldown.ready) {
     return json({
       ok:false,
       error:'frontier_sync_cooldown',
@@ -40,12 +65,12 @@ export async function onRequestPost({request,env}) {
   }
 
   try {
-    let access = await ensureAccessToken(request, env, auth.session.sub, account);
+    let access = await ensureAccessToken(request, env, userId, account);
     account = access.account;
 
     let current = await fetchJournal(access.accessToken, env);
     if (current.response.status === 401 || current.response.status === 422) {
-      access = await ensureAccessToken(request, env, auth.session.sub, {...account,accessExpiresAt:'1970-01-01T00:00:00Z'});
+      access = await ensureAccessToken(request, env, userId, {...account,accessExpiresAt:'1970-01-01T00:00:00Z'});
       account = access.account;
       current = await fetchJournal(access.accessToken, env);
     }
@@ -108,41 +133,49 @@ export async function onRequestPost({request,env}) {
     let parsed;
     if(backfillRows.length){
       parsed=parseJournal([...backfillRows.map(row=>row.text),currentText].filter(Boolean).join('\n'),targetSystems,{
-        diagnostics:auth.session.access === 'site_admin',
+        diagnostics:diagnostics,
         knownSystemAddresses:account.systemAddresses || {},
         knownMissionOrigins:account.missionOrigins || {},
       });
     }else if (historicalText && historicalDate === yesterday) {
       parsed=parseJournal([historicalText,currentText].filter(Boolean).join('\n'),targetSystems,{
-        diagnostics:auth.session.access === 'site_admin',
+        diagnostics:diagnostics,
         knownSystemAddresses:account.systemAddresses || {},
         knownMissionOrigins:account.missionOrigins || {},
       });
     } else {
       const historicalParsed=historicalText
         ? parseJournal(historicalText,targetSystems,{
-            diagnostics:auth.session.access === 'site_admin',
+            diagnostics:diagnostics,
             knownSystemAddresses:account.systemAddresses || {},
             knownMissionOrigins:account.missionOrigins || {},
           })
         : emptyParsed(targetSystems);
       const currentParsed=currentText
         ? parseJournal(currentText,targetSystems,{
-            diagnostics:auth.session.access === 'site_admin',
+            diagnostics:diagnostics,
             knownSystemAddresses:{...(account.systemAddresses||{}),...(historicalParsed.systemAddresses||{})},
             knownMissionOrigins:{...(account.missionOrigins||{}),...(historicalParsed.missionOrigins||{})},
           })
         : emptyParsed(targetSystems);
       parsed=mergeParsed(historicalParsed,currentParsed,targetSystems);
     }
-    const merged = await mergeEvents(env, auth.session.sub, parsed.events, parsed.excluded);
+    const merged = await mergeEvents(env, userId, parsed.events, parsed.excluded);
     const matched = matchVerifiedActivity(merged, currentOrders);
     const rewardSettings = await readRewardSettings(env);
     const rewardPreview = buildRewardPreview(matched.orderTotals, rewardSettings.settings);
 
+    const syncedAt=new Date().toISOString();
     account = {
       ...account,
-      lastSyncAt:new Date().toISOString(),
+      lastSyncAt:syncedAt,
+      lastSyncSource:syncSource==='auto'?'auto':'manual',
+      lastAutoSyncError:'',
+      autoSyncReauthRequired:false,
+      ...(syncSource==='auto'?{
+        lastAutoSyncAt:syncedAt,
+        lastAutoSyncAttemptAt:syncedAt,
+      }:{}),
       lastJournalEventAt:parsed.lastEventAt || account.lastJournalEventAt,
       lastSystem:parsed.lastSystem || account.lastSystem,
       systemAddresses:{...(account.systemAddresses||{}),...(parsed.systemAddresses||{})},
@@ -153,7 +186,7 @@ export async function onRequestPost({request,env}) {
       } : {}),
       reconciledJournalDates:[...reconciled].sort().slice(-14),
     };
-    await saveAccount(env, auth.session.sub, account);
+    await saveAccount(env, userId, account);
 
     let memberFundedColonization=null;
     try{
@@ -220,7 +253,7 @@ export async function onRequestPost({request,env}) {
       colonizationDiscord,
       colonizationDiscordRefreshTriggered:colonizationActivityChanged,
       recentEvents:matched.events.slice(-20).reverse(),
-      diagnosticEvents:auth.session.access === 'site_admin' ? parsed.diagnostics.slice(-500).reverse() : [],
+      diagnosticEvents:diagnostics ? parsed.diagnostics.slice(-500).reverse() : [],
       journalCoverage:{
         currentStatus,
         historicalDate,

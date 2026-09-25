@@ -1,0 +1,55 @@
+name: Frontier daily safety sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Wake every six hours. The endpoint only syncs connected CMDRs whose last
+    # successful Frontier sync is at least 24 hours old.
+    - cron: '23 */6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontier-daily-safety-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FRONTIER_AUTO_SYNC_CRON_TOKEN: ${{ secrets.FRONTIER_AUTO_SYNC_CRON_TOKEN || secrets.SCOUT_DISCORD_CRON_TOKEN }}
+    steps:
+      - name: Sync due Frontier accounts
+        shell: bash
+        run: |
+          if [ -z "$FRONTIER_AUTO_SYNC_CRON_TOKEN" ]; then
+            echo "No Frontier/Scout cron token is configured; scheduled Frontier sync is safely skipped."
+            exit 0
+          fi
+
+          response_file="$(mktemp)"
+          status="$(
+            curl \
+              --silent \
+              --show-error \
+              --retry 1 \
+              --retry-delay 10 \
+              --connect-timeout 20 \
+              --max-time 240 \
+              --output "$response_file" \
+              --write-out "%{http_code}" \
+              --request POST \
+              --header "Authorization: Bearer $FRONTIER_AUTO_SYNC_CRON_TOKEN" \
+              --header "Accept: application/json" \
+              "https://mongrels-squadron.pages.dev/api/internal/frontier-auto-sync"
+          )"
+
+          cat "$response_file"
+          echo
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "Scheduled Frontier safety sync failed with HTTP $status."
+            exit 1
+          fi
