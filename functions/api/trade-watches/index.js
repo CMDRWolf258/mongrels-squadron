@@ -1,6 +1,14 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { normalizeMarketSearch } from '../../../lib/trade-market.js';
-import { readTradeControl } from '../../../lib/trade-intelligence.js';
+import {
+  readTradeControl,
+  removeTradeAlertSubscriptions,
+} from '../../../lib/trade-intelligence.js';
+import {
+  applyTradeWatchDiscordState,
+  closeTradeWatchDiscord,
+  syncTradeWatchDiscord,
+} from '../../../lib/trade-discord.js';
 import {
   normalizeTradeWatch,
   readTradeWatches,
@@ -112,6 +120,17 @@ export async function onRequestPut({request,env}){
   current.updatedAt=now;
   items[index]=current;
   await writeTradeWatches(env,items);
+
+  if(env?.DISCORD_BOT_TOKEN){
+    const discord=await syncTradeWatchDiscord(env,{
+      watch:current,
+      origin:new URL(request.url).origin,
+    });
+    applyTradeWatchDiscordState(current,discord);
+    items[index]=current;
+    await writeTradeWatches(env,items);
+  }
+
   return reply({ok:true,watch:present(current)});
 }
 
@@ -126,6 +145,14 @@ export async function onRequestDelete({request,env}){
   const index=items.findIndex(item=>item.id===id);
   if(index<0)return reply({ok:false,error:'watch_not_found'},404);
   const [removed]=items.splice(index,1);
+
+  if(env?.DISCORD_BOT_TOKEN){
+    await closeTradeWatchDiscord(env,{
+      watch:removed,
+      reason:'Removed',
+    }).catch(()=>{});
+  }
+  await removeTradeAlertSubscriptions(env,removed.id).catch(()=>0);
   await writeTradeWatches(env,items);
   return reply({ok:true,removed:{id:removed.id,name:removed.name}});
 }

@@ -35,10 +35,16 @@ import {
 } from '../../../lib/trade-intelligence.js';
 import {
   applyTradeDiscordState,
+  applyTradeWatchDiscordState,
   parseTradeAlertCustomId,
   syncTradeDiscord,
+  syncTradeWatchDiscord,
   tradeAlertActionCustomId,
 } from '../../../lib/trade-discord.js';
+import {
+  readTradeWatches,
+  writeTradeWatches,
+} from '../../../lib/trade-watches.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
 const GUEST_CUSTOM_ID = 'mongrels_onboarding_guest';
@@ -179,14 +185,54 @@ async function handleTradeAlertSettings({ interaction, env, routeId, action='set
   try {
     const items = await readTradeRoutes(env);
     const index = items.findIndex(item => String(item?.id) === String(routeId));
-    if (index < 0) {
-      await editDeferredInteraction(interaction, { content:'That Trader’s Outpost post could not be found.', components:[] });
+
+    if (index >= 0) {
+      const route = items[index];
+      if (!isTradeRouteActive(route)) {
+        await editDeferredInteraction(interaction, { content:'That trade post is no longer active, so its alert subscription is closed.', components:[] });
+        return;
+      }
+
+      let subscribed=await hasTradeAlertSubscription(env,{routeId,userId});
+      const wantsEnabled=action==='enable'?true:action==='disable'?false:null;
+      let changed=false;
+
+      if(wantsEnabled!==null&&wantsEnabled!==subscribed){
+        const result=await toggleTradeAlertSubscription(env,{routeId,userId,displayName});
+        subscribed=result.subscribed;
+        changed=true;
+      }
+
+      let note='';
+      if(changed){
+        const discord=await syncTradeDiscord(env,{route,origin});
+        applyTradeDiscordState(route,discord);
+        items[index]=route;
+        await writeTradeRoutes(env,items);
+        if(!discord.ok){
+          note='\n\nYour alert setting was saved, but the shared Discord card could not refresh its watcher count right now.';
+        }
+      }
+
+      await editDeferredInteraction(interaction,{
+        content:subscribed
+          ?'🔔 **Alerts Enabled ✓**\nYou are watching this specific trade post and will receive its configured trigger alerts.'+note
+          :'🔕 **Alerts Disabled**\nYou are not currently subscribed to alerts for this trade post.'+note,
+        components:[alertToggleComponents(routeId,subscribed)],
+      });
       return;
     }
 
-    const route = items[index];
-    if (!isTradeRouteActive(route)) {
-      await editDeferredInteraction(interaction, { content:'That trade post is no longer active, so its alert subscription is closed.', components:[] });
+    const watches=await readTradeWatches(env);
+    const watchIndex=watches.findIndex(item=>String(item?.id)===String(routeId));
+    if(watchIndex<0){
+      await editDeferredInteraction(interaction,{content:'That Trader’s Outpost post or Watch could not be found.',components:[]});
+      return;
+    }
+
+    const watch=watches[watchIndex];
+    if(watch.status!=='active'){
+      await editDeferredInteraction(interaction,{content:'That Trade Watch is paused, so its alert subscription cannot be changed until it is resumed.',components:[]});
       return;
     }
 
@@ -202,29 +248,20 @@ async function handleTradeAlertSettings({ interaction, env, routeId, action='set
 
     let note='';
     if(changed){
-      const discord=await syncTradeDiscord(env,{route,origin});
-      applyTradeDiscordState(route,discord);
-      items[index]=route;
-      await writeTradeRoutes(env,items);
+      const discord=await syncTradeWatchDiscord(env,{watch,origin});
+      applyTradeWatchDiscordState(watch,discord);
+      watches[watchIndex]=watch;
+      await writeTradeWatches(env,watches);
       if(!discord.ok){
-        note='\n\nYour alert setting was saved, but the shared Discord card could not refresh its watcher count right now.';
+        note='\n\nYour alert setting was saved, but the shared Watch card could not refresh its watcher count right now.';
       }
     }
 
     await editDeferredInteraction(interaction,{
       content:subscribed
-        ?'🔔 **Alerts Enabled ✓**\nYou are watching this specific trade post and will receive its configured trigger alerts.'+note
-        :'🔕 **Alerts Disabled**\nYou are not currently subscribed to alerts for this trade post.'+note,
-      components:[{
-        type:1,
-        components:[{
-          type:2,
-          style:subscribed?4:3,
-          custom_id:tradeAlertActionCustomId(routeId,subscribed?'disable':'enable'),
-          label:subscribed?'Disable Alerts':'Enable Alerts',
-          emoji:{name:subscribed?'🔕':'🔔'},
-        }],
-      }],
+        ?'🔔 **Alerts Enabled ✓**\nYou are watching this specific Trade Watch. You’ll receive its configured trigger alerts when the monitored market state changes.'+note
+        :'🔕 **Alerts Disabled**\nYou are not currently subscribed to alerts for this Trade Watch.'+note,
+      components:[alertToggleComponents(routeId,subscribed)],
     });
   } catch (error) {
     await editDeferredInteraction(interaction,{
@@ -232,6 +269,19 @@ async function handleTradeAlertSettings({ interaction, env, routeId, action='set
       components:[],
     }).catch(()=>{});
   }
+}
+
+function alertToggleComponents(routeId,subscribed){
+  return{
+    type:1,
+    components:[{
+      type:2,
+      style:subscribed?4:3,
+      custom_id:tradeAlertActionCustomId(routeId,subscribed?'disable':'enable'),
+      label:subscribed?'Alerts Enabled ✓':'Enable Alerts',
+      emoji:{name:subscribed?'🔕':'🔔'},
+    }],
+  };
 }
 
 async function handlePursuitsManager(context, interaction) {

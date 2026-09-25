@@ -49,6 +49,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-trade-market.mjs
           node --experimental-default-type=module scripts/smoke-trade-watches.mjs
           node --experimental-default-type=module scripts/smoke-trade-watch-evaluator.mjs
+          node --experimental-default-type=module scripts/smoke-trade-watch-discord.mjs
           node --experimental-default-type=module scripts/smoke-colonization-jobs.mjs
           node --experimental-default-type=module scripts/smoke-colonization-discord.mjs
           node --experimental-default-type=module scripts/smoke-colonization-rewards.mjs

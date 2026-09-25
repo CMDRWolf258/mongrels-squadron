@@ -180,6 +180,7 @@
     list.replaceChildren(...tradeWatches.map(watch=>{
       const article=document.createElement('article');
       article.className='trade-watch-card'+(watch.status==='paused'?' is-paused':'');
+      article.id='watch-'+watch.id;
       const q=watch.query||{};
       const profile=tradeControlState?.control?.priorities?.[q.priority]||{};
       const refresh=profile.refreshMinutes?profile.refreshMinutes+' min':'Profile';
@@ -188,6 +189,13 @@
       const best=evaluation.currentBest||null;
       const volumeLabel=q.direction==='buy'?'supply':'demand';
       const transition=watchTransitionLabel(evaluation.lastTransition);
+      const discordLabel=watch.discord?.publish===false
+        ?'Off'
+        :watch.discord?.messageId
+          ?'Live'
+          :watch.discord?.lastError
+            ?'Error'
+            :'Waiting';
       article.innerHTML=`
         <div class="trade-watch-card-head">
           <div><span>${safe(watchPriorityLabel(q.priority))} · ${safe(state)}</span><strong>${safe(watch.name||'Saved Watch')}</strong><small>${safe(watch.summary||'')}</small></div>
@@ -204,10 +212,11 @@
           <span>Matches <strong>${evaluation.matchCount===null||evaluation.matchCount===undefined?'—':fmt(evaluation.matchCount)}</strong></span>
           <span>Last check <strong>${safe(watchTimeLabel(evaluation.lastAttemptAt||evaluation.lastEvaluatedAt))}</strong></span>
           <span>Next due <strong>${watch.status==='paused'?'Paused':safe(watchTimeLabel(evaluation.nextEvaluationAt))}</strong></span>
-          <span>Discord <strong>${watch.discord?.publish?'Prepared':'Off'}</strong></span>
+          <span>Discord <strong>${safe(discordLabel)}</strong></span>
         </div>
         ${best?`<div class="trade-watch-best"><div><span>Current Best</span><strong>${safe(best.stationName||'Unknown station')}</strong><small>${safe(best.systemName||'Unknown system')}</small></div><div><span>Price</span><strong>${fmt(best.price)} Cr/t</strong></div><div><span>${safe(volumeLabel)}</span><strong>${fmt(best.volume)} t</strong></div><div><span>Distance</span><strong>${best.distanceLy===null||best.distanceLy===undefined?'—':safe(String(best.distanceLy))+' ly'}</strong></div></div>`:''}
         ${evaluation.lastError?`<p class="trade-watch-evaluation-message is-error">Last check: ${safe(evaluation.lastError)}</p>`:evaluation.warning?`<p class="trade-watch-evaluation-message is-warning">${safe(evaluation.warning)}</p>`:''}
+        ${watch.discord?.lastError?`<p class="trade-watch-evaluation-message is-error">Discord: ${safe(watch.discord.lastError)}</p>`:''}
         ${transition?`<p class="trade-watch-transition">${safe(transition)} · ${safe(watchTimeLabel(evaluation.lastTransition?.at))}</p>`:''}`;
 
       article.querySelector('[data-watch-run]')?.addEventListener('click',event=>runTradeWatch(watch,event.currentTarget));
