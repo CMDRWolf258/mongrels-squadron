@@ -178,6 +178,7 @@
         button.id='tradeCommodityOption'+index;
         button.setAttribute('role','option');
         button.dataset.commodityIndex=String(index);
+        button.dataset.commodityLabel=label;
         const text=document.createElement('span');
         text.textContent=label;
         button.append(text);
@@ -751,7 +752,7 @@
     else if(event.key==='Enter'&&commodityMenuOpen&&commodityActiveIndex>=0){
       event.preventDefault();
       const option=commodityMenu.querySelectorAll('.trade-commodity-option')[commodityActiveIndex];
-      if(option)chooseCommodity(option.textContent);
+      if(option)chooseCommodity(option.dataset.commodityLabel||option.textContent);
     }else if(event.key==='Escape'){
       closeCommodityMenu();
     }
