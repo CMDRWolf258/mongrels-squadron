@@ -83,8 +83,8 @@
     return digits?Number(digits):0;
   };
   const formattedInteger=value=>{
-    const n=integerValue(value);
-    return n?n.toLocaleString('en-US'):'';
+    if(value===null||value===undefined||String(value).trim()==='')return'';
+    return integerValue(value).toLocaleString('en-US');
   };
   function bindFormattedInteger(input){
     if(!input)return;
