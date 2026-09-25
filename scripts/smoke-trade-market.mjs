@@ -203,9 +203,9 @@ assert.match(html,/data-market-result-tools/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=3/);
-assert.match(html,/trade-market\.js\?v=3/);
-assert.match(html,/trading\.js\?v=72/);
+assert.match(html,/trade-market\.css\?v=4/);
+assert.match(html,/trade-market\.js\?v=4/);
+assert.match(html,/trading\.js\?v=73/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
