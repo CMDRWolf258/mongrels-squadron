@@ -13,6 +13,13 @@
 .trade-market-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 0}
 .trade-market-summary span{display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border:1px solid var(--line);border-radius:999px;color:#c4d2d7;font-size:.62rem}
 .trade-market-summary strong{color:#eefbff}
+.trade-market-result-tools{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(2,7,10,.28)}
+.trade-market-result-tools>div strong,.trade-market-result-tools>div small{display:block}
+.trade-market-result-tools>div strong{font-size:.76rem;color:#e7faff}
+.trade-market-result-tools>div small{margin-top:3px;color:var(--muted);font-size:.61rem;line-height:1.4}
+.trade-market-result-tools label{min-width:220px}
+.trade-market-result-tools label>span{display:block;margin-bottom:5px;color:var(--muted);font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.trade-market-result-tools select{width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#0b1013;color:var(--text);padding:0 10px}
 .trade-market-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
 .trade-market-result{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:12px;padding:16px;background:linear-gradient(145deg,rgba(13,19,23,.94),rgba(7,11,14,.98))}
 .trade-market-result::before{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:linear-gradient(90deg,var(--accent),transparent 76%)}
@@ -33,6 +40,14 @@
 .trade-market-result-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
 .trade-market-result-foot small{color:var(--muted);font-size:.61rem;line-height:1.4}
 .trade-market-result-foot button{min-height:32px;padding:0 9px;font-size:.59rem}
+.trade-market-pagination{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.trade-market-pagination>span{color:var(--muted);font-size:.62rem;white-space:nowrap}
+.trade-market-page-numbers{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center}
+.trade-market-page-number{min-width:32px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:#0b1013;color:var(--text);font:inherit;font-size:.63rem;font-weight:800;cursor:pointer}
+.trade-market-page-number:hover{border-color:var(--line-accent);color:#dffcff}
+.trade-market-page-number.is-active{border-color:var(--accent);background:rgba(34,211,238,.12);color:#dffcff}
+.trade-market-page-ellipsis{display:grid;place-items:center;min-width:24px;color:var(--muted);font-size:.7rem}
+.trade-market-pagination button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:1120px){.trade-market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.trade-market-results{grid-template-columns:1fr}}
-@media(max-width:760px){.trade-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.trade-market-actions{align-items:stretch;flex-direction:column}.trade-market-actions .btn{width:100%}.trade-market-result-main{grid-template-columns:1fr 1fr}.trade-market-result-main>div:first-child{grid-column:1/-1}}
-@media(max-width:520px){.trade-market-grid{grid-template-columns:1fr}.trade-market-result-head,.trade-market-result-foot{align-items:flex-start;flex-direction:column}.trade-market-result-main{grid-template-columns:1fr}.trade-market-result-main>div:first-child{grid-column:auto}.trade-market-result-foot button{width:100%}}
+@media(max-width:760px){.trade-market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.trade-market-actions{align-items:stretch;flex-direction:column}.trade-market-actions .btn{width:100%}.trade-market-result-tools{align-items:stretch;flex-direction:column}.trade-market-result-tools label{min-width:0;width:100%}.trade-market-result-main{grid-template-columns:1fr 1fr}.trade-market-result-main>div:first-child{grid-column:1/-1}}
+@media(max-width:520px){.trade-market-grid{grid-template-columns:1fr}.trade-market-result-head,.trade-market-result-foot{align-items:flex-start;flex-direction:column}.trade-market-result-main{grid-template-columns:1fr}.trade-market-result-main>div:first-child{grid-column:auto}.trade-market-result-foot button{width:100%}.trade-market-pagination{align-items:stretch}.trade-market-pagination>.btn{flex:1}.trade-market-page-numbers{order:3;width:100%}}
