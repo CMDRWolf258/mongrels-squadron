@@ -181,6 +181,7 @@ Priority / freshness:
 - initial Critical defaults: refresh 5 min, Fresh <=30 min, Aging <=90 min, Stale >90 min.
 - initial Standard defaults: refresh 60 min, Fresh <=24 h, Aging <=48 h, Stale >48 h.
 - profile cutoffs are scenario-specific; the same 73-minute-old observation can be Aging in a CG watch and Fresh in an ordinary route.
+- Trade Control presents **Refresh / Fresh through / Aging through** as paired **hours + minutes** inputs while the API/KV model remains total minutes. Minute overflow normalizes in the browser (for example, entering 90 minutes becomes 1 hr 30 min; entering 1 hr + 90 min becomes 2 hr 30 min). On change/save, profile bounds are normalized to the existing backend limits, including the 5-minute refresh floor.
 - monitoring priority and alert severity/delivery are separate concepts.
 
 Discord lifecycle:
