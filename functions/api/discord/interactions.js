@@ -27,6 +27,7 @@ import {
   syncCombatEscortDiscord,
 } from '../../../lib/combat-escort-discord.js';
 import {
+  hasTradeAlertSubscription,
   isTradeRouteActive,
   readTradeRoutes,
   toggleTradeAlertSubscription,
@@ -36,6 +37,7 @@ import {
   applyTradeDiscordState,
   parseTradeAlertCustomId,
   syncTradeDiscord,
+  tradeAlertActionCustomId,
 } from '../../../lib/trade-discord.js';
 
 const APPLICANT_CUSTOM_ID = 'mongrels_onboarding_applicant';
@@ -159,10 +161,11 @@ async function handleTradeAlertInteraction(context, interaction, tradeAlert) {
   const user = interaction?.member?.user || interaction?.user || {};
   const displayName = interaction?.member?.nick || user.global_name || user.username || 'Commander';
   const origin = new URL(request.url).origin;
-  const work = handleTradeAlertSubscription({
+  const work = handleTradeAlertSettings({
     interaction,
     env,
     routeId:tradeAlert.routeId,
+    action:tradeAlert.action||'settings',
     userId,
     displayName,
     origin,
@@ -172,7 +175,7 @@ async function handleTradeAlertInteraction(context, interaction, tradeAlert) {
   return response({ type:5, data:{ flags:EPHEMERAL } });
 }
 
-async function handleTradeAlertSubscription({ interaction, env, routeId, userId, displayName, origin }) {
+async function handleTradeAlertSettings({ interaction, env, routeId, action='settings', userId, displayName, origin }) {
   try {
     const items = await readTradeRoutes(env);
     const index = items.findIndex(item => String(item?.id) === String(routeId));
@@ -187,24 +190,45 @@ async function handleTradeAlertSubscription({ interaction, env, routeId, userId,
       return;
     }
 
-    const subscription = await toggleTradeAlertSubscription(env,{routeId,userId,displayName});
-    const discord = await syncTradeDiscord(env,{route,origin});
-    applyTradeDiscordState(route,discord);
-    items[index]=route;
-    await writeTradeRoutes(env,items);
+    let subscribed=await hasTradeAlertSubscription(env,{routeId,userId});
+    const wantsEnabled=action==='enable'?true:action==='disable'?false:null;
+    let changed=false;
 
-    const note=discord.ok
-      ?''
-      :'\n\nYour subscription was saved, but the shared Discord card could not refresh its watcher count right now.';
+    if(wantsEnabled!==null&&wantsEnabled!==subscribed){
+      const result=await toggleTradeAlertSubscription(env,{routeId,userId,displayName});
+      subscribed=result.subscribed;
+      changed=true;
+    }
+
+    let note='';
+    if(changed){
+      const discord=await syncTradeDiscord(env,{route,origin});
+      applyTradeDiscordState(route,discord);
+      items[index]=route;
+      await writeTradeRoutes(env,items);
+      if(!discord.ok){
+        note='\n\nYour alert setting was saved, but the shared Discord card could not refresh its watcher count right now.';
+      }
+    }
+
     await editDeferredInteraction(interaction,{
-      content:subscription.subscribed
-        ?'🔔 **Alerts enabled.** You are now watching this specific trade post. Click **Alert Me** again any time to unsubscribe.'+note
-        :'🔕 **Alerts disabled.** You will no longer be targeted by alerts for this trade post.'+note,
-      components:[],
+      content:subscribed
+        ?'🔔 **Alerts Enabled ✓**\nYou are watching this specific trade post and will receive its configured trigger alerts.'+note
+        :'🔕 **Alerts Disabled**\nYou are not currently subscribed to alerts for this trade post.'+note,
+      components:[{
+        type:1,
+        components:[{
+          type:2,
+          style:subscribed?4:3,
+          custom_id:tradeAlertActionCustomId(routeId,subscribed?'disable':'enable'),
+          label:subscribed?'Disable Alerts':'Enable Alerts',
+          emoji:{name:subscribed?'🔕':'🔔'},
+        }],
+      }],
     });
   } catch (error) {
     await editDeferredInteraction(interaction,{
-      content:`I couldn't update that trade alert subscription. Please try again.\n\nTechnical detail: ${safeError(error)}`,
+      content:`I couldn't open those trade alert settings. Please try again.\n\nTechnical detail: ${safeError(error)}`,
       components:[],
     }).catch(()=>{});
   }
