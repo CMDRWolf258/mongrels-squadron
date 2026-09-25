@@ -31,28 +31,11 @@ export async function onRequestPost({request,env}){
   if(body.response)return body.response;
 
   const control=await readTradeControl(env);
-  let normalizedQuery;
-  try{
-    normalizedQuery=normalizeMarketSearch(body.value?.query||{},control);
-  }catch(error){
-    return reply({ok:false,error:publicQueryError(error)},400);
-  }
+  const queryResult=normalizedWatchQuery(body.value?.query,control);
+  if(queryResult.error)return reply({ok:false,error:queryResult.error},400);
 
   const now=new Date().toISOString();
-  const query={
-    commodity:normalizedQuery.commodity,
-    direction:normalizedQuery.direction,
-    referenceSystem:normalizedQuery.referenceSystem,
-    radiusLy:normalizedQuery.radiusLy,
-    minVolume:normalizedQuery.minVolume,
-    price:normalizedQuery.price,
-    minPad:normalizedQuery.minPad,
-    carrierMode:normalizedQuery.carrierMode,
-    maxAgeMinutes:normalizedQuery.maxAgeMinutes,
-    priority:normalizedQuery.priority,
-    sort:normalizedQuery.sort,
-    limit:100,
-  };
+  const query=queryResult.query;
 
   const watch=normalizeTradeWatch({
     id:crypto.randomUUID(),
@@ -92,7 +75,23 @@ export async function onRequestPut({request,env}){
 
   if(action==='pause')current.status='paused';
   else if(action==='resume')current.status='active';
-  else if(action==='rename'){
+  else if(action==='edit'){
+    const control=await readTradeControl(env);
+    const queryResult=normalizedWatchQuery(body.value?.query,control);
+    if(queryResult.error)return reply({ok:false,error:queryResult.error},400);
+    const name=String(body.value?.name||'').trim().slice(0,160);
+    if(!name)return reply({ok:false,error:'watch_name_required'},400);
+    current.name=name;
+    current.query=queryResult.query;
+    current.discord={...current.discord,publish:body.value?.publishDiscord!==false};
+    current.evaluation={
+      state:'pending_scheduler',
+      lastEvaluatedAt:'',
+      nextEvaluationAt:'',
+      lastError:'',
+      currentBest:null,
+    };
+  }else if(action==='rename'){
     const name=String(body.value?.name||'').trim().slice(0,160);
     if(!name)return reply({ok:false,error:'watch_name_required'},400);
     current.name=name;
@@ -146,6 +145,29 @@ function validateSameOrigin(request){
 async function readBody(request){
   try{return{value:await request.json()};}
   catch{return{response:reply({ok:false,error:'invalid_json'},400)};}
+}
+function normalizedWatchQuery(value,control){
+  try{
+    const normalized=normalizeMarketSearch(value||{},control);
+    return{
+      query:{
+        commodity:normalized.commodity,
+        direction:normalized.direction,
+        referenceSystem:normalized.referenceSystem,
+        radiusLy:normalized.radiusLy,
+        minVolume:normalized.minVolume,
+        price:normalized.price,
+        minPad:normalized.minPad,
+        carrierMode:normalized.carrierMode,
+        maxAgeMinutes:normalized.maxAgeMinutes,
+        priority:normalized.priority,
+        sort:normalized.sort,
+        limit:100,
+      },
+    };
+  }catch(error){
+    return{error:publicQueryError(error)};
+  }
 }
 function publicQueryError(error){
   const code=String(error?.message||error);
