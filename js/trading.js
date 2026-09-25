@@ -84,16 +84,75 @@
 
   function manager(){return session&&['officer','site_admin'].includes(session.access);}
 
+  const PRIORITY_DURATION_LIMITS={
+    refreshMinutes:{min:5,max:10080},
+    freshMinutes:{min:1,max:43200},
+    agingMinutes:{min:1,max:43200},
+  };
+
   function controlFields(priority) {
     const root=document.querySelector(`[data-trade-priority="${priority}"]`);
     if(!root)return null;
-    const read=name=>root.querySelector(`[data-priority-field="${name}"]`);
+    const read=name=>root.querySelector(`[data-priority-duration="${name}"]`);
     return {
       root,
       refreshMinutes:read('refreshMinutes'),
       freshMinutes:read('freshMinutes'),
       agingMinutes:read('agingMinutes'),
     };
+  }
+
+  function durationInputs(container){
+    if(!container)return{hours:null,minutes:null};
+    return{
+      hours:container.querySelector('[data-duration-hours]'),
+      minutes:container.querySelector('[data-duration-minutes]'),
+    };
+  }
+
+  function setDuration(container,totalMinutes){
+    const {hours,minutes}=durationInputs(container);
+    if(!hours||!minutes)return;
+    const total=Math.max(0,Math.round(Number(totalMinutes)||0));
+    hours.value=Math.floor(total/60);
+    minutes.value=total%60;
+  }
+
+  function normalizeDurationOverflow(container){
+    const {hours,minutes}=durationInputs(container);
+    if(!hours||!minutes)return;
+    let hourValue=Math.max(0,Math.floor(Number(hours.value)||0));
+    let minuteValue=Math.max(0,Math.floor(Number(minutes.value)||0));
+    if(minuteValue>=60){
+      hourValue+=Math.floor(minuteValue/60);
+      minuteValue%=60;
+      hours.value=hourValue;
+      minutes.value=minuteValue;
+    }
+  }
+
+  function readDuration(container,field,{normalize=true}={}){
+    const {hours,minutes}=durationInputs(container);
+    const limits=PRIORITY_DURATION_LIMITS[field]||{min:0,max:43200};
+    const hourValue=Math.max(0,Math.floor(Number(hours?.value)||0));
+    const minuteValue=Math.max(0,Math.floor(Number(minutes?.value)||0));
+    const total=Math.min(limits.max,Math.max(limits.min,hourValue*60+minuteValue));
+    if(normalize)setDuration(container,total);
+    return total;
+  }
+
+  function bindPriorityDurationInputs(){
+    document.querySelectorAll('[data-priority-duration]').forEach(container=>{
+      if(container.dataset.durationBound==='true')return;
+      container.dataset.durationBound='true';
+      const field=container.dataset.priorityDuration;
+      const {hours,minutes}=durationInputs(container);
+      minutes?.addEventListener('input',()=>normalizeDurationOverflow(container));
+      [hours,minutes].forEach(input=>input?.addEventListener('change',()=>{
+        normalizeDurationOverflow(container);
+        readDuration(container,field,{normalize:true});
+      }));
+    });
   }
 
   function renderTradeControl(payload) {
@@ -107,9 +166,9 @@
       const inputs=controlFields(key);
       const profile=control.priorities?.[key];
       if(!inputs||!profile)continue;
-      inputs.refreshMinutes.value=profile.refreshMinutes;
-      inputs.freshMinutes.value=profile.freshMinutes;
-      inputs.agingMinutes.value=profile.agingMinutes;
+      setDuration(inputs.refreshMinutes,profile.refreshMinutes);
+      setDuration(inputs.freshMinutes,profile.freshMinutes);
+      setDuration(inputs.agingMinutes,profile.agingMinutes);
     }
     $('[data-trade-discord-auto]').checked=control.discord?.autoPublish!==false;
     $('[data-trade-discord-threshold]').checked=control.discord?.thresholdMessages!==false;
@@ -371,11 +430,18 @@
     for(const key of ['critical','high','standard','low']){
       const inputs=controlFields(key);
       if(!inputs)continue;
+      const refreshMinutes=readDuration(inputs.refreshMinutes,'refreshMinutes',{normalize:true});
+      const freshMinutes=readDuration(inputs.freshMinutes,'freshMinutes',{normalize:true});
+      const agingMinutes=Math.max(
+        freshMinutes,
+        readDuration(inputs.agingMinutes,'agingMinutes',{normalize:true}),
+      );
+      setDuration(inputs.agingMinutes,agingMinutes);
       priorities[key]={
         ...(tradeControlState?.control?.priorities?.[key]||{}),
-        refreshMinutes:Number(inputs.refreshMinutes.value)||5,
-        freshMinutes:Number(inputs.freshMinutes.value)||1,
-        agingMinutes:Number(inputs.agingMinutes.value)||1,
+        refreshMinutes,
+        freshMinutes,
+        agingMinutes,
       };
     }
     return {
@@ -432,6 +498,7 @@
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
   async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer)window.MongrelTradeMarket?.activate(payload.viewer);if(manager()){loadTradeControl();loadTradeWatches();}}}catch{}render();}
 
+  bindPriorityDurationInputs();
   window.addEventListener('mongrels:trade-market-search',()=>{if(manager())loadTradeControl(true);});
   window.addEventListener('mongrels:trade-watch-saved',()=>{if(manager())loadTradeWatches();});
   setInterval(()=>{if(manager()&&!document.hidden)loadTradeWatches();},60000);
