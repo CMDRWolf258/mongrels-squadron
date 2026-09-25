@@ -67,6 +67,41 @@ const rareBody=buildSpanshSearchBody(rareBuy,fixedNow);
 assert.equal(rareBody.reference_system,'Diaba');
 assert.equal('distance' in rareBody.filters,false,'rare-source Spansh query must not include a distance filter');
 assert.deepEqual(rareBody.filters.marketplace[0].supply.value,[1,2147483647]);
+assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontill Relics'));
+assert.ok(rareBody.filters.marketplace[0].commodity.includes('Soontil Relics'),'Spansh query should search both common Soontill spellings');
+assert.equal(rareBuy.commodityKey,'soontillrelics','rare spelling aliases should share one cache key');
+
+const aliasNow=Date.now();
+const aliasRows=[{
+  id:'rare-1',
+  market_id:'rare-1',
+  name:'Cheranovsky City',
+  type:'Coriolis Starport',
+  distance_to_arrival:500,
+  large_pads:4,medium_pads:4,small_pads:4,
+  system_id64:'987',
+  system_name:'Ngurii',
+  system_x:10,system_y:20,system_z:30,
+  carrier_docking_access:null,
+  market_updated_at:new Date(aliasNow-10*60*1000).toISOString(),
+  distance:250,
+  market:[{commodity:'Soontil Relics',category:'Consumer Items',buy_price:19700,sell_price:0,supply:12,demand:0}],
+}];
+const aliasEnv={TRADES:new FakeKV()};
+const aliasSearch=await searchTradeMarkets(aliasEnv,{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:aliasRows}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(aliasSearch.results.length,1,'two-L Soontill query must match a one-L Spansh market row');
+assert.equal(aliasSearch.results[0].stationName,'Cheranovsky City');
+assert.equal(aliasSearch.results[0].supply,12);
 
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
