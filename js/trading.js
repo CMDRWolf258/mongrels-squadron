@@ -121,10 +121,9 @@
   function normalizeDurationOverflow(container){
     const {hours,minutes}=durationInputs(container);
     if(!hours||!minutes)return;
-    let hourValue=Math.max(0,Math.floor(Number(hours.value)||0));
     let minuteValue=Math.max(0,Math.floor(Number(minutes.value)||0));
     if(minuteValue>=60){
-      hourValue+=Math.floor(minuteValue/60);
+      const hourValue=Math.floor(minuteValue/60);
       minuteValue%=60;
       hours.value=hourValue;
       minutes.value=minuteValue;
