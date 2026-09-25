@@ -83,11 +83,24 @@ assert.match(html,/Trade Operations Control/);
 assert.match(html,/1552127291234983956/);
 assert.match(html,/1029221573988720722/);
 assert.match(html,/production routing is locked during development/i);
+assert.match(html,/data-priority-duration="refreshMinutes"/);
+assert.match(html,/data-priority-duration="freshMinutes"/);
+assert.match(html,/data-priority-duration="agingMinutes"/);
+assert.match(html,/data-duration-hours/);
+assert.match(html,/data-duration-minutes/);
+assert.match(html,/entering 90 in a minutes box becomes 1 hr 30 min/i);
+assert.doesNotMatch(html,/data-priority-field=/,'legacy minute-only freshness controls should be removed');
 
 const client=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-control/);
 assert.match(client,/X-Mongrels-Request':'trade-control/);
 assert.match(client,/article\.id = `trade-\$\{route\.id\}`/);
+assert.match(client,/function normalizeDurationOverflow\(container\)/);
+assert.match(client,/minuteValue>=60/);
+assert.match(client,/hourValue\+=Math\.floor\(minuteValue\/60\)/);
+assert.match(client,/minutes\.value=minuteValue/);
+assert.match(client,/function readDuration\(container,field/);
+assert.match(client,/refreshMinutes:\{min:5,max:10080\}/);
 
 const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.meta.url),'utf8');
 assert.match(tradeApi,/syncTradeDiscord/);
