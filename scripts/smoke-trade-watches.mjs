@@ -80,7 +80,7 @@ assert.match(html,/data-trade-watch-carriers/);
 assert.match(html,/data-trade-watch-sort/);
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
-assert.match(html,/trade-market\.css\?v=6/);
+assert.match(html,/trade-market\.css\?v=7/);
 assert.match(html,/trade-control\.css\?v=9/);
 assert.match(html,/trade-market\.js\?v=10/);
 assert.match(html,/trading\.js\?v=82/);
