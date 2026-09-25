@@ -13,6 +13,7 @@ import { listAllRewardEntries } from '../../../lib/reward-ledger.js';
 import { reconcileMemberFundedColonizationRewards } from '../../../lib/member-funded-colonization.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { syncColonizationMutationDiscord } from '../../../lib/colonization-discord.js';
+import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 import {
   ensureColonizationJobHistoryBaseline,
   markColonizationJobPublicationApplied,
@@ -133,13 +134,14 @@ export async function onRequestPost({request,env}) {
   const jobs=[job,...store.jobs];
   const saved=await commitMutation(env,{before:store,jobs,actor,action:'create',targetJobId:job.id});
   const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  const rewardDiscord=await syncRewardsDiscordIfCreated(request,env,rewardReconciliation);
   const discord=await syncMemberColonizationDiscord(env,{
     request,
     action:'create',
     job,
     actor,
   });
-  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,discord},201);
+  return reply({ok:true,job:presentJob(job,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,rewardDiscord,discord},201);
 }
 
 export async function onRequestPut({request,env}) {
@@ -297,13 +299,14 @@ export async function onRequestPut({request,env}) {
     });
   }
   const rewardReconciliation=await reconcileAfterJobChange(env,actor);
+  const rewardDiscord=await syncRewardsDiscordIfCreated(request,env,rewardReconciliation);
   const discord=await syncMemberColonizationDiscord(env,{
     request,
     action:action==='link-site'?'create':'update',
     job:next,
     actor,
   });
-  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,discord});
+  return reply({ok:true,job:presentJob(next,auth.session),updatedAt:saved.updatedAt,rewardReconciliation,rewardDiscord,discord});
 }
 
 export async function onRequestDelete({request,env}) {
@@ -488,6 +491,25 @@ function colonizationControlUrlForRequest(request){
 }
 
 function normSystem(value){return String(value||'').trim().toLowerCase()}
+
+async function syncRewardsDiscordIfCreated(request,env,reconciliation){
+  const created=Number(reconciliation?.memberFunded?.created||0)+Number(reconciliation?.squad?.created||0);
+  if(created<=0)return null;
+  try{
+    const view=await loadRewardDiscordView(env);
+    const adminUrl=new URL('/wolf-bgs/',request.url);
+    adminUrl.hash='reward-engine';
+    return await syncRewardDiscordBoard(env,{
+      view,
+      adminUrl:adminUrl.toString(),
+      rewardsUrl:new URL('/rewards/',request.url).toString(),
+      createMissing:false,
+    });
+  }catch(error){
+    console.error('Colonization rewards were issued but Rewards Discord refresh failed',error);
+    return {feature:'rewards',configured:true,error:'discord_rewards_sync_failed',failed:1};
+  }
+}
 
 async function reconcileAfterJobChange(env,actor){
   const result={memberFunded:null,squad:null};
