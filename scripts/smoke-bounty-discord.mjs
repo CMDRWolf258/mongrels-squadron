@@ -75,5 +75,17 @@ const pvp=readFileSync('pvp/index.html','utf8');
 assert.match(pvp,/id="bounty-board"/);
 assert.match(pvp,/Post Bounty/);
 assert.match(pvp,/Elite Dangerous only/);
+assert.match(pvp,/pvp\.js\?v=70/);
 
-console.log('✓ Bounty Board posts, edits, completion history, deletion, and Discord channel discovery are wired');
+const client=readFileSync('js/pvp.js','utf8');
+for(const pattern of [
+  /bounty-discord-sync-btn/,
+  /Sync Discord/,
+  /discordFailure/,
+  /Bounty saved, but Discord did not sync:/,
+  /method:'PUT'/,
+  /result\?\.discord\?\.mode==='recreated'/,
+])assert.match(client,pattern);
+new Function(client);
+
+console.log('✓ Bounty Board posts, edits, missing-card repair, completion history, deletion, and Discord channel discovery are wired');
