@@ -73,3 +73,14 @@
 .trade-managed-editor-note label{display:grid;gap:6px}
 .trade-managed-editor-note label>span{color:var(--muted);font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
 @media(max-width:650px){.trade-managed-editor-note{grid-template-columns:1fr}}
+
+.trade-loop-toggle-field{align-content:start}
+.trade-loop-toggle{min-height:44px;display:flex;align-items:center}
+.trade-loop-toggle input{position:absolute;opacity:0;pointer-events:none}
+.trade-loop-toggle label{display:flex!important;align-items:center;gap:10px;min-height:44px;cursor:pointer;color:var(--text)!important;text-transform:none!important;letter-spacing:0!important;font-size:.72rem!important}
+.trade-loop-toggle label::before{content:"";width:42px;height:24px;border-radius:999px;border:1px solid var(--line);background:#0a0f12;transition:.18s ease}
+.trade-loop-toggle-knob{position:absolute;width:18px;height:18px;margin-left:3px;border-radius:50%;background:var(--muted);transition:.18s ease;pointer-events:none}
+.trade-loop-toggle input:checked+label::before{border-color:rgba(34,211,238,.7);background:rgba(34,211,238,.13)}
+.trade-loop-toggle input:checked+label .trade-loop-toggle-knob{transform:translateX(18px);background:var(--accent)}
+.trade-loop-toggle input:focus-visible+label::before{outline:2px solid var(--accent);outline-offset:2px}
+.trade-loop-owner{color:#7de9b7!important;font-size:.56rem!important}
