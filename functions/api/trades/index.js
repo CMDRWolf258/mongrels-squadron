@@ -163,9 +163,11 @@ function normalizeRoute(value, fixed, session, existing={}) {
     expires: clean(src.expires,'',40),
     status: normalizeStatus(src.status),
     tags: normalizeTags(src.tags),
+    legs: normalizeRouteLegs(Array.isArray(src.legs)?src.legs:existing.legs),
+    optimizer: normalizeRouteOptimizer(src.optimizer,existing.optimizer),
     intelligence:{
-      enabled:Boolean(existingIntelligence.enabled),
-      priority:normalizePriority(existingIntelligence.priority),
+      enabled:Boolean(src.intelligence?.enabled ?? existingIntelligence.enabled),
+      priority:normalizePriority(src.intelligence?.priority || existingIntelligence.priority),
       watchId:clean(existingIntelligence.watchId || '','',80),
     },
     discord:normalizeTradeDiscordState(existing.discord),
@@ -244,6 +246,75 @@ async function readBody(request){
   try{return {value:await request.json()};}
   catch{return {response:reply({ok:false,error:'invalid_json'},400)};}
 }
+
+function normalizeRouteLegs(value){
+  const rows=Array.isArray(value)?value:[];
+  return rows.slice(0,3).map((leg,index)=>({
+    index:index+1,
+    commodity:clean(leg?.commodity,'',100),
+    sourceMarketId:clean(String(leg?.sourceMarketId??''),'',80),
+    sourceSystem:clean(leg?.sourceSystem,'',140),
+    sourceStation:clean(leg?.sourceStation,'',140),
+    destinationMarketId:clean(String(leg?.destinationMarketId??''),'',80),
+    destinationSystem:clean(leg?.destinationSystem,'',140),
+    destinationStation:clean(leg?.destinationStation,'',140),
+    buyPrice:clampNumber(leg?.buyPrice,0,2147483647,0),
+    sellPrice:clampNumber(leg?.sellPrice,0,2147483647,0),
+    profitPerTon:clampNumber(leg?.profitPerTon,0,2147483647,0),
+    quantity:clampNumber(leg?.quantity,0,2000000000,0),
+    tripProfit:clampNumber(leg?.tripProfit,0,1000000000000,0),
+    sourceSupply:clampNumber(leg?.sourceSupply,0,2147483647,0),
+    destinationDemand:clampNumber(leg?.destinationDemand,0,2147483647,0),
+    distanceLy:finiteNumber(leg?.distanceLy),
+    sourceArrivalLs:finiteNumber(leg?.sourceArrivalLs),
+    destinationArrivalLs:finiteNumber(leg?.destinationArrivalLs),
+    observedAt:clean(leg?.observedAt,'',40),
+  })).filter(leg=>leg.commodity&&leg.sourceMarketId&&leg.destinationMarketId);
+}
+function normalizeRouteOptimizer(value,existing={}){
+  const source=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  const prior=existing&&typeof existing==='object'&&!Array.isArray(existing)?existing:{};
+  const managed=Boolean(source.managed ?? prior.managed);
+  if(!managed)return{};
+  const legCount=Number(source.legCount??prior.legCount)===3?3:2;
+  const scope=clean(source.scope??prior.scope,'radius',20).toLowerCase()==='same'?'same':'radius';
+  return{
+    managed:true,
+    startSystem:clean(source.startSystem??prior.startSystem,'',140),
+    legCount,
+    scope,
+    radiusLy:clampNumber(source.radiusLy??prior.radiusLy,0,legCount===3?100:500,0),
+    cargoCapacity:clampNumber(source.cargoCapacity??prior.cargoCapacity,1,2000,784),
+    minPad:[0,1,2,3].includes(Number(source.minPad??prior.minPad))?Number(source.minPad??prior.minPad):3,
+    carrierMode:['exclude','include','only'].includes(clean(source.carrierMode??prior.carrierMode,'exclude',20))?clean(source.carrierMode??prior.carrierMode,'exclude',20):'exclude',
+    priority:normalizePriority(source.priority??prior.priority),
+    maxAgeMinutes:clampNumber(source.maxAgeMinutes??prior.maxAgeMinutes,1,20160,1440),
+    thresholdDropPercent:clampNumber(source.thresholdDropPercent??prior.thresholdDropPercent,5,90,25),
+    baselineProfit:clampNumber(source.baselineProfit??prior.baselineProfit,0,1000000000000,0),
+    currentProfit:clampNumber(source.currentProfit??prior.currentProfit,0,1000000000000,0),
+    state:['healthy','degraded','unavailable'].includes(clean(source.state??prior.state,'healthy',20))?clean(source.state??prior.state,'healthy',20):'healthy',
+    lastEvaluatedAt:clean(source.lastEvaluatedAt??prior.lastEvaluatedAt,'',40),
+    lastAlertAt:clean(source.lastAlertAt??prior.lastAlertAt,'',40),
+    alternative:normalizeOptimizerAlternative(source.alternative??prior.alternative),
+  };
+}
+function normalizeOptimizerAlternative(value){
+  const source=value&&typeof value==='object'&&!Array.isArray(value)?value:null;
+  if(!source)return null;
+  const legs=normalizeRouteLegs(source.legs);
+  if(!legs.length)return null;
+  return{
+    loopProfit:clampNumber(source.loopProfit,0,1000000000000,0),
+    totalDistanceLy:finiteNumber(source.totalDistanceLy),
+    observedAt:clean(source.observedAt,'',40),
+    legs,
+  };
+}
+function finiteNumber(value){
+  const n=Number(value);
+  return Number.isFinite(n)?Math.round(n*100)/100:null;
+}
+
 function normalizePad(v){
   const x=clean(v,'unknown',20).toLowerCase();
   return ['large','medium','small','unknown'].includes(x)?x:'unknown';
