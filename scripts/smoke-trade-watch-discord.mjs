@@ -389,7 +389,7 @@ assert.match(discord,/has \*\*not disappeared\*\*/);
 assert.match(discord,/Rare-source buys are searched at all distances/);
 assert.match(discord,/Rare Allocation Changed/);
 assert.match(discord,/Zero\/partial commander depletion reports are ignored/);
-assert.match(discord,/Tracked allocation/);
+assert.match(discord,/Tracked Allocation/);
 assert.match(evaluator,/syncEvaluatedWatchDiscord/);
 assert.match(evaluator,/TRADE_WATCH_SHORTLIST_SIZE=5/);
 assert.match(evaluator,/rankedMarkets/);
