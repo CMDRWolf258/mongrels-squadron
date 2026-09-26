@@ -891,3 +891,9 @@ body:has(.project-editor-shell:not([hidden])) .mongrel-assistant-launcher{displa
 .trade-return-cargo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-10px 0 18px;color:var(--muted);font-size:.68rem}
 .trade-return-cargo span{color:#bfaeff;font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
 .trade-return-cargo strong{color:#eee9ff}
+
+@media(max-width:600px){
+  .trade-route-return .trade-arrow{transform:rotate(-90deg)}
+  .trade-return-editor-head{align-items:flex-start;flex-direction:column}
+  .trade-return-editor-head small{text-align:left}
+}
