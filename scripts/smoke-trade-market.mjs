@@ -427,7 +427,7 @@ assert.match(tradeClient,/const fmtLy = value =>/);
 assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
 
-assert.match(html,/data-trading-build="86"/);
+assert.match(html,/data-trading-build="87"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
