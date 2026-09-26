@@ -357,6 +357,6 @@ assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
 assert.match(html,/trade-control\.css\?v=10/);
 assert.match(html,/trade-market\.js\?v=15/);
-assert.match(html,/trading\.js\?v=86/);
+assert.match(html,/trading\.js\?v=87/);
 
 console.log('Trade Watch evaluator smoke checks passed.');
