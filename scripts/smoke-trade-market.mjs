@@ -386,9 +386,9 @@ assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-volume/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=8/);
+assert.match(html,/trade-market\.css\?v=9/);
 assert.match(html,/trade-market\.js\?v=13/);
-assert.match(html,/trading\.js\?v=83/);
+assert.match(html,/trading\.js\?v=84/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
