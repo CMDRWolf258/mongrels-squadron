@@ -109,8 +109,8 @@
     squadGrid.replaceChildren(...squad.map(card)); squadEmpty.hidden = squad.length > 0;
 
     const q=(search.value||'').trim().toLowerCase(); const pad=padFilter.value;
-    let credit=routes.filter(r=>r.category==='credits'&&active(r)).filter(r=>{const hay=[r.title,r.commodity,r.originStation,r.originSystem,r.destinationStation,r.destinationSystem,r.notes,...(r.tags||[])].join(' ').toLowerCase();return(!q||hay.includes(q))&&(pad==='all'||String(r.padSize||'').toLowerCase()===pad);});
-    if(sort.value==='profit-desc')credit.sort((a,b)=>n(b.profitPerTon)-n(a.profitPerTon));
+    let credit=routes.filter(r=>r.category==='credits'&&active(r)).filter(r=>{const legText=Array.isArray(r.legs)?r.legs.flatMap(leg=>[leg.commodity,leg.sourceStation,leg.sourceSystem,leg.destinationStation,leg.destinationSystem]):[];const hay=[r.title,r.commodity,r.originStation,r.originSystem,r.destinationStation,r.destinationSystem,r.notes,...legText,...(r.tags||[])].join(' ').toLowerCase();return(!q||hay.includes(q))&&(pad==='all'||String(r.padSize||'').toLowerCase()===pad);});
+    if(sort.value==='profit-desc')credit.sort((a,b)=>n(b.optimizer?.managed?(b.optimizer.currentProfit||b.estimatedLoopProfit):b.profitPerTon)-n(a.optimizer?.managed?(a.optimizer.currentProfit||a.estimatedLoopProfit):a.profitPerTon));
     if(sort.value==='updated-desc')credit.sort((a,b)=>Date.parse(b.updatedAt||b.updated||0)-Date.parse(a.updatedAt||a.updated||0));
     if(sort.value==='commodity-asc')credit.sort((a,b)=>String(a.commodity||'').localeCompare(String(b.commodity||'')));
     creditGrid.replaceChildren(...credit.map(card)); creditEmpty.hidden=credit.length>0;
