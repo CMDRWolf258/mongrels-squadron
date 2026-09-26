@@ -47,3 +47,21 @@
 .trade-loop-empty{padding:20px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
 @media(max-width:900px){.trade-loop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.trade-loop-disclosure>summary{align-items:flex-start;padding:18px}.trade-loop-summary-copy{display:none}.trade-loop-body{padding:0 10px 10px}.trade-loop-grid{grid-template-columns:1fr}.trade-loop-actions,.trade-loop-card-head,.trade-loop-card-foot{align-items:stretch;flex-direction:column}.trade-loop-profit{text-align:left}.trade-loop-leg{grid-template-columns:1fr}.trade-loop-leg-arrow{transform:rotate(90deg);justify-self:start}.trade-loop-cargo{grid-column:auto}.trade-loop-card-foot .btn{width:100%}}
+
+.trade-card-managed{border-color:rgba(34,211,238,.34)}
+.trade-managed-legs{display:grid;gap:8px;margin:20px 0}
+.trade-managed-leg{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) minmax(120px,.55fr);gap:10px;align-items:center;padding:12px 13px;border:1px solid var(--line);border-radius:9px;background:rgba(34,211,238,.018)}
+.trade-managed-leg>div:not(.trade-arrow){min-width:0}
+.trade-managed-leg span{display:block;color:var(--muted);font-size:.57rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.trade-managed-leg strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.78rem}
+.trade-managed-leg small{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.61rem;margin-top:3px}
+.trade-managed-leg-profit{text-align:right}
+.trade-managed-leg-profit strong{color:var(--accent)}
+.trade-managed-state{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 0}
+.trade-managed-state>div{padding:10px 12px;border:1px solid rgba(94,230,168,.2);border-radius:9px;background:rgba(94,230,168,.025)}
+.trade-managed-state span{display:block;color:#86e9bd;font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.trade-managed-state strong{display:block;font-size:.76rem}
+.trade-managed-state small{display:block;color:var(--muted);font-size:.6rem;margin-top:3px;line-height:1.4}
+.trade-managed-state.is-warning>div{border-color:rgba(255,209,102,.28);background:rgba(255,209,102,.03)}
+.trade-managed-state.is-warning span{color:var(--warning)}
+@media(max-width:700px){.trade-managed-leg{grid-template-columns:1fr}.trade-managed-leg .trade-arrow{transform:rotate(90deg);justify-self:start}.trade-managed-leg-profit{text-align:left}.trade-managed-state{grid-template-columns:1fr}}
