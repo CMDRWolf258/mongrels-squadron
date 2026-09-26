@@ -1,5 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { resolveMemberProfile, publicMemberFilter } from '../../../lib/member-profile.js';
+import {
+  applyBountyDiscordState,
+  deleteBountyDiscord,
+  syncBountyDiscord,
+} from '../../../lib/bounty-discord.js';
 
 const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
@@ -21,8 +26,16 @@ export async function onRequestPost({ request, env }) {
   const body = await readBody(request); if (body.response) return body.response;
   const now = new Date().toISOString();
   const item = normalizeItem(body.value, { id:crypto.randomUUID(), ownerId:auth.session.sub, ownerName:auth.session.displayName, createdAt:now, updatedAt:now, updatedBy:auth.session.displayName });
-  const items = await readItems(env); items.unshift(item); await writeItems(env, items);
-  return reply({ ok:true, item:present(item, auth.session) }, 201);
+  const items = await readItems(env);
+  items.unshift(item);
+  await writeItems(env, items);
+
+  const discord = await syncBountyDiscord(env,{bounty:item,origin:new URL(request.url).origin});
+  applyBountyDiscordState(item,discord);
+  items[0]=item;
+  await writeItems(env,items);
+
+  return reply({ ok:true, item:present(item, auth.session), discord }, 201);
 }
 
 export async function onRequestPut({ request, env }) {
@@ -37,7 +50,12 @@ export async function onRequestPut({ request, env }) {
   if (!manager && existing.ownerId !== auth.session.sub) return reply({ok:false,error:'not_bounty_owner'},403);
   items[idx] = normalizeItem(body.value, { id:existing.id, ownerId:existing.ownerId, ownerName:existing.ownerName, createdAt:existing.createdAt, updatedAt:new Date().toISOString(), updatedBy:auth.session.displayName }, existing);
   await writeItems(env, items);
-  return reply({ ok:true, item:present(items[idx], auth.session) });
+
+  const discord = await syncBountyDiscord(env,{bounty:items[idx],origin:new URL(request.url).origin});
+  applyBountyDiscordState(items[idx],discord);
+  await writeItems(env,items);
+
+  return reply({ ok:true, item:present(items[idx], auth.session), discord });
 }
 
 export async function onRequestDelete({ request, env }) {
@@ -49,7 +67,10 @@ export async function onRequestDelete({ request, env }) {
   if (idx < 0) return reply({ok:false,error:'bounty_not_found'},404);
   const existing = items[idx]; const manager = MANAGER_ACCESS.has(auth.session.access);
   if (!manager && existing.ownerId !== auth.session.sub) return reply({ok:false,error:'not_bounty_owner'},403);
-  items.splice(idx,1); await writeItems(env,items); return reply({ok:true});
+  items.splice(idx,1);
+  await writeItems(env,items);
+  const discord=await deleteBountyDiscord(env,{bounty:existing});
+  return reply({ok:true,discord});
 }
 
 function normalizeItem(value, fixed, existing={}) {
@@ -68,10 +89,28 @@ function normalizeItem(value, fixed, existing={}) {
     createdAt: fixed.createdAt,
     updatedAt: fixed.updatedAt,
     updatedBy: fixed.updatedBy,
+    discordMessageId: clean(existing.discordMessageId, '', 40),
+    discordChannelId: clean(existing.discordChannelId, '', 40),
+    discordLastSyncedAt: clean(existing.discordLastSyncedAt, '', 80),
+    discordLastError: clean(existing.discordLastError, '', 300),
   };
 }
 
-function present(item, session) { return { ...item, canEdit:MANAGER_ACCESS.has(session.access) || item.ownerId === session.sub, isMine:item.ownerId === session.sub }; }
+function present(item, session) {
+  const {
+    discordMessageId,
+    discordChannelId,
+    discordLastSyncedAt,
+    discordLastError,
+    ...publicItem
+  }=item||{};
+  return {
+    ...publicItem,
+    discord:{linked:Boolean(discordMessageId&&discordChannelId),lastSyncedAt:discordLastSyncedAt||'',error:discordLastError||''},
+    canEdit:MANAGER_ACCESS.has(session.access) || item.ownerId === session.sub,
+    isMine:item.ownerId === session.sub,
+  };
+}
 async function readItems(env) { if(!env.BOUNTIES || typeof env.BOUNTIES.get !== 'function') return []; const stored=await env.BOUNTIES.get(KV_KEY,{type:'json'}); return Array.isArray(stored)?stored:[]; }
 async function writeItems(env,items) { await env.BOUNTIES.put(KV_KEY, JSON.stringify(items.slice(0,250))); }
 function requireStorage(env) { return (!env.BOUNTIES || typeof env.BOUNTIES.put !== 'function') ? reply({ok:false,error:'bounty_storage_not_configured'},503) : null; }
