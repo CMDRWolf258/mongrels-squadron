@@ -40,27 +40,59 @@
 
   function card(route) {
     const priority = route.category === 'squad' ? `<span class="trade-priority ${route.official?'high':'normal'}">${route.official?'Official':'Support'}</span>` : '';
-    const profit = route.profitPerTon ? `${fmt(route.profitPerTon)} Cr/t` : (route.category==='squad'?'Objective route':'Profit not listed');
-    const total = route.estimatedLoopProfit ? `${fmt(route.estimatedLoopProfit)} Cr / loop` : '';
+    const managed=Boolean(route?.optimizer?.managed)&&Array.isArray(route?.legs)&&route.legs.length>=2;
+    const profit = managed
+      ? (Number(route.optimizer.currentProfit||route.estimatedLoopProfit)>0?`${fmt(route.optimizer.currentProfit||route.estimatedLoopProfit)} Cr / loop`:'Managed loop')
+      : route.profitPerTon ? `${fmt(route.profitPerTon)} Cr/t` : (route.category==='squad'?'Objective route':'Profit not listed');
+    const total = !managed&&route.estimatedLoopProfit ? `${fmt(route.estimatedLoopProfit)} Cr / loop` : '';
     const tags = (route.tags || []).map(tag => `<span>${safe(tag)}</span>`).join('');
     const edit = route.canEdit ? '<button class="btn btn-secondary trade-edit-btn" type="button">Edit</button>' : '';
     const originSystem = route.originSystem ? `<span class="trade-system-inline">${safe(route.originSystem)} <button type="button" class="copy-system-btn" data-copy-origin aria-label="Copy origin system">⧉</button></span>` : '';
     const destSystem = route.destinationSystem ? `<span class="trade-system-inline">${safe(route.destinationSystem)} <button type="button" class="copy-system-btn" data-copy-destination aria-label="Copy destination system">⧉</button></span>` : '';
-    const freshness = route.updatedAt ? ageLabel(route.updatedAt) : (route.updated ? `Updated ${dateLabel(route.updated)}` : 'No timestamp');
+    const freshness = managed&&route.optimizer?.lastEvaluatedAt
+      ? ageLabel(route.optimizer.lastEvaluatedAt)
+      : route.updatedAt ? ageLabel(route.updatedAt) : (route.updated ? `Updated ${dateLabel(route.updated)}` : 'No timestamp');
     const owner = route.ownerName ? `Posted by ${safe(route.ownerName)}` : 'Squad-curated';
     const quantity = route.quantity ? `<div><span>Quantity</span><strong>${safe(fmtInput(route.quantity) || route.quantity)}</strong></div>` : '';
-    const hasReturn = Boolean(route.returnCommodity);
-    const returnProfit = route.returnProfitPerTon ? `${fmt(route.returnProfitPerTon)} Cr/t` : 'Profit not listed';
-    const returnQuantity = route.returnQuantity ? `${safe(fmtInput(route.returnQuantity) || route.returnQuantity)} t` : '';
-    const returnLeg = hasReturn ? `<div class="trade-return-leg"><div class="trade-return-meta"><span>Return cargo</span><strong>${safe(route.returnCommodity)}</strong>${route.returnProfitPerTon?`<small>${returnProfit}</small>`:''}${returnQuantity?`<small>${returnQuantity}</small>`:''}</div><div class="trade-route-line trade-route-line-return"><div><span>Return / Deliver</span><strong>${safe(route.originStation || '—')}</strong><small>${safe(route.originSystem || '')}</small></div><div class="trade-arrow">←</div><div><span>Return / Load</span><strong>${safe(route.destinationStation || '—')}</strong><small>${safe(route.destinationSystem || '')}</small></div></div></div>` : '';
     const article = document.createElement('article');
-    article.className = `trade-card${route.official?' trade-card-official':''}`;
+    article.className = `trade-card${route.official?' trade-card-official':''}${managed?' trade-card-managed':''}`;
     if (route.id) article.id = `trade-${route.id}`;
+
+    let routeBlock='';
+    let metrics='';
+    let managedState='';
+    if(managed){
+      routeBlock='<div class="trade-managed-legs">'+route.legs.map((leg,index)=>`
+        <div class="trade-managed-leg">
+          <div><span>Leg ${index+1} · ${safe(leg.commodity||'Cargo')}</span><strong>${safe(leg.sourceStation||'—')}</strong><small>${safe(leg.sourceSystem||'')}</small></div>
+          <div class="trade-arrow">→</div>
+          <div><span>Deliver</span><strong>${safe(leg.destinationStation||'—')}</strong><small>${safe(leg.destinationSystem||'')}</small></div>
+          <div class="trade-managed-leg-profit"><strong>+${fmt(leg.profitPerTon)} Cr/t</strong><small>${fmt(leg.quantity)} t · ${fmt(leg.tripProfit)} Cr</small></div>
+        </div>`).join('')+'</div>';
+      const current=Number(route.optimizer.currentProfit||route.estimatedLoopProfit)||0;
+      const baseline=Number(route.optimizer.baselineProfit)||0;
+      const thresholdDrop=Number(route.optimizer.thresholdDropPercent)||25;
+      const thresholdValue=baseline>0?Math.round(baseline*(1-thresholdDrop/100)):0;
+      const state=route.optimizer.state||'healthy';
+      const alternative=route.optimizer.alternative;
+      managedState=`<div class="trade-managed-state ${state==='degraded'||state==='unavailable'?'is-warning':''}">
+        <div><span>Managed Loop</span><strong>${state==='healthy'?'Monitoring':'Needs attention'}</strong><small>Alerts below ${fmt(thresholdValue)} Cr / loop · ${thresholdDrop}% drop threshold</small></div>
+        ${alternative&&Number(alternative.loopProfit)>current?`<div><span>Better Match</span><strong>${fmt(alternative.loopProfit)} Cr / loop</strong><small>${safe((alternative.legs||[]).map(leg=>leg.commodity).join(' → '))}</small></div>`:''}
+      </div>`;
+      metrics=`<div class="trade-metrics"><div><span>Loop Profit</span><strong>${profit}</strong></div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Loop Distance</span><strong>${route.distanceLy?`${fmtLy(route.distanceLy)} ly`:'—'}</strong></div><div><span>Legs</span><strong>${route.legs.length}</strong></div></div>`;
+    }else{
+      const returnProfit = route.returnProfitPerTon ? `${fmt(route.returnProfitPerTon)} Cr/t` : 'Profit not listed';
+      const returnQuantity = route.returnQuantity ? `${safe(fmtInput(route.returnQuantity) || route.returnQuantity)} t` : '';
+      const returnLeg = route.returnCommodity ? `<div class="trade-return-leg"><div class="trade-return-meta"><span>Return cargo</span><strong>${safe(route.returnCommodity)}</strong>${route.returnProfitPerTon?`<small>${returnProfit}</small>`:''}${returnQuantity?`<small>${returnQuantity}</small>`:''}</div><div class="trade-route-line trade-route-line-return"><div><span>Return / Deliver</span><strong>${safe(route.originStation || '—')}</strong><small>${safe(route.originSystem || '')}</small></div><div class="trade-arrow">←</div><div><span>Return / Load</span><strong>${safe(route.destinationStation || '—')}</strong><small>${safe(route.destinationSystem || '')}</small></div></div></div>` : '';
+      routeBlock=`<div class="trade-route-line"><div><span>Buy / Load</span><strong>${safe(route.originStation || '—')}</strong><small>${originSystem}</small></div><div class="trade-arrow">→</div><div><span>Sell / Deliver</span><strong>${safe(route.destinationStation || '—')}</strong><small>${destSystem}</small></div></div>${returnLeg}`;
+      metrics=`<div class="trade-metrics"><div><span>Profit</span><strong>${profit}</strong>${total?`<small>${total}</small>`:''}</div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Distance</span><strong>${route.distanceLy?`${fmtLy(route.distanceLy)} ly`:'—'}</strong></div>${quantity}</div>`;
+    }
+
     article.innerHTML = `
       <div class="trade-card-head"><div><p class="trade-kicker">${safe(route.commodity || 'Commodity')}</p><h3>${safe(route.title || `${route.originSystem || ''} → ${route.destinationSystem || ''}`)}</h3></div><div class="trade-card-actions">${priority}${edit}</div></div>
-      <div class="trade-route-line"><div><span>Buy / Load</span><strong>${safe(route.originStation || '—')}</strong><small>${originSystem}</small></div><div class="trade-arrow">→</div><div><span>Sell / Deliver</span><strong>${safe(route.destinationStation || '—')}</strong><small>${destSystem}</small></div></div>
-      ${returnLeg}
-      <div class="trade-metrics"><div><span>Profit</span><strong>${profit}</strong>${total?`<small>${total}</small>`:''}</div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Distance</span><strong>${route.distanceLy?`${fmtLy(route.distanceLy)} ly`:'—'}</strong></div>${quantity}</div>
+      ${routeBlock}
+      ${metrics}
+      ${managedState}
       ${route.objective?`<p class="trade-objective"><strong>Objective:</strong> ${safe(route.objective)}</p>`:''}
       ${route.notes?`<p class="trade-notes">${safe(route.notes)}</p>`:''}
       <div class="trade-card-foot"><div class="trade-tags">${tags}</div><small>${owner} · ${freshness}${route.expires?` · Expires ${dateLabel(route.expires)}`:''}</small></div>`;
@@ -558,11 +590,12 @@
   }
 
   async function loadStatic(){try{const r=await fetch('../data/trades.json',{cache:'no-store'});if(!r.ok)throw 0;const data=await r.json();staticRoutes=Array.isArray(data)?data:(data.routes||[]);}catch{staticRoutes=[];}render();}
-  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer)window.MongrelTradeMarket?.activate(payload.viewer);if(manager()){loadTradeControl();loadTradeWatches();}}}catch{}render();}
+  async function loadPosted(){try{const memberQuery=memberParam?`?member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/trades${memberQuery}`);if(response.ok){postedRoutes=Array.isArray(payload.routes)?payload.routes:[];session=payload.viewer||session;memberFilter=payload.memberFilter||null;renderMemberFilter();const create=$('[data-trade-create]');const sign=$('[data-trade-sign-in]');if(create)create.hidden=!payload.canPost;if(sign)sign.hidden=Boolean(payload.canPost);if(memberParam&&memberFilter&&!window.__memberTradeAnchorHandled){window.__memberTradeAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('member-trade-board')?.scrollIntoView({block:'start'}));}if(payload.viewer){window.MongrelTradeMarket?.activate(payload.viewer);window.MongrelTradeLoops?.activate(payload.viewer);}if(manager()){loadTradeControl();loadTradeWatches();}}}catch{}render();}
 
   bindPriorityDurationInputs();
   window.addEventListener('mongrels:trade-market-search',()=>{if(manager())loadTradeControl(true);});
   window.addEventListener('mongrels:trade-watch-saved',()=>{if(manager())loadTradeWatches();});
+  window.addEventListener('mongrels:trade-route-posted',()=>loadPosted());
   setInterval(()=>{if(manager()&&!document.hidden)loadTradeWatches();},60000);
   [search,padFilter,sort].forEach(el=>el?.addEventListener(el===search?'input':'change',render)); $('[data-trade-create]')?.addEventListener('click',()=>openEditor()); document.querySelectorAll('[data-trade-cancel]').forEach(b=>b.addEventListener('click',closeEditor)); form?.addEventListener('submit',save);form?.addEventListener('input',()=>dirty=true); $('[data-trade-delete]')?.addEventListener('click',remove); $('[data-trade-control-form]')?.addEventListener('submit',saveTradeControl); window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   Promise.all([loadStatic(),loadPosted()]);
