@@ -5,6 +5,9 @@ import {
   evaluateTradeWatches,
   tradeWatchIsDue,
   watchDueAt,
+  RARE_SOURCE_WATCH_TIME_ZONE,
+  RARE_SOURCE_WATCH_START_HOUR,
+  RARE_SOURCE_WATCH_END_HOUR,
 } from '../lib/trade-watch-evaluator.js';
 import {
   normalizeTradeWatch,
@@ -142,6 +145,50 @@ assert.equal(tradeWatchIsDue(stored,control,baseNow+4*60*1000),false);
 assert.equal(tradeWatchIsDue(stored,control,baseNow+5*60*1000),true);
 assert.equal(watchDueAt(stored,control),baseNow+5*60*1000);
 
+assert.equal(RARE_SOURCE_WATCH_TIME_ZONE,'America/Chicago');
+assert.equal(RARE_SOURCE_WATCH_START_HOUR,13);
+assert.equal(RARE_SOURCE_WATCH_END_HOUR,20);
+const rareScheduleWatch=normalizeTradeWatch({
+  id:'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+  name:'Rare source timer',
+  status:'active',
+  query:{
+    commodity:'Soontill Relics',
+    direction:'buy',
+    referenceSystem:'Diaba',
+    radiusLy:200,
+    minVolume:1,
+    minPad:0,
+    carrierMode:'exclude',
+    maxAgeMinutes:2880,
+    priority:'critical',
+    sort:'price',
+    limit:100,
+  },
+  createdById:'111111111111111111',
+  createdByName:'CMDR Wolf258',
+  createdAt:'2026-09-26T17:00:00.000Z',
+  updatedAt:'2026-09-26T17:00:00.000Z',
+  evaluation:{lastAttemptAt:'2026-09-26T18:02:00.000Z'},
+  discord:{publish:true},
+});
+assert.equal(tradeWatchIsDue(rareScheduleWatch,control,Date.parse('2026-09-26T18:55:00.000Z')),false,'rare Watch should run only once in the 1 PM Central hour');
+assert.equal(watchDueAt(rareScheduleWatch,control,Date.parse('2026-09-26T18:55:00.000Z')),Date.parse('2026-09-26T19:00:00.000Z'),'next rare slot should be 2 PM Central');
+assert.equal(tradeWatchIsDue(rareScheduleWatch,control,Date.parse('2026-09-26T19:02:00.000Z')),true,'rare Watch should become due in the next hourly slot');
+
+const rareAfterWindow=normalizeTradeWatch({
+  ...rareScheduleWatch,
+  evaluation:{lastAttemptAt:'2026-09-27T01:02:00.000Z'},
+});
+assert.equal(tradeWatchIsDue(rareAfterWindow,control,Date.parse('2026-09-27T02:02:00.000Z')),false,'rare Watch should sleep after the 8 PM Central slot');
+assert.equal(watchDueAt(rareAfterWindow,control,Date.parse('2026-09-27T02:02:00.000Z')),Date.parse('2026-09-27T18:00:00.000Z'),'rare Watch should resume at 1 PM Central next day');
+
+const rareCst=normalizeTradeWatch({
+  ...rareScheduleWatch,
+  evaluation:{lastAttemptAt:'2026-11-01T20:02:00.000Z'},
+});
+assert.equal(watchDueAt(rareCst,control,Date.parse('2026-11-02T18:55:00.000Z')),Date.parse('2026-11-02T19:00:00.000Z'),'rare timer should follow Central DST/CST automatically');
+
 const early=await evaluateTradeWatches(env,{
   now:baseNow+4*60*1000,
   fetchImpl,
@@ -224,6 +271,7 @@ const rareZeroRow=[{
 }];
 const rareCleared=await evaluateTradeWatches(rareEnv,{
   now:baseNow,
+  force:true,
   concurrency:1,
   fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:rareZeroRow}),{status:200,headers:{'Content-Type':'application/json'}}),
 });
@@ -251,7 +299,6 @@ assert.match(workflow,/2-57\/5 \* \* \* \*/);
 assert.match(workflow,/TRADE_WATCH_CRON_TOKEN/);
 assert.match(workflow,/SCOUT_DISCORD_CRON_TOKEN/);
 assert.match(workflow,/api\/internal\/trade-watch-evaluate/);
-
 const internalApi=readFileSync(new URL('../functions/api/internal/trade-watch-evaluate.js',import.meta.url),'utf8');
 assert.match(internalApi,/evaluateTradeWatches/);
 assert.match(internalApi,/TRADE_WATCH_CRON_TOKEN/);
@@ -265,6 +312,7 @@ assert.match(manualApi,/watchIds:\[id\]/);
 
 const client=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(client,/Run Now/);
+assert.match(client,/Hourly · 1–8 PM CT/,'Trader UI should expose the rare-source cadence');
 assert.match(client,/\/api\/trade-watches\/evaluate/);
 assert.match(client,/Current Best/);
 assert.match(client,/Fallback Markets/);
@@ -280,6 +328,6 @@ assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
 assert.match(html,/trade-control\.css\?v=10/);
 assert.match(html,/trade-market\.js\?v=14/);
-assert.match(html,/trading\.js\?v=85/);
+assert.match(html,/trading\.js\?v=86/);
 
 console.log('Trade Watch evaluator smoke checks passed.');

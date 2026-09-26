@@ -125,6 +125,7 @@ const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
   query:{...watch.query,direction:'buy',radiusLy:5,minVolume:1},
 }),{origin:'https://mongrels-squadron.pages.dev',control});
 assert.match(rareBuyPayload.embeds[0].fields.map(field=>field.value).join('\n'),/all distances \(rare source\)/);
+assert.match(rareBuyPayload.embeds[0].description,/hourly from 1–8 PM CT/);
 
 const rareNoStockPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
   ...watch,
