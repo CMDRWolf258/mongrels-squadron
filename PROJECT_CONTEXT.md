@@ -1322,3 +1322,10 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - complete First Engineering Win in-game sequence.
 
 Production deployment can lag GitHub commits. Always distinguish **committed / CI-checked** from **confirmed live / production-validated**.
+
+
+## Trader's Outpost QoL / return-leg update (Sep 25, 2026)
+- Commodity Search now defaults collapsed to reduce vertical space; members expand it when they need live market intelligence.
+- Shared modal-editor standard: destructive Delete/Remove actions sit on the opposite side from the primary actions; Close/Cancel sits beside Save. The floating Ask the Mongrels launcher is hidden while a project-style modal editor is open so it cannot cover footer actions.
+- Shared large-integer field convention: inputs marked `data-number-format` receive live comma grouping; JS-managed forms strip formatting safely for payloads. Applied to trade-route profit/quantity fields, Trader colonization cargo/reward quantities, and carrier-coordination cargo quantities.
+- Trade routes support an optional return leg. The destination is implicitly the return pickup and the origin is the return delivery, with optional return commodity, return profit/t, and return quantity/demand. Route cards render the same station pair with a reverse arrow, and Discord route cards include return cargo details.
