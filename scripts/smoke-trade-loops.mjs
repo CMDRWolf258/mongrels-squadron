@@ -132,6 +132,14 @@ assert.ok(mongrelOnlyResults.every(route=>route.legs.every(leg=>
   leg.sourceFaction==='Regiment of Imperial Mongrels'&&leg.destinationFaction==='Regiment of Imperial Mongrels'
 )),'Mongrel Faction Routes must exclude non-Mongrel-controlled stations');
 
+const ownershipChanged=[
+  {...A,stationControllingFaction:'Some Other Faction'},
+  A2,
+];
+const priorMongrelRoute=mongrelOnlyResults[0];
+const invalidAfterOwnershipChange=evaluateSpecificLoop(ownershipChanged,priorMongrelRoute.legs,mongrelQuery);
+assert.equal(invalidAfterOwnershipChange.valid,false,'managed Mongrel-only route must invalidate if a station changes faction ownership');
+
 const body=buildSpanshLoopSnapshotBody(twoQuery,new Date('2026-09-25T12:00:00Z'));
 assert.equal(body.reference_system,'Home');
 assert.equal(body.filters.distance.max,'50');
