@@ -55,6 +55,7 @@ for(const pattern of [
   /method:'DELETE'/,
   /View Bounty Board/,
   /allowed_mentions:\{parse:\[\]\}/,
+  /attempted channel ID/,
 ])assert.match(discord,pattern);
 assert.doesNotMatch(discord,/\/guilds\/[^'"]*\/channels'[^\n]*method:'POST'/,'Bounty Board integration must not create Discord channels');
 assert.doesNotMatch(discord,/\/pins\//,'Bounty Board integration should leave pinning/manual channel presentation alone');
