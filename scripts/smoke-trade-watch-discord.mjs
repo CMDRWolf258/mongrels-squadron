@@ -139,15 +139,15 @@ const rareNoStockPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
     rankedMarkets:[],
     knownRareSource:{
       rank:1,marketId:'555',stationName:'Cheranovsky City',systemName:'Ngurii',
-      price:19700,volume:0,distanceLy:250,observedAt:'2026-09-25T18:29:00.000Z',
-      source:'Spansh',qualifies:false,rareSourceStatus:'no_observed_stock',
+      price:19700,volume:0,reportedVolume:0,allocationVolume:0,distanceLy:250,observedAt:'2026-09-25T18:29:00.000Z',
+      source:'Spansh',qualifies:false,rareSourceStatus:'no_positive_allocation_observed',
     },
   },
 }),{origin:'https://mongrels-squadron.pages.dev',control});
 const rareNoStockFields=rareNoStockPayload.embeds[0].fields.map(field=>field.value).join('\n');
 assert.match(rareNoStockFields,/Known Rare Source|Cheranovsky City/);
 assert.match(rareNoStockFields,/0 t/);
-assert.match(rareNoStockFields,/no qualifying stock/);
+assert.match(rareNoStockFields,/No positive allocation|zero commander reports/);
 
 const infraWatch=normalizeTradeWatch({
   ...watch,
@@ -384,9 +384,12 @@ assert.match(watchApi,/syncTradeWatchDiscord/);
 const discord=readFileSync(new URL('../lib/trade-discord.js',import.meta.url),'utf8');
 const evaluator=readFileSync(new URL('../lib/trade-watch-evaluator.js',import.meta.url),'utf8');
 assert.match(evaluator,/sendTradeWatchTransitionAlert/);
-assert.match(evaluator,/condition_met','condition_cleared','best_market_changed/);
+assert.match(evaluator,/condition_met','condition_cleared','best_market_changed','rare_allocation_changed/);
 assert.match(discord,/has \*\*not disappeared\*\*/);
 assert.match(discord,/Rare-source buys are searched at all distances/);
+assert.match(discord,/Rare Allocation Changed/);
+assert.match(discord,/Zero\/partial commander depletion reports are ignored/);
+assert.match(discord,/Tracked allocation/);
 assert.match(evaluator,/syncEvaluatedWatchDiscord/);
 assert.match(evaluator,/TRADE_WATCH_SHORTLIST_SIZE=5/);
 assert.match(evaluator,/rankedMarkets/);
