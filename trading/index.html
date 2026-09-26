@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-trading-build="86">
+<html lang="en" data-trading-build="87">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-market.css?v=8"><link rel="stylesheet" href="../css/trade-control.css?v=10">
+  <link rel="stylesheet" href="../css/global.css?v=71"><link rel="stylesheet" href="../css/trading-colonization.css?v=4"><link rel="stylesheet" href="../css/trade-market.css?v=8"><link rel="stylesheet" href="../css/trade-control.css?v=10">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -14,10 +14,12 @@
 <section class="section-sm"><div class="container trade-member-posting"><div><p class="eyebrow">Member Trade Network</p><h2>Found a useful route?</h2><p>Share strategic hauling, carrier logistics, colony supply, or a profitable route with the squad. Your post stays yours to maintain; Officers can moderate the board.</p></div><div class="trade-post-actions"><a class="btn btn-secondary" href="/api/auth/login?return=%2Ftrading%2F" data-trade-sign-in>Sign in to Post</a><button class="btn btn-primary" type="button" data-trade-create hidden>Post Trade Route</button></div></div></section>
 <section class="section trade-market-section" data-trade-market hidden>
   <div class="container">
-    <div class="section-heading trade-market-heading">
-      <div><p class="eyebrow">Live Market Intelligence</p><h2>Commodity Search</h2></div>
-      <p>Search current community-observed markets near a reference system. Results are pulled through the Mongrels backend, classified against our freshness profiles, and added to our working market cache.</p>
-    </div>
+    <details class="trade-market-disclosure">
+      <summary class="section-heading trade-market-heading">
+        <div><p class="eyebrow">Live Market Intelligence</p><h2>Commodity Search</h2></div>
+        <div class="trade-market-summary-copy"><p>Search current community-observed markets near a reference system.</p><span class="trade-market-disclosure-toggle">Open Search</span></div>
+      </summary>
+      <div class="trade-market-disclosure-body">
     <form class="trade-market-form" data-trade-market-form>
       <div class="trade-market-grid">
         <label class="trade-commodity-field"><span>Commodity</span><div class="trade-commodity-combobox" data-market-commodity-box><input type="text" maxlength="100" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="tradeCommodityMenu" data-market-commodity placeholder="Gold, Platinum, Soontil Relics…"><button type="button" class="trade-commodity-toggle" data-market-commodity-toggle aria-label="Show commodity list">⌄</button><div class="trade-commodity-menu" id="tradeCommodityMenu" role="listbox" data-market-commodity-menu hidden></div></div><small class="trade-commodity-help" data-market-commodity-help>Standard and rare commodities use the same searchable list.</small></label>
@@ -51,6 +53,8 @@
       <button class="btn btn-secondary btn-compact" type="button" data-market-page-next>Next</button>
     </nav>
     <div class="data-empty-state" data-market-empty hidden><div class="data-empty-icon">⌁</div><div><strong>No markets matched those filters.</strong><p>Try a wider radius, older data window, lower supply/demand threshold, or different price.</p></div></div>
+      </div>
+    </details>
   </div>
 </section>
 <section class="section-sm trader-colonization-section" data-colonization-board>
@@ -165,7 +169,7 @@
       <label><span>Discord Card</span><select data-trade-watch-discord><option value="true">Publish automated Watch card</option><option value="false">Website watch only</option></select></label>
       <div class="project-editor-wide trade-watch-pending-note"><strong data-trade-watch-note-title>Saved Watch only</strong><span data-trade-watch-note>The evaluator wakes on a five-minute floor and checks this watch when its selected priority cadence is due.</span></div>
     </div>
-    <div class="project-editor-actions"><span data-trade-watch-status aria-live="polite"></span><div><button class="btn btn-primary" type="submit" data-trade-watch-submit>Save Watch</button></div></div>
+    <div class="project-editor-actions is-standard"><div class="project-editor-danger"></div><span class="project-editor-status" data-trade-watch-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-trade-watch-cancel>Close</button><button class="btn btn-primary" type="submit" data-trade-watch-submit>Save Watch</button></div></div>
   </form>
 </section>
 <section class="project-editor-shell" data-trade-editor-shell hidden aria-label="Trade route editor"><div class="project-editor-backdrop" data-trade-cancel></div><form class="project-editor-panel" data-trade-form><div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost</p><h2 data-trade-form-title>Post Trade Route</h2></div><button class="btn btn-secondary" type="button" data-trade-cancel>Close</button></div><input type="hidden" data-trade-id><div class="project-editor-grid">
@@ -173,33 +177,44 @@
 <label data-trade-official-wrap hidden><span>Posting Type</span><select data-trade-official><option value="false">Member Posting</option><option value="true">Official Squadron Route</option></select></label>
 <label><span>Title</span><input type="text" maxlength="140" required data-trade-title placeholder="Example: Bertrandite run to Diaba"></label><label><span>Commodity</span><input type="text" maxlength="100" required data-trade-commodity placeholder="Commodity"></label>
 <label><span>Origin System</span><input type="text" maxlength="120" data-trade-origin-system></label><label><span>Origin Station</span><input type="text" maxlength="120" data-trade-origin-station></label><label><span>Destination System</span><input type="text" maxlength="120" data-trade-destination-system></label><label><span>Destination Station</span><input type="text" maxlength="120" data-trade-destination-station></label>
-<label><span>Profit / ton (Cr)</span><input type="number" min="0" step="1" data-trade-profit placeholder="Optional"></label><label><span>Estimated Loop Profit (Cr)</span><input type="number" min="0" step="1" data-trade-loop-profit placeholder="Optional"></label>
+<label><span>Profit / ton (Cr)</span><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" data-number-format data-number-max="1000000000" data-trade-profit placeholder="Optional"></label><label><span>Estimated Loop Profit (Cr)</span><input type="text" inputmode="numeric" autocomplete="off" maxlength="17" data-number-format data-number-max="1000000000000" data-trade-loop-profit placeholder="Optional"></label>
 <label><span>Pad Size</span><select data-trade-pad><option value="large">Large</option><option value="medium">Medium</option><option value="small">Small</option><option value="unknown">Unknown</option></select></label><label><span>Distance (ly)</span><input type="text" maxlength="30" data-trade-distance placeholder="Optional"></label>
-<label><span>Quantity / Demand</span><input type="text" maxlength="80" data-trade-quantity placeholder="Example: 18,000 t"></label><label><span>Expires</span><input type="date" data-trade-expires></label>
+<label><span>Quantity / Demand</span><input type="text" inputmode="numeric" autocomplete="off" maxlength="15" data-number-format data-number-max="2000000000" data-trade-quantity placeholder="Example: 18,000"></label><label><span>Expires</span><input type="date" data-trade-expires></label>
+
+<fieldset class="project-editor-wide trade-return-fields">
+  <legend>Optional Return Trip</legend>
+  <p>Bring cargo back from the destination for additional profit. The stations reverse automatically on the route card.</p>
+  <div class="project-editor-grid">
+    <label><span>Return Commodity</span><input type="text" maxlength="100" data-trade-return-commodity placeholder="Optional · leave blank for one-way route"></label>
+    <label><span>Return Profit / ton (Cr)</span><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" data-number-format data-number-max="1000000000" data-trade-return-profit placeholder="Optional"></label>
+    <label><span>Return Quantity / Demand</span><input type="text" inputmode="numeric" autocomplete="off" maxlength="15" data-number-format data-number-max="2000000000" data-trade-return-quantity placeholder="Optional"></label>
+  </div>
+</fieldset>
+
 <label><span>Status</span><select data-trade-status><option value="active">Active</option><option value="complete">Complete</option><option value="expired">Expired</option></select></label><label><span>Tags</span><input type="text" maxlength="300" data-trade-tags placeholder="Carrier, Colonization, Large Pad"></label>
 <label class="project-editor-wide"><span>Objective</span><textarea rows="3" maxlength="500" data-trade-objective placeholder="Why should members run this route?"></textarea></label><label class="project-editor-wide"><span>Notes</span><textarea rows="4" maxlength="1400" data-trade-notes placeholder="Price caveats, loading instructions, timing, or other details."></textarea></label>
-</div><div class="project-editor-actions"><span data-trade-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-trade-delete hidden>Delete</button><button class="btn btn-primary" type="submit">Save Route</button></div></div></form></section>
+</div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-trade-delete hidden>Delete</button></div><span class="project-editor-status" data-trade-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-trade-cancel>Close</button><button class="btn btn-primary" type="submit">Save Route</button></div></div></form></section>
 <section class="project-editor-shell" data-colony-editor-shell hidden aria-label="Colonization Job editor"><div class="project-editor-backdrop" data-colony-cancel></div><form class="project-editor-panel" data-colony-form><div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost · Colonization</p><h2 data-colony-form-title>Post Colonization Job</h2></div><button class="btn btn-secondary" type="button" data-colony-cancel>Close</button></div><input type="hidden" data-colony-id><div class="project-editor-grid">
 <label class="project-editor-wide"><span>Job Title</span><input type="text" maxlength="160" required data-colony-title placeholder="Example: Finish Eleven's Lighthouse"></label>
 <label class="project-editor-wide"><span>System</span><input type="text" maxlength="140" required data-colony-system placeholder="System name"></label>
 <label><span>Job Scope</span><select data-colony-scope><option value="system">Any construction in system</option><option value="market">Specific construction build</option></select></label>
 <label data-colony-build-wrap hidden><span>Build Name</span><input type="text" maxlength="140" data-colony-build placeholder="Optional display name"><small>The internal construction-site ID can be linked later from verified observed-site data.</small></label>
 <label><span>Commodity Filter</span><input type="text" maxlength="100" data-colony-commodity placeholder="Optional · all commodities"></label>
-<label><span>Target Cargo (t)</span><input type="number" min="1" max="100000000" step="1" data-colony-target placeholder="Optional · leave blank for open-ended"><small>Leave blank for large or ongoing jobs with no fixed stopping point.</small></label>
+<label><span>Target Cargo (t)</span><input type="text" inputmode="numeric" autocomplete="off" data-number-format data-number-max="100000000" data-colony-target placeholder="Optional · leave blank for open-ended"><small>Leave blank for large or ongoing jobs with no fixed stopping point.</small></label>
 <label><span>Reward Start Date / Time</span><input type="datetime-local" data-colony-start><small>Work at or after this time can count. Backdate it to include recent hauling that began before the post was created.</small></label>
 <label><span>Funding</span><select data-colony-funding><option value="none">No reward · help requested</option><option value="member">Member funded · I will pay</option><option value="squad">Request squad funding</option></select></label>
 <label><span>Status</span><select data-colony-job-status><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed / Archived</option></select></label>
 <div class="project-editor-wide colony-funding-fields" data-colony-funding-fields hidden>
   <div class="project-editor-grid">
-    <label><span>Reward Block (t)</span><input type="number" min="1" max="100000000" step="1" value="1000" data-colony-reward-tons></label>
-    <label><span>Reward / Block (M Cr)</span><input type="number" min="1" max="1000000" step="1" value="10" data-colony-reward-millions></label>
-    <label><span>Maximum Pledge (M Cr)</span><input type="number" min="1" max="100000000" step="1" data-colony-budget placeholder="Optional · leave blank for no cap"><small>Leave blank to keep reward liability open-ended until the job is completed.</small></label>
-    <label><span>Personal Cap (M Cr)</span><input type="number" min="0" max="100000000" step="1" data-colony-personal-cap placeholder="No per-CMDR cap"></label>
+    <label><span>Reward Block (t)</span><input type="text" inputmode="numeric" autocomplete="off" value="1,000" data-number-format data-number-max="100000000" data-colony-reward-tons></label>
+    <label><span>Reward / Block (M Cr)</span><input type="text" inputmode="numeric" autocomplete="off" value="10" data-number-format data-number-max="1000000" data-colony-reward-millions></label>
+    <label><span>Maximum Pledge (M Cr)</span><input type="text" inputmode="numeric" autocomplete="off" data-number-format data-number-max="100000000" data-colony-budget placeholder="Optional · leave blank for no cap"><small>Leave blank to keep reward liability open-ended until the job is completed.</small></label>
+    <label><span>Personal Cap (M Cr)</span><input type="text" inputmode="numeric" autocomplete="off" data-number-format data-number-max="100000000" data-colony-personal-cap placeholder="No per-CMDR cap"></label>
   </div>
   <p class="colony-funding-summary" data-colony-funding-summary></p>
 </div>
 <label class="project-editor-wide"><span>Instructions / Notes</span><textarea rows="4" maxlength="1000" data-colony-notes placeholder="Where to haul, priority commodities, timing, carrier support, or other instructions."></textarea></label>
-</div><div class="project-editor-actions"><span data-colony-form-status aria-live="polite"></span><div><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Complete</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
+</div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-colony-close-job hidden>Complete</button></div><span class="project-editor-status" data-colony-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-colony-cancel>Close</button><button class="btn btn-primary" type="submit">Save Job</button></div></div></form></section>
 </main><footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script>
 (()=>{
@@ -232,5 +247,5 @@
   });
 })();
 </script>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=13"></script><script src="../js/trading.js?v=83"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=13"></script><script src="../js/trading.js?v=84"></script><script src="../js/trading-colonization.js?v=9"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
