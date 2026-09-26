@@ -108,6 +108,28 @@ assert.equal(aliasSearch.query.rareSource.systemName,'Ngurii');
 assert.equal(aliasSearch.query.rareSource.stationName,'Cheranovsky City');
 assert.match(aliasSearch.warning,/market-age cutoffs do not exclude the unique source/);
 
+const duplicateAliasRows=[{
+  ...aliasRows[0],
+  market_updated_at:new Date(aliasNow-2*60*1000).toISOString(),
+  market:[
+    {commodity:'Soontil Relics',category:'Consumer Items',buy_price:19700,sell_price:0,supply:0,demand:0},
+    {commodity:'Soontill Relics',category:'Consumer Items',buy_price:17000,sell_price:0,supply:24,demand:0},
+  ],
+}];
+const duplicateAlias=await searchTradeMarkets({TRADES:new FakeKV()},{
+  commodity:'Soontill Relics',
+  direction:'buy',
+  referenceSystem:'Diaba',
+  radiusLy:5,
+  minVolume:1,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:duplicateAliasRows}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(duplicateAlias.results[0].supply,24,'when both aliases appear, positive rare allocation must beat a zero alias row');
+assert.equal(duplicateAlias.results[0].buyPrice,17000);
+
 const legacyRareEnv={TRADES:new FakeKV()};
 await legacyRareEnv.TRADES.put('trade-market-observations-v1:soontilrelics',JSON.stringify({
   commodity:'soontilrelics',
@@ -171,14 +193,18 @@ const explicitZero=await searchTradeMarkets(legacyRareEnv,{
   priority:'critical',
   sort:'price',
 },{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:explicitZeroRows}),{status:200,headers:{'Content-Type':'application/json'}})});
-assert.equal(explicitZero.source,'Spansh','a live rare commodity row should remain authoritative even when it does not meet Min Supply');
-assert.equal(explicitZero.qualifyingMatchCount,0,'fresh explicit supply=0 must not count as a qualifying Watch/search match');
-assert.equal(explicitZero.results.length,1,'known rare source should remain visible even when current supply is zero');
-assert.equal(explicitZero.results[0].qualifies,false);
-assert.equal(explicitZero.results[0].rareSourceStatus,'no_observed_stock');
+assert.equal(explicitZero.source,'Spansh','the latest rare row should remain the raw market observation');
+assert.equal(explicitZero.qualifyingMatchCount,1,'a commander-specific 0 t report must not clear a remembered positive rare allocation');
+assert.equal(explicitZero.results.length,1,'known rare source should remain visible');
+assert.equal(explicitZero.results[0].qualifies,true);
 assert.equal(explicitZero.results[0].stationName,'Cheranovsky City');
-assert.equal(explicitZero.results[0].supply,0,'fresh zero stock must not be replaced by older cached stock');
-assert.equal(explicitZero.query.rareSource.stationName,'Cheranovsky City','known source metadata should remain available even with zero qualifying stock');
+assert.equal(explicitZero.results[0].supply,0,'raw Spansh supply should remain visible as the latest commander report');
+assert.equal(explicitZero.results[0].reportedSupply,0);
+assert.equal(explicitZero.results[0].allocationSupply,12,'last positive allocation should survive a later commander-specific zero report');
+assert.equal(explicitZero.results[0].allocationBuyPrice,19700);
+assert.ok(explicitZero.results[0].allocationObservedAt);
+assert.equal(explicitZero.results[0].commanderSensitiveSupply,true);
+assert.equal(explicitZero.query.rareSource.stationName,'Cheranovsky City');
 
 const rareSell=normalizeMarketSearch({
   commodity:'Soontill Relics',
@@ -394,7 +420,7 @@ assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=9/);
-assert.match(html,/trade-market\.js\?v=14/);
+assert.match(html,/trade-market\.js\?v=15/);
 assert.match(html,/trading\.js\?v=86/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
@@ -415,7 +441,9 @@ assert.match(client,/soontil relics/);
 assert.match(client,/Rare source&nbsp;/);
 assert.match(client,/Unique rare source · all distances|radiusField\.hidden=rareSource/);
 assert.match(client,/trade-commodity-rare-badge/);
-assert.match(client,/Known rare source · current observation does not qualify/);
+assert.match(client,/Rare allocation tracking/);
+assert.match(client,/Latest 0 t commander report ignored/);
+assert.match(client,/tracked allocation/);
 assert.match(client,/0 qualifying/);
 assert.match(client,/const PAGE_SIZE=10/);
 assert.match(client,/function bindFormattedInteger\(input\)/);
@@ -441,7 +469,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="91"/);
+assert.match(html,/data-trading-build="92"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
