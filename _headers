@@ -13,10 +13,16 @@
 /js/trading.js
   Cache-Control: no-cache, no-store, must-revalidate
 
+/js/trade-loops.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /js/trading-colonization.js
   Cache-Control: no-cache, no-store, must-revalidate
 
 /css/trade-market.css
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/css/trade-loops.css
   Cache-Control: no-cache, no-store, must-revalidate
 
 /css/trade-control.css

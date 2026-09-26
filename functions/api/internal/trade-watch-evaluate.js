@@ -3,18 +3,27 @@ import {
   evaluateTradeWatches,
   TRADE_WATCH_EVALUATION_BATCH_SIZE,
 } from '../../../lib/trade-watch-evaluator.js';
+import {
+  evaluateManagedTradeRoutes,
+  TRADE_ROUTE_EVALUATION_BATCH_SIZE,
+} from '../../../lib/trade-route-evaluator.js';
 
 export async function onRequestPost({request,env}){
   const auth=await authenticateCron(request,env);
   if(!auth.ok)return reply({ok:false,error:auth.error},auth.status);
 
   try{
-    const result=await evaluateTradeWatches(env,{
+    const origin=new URL(request.url).origin;
+    const watches=await evaluateTradeWatches(env,{
       maxWatches:TRADE_WATCH_EVALUATION_BATCH_SIZE,
       concurrency:2,
-      origin:new URL(request.url).origin,
+      origin,
     });
-    return reply(result);
+    const managedRoutes=await evaluateManagedTradeRoutes(env,{
+      maxRoutes:TRADE_ROUTE_EVALUATION_BATCH_SIZE,
+      origin,
+    });
+    return reply({ok:true,watches,managedRoutes});
   }catch(error){
     console.error('Scheduled Trade Watch evaluation failed',error);
     return reply({ok:false,error:'scheduled_trade_watch_evaluation_failed'},502);

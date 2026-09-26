@@ -84,6 +84,27 @@ assert.match(routeFields.find(field=>field.name==='📤 Return / Deliver')?.valu
 assert.equal(routeFields.find(field=>field.name==='Return Profit / t')?.value,'18,000 Cr');
 assert.equal(routeFields.find(field=>field.name==='Return Supply / Demand')?.value,'18,500 t');
 
+const managedPayload=buildTradeDiscordPayload({
+  ...route,
+  title:'Managed Gold Loop',
+  commodity:'Gold / Silver',
+  estimatedLoopProfit:35000,
+  distanceLy:'40',
+  legs:[{
+    commodity:'Gold',sourceMarketId:'A',sourceSystem:'Home',sourceStation:'Alpha Port',
+    destinationMarketId:'B',destinationSystem:'Away',destinationStation:'Beta Port',
+    buyPrice:100,sellPrice:300,profitPerTon:200,quantity:100,tripProfit:20000,
+  },{
+    commodity:'Silver',sourceMarketId:'B',sourceSystem:'Away',sourceStation:'Beta Port',
+    destinationMarketId:'A',destinationSystem:'Home',destinationStation:'Alpha Port',
+    buyPrice:50,sellPrice:200,profitPerTon:150,quantity:100,tripProfit:15000,
+  }],
+  optimizer:{managed:true,currentProfit:35000,baselineProfit:40000,thresholdDropPercent:25,state:'healthy'},
+},{origin:'https://mongrels-squadron.pages.dev',control,subscriberCount:1});
+assert.match(managedPayload.embeds[0].fields.find(field=>field.name==='🧭 Managed Loop')?.value||'',/35,000 Cr \/ loop/);
+assert.match(managedPayload.embeds[0].fields.find(field=>field.name==='Leg 1 · Gold')?.value||'',/Alpha Port/);
+assert.match(managedPayload.embeds[0].fields.find(field=>field.name==='Leg 2 · Silver')?.value||'',/Beta Port/);
+
 const compact=buildCompactTradeDiscordPayload({...route,status:'expired'},{control,reason:'Superseded'});
 assert.equal(compact.embeds.length,0);
 assert.equal(compact.components.length,0);
