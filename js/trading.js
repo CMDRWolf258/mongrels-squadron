@@ -283,7 +283,8 @@
       article.id='watch-'+watch.id;
       const q=watch.query||{};
       const profile=tradeControlState?.control?.priorities?.[q.priority]||{};
-      const refresh=profile.refreshMinutes?profile.refreshMinutes+' min':'Profile';
+      const rareSourceBuy=q.direction==='buy'&&Boolean(q.rareSource?.stationName);
+      const refresh=rareSourceBuy?'Hourly · 1–8 PM CT':(profile.refreshMinutes?profile.refreshMinutes+' min':'Profile');
       const state=watchStatusLabel(watch);
       const evaluation=watch.evaluation||{};
       const best=evaluation.currentBest||null;
