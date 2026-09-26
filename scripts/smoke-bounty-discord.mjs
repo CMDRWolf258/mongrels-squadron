@@ -49,6 +49,8 @@ assert.equal(complete.components[0].components[0].label,'View Bounty Board');
 const discord=readFileSync('lib/bounty-discord.js','utf8');
 for(const pattern of [
   /DISCORD_BOUNTY_BOARD_CHANNEL_ID/,
+  /configured&&bountyChannelName/,
+  /decorated=eligible\.find/,
   /💀〡bounty-board/,
   /plain bounty-board is also accepted/,
   /method:'PATCH'/,
