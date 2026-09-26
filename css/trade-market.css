@@ -101,3 +101,8 @@
 .trade-rare-source-mode span{color:#bfaeff;font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
 .trade-rare-source-mode strong{margin-top:3px;color:#eee9ff;font-size:.7rem}
 .trade-rare-source-mode small{margin-top:3px;color:var(--muted);font-size:.58rem}
+
+.trade-market-result.is-known-rare-source{border-color:rgba(155,124,255,.5)}
+.trade-rare-source-stock-state{display:flex;flex-direction:column;gap:4px;margin:0 0 11px;padding:10px 12px;border:1px solid rgba(155,124,255,.34);border-radius:8px;background:rgba(155,124,255,.055)}
+.trade-rare-source-stock-state strong{color:#d6c9ff;font-size:.65rem}
+.trade-rare-source-stock-state span{color:var(--muted);font-size:.61rem;line-height:1.45}

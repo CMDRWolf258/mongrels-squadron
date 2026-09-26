@@ -175,6 +175,66 @@ assert.equal(stored.evaluation.currentBest,null);
 assert.deepEqual(stored.evaluation.rankedMarkets,[]);
 assert.equal(stored.evaluation.lastTransition.type,'condition_cleared');
 
+const rareEnv={TRADES:new FakeKV()};
+const rareWatch=normalizeTradeWatch({
+  id:'87654321-abcd-4321-abcd-210987654321',
+  name:'Soontill Relics stock',
+  status:'active',
+  query:{
+    commodity:'Soontill Relics',
+    direction:'buy',
+    referenceSystem:'Diaba',
+    radiusLy:200,
+    minVolume:1,
+    price:0,
+    minPad:0,
+    carrierMode:'exclude',
+    maxAgeMinutes:2880,
+    priority:'critical',
+    sort:'price',
+    limit:100,
+  },
+  createdById:'111111111111111111',
+  createdByName:'CMDR Wolf258',
+  createdAt:new Date(baseNow-20*60*1000).toISOString(),
+  updatedAt:new Date(baseNow-20*60*1000).toISOString(),
+  evaluation:{
+    state:'healthy',
+    lastEvaluatedAt:new Date(baseNow-10*60*1000).toISOString(),
+    lastSuccessfulAt:new Date(baseNow-10*60*1000).toISOString(),
+    matchCount:1,
+    currentBest:{marketId:'rare-555',stationName:'Cheranovsky City',systemName:'Ngurii'},
+  },
+  discord:{publish:true},
+});
+await writeTradeWatches(rareEnv,[rareWatch]);
+const rareZeroRow=[{
+  id:'rare-555',
+  market_id:'rare-555',
+  name:'Cheranovsky City',
+  type:'Coriolis Starport',
+  distance_to_arrival:500,
+  large_pads:4,medium_pads:4,small_pads:4,
+  system_id64:'987',
+  system_name:'Ngurii',
+  system_x:10,system_y:20,system_z:30,
+  market_updated_at:new Date(baseNow-60000).toISOString(),
+  distance:250,
+  market:[{commodity:'Soontill Relics',category:'Consumer Items',buy_price:19700,sell_price:0,supply:0,demand:0}],
+}];
+const rareCleared=await evaluateTradeWatches(rareEnv,{
+  now:baseNow,
+  concurrency:1,
+  fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:rareZeroRow}),{status:200,headers:{'Content-Type':'application/json'}}),
+});
+assert.equal(rareCleared.results[0].transition,'condition_cleared');
+assert.equal(rareCleared.results[0].matchCount,0,'visible known source must not count as qualifying stock');
+const rareStored=(await readTradeWatches(rareEnv))[0];
+assert.equal(rareStored.evaluation.currentBest,null);
+assert.equal(rareStored.evaluation.knownRareSource.stationName,'Cheranovsky City');
+assert.equal(rareStored.evaluation.knownRareSource.volume,0);
+assert.equal(rareStored.evaluation.knownRareSource.rareSourceStatus,'no_observed_stock');
+
 const transition=detectTradeWatchTransition({
   matchCount:1,
   currentBest:{marketId:'1001'},
@@ -219,7 +279,7 @@ const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8')
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
 assert.match(html,/trade-control\.css\?v=10/);
-assert.match(html,/trade-market\.js\?v=13/);
+assert.match(html,/trade-market\.js\?v=14/);
 assert.match(html,/trading\.js\?v=85/);
 
 console.log('Trade Watch evaluator smoke checks passed.');

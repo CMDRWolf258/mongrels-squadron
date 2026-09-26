@@ -126,6 +126,28 @@ const rareBuyPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
 }),{origin:'https://mongrels-squadron.pages.dev',control});
 assert.match(rareBuyPayload.embeds[0].fields.map(field=>field.value).join('\n'),/all distances \(rare source\)/);
 
+const rareNoStockPayload=buildTradeWatchDiscordPayload(normalizeTradeWatch({
+  ...watch,
+  id:'99999999-abcd-4321-abcd-999999999998',
+  name:'Soontill Relics No Stock',
+  query:{...watch.query,commodity:'Soontill Relics',direction:'buy',radiusLy:200,minVolume:1},
+  evaluation:{
+    state:'healthy',
+    matchCount:0,
+    currentBest:null,
+    rankedMarkets:[],
+    knownRareSource:{
+      rank:1,marketId:'555',stationName:'Cheranovsky City',systemName:'Ngurii',
+      price:19700,volume:0,distanceLy:250,observedAt:'2026-09-25T18:29:00.000Z',
+      source:'Spansh',qualifies:false,rareSourceStatus:'no_observed_stock',
+    },
+  },
+}),{origin:'https://mongrels-squadron.pages.dev',control});
+const rareNoStockFields=rareNoStockPayload.embeds[0].fields.map(field=>field.value).join('\n');
+assert.match(rareNoStockFields,/Known Rare Source|Cheranovsky City/);
+assert.match(rareNoStockFields,/0 t/);
+assert.match(rareNoStockFields,/no qualifying stock/);
+
 const infraWatch=normalizeTradeWatch({
   ...watch,
   id:'77777777-abcd-4321-abcd-777777777777',
@@ -358,9 +380,12 @@ assert.match(watchApi,/closeTradeWatchDiscord/);
 assert.match(watchApi,/removeTradeAlertSubscriptions/);
 assert.match(watchApi,/syncTradeWatchDiscord/);
 
+const discord=readFileSync(new URL('../lib/trade-discord.js',import.meta.url),'utf8');
 const evaluator=readFileSync(new URL('../lib/trade-watch-evaluator.js',import.meta.url),'utf8');
 assert.match(evaluator,/sendTradeWatchTransitionAlert/);
 assert.match(evaluator,/condition_met','condition_cleared','best_market_changed/);
+assert.match(discord,/has \*\*not disappeared\*\*/);
+assert.match(discord,/Rare-source buys are searched at all distances/);
 assert.match(evaluator,/syncEvaluatedWatchDiscord/);
 assert.match(evaluator,/TRADE_WATCH_SHORTLIST_SIZE=5/);
 assert.match(evaluator,/rankedMarkets/);

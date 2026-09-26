@@ -389,7 +389,9 @@
         :'',
       '<span>Profile&nbsp;<strong>'+safe(q.priority||'standard')+'</strong></span>',
       '<span>Max age&nbsp;<strong>'+safe(ageText)+'</strong></span>',
-      '<span><strong>'+fmt(payload.results?.length||0)+'</strong>&nbsp;matches from '+fmt(payload.sourceResultCount||0)+' source candidates</span>',
+      q.rareSourceSearch&&Number(payload.qualifyingMatchCount||0)===0&&Array.isArray(payload.results)&&payload.results.some(item=>item?.qualifies===false)
+        ?'<span><strong>0 qualifying</strong>&nbsp;· 1 known source shown</span>'
+        :'<span><strong>'+fmt(Number.isFinite(Number(payload.qualifyingMatchCount))?payload.qualifyingMatchCount:(payload.results?.length||0))+'</strong>&nbsp;matches from '+fmt(payload.sourceResultCount||0)+' source candidates</span>',
       payload.partial?'<span><strong>Partial / fallback results</strong></span>':'',
     ].filter(Boolean).join('');
   }
@@ -407,7 +409,8 @@
     const economies=[bgs.stationPrimaryEconomy,bgs.stationSecondaryEconomy].filter(Boolean);
     const bgsAge=Number.isFinite(Number(bgs.metadataAgeMinutes))?ageLabel(bgs.metadataAgeMinutes):'Unknown BGS age';
     const article=document.createElement('article');
-    article.className='trade-market-result is-'+freshness+(bgs.infrastructureFailureMetalOpportunity?' has-infra-metal-signal':'');
+    const nonqualifying=item.qualifies===false;
+    article.className='trade-market-result is-'+freshness+(bgs.infrastructureFailureMetalOpportunity?' has-infra-metal-signal':'')+(nonqualifying?' is-known-rare-source':'');
     article.innerHTML=`
       <div class="trade-market-result-head">
         <div><p>${safe(item.systemName)}</p><h3>${safe(item.stationName)}</h3></div>
@@ -418,6 +421,7 @@
         <div><span>${buying?'Supply':'Demand'}</span><strong>${safe(quantity)}</strong></div>
         <div><span>Distance</span><strong>${safe(distance)}</strong></div>
       </div>
+      ${nonqualifying?`<div class="trade-rare-source-stock-state"><strong>Known rare source · current observation does not qualify</strong><span>${safe(rareSourceStatusText(item.rareSourceStatus,item,query))}</span></div>`:''}
       <div class="trade-market-result-sub">
         <span>${safe(carrier)}</span>
         <span>${safe(padLabel(item.maxLandingPadSize))} pad</span>
@@ -446,6 +450,16 @@
       }catch{}
     });
     return article;
+  }
+
+  function rareSourceStatusText(statusValue,item,query){
+    const state=String(statusValue||'');
+    if(state==='no_observed_stock')return'The latest community observation reports 0 t supply. Cheranovsky City remains the known source; stock can change between observations.';
+    if(state==='supply_below_threshold')return'The latest observed supply ('+fmt(item?.supply||0)+' t) is below your minimum of '+fmt(query?.minVolume||0)+' t.';
+    if(state==='price_above_threshold')return'The latest observed buy price ('+fmt(item?.buyPrice||0)+' Cr/t) is above your saved maximum.';
+    if(state==='price_unavailable')return'The latest observation does not include a usable buy price.';
+    if(state==='pad_below_threshold')return'The known source does not meet the selected pad-size filter.';
+    return'The source is still known, but the latest observation does not meet the selected filters.';
   }
 
   function defaultWatchName(query){
@@ -773,11 +787,14 @@
       const payload=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(payload.error||'Market search failed.');
       renderResults(payload);
-      status.textContent=payload.warning
-        ?payload.warning
-        :payload.results?.length
-          ?'Live market search complete.'
-          :'Search complete — no matching markets.';
+      const hasVisibleRareSource=Array.isArray(payload.results)&&payload.results.some(item=>item?.qualifies===false);
+      status.textContent=hasVisibleRareSource
+        ?'Known rare source shown — the current observation does not meet the selected stock/price filters.'
+        :payload.warning
+          ?payload.warning
+          :payload.results?.length
+            ?'Live market search complete.'
+            :'Search complete — no matching markets.';
       window.dispatchEvent(new CustomEvent('mongrels:trade-market-search',{detail:payload}));
     }catch(error){
       status.textContent=error.message||'Market search failed.';
