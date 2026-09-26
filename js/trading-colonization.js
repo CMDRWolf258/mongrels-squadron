@@ -18,7 +18,7 @@
   const recentJobUpdates=new Map();
   const RECENT_JOB_TTL_MS=120000;
 
-  const n=value=>Number(value||0);
+  const n=value=>Number(String(value??'').replace(/[^0-9.-]/g,''))||0;
   const fmt=value=>Math.round(n(value)).toLocaleString();
   const moneyM=value=>n(value).toLocaleString(undefined,{maximumFractionDigits:1})+'M Cr';
   const dateLabel=value=>{const d=new Date(value||'');return Number.isNaN(d.getTime())?'Unknown':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});};
