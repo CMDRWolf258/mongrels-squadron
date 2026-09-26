@@ -72,8 +72,8 @@
       ${route.objective?`<p class="trade-objective"><strong>Objective:</strong> ${safe(route.objective)}</p>`:''}
       ${route.notes?`<p class="trade-notes">${safe(route.notes)}</p>`:''}
       <div class="trade-card-foot"><div class="trade-tags">${tags}</div><small>${owner} · ${freshness}${route.expires?` · Expires ${dateLabel(route.expires)}`:''}</small></div>`;
-    article.querySelector('[data-copy-origin]')?.addEventListener('click',e=>copySystem(route.originSystem,e.currentTarget));
-    article.querySelector('[data-copy-destination]')?.addEventListener('click',e=>copySystem(route.destinationSystem,e.currentTarget));
+    article.querySelectorAll('[data-copy-origin]').forEach(button=>button.addEventListener('click',e=>copySystem(route.originSystem,e.currentTarget)));
+    article.querySelectorAll('[data-copy-destination]').forEach(button=>button.addEventListener('click',e=>copySystem(route.destinationSystem,e.currentTarget)));
     article.querySelector('.trade-edit-btn')?.addEventListener('click',()=>openEditor(route));
     return article;
   }
