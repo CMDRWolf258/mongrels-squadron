@@ -53,6 +53,9 @@ const route={
   destinationStation:'CG Station',
   profitPerTon:250000,
   quantity:'42,000 t',
+  returnCommodity:'Tritium',
+  returnProfitPerTon:18000,
+  returnQuantity:'18,500 t',
   padSize:'large',
   distanceLy:'18.4',
   status:'active',
@@ -71,6 +74,15 @@ assert.match(payload.embeds[0].description,/TEST FEED/);
 assert.match(payload.embeds[0].footer.text,/3 watching/);
 assert.equal(payload.components[0].components[0].custom_id,customId);
 assert.equal(payload.components[0].components[0].label,'Alert Me');
+const routeFields=payload.embeds[0].fields;
+assert.equal(routeFields.find(field=>field.name==='📦 Outbound Cargo')?.value,'**Gold**');
+assert.match(routeFields.find(field=>field.name==='📥 Buy / Load')?.value||'',/Source Station/);
+assert.match(routeFields.find(field=>field.name==='📤 Sell / Deliver')?.value||'',/CG Station/);
+assert.equal(routeFields.find(field=>field.name==='↩️ Return Cargo')?.value,'**Tritium**');
+assert.match(routeFields.find(field=>field.name==='📥 Return / Load')?.value||'',/CG Station/,'return load should reverse to the outbound destination');
+assert.match(routeFields.find(field=>field.name==='📤 Return / Deliver')?.value||'',/Source Station/,'return delivery should reverse to the outbound origin');
+assert.equal(routeFields.find(field=>field.name==='Return Profit / t')?.value,'18,000 Cr');
+assert.equal(routeFields.find(field=>field.name==='Return Supply / Demand')?.value,'18,500 t');
 
 const compact=buildCompactTradeDiscordPayload({...route,status:'expired'},{control,reason:'Superseded'});
 assert.equal(compact.embeds.length,0);
