@@ -298,8 +298,6 @@ assert.match(workflow,/2-57\/5 \* \* \* \*/);
 assert.match(workflow,/TRADE_WATCH_CRON_TOKEN/);
 assert.match(workflow,/SCOUT_DISCORD_CRON_TOKEN/);
 assert.match(workflow,/api\/internal\/trade-watch-evaluate/);
-assert.match(html,/Hourly · 1–8 PM CT/,'Trader UI should expose the rare-source cadence');
-
 const internalApi=readFileSync(new URL('../functions/api/internal/trade-watch-evaluate.js',import.meta.url),'utf8');
 assert.match(internalApi,/evaluateTradeWatches/);
 assert.match(internalApi,/TRADE_WATCH_CRON_TOKEN/);
@@ -313,6 +311,7 @@ assert.match(manualApi,/watchIds:\[id\]/);
 
 const client=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(client,/Run Now/);
+assert.match(client,/Hourly · 1–8 PM CT/,'Trader UI should expose the rare-source cadence');
 assert.match(client,/\/api\/trade-watches\/evaluate/);
 assert.match(client,/Current Best/);
 assert.match(client,/Fallback Markets/);
