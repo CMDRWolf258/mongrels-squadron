@@ -398,9 +398,17 @@
 
   function resultCard(item,query){
     const buying=query.direction==='buy';
-    const primaryPrice=buying?item.buyPrice:item.sellPrice;
+    const rareSourceBuy=buying&&Boolean(query.rareSourceSearch);
+    const allocationSupply=rareSourceBuy?Number(item.allocationSupply||0):0;
+    const reportedSupply=rareSourceBuy?Number(item.reportedSupply??item.supply??0):Number(item.supply||0);
+    const allocationPrice=rareSourceBuy?Number(item.allocationBuyPrice||0):0;
+    const primaryPrice=buying
+      ?(rareSourceBuy?(allocationPrice||item.buyPrice):item.buyPrice)
+      :item.sellPrice;
     const quantity=buying
-      ?fmt(item.supply)+' t supply'
+      ?(rareSourceBuy
+        ?fmt(allocationSupply||reportedSupply)+' t tracked allocation'
+        :fmt(item.supply)+' t supply')
       :(Number(item.demand)===0?'∞ demand':fmt(item.demand)+' t demand');
     const carrier=item.carrier?'Fleet Carrier':item.stationType||'Station';
     const distance=Number.isFinite(Number(item.distanceLy))?fmtLy(item.distanceLy)+' ly':'Distance unknown';
@@ -421,7 +429,7 @@
         <div><span>${buying?'Supply':'Demand'}</span><strong>${safe(quantity)}</strong></div>
         <div><span>Distance</span><strong>${safe(distance)}</strong></div>
       </div>
-      ${nonqualifying?`<div class="trade-rare-source-stock-state"><strong>Known rare source · current observation does not qualify</strong><span>${safe(rareSourceStatusText(item.rareSourceStatus,item,query))}</span></div>`:''}
+      ${rareSourceBuy&&item.commanderSensitiveSupply?`<div class="trade-rare-source-stock-state"><strong>${reportedSupply===0&&allocationSupply>0?'Latest 0 t commander report ignored':'Rare allocation tracking'}</strong><span>${safe(rareAllocationStatusText(item))}</span></div>`:(nonqualifying?`<div class="trade-rare-source-stock-state"><strong>Known rare source · current observation does not qualify</strong><span>${safe(rareSourceStatusText(item.rareSourceStatus,item,query))}</span></div>`:'')}
       <div class="trade-market-result-sub">
         <span>${safe(carrier)}</span>
         <span>${safe(padLabel(item.maxLandingPadSize))} pad</span>
@@ -452,10 +460,23 @@
     return article;
   }
 
+  function rareAllocationStatusText(item){
+    const reported=Math.max(0,Number(item?.reportedSupply??item?.supply??0)||0);
+    const allocation=Math.max(0,Number(item?.allocationSupply||0)||0);
+    const when=item?.allocationObservedAt?ageLabel(Math.max(0,(Date.now()-Date.parse(item.allocationObservedAt))/60000)):'unknown age';
+    if(reported===0&&allocation>0){
+      return'Latest uploader reported 0 t, which can reflect that commander exhausting their personal allotment. Last positive allocation: '+fmt(allocation)+' t · '+when+'.';
+    }
+    if(reported>0){
+      return'Positive allocation report: '+fmt(reported)+' t. Daily Watch tracking ignores later zero/partial depletion noise and keeps the strongest meaningful allocation for the observation window.';
+    }
+    return'No positive allocation has been observed yet. Zero reports are not treated as station depletion.';
+  }
+
   function rareSourceStatusText(statusValue,item,query){
     const state=String(statusValue||'');
-    if(state==='no_observed_stock')return'The latest community observation reports 0 t supply. Cheranovsky City remains the known source; stock can change between observations.';
-    if(state==='supply_below_threshold')return'The latest observed supply ('+fmt(item?.supply||0)+' t) is below your minimum of '+fmt(query?.minVolume||0)+' t.';
+    if(state==='no_positive_allocation_observed')return'No positive rare allocation has been observed yet; zero commander reports are ignored for station availability.';
+    if(state==='allocation_below_threshold')return'The tracked positive allocation ('+fmt(item?.allocationSupply||0)+' t) is below your minimum of '+fmt(query?.minVolume||0)+' t.';
     if(state==='price_above_threshold')return'The latest observed buy price ('+fmt(item?.buyPrice||0)+' Cr/t) is above your saved maximum.';
     if(state==='price_unavailable')return'The latest observation does not include a usable buy price.';
     if(state==='pad_below_threshold')return'The known source does not meet the selected pad-size filter.';
@@ -535,9 +556,12 @@
     const noteTitle=document.querySelector('[data-trade-watch-note-title]');
     const note=document.querySelector('[data-trade-watch-note]');
     if(noteTitle)noteTitle.textContent=editing?'Criteria change':'Saved Watch only';
-    if(note)note.textContent=editing
-      ?'Updating these criteria keeps the same watch but resets its evaluation state so the next scheduler run starts from the new rules.'
-      :'The evaluator wakes on a five-minute floor and checks this watch when its selected priority cadence is due. Use Run Now from Saved Watches to test it immediately.';
+    const rareSourceBuy=q.direction==='buy'&&Boolean(q.rareSource?.stationName);
+    if(note)note.textContent=rareSourceBuy
+      ?'Rare-source BUY Watches run hourly from 1–8 PM CT. Zero/partial commander depletion reports do not lower the tracked daily allocation; Run Now still checks immediately.'
+      :editing
+        ?'Updating these criteria keeps the same watch but resets its evaluation state so the next scheduler run starts from the new rules.'
+        :'The evaluator wakes on a five-minute floor and checks this watch when its selected priority cadence is due. Use Run Now from Saved Watches to test it immediately.';
     updateWatchLabels();
     if(watchStatus)watchStatus.textContent='';
   }
@@ -655,8 +679,13 @@
     const q=currentPayload?.query||{};
     const mode=resultSort?.value||q.sort||'price';
     const buying=q.direction==='buy';
-    const priceOf=item=>buying?Number(item.buyPrice||0):Number(item.sellPrice||0);
-    const volumeOf=item=>buying?Number(item.supply||0):Number(item.demand||0);
+    const rareSourceBuy=buying&&Boolean(q.rareSourceSearch);
+    const priceOf=item=>buying
+      ?Number(rareSourceBuy?(item.allocationBuyPrice||item.buyPrice||0):(item.buyPrice||0))
+      :Number(item.sellPrice||0);
+    const volumeOf=item=>buying
+      ?Number(rareSourceBuy?(item.allocationSupply||item.supply||0):(item.supply||0))
+      :Number(item.demand||0);
     const distanceOf=item=>{
       const value=Number(item.distanceLy);
       return Number.isFinite(value)?value:Number.MAX_SAFE_INTEGER;
