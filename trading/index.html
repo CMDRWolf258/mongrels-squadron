@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-trading-build="92">
+<html lang="en" data-trading-build="93">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=71"><link rel="stylesheet" href="../css/trading-colonization.css?v=4"><link rel="stylesheet" href="../css/trade-market.css?v=9"><link rel="stylesheet" href="../css/trade-loops.css?v=2"><link rel="stylesheet" href="../css/trade-control.css?v=10">
+  <link rel="stylesheet" href="../css/global.css?v=71"><link rel="stylesheet" href="../css/trading-colonization.css?v=4"><link rel="stylesheet" href="../css/trade-market.css?v=9"><link rel="stylesheet" href="../css/trade-cg.css?v=1"><link rel="stylesheet" href="../css/trade-loops.css?v=2"><link rel="stylesheet" href="../css/trade-control.css?v=10">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -55,6 +55,18 @@
     <div class="data-empty-state" data-market-empty hidden><div class="data-empty-icon">⌁</div><div><strong>No markets matched those filters.</strong><p>Try a wider radius, older data window, lower supply/demand threshold, or different price.</p></div></div>
       </div>
     </details>
+  </div>
+</section>
+<section class="section-sm trade-cg-section" data-trade-cg hidden>
+  <div class="container">
+    <div class="trade-cg-shell">
+      <div class="trade-cg-shell-head">
+        <div><p class="eyebrow">Frontier Community Goals</p><h2>Community Goal Operations</h2><p>Find the strongest live supply route into an active hauling CG. The squad primary updates itself when a better healthy source remains #1 for one hour.</p></div>
+        <div class="trade-post-actions"><button class="btn btn-primary" type="button" data-cg-create hidden>Create CG</button></div>
+      </div>
+      <div class="trade-cg-status" data-cg-status aria-live="polite">Loading Community Goal operations…</div>
+      <div class="trade-cg-list" data-cg-list></div>
+    </div>
   </div>
 </section>
 <section class="section-sm trade-loop-section" data-trade-loops hidden>
@@ -178,6 +190,31 @@
     </details>
   </div>
 </section>
+<section class="project-editor-shell" data-cg-editor hidden aria-label="Community Goal editor">
+  <div class="project-editor-backdrop" data-cg-cancel></div>
+  <form class="project-editor-panel" data-cg-form>
+    <div class="project-editor-head"><div><p class="eyebrow">Trader's Outpost · Community Goal</p><h2 data-cg-editor-title>Create Community Goal</h2></div><button class="btn btn-secondary" type="button" data-cg-cancel>Close</button></div>
+    <input type="hidden" data-cg-id>
+    <div class="trade-cg-editor-grid">
+      <label class="wide"><span>CG Title</span><input type="text" maxlength="180" required data-cg-title placeholder="Example: Deliver Industrial Materials"></label>
+      <label><span>Destination System</span><input type="text" maxlength="140" required data-cg-destination-system placeholder="System name"></label>
+      <label><span>Destination Station</span><input type="text" maxlength="140" required data-cg-destination-station placeholder="CG station"></label>
+      <label class="wide"><span>Accepted Commodities</span><textarea rows="4" required data-cg-commodities placeholder="Bertrandite&#10;Indite&#10;Gallite"></textarea></label>
+      <label><span>CG End Date / Time</span><input type="datetime-local" data-cg-end></label>
+      <label><span>Primary Ranking</span><select data-cg-auto-ranking><option value="profit">Best Profit / Trip</option><option value="supply">Highest Source Supply</option></select></label>
+      <label><span>Squad Cargo Model</span><input type="text" inputmode="numeric" data-number-format data-cg-auto-cargo value="784"></label>
+      <label><span>Search Radius (ly)</span><input type="number" min="1" max="500" data-cg-auto-radius value="100"></label>
+      <label><span>Minimum Pad</span><select data-cg-auto-pad><option value="3">Large</option><option value="2">Medium+</option><option value="1">Small+</option><option value="0">Any</option></select></label>
+      <label><span>Fleet Carriers</span><select data-cg-auto-carriers><option value="exclude">Exclude</option><option value="include">Include</option><option value="only">Only carriers</option></select></label>
+      <label><span>Maximum Data Age (min)</span><input type="number" min="5" max="1440" data-cg-auto-age value="120"></label>
+      <label><span>Primary Must Be Fresh Within (min)</span><input type="number" min="5" max="720" data-cg-auto-fresh value="60"></label>
+      <label><span>Minimum Primary Supply (t)</span><input type="text" inputmode="numeric" data-number-format data-cg-auto-supply value="5,000"></label>
+      <div class="trade-cg-editor-note">Automation checks every <strong>15 minutes</strong>. The first healthy primary is assigned immediately. After that, a different route must remain the best healthy candidate for <strong>1 hour</strong> before it automatically replaces the current primary.</div>
+      <label class="wide"><span>Notes / Instructions</span><textarea rows="4" maxlength="1600" data-cg-notes placeholder="Any CG-specific instructions, carrier staging, or squad priorities."></textarea></label>
+    </div>
+    <div class="project-editor-actions is-standard"><div class="project-editor-danger"></div><span class="project-editor-status" data-cg-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-cg-cancel>Close</button><button class="btn btn-primary" type="submit">Save CG</button></div></div>
+  </form>
+</section>
 <section class="project-editor-shell trade-watch-editor-shell" data-trade-watch-editor hidden aria-label="Trade Watch editor">
   <div class="project-editor-backdrop" data-trade-watch-cancel></div>
   <form class="project-editor-panel trade-watch-editor" data-trade-watch-form>
@@ -278,5 +315,5 @@
   });
 })();
 </script>
-<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=15"></script><script src="../js/trade-loops.js?v=2"></script><script src="../js/trading.js?v=86"></script><script src="../js/trading-colonization.js?v=9"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=15"></script><script src="../js/trade-cg.js?v=1"></script><script src="../js/trade-loops.js?v=2"></script><script src="../js/trading.js?v=87"></script><script src="../js/trading-colonization.js?v=9"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>

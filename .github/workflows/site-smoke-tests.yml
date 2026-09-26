@@ -49,6 +49,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-trade-intelligence.mjs
           node --experimental-default-type=module scripts/smoke-trade-market.mjs
           node --experimental-default-type=module scripts/smoke-trade-loops.mjs
+          node --experimental-default-type=module scripts/smoke-trade-cg.mjs
           node --experimental-default-type=module scripts/smoke-trade-watches.mjs
           node --experimental-default-type=module scripts/smoke-trade-watch-evaluator.mjs
           node --experimental-default-type=module scripts/smoke-trade-watch-discord.mjs

@@ -7,6 +7,10 @@ import {
   evaluateManagedTradeRoutes,
   TRADE_ROUTE_EVALUATION_BATCH_SIZE,
 } from '../../../lib/trade-route-evaluator.js';
+import {
+  evaluateTradeCgCampaigns,
+  TRADE_CG_EVALUATION_BATCH_SIZE,
+} from '../../../lib/trade-cg-evaluator.js';
 
 export async function onRequestPost({request,env}){
   const auth=await authenticateCron(request,env);
@@ -23,7 +27,11 @@ export async function onRequestPost({request,env}){
       maxRoutes:TRADE_ROUTE_EVALUATION_BATCH_SIZE,
       origin,
     });
-    return reply({ok:true,watches,managedRoutes});
+    const communityGoals=await evaluateTradeCgCampaigns(env,{
+      maxCampaigns:TRADE_CG_EVALUATION_BATCH_SIZE,
+      origin,
+    });
+    return reply({ok:true,watches,managedRoutes,communityGoals});
   }catch(error){
     console.error('Scheduled Trade Watch evaluation failed',error);
     return reply({ok:false,error:'scheduled_trade_watch_evaluation_failed'},502);
