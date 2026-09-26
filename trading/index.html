@@ -200,16 +200,16 @@
 <label><span>Job Scope</span><select data-colony-scope><option value="system">Any construction in system</option><option value="market">Specific construction build</option></select></label>
 <label data-colony-build-wrap hidden><span>Build Name</span><input type="text" maxlength="140" data-colony-build placeholder="Optional display name"><small>The internal construction-site ID can be linked later from verified observed-site data.</small></label>
 <label><span>Commodity Filter</span><input type="text" maxlength="100" data-colony-commodity placeholder="Optional · all commodities"></label>
-<label><span>Target Cargo (t)</span><input type="number" min="1" max="100000000" step="1" data-colony-target placeholder="Optional · leave blank for open-ended"><small>Leave blank for large or ongoing jobs with no fixed stopping point.</small></label>
+<label><span>Target Cargo (t)</span><input type="text" inputmode="numeric" maxlength="17" data-number-format data-number-max="100000000" data-colony-target placeholder="Optional · leave blank for open-ended"><small>Leave blank for large or ongoing jobs with no fixed stopping point.</small></label>
 <label><span>Reward Start Date / Time</span><input type="datetime-local" data-colony-start><small>Work at or after this time can count. Backdate it to include recent hauling that began before the post was created.</small></label>
 <label><span>Funding</span><select data-colony-funding><option value="none">No reward · help requested</option><option value="member">Member funded · I will pay</option><option value="squad">Request squad funding</option></select></label>
 <label><span>Status</span><select data-colony-job-status><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed / Archived</option></select></label>
 <div class="project-editor-wide colony-funding-fields" data-colony-funding-fields hidden>
   <div class="project-editor-grid">
-    <label><span>Reward Block (t)</span><input type="number" min="1" max="100000000" step="1" value="1000" data-colony-reward-tons></label>
-    <label><span>Reward / Block (M Cr)</span><input type="number" min="1" max="1000000" step="1" value="10" data-colony-reward-millions></label>
-    <label><span>Maximum Pledge (M Cr)</span><input type="number" min="1" max="100000000" step="1" data-colony-budget placeholder="Optional · leave blank for no cap"><small>Leave blank to keep reward liability open-ended until the job is completed.</small></label>
-    <label><span>Personal Cap (M Cr)</span><input type="number" min="0" max="100000000" step="1" data-colony-personal-cap placeholder="No per-CMDR cap"></label>
+    <label><span>Reward Block (t)</span><input type="text" inputmode="numeric" maxlength="17" value="1,000" data-number-format data-number-max="100000000" data-colony-reward-tons></label>
+    <label><span>Reward / Block (M Cr)</span><input type="text" inputmode="numeric" maxlength="13" value="10" data-number-format data-number-max="1000000" data-colony-reward-millions></label>
+    <label><span>Maximum Pledge (M Cr)</span><input type="text" inputmode="numeric" maxlength="17" data-number-format data-number-max="100000000" data-colony-budget placeholder="Optional · leave blank for no cap"><small>Leave blank to keep reward liability open-ended until the job is completed.</small></label>
+    <label><span>Personal Cap (M Cr)</span><input type="text" inputmode="numeric" maxlength="17" data-number-format data-number-max="100000000" data-colony-personal-cap placeholder="No per-CMDR cap"></label>
   </div>
   <p class="colony-funding-summary" data-colony-funding-summary></p>
 </div>
