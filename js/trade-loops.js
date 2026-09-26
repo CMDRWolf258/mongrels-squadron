@@ -14,6 +14,7 @@
   const priority=$('[data-loop-priority]');
   const age=$('[data-loop-age]');
   const threshold=$('[data-loop-threshold]');
+  const mongrelOnly=$('[data-loop-mongrel-only]');
   const status=$('[data-loop-status]');
   const results=$('[data-loop-results]');
   const resultsHead=$('[data-loop-results-head]');
@@ -59,6 +60,7 @@
     priority.value=['critical','high','standard','low'].includes(saved.priority)?saved.priority:'standard';
     age.value=Number(saved.maxAgeMinutes)>0?String(saved.maxAgeMinutes):'';
     threshold.value=Number(saved.thresholdDropPercent)>=5?String(saved.thresholdDropPercent):'25';
+    mongrelOnly.checked=Boolean(saved.mongrelOnly);
   }
 
   function settings(){
@@ -76,6 +78,7 @@
       priority:priority.value,
       maxAgeMinutes:Number(age.value)||undefined,
       thresholdDropPercent:Math.max(5,Math.min(90,Number(threshold.value)||25)),
+      mongrelOnly:Boolean(mongrelOnly.checked),
       limit:10,
     };
   }
@@ -144,7 +147,7 @@
       warning.textContent=payload.warning;
     }
     if(!currentResults.length){
-      results.innerHTML='<div class="trade-loop-empty">No profitable '+currentSettings.legCount+'-leg loop could be completed with the current pad, freshness, cargo, and distance settings.</div>';
+      results.innerHTML='<div class="trade-loop-empty">No profitable '+currentSettings.legCount+'-leg loop could be completed with the current pad, freshness, cargo, distance'+(currentSettings.mongrelOnly?', and Mongrel-ownership':'')+' settings.</div>';
       return;
     }
     results.replaceChildren(...currentResults.map((route,index)=>resultCard(route,index)));
@@ -155,9 +158,9 @@
     article.className='trade-loop-card';
     const legHtml=(route.legs||[]).map((leg,legIndex)=>`
       <div class="trade-loop-leg">
-        <div class="trade-loop-stop"><span>Leg ${legIndex+1} · Load</span><strong>${safe(leg.sourceStation)}</strong><small>${safe(leg.sourceSystem)}</small></div>
+        <div class="trade-loop-stop"><span>Leg ${legIndex+1} · Load</span><strong>${safe(leg.sourceStation)}</strong><small>${safe(leg.sourceSystem)}</small>${leg.sourceFaction?`<small class="trade-loop-owner">${safe(leg.sourceFaction)}</small>`:''}</div>
         <div class="trade-loop-leg-arrow">→</div>
-        <div class="trade-loop-stop"><span>Deliver</span><strong>${safe(leg.destinationStation)}</strong><small>${safe(leg.destinationSystem)}</small></div>
+        <div class="trade-loop-stop"><span>Deliver</span><strong>${safe(leg.destinationStation)}</strong><small>${safe(leg.destinationSystem)}</small>${leg.destinationFaction?`<small class="trade-loop-owner">${safe(leg.destinationFaction)}</small>`:''}</div>
         <div class="trade-loop-cargo"><strong>${safe(leg.commodity)}</strong><span>Buy ${fmt(leg.buyPrice)} · Sell ${fmt(leg.sellPrice)} Cr/t</span><span>+${fmt(leg.profitPerTon)} Cr/t</span><span>${fmt(leg.quantity)} t used</span><span>${fmt(leg.tripProfit)} Cr leg profit</span></div>
       </div>`).join('');
     article.innerHTML=`
@@ -226,7 +229,7 @@
       objective:'Managed Trade Loop Finder route. Prices, supply, demand, and better matching alternatives are reevaluated automatically.',
       notes:'Generated from a live community market snapshot. Verify market freshness before committing a large haul.',
       status:'active',
-      tags:['Managed Loop',routeLegs.length+'-Leg',query.scope==='same'?'Same System':query.radiusLy+' ly'],
+      tags:['Managed Loop',routeLegs.length+'-Leg',query.scope==='same'?'Same System':query.radiusLy+' ly',...(query.mongrelOnly?['Mongrel Faction']:[])],
       intelligence:{enabled:true,priority:query.priority},
       legs:routeLegs,
       optimizer:{
@@ -238,6 +241,7 @@
         cargoCapacity:query.cargoCapacity,
         minPad:query.minPad,
         carrierMode:query.carrierMode,
+        mongrelOnly:Boolean(query.mongrelOnly),
         priority:query.priority,
         maxAgeMinutes:query.maxAgeMinutes,
         thresholdDropPercent:query.thresholdDropPercent,

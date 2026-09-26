@@ -25,6 +25,7 @@ const twoQuery=normalizeLoopSearch({
 assert.equal(twoQuery.legCount,2);
 assert.equal(twoQuery.radiusLy,50);
 assert.equal(twoQuery.cargoCapacity,100);
+assert.equal(twoQuery.mongrelOnly,false);
 
 const triangleClamped=normalizeLoopSearch({
   startSystem:'Home',
@@ -44,8 +45,8 @@ const sameQuery=normalizeLoopSearch({
 },control);
 assert.equal(sameQuery.radiusLy,0);
 
-const station=(marketId,stationName,systemName,distanceLy,x,market)=>({
-  marketId,stationName,systemName,distanceLy,
+const station=(marketId,stationName,systemName,distanceLy,x,market,stationControllingFaction='Regiment of Imperial Mongrels')=>({
+  marketId,stationName,systemName,distanceLy,stationControllingFaction,
   systemX:x,systemY:0,systemZ:0,
   distanceToArrivalLs:500,
   maxLandingPadSize:3,
@@ -118,6 +119,27 @@ const same=optimizeTradeLoops([A,A2,A3],sameQuery);
 assert.ok(same.length>=1,'same-system optimizer should find loops between distinct stations in the work system');
 assert.equal(same[0].totalDistanceLy,0);
 
+const outsider=station('X','Outsider Port','Home',0,0,[
+  row('Gold',{sell:999,demand:1000}),
+  row('Silver',{buy:1,supply:1000}),
+],'Some Other Faction');
+const mongrelQuery=normalizeLoopSearch({
+  startSystem:'Home',scope:'same',legCount:2,cargoCapacity:100,minPad:3,mongrelOnly:true,
+},control);
+const mongrelOnlyResults=optimizeTradeLoops([A,A2,outsider],mongrelQuery);
+assert.ok(mongrelOnlyResults.length>=1);
+assert.ok(mongrelOnlyResults.every(route=>route.legs.every(leg=>
+  leg.sourceFaction==='Regiment of Imperial Mongrels'&&leg.destinationFaction==='Regiment of Imperial Mongrels'
+)),'Mongrel Faction Routes must exclude non-Mongrel-controlled stations');
+
+const ownershipChanged=[
+  {...A,stationControllingFaction:'Some Other Faction'},
+  A2,
+];
+const priorMongrelRoute=mongrelOnlyResults[0];
+const invalidAfterOwnershipChange=evaluateSpecificLoop(ownershipChanged,priorMongrelRoute.legs,mongrelQuery);
+assert.equal(invalidAfterOwnershipChange.valid,false,'managed Mongrel-only route must invalidate if a station changes faction ownership');
+
 const body=buildSpanshLoopSnapshotBody(twoQuery,new Date('2026-09-25T12:00:00Z'));
 assert.equal(body.reference_system,'Home');
 assert.equal(body.filters.distance.max,'50');
@@ -135,14 +157,19 @@ assert.match(html,/Trade Loop Finder/);
 assert.match(html,/Same system only/);
 assert.match(html,/3 legs · triangle/);
 assert.match(html,/data-loop-threshold/);
-assert.match(html,/trade-loops\.css\?v=1/);
-assert.match(html,/trade-loops\.js\?v=1/);
+assert.match(html,/data-loop-mongrel-only/);
+assert.match(html,/Mongrel Faction Routes/);
+assert.match(html,/trade-loops\.css\?v=2/);
+assert.match(html,/trade-loops\.js\?v=2/);
 
 const client=readFileSync(new URL('../js/trade-loops.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-loops\/search/);
 assert.match(client,/Post Managed Route/);
 assert.match(client,/optimizer:/);
 assert.match(client,/thresholdDropPercent/);
+assert.match(client,/mongrelOnly/);
+assert.match(client,/sourceFaction/);
+assert.match(client,/destinationFaction/);
 assert.match(client,/mongrels:trade-route-posted/);
 
 const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.meta.url),'utf8');

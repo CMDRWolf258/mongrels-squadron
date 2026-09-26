@@ -434,7 +434,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="88"/);
+assert.match(html,/data-trading-build="89"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
