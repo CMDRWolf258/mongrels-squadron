@@ -219,7 +219,7 @@ const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8')
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
 assert.match(html,/trade-control\.css\?v=10/);
-assert.match(html,/trade-market\.js\?v=12/);
+assert.match(html,/trade-market\.js\?v=13/);
 assert.match(html,/trading\.js\?v=83/);
 
 console.log('Trade Watch evaluator smoke checks passed.');
