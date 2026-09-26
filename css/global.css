@@ -864,3 +864,36 @@ a.profile-chip:hover{border-color:rgba(34,211,238,.72);background:rgba(34,211,23
   body:not(.assistant-page) .mongrel-assistant-launcher-mark{font-size:.9rem}
   .pvp-flare::before,.ships-flare::before,.carriers-flare::before,.trading-flare::before,.projects-flare::before,.guides-flare::before,.about-flare::before,.recruitment-flare::before{opacity:.22}
 }
+
+/* v71 — shared modal actions, formatted-number QoL, assistant collision guard */
+body.project-editor-open .mongrel-assistant-launcher,
+body:has(.project-editor-shell:not([hidden])) .mongrel-assistant-launcher{display:none!important}
+.project-editor-actions.project-editor-actions-standard{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px}
+.project-editor-actions-standard .project-editor-actions-danger{justify-self:start;display:flex;gap:10px}
+.project-editor-actions-standard .project-editor-actions-primary{justify-self:end;display:flex;gap:10px}
+.project-editor-actions-standard .project-editor-actions-danger .btn{border-color:rgba(255,123,123,.38);color:var(--danger);background:rgba(255,123,123,.07)}
+.project-editor-actions-standard .project-editor-actions-danger .btn:hover{border-color:var(--danger);background:rgba(255,123,123,.12)}
+.project-editor-action-status{min-width:0;color:var(--muted)}
+@media(max-width:520px){
+  .project-editor-actions.project-editor-actions-standard{grid-template-columns:1fr;align-items:stretch}
+  .project-editor-actions-standard .project-editor-actions-danger,
+  .project-editor-actions-standard .project-editor-actions-primary{justify-self:stretch;width:100%}
+  .project-editor-actions-standard .project-editor-actions-danger{order:3}
+  .project-editor-actions-standard .project-editor-actions-primary{display:grid;grid-template-columns:1fr 1fr}
+  .project-editor-actions-standard .project-editor-actions-primary .btn,
+  .project-editor-actions-standard .project-editor-actions-danger .btn{width:100%}
+}
+.trade-return-editor{border:1px solid rgba(34,211,238,.18);border-radius:10px;padding:14px;background:rgba(34,211,238,.025)}
+.trade-return-editor-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.trade-return-editor-head strong{color:#e9fbff;font-size:.76rem}
+.trade-return-editor-head small{color:var(--muted);font-size:.62rem;line-height:1.4;text-align:right}
+.trade-route-return{margin-top:-12px;border-top:0}
+.trade-return-cargo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-10px 0 18px;color:var(--muted);font-size:.68rem}
+.trade-return-cargo span{color:#bfaeff;font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.trade-return-cargo strong{color:#eee9ff}
+
+@media(max-width:600px){
+  .trade-route-return .trade-arrow{transform:rotate(-90deg)}
+  .trade-return-editor-head{align-items:flex-start;flex-direction:column}
+  .trade-return-editor-head small{text-align:left}
+}

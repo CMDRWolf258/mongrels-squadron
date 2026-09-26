@@ -53,6 +53,9 @@ const route={
   destinationStation:'CG Station',
   profitPerTon:250000,
   quantity:'42,000 t',
+  returnCommodity:'Tritium',
+  returnProfitPerTon:12000,
+  returnQuantity:'8,000',
   padSize:'large',
   distanceLy:'18.4',
   status:'active',
@@ -71,6 +74,7 @@ assert.match(payload.embeds[0].description,/TEST FEED/);
 assert.match(payload.embeds[0].footer.text,/3 watching/);
 assert.equal(payload.components[0].components[0].custom_id,customId);
 assert.equal(payload.components[0].components[0].label,'Alert Me');
+assert.ok(payload.embeds[0].fields.some(field=>field.name==='↩ Return Load'&&/Tritium/.test(field.value)),'Discord route card should show optional return cargo');
 
 const compact=buildCompactTradeDiscordPayload({...route,status:'expired'},{control,reason:'Superseded'});
 assert.equal(compact.embeds.length,0);
@@ -90,6 +94,12 @@ assert.match(html,/data-duration-hours/);
 assert.match(html,/data-duration-minutes/);
 assert.match(html,/entering 90 in a minutes box becomes 1 hr 30 min/i);
 assert.doesNotMatch(html,/data-priority-field=/,'legacy minute-only freshness controls should be removed');
+assert.match(html,/data-market-collapse/,'Commodity Search should use the collapsed-by-default details shell');
+assert.doesNotMatch(html,/data-market-collapse[^>]*\sopen(?:\s|>)/,'Commodity Search should default closed');
+assert.match(html,/data-trade-return-commodity/);
+assert.match(html,/data-trade-return-profit/);
+assert.match(html,/data-trade-return-quantity/);
+assert.match(html,/data-number-format/,'large route quantities should use shared comma formatting');
 
 const client=readFileSync(new URL('../js/trading.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-control/);
@@ -102,11 +112,18 @@ assert.doesNotMatch(client,/hourValue\+=Math\.floor\(minuteValue\/60\)/,'overflo
 assert.match(client,/minutes\.value=minuteValue/);
 assert.match(client,/function readDuration\(container,field/);
 assert.match(client,/refreshMinutes:\{min:5,max:10080\}/);
+assert.match(client,/trade-route-return/,'route cards should render a reverse-arrow return leg');
+assert.match(client,/returnCommodity/);
+assert.match(client,/returnProfitPerTon/);
+assert.match(client,/returnQuantity/);
 
 const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.meta.url),'utf8');
 assert.match(tradeApi,/syncTradeDiscord/);
 assert.match(tradeApi,/Boolean\(existing\.official\)/,'member edit must preserve an Officer-designated official status');
 assert.match(tradeApi,/removeTradeAlertSubscriptions/);
+assert.match(tradeApi,/returnCommodity:/);
+assert.match(tradeApi,/returnProfitPerTon:/);
+assert.match(tradeApi,/returnQuantity:/);
 
 const controlApi=readFileSync(new URL('../functions/api/trade-control/index.js',import.meta.url),'utf8');
 assert.match(controlApi,/officer','site_admin/);
@@ -126,3 +143,10 @@ assert.match(discord,/flags:DISCORD_SUPPRESS_NOTIFICATIONS/,'public threshold ca
 assert.match(discord,/deliverTradeAlertDms/,'subscribers should receive the opt-in alert privately');
 
 console.log('Trade Intelligence smoke checks passed.');
+
+const siteClient=readFileSync(new URL('../js/site.js',import.meta.url),'utf8');
+assert.match(siteClient,/data-number-format/,'shared site client should format large integer fields');
+assert.match(siteClient,/standardizeEditorActions/,'shared site client should standardize modal action layout');
+const globalCss=readFileSync(new URL('../css/global.css',import.meta.url),'utf8');
+assert.match(globalCss,/project-editor-actions-standard/);
+assert.match(globalCss,/project-editor-open \.mongrel-assistant-launcher/,'Assistant launcher should not cover open modal actions');

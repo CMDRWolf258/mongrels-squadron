@@ -101,3 +101,13 @@
 .trade-rare-source-mode span{color:#bfaeff;font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
 .trade-rare-source-mode strong{margin-top:3px;color:#eee9ff;font-size:.7rem}
 .trade-rare-source-mode small{margin-top:3px;color:var(--muted);font-size:.58rem}
+
+.trade-market-collapsible{border:1px solid var(--line);border-radius:var(--radius);background:rgba(5,10,13,.34);overflow:visible}
+.trade-market-collapsible>summary{list-style:none;cursor:pointer;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.trade-market-collapsible>summary::-webkit-details-marker{display:none}
+.trade-market-collapsible>summary .trade-market-heading{margin:0;flex:1}
+.trade-market-collapse-toggle{flex:0 0 auto;border:1px solid var(--line-accent);border-radius:999px;padding:7px 10px;color:var(--accent);font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.trade-market-collapsible[open] .trade-market-collapse-toggle::before{content:"Collapse"}
+.trade-market-collapsible:not([open]) .trade-market-collapse-toggle::before{content:"Open search"}
+.trade-market-collapse-body{padding:0 18px 18px}
+@media(max-width:760px){.trade-market-collapsible>summary{align-items:flex-start;flex-direction:column}.trade-market-collapse-toggle{align-self:flex-start}}
