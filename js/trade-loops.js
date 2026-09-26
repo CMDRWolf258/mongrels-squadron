@@ -14,6 +14,7 @@
   const priority=$('[data-loop-priority]');
   const age=$('[data-loop-age]');
   const threshold=$('[data-loop-threshold]');
+  const mongrelOnly=$('[data-loop-mongrel-only]');
   const status=$('[data-loop-status]');
   const results=$('[data-loop-results]');
   const resultsHead=$('[data-loop-results-head]');
@@ -59,6 +60,7 @@
     priority.value=['critical','high','standard','low'].includes(saved.priority)?saved.priority:'standard';
     age.value=Number(saved.maxAgeMinutes)>0?String(saved.maxAgeMinutes):'';
     threshold.value=Number(saved.thresholdDropPercent)>=5?String(saved.thresholdDropPercent):'25';
+    mongrelOnly.checked=Boolean(saved.mongrelOnly);
   }
 
   function settings(){
@@ -76,6 +78,7 @@
       priority:priority.value,
       maxAgeMinutes:Number(age.value)||undefined,
       thresholdDropPercent:Math.max(5,Math.min(90,Number(threshold.value)||25)),
+      mongrelOnly:Boolean(mongrelOnly.checked),
       limit:10,
     };
   }
@@ -226,7 +229,7 @@
       objective:'Managed Trade Loop Finder route. Prices, supply, demand, and better matching alternatives are reevaluated automatically.',
       notes:'Generated from a live community market snapshot. Verify market freshness before committing a large haul.',
       status:'active',
-      tags:['Managed Loop',routeLegs.length+'-Leg',query.scope==='same'?'Same System':query.radiusLy+' ly'],
+      tags:['Managed Loop',routeLegs.length+'-Leg',query.scope==='same'?'Same System':query.radiusLy+' ly',...(query.mongrelOnly?['Mongrel Faction']:[])],
       intelligence:{enabled:true,priority:query.priority},
       legs:routeLegs,
       optimizer:{
@@ -238,6 +241,7 @@
         cargoCapacity:query.cargoCapacity,
         minPad:query.minPad,
         carrierMode:query.carrierMode,
+        mongrelOnly:Boolean(query.mongrelOnly),
         priority:query.priority,
         maxAgeMinutes:query.maxAgeMinutes,
         thresholdDropPercent:query.thresholdDropPercent,
