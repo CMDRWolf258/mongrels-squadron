@@ -387,7 +387,7 @@ assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=7/);
-assert.match(html,/trade-market\.js\?v=11/);
+assert.match(html,/trade-market\.js\?v=12/);
 assert.match(html,/trading\.js\?v=83/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
@@ -399,6 +399,7 @@ assert.match(client,/function validateCommoditySelection\(\)/);
 assert.match(client,/ArrowDown/);
 assert.match(client,/includesRares/);
 assert.match(client,/function rareSourceSearch\(commodityValue,directionValue\)/);
+assert.match(client,/knownRareSource=commodityAliasKey\(commodityValue\)===['"]soontill relics['"]/);
 assert.match(client,/commodityAliasKey/);
 assert.match(client,/soontil relics/);
 assert.match(client,/Rare source&nbsp;/);
@@ -423,7 +424,7 @@ assert.match(tradeClient,/const fmtLy = value =>/);
 assert.match(tradeClient,/maximumFractionDigits:2/);
 assert.match(tradeClient,/health\.source/);
 
-assert.match(html,/data-trading-build="84"/);
+assert.match(html,/data-trading-build="85"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
@@ -436,6 +437,9 @@ assert.match(headersFile,/\/js\/trade-market\.js/);
 assert.match(headersFile,/\/js\/trading\.js/);
 assert.match(headersFile,/\/css\/trade-market\.css/);
 assert.match(headersFile,/Cache-Control: no-cache, no-store, must-revalidate/);
+
+const commodityApi=readFileSync(new URL('../functions/api/trade-market/commodities.js',import.meta.url),'utf8');
+assert.doesNotMatch(commodityApi,/readSession|authentication_required|member_access_required/,'commodity catalog should stay public/read-only so rare metadata is consistent across devices');
 
 const searchApi=readFileSync(new URL('../functions/api/trade-market/search.js',import.meta.url),'utf8');
 assert.match(searchApi,/member','officer','site_admin/);
