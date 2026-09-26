@@ -65,3 +65,11 @@
 .trade-managed-state.is-warning>div{border-color:rgba(255,209,102,.28);background:rgba(255,209,102,.03)}
 .trade-managed-state.is-warning span{color:var(--warning)}
 @media(max-width:700px){.trade-managed-leg{grid-template-columns:1fr}.trade-managed-leg .trade-arrow{transform:rotate(90deg);justify-self:start}.trade-managed-leg-profit{text-align:left}.trade-managed-state{grid-template-columns:1fr}}
+
+.trade-managed-editor-note{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:16px;align-items:end;padding:13px 14px;border:1px solid rgba(34,211,238,.3);border-radius:10px;background:rgba(34,211,238,.04)}
+.trade-managed-editor-note[hidden]{display:none!important}
+.trade-managed-editor-note>div>strong{display:block;color:var(--accent);font-size:.78rem;margin-bottom:4px}
+.trade-managed-editor-note>div>span{display:block;color:var(--muted);font-size:.66rem;line-height:1.5}
+.trade-managed-editor-note label{display:grid;gap:6px}
+.trade-managed-editor-note label>span{color:var(--muted);font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+@media(max-width:650px){.trade-managed-editor-note{grid-template-columns:1fr}}
