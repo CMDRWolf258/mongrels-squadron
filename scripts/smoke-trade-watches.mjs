@@ -82,9 +82,9 @@ assert.match(html,/data-trade-watch-carriers/);
 assert.match(html,/data-trade-watch-sort/);
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/data-trade-watch-list/);
-assert.match(html,/trade-market\.css\?v=8/);
+assert.match(html,/trade-market\.css\?v=9/);
 assert.match(html,/trade-control\.css\?v=10/);
-assert.match(html,/trade-market\.js\?v=13/);
+assert.match(html,/trade-market\.js\?v=14/);
 assert.match(html,/trading\.js\?v=85/);
 
 const marketClient=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
