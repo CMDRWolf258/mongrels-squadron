@@ -75,6 +75,10 @@ const A2=station('A2','Home Two','Home',0,0,[
   row('Gold',{sell:180,demand:1000}),
   row('Silver',{buy:70,supply:1000}),
 ]);
+const A3=station('A3','Home Three','Home',0,0,[
+  row('Silver',{sell:250,demand:1000}),
+  row('Tritium',{buy:30,supply:1000}),
+]);
 
 const two=optimizeTradeLoops([A,B,C,A2],twoQuery);
 assert.ok(two.length>=1);
@@ -110,7 +114,7 @@ assert.deepEqual(three[0].legs.map(leg=>leg.commodity),['Gold','Palladium','Trit
 assert.equal(three[0].loopProfit,54000);
 assert.equal(three[0].totalDistanceLy,60);
 
-const same=optimizeTradeLoops([A,A2],sameQuery);
+const same=optimizeTradeLoops([A,A2,A3],sameQuery);
 assert.ok(same.length>=1,'same-system optimizer should find loops between distinct stations in the work system');
 assert.equal(same[0].totalDistanceLy,0);
 
