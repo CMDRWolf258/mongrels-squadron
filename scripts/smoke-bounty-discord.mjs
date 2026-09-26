@@ -75,17 +75,22 @@ const pvp=readFileSync('pvp/index.html','utf8');
 assert.match(pvp,/id="bounty-board"/);
 assert.match(pvp,/Post Bounty/);
 assert.match(pvp,/Elite Dangerous only/);
-assert.match(pvp,/pvp\.js\?v=70/);
+assert.match(pvp,/pvp\.js\?v=71/);
+assert.match(pvp,/global\.css\?v=72/);
 
 const client=readFileSync('js/pvp.js','utf8');
 for(const pattern of [
   /bounty-discord-sync-btn/,
   /Sync Discord/,
+  /bounty-discord-error/,
+  /Discord sync failed:/,
   /discordFailure/,
   /Bounty saved, but Discord did not sync:/,
   /method:'PUT'/,
   /result\?\.discord\?\.mode==='recreated'/,
 ])assert.match(client,pattern);
+const globalCss=readFileSync('css/global.css','utf8');
+assert.match(globalCss,/\.bounty-discord-error/);
 new Function(client);
 
 console.log('✓ Bounty Board posts, edits, missing-card repair, completion history, deletion, and Discord channel discovery are wired');
