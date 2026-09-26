@@ -49,12 +49,15 @@ assert.equal(complete.components[0].components[0].label,'View Bounty Board');
 const discord=readFileSync('lib/bounty-discord.js','utf8');
 for(const pattern of [
   /DISCORD_BOUNTY_BOARD_CHANNEL_ID/,
+  /configured&&bountyChannelName/,
+  /decorated=eligible\.find/,
   /💀〡bounty-board/,
   /plain bounty-board is also accepted/,
   /method:'PATCH'/,
   /method:'DELETE'/,
   /View Bounty Board/,
   /allowed_mentions:\{parse:\[\]\}/,
+  /attempted channel ID/,
 ])assert.match(discord,pattern);
 assert.doesNotMatch(discord,/\/guilds\/[^'"]*\/channels'[^\n]*method:'POST'/,'Bounty Board integration must not create Discord channels');
 assert.doesNotMatch(discord,/\/pins\//,'Bounty Board integration should leave pinning/manual channel presentation alone');
