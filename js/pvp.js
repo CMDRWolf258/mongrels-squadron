@@ -49,8 +49,10 @@
       const card = document.createElement('article');
       card.className = `bounty-card bounty-${safe(item.status)}`;
       const system = item.system ? `<div class="project-system bounty-system"><span>${safe(item.system)}</span><button type="button" class="copy-system-btn" data-copy-system aria-label="Copy system name">⧉</button></div>` : '';
+      const discordNeedsRepair=item.canEdit&&(!item.discord?.linked||item.discord?.error);
+      const discordAction=discordNeedsRepair?'<button type="button" class="btn btn-secondary bounty-discord-sync-btn">Sync Discord</button>':'';
       card.innerHTML = `
-        <div class="bounty-card-head"><div><span class="bounty-status">${safe(label(item.status))}</span></div>${item.canEdit?'<button type="button" class="btn btn-secondary bounty-edit-btn">Edit</button>':''}</div>
+        <div class="bounty-card-head"><div><span class="bounty-status">${safe(label(item.status))}</span></div><div>${discordAction}${item.canEdit?'<button type="button" class="btn btn-secondary bounty-edit-btn">Edit</button>':''}</div></div>
         <p class="bounty-kicker">Target Commander</p><h3>${safe(item.target)}</h3>
         ${system}
         <div class="bounty-reward"><span>Reward</span><strong>${safe(item.reward)}</strong></div>
@@ -58,6 +60,7 @@
         <dl class="bounty-meta"><div><dt>Posted by</dt><dd>${safe(item.ownerName)}</dd></div><div><dt>Expires</dt><dd>${safe(formatDate(item.expires))}</dd></div><div><dt>Proof</dt><dd>${safe(item.proof || 'Screenshot or combat report')}</dd></div></dl>`;
       card.querySelector('[data-copy-system]')?.addEventListener('click', e=>copySystem(item.system,e.currentTarget));
       card.querySelector('.bounty-edit-btn')?.addEventListener('click',()=>openEditor(item));
+      card.querySelector('.bounty-discord-sync-btn')?.addEventListener('click',e=>syncDiscord(item,e.currentTarget));
       grid.appendChild(card);
     });
   }
@@ -78,7 +81,10 @@
   }
   function closeEditor(){ if(dirty && !confirm('Discard unsaved bounty changes?')) return; shell.hidden=true; document.body.classList.remove('project-editor-open'); editing=null; dirty=false; }
   function payload(){ return {id:$('[data-bounty-id]').value||undefined,target:$('[data-bounty-target]').value,reward:$('[data-bounty-reward]').value,system:$('[data-bounty-system]').value,status:$('[data-bounty-status]').value,expires:$('[data-bounty-expires]').value,reason:$('[data-bounty-reason]').value,proof:$('[data-bounty-proof]').value}; }
-  async function save(event){ event.preventDefault(); const status=$('[data-bounty-form-status]'); status.textContent='Saving…'; const {response,payload:result}=await apiFetch('/api/bounties',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'bounty-editor'},body:JSON.stringify(payload())}); if(!response.ok){status.textContent=result.error||'Unable to save bounty.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open'); }
+  function bountyPayload(item){ return {id:item?.id,target:item?.target,reward:item?.reward,system:item?.system,status:item?.status,expires:item?.expires,reason:item?.reason,proof:item?.proof}; }
+  function discordFailure(result){ return result?.discord&&result.discord.ok===false ? (result.discord.error||result.discord.mode||'Discord sync failed.') : ''; }
+  async function save(event){ event.preventDefault(); const status=$('[data-bounty-form-status]'); status.textContent='Saving…'; const {response,payload:result}=await apiFetch('/api/bounties',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'bounty-editor'},body:JSON.stringify(payload())}); if(!response.ok){status.textContent=result.error||'Unable to save bounty.';return;} dirty=false; const discordError=discordFailure(result); await load(); if(discordError){status.textContent='Bounty saved, but Discord did not sync: '+discordError; return;} shell.hidden=true; document.body.classList.remove('project-editor-open'); editing=null; }
+  async function syncDiscord(item,button){ if(!item?.id)return; const old=button?.textContent||'Sync Discord'; if(button){button.disabled=true;button.textContent='Syncing…';} try{ const {response,payload:result}=await apiFetch('/api/bounties',{method:'PUT',headers:{'Content-Type':'application/json','X-Mongrels-Request':'bounty-editor'},body:JSON.stringify(bountyPayload(item))}); if(!response.ok)throw new Error(result.error||'Unable to save bounty.'); const discordError=discordFailure(result); if(discordError)throw new Error(discordError); if(button)button.textContent=result?.discord?.mode==='recreated'?'Recreated ✓':'Synced ✓'; await load(); }catch(error){ if(button){button.textContent='Discord failed';button.title=String(error?.message||error||'Discord sync failed');button.disabled=false;} return; } if(button)setTimeout(()=>{button.textContent=old;button.disabled=false;},1200); }
   async function remove(){ if(!editing || !confirm('Delete this bounty? This cannot be undone.')) return; const {response,payload:result}=await apiFetch(`/api/bounties?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'bounty-editor'}}); if(!response.ok){$('[data-bounty-form-status]').textContent=result.error||'Unable to delete bounty.';return;} dirty=false; await load(); shell.hidden=true; document.body.classList.remove('project-editor-open'); }
 
   function renderMemberFilter() {
