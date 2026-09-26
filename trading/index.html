@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-trading-build="87">
+<html lang="en" data-trading-build="88">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=71"><link rel="stylesheet" href="../css/trading-colonization.css?v=4"><link rel="stylesheet" href="../css/trade-market.css?v=8"><link rel="stylesheet" href="../css/trade-control.css?v=10">
+  <link rel="stylesheet" href="../css/global.css?v=71"><link rel="stylesheet" href="../css/trading-colonization.css?v=4"><link rel="stylesheet" href="../css/trade-market.css?v=8"><link rel="stylesheet" href="../css/trade-loops.css?v=1"><link rel="stylesheet" href="../css/trade-control.css?v=10">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -53,6 +53,36 @@
       <button class="btn btn-secondary btn-compact" type="button" data-market-page-next>Next</button>
     </nav>
     <div class="data-empty-state" data-market-empty hidden><div class="data-empty-icon">⌁</div><div><strong>No markets matched those filters.</strong><p>Try a wider radius, older data window, lower supply/demand threshold, or different price.</p></div></div>
+      </div>
+    </details>
+  </div>
+</section>
+<section class="section-sm trade-loop-section" data-trade-loops hidden>
+  <div class="container">
+    <details class="trade-loop-disclosure">
+      <summary>
+        <div><p class="eyebrow">Route Intelligence</p><h2>Trade Loop Finder</h2></div>
+        <div class="trade-loop-summary-copy">Start with the system you are working in and rank the most profitable complete loops that return you home. Two-leg loops are the primary mode; three-leg triangles can stay in-system or use a tightly bounded radius.</div>
+      </summary>
+      <div class="trade-loop-body">
+        <form class="trade-loop-form" data-trade-loop-form>
+          <div class="trade-loop-grid">
+            <label><span>Start / Work System</span><input type="text" maxlength="140" required data-loop-start placeholder="NGC 2546 Sector UZ-G d10-16"><small>Every result starts and finishes in this system.</small></label>
+            <label><span>Loop Scope</span><select data-loop-scope><option value="same">Same system only</option><option value="radius" selected>Outside start system · set radius</option></select><small>Radius mode requires the loop to leave the start system.</small></label>
+            <label><span>Legs</span><select data-loop-legs><option value="2" selected>2 legs · out and back</option><option value="3">3 legs · triangle</option></select><small>3-leg cross-system searches are capped at 100 ly.</small></label>
+            <label><span>Maximum Distance</span><div class="trade-market-unit-input"><input type="number" min="1" max="500" step="1" value="50" data-loop-radius><em>ly</em></div><small data-loop-radius-help>Maximum distance from the start system; each loop returns to it.</small></label>
+            <label><span>Cargo Capacity</span><div class="trade-market-unit-input"><input type="text" inputmode="numeric" autocomplete="off" value="784" data-number-format data-number-max="2000" data-loop-cargo><em>t</em></div><small>Profit uses the cargo the route can actually fill.</small></label>
+            <label><span>Minimum Pad</span><select data-loop-pad><option value="3" selected>Large</option><option value="2">Medium+</option><option value="1">Small+</option><option value="0">Any pad</option></select></label>
+            <label><span>Fleet Carriers</span><select data-loop-carriers><option value="exclude" selected>Exclude</option><option value="include">Include</option><option value="only">Only carriers</option></select></label>
+            <label><span>Freshness Profile</span><select data-loop-priority><option value="critical">Critical</option><option value="high">High</option><option value="standard" selected>Standard</option><option value="low">Low</option></select></label>
+            <label><span>Maximum Data Age</span><select data-loop-age><option value="">Use profile fresh limit</option><option value="30">30 minutes</option><option value="90">90 minutes</option><option value="120">2 hours</option><option value="360">6 hours</option><option value="1440">24 hours</option><option value="2880">48 hours</option></select></label>
+            <label><span>Managed Route Alert</span><div class="trade-market-unit-input"><input type="number" min="5" max="90" step="5" value="25" data-loop-threshold><em>%</em></div><small>After posting, alert when loop profit drops this far below its original value.</small></label>
+          </div>
+          <div class="trade-loop-actions"><span data-loop-status aria-live="polite">Ready to rank complete loops.</span><button class="btn btn-primary" type="submit">Find Best Loops</button></div>
+        </form>
+        <div class="trade-loop-results-head" data-loop-results-head hidden><div><strong data-loop-results-summary>Top routes</strong><br><small>Ranked by estimated credits per completed loop.</small></div></div>
+        <div class="trade-loop-warning" data-loop-warning hidden></div>
+        <div class="trade-loop-results" data-loop-results></div>
       </div>
     </details>
   </div>
@@ -247,5 +277,5 @@
   });
 })();
 </script>
-<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=13"></script><script src="../js/trading.js?v=84"></script><script src="../js/trading-colonization.js?v=9"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=64"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=13"></script><script src="../js/trade-loops.js?v=1"></script><script src="../js/trading.js?v=84"></script><script src="../js/trading-colonization.js?v=9"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
