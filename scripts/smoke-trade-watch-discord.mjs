@@ -380,6 +380,7 @@ assert.match(watchApi,/closeTradeWatchDiscord/);
 assert.match(watchApi,/removeTradeAlertSubscriptions/);
 assert.match(watchApi,/syncTradeWatchDiscord/);
 
+const discord=readFileSync(new URL('../lib/trade-discord.js',import.meta.url),'utf8');
 const evaluator=readFileSync(new URL('../lib/trade-watch-evaluator.js',import.meta.url),'utf8');
 assert.match(evaluator,/sendTradeWatchTransitionAlert/);
 assert.match(evaluator,/condition_met','condition_cleared','best_market_changed/);
