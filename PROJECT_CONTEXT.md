@@ -238,6 +238,37 @@ Market-data direction:
 - Watch Discord automation remains routed to **🧪〡system-testing** until Wolf explicitly changes Trade Control to production. **not yet enabled:** BGS-specific search/Watch filters, automatic alerts when BGS state changes without a market-rank transition, cross-source promotion between Spansh/MongrelScout observations, or MongrelScout market writes.
 - future market-source changes must not require Trader's Outpost UI/card code to know whether an observation came from Spansh, EDData, MongrelScout, or another adapter.
 
+### PvP Bounty Board Discord integration
+
+Channel:
+- preferred Discord channel: **💀〡bounty-board**
+- plain `bounty-board` remains a fallback.
+- optional explicit override: `DISCORD_BOUNTY_BOARD_CHANNEL_ID`
+- existing Imperial Mongrels Website bot + `GUILD_ID` are reused; no new Cloudflare resource.
+
+Authority and lifecycle:
+- website `/pvp/#bounty-board` remains authoritative and member-only.
+- creating a website bounty saves the bounty first, then creates one Discord card.
+- editing a bounty edits the same Discord message using stored `discordMessageId` + `discordChannelId`.
+- **Active → Claimed → Complete** updates the same card; Claimed/Complete cards remain in Discord as contract history.
+- explicit website Delete removes the tracked Discord card after the website record is removed.
+- Discord sync failure never rolls back the website bounty.
+- Discord tracking metadata is stored on the BOUNTIES record: message/channel ID, last sync timestamp, last error.
+- normal member API responses hide Discord IDs and expose only linked/sync-health state.
+
+Discord card:
+- target Commander, reward, optional system/location, contract terms, proof requirement, poster, expiration.
+- status colors: Active red, Claimed amber, Complete green.
+- **View Bounty Board** link returns to `/pvp/#bounty-board`.
+- no pings and no Discord-side claim button in v1; the website status remains authoritative.
+- no automatic pinning and no channel creation/rename.
+- required permissions: View Channel, Send Messages, Embed Links, Read Message History.
+
+Primary files:
+- `lib/bounty-discord.js`
+- `functions/api/bounties/index.js`
+- `scripts/smoke-bounty-discord.mjs`
+
 ### Squad Payouts Discord visibility
 
 Channel:
