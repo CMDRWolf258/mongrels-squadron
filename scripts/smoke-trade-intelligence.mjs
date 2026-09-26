@@ -79,6 +79,9 @@ assert.match(compact.content,/SUPERSEDED/);
 
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/data-trade-control/);
+assert.match(html,/project-editor-actions is-standard/);
+assert.match(html,/project-editor-danger/);
+assert.match(html,/project-editor-primary-actions/);
 assert.match(html,/Trade Operations Control/);
 assert.match(html,/1552127291234983956/);
 assert.match(html,/1029221573988720722/);
@@ -107,6 +110,9 @@ const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.me
 assert.match(tradeApi,/syncTradeDiscord/);
 assert.match(tradeApi,/Boolean\(existing\.official\)/,'member edit must preserve an Officer-designated official status');
 assert.match(tradeApi,/removeTradeAlertSubscriptions/);
+assert.match(tradeApi,/returnCommodity:/);
+assert.match(tradeApi,/returnProfitPerTon:/);
+assert.match(tradeApi,/returnQuantity:/);
 
 const controlApi=readFileSync(new URL('../functions/api/trade-control/index.js',import.meta.url),'utf8');
 assert.match(controlApi,/officer','site_admin/);

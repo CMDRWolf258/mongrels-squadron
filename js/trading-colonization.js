@@ -18,7 +18,7 @@
   const recentJobUpdates=new Map();
   const RECENT_JOB_TTL_MS=120000;
 
-  const n=value=>Number(value||0);
+  const n=value=>Number(String(value??'').replace(/[^0-9.-]/g,''))||0;
   const fmt=value=>Math.round(n(value)).toLocaleString();
   const moneyM=value=>n(value).toLocaleString(undefined,{maximumFractionDigits:1})+'M Cr';
   const dateLabel=value=>{const d=new Date(value||'');return Number.isNaN(d.getTime())?'Unknown':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});};
@@ -243,7 +243,7 @@
   function openEditor(job=null){
     editing=job;dirty=false;shell.hidden=false;document.body.classList.add('project-editor-open');
     $('[data-colony-form-title]').textContent=job?'Edit Colonization Job':'Post Colonization Job';
-    $('[data-colony-id]').value=job?.id||'';$('[data-colony-title]').value=job?.title||'';$('[data-colony-system]').value=job?.system||'';$('[data-colony-scope]').value=job?.scope||'system';$('[data-colony-build]').value=job?.buildName||'';$('[data-colony-commodity]').value=job?.commodity||'';$('[data-colony-target]').value=n(job?.targetTons)>0?job.targetTons:'';$('[data-colony-start]').value=toLocalInput(job?.startsAt);$('[data-colony-funding]').value=job?.fundingMode||'none';$('[data-colony-job-status]').value=job?.status||'active';$('[data-colony-reward-tons]').value=job?.rewardBlockTons||1000;$('[data-colony-reward-millions]').value=job?.rewardBlockMillions||10;$('[data-colony-budget]').value=n(job?.rewardBudgetMillions)>0?job.rewardBudgetMillions:'';$('[data-colony-personal-cap]').value=job?.personalCapMillions??'';$('[data-colony-notes]').value=job?.notes||'';$('[data-colony-form-status]').textContent='';$('[data-colony-close-job]').hidden=!job||job.status==='completed';
+    $('[data-colony-id]').value=job?.id||'';$('[data-colony-title]').value=job?.title||'';$('[data-colony-system]').value=job?.system||'';$('[data-colony-scope]').value=job?.scope||'system';$('[data-colony-build]').value=job?.buildName||'';$('[data-colony-commodity]').value=job?.commodity||'';$('[data-colony-target]').value=n(job?.targetTons)>0?job.targetTons:'';$('[data-colony-start]').value=toLocalInput(job?.startsAt);$('[data-colony-funding]').value=job?.fundingMode||'none';$('[data-colony-job-status]').value=job?.status||'active';$('[data-colony-reward-tons]').value=job?.rewardBlockTons||1000;$('[data-colony-reward-millions]').value=job?.rewardBlockMillions||10;$('[data-colony-budget]').value=n(job?.rewardBudgetMillions)>0?job.rewardBudgetMillions:'';$('[data-colony-personal-cap]').value=job?.personalCapMillions??'';$('[data-colony-notes]').value=job?.notes||'';$('[data-colony-form-status]').textContent='';$('[data-colony-close-job]').hidden=!job||job.status==='completed'; document.querySelectorAll('[data-colony-form] input[data-number-format]').forEach(input=>window.MongrelNumbers?.format(input));
     const immutable=Boolean(job);$('[data-colony-system]').disabled=immutable&&!job?.canModerate;$('[data-colony-scope]').disabled=immutable&&!job?.canModerate;$('[data-colony-build]').disabled=immutable&&!job?.canModerate;$('[data-colony-commodity]').disabled=immutable&&!job?.canModerate;
     $('[data-colony-start]').disabled=Boolean(job&&!job.canEditStart);
     const lockRewards=Boolean(job&&!job.canEditFunding);$('[data-colony-funding]').disabled=lockRewards;

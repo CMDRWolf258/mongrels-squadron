@@ -22,7 +22,8 @@
   let tradeControlState = null;
   let tradeWatches = [];
 
-  const n = value => Number(value || 0);
+  const n = value => Number(String(value ?? '').replace(/[^0-9.-]/g,'')) || 0;
+  const fmtInput = value => n(value)>0 ? Math.trunc(n(value)).toLocaleString('en-US') : '';
   const fmt = value => n(value).toLocaleString();
   const fmtLy = value => {
     const distance=Number(value);
@@ -47,13 +48,18 @@
     const destSystem = route.destinationSystem ? `<span class="trade-system-inline">${safe(route.destinationSystem)} <button type="button" class="copy-system-btn" data-copy-destination aria-label="Copy destination system">⧉</button></span>` : '';
     const freshness = route.updatedAt ? ageLabel(route.updatedAt) : (route.updated ? `Updated ${dateLabel(route.updated)}` : 'No timestamp');
     const owner = route.ownerName ? `Posted by ${safe(route.ownerName)}` : 'Squad-curated';
-    const quantity = route.quantity ? `<div><span>Quantity</span><strong>${safe(route.quantity)}</strong></div>` : '';
+    const quantity = route.quantity ? `<div><span>Quantity</span><strong>${safe(fmtInput(route.quantity) || route.quantity)}</strong></div>` : '';
+    const hasReturn = Boolean(route.returnCommodity);
+    const returnProfit = route.returnProfitPerTon ? `${fmt(route.returnProfitPerTon)} Cr/t` : 'Profit not listed';
+    const returnQuantity = route.returnQuantity ? `${safe(fmtInput(route.returnQuantity) || route.returnQuantity)} t` : '';
+    const returnLeg = hasReturn ? `<div class="trade-return-leg"><div class="trade-return-meta"><span>Return cargo</span><strong>${safe(route.returnCommodity)}</strong>${route.returnProfitPerTon?`<small>${returnProfit}</small>`:''}${returnQuantity?`<small>${returnQuantity}</small>`:''}</div><div class="trade-route-line trade-route-line-return"><div><span>Return / Deliver</span><strong>${safe(route.originStation || '—')}</strong><small>${safe(route.originSystem || '')}</small></div><div class="trade-arrow">←</div><div><span>Return / Load</span><strong>${safe(route.destinationStation || '—')}</strong><small>${safe(route.destinationSystem || '')}</small></div></div></div>` : '';
     const article = document.createElement('article');
     article.className = `trade-card${route.official?' trade-card-official':''}`;
     if (route.id) article.id = `trade-${route.id}`;
     article.innerHTML = `
       <div class="trade-card-head"><div><p class="trade-kicker">${safe(route.commodity || 'Commodity')}</p><h3>${safe(route.title || `${route.originSystem || ''} → ${route.destinationSystem || ''}`)}</h3></div><div class="trade-card-actions">${priority}${edit}</div></div>
       <div class="trade-route-line"><div><span>Buy / Load</span><strong>${safe(route.originStation || '—')}</strong><small>${originSystem}</small></div><div class="trade-arrow">→</div><div><span>Sell / Deliver</span><strong>${safe(route.destinationStation || '—')}</strong><small>${destSystem}</small></div></div>
+      ${returnLeg}
       <div class="trade-metrics"><div><span>Profit</span><strong>${profit}</strong>${total?`<small>${total}</small>`:''}</div><div><span>Pad</span><strong>${safe(route.padSize || 'Unknown')}</strong></div><div><span>Distance</span><strong>${route.distanceLy?`${fmtLy(route.distanceLy)} ly`:'—'}</strong></div>${quantity}</div>
       ${route.objective?`<p class="trade-objective"><strong>Objective:</strong> ${safe(route.objective)}</p>`:''}
       ${route.notes?`<p class="trade-notes">${safe(route.notes)}</p>`:''}
@@ -479,9 +485,61 @@
       status.textContent=error.message||'Unable to save Trade Control.';
     }
   }
-  function openEditor(route=null){editing=route;dirty=false;shell.hidden=false;document.body.classList.add('project-editor-open'); $('[data-trade-form-title]').textContent=route?'Edit Trade Route':'Post Trade Route'; $('[data-trade-id]').value=route?.id||''; $('[data-trade-category]').value=route?.category||'credits'; $('[data-trade-official]').value=route?.official?'true':'false'; $('[data-trade-title]').value=route?.title||''; $('[data-trade-commodity]').value=route?.commodity||''; $('[data-trade-origin-system]').value=route?.originSystem||''; $('[data-trade-origin-station]').value=route?.originStation||''; $('[data-trade-destination-system]').value=route?.destinationSystem||''; $('[data-trade-destination-station]').value=route?.destinationStation||''; $('[data-trade-profit]').value=route?.profitPerTon||''; $('[data-trade-loop-profit]').value=route?.estimatedLoopProfit||''; $('[data-trade-pad]').value=String(route?.padSize||'large').toLowerCase(); $('[data-trade-distance]').value=route?.distanceLy||''; $('[data-trade-quantity]').value=route?.quantity||''; $('[data-trade-expires]').value=route?.expires||''; $('[data-trade-status]').value=route?.status||'active'; $('[data-trade-tags]').value=(route?.tags||[]).join(', '); $('[data-trade-objective]').value=route?.objective||''; $('[data-trade-notes]').value=route?.notes||''; $('[data-trade-delete]').hidden=!route; $('[data-trade-form-status]').textContent=''; $('[data-trade-official-wrap]').hidden=!manager();}
+  function openEditor(route=null){
+    editing=route;dirty=false;shell.hidden=false;document.body.classList.add('project-editor-open');
+    $('[data-trade-form-title]').textContent=route?'Edit Trade Route':'Post Trade Route';
+    $('[data-trade-id]').value=route?.id||'';
+    $('[data-trade-category]').value=route?.category||'credits';
+    $('[data-trade-official]').value=route?.official?'true':'false';
+    $('[data-trade-title]').value=route?.title||'';
+    $('[data-trade-commodity]').value=route?.commodity||'';
+    $('[data-trade-origin-system]').value=route?.originSystem||'';
+    $('[data-trade-origin-station]').value=route?.originStation||'';
+    $('[data-trade-destination-system]').value=route?.destinationSystem||'';
+    $('[data-trade-destination-station]').value=route?.destinationStation||'';
+    $('[data-trade-profit]').value=fmtInput(route?.profitPerTon);
+    $('[data-trade-loop-profit]').value=fmtInput(route?.estimatedLoopProfit);
+    $('[data-trade-pad]').value=String(route?.padSize||'large').toLowerCase();
+    $('[data-trade-distance]').value=route?.distanceLy||'';
+    $('[data-trade-quantity]').value=fmtInput(route?.quantity)||route?.quantity||'';
+    $('[data-trade-return-commodity]').value=route?.returnCommodity||'';
+    $('[data-trade-return-profit]').value=fmtInput(route?.returnProfitPerTon);
+    $('[data-trade-return-quantity]').value=fmtInput(route?.returnQuantity)||route?.returnQuantity||'';
+    $('[data-trade-expires]').value=route?.expires||'';
+    $('[data-trade-status]').value=route?.status||'active';
+    $('[data-trade-tags]').value=(route?.tags||[]).join(', ');
+    $('[data-trade-objective]').value=route?.objective||'';
+    $('[data-trade-notes]').value=route?.notes||'';
+    $('[data-trade-delete]').hidden=!route;
+    $('[data-trade-form-status]').textContent='';
+    $('[data-trade-official-wrap]').hidden=!manager();
+    form.querySelectorAll('input[data-number-format]').forEach(input=>window.MongrelNumbers?.format(input));
+  }
   function closeEditor(){if(dirty&&!confirm('Discard unsaved trade changes?'))return;shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
-  function payload(){return{id:$('[data-trade-id]').value||undefined,category:$('[data-trade-category]').value,official:$('[data-trade-official]').value==='true',title:$('[data-trade-title]').value,commodity:$('[data-trade-commodity]').value,originSystem:$('[data-trade-origin-system]').value,originStation:$('[data-trade-origin-station]').value,destinationSystem:$('[data-trade-destination-system]').value,destinationStation:$('[data-trade-destination-station]').value,profitPerTon:Number($('[data-trade-profit]').value)||0,estimatedLoopProfit:Number($('[data-trade-loop-profit]').value)||0,padSize:$('[data-trade-pad]').value,distanceLy:$('[data-trade-distance]').value,quantity:$('[data-trade-quantity]').value,expires:$('[data-trade-expires]').value,status:$('[data-trade-status]').value,tags:$('[data-trade-tags]').value,objective:$('[data-trade-objective]').value,notes:$('[data-trade-notes]').value};}
+  function payload(){return{
+    id:$('[data-trade-id]').value||undefined,
+    category:$('[data-trade-category]').value,
+    official:$('[data-trade-official]').value==='true',
+    title:$('[data-trade-title]').value,
+    commodity:$('[data-trade-commodity]').value,
+    originSystem:$('[data-trade-origin-system]').value,
+    originStation:$('[data-trade-origin-station]').value,
+    destinationSystem:$('[data-trade-destination-system]').value,
+    destinationStation:$('[data-trade-destination-station]').value,
+    profitPerTon:n($('[data-trade-profit]').value),
+    estimatedLoopProfit:n($('[data-trade-loop-profit]').value),
+    padSize:$('[data-trade-pad]').value,
+    distanceLy:$('[data-trade-distance]').value,
+    quantity:String(Math.trunc(n($('[data-trade-quantity]').value))||''),
+    returnCommodity:$('[data-trade-return-commodity]').value,
+    returnProfitPerTon:n($('[data-trade-return-profit]').value),
+    returnQuantity:String(Math.trunc(n($('[data-trade-return-quantity]').value))||''),
+    expires:$('[data-trade-expires]').value,
+    status:$('[data-trade-status]').value,
+    tags:$('[data-trade-tags]').value,
+    objective:$('[data-trade-objective]').value,
+    notes:$('[data-trade-notes]').value
+  };}
   async function save(event){event.preventDefault();const status=$('[data-trade-form-status]');status.textContent='Saving…';const {response,payload:result}=await apiFetch('/api/trades',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-editor'},body:JSON.stringify(payload())});if(!response.ok){status.textContent=result.error||'Unable to save route.';return;}dirty=false;await loadPosted();closeEditorForce();}
   function closeEditorForce(){shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
   async function remove(){if(!editing||!confirm('Delete this trade route?'))return;const {response,payload:result}=await apiFetch(`/api/trades?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'trade-editor'}});if(!response.ok){$('[data-trade-form-status]').textContent=result.error||'Unable to delete route.';return;}dirty=false;await loadPosted();closeEditorForce();}

@@ -247,3 +247,27 @@
     })();
   }
 })();
+
+
+/* Shared formatted integer inputs */
+(() => {
+  const rawInteger=value=>String(value??'').replace(/[^0-9]/g,'');
+  const numberValue=value=>{
+    const digits=rawInteger(value);
+    return digits?Number(digits):0;
+  };
+  const format=input=>{
+    if(!input||!input.matches('input[data-number-format]'))return;
+    const digits=rawInteger(input.value).replace(/^0+(?=\d)/,'');
+    if(!digits){input.value='';return;}
+    const max=Number(input.dataset.numberMax)||Number.MAX_SAFE_INTEGER;
+    const value=Math.min(Number(digits),max);
+    input.value=Number.isFinite(value)?Math.trunc(value).toLocaleString('en-US'):'';
+  };
+  document.querySelectorAll('input[data-number-format]').forEach(format);
+  document.addEventListener('input',event=>{
+    const input=event.target.closest?.('input[data-number-format]');
+    if(input)format(input);
+  });
+  window.MongrelNumbers={value:numberValue,format};
+})();
