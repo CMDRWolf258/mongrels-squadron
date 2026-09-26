@@ -250,7 +250,13 @@ const rareWatch=normalizeTradeWatch({
     lastEvaluatedAt:new Date(baseNow-10*60*1000).toISOString(),
     lastSuccessfulAt:new Date(baseNow-10*60*1000).toISOString(),
     matchCount:1,
-    currentBest:{marketId:'rare-555',stationName:'Cheranovsky City',systemName:'Ngurii'},
+    currentBest:{
+      marketId:'rare-555',stationName:'Cheranovsky City',systemName:'Ngurii',
+      price:19700,volume:24,reportedVolume:24,allocationVolume:24,
+      allocationPrice:19700,allocationObservedAt:new Date(baseNow-10*60*1000).toISOString(),
+      observedAt:new Date(baseNow-10*60*1000).toISOString(),
+      commanderSensitiveSupply:true,
+    },
   },
   discord:{publish:true},
 });
@@ -275,13 +281,36 @@ const rareCleared=await evaluateTradeWatches(rareEnv,{
   concurrency:1,
   fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:rareZeroRow}),{status:200,headers:{'Content-Type':'application/json'}}),
 });
-assert.equal(rareCleared.results[0].transition,'condition_cleared');
-assert.equal(rareCleared.results[0].matchCount,0,'visible known source must not count as qualifying stock');
-const rareStored=(await readTradeWatches(rareEnv))[0];
-assert.equal(rareStored.evaluation.currentBest,null);
-assert.equal(rareStored.evaluation.knownRareSource.stationName,'Cheranovsky City');
-assert.equal(rareStored.evaluation.knownRareSource.volume,0);
-assert.equal(rareStored.evaluation.knownRareSource.rareSourceStatus,'no_observed_stock');
+assert.equal(rareCleared.results[0].transition,'','commander-specific zero must not clear a rare Watch');
+assert.equal(rareCleared.results[0].matchCount,1,'tracked positive allocation should remain qualifying through a zero report');
+let rareStored=(await readTradeWatches(rareEnv))[0];
+assert.equal(rareStored.evaluation.currentBest.stationName,'Cheranovsky City');
+assert.equal(rareStored.evaluation.currentBest.volume,24,'previous positive allocation should survive a later zero report');
+assert.equal(rareStored.evaluation.rareAllocation.value,24);
+assert.equal(rareStored.evaluation.rareAllocation.lastReportedSupply,0);
+assert.equal(rareStored.evaluation.knownRareSource.reportedVolume,0);
+
+const rareHighRow=[{
+  ...rareZeroRow[0],
+  market_updated_at:new Date(baseNow+59*60*1000).toISOString(),
+  market:[{commodity:'Soontill Relics',category:'Consumer Items',buy_price:17000,sell_price:0,supply:700,demand:0}],
+}];
+const rareRaised=await evaluateTradeWatches(rareEnv,{
+  now:baseNow+60*60*1000,
+  force:true,
+  concurrency:1,
+  fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:rareHighRow}),{status:200,headers:{'Content-Type':'application/json'}}),
+});
+assert.equal(rareRaised.results[0].transition,'rare_allocation_changed');
+assert.equal(rareRaised.results[0].matchCount,1);
+rareStored=(await readTradeWatches(rareEnv))[0];
+assert.equal(rareStored.evaluation.currentBest.volume,700);
+assert.equal(rareStored.evaluation.currentBest.price,17000);
+assert.equal(rareStored.evaluation.rareAllocation.value,700);
+assert.equal(rareStored.evaluation.rareAllocation.previousValue,24);
+assert.equal(rareStored.evaluation.lastTransition.fromVolume,24);
+assert.equal(rareStored.evaluation.lastTransition.toVolume,700);
+assert.equal(rareStored.evaluation.lastTransition.direction,'up');
 
 const transition=detectTradeWatchTransition({
   matchCount:1,
@@ -327,7 +356,7 @@ const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8')
 assert.match(html,/evaluated automatically on their assigned priority cadence/);
 assert.match(html,/five-minute floor/);
 assert.match(html,/trade-control\.css\?v=10/);
-assert.match(html,/trade-market\.js\?v=14/);
+assert.match(html,/trade-market\.js\?v=15/);
 assert.match(html,/trading\.js\?v=86/);
 
 console.log('Trade Watch evaluator smoke checks passed.');
