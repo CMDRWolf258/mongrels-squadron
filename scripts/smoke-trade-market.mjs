@@ -390,7 +390,7 @@ assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=8/);
 assert.match(html,/trade-market\.js\?v=13/);
-assert.match(html,/trading\.js\?v=84/);
+assert.match(html,/trading\.js\?v=85/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -434,7 +434,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="87"/);
+assert.match(html,/data-trading-build="88"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
@@ -445,6 +445,8 @@ assert.match(headersFile,/\/trading\//);
 assert.match(headersFile,/\/trading\/\*/);
 assert.match(headersFile,/\/js\/trade-market\.js/);
 assert.match(headersFile,/\/js\/trading\.js/);
+assert.match(headersFile,/\/js\/trade-loops\.js/);
+assert.match(headersFile,/\/css\/trade-loops\.css/);
 assert.match(headersFile,/\/css\/trade-market\.css/);
 assert.match(headersFile,/Cache-Control: no-cache, no-store, must-revalidate/);
 
