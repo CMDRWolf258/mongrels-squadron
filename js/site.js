@@ -305,7 +305,6 @@
     const danger=document.createElement('div');
     danger.className='project-editor-actions-danger';
     dangerButtons.forEach(button=>danger.appendChild(button));
-    danger.hidden=!danger.children.length;
     const primary=document.createElement('div');
     primary.className='project-editor-actions-primary';
     close.remove();
