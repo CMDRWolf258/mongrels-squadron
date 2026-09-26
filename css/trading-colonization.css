@@ -22,3 +22,37 @@
 .colonization-site-linker-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .colonization-site-linker-actions select{min-width:min(100%,260px);flex:1 1 220px}
 @media(max-width:640px){.colonization-site-linker-actions{align-items:stretch}.colonization-site-linker-actions .btn{width:100%}}
+
+
+/* Trader's Outpost QoL */
+.trade-market-disclosure{border:1px solid rgba(34,211,238,.2);border-radius:var(--radius);background:rgba(8,12,15,.72);overflow:hidden}
+.trade-market-disclosure>summary{cursor:pointer;list-style:none;margin:0;padding:22px 24px;align-items:center}
+.trade-market-disclosure>summary::-webkit-details-marker{display:none}
+.trade-market-disclosure>summary::after{content:"+";flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line-accent);border-radius:50%;color:var(--accent);font-size:1.05rem;font-weight:900}
+.trade-market-disclosure[open]>summary::after{content:"−"}
+.trade-market-summary-copy{display:flex;align-items:center;justify-content:flex-end;gap:16px;min-width:0}
+.trade-market-summary-copy p{margin:0!important;max-width:620px}
+.trade-market-disclosure-toggle{color:var(--accent);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.trade-market-disclosure[open] .trade-market-disclosure-toggle{font-size:0}
+.trade-market-disclosure[open] .trade-market-disclosure-toggle::after{content:"Close Search";font-size:.62rem}
+.trade-market-disclosure-body{padding:0 18px 18px}
+.trade-market-disclosure-body .trade-market-form{margin-top:0}
+
+.trade-return-fields{margin:4px 0 0;border:1px solid rgba(34,211,238,.2);border-radius:10px;padding:15px;background:rgba(34,211,238,.025)}
+.trade-return-fields legend{padding:0 7px;color:var(--accent);font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.trade-return-fields>p{margin:0 0 13px;color:var(--muted);font-size:.7rem;line-height:1.55}
+.trade-return-fields .project-editor-grid{gap:12px}
+
+.trade-return-leg{margin:-8px 0 20px;padding:13px 15px 4px;border:1px solid rgba(34,211,238,.18);border-radius:10px;background:rgba(34,211,238,.025)}
+.trade-return-meta{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding:0 0 7px}
+.trade-return-meta>span{color:var(--accent);font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.09em}
+.trade-return-meta>strong{font-size:.82rem}
+.trade-return-meta>small{color:var(--muted);font-size:.63rem}
+.trade-route-line-return{margin:0;padding:12px 0;border-bottom:0}
+.trade-route-line-return .trade-arrow{color:#8eeeff}
+
+@media(max-width:760px){
+  .trade-market-disclosure>summary{align-items:flex-start;padding:18px;gap:12px}
+  .trade-market-summary-copy{display:none}
+  .trade-market-disclosure-body{padding:0 10px 10px}
+}
