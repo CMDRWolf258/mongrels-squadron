@@ -172,7 +172,12 @@ const explicitZero=await searchTradeMarkets(legacyRareEnv,{
   sort:'price',
 },{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:explicitZeroRows}),{status:200,headers:{'Content-Type':'application/json'}})});
 assert.equal(explicitZero.source,'Spansh','a live rare commodity row should remain authoritative even when it does not meet Min Supply');
-assert.equal(explicitZero.results.length,0,'fresh explicit supply=0 must not be replaced by older cached stock');
+assert.equal(explicitZero.qualifyingMatchCount,0,'fresh explicit supply=0 must not count as a qualifying Watch/search match');
+assert.equal(explicitZero.results.length,1,'known rare source should remain visible even when current supply is zero');
+assert.equal(explicitZero.results[0].qualifies,false);
+assert.equal(explicitZero.results[0].rareSourceStatus,'no_observed_stock');
+assert.equal(explicitZero.results[0].stationName,'Cheranovsky City');
+assert.equal(explicitZero.results[0].supply,0,'fresh zero stock must not be replaced by older cached stock');
 assert.equal(explicitZero.query.rareSource.stationName,'Cheranovsky City','known source metadata should remain available even with zero qualifying stock');
 
 const rareSell=normalizeMarketSearch({
@@ -388,8 +393,8 @@ assert.match(html,/inputmode="numeric"[^>]*data-trade-watch-volume/);
 assert.match(html,/Sort displayed results/);
 assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
-assert.match(html,/trade-market\.css\?v=8/);
-assert.match(html,/trade-market\.js\?v=13/);
+assert.match(html,/trade-market\.css\?v=9/);
+assert.match(html,/trade-market\.js\?v=14/);
 assert.match(html,/trading\.js\?v=85/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
@@ -410,6 +415,8 @@ assert.match(client,/soontil relics/);
 assert.match(client,/Rare source&nbsp;/);
 assert.match(client,/Unique rare source · all distances|radiusField\.hidden=rareSource/);
 assert.match(client,/trade-commodity-rare-badge/);
+assert.match(client,/Known rare source · current observation does not qualify/);
+assert.match(client,/0 qualifying/);
 assert.match(client,/const PAGE_SIZE=10/);
 assert.match(client,/function bindFormattedInteger\(input\)/);
 assert.match(client,/const integerValue=value=>/);
@@ -434,7 +441,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="89"/);
+assert.match(html,/data-trading-build="90"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
