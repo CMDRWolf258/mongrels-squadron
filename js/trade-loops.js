@@ -147,7 +147,7 @@
       warning.textContent=payload.warning;
     }
     if(!currentResults.length){
-      results.innerHTML='<div class="trade-loop-empty">No profitable '+currentSettings.legCount+'-leg loop could be completed with the current pad, freshness, cargo, and distance settings.</div>';
+      results.innerHTML='<div class="trade-loop-empty">No profitable '+currentSettings.legCount+'-leg loop could be completed with the current pad, freshness, cargo, distance'+(currentSettings.mongrelOnly?', and Mongrel-ownership':'')+' settings.</div>';
       return;
     }
     results.replaceChildren(...currentResults.map((route,index)=>resultCard(route,index)));
@@ -158,9 +158,9 @@
     article.className='trade-loop-card';
     const legHtml=(route.legs||[]).map((leg,legIndex)=>`
       <div class="trade-loop-leg">
-        <div class="trade-loop-stop"><span>Leg ${legIndex+1} · Load</span><strong>${safe(leg.sourceStation)}</strong><small>${safe(leg.sourceSystem)}</small></div>
+        <div class="trade-loop-stop"><span>Leg ${legIndex+1} · Load</span><strong>${safe(leg.sourceStation)}</strong><small>${safe(leg.sourceSystem)}</small>${leg.sourceFaction?`<small class="trade-loop-owner">${safe(leg.sourceFaction)}</small>`:''}</div>
         <div class="trade-loop-leg-arrow">→</div>
-        <div class="trade-loop-stop"><span>Deliver</span><strong>${safe(leg.destinationStation)}</strong><small>${safe(leg.destinationSystem)}</small></div>
+        <div class="trade-loop-stop"><span>Deliver</span><strong>${safe(leg.destinationStation)}</strong><small>${safe(leg.destinationSystem)}</small>${leg.destinationFaction?`<small class="trade-loop-owner">${safe(leg.destinationFaction)}</small>`:''}</div>
         <div class="trade-loop-cargo"><strong>${safe(leg.commodity)}</strong><span>Buy ${fmt(leg.buyPrice)} · Sell ${fmt(leg.sellPrice)} Cr/t</span><span>+${fmt(leg.profitPerTon)} Cr/t</span><span>${fmt(leg.quantity)} t used</span><span>${fmt(leg.tripProfit)} Cr leg profit</span></div>
       </div>`).join('');
     article.innerHTML=`
