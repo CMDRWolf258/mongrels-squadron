@@ -545,33 +545,51 @@
     $('[data-trade-delete]').hidden=!route;
     $('[data-trade-form-status]').textContent='';
     $('[data-trade-official-wrap]').hidden=!manager();
+    const managed=Boolean(route?.optimizer?.managed);
+    const managedNote=$('[data-trade-managed-note]');
+    if(managedNote)managedNote.hidden=!managed;
+    const managedThreshold=$('[data-trade-managed-threshold]');
+    if(managedThreshold)managedThreshold.value=String(route?.optimizer?.thresholdDropPercent||25);
+    const optimizerOwned=[
+      '[data-trade-commodity]','[data-trade-origin-system]','[data-trade-origin-station]',
+      '[data-trade-destination-system]','[data-trade-destination-station]','[data-trade-profit]',
+      '[data-trade-loop-profit]','[data-trade-pad]','[data-trade-distance]','[data-trade-quantity]',
+      '[data-trade-return-commodity]','[data-trade-return-profit]','[data-trade-return-quantity]'
+    ];
+    optimizerOwned.forEach(selector=>{const input=$(selector);if(input)input.disabled=managed;});
     form.querySelectorAll('input[data-number-format]').forEach(input=>window.MongrelNumbers?.format(input));
   }
   function closeEditor(){if(dirty&&!confirm('Discard unsaved trade changes?'))return;shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
-  function payload(){return{
-    id:$('[data-trade-id]').value||undefined,
-    category:$('[data-trade-category]').value,
-    official:$('[data-trade-official]').value==='true',
-    title:$('[data-trade-title]').value,
-    commodity:$('[data-trade-commodity]').value,
-    originSystem:$('[data-trade-origin-system]').value,
-    originStation:$('[data-trade-origin-station]').value,
-    destinationSystem:$('[data-trade-destination-system]').value,
-    destinationStation:$('[data-trade-destination-station]').value,
-    profitPerTon:n($('[data-trade-profit]').value),
-    estimatedLoopProfit:n($('[data-trade-loop-profit]').value),
-    padSize:$('[data-trade-pad]').value,
-    distanceLy:$('[data-trade-distance]').value,
-    quantity:String(Math.trunc(n($('[data-trade-quantity]').value))||''),
-    returnCommodity:$('[data-trade-return-commodity]').value,
-    returnProfitPerTon:n($('[data-trade-return-profit]').value),
-    returnQuantity:String(Math.trunc(n($('[data-trade-return-quantity]').value))||''),
-    expires:$('[data-trade-expires]').value,
-    status:$('[data-trade-status]').value,
-    tags:$('[data-trade-tags]').value,
-    objective:$('[data-trade-objective]').value,
-    notes:$('[data-trade-notes]').value
-  };}
+  function payload(){
+    const value={
+      id:$('[data-trade-id]').value||undefined,
+      category:$('[data-trade-category]').value,
+      official:$('[data-trade-official]').value==='true',
+      title:$('[data-trade-title]').value,
+      commodity:$('[data-trade-commodity]').value,
+      originSystem:$('[data-trade-origin-system]').value,
+      originStation:$('[data-trade-origin-station]').value,
+      destinationSystem:$('[data-trade-destination-system]').value,
+      destinationStation:$('[data-trade-destination-station]').value,
+      profitPerTon:n($('[data-trade-profit]').value),
+      estimatedLoopProfit:n($('[data-trade-loop-profit]').value),
+      padSize:$('[data-trade-pad]').value,
+      distanceLy:$('[data-trade-distance]').value,
+      quantity:String(Math.trunc(n($('[data-trade-quantity]').value))||''),
+      returnCommodity:$('[data-trade-return-commodity]').value,
+      returnProfitPerTon:n($('[data-trade-return-profit]').value),
+      returnQuantity:String(Math.trunc(n($('[data-trade-return-quantity]').value))||''),
+      expires:$('[data-trade-expires]').value,
+      status:$('[data-trade-status]').value,
+      tags:$('[data-trade-tags]').value,
+      objective:$('[data-trade-objective]').value,
+      notes:$('[data-trade-notes]').value
+    };
+    if(editing?.optimizer?.managed){
+      value.optimizer={...editing.optimizer,thresholdDropPercent:Math.max(5,Math.min(90,n($('[data-trade-managed-threshold]').value)||25))};
+    }
+    return value;
+  }
   async function save(event){event.preventDefault();const status=$('[data-trade-form-status]');status.textContent='Saving…';const {response,payload:result}=await apiFetch('/api/trades',{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'trade-editor'},body:JSON.stringify(payload())});if(!response.ok){status.textContent=result.error||'Unable to save route.';return;}dirty=false;await loadPosted();closeEditorForce();}
   function closeEditorForce(){shell.hidden=true;document.body.classList.remove('project-editor-open');editing=null;dirty=false;}
   async function remove(){if(!editing||!confirm('Delete this trade route?'))return;const {response,payload:result}=await apiFetch(`/api/trades?id=${encodeURIComponent(editing.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'trade-editor'}});if(!response.ok){$('[data-trade-form-status]').textContent=result.error||'Unable to delete route.';return;}dirty=false;await loadPosted();closeEditorForce();}
