@@ -868,3 +868,21 @@ a.profile-chip:hover{border-color:rgba(34,211,238,.72);background:rgba(34,211,23
 
 /* Modal editors own the bottom-right action area; keep the floating Assistant out of the way. */
 body.project-editor-open:not(.assistant-open) .mongrel-assistant-launcher{display:none!important}
+
+
+/* Standard modal action layout: destructive left, status center, Close + Save right. */
+.project-editor-actions.is-standard{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+}
+.project-editor-actions.is-standard .project-editor-danger{display:flex;justify-self:start}
+.project-editor-actions.is-standard .project-editor-status{min-width:0;color:var(--muted)}
+.project-editor-actions.is-standard .project-editor-primary-actions{display:flex;gap:10px;justify-self:end}
+@media(max-width:520px){
+  .project-editor-actions.is-standard{grid-template-columns:1fr;align-items:stretch}
+  .project-editor-actions.is-standard .project-editor-danger{justify-self:start}
+  .project-editor-actions.is-standard .project-editor-primary-actions{justify-self:stretch;display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .project-editor-actions.is-standard .project-editor-primary-actions .btn{width:100%}
+}
