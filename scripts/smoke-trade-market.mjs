@@ -406,7 +406,7 @@ assert.match(html,/Unique rare source · all distances/);
 assert.match(client,/commodityAliasKey/);
 assert.match(client,/soontil relics/);
 assert.match(client,/Rare source&nbsp;/);
-assert.match(client,/Rare source search · all distances/);
+assert.match(client,/Unique rare source · all distances|radiusField\.hidden=rareSource/);
 assert.match(client,/trade-commodity-rare-badge/);
 assert.match(client,/const PAGE_SIZE=10/);
 assert.match(client,/function bindFormattedInteger\(input\)/);
