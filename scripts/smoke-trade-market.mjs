@@ -395,7 +395,7 @@ assert.match(html,/Shortest arrival/);
 assert.match(html,/data-market-pagination/);
 assert.match(html,/trade-market\.css\?v=9/);
 assert.match(html,/trade-market\.js\?v=14/);
-assert.match(html,/trading\.js\?v=85/);
+assert.match(html,/trading\.js\?v=86/);
 
 const client=readFileSync(new URL('../js/trade-market.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-market\/search/);
@@ -441,7 +441,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="90"/);
+assert.match(html,/data-trading-build="91"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
