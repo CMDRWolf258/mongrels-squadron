@@ -12,6 +12,8 @@
   const direction=$('[data-market-direction]');
   const system=$('[data-market-system]');
   const radius=$('[data-market-radius]');
+  const radiusField=$('[data-market-radius-field]');
+  const rareSourceIndicator=$('[data-market-rare-source-indicator]');
   const radiusHelp=$('[data-market-radius-help]');
   const price=$('[data-market-price]');
   const volume=$('[data-market-volume]');
@@ -46,6 +48,8 @@
   const watchDirection=document.querySelector('[data-trade-watch-direction]');
   const watchSystem=document.querySelector('[data-trade-watch-system]');
   const watchRadius=document.querySelector('[data-trade-watch-radius]');
+  const watchRadiusField=document.querySelector('[data-trade-watch-radius-field]');
+  const watchRareSourceIndicator=document.querySelector('[data-trade-watch-rare-source-indicator]');
   const watchRadiusHelp=document.querySelector('[data-trade-watch-radius-help]');
   const watchPrice=document.querySelector('[data-trade-watch-price]');
   const watchPriceLabel=document.querySelector('[data-trade-watch-price-label]');
@@ -149,13 +153,19 @@
   }
 
   function updateRadiusMode(){
+    const rareCommodity=Boolean(commodityCatalogItem(commodity.value)?.rare)||commodityAliasKey(commodity.value)==='soontill relics';
     const rareSource=rareSourceSearch(commodity.value,direction.value);
     radius.disabled=rareSource;
+    if(radiusField)radiusField.hidden=rareSource;
+    if(rareSourceIndicator)rareSourceIndicator.hidden=!rareSource;
     radius.closest('label')?.classList.toggle('is-rare-source',rareSource);
-    if(radiusHelp){
-      radiusHelp.textContent=rareSource
-        ?'Rare source search · all distances. Distance is still measured from the reference system.'
-        :'Maximum distance from the reference system.';
+    if(radiusHelp)radiusHelp.textContent='Maximum distance from the reference system.';
+    if(commodityHelp&&rareCommodity&&direction.value!=='buy'){
+      commodityHelp.textContent='Rare commodity selected · Radius applies while finding a market to sell it. Choose Buy commodity to locate its unique source.';
+    }else if(commodityHelp&&commodityCatalog.length){
+      commodityHelp.textContent=commodityCatalogComplete
+        ?'Standard and rare commodities use the same searchable list · '+commodityCatalog.length+' available.'
+        :'Commodity suggestions are using a fallback catalog right now.';
     }
   }
 
@@ -163,12 +173,10 @@
     if(!watchRadius)return;
     const rareSource=rareSourceSearch(watchCommodity?.value,watchDirection?.value);
     watchRadius.disabled=rareSource;
+    if(watchRadiusField)watchRadiusField.hidden=rareSource;
+    if(watchRareSourceIndicator)watchRareSourceIndicator.hidden=!rareSource;
     watchRadius.closest('label')?.classList.toggle('is-rare-source',rareSource);
-    if(watchRadiusHelp){
-      watchRadiusHelp.textContent=rareSource
-        ?'Rare source search · all distances. The stored radius is ignored while buying this rare commodity.'
-        :'Maximum distance from the reference system.';
-    }
+    if(watchRadiusHelp)watchRadiusHelp.textContent='Maximum distance from the reference system.';
   }
 
   function commodityMatches(term){
