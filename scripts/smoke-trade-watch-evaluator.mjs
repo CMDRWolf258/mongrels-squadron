@@ -271,6 +271,7 @@ const rareZeroRow=[{
 }];
 const rareCleared=await evaluateTradeWatches(rareEnv,{
   now:baseNow,
+  force:true,
   concurrency:1,
   fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:rareZeroRow}),{status:200,headers:{'Content-Type':'application/json'}}),
 });
