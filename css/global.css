@@ -864,3 +864,7 @@ a.profile-chip:hover{border-color:rgba(34,211,238,.72);background:rgba(34,211,23
   body:not(.assistant-page) .mongrel-assistant-launcher-mark{font-size:.9rem}
   .pvp-flare::before,.ships-flare::before,.carriers-flare::before,.trading-flare::before,.projects-flare::before,.guides-flare::before,.about-flare::before,.recruitment-flare::before{opacity:.22}
 }
+
+
+/* Modal editors own the bottom-right action area; keep the floating Assistant out of the way. */
+body.project-editor-open:not(.assistant-open) .mongrel-assistant-launcher{display:none!important}
