@@ -139,8 +139,13 @@
   }
 
   function rareSourceSearch(commodityValue,directionValue){
+    if(directionValue!=='buy')return false;
     const item=commodityCatalogItem(commodityValue);
-    return Boolean(item?.rare)&&directionValue==='buy';
+    // Soontill is a pinned known rare source. Recognize it even if the
+    // commodity catalog has not loaded yet (for example on a fresh device
+    // or preview hostname without an existing member session).
+    const knownRareSource=commodityAliasKey(commodityValue)==='soontill relics';
+    return Boolean(item?.rare)||knownRareSource;
   }
 
   function updateRadiusMode(){
