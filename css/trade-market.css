@@ -95,3 +95,9 @@
 .trade-watch-unit-input{display:flex;min-width:0}
 .trade-watch-unit-input input{min-width:0;border-radius:8px 0 0 8px}
 .trade-watch-unit-input em{display:grid;place-items:center;min-width:46px;padding:0 8px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;background:#090e11;color:var(--muted);font-size:.61rem;font-style:normal}
+
+.trade-rare-source-mode{display:flex;flex-direction:column;justify-content:center;min-height:66px;border:1px solid rgba(155,124,255,.36);border-radius:8px;padding:9px 11px;background:rgba(155,124,255,.055)}
+.trade-rare-source-mode[hidden]{display:none!important}
+.trade-rare-source-mode span{color:#bfaeff;font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.trade-rare-source-mode strong{margin-top:3px;color:#eee9ff;font-size:.7rem}
+.trade-rare-source-mode small{margin-top:3px;color:var(--muted);font-size:.58rem}

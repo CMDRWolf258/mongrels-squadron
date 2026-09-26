@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" data-trading-build="85">
+<html lang="en" data-trading-build="86">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050607">
   <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png"><link rel="icon" href="../assets/images/branding/favicon-16x16.png?v=63" sizes="16x16" type="image/png"><link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
   <title>Trader's Outpost | The Mongrels</title><meta name="description" content="Mongrel strategic hauling and member-posted Elite Dangerous trade opportunities.">
-  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-market.css?v=7"><link rel="stylesheet" href="../css/trade-control.css?v=10">
+  <link rel="stylesheet" href="../css/global.css?v=70"><link rel="stylesheet" href="../css/trading-colonization.css?v=3"><link rel="stylesheet" href="../css/trade-market.css?v=8"><link rel="stylesheet" href="../css/trade-control.css?v=10">
 </head>
 <body class="visual-page page-trading">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/" aria-current="page">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -24,6 +24,7 @@
         <label><span>I want to</span><select data-market-direction><option value="sell">Sell commodity</option><option value="buy">Buy commodity</option></select></label>
         <label><span>Near system</span><input type="text" maxlength="140" required data-market-system placeholder="Diaba"></label>
         <label data-market-radius-field><span>Radius</span><div class="trade-market-unit-input"><input type="number" min="1" max="500" step="1" value="100" data-market-radius><em>ly</em></div><small class="trade-market-filter-help" data-market-radius-help>Maximum distance from the reference system.</small></label>
+        <div class="trade-rare-source-mode" data-market-rare-source-indicator hidden><span>Search range</span><strong>Unique rare source · all distances</strong><small>Radius does not apply when buying this rare commodity.</small></div>
         <label><span data-market-price-label>Minimum sell price</span><div class="trade-market-unit-input"><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="Any" data-number-max="2000000000" data-market-price><em>Cr</em></div></label>
         <label><span data-market-volume-label>Minimum demand</span><div class="trade-market-unit-input"><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" value="1" data-number-max="2000000000" data-market-volume><em>t</em></div></label>
         <label><span>Minimum pad</span><select data-market-pad><option value="0">Any pad</option><option value="2">Medium+</option><option value="3">Large</option></select></label>
@@ -153,6 +154,7 @@
       <label><span>Action</span><select data-trade-watch-direction><option value="sell">Sell commodity</option><option value="buy">Buy commodity</option></select></label>
       <label><span>Near System</span><input type="text" maxlength="140" required data-trade-watch-system placeholder="Diaba"></label>
       <label data-trade-watch-radius-field><span>Radius</span><div class="trade-watch-unit-input"><input type="number" min="1" max="500" step="1" required data-trade-watch-radius><em>ly</em></div><small class="trade-market-filter-help" data-trade-watch-radius-help>Maximum distance from the reference system.</small></label>
+      <div class="trade-rare-source-mode" data-trade-watch-rare-source-indicator hidden><span>Search range</span><strong>Unique rare source · all distances</strong><small>Stored radius is ignored for this rare-source Watch.</small></div>
       <label><span data-trade-watch-price-label>Minimum sell price</span><div class="trade-watch-unit-input"><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" data-number-max="2000000000" data-trade-watch-price placeholder="Any"><em>Cr/t</em></div></label>
       <label><span data-trade-watch-volume-label>Minimum demand</span><div class="trade-watch-unit-input"><input type="text" inputmode="numeric" autocomplete="off" maxlength="13" required data-number-max="2000000000" data-trade-watch-volume><em>t</em></div></label>
       <label><span>Minimum Pad</span><select data-trade-watch-pad><option value="0">Any pad</option><option value="2">Medium+</option><option value="3">Large</option></select></label>
@@ -230,5 +232,5 @@
   });
 })();
 </script>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=12"></script><script src="../js/trading.js?v=83"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/trade-market.js?v=13"></script><script src="../js/trading.js?v=83"></script><script src="../js/trading-colonization.js?v=8"></script><script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
