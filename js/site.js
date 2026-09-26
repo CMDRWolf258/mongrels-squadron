@@ -246,4 +246,94 @@
       }
     })();
   }
+
+  // Shared editor + large-number QoL.
+  const numberRaw=value=>String(value??'').replace(/[^0-9]/g,'');
+  const numberValue=value=>{
+    const raw=numberRaw(value);
+    return raw?Number(raw):0;
+  };
+  const formatNumberField=input=>{
+    if(!input?.matches?.('[data-number-format]'))return;
+    const raw=numberRaw(input.value);
+    if(!raw){input.value='';return;}
+    const max=Number(input.dataset.numberMax)||Number.MAX_SAFE_INTEGER;
+    const value=Math.min(Number(raw),max);
+    input.value=Number.isFinite(value)?Math.trunc(value).toLocaleString('en-US'):'';
+  };
+  const formatNumberFields=root=>{
+    if(root?.matches?.('[data-number-format]'))formatNumberField(root);
+    root?.querySelectorAll?.('[data-number-format]').forEach(formatNumberField);
+  };
+  window.MongrelNumberFields={parse:numberValue,format:formatNumberField,refresh:formatNumberFields};
+
+  document.addEventListener('input',event=>{
+    const input=event.target.closest?.('[data-number-format]');
+    if(!input)return;
+    const raw=String(input.value||'');
+    const caret=input.selectionStart??raw.length;
+    const digitsBefore=raw.slice(0,caret).replace(/\D/g,'').length;
+    formatNumberField(input);
+    const formatted=input.value;
+    let seen=0,pos=formatted.length;
+    for(let i=0;i<formatted.length;i++){
+      if(/\d/.test(formatted[i]))seen+=1;
+      if(seen>=digitsBefore){pos=i+1;break;}
+    }
+    try{input.setSelectionRange(pos,pos);}catch{}
+  });
+
+  // JS-managed forms read plain digits while keeping the visible field formatted.
+  document.addEventListener('submit',event=>{
+    const inputs=[...event.target.querySelectorAll?.('[data-number-format]')||[]];
+    if(!inputs.length)return;
+    inputs.forEach(input=>{input.value=numberRaw(input.value);});
+    queueMicrotask(()=>inputs.forEach(formatNumberField));
+  },true);
+
+  const standardizeEditorActions=panel=>{
+    if(!panel||panel.dataset.actionLayout==='standard')return;
+    const actions=panel.querySelector('.project-editor-actions');
+    const save=actions?.querySelector('button[type="submit"]');
+    const close=panel.querySelector('.project-editor-head button[type="button"]');
+    if(!actions||!save||!close)return;
+    const status=actions.querySelector('[aria-live]')||document.createElement('span');
+    status.classList.add('project-editor-action-status');
+    const existing=[...actions.querySelectorAll('button')].filter(button=>button!==save);
+    const dangerButtons=existing.filter(button=>/^\s*(delete|remove)\b/i.test(button.textContent||''));
+    const otherButtons=existing.filter(button=>!dangerButtons.includes(button));
+    const danger=document.createElement('div');
+    danger.className='project-editor-actions-danger';
+    dangerButtons.forEach(button=>danger.appendChild(button));
+    danger.hidden=!danger.children.length;
+    const primary=document.createElement('div');
+    primary.className='project-editor-actions-primary';
+    close.remove();
+    primary.append(close,...otherButtons,save);
+    actions.replaceChildren(danger,status,primary);
+    actions.classList.add('project-editor-actions-standard');
+    panel.dataset.actionLayout='standard';
+  };
+  const standardizeEditors=root=>{
+    if(root?.matches?.('.project-editor-panel'))standardizeEditorActions(root);
+    root?.querySelectorAll?.('.project-editor-panel').forEach(standardizeEditorActions);
+  };
+  standardizeEditors(document);
+  formatNumberFields(document);
+
+  new MutationObserver(mutations=>{
+    for(const mutation of mutations){
+      if(mutation.type==='childList'){
+        mutation.addedNodes.forEach(node=>{
+          if(node.nodeType!==1)return;
+          standardizeEditors(node);
+          formatNumberFields(node);
+        });
+      }else if(mutation.type==='attributes'&&!mutation.target.hidden){
+        standardizeEditors(mutation.target);
+        formatNumberFields(mutation.target);
+      }
+    }
+  }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden']});
+
 })();
