@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=63" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=63">
+  <title>Knowledge Workshop | The Mongrels</title>
+  <meta name="description" content="Private Site Admin editorial workshop for Ask the Mongrels know-how.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <style>
+    .kw-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}
+    .kw-summary article,.kw-panel,.kw-card{border:1px solid var(--line);background:rgba(8,13,16,.9);border-radius:12px}
+    .kw-summary article{padding:15px}.kw-summary span,.kw-meta,.kw-label{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+    .kw-summary strong{display:block;margin-top:6px;font-size:1.65rem;color:var(--text)}
+    .kw-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:18px 0}
+    .kw-toolbar .kw-search{min-width:min(100%,260px);flex:1}.kw-toolbar input{width:100%}.kw-toolbar button.active{border-color:var(--accent);color:var(--accent)}
+    .kw-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(360px,1.1fr);gap:16px;align-items:start}
+    .kw-list{display:grid;gap:12px}.kw-card{padding:15px}.kw-card-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+    .kw-card h3{margin:4px 0 6px;font-size:1rem}.kw-card p{margin:10px 0 0;color:var(--muted);line-height:1.5}
+    .kw-badge{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em}
+    .kw-badge-approved{color:#88edb8;border-color:rgba(136,237,184,.35)}.kw-badge-review{color:var(--accent);border-color:var(--line-accent)}.kw-badge-retired{opacity:.65}
+    .kw-card-actions{display:flex;justify-content:flex-end;margin-top:12px}.kw-panel{padding:18px;position:sticky;top:88px}
+    .kw-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px}.kw-panel h2{margin:4px 0 0;font-size:1.25rem}
+    .kw-form{display:grid;gap:14px}.kw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.kw-field{display:grid;gap:6px}
+    .kw-field input,.kw-field textarea,.kw-field select{width:100%}.kw-field textarea{min-height:86px;resize:vertical}.kw-field-wide{grid-column:1/-1}
+    .kw-help{color:var(--muted);font-size:.8rem;line-height:1.4}.kw-check{display:flex;gap:9px;align-items:flex-start}.kw-check input{margin-top:3px}
+    .kw-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px}.kw-empty,.kw-access{padding:26px;border:1px dashed var(--line);border-radius:12px;color:var(--muted)}
+    .kw-access{max-width:760px;margin:30px auto;background:rgba(8,13,16,.9)}.kw-empty{text-align:center}
+    @media(max-width:900px){.kw-layout{grid-template-columns:1fr}.kw-panel{position:static}.kw-grid{grid-template-columns:1fr}.kw-field-wide{grid-column:auto}}
+    @media(max-width:620px){.kw-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.kw-card-head{display:block}.kw-badge{display:inline-block;margin-top:7px}}
+  </style>
+</head>
+<body class="visual-page">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../pvp/">PvP</a><a href="../trading/">Trader's Outpost</a><a href="../ships/">Ships</a><a href="../projects/">Projects</a><a href="../carriers/">Carriers</a><a href="../guides/">Guides</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
+<main>
+  <section class="page-hero hero-flare"><div class="container page-hero-grid"><div><p class="eyebrow">Site Admin · Ask the Mongrels</p><h1>Knowledge Workshop</h1><p>Research can be messy. This is the private editorial layer where source claims, Mongrel field experience, and practical recommendations are reviewed before the assistant is allowed to trust them.</p><div class="actions"><a class="btn btn-ghost" href="../assistant-gaps/">Assistant Knowledge Gaps</a><a class="btn btn-ghost" href="../guides/reference/">Public Reference Database</a></div></div><img class="page-mark" src="../assets/images/branding/mongrels-logo.png" alt=""></div></section>
+  <section class="section"><div class="container">
+    <div class="kw-access" data-kw-access><strong>Checking Site Admin access…</strong><p>This editorial workshop is restricted to the Site Admin account.</p></div>
+    <div data-kw-app hidden>
+      <div class="kw-summary"><article><span>Needs Review</span><strong data-kw-review>0</strong></article><article><span>Drafts</span><strong data-kw-draft>0</strong></article><article><span>Approved</span><strong data-kw-approved>0</strong></article><article><span>Retired</span><strong data-kw-retired>0</strong></article></div>
+      <div class="kw-toolbar">
+        <button class="btn btn-secondary active" type="button" data-kw-filter="review">Needs Review</button><button class="btn btn-secondary" type="button" data-kw-filter="all">All</button><button class="btn btn-secondary" type="button" data-kw-filter="draft">Draft</button><button class="btn btn-secondary" type="button" data-kw-filter="approved">Approved</button><button class="btn btn-secondary" type="button" data-kw-filter="retired">Retired</button>
+        <label class="kw-search"><span class="sr-only">Search know-how</span><input type="search" placeholder="Search topic, answer, alias…" data-kw-search></label>
+        <button class="btn btn-primary" type="button" data-kw-new>New Know-How</button>
+      </div>
+      <div class="kw-layout">
+        <div><div class="kw-list" data-kw-list></div><div class="kw-empty" data-kw-empty hidden>No know-how entries match this view.</div></div>
+        <aside class="kw-panel">
+          <div data-kw-placeholder><p class="eyebrow">Editorial Desk</p><h2>Select an entry to review</h2><p class="kw-help">Research batches will arrive as Needs Review. Nothing reaches Ask the Mongrels until you explicitly approve it.</p></div>
+          <form class="kw-form" data-kw-editor hidden>
+            <div class="kw-panel-head"><div><p class="eyebrow">Know-How Editor</p><h2 data-kw-editor-title>Edit entry</h2></div><button class="btn btn-ghost" type="button" data-kw-cancel>Close</button></div>
+            <input type="hidden" data-kw-id>
+            <div class="kw-grid">
+              <label class="kw-field"><span class="kw-label">Topic *</span><input maxlength="180" required data-kw-topic></label>
+              <label class="kw-field"><span class="kw-label">Category</span><input maxlength="120" placeholder="Mining · Core Mining" data-kw-category></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Question / use case</span><input maxlength="900" placeholder="How far should I be from a core asteroid before detonation?" data-kw-question></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Approved Mongrel answer *</span><textarea maxlength="4000" required data-kw-answer></textarea><span class="kw-help">This is the practical answer the assistant should lead with after approval.</span></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Supporting details</span><textarea placeholder="One useful detail per line" data-kw-details></textarea></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Search aliases / phrases</span><textarea placeholder="core explosion distance&#10;how far from the rock&#10;seismic charge blast" data-kw-keywords></textarea></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Source claim / research notes</span><textarea maxlength="3500" placeholder="What external sources claim, including conservative or conflicting advice." data-kw-source-claim></textarea></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Mongrel field notes</span><textarea maxlength="3500" placeholder="Observed squad experience, testing, caveats, or why we disagree with a source." data-kw-field-notes></textarea></label>
+              <label class="kw-field kw-field-wide"><span class="kw-label">Sources</span><textarea placeholder="Elite Dangerous Wiki | https://… | wiki | Notes&#10;EliteMiners discussion | https://… | community | Notes" data-kw-sources></textarea><span class="kw-help">One per line: Name | URL | type | optional note.</span></label>
+              <label class="kw-field"><span class="kw-label">Status</span><select data-kw-status><option value="draft">Draft</option><option value="review">Needs Review</option><option value="approved">Approved</option><option value="retired">Retired</option></select></label>
+              <label class="kw-field"><span class="kw-label">Confidence</span><select data-kw-confidence><option value="unverified">Unverified</option><option value="anecdotal">Anecdotal</option><option value="mixed">Mixed evidence</option><option value="strong">Strong</option><option value="tested">Mongrel-tested</option></select></label>
+              <label class="kw-field"><span class="kw-label">Stability</span><select data-kw-stability><option value="stable">Stable mechanic</option><option value="patch-sensitive">Patch-sensitive</option><option value="experimental">Experimental / still testing</option></select></label>
+              <label class="kw-field"><span class="kw-label">Game version / era</span><input maxlength="80" placeholder="Current live build, Update 19, etc." data-kw-game-version></label>
+              <label class="kw-check kw-field-wide"><input type="checkbox" checked data-kw-assistant-visible><span><strong>Available to Ask the Mongrels when approved</strong><span class="kw-help">Draft, Needs Review, and Retired entries are never supplied to the assistant even if this is checked.</span></span></label>
+            </div>
+            <div class="kw-actions"><button class="btn btn-secondary" type="button" data-kw-save-draft>Save as Draft</button><button class="btn btn-primary" type="submit">Save Entry</button></div>
+            <small class="kw-help" data-kw-result></small>
+          </form>
+        </aside>
+      </div>
+    </div>
+  </div></section>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=72"></script>
+<script src="../js/auth-ui.js?v=68"></script>
+<script src="../js/knowledge-workshop.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=69"></script>
+</body>
+</html>
