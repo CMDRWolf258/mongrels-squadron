@@ -137,8 +137,9 @@
     fields.result.textContent = '';
   }
 
-  function parseLines(value) {
-    return [...new Set(String(value || '').split(/\n|,/).map(x => x.trim()).filter(Boolean))];
+  function parseLines(value, splitCommas=false) {
+    const pattern = splitCommas ? /\n|,/ : /\n/;
+    return [...new Set(String(value || '').split(pattern).map(x => x.trim()).filter(Boolean))];
   }
 
   function parseSources(value) {
@@ -154,8 +155,8 @@
       category:fields.category.value.trim() || 'General',
       question:fields.question.value.trim(),
       answer:fields.answer.value.trim(),
-      details:parseLines(fields.details.value),
-      keywords:parseLines(fields.keywords.value),
+      details:parseLines(fields.details.value, false),
+      keywords:parseLines(fields.keywords.value, true),
       sourceClaim:fields.sourceClaim.value.trim(),
       fieldNotes:fields.fieldNotes.value.trim(),
       sources:parseSources(fields.sources.value),
