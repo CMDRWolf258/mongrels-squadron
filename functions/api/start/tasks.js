@@ -5,6 +5,9 @@ import { DAILY_TASK_LIMIT, START_ACTIVITY_META, getEligibleStartTasks } from '..
 const MEMBER_ACCESS = new Set(['member','officer','site_admin']);
 const PREFS_PREFIX = 'pathway-preferences-v1:';
 const DAILY_PREFIX = 'start-daily-v1:';
+const HISTORY_PREFIX = 'start-task-history-v1:';
+const RECENT_TASK_MEMORY = 6;
+const HISTORY_LIMIT = 24;
 const EXPERIENCE = new Set(['new','some','comfortable','experienced']);
 const PLAY_STYLES = new Set(['either','solo','group']);
 
@@ -47,6 +50,8 @@ export async function onRequestPost({ request, env }) {
   const key = `${DAILY_PREFIX}${date}:${session.sub}`;
   const state = normalizeDailyState(await readJson(env.PROJECTS, key), date, timeZone);
   const revealed = state.reveals[activity] || [];
+  const historyKey = `${HISTORY_PREFIX}${session.sub}:${activity}`;
+  const history = normalizeTaskHistory(await readJson(env.PROJECTS, historyKey));
 
   if (revealed.length >= DAILY_TASK_LIMIT) {
     const result = await buildDailyState(request, env, session, timeZone, state);
@@ -66,12 +71,22 @@ export async function onRequestPost({ request, env }) {
     return reply({ ok:true, authenticated:true, poolExhausted:true, ...result });
   }
 
-  const seed = `${session.sub}:${date}:${activity}:${revealed.length}:start-here-v1`;
-  const picked = available[hashIndex(seed, available.length)];
+  const recentIds = new Set(history.slice(-RECENT_TASK_MEMORY).map(item => item.id));
+  const fresh = available.filter(item => !recentIds.has(item.id));
+  const pickPool = fresh.length ? fresh : available;
+  const seed = `${session.sub}:${date}:${activity}:${revealed.length}:start-here-v2`;
+  const picked = pickPool[hashIndex(seed, pickPool.length)];
   const snapshot = presentTask(picked, new Date().toISOString());
   state.reveals[activity] = [...revealed, snapshot];
   state.updatedAt = new Date().toISOString();
-  await env.PROJECTS.put(key, JSON.stringify(state), { expirationTtl:7 * 24 * 60 * 60 });
+
+  const nextHistory = snapshot.id.startsWith('squad-')
+    ? history
+    : [...history.filter(item => item.id !== snapshot.id), { id:snapshot.id, date, revealedAt:snapshot.revealedAt }].slice(-HISTORY_LIMIT);
+  await Promise.all([
+    env.PROJECTS.put(key, JSON.stringify(state), { expirationTtl:7 * 24 * 60 * 60 }),
+    env.PROJECTS.put(historyKey, JSON.stringify(nextHistory), { expirationTtl:30 * 24 * 60 * 60 }),
+  ]);
 
   const result = await buildDailyState(request, env, session, timeZone, state);
   return reply({ ok:true, authenticated:true, revealed:snapshot, ...result });
@@ -144,6 +159,18 @@ function selectedActivities(prefs) {
 
 async function readPreferences(env, ownerId) {
   return await readJson(env.PROJECTS, `${PREFS_PREFIX}${ownerId}`) || {};
+}
+
+function normalizeTaskHistory(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(item => item && typeof item === 'object' && String(item.id || '').trim())
+    .map(item => ({
+      id:String(item.id || '').trim(),
+      date:String(item.date || ''),
+      revealedAt:String(item.revealedAt || ''),
+    }))
+    .slice(-HISTORY_LIMIT);
 }
 
 function normalizeDailyState(value, date, timeZone) {
