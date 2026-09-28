@@ -5,9 +5,8 @@ import {
   clearCookie,
   createSession,
   exchangeDiscordCode,
-  fetchDiscordUser,
   getCookie,
-  resolveAccess,
+  resolveDiscordIdentityAndAccess,
   safeReturnPath,
   sessionCookie,
 } from '../../../lib/auth.js';
@@ -28,8 +27,7 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const token = await exchangeDiscordCode(env, code);
-    const user = await fetchDiscordUser(token.access_token);
-    const accessInfo = await resolveAccess(env, token.access_token, user);
+    const { user, accessInfo } = await resolveDiscordIdentityAndAccess(env, token.access_token);
     const session = await createSession(env, user, accessInfo);
 
     // Two-step handoff: first commit the secure session cookie, then make a
