@@ -122,6 +122,7 @@ Important rules:
 - `MEMBER_ROLE_ID` drives Member access.
 - Authenticated Discord server users without Member role may still have `access:no_access` with `membershipVerified:true` for applicant flows.
 - Sessions use signed `mongrels_session` cookies.
+- Discord OAuth callback is CPU-budget hardened: normal server-member sign-in resolves identity + guild roles from the single `guilds.members.read` current-member response, falling back to `/users/@me` only when that member response cannot identify the user. The imported HMAC key is cached per warm Worker isolate to avoid repeated key-import cost.
 - UI hiding is never a substitute for server authorization.
 - Never expose Discord secrets, session secrets, API keys, or hidden IDs.
 
