@@ -235,6 +235,33 @@ query MongrelOpponentConflicts($factionId: UUID!, $first: Int!, $after: Cursor) 
 }
 """
 
+FACTION_CONFLICTS_BY_NAME_QUERY = r"""
+query ActiveFactionConflicts($name: String!, $first: Int!) {
+  factionByName(name: $name) {
+    id
+    name
+    factionConflicts(first: $first) {
+      edges {
+        node {
+          id
+          type
+          status
+          factionWonDays
+          opponentWonDays
+          factionStake
+          opponentStake
+          updatedAt
+          faction { id name }
+          opponentFaction { id name }
+          system { id name }
+        }
+      }
+    }
+  }
+}
+"""
+
+
 
 def fetch_faction_id() -> str:
     data = gql(FACTION_ID_QUERY, {"name": FACTION_NAME})
@@ -367,6 +394,93 @@ def fetch_mongrel_conflicts(faction_id: str) -> dict[str, dict[str, Any]]:
         if not current or compare_conflict_time(value.get("updatedAt"), current.get("updatedAt")) >= 0:
             rows[key] = value
     return rows
+
+
+def conflict_state_name(value: Any) -> str:
+    text = norm(value).replace("_", " ")
+    if text in {"civilwar", "civil war"}:
+        return "Civil War"
+    if text == "war":
+        return "War"
+    if text == "election":
+        return "Election"
+    return ""
+
+
+def board_active_conflict_factions(board: dict[str, Any]) -> list[str]:
+    names: list[str] = []
+    seen: set[str] = set()
+    for row in board.get("factions") or []:
+        if not isinstance(row, dict):
+            continue
+        if not any(conflict_state_name(state) for state in (row.get("activeStates") or [])):
+            continue
+        name = str(row.get("name") or "").strip()
+        key = norm(name)
+        if name and key not in seen:
+            seen.add(key)
+            names.append(name)
+    return names
+
+
+def fetch_tracked_system_conflicts(boards: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Fetch score records for active conflicts in tracked Mongrel systems, regardless of participants."""
+    wanted_by_faction: dict[str, set[str]] = {}
+    display_names: dict[str, str] = {}
+    for system_key, board in boards.items():
+        if not isinstance(board, dict) or not board.get("ok"):
+            continue
+        for faction_name in board_active_conflict_factions(board):
+            faction_key = norm(faction_name)
+            display_names[faction_key] = faction_name
+            wanted_by_faction.setdefault(faction_key, set()).add(system_key)
+
+    output: dict[str, dict[str, dict[str, Any]]] = {}
+    for faction_key, system_keys in wanted_by_faction.items():
+        faction_name = display_names[faction_key]
+        data = gql(FACTION_CONFLICTS_BY_NAME_QUERY, {"name": faction_name, "first": 100})
+        faction = data.get("factionByName") or {}
+        connection = faction.get("factionConflicts") if isinstance(faction, dict) else {}
+        edges = connection.get("edges") if isinstance(connection, dict) else []
+        for edge in edges or []:
+            node = edge.get("node") if isinstance(edge, dict) else None
+            system = node.get("system") if isinstance(node, dict) else None
+            one = node.get("faction") if isinstance(node, dict) else None
+            two = node.get("opponentFaction") if isinstance(node, dict) else None
+            if not isinstance(system, dict):
+                continue
+            system_key = norm(system.get("name"))
+            if system_key not in system_keys:
+                continue
+            one_name = str(one.get("name") or faction_name) if isinstance(one, dict) else faction_name
+            two_name = str(two.get("name") or "") if isinstance(two, dict) else ""
+            if not one_name or not two_name:
+                continue
+            try:
+                one_won = max(0, int(node.get("factionWonDays")))
+                two_won = max(0, int(node.get("opponentWonDays")))
+            except (TypeError, ValueError):
+                continue
+            record = {
+                "id": str(node.get("id") or ""),
+                "type": str(node.get("type") or ""),
+                "status": str(node.get("status") or ""),
+                "faction": one_name,
+                "factionWonDays": one_won,
+                "opponentFaction": two_name,
+                "opponentWonDays": two_won,
+                "factionStake": str(node.get("factionStake") or ""),
+                "opponentStake": str(node.get("opponentStake") or ""),
+                "updatedAt": node.get("updatedAt"),
+                "source": "EliteHub Vault / EDDN",
+            }
+            pair_key = "::".join(sorted((norm(one_name), norm(two_name))))
+            current = output.setdefault(system_key, {}).get(pair_key)
+            if not current or compare_conflict_time(record.get("updatedAt"), current.get("updatedAt")) >= 0:
+                output[system_key][pair_key] = record
+        time.sleep(BOARD_REQUEST_PAUSE_SECONDS)
+
+    return {key: list(records.values()) for key, records in output.items()}
 
 
 def compare_conflict_time(left: Any, right: Any) -> int:
@@ -535,6 +649,16 @@ def main() -> int:
     for start in range(0, len(targets), BOARD_BATCH_SIZE):
         fetch_boards_adaptive(targets[start:start + BOARD_BATCH_SIZE], fetched, errors)
 
+    system_conflict_rows: dict[str, list[dict[str, Any]]] = {}
+    system_conflict_sync_ok = True
+    system_conflict_error = ""
+    try:
+        system_conflict_rows = fetch_tracked_system_conflicts(fetched)
+    except Exception as exc:
+        system_conflict_sync_ok = False
+        system_conflict_error = str(exc)
+        print(f"SYSTEM CONFLICT SCORE ERR: {exc}", flush=True)
+
     now_iso = iso(utc_now())
     previous_systems = existing.get("systems") if isinstance(existing, dict) else {}
     if not isinstance(previous_systems, dict):
@@ -557,6 +681,16 @@ def main() -> int:
                     previous = next((value for name, value in previous_systems.items() if norm(name) == key), None)
                 board["conflict"] = previous.get("conflict") if isinstance(previous, dict) else None
                 board["conflictStale"] = bool(board.get("conflict"))
+
+            if system_conflict_sync_ok:
+                board["systemConflicts"] = system_conflict_rows.get(key, [])
+                board["systemConflictsStale"] = False
+            else:
+                previous = previous_systems.get(display_name)
+                if not previous:
+                    previous = next((value for name, value in previous_systems.items() if norm(name) == key), None)
+                board["systemConflicts"] = previous.get("systemConflicts", []) if isinstance(previous, dict) else []
+                board["systemConflictsStale"] = bool(board.get("systemConflicts"))
             merged[display_name] = board
             successful += 1
             continue
@@ -573,6 +707,11 @@ def main() -> int:
                 retained["conflictStale"] = False
             elif retained.get("conflict"):
                 retained["conflictStale"] = True
+            if system_conflict_sync_ok:
+                retained["systemConflicts"] = system_conflict_rows.get(key, [])
+                retained["systemConflictsStale"] = False
+            elif retained.get("systemConflicts"):
+                retained["systemConflictsStale"] = True
             merged[display_name] = retained
         else:
             merged[display_name] = {
@@ -587,6 +726,8 @@ def main() -> int:
                 "lastAttemptAt": now_iso,
                 "conflict": conflict_rows.get(key) if conflict_sync_ok else None,
                 "conflictStale": not conflict_sync_ok,
+                "systemConflicts": system_conflict_rows.get(key, []) if system_conflict_sync_ok else [],
+                "systemConflictsStale": not system_conflict_sync_ok,
             }
 
     output = {
@@ -600,6 +741,9 @@ def main() -> int:
         "conflictSyncOk": conflict_sync_ok,
         "conflictError": conflict_error[:500] if conflict_error else "",
         "conflictRecords": len(conflict_rows),
+        "systemConflictSyncOk": system_conflict_sync_ok,
+        "systemConflictError": system_conflict_error[:500] if system_conflict_error else "",
+        "systemConflictRecords": sum(len(rows) for rows in system_conflict_rows.values()),
         "errors": errors[:50],
         "systems": merged,
     }

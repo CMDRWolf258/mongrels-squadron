@@ -168,6 +168,8 @@ const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8')
 for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
+assert.match(boardUpdater,/fetch_tracked_system_conflicts/,'Board updater must fetch active conflicts regardless of Mongrel participation');
+assert.match(boardUpdater,/systemConflicts/,'Board updater must persist system-level conflict scores');
 for (const pattern of [/factionStates/,/pendingStates/,/recoveringStates/,/live-bgs-boards\.json/,/factionConflicts/,/factionWonDays/,/opponentWonDays/,/opponentFactionId/,/fetch_mongrel_conflicts/,/conflictSyncOk/]) assert.match(boardUpdater,pattern);
 
 const baseCss=readFileSync('css/wolf-bgs.css','utf8');
