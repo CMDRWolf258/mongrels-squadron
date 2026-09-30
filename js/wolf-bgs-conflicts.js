@@ -6,13 +6,15 @@
   const MAX_PAIRS = 3;
   const INFLUENCE_PAIR_TOLERANCE = 3;
   const previewObservers = new WeakMap();
-  let remote = { systemConflicts:{}, updatedAt:{}, updatedBy:{} };
+  let remote = { systemConflicts:{}, pressureStates:{}, updatedAt:{}, updatedBy:{} };
+  const pressureSyncSignatures = new Map();
 
   const esc = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
   const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
-  const DEFAULT_CZ_POINT_TARGET = 10;
   const CZ_POINTS = { low:1, medium:1.3, high:1.6 };
+  const CZ_TARGETS = { routine:3, contested:6, heavy:15, blitz:25 };
+  const ELECTION_TARGETS = { routine:6, contested:15, heavy:40, blitz:60 };
   const systemName = card => card.dataset.system || '';
   const isLab = card => card.dataset.bgsLab === 'true';
 
@@ -268,7 +270,7 @@
         <label><span>Faction A</span><select data-conflict="factionA">${optionList(names,pair.factionA)}</select></label>
         <span class="wolf-conflict-versus">VS</span>
         <label><span>Faction B</span><select data-conflict="factionB">${optionList(names,pair.factionB)}</select></label>
-        <label><span>Objective</span><select data-conflict="objective"><option value="monitor" ${!pair.objective||pair.objective==='monitor'?'selected':''}>Monitor / no winner</option><option value="win-a" ${pair.objective==='win-a'?'selected':''}>Win for faction A</option><option value="win-b" ${pair.objective==='win-b'?'selected':''}>Win for faction B</option></select></label>
+        <label><span>Objective</span><select data-conflict="objective"><option value="monitor" ${!pair.objective||pair.objective==='monitor'?'selected':''}>Monitor / no winner</option><option value="win-a" ${pair.objective==='win-a'&&!pair.blitz?'selected':''}>Win for faction A</option><option value="win-b" ${pair.objective==='win-b'&&!pair.blitz?'selected':''}>Win for faction B</option><option value="blitz-a" ${pair.objective==='win-a'&&pair.blitz?'selected':''}>BLITZ — win for faction A</option><option value="blitz-b" ${pair.objective==='win-b'&&pair.blitz?'selected':''}>BLITZ — win for faction B</option></select></label>
         <div class="wolf-conflict-type" data-conflict-type>—</div>
       </div>`;
     }
@@ -286,18 +288,22 @@
         ${isLab(card)?'<div class="wolf-conflict-day-meta">Live-system conflict-day tracking is disabled in Mandalore.</div>':`<div class="wolf-conflict-day-controls"><label><span>Manual current day</span><select data-conflict-day-input><option value="">— unknown / automation —</option>${[1,2,3,4,5,6,7].map(day=>`<option value="${day}" ${num(card.dataset.conflictManualDay)===day?'selected':''}>Day ${day}</option>`).join('')}</select></label><button type="button" class="btn btn-primary btn-compact" data-save-conflict-day>SET DAY</button><button type="button" class="btn btn-secondary btn-compact" data-clear-conflict-day>USE AUTOMATION</button></div><small class="wolf-conflict-day-meta" data-conflict-day-meta></small>`}
       </div>
       <div class="wolf-conflict-pairs">${pairRowsMarkup(card)}</div>
-      <div class="wolf-rules-callout subtle"><strong>Conflict action boundary</strong><span>War/Civil War winners use Conflict Zones + Combat Bonds. Election winners use non-combat/economic mission work. Exact CZ-win workload calibration is intentionally not invented yet; Mandalore is where we can tune that next.</span></div>
+      <div class="wolf-rules-callout subtle"><strong>Adaptive conflict doctrine</strong><span>War/Civil War: Routine 3 · Contested 6 · Heavy 15 · Blitz 25 CZ points. Election: Routine 6 · Contested 15 · Heavy 40 · Blitz 60 INF. Opponent wins raise pressure; two observed opponent-winless days lower it unless Heavy is locked.</span></div>
       <div class="wolf-faction-strategy-actions"><span data-conflict-message>${isLab(card)?'Mandalore conflict setup is local sandbox data only.':savedAt?`Saved ${esc(new Date(savedAt).toLocaleString())} by ${esc(savedBy||'Wolf')}`:'No manual conflict pairing saved. Unambiguous pairs can still resolve automatically.'}</span><div><button type="button" class="btn btn-secondary btn-compact" data-reset-conflicts>${isLab(card)?'Reset Lab Pairing':'Reset Conflict Pairing'}</button><button type="button" class="btn btn-primary btn-compact" data-save-conflicts>${isLab(card)?'Save Lab Pairing':'Save Conflict Pairing'}</button></div></div>
     </section>`;
   }
 
   function collectPairs(card) {
-    return [...card.querySelectorAll('[data-conflict-pair-row]')].map(row=>({
-      factionA:row.querySelector('[data-conflict="factionA"]')?.value||'',
-      factionB:row.querySelector('[data-conflict="factionB"]')?.value||'',
-      objective:row.querySelector('[data-conflict="objective"]')?.value||'monitor',
-      auto:row.dataset.autoPair==='true',
-    })).filter(row=>row.factionA&&row.factionB&&norm(row.factionA)!==norm(row.factionB));
+    return [...card.querySelectorAll('[data-conflict-pair-row]')].map(row=>{
+      const selected=row.querySelector('[data-conflict="objective"]')?.value||'monitor';
+      return {
+        factionA:row.querySelector('[data-conflict="factionA"]')?.value||'',
+        factionB:row.querySelector('[data-conflict="factionB"]')?.value||'',
+        objective:selected==='blitz-a'?'win-a':selected==='blitz-b'?'win-b':selected,
+        blitz:selected==='blitz-a'||selected==='blitz-b',
+        auto:row.dataset.autoPair==='true',
+      };
+    }).filter(row=>row.factionA&&row.factionB&&norm(row.factionA)!==norm(row.factionB));
   }
 
   function clearAutoPairControls(card) {
@@ -432,6 +438,8 @@
       const pairGap=influenceGap(one,two);
       if(typeHost)typeHost.textContent=one&&two?`${typeLabel(one.type)}${phase==='pending'?' · PENDING':''}${pairGap===null?'':` · Δ${pairGap.toFixed(1)}%`}`:(a&&b?'Mismatch / inactive':'—');
     });
+    refreshPressureLabels(card,result);
+    syncPressure(card,result);
     processPreview(card);
   }
 
@@ -474,7 +482,7 @@
   }
 
   async function save(card) {
-    const pairs=collectPairs(card).map(({factionA,factionB,objective})=>({factionA,factionB,objective})), message=card.querySelector('[data-conflict-message]'), button=card.querySelector('[data-save-conflicts]');
+    const pairs=collectPairs(card).map(({factionA,factionB,objective,blitz})=>({factionA,factionB,objective,blitz})), message=card.querySelector('[data-conflict-message]'), button=card.querySelector('[data-save-conflicts]');
     if(button)button.disabled=true;
     try{
       if(isLab(card)){
@@ -501,11 +509,99 @@
     }catch(error){console.error(error);if(message)message.textContent='Could not reset conflict pairing.';}
   }
 
+  function conflictPairKey(a,b){return[norm(a),norm(b)].sort().join('::');}
+  function conflictScores(card){
+    try{return JSON.parse(card.dataset.conflictScores||'[]')||[];}catch{return[];}
+  }
+  function scoreForPair(card,pair){
+    const wanted=conflictPairKey(pair.factionA,pair.factionB);
+    let score=conflictScores(card).find(row=>conflictPairKey(row?.faction,row?.opponentFaction)===wanted)||null;
+    if(!score){
+      const a=num(card.dataset.conflictScoreA),b=num(card.dataset.conflictScoreB);
+      const faction=card.dataset.conflictFaction||'',opponent=card.dataset.conflictOpponent||'';
+      if(a!==null&&b!==null&&conflictPairKey(faction,opponent)===wanted){
+        score={faction,factionWonDays:a,opponentFaction:opponent,opponentWonDays:b,stale:card.dataset.conflictScoreStale==='true',updatedAt:card.dataset.conflictScoreUpdated||''};
+      }
+    }
+    if(!score)return null;
+    const same=norm(score.faction)===norm(pair.factionA);
+    return{
+      a:same?num(score.factionWonDays):num(score.opponentWonDays),
+      b:same?num(score.opponentWonDays):num(score.factionWonDays),
+      stale:Boolean(score.stale),
+      updatedAt:score.updatedAt||'',
+    };
+  }
+  function initialPressureFor(pair,score){
+    if(!score||score.a===null||score.b===null)return null;
+    const desired=pair.objective==='win-a'?score.a:score.b;
+    const opponent=pair.objective==='win-a'?score.b:score.a;
+    return (score.a===0&&score.b===0)||desired>opponent?'routine':'contested';
+  }
+  function pressureStateFor(card,pair){
+    return remote.pressureStates?.[systemName(card)]?.[conflictPairKey(pair.factionA,pair.factionB)]||null;
+  }
+  function workloadForPair(card,pair){
+    const score=scoreForPair(card,pair),saved=pressureStateFor(card,pair);
+    if(!score)return{pressure:'',target:null,reason:'Conflict score required before adaptive workload can be generated.',score:null,stale:false,heavyLock:false,quiet:0};
+    let pressure=saved?.pressure||initialPressureFor(pair,score)||'contested';
+    if(pair.blitz)pressure='blitz';
+    const targets=pair.type==='election'?ELECTION_TARGETS:CZ_TARGETS;
+    return{
+      pressure,target:targets[pressure]??null,score,stale:Boolean(score.stale),
+      heavyLock:Boolean(saved?.heavyLock),quiet:Number(saved?.quiet)||0,
+      reason:pair.blitz?'Manual Blitz override is active.':saved?.reason||(pressure==='routine'?'Opening / favorable observed score starts Routine.':'First observed score starts Contested; prior resistance is not reconstructed.'),
+    };
+  }
+  async function syncPressure(card,result){
+    if(isLab(card))return;
+    const observations=result.resolved.filter(pair=>pair.phase==='active'&&(pair.objective==='win-a'||pair.objective==='win-b')).map(pair=>{
+      const score=scoreForPair(card,pair);
+      if(!score||score.stale||score.a===null||score.b===null)return null;
+      return{
+        factionA:pair.factionA,factionB:pair.factionB,objective:pair.objective,
+        scoreA:score.a,scoreB:score.b,scoreUpdatedAt:score.updatedAt,
+        day:num(card.dataset.conflictDay),
+        episodeId:card.dataset.conflictActiveSeen||card.dataset.conflictExpectedActive||'',
+        phase:'active',stale:false,
+      };
+    }).filter(Boolean);
+    if(!observations.length)return;
+    const signature=JSON.stringify(observations);
+    const system=systemName(card);
+    if(pressureSyncSignatures.get(system)===signature)return;
+    pressureSyncSignatures.set(system,signature);
+    try{
+      await request('observe-conflict-scores',{system,observations});
+      processPreview(card);
+      refreshPressureLabels(card,result);
+    }catch(error){
+      pressureSyncSignatures.delete(system);
+      console.error('Could not update adaptive conflict pressure',error);
+    }
+  }
+  function refreshPressureLabels(card,result=resolve(card)){
+    card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
+      const a=row.querySelector('[data-conflict="factionA"]')?.value||'',b=row.querySelector('[data-conflict="factionB"]')?.value||'';
+      const pair=result.resolved.find(item=>conflictPairKey(item.factionA,item.factionB)===conflictPairKey(a,b));
+      const host=row.querySelector('[data-conflict-type]');
+      if(!pair||!host)return;
+      const work=(pair.objective==='win-a'||pair.objective==='win-b')?workloadForPair(card,pair):null;
+      if(work?.pressure)host.textContent=host.textContent.replace(/ · (ROUTINE|CONTESTED|HEAVY|BLITZ)(?: · LOCKED)?$/,'')+` · ${work.pressure.toUpperCase()}${work.heavyLock?' · LOCKED':''}`;
+    });
+  }
+
   function missionGoal(){return Number(document.querySelector('[data-rule="missionInfPerCmdr"]')?.value||25);}
-  function conflictTaskMarkup(pair,index){
+  function conflictTaskMarkup(pair,index,card){
     const winA=pair.objective==='win-a', winner=winA?pair.factionA:pair.factionB, loser=winA?pair.factionB:pair.factionA;
-    if(pair.type==='election')return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="mission-inf" data-order-faction="${esc(winner)}" data-order-amount="${esc(missionGoal())}" data-order-conflict-type="election"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ELECTION</span><strong>Complete about ${missionGoal()} INF of non-combat/economic missions for ${esc(winner)}</strong><p>Election pair: ${esc(winner)} vs ${esc(loser)}. Favor legal non-combat/economic mission work for the intended winner; trade/exploration can supplement where practical.</p><small><b>Conflict lock:</b> ordinary influence balancing for both participants is suspended until the Election ends.</small></div></article>`;
-    return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(winner)}" data-order-amount="${DEFAULT_CZ_POINT_TARGET}" data-order-conflict-type="${esc(pair.type)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ${esc(typeLabel(pair.type).toUpperCase())}</span><strong>Earn ${DEFAULT_CZ_POINT_TARGET} CZ points for ${esc(winner)}</strong><p>${esc(typeLabel(pair.type))} pair: ${esc(winner)} vs ${esc(loser)}. Low = ${CZ_POINTS.low} · Medium = ${CZ_POINTS.medium} · High = ${CZ_POINTS.high}. Any combination of completed victories counts.</p><small><b>Report each completed CZ result in Mission Control.</b> One shared wing instance counts once for squad progress; Combat Bonds remain supporting evidence, not the point currency.</small></div></article>`;
+    const work=workloadForPair(card,pair);
+    if(work.target===null)return '';
+    const pressure=work.pressure.toUpperCase();
+    const prefix=work.pressure==='blitz'?'BLITZ — ':work.pressure==='heavy'?'ALERT — ':'';
+    const freeze=work.stale?' · SCORE STALE / PRESSURE FROZEN':'';
+    const lock=work.heavyLock?' · HEAVY LOCK':'';
+    if(pair.type==='election')return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="mission-inf" data-order-faction="${esc(winner)}" data-order-amount="${esc(work.target)}" data-order-conflict-type="election"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ELECTION · ${esc(pressure)}${esc(lock)}${esc(freeze)}</span><strong>${esc(prefix)}Earn ${esc(work.target)} mission INF for ${esc(winner)}</strong><p>Election pair: ${esc(winner)} vs ${esc(loser)}. Squad-wide adaptive target. ${esc(work.reason)}</p><small>Routine 6 · Contested 15 · Heavy 40 · Blitz 60 INF. +2 / +3 / +4 / +5 mission INF reports aggregate toward this target.</small></div></article>`;
+    return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(winner)}" data-order-amount="${esc(work.target)}" data-order-conflict-type="${esc(pair.type)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ${esc(typeLabel(pair.type).toUpperCase())} · ${esc(pressure)}${esc(lock)}${esc(freeze)}</span><strong>${esc(prefix)}Earn ${esc(work.target)} CZ points for ${esc(winner)}</strong><p>${esc(typeLabel(pair.type))} pair: ${esc(winner)} vs ${esc(loser)}. Low = ${CZ_POINTS.low} · Medium = ${CZ_POINTS.medium} · High = ${CZ_POINTS.high}. ${esc(work.reason)}</p><small>Routine 3 · Contested 6 · Heavy 15 · Blitz 25 CZ pts. Report each completed CZ result in Mission Control; one shared wing instance counts once.</small></div></article>`;
   }
 
   function labOrder(card){
@@ -551,7 +647,7 @@
         if(markup)list.insertAdjacentHTML('afterbegin',markup);
       }else{
         const orders=result.resolved.filter(pair=>pair.phase==='active'&&(pair.objective==='win-a'||pair.objective==='win-b'));
-        if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map(conflictTaskMarkup).join(''));
+        if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map((pair,index)=>conflictTaskMarkup(pair,index,card)).filter(Boolean).join(''));
       }
 
       const head=host.querySelector('.wolf-order-preview-head');

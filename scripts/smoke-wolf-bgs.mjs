@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=8/,'Conflict client cache version should be v8');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=9/,'Conflict client cache version should be v8');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -80,8 +80,13 @@ for (const pattern of [
 assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be generated as a BGS task');
 
 const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
+for(const pattern of [/CZ_TARGETS = \{ routine:3, contested:6, heavy:15, blitz:25 \}/,/ELECTION_TARGETS = \{ routine:6, contested:15, heavy:40, blitz:60 \}/,/workloadForPair/,/syncPressure/,/observe-conflict-scores/,/BLITZ — win for faction A/,/HEAVY LOCK/]) assert.match(conflictClient,pattern);
+assert.match(baseClient,/data-conflict-scores=/,'All conflict-pair scores must be exposed to adaptive pressure automation');
+const conflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
+for(const pattern of [/pressureStates/,/observe-conflict-scores/,/advancePressure/,/Opponent reached 3 wins while observed/,/Two observed conflict days without an opponent win/,/blitz:Boolean/]) assert.match(conflictApi,pattern);
+
 for(const pattern of [
-  /wolf-bgs-conflicts/,/Conflict Configuration/,/DEFAULT_CZ_POINT_TARGET = 10/,/Low = \$\{CZ_POINTS\.low\}/,/conflictType/,/civil-war/,/election/,/war/,
+  /wolf-bgs-conflicts/,/Conflict Configuration/,/Low = \$\{CZ_POINTS\.low\}/,/conflictType/,/civil-war/,/election/,/war/,
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
@@ -151,7 +156,7 @@ const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=21/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=22/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
