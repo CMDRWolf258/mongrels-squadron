@@ -9,6 +9,8 @@ for(const pattern of [
   /site_admin_access_required/,
   /listFrontierAccounts/,
   /getEvents/,
+  /getDiagnosticEvents/,
+  /diagnostics:/,
   /matchVerifiedActivityHistory/,
   /summarizeEvents/,
   /storedEventCount/,
@@ -26,6 +28,9 @@ for(const pattern of [
   /DAILY ORDER MATCH/,
   /tradeEligibilityReason/,
   /sessionStorage/,
+  /data-frontier-diagnostics-view/,
+  /Raw Journal Trace/,
+  /diagnosticCard/,
   /loadMember/,
 ])assert.match(client,pattern);
 new Function(client);
@@ -37,8 +42,10 @@ for(const pattern of [
   /data-frontier-last-sync/,
   /data-frontier-last-event/,
   /data-frontier-event-count/,
+  /data-frontier-journal-count/,
+  /data-frontier-diagnostics-view/,
   /wolf-bgs-frontier-diagnostics\.css\?v=1/,
-  /wolf-bgs-frontier-diagnostics\.js\?v=2/,
+  /wolf-bgs-frontier-diagnostics\.js\?v=3/,
 ])assert.match(page,pattern);
 
 const css=readFileSync('css/wolf-bgs-frontier-diagnostics.css','utf8');

@@ -1,8 +1,9 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { getEvents, listFrontierAccounts, summarizeEvents } from '../../../lib/frontier.js';
+import { getDiagnosticEvents, getEvents, listFrontierAccounts, summarizeEvents } from '../../../lib/frontier.js';
 import { matchVerifiedActivityHistory, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 
 const MAX_EVENTS=300;
+const MAX_DIAGNOSTICS=500;
 
 export async function onRequestGet({request,env}) {
   const session=await readSession(request,env);
@@ -26,8 +27,9 @@ export async function onRequestGet({request,env}) {
   const selected=members.find(member=>member.ownerId===ownerId);
   if(!selected)return reply({ok:false,error:'frontier_member_not_found'},404);
 
-  const [events,current]=await Promise.all([
+  const [events,diagnosticEvents,current]=await Promise.all([
     getEvents(env,ownerId),
+    getDiagnosticEvents(env,ownerId),
     readCurrentOrderCycle(env,{historyDepth:7}),
   ]);
   const matched=matchVerifiedActivityHistory(events,current,{depth:7});
@@ -43,10 +45,17 @@ export async function onRequestGet({request,env}) {
     selected:{
       ...selected,
       storedEventCount:Array.isArray(events)?events.length:0,
+      storedDiagnosticCount:Array.isArray(diagnosticEvents)?diagnosticEvents.length:0,
       summary:summarizeEvents(events),
     },
     events:rows,
+    diagnostics:(Array.isArray(diagnosticEvents)?diagnosticEvents:[])
+      .slice()
+      .sort((a,b)=>String(b?.timestamp||'').localeCompare(String(a?.timestamp||'')))
+      .slice(0,MAX_DIAGNOSTICS)
+      .map(diagnosticView),
     eventLimit:MAX_EVENTS,
+    diagnosticLimit:MAX_DIAGNOSTICS,
     currentCycleId:current?.cycleId||null,
   });
 }
@@ -119,6 +128,30 @@ function eventView(event){
     }));
   }
   return base;
+}
+
+function diagnosticView(row){
+  const out={
+    timestamp:row?.timestamp||null,
+    event:String(row?.event||''),
+    system:String(row?.system||''),
+    station:String(row?.station||''),
+    stationType:String(row?.stationType||''),
+    keys:Array.isArray(row?.keys)?row.keys.slice(0,24):[],
+  };
+  const safe=[
+    'Faction','FactionName','AwardingFaction','VictimFaction','Result','Status','Success',
+    'Message','Message_Localised','From','From_Localised','Channel','MusicTrack','Reward',
+    'Amount','Influence','Reputation','MissionID','War','Conflict','Combat',
+    'Count','SellPrice','TotalSale','AvgPricePaid','Type','Type_Localised','MarketID',
+    'factionEffects','factions','contributions','resourcesRequired'
+  ];
+  for(const key of safe){
+    const value=row?.[key];
+    if(value===undefined||value===null||value==='')continue;
+    out[key]=value;
+  }
+  return out;
 }
 
 function reply(body,status=200){

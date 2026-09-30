@@ -4,6 +4,7 @@
 
   const parent=panel.closest('[data-verification-review]');
   const memberSelect=panel.querySelector('[data-frontier-diagnostics-member]');
+  const viewSelect=panel.querySelector('[data-frontier-diagnostics-view]');
   const typeSelect=panel.querySelector('[data-frontier-diagnostics-type]');
   const systemInput=panel.querySelector('[data-frontier-diagnostics-system]');
   const refresh=panel.querySelector('[data-frontier-diagnostics-refresh]');
@@ -15,6 +16,7 @@
   let members=[];
   let selected=null;
   let events=[];
+  let diagnostics=[];
   let loading=false;
   let initialized=false;
 
@@ -100,7 +102,9 @@
     set('[data-frontier-last-sync]',dateTime(selected.lastSyncAt));
     set('[data-frontier-last-event]',dateTime(selected.lastJournalEventAt));
     set('[data-frontier-last-system]',selected.lastSystem||'—');
+    const journalCount=selected.storedDiagnosticCount||0;
     set('[data-frontier-event-count]',count(selected.storedEventCount));
+    set('[data-frontier-journal-count]',count(journalCount));
   }
 
   function matchBadge(event){
@@ -181,9 +185,34 @@
     }[ch]));
   }
 
+  function diagnosticCard(row){
+    const details=[];
+    const skip=new Set(['timestamp','event','system','station','stationType','keys']);
+    for(const [key,value] of Object.entries(row||{})){
+      if(skip.has(key)||value===null||value===undefined||value==='')continue;
+      const text=Array.isArray(value)?value.join(' · '):String(value);
+      if(text)details.push(metric(key.replaceAll('_',' '),text));
+    }
+    return '<article class="wolf-frontier-event is-journal">'+
+      '<div class="wolf-frontier-event-head"><div><span>Raw Journal Trace</span><strong>'+escapeHtml(row.event||'Journal event')+'</strong></div>'+
+      '<b class="wolf-frontier-event-type">JOURNAL</b></div>'+
+      '<div class="wolf-frontier-event-context">'+
+        '<span>'+escapeHtml(dateTime(row.timestamp))+'</span>'+
+        (row.system?'<strong>'+escapeHtml(row.system)+'</strong>':'')+
+        (row.station?'<span>'+escapeHtml(row.station)+'</span>':'')+
+      '</div>'+
+      (details.length?'<div class="wolf-frontier-trade-grid">'+details.join('')+'</div>':'')+
+    '</article>';
+  }
+
+  function rawJournalMode(){ return (viewSelect?.value||'activity')==='journal'; }
+
   function filteredEvents(){
-    const type=typeSelect?.value||'all';
     const system=String(systemInput?.value||'').trim().toLowerCase();
+    if(rawJournalMode()){
+      return diagnostics.filter(row=>!system||String(row.system||'').toLowerCase().includes(system));
+    }
+    const type=typeSelect?.value||'all';
     return events.filter(event=>{
       if(type!=='all'&&event.type!==type)return false;
       if(system&&!String(event.system||'').toLowerCase().includes(system))return false;
@@ -193,22 +222,30 @@
 
   function render(){
     fillSummary();
+    const raw=rawJournalMode();
+    if(typeSelect)typeSelect.disabled=raw;
     if(!selected){
       list.innerHTML='';
       setStatus('Select a CMDR to inspect stored Frontier events.');
       return;
     }
     const rows=filteredEvents();
+    const total=raw?diagnostics.length:events.length;
+    const label=raw?'journal event':'stored event';
     setStatus(
       rows.length
-        ?rows.length.toLocaleString()+' event'+(rows.length===1?'':'s')+' shown · '+events.length.toLocaleString()+' recent stored event'+(events.length===1?'':'s')+' loaded'
-        :'No stored events match the selected filters.'
+        ?rows.length.toLocaleString()+' '+label+(rows.length===1?'':'s')+' shown · '+total.toLocaleString()+' loaded'
+        :raw
+          ?'No persisted journal diagnostics match the selected filter. Sync Elite once as Site Admin to populate the raw trace.'
+          :'No stored events match the selected filters.'
     );
     if(!rows.length){
-      list.innerHTML='<div class="wolf-scout-empty"><strong>No matching stored activity.</strong><small>Try All stored activity or clear the system filter.</small></div>';
+      list.innerHTML='<div class="wolf-scout-empty"><strong>'+escapeHtml(raw?'No raw journal trace stored yet.':'No matching stored activity.')+'</strong><small>'+escapeHtml(raw?'Run Sync Elite, then refresh this panel.':'Try All stored activity or clear the system filter.')+'</small></div>';
       return;
     }
-    list.innerHTML=rows.map(event=>event.type==='market_sell'?tradeCard(event):genericCard(event)).join('');
+    list.innerHTML=raw
+      ?rows.map(diagnosticCard).join('')
+      :rows.map(event=>event.type==='market_sell'?tradeCard(event):genericCard(event)).join('');
   }
 
   async function loadMembers(force=false){
@@ -227,6 +264,7 @@
       if(!remembered){
         selected=null;
         events=[];
+        diagnostics=[];
         render();
       }
     }catch(error){
@@ -243,6 +281,7 @@
     if(!ownerId){
       selected=null;
       events=[];
+      diagnostics=[];
       sessionStorage.removeItem(STORAGE_KEY);
       render();
       return;
@@ -256,6 +295,7 @@
       members=Array.isArray(data.members)?data.members:members;
       selected=data.selected||null;
       events=Array.isArray(data.events)?data.events:[];
+      diagnostics=Array.isArray(data.diagnostics)?data.diagnostics:[];
       sessionStorage.setItem(STORAGE_KEY,ownerId);
       populateMembers();
       memberSelect.value=ownerId;
@@ -270,6 +310,7 @@
   }
 
   memberSelect?.addEventListener('change',()=>loadMember(memberSelect.value));
+  viewSelect?.addEventListener('change',render);
   typeSelect?.addEventListener('change',render);
   systemInput?.addEventListener('input',render);
   refresh?.addEventListener('click',()=>{

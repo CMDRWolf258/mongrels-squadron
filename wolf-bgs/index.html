@@ -436,6 +436,10 @@
               </div>
               <div class="wolf-frontier-diagnostics-toolbar">
                 <label><span>Commander</span><select data-frontier-diagnostics-member><option value="">Select a connected CMDR…</option></select></label>
+                <label><span>View</span><select data-frontier-diagnostics-view>
+                  <option value="activity">Parsed activity</option>
+                  <option value="journal">Raw journal trace</option>
+                </select></label>
                 <label><span>Activity</span><select data-frontier-diagnostics-type>
                   <option value="all">All stored activity</option>
                   <option value="market_sell">Trade sales</option>
@@ -452,10 +456,11 @@
                 <div><span>Latest Journal Event</span><strong data-frontier-last-event>—</strong></div>
                 <div><span>Last Known System</span><strong data-frontier-last-system>—</strong></div>
                 <div><span>Stored Events</span><strong data-frontier-event-count>0</strong></div>
+                <div><span>Raw Journal Trace</span><strong data-frontier-journal-count>0</strong></div>
               </div>
               <div class="wolf-rules-callout subtle wolf-frontier-diagnostics-note">
                 <strong>What this proves</strong>
-                <span>If a trade appears here, the sync collected it. <b>No Daily Order match</b> only means it did not attach to an active matching order. If it does not appear here at all, it was not stored by the Scout sync.</span>
+                <span><b>Parsed activity</b> shows evidence retained for BGS/rewards. <b>Raw journal trace</b> shows the sanitized surrounding Frontier events captured during a Site Admin sync, including useful troubleshooting events that do not become rewards.</span>
               </div>
               <div class="wolf-frontier-diagnostics-status" data-frontier-diagnostics-status>Select a CMDR to inspect stored Frontier events.</div>
               <div class="wolf-frontier-event-list" data-frontier-diagnostics-list></div>
@@ -646,7 +651,7 @@
 <script src="../js/wolf-bgs-colonization.js?v=12"></script>
 <script src="../js/wolf-bgs-colonization-history.js?v=1"></script>
 <script src="../js/wolf-bgs-rewards.js?v=17"></script>
-<script src="../js/wolf-bgs-frontier-diagnostics.js?v=2"></script>
+<script src="../js/wolf-bgs-frontier-diagnostics.js?v=3"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>
