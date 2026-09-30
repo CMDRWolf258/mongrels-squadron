@@ -41,7 +41,7 @@
   </section>
 
   <section class="section" data-wolf-gate>
-    <div class="container"><div class="wolf-gate-card"><div><p class="eyebrow">Wolf Only</p><h2>Site Admin Authorization Required</h2><p>This control room can change private BGS automation parameters and manual system snapshots. It is intentionally restricted to the site-admin account.</p></div><a class="btn btn-primary" href="/api/auth/login?return=%2Fwolf-bgs%2F">Sign In with Discord →</a><small data-wolf-gate-status>Checking secure session…</small></div></div>
+    <div class="container"><div class="wolf-gate-card"><div><p class="eyebrow" data-wolf-gate-eyebrow>Wolf Only</p><h2 data-wolf-gate-title>Checking Secure Access</h2><p data-wolf-gate-detail>Confirming the current site-admin session and loading Wolf BGS Control.</p></div><a class="btn btn-primary" data-wolf-login href="/api/auth/login?return=%2Fwolf-bgs%2F" hidden>Sign In with Discord →</a><button class="btn btn-secondary" type="button" data-wolf-retry hidden>Retry Wolf BGS Control</button><small data-wolf-gate-status>Checking secure session…</small></div></div>
   </section>
 
   <div data-wolf-private hidden>
@@ -627,7 +627,7 @@
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
 <script src="../js/wolf-bgs-inheritance.js?v=3"></script>
-<script src="../js/wolf-bgs.js?v=18"></script>
+<script src="../js/wolf-bgs.js?v=19"></script>
 <script src="../js/wolf-bgs-discord.js?v=14"></script>
 <script src="../js/wolf-bgs-scout.js?v=4"></script>
 <script src="../js/wolf-bgs-scout-jobs.js?v=2"></script>

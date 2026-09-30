@@ -41,20 +41,34 @@ export async function onRequestGet({ request, env }) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
 
-  const [live, boards, control, scoutState] = await Promise.all([
-    fetchLive(request),
-    fetchBoards(request),
-    readControl(env),
-    readScoutSnapshots(env),
-  ]);
-  const payload = buildPayload(live, boards, control, auth.session, scoutState);
-  const alertsChanged = refreshAlertEpisodes(control, payload.systems, new Date().toISOString(), scoutState.conflictHistory);
-  attachConflictTracking(payload, control);
-  attachAlertData(payload, control);
-  if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
-    await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
+  try {
+    const [live, boards, control, scoutState] = await Promise.all([
+      fetchLive(request),
+      fetchBoards(request),
+      readControl(env),
+      readScoutSnapshots(env),
+    ]);
+    const payload = buildPayload(live, boards, control, auth.session, scoutState);
+    const alertsChanged = refreshAlertEpisodes(control, payload.systems, new Date().toISOString(), scoutState.conflictHistory);
+    attachConflictTracking(payload, control);
+    attachAlertData(payload, control);
+    if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
+      await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
+    }
+    return json(payload, { headers: privateHeaders() });
+  } catch (error) {
+    console.error('Could not build Wolf BGS Control data', error);
+    return json({
+      ok:false,
+      error:'wolf_bgs_unavailable',
+      authenticated:true,
+      viewer:{
+        displayName:auth.session.displayName || auth.session.username || 'CMDR Wolf258',
+        username:auth.session.username || '',
+        access:auth.session.access,
+      },
+    }, { status:503, headers:privateHeaders() });
   }
-  return json(payload, { headers: privateHeaders() });
 }
 
 export async function onRequestPut({ request, env }) {

@@ -2,6 +2,11 @@
   const gate = document.querySelector('[data-wolf-gate]');
   const privateView = document.querySelector('[data-wolf-private]');
   const gateStatus = document.querySelector('[data-wolf-gate-status]');
+  const gateEyebrow = document.querySelector('[data-wolf-gate-eyebrow]');
+  const gateTitle = document.querySelector('[data-wolf-gate-title]');
+  const gateDetail = document.querySelector('[data-wolf-gate-detail]');
+  const loginLink = document.querySelector('[data-wolf-login]');
+  const retryButton = document.querySelector('[data-wolf-retry]');
   const viewer = document.querySelector('[data-wolf-viewer]');
   const list = document.querySelector('[data-system-list]');
   const search = document.querySelector('[data-system-search]');
@@ -50,6 +55,94 @@
   function setAccess(ok) {
     if (gate) gate.hidden = ok;
     if (privateView) privateView.hidden = !ok;
+  }
+
+  function setGateState(state, detail = {}) {
+    setAccess(false);
+    const displayName = detail.displayName || detail.username || '';
+
+    if (state === 'checking') {
+      if (gateEyebrow) gateEyebrow.textContent = 'Wolf Only';
+      if (gateTitle) gateTitle.textContent = 'Checking Secure Access';
+      if (gateDetail) gateDetail.textContent = 'Confirming the current site-admin session and loading Wolf BGS Control.';
+      if (gateStatus) gateStatus.textContent = detail.retrying ? 'Secure control service is taking longer than expected. Retrying…' : 'Checking secure session…';
+      if (loginLink) loginLink.hidden = true;
+      if (retryButton) retryButton.hidden = true;
+      return;
+    }
+
+    if (state === 'auth-required') {
+      if (gateEyebrow) gateEyebrow.textContent = 'Wolf Only';
+      if (gateTitle) gateTitle.textContent = detail.denied ? 'Site Admin Access Required' : 'Site Admin Authorization Required';
+      if (gateDetail) gateDetail.textContent = detail.denied
+        ? 'This Discord account is signed in, but it does not have site-admin access to Wolf BGS Control.'
+        : 'This control room can change private BGS automation parameters and manual system snapshots. It is intentionally restricted to the site-admin account.';
+      if (gateStatus) gateStatus.textContent = detail.denied ? 'Site-admin access is required.' : 'Site-admin sign-in required.';
+      if (loginLink) loginLink.hidden = false;
+      if (retryButton) retryButton.hidden = true;
+      return;
+    }
+
+    if (state === 'service-error') {
+      if (gateEyebrow) gateEyebrow.textContent = displayName ? 'Session Active' : 'Secure Service';
+      if (gateTitle) gateTitle.textContent = 'Wolf BGS Control Temporarily Unavailable';
+      if (gateDetail) gateDetail.textContent = displayName
+        ? `You are still signed in as ${displayName}. The secure BGS control service did not answer correctly, so there is no need to sign in again.`
+        : 'The secure BGS control service did not answer correctly. Your browser has not been sent back through Discord authentication.';
+      if (gateStatus) gateStatus.textContent = 'Retry the secure control request in a moment.';
+      if (loginLink) loginLink.hidden = true;
+      if (retryButton) retryButton.hidden = false;
+    }
+  }
+
+  const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
+
+  async function fetchSessionState() {
+    try {
+      const response = await fetch(`/api/auth/session?_=${Date.now()}`, {
+        credentials:'same-origin',
+        cache:'no-store',
+        headers:{ Accept:'application/json' },
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function fetchWolfControlWithRetry() {
+    const delays = [0, 350, 1000];
+    let lastError = null;
+
+    for (let attempt = 0; attempt < delays.length; attempt += 1) {
+      if (delays[attempt]) await wait(delays[attempt]);
+      try {
+        const response = await fetch(`/api/operations/wolf-bgs?_=${Date.now()}`, {
+          credentials:'same-origin',
+          cache:'no-store',
+          headers:{ Accept:'application/json' },
+        });
+
+        if (response.status === 401 || response.status === 403 || response.ok) return response;
+
+        const payload = await response.json().catch(() => ({}));
+        const error = new Error(`Wolf BGS Control request failed (${response.status})`);
+        error.status = response.status;
+        error.payload = payload;
+        lastError = error;
+
+        if (![429,500,502,503,504].includes(response.status) || attempt === delays.length - 1) throw error;
+        setGateState('checking', { retrying:true });
+      } catch (error) {
+        lastError = error;
+        const retryable = !error?.status || [429,500,502,503,504].includes(error.status);
+        if (!retryable || attempt === delays.length - 1) throw error;
+        setGateState('checking', { retrying:true });
+      }
+    }
+
+    throw lastError || new Error('Wolf BGS Control request failed');
   }
 
   function parsedTime(value) {
@@ -771,14 +864,16 @@
 
   async function load(resetUi = true) {
     const reopenSystem = !resetUi ? ([...document.querySelectorAll('.wolf-system-card[open]')][0]?.dataset.system || '') : '';
-    if (resetUi) setAccess(false);
+    if (resetUi) setGateState('checking');
+
     try {
-      const response = await fetch(`/api/operations/wolf-bgs?_=${Date.now()}`, { credentials:'same-origin', cache:'no-store', headers:{ Accept:'application/json' } });
+      const response = await fetchWolfControlWithRetry();
+
       if (response.status === 401 || response.status === 403) {
-        if (gateStatus) gateStatus.textContent = response.status === 401 ? 'Site-admin sign-in required.' : 'This Discord account does not have Wolf BGS Control access.';
-        return;
+        if (resetUi) setGateState('auth-required', { denied:response.status === 403 });
+        return null;
       }
-      if (!response.ok) throw new Error(`Wolf BGS Control request failed (${response.status})`);
+
       payload = await response.json();
       if (viewer) viewer.textContent = `${payload.viewer?.displayName || 'CMDR Wolf258'} · site admin`;
       if (resetUi && pageSizeEl) { pageSizeEl.value = '20'; pageSize = 20; }
@@ -793,10 +888,26 @@
       return payload;
     } catch (error) {
       console.error('Could not load Wolf BGS Control', error);
-      if (gateStatus) gateStatus.textContent = 'Wolf BGS Control service unavailable. Please try again.';
+      if (!resetUi) return null;
+
+      const serverViewer = error?.payload?.authenticated ? error.payload.viewer : null;
+      if (serverViewer) {
+        setGateState('service-error', serverViewer);
+        return null;
+      }
+
+      const session = await fetchSessionState();
+      if (session?.authenticated) setGateState('service-error', session);
+      else if (session && session.authenticated === false) setGateState('auth-required');
+      else setGateState('service-error');
       return null;
     }
   }
+
+  retryButton?.addEventListener('click', () => {
+    if (retryButton) retryButton.disabled = true;
+    load(true).finally(() => { if (retryButton) retryButton.disabled = false; });
+  });
 
   window.WolfBgsRefresh = () => load(false);
   window.WolfBgsGetSystems = () => (payload?.systems || []).map(system => ({name:system.name})).filter(system => system.name);

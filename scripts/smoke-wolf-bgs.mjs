@@ -136,14 +136,23 @@ const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','ut
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
+assert.match(apiSource,/wolf_bgs_unavailable/,'Wolf BGS API must expose authenticated data-build failures distinctly');
+assert.match(apiSource,/authenticated:true/,'Wolf BGS API must preserve authenticated state when secure data building fails');
+
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=18/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=19/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
+assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
+assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
+assert.match(wolfMainClient,/setGateState\('service-error'/,'Wolf BGS must distinguish service failure from signed-out state');
+assert.match(wolfMainClient,/fetchWolfControlWithRetry/,'Wolf BGS must retry transient secure-service failures');
+assert.match(wolfMainClient,/response\.status === 401 \|\| response\.status === 403/,'Only explicit Wolf BGS auth failures should reveal login');
+
 assert.match(wolfMainClient,/Current BGS cycle/);
 assert.match(wolfMainClient,/freshnessCycle/);
 assert.doesNotMatch(wolfMainClient,/Custom freshness hours/);
