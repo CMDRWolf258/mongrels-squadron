@@ -886,3 +886,77 @@ body.project-editor-open:not(.assistant-open) .mongrel-assistant-launcher{displa
   .project-editor-actions.is-standard .project-editor-primary-actions{justify-self:stretch;display:grid;grid-template-columns:1fr 1fr;width:100%}
   .project-editor-actions.is-standard .project-editor-primary-actions .btn{width:100%}
 }
+
+
+/* v71 — operational hero density
+   Keep the cinematic artwork, but get members to live tools and information sooner. */
+.page-hero.operational-hero{
+  padding:34px 0 24px;
+}
+.page-hero.operational-hero h1{
+  font-size:clamp(2.35rem,5vw,4rem);
+  line-height:.96;
+}
+.page-hero.operational-hero .eyebrow{
+  margin:0 0 11px;
+}
+.page-hero.operational-hero p:not(.eyebrow){
+  margin:13px 0 0;
+  max-width:850px;
+  line-height:1.55;
+}
+.page-hero.operational-hero .page-mark{
+  width:124px;
+}
+.page-hero.operational-hero-compact{
+  padding:26px 0 18px;
+}
+.page-hero.operational-hero-compact h1{
+  font-size:clamp(2.3rem,4.6vw,3.55rem);
+}
+.page-hero.operational-hero-compact .page-mark{
+  width:112px;
+}
+
+/* Mission Control keeps a little more ceremony, but the live dashboard starts sooner. */
+.page-command .operations-overview-section{
+  padding-top:30px;
+}
+
+/* Member Portal is a working dashboard, not a second landing page. */
+.page-member-portal .member-dashboard-section{
+  padding-top:30px;
+}
+.page-member-portal .member-access-section{
+  padding-top:36px;
+}
+.page-member-portal .member-dashboard-head{
+  align-items:center;
+  margin-bottom:18px;
+}
+.page-member-portal .member-dashboard-head h2{
+  font-size:clamp(1.75rem,3.1vw,2.45rem);
+  line-height:1.02;
+}
+.page-member-portal .member-dashboard-head .member-admin-shortcut{
+  margin-top:12px;
+}
+.page-member-portal .member-dashboard-head .member-admin-shortcut .btn{
+  min-height:40px;
+  padding:0 15px;
+}
+
+@media(max-width:800px){
+  .page-hero.operational-hero,
+  .page-hero.operational-hero-compact{
+    padding:28px 0 22px;
+  }
+  .page-hero.operational-hero h1,
+  .page-hero.operational-hero-compact h1{
+    font-size:clamp(2.15rem,9vw,3.25rem);
+  }
+  .page-member-portal .member-dashboard-section,
+  .page-member-portal .member-access-section{
+    padding-top:28px;
+  }
+}

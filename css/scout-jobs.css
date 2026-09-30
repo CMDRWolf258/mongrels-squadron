@@ -72,3 +72,17 @@
 .scout-job-distance strong{color:#8eeeff}
 @media(max-width:1050px){.scout-route-tools{grid-template-columns:1fr 1fr}.scout-route-copy{grid-column:1/-1}.scout-route-status{grid-column:1/-1}.scout-use-last{max-width:none}}
 @media(max-width:620px){.scout-route-tools{grid-template-columns:1fr}.scout-route-copy,.scout-route-status{grid-column:auto}.scout-use-last{width:100%;max-width:none}}
+
+
+/* v7 — dedicated Scout Jobs density pass */
+.scout-setup-section{
+  padding-top:24px;
+  padding-bottom:16px;
+}
+.scout-board-nav-section{
+  padding-top:0;
+  padding-bottom:18px;
+}
+.scout-board-nav-section + .section-sm{
+  padding-top:16px;
+}
