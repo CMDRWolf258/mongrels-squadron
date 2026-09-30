@@ -112,6 +112,8 @@ for(const pattern of [
   /scoutPresenceRow/,
   /activeSnapshotSource: activeSource/,
   /scoutActiveCount/,
+  /directSnapshotSourceLabel/,
+  /Frontier CAPI/,
 ])assert.match(bgsApi,pattern);
 
 const bgsFactory=new Function(
@@ -263,6 +265,13 @@ payload=bgs.buildPayload(
 );
 assert.equal(payload.systems.length,0,'Newer external former-presence data must retire an older Scout snapshot');
 
+const frontierSource=readFileSync('lib/frontier.js','utf8');
+assert.match(frontierSource,/boardSnapshots:newestBoardSnapshots/,'Frontier journal parser must return faction-board snapshots');
+assert.match(frontierSource,/journalBoardSnapshot/,'Frontier journal parser must recognize Location/FSDJump/CarrierJump faction boards');
+const frontierSyncSource=readFileSync('functions/api/frontier/sync.js','utf8');
+assert.match(frontierSyncSource,/mergeFrontierBoardSnapshots/,'Frontier sync must merge direct faction boards into BGS snapshots');
+assert.match(frontierSyncSource,/Frontier CAPI Journal/,'Frontier direct BGS snapshots must retain source identity');
+
 const memberPage=readFileSync('member/index.html','utf8');
 for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/View Rewards Owed/,/rewards\/#outstanding-rewards/,/member-dashboard\.js\?v=90/])assert.match(memberPage,pattern);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
@@ -288,7 +297,7 @@ for(const pattern of [
 ])assert.match(scoutCss,pattern);
 
 const baseClient=readFileSync('js/wolf-bgs.js','utf8');
-for(const pattern of [/wolf-scout-source-chip/,/Active board/,/Refresh with Scout:/,/jump out and back in/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/,/parsedTime/])assert.match(baseClient,pattern);
+for(const pattern of [/wolf-scout-source-chip/,/Active board/,/Refresh with Scout:/,/Frontier CAPI/,/jump out and back in/,/activeSnapshotSource === 'scout'/,/window\.WolfBgsRefresh/,/window\.WolfBgsGetSystems/,/parsedTime/])assert.match(baseClient,pattern);
 assert.doesNotMatch(baseClient,/External board newest/);
 assert.doesNotMatch(baseClient,/External board oldest/);
 assert.doesNotMatch(baseClient,/Mixed \/ Stale/);
