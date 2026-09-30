@@ -355,6 +355,7 @@ function normalizeConflictScore(value, stale = false) {
   return {
     factionWonDays: Math.max(0, Math.round(factionWonDays)),
     opponentWonDays: Math.max(0, Math.round(opponentWonDays)),
+    faction: cleanText(value.faction, MONGREL, 120),
     opponentFaction: cleanText(value.opponentFaction, '', 120),
     type: prettyStateText(cleanText(value.type, '', 60)),
     status: prettyStateText(cleanText(value.status, '', 60)),
@@ -447,10 +448,16 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
   const boardComplete = activeSource==='manual'
     ? Boolean(manual?.factions?.length)
     : (activeSource==='scout' ? Boolean(scoutFactions.length) : Boolean(externalFactions.length));
-  const mongrelConflict = activeStates.some(item => ['war','civil war','election'].includes(norm(item)));
+  const mongrelConflict = activeStates.some(item => CONFLICT_STATES.has(norm(item)));
+  const activeConflict = factions.some(faction => factionStateArray(faction,'activeStates','state').some(item=>CONFLICT_STATES.has(norm(item))));
+  const pendingConflict = factions.some(faction => factionStateArray(faction,'pendingStates','pending').some(item=>CONFLICT_STATES.has(norm(item))));
   const externalConflictScore = normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale);
-  const directScoutConflictScore = scoutConflictScore(scout);
-  const conflictScore = mongrelConflict ? newestConflictScore(externalConflictScore, directScoutConflictScore) : null;
+  const scoutConflictScoreList = scoutConflictScores(scout);
+  const conflictScores = mergeConflictScores(scoutConflictScoreList);
+  const pairScore = selectPrimaryConflictScore(conflictScores,factions);
+  const conflictScore = activeConflict
+    ? (pairScore || (mongrelConflict ? newestConflictScore(externalConflictScore, scoutConflictScore(scout,factions)) : null))
+    : null;
 
   return {
     name,
@@ -496,7 +503,10 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
     settings,
     hasCustomSettings: Boolean(storedSettings?.updatedAt),
     conflict: /\bwar\b|civil war|election/.test(conflictWords),
+    activeConflict,
+    pendingConflict,
     mongrelConflict,
+    conflictScores,
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
     retreatRisk: influence !== null && Number(influence) < 5,
@@ -576,9 +586,11 @@ function alertCondition(system, family) {
     return activeDetail ? { detail:activeDetail, phase:'active' } : null;
   }
   if (family === 'conflict') {
-    const pendingDetail = find(pending, value => CONFLICT_STATES.has(value));
+    const factionPending=(system?.factions || []).flatMap(faction=>factionStateArray(faction,'pendingStates','pending'));
+    const factionActive=(system?.factions || []).flatMap(faction=>factionStateArray(faction,'activeStates','state'));
+    const pendingDetail = find(factionPending.length ? factionPending : pending, value => CONFLICT_STATES.has(value));
     if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
-    const activeDetail = find(active, value => CONFLICT_STATES.has(value));
+    const activeDetail = find(factionActive.length ? factionActive : active, value => CONFLICT_STATES.has(value));
     return activeDetail ? { detail:activeDetail, phase:'active' } : null;
   }
   if (family === 'bust') {
@@ -749,8 +761,8 @@ function conflictTimelineFor(system, control, nowIso) {
   const episode = control.alertEpisodes?.[alertKey(system.name, 'conflict')] || null;
   const override = control.conflictDayOverrides?.[system.name] || null;
   const tick = system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick;
-  const active = Boolean(system.mongrelConflict);
-  const pending = (system.pendingStates || []).some(state => CONFLICT_STATES.has(norm(state)));
+  const active = Boolean(system.activeConflict ?? system.mongrelConflict);
+  const pending = Boolean(system.pendingConflict) || (system.pendingStates || []).some(state => CONFLICT_STATES.has(norm(state)));
   const phase = override && (active || pending || episode) ? 'active' : (active ? 'active' : pending ? 'pending' : 'none');
 
   let day = null;
@@ -863,30 +875,55 @@ function scoutPresenceRow(snapshot) {
   };
 }
 
-function scoutConflictScore(snapshot) {
-  if (!Array.isArray(snapshot?.conflicts)) return null;
-  for (const conflict of snapshot.conflicts) {
-    const one = conflict?.faction1;
-    const two = conflict?.faction2;
-    const oneIsMongrel = norm(one?.name) === norm(MONGREL);
-    const twoIsMongrel = norm(two?.name) === norm(MONGREL);
-    if (!oneIsMongrel && !twoIsMongrel) continue;
-    const ours = oneIsMongrel ? one : two;
-    const theirs = oneIsMongrel ? two : one;
+function scoutConflictScores(snapshot) {
+  if (!Array.isArray(snapshot?.conflicts)) return [];
+  return snapshot.conflicts.map(conflict => {
+    const one = conflict?.faction1, two = conflict?.faction2;
+    if (!one?.name || !two?.name) return null;
     return {
-      factionWonDays:Math.max(0,Math.round(Number(ours?.wonDays) || 0)),
-      opponentWonDays:Math.max(0,Math.round(Number(theirs?.wonDays) || 0)),
-      opponentFaction:cleanText(theirs?.name, '', 120),
+      faction:cleanText(one.name, '', 120),
+      factionWonDays:Math.max(0,Math.round(Number(one?.wonDays) || 0)),
+      opponentWonDays:Math.max(0,Math.round(Number(two?.wonDays) || 0)),
+      opponentFaction:cleanText(two.name, '', 120),
       type:prettyStateText(cleanText(conflict?.type, '', 60)),
       status:prettyStateText(cleanText(conflict?.status, '', 60)),
-      factionStake:cleanText(ours?.stake, '', 160),
-      opponentStake:cleanText(theirs?.stake, '', 160),
+      factionStake:cleanText(one?.stake, '', 160),
+      opponentStake:cleanText(two?.stake, '', 160),
       updatedAt:snapshot.updatedAt || null,
       stale:false,
       source:'Mongrel Scout',
     };
+  }).filter(Boolean);
+}
+function conflictPairKey(score) {
+  if (!score?.faction || !score?.opponentFaction) return '';
+  return [norm(score.faction),norm(score.opponentFaction)].sort().join('::');
+}
+function mergeConflictScores(...groups) {
+  const map=new Map();
+  for(const group of groups) for(const score of group || []){
+    const key=conflictPairKey(score); if(!key)continue;
+    const current=map.get(key);
+    if(!current || compareTime(score.updatedAt,current.updatedAt)>=0) map.set(key,score);
   }
-  return null;
+  return [...map.values()];
+}
+function activeConflictFactionNames(factions) {
+  const names=new Set();
+  for(const faction of factions || []){
+    const active=factionStateArray(faction,'activeStates','state');
+    if(active.some(state=>CONFLICT_STATES.has(norm(state)))) names.add(norm(faction.name));
+  }
+  return names;
+}
+function selectPrimaryConflictScore(scores,factions) {
+  const active=activeConflictFactionNames(factions);
+  const matches=(scores || []).filter(score=>active.has(norm(score.faction)) && active.has(norm(score.opponentFaction)));
+  if(matches.length===1) return matches[0];
+  return matches.find(score=>norm(score.faction)===norm(MONGREL) || norm(score.opponentFaction)===norm(MONGREL)) || null;
+}
+function scoutConflictScore(snapshot,factions=[]) {
+  return selectPrimaryConflictScore(scoutConflictScores(snapshot),factions);
 }
 
 function newestConflictScore(a,b) {

@@ -341,8 +341,6 @@ async function readSnapshots(env) {
   } catch { return {version:1,systems:{},conflictHistory:{}}; }
 }
 function conflictObservation(snapshot) {
-  const mongrel = (snapshot.factions || []).find(row => norm(row?.name) === norm(MONGREL));
-  if (!mongrel) return null;
   const conflictName = value => {
     const text = norm(value).replaceAll('_',' ');
     if (text === 'civilwar' || text === 'civil war') return 'Civil War';
@@ -350,16 +348,16 @@ function conflictObservation(snapshot) {
     if (text === 'election') return 'Election';
     return '';
   };
-  for (const state of mongrel.pendingStates || []) {
-    const detail = conflictName(state);
-    if (detail) return {phase:'pending',detail};
+  const pending=[], active=[];
+  for(const faction of snapshot.factions || []){
+    for(const state of faction?.pendingStates || []){const detail=conflictName(state);if(detail)pending.push(detail);}
+    for(const state of faction?.activeStates || []){const detail=conflictName(state);if(detail)active.push(detail);}
+    const direct=conflictName(faction?.state); if(direct)active.push(direct);
   }
-  for (const state of mongrel.activeStates || []) {
-    const detail = conflictName(state);
-    if (detail) return {phase:'active',detail};
-  }
-  const detail = conflictName(mongrel.state);
-  return detail ? {phase:'active',detail} : null;
+  if(pending.length) return {phase:'pending',detail:pending[0]};
+  if(active.length) return {phase:'active',detail:active[0]};
+  for(const conflict of snapshot.conflicts || []){const detail=conflictName(conflict?.type);if(detail)return {phase:'active',detail};}
+  return null;
 }
 
 function updateConflictHistory(state, snapshot) {
