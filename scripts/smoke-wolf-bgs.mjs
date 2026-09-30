@@ -89,7 +89,7 @@ for(const pattern of [
   /wolf-bgs-conflicts/,/Conflict Configuration/,/Low = \$\{CZ_POINTS\.low\}/,/conflictType/,/civil-war/,/election/,/war/,
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
-  /ordinary influence\/counterweight work/,/Adaptive conflict doctrine/,/non-combat\/economic mission work/,
+  /ordinary influence\/counterweight work/,/Adaptive conflict doctrine/,/Election: Routine 6/,
   /wolf-conflict-preview-task/,/Conflict lock active/,/Conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/Pending conflict prepared/,'Pending conflicts must expose pre-activation strategy preparation');
