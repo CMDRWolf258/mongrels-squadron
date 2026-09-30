@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=6/,'Conflict client cache version should be v6');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=7/,'Conflict client cache version should be v6');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -145,7 +145,7 @@ const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=19/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=20/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
@@ -157,6 +157,12 @@ assert.match(wolfMainClient,/Current BGS cycle/);
 assert.match(wolfMainClient,/freshnessCycle/);
 assert.doesNotMatch(wolfMainClient,/Custom freshness hours/);
 new Function(wolfMainClient);
+
+assert.match(apiSource,/activeConflict/,'System-level conflicts must be tracked separately from Mongrel participation');
+assert.match(apiSource,/scoutConflictScores/,'Live Scout must expose scores for non-Mongrel conflict pairs');
+assert.doesNotMatch(apiSource,/const conflictScore = mongrelConflict \?/,'Conflict scores must not be gated on Mongrel participation');
+assert.match(conflictClient,/Conflict score/,'Conflict UI must use a system-level score label');
+assert.doesNotMatch(conflictClient,/Mongrel conflict score/,'Conflict UI must not label every score as Mongrel-only');
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
 for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
