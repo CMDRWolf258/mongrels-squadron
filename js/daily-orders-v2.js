@@ -1,5 +1,5 @@
 (() => {
-  // CZ result reports are atomic squad-result records; matching wing reports are deduplicated server-side.
+  // CZ result reports are atomic squad-result records; matching wing reports count once server-side.
   const section=document.querySelector('[data-daily-orders]');
   const list=section?.querySelector('[data-orders-list]');
   const frontierConnect=section?.querySelector('[data-orders-frontier-connect]');
