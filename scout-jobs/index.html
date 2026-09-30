@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="../assets/images/branding/apple-touch-icon.png?v=66">
   <title>Scout Jobs | The Mongrels</title>
   <link rel="stylesheet" href="../css/global.css?v=71">
-  <link rel="stylesheet" href="../css/scout-jobs.css?v=7">
+  <link rel="stylesheet" href="../css/scout-jobs.css?v=8">
 </head>
 <body class="visual-page page-command">
 <header class="site-header">
@@ -43,24 +43,33 @@
   <div data-mission-control-private hidden>
     <section class="section-sm scout-setup-section">
       <div class="container">
-        <div class="scout-setup-panel">
-          <div class="scout-setup-copy">
-            <p class="eyebrow">First Time Scouting?</p>
-            <h2>Scout Setup</h2>
-            <div class="scout-setup-steps">
-              <p><strong>1.</strong> Connect your Elite account for reward identity.</p>
-              <p><strong>2.</strong> Install EDMC and download Live Scout.</p>
-              <p><strong>3.</strong> Get your Scout token from leadership and paste it into EDMC → Settings → Mongrel Scout. Then jump into a listed system to send its faction board automatically.</p>
+        <details class="scout-setup-panel scout-setup-details">
+          <summary class="scout-setup-summary">
+            <div>
+              <p class="eyebrow">Live Scout Setup</p>
+              <strong>Already configured? Go straight to the board.</strong>
+              <small>First time scouting? Expand setup for Elite connection, EDMC, Live Scout, and token instructions.</small>
             </div>
+            <span class="scout-setup-toggle">Show Setup <b>+</b></span>
+          </summary>
+          <div class="scout-setup-expanded">
+            <div class="scout-setup-copy">
+              <h2>First-Time Scout Setup</h2>
+              <div class="scout-setup-steps">
+                <p><strong>1.</strong> Connect your Elite account for reward identity.</p>
+                <p><strong>2.</strong> Install EDMC and download Live Scout.</p>
+                <p><strong>3.</strong> Get your Scout token from leadership and paste it into EDMC → Settings → Mongrel Scout. Then jump into a listed system to send its faction board automatically.</p>
+              </div>
+            </div>
+            <div class="scout-setup-actions">
+              <a class="btn btn-primary btn-compact" href="/api/frontier/login">Connect Elite</a>
+              <a class="btn btn-secondary btn-compact" href="/api/downloads/mongrel-scout">Download Live Scout</a>
+              <a class="btn btn-secondary btn-compact" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Setup Instructions</a>
+              <a class="btn btn-secondary btn-compact" href="../member/?section=live-scout-setup#live-scout-setup">Member Setup</a>
+            </div>
+            <p class="scout-setup-notice"><strong>LIVE SCOUT REQUIRED:</strong> Live Scout is needed to update system data and receive Scout Job rewards.</p>
           </div>
-          <div class="scout-setup-actions">
-            <a class="btn btn-primary btn-compact" href="/api/frontier/login">Connect Elite</a>
-            <a class="btn btn-secondary btn-compact" href="/api/downloads/mongrel-scout">Download Live Scout</a>
-            <a class="btn btn-secondary btn-compact" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Setup Instructions</a>
-            <a class="btn btn-secondary btn-compact" href="../member/?section=live-scout-setup#live-scout-setup">Member Setup</a>
-          </div>
-          <p class="scout-setup-notice"><strong>LIVE SCOUT REQUIRED:</strong> Live Scout is needed to update system data and receive Scout Job rewards.</p>
-        </div>
+        </details>
       </div>
     </section>
 

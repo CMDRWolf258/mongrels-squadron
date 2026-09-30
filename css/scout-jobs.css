@@ -86,3 +86,20 @@
 .scout-board-nav-section + .section-sm{
   padding-top:16px;
 }
+
+
+/* v8 — Scout Setup collapses once a member already knows the workflow. */
+.scout-setup-details{display:block;padding:0;overflow:hidden}
+.scout-setup-summary{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:13px 16px;cursor:pointer;list-style:none}
+.scout-setup-summary::-webkit-details-marker{display:none}
+.scout-setup-summary .eyebrow{margin:0 0 3px}
+.scout-setup-summary>div>strong{display:block;color:#edf9fb;font-size:.86rem}
+.scout-setup-summary>div>small{display:block;margin-top:3px;color:#8fa5ab;font-size:.7rem;line-height:1.4}
+.scout-setup-toggle{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(34,211,238,.24);border-radius:999px;padding:7px 10px;color:var(--accent);font-size:.62rem;font-weight:900;letter-spacing:.075em;text-transform:uppercase}
+.scout-setup-toggle b{font-size:1rem;line-height:1;transition:transform .18s ease}
+.scout-setup-details[open] .scout-setup-toggle b{transform:rotate(45deg)}
+.scout-setup-details[open] .scout-setup-toggle{font-size:0}
+.scout-setup-details[open] .scout-setup-toggle::before{content:"Hide Setup";font-size:.62rem}
+.scout-setup-expanded{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 16px;border-top:1px solid rgba(34,211,238,.14)}
+@media(max-width:820px){.scout-setup-summary{align-items:flex-start}.scout-setup-expanded{display:block}}
+@media(max-width:620px){.scout-setup-summary{gap:10px}.scout-setup-summary>div>small{display:none}.scout-setup-toggle{padding:6px 8px}}
