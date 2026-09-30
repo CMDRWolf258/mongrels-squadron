@@ -11,6 +11,8 @@
   const esc = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
   const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+  const DEFAULT_CZ_POINT_TARGET = 10;
+  const CZ_POINTS = { low:1, medium:1.3, high:1.6 };
   const systemName = card => card.dataset.system || '';
   const isLab = card => card.dataset.bgsLab === 'true';
 
@@ -503,7 +505,7 @@
   function conflictTaskMarkup(pair,index){
     const winA=pair.objective==='win-a', winner=winA?pair.factionA:pair.factionB, loser=winA?pair.factionB:pair.factionA;
     if(pair.type==='election')return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="mission-inf" data-order-faction="${esc(winner)}" data-order-amount="${esc(missionGoal())}" data-order-conflict-type="election"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ELECTION</span><strong>Complete about ${missionGoal()} INF of non-combat/economic missions for ${esc(winner)}</strong><p>Election pair: ${esc(winner)} vs ${esc(loser)}. Favor legal non-combat/economic mission work for the intended winner; trade/exploration can supplement where practical.</p><small><b>Conflict lock:</b> ordinary influence balancing for both participants is suspended until the Election ends.</small></div></article>`;
-    return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(winner)}" data-order-amount="" data-order-conflict-type="${esc(pair.type)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ${esc(typeLabel(pair.type).toUpperCase())}</span><strong>Fight Conflict Zones and turn in Combat Bonds for ${esc(winner)}</strong><p>${esc(typeLabel(pair.type))} pair: ${esc(winner)} vs ${esc(loser)}. Work only the intended winner's side.</p><small><b>Calibration:</b> exact CZ-win workload per CMDR is not programmed yet; Mandalore can be used to tune that threshold before publishing real conflict orders.</small></div></article>`;
+    return `<article class="wolf-order-task wolf-conflict-preview-task" data-order-kind="conflict-cz" data-order-faction="${esc(winner)}" data-order-amount="${DEFAULT_CZ_POINT_TARGET}" data-order-conflict-type="${esc(pair.type)}"><div class="wolf-order-task-number">C${index+1}</div><div><span class="wolf-order-task-type">CONFLICT / ${esc(typeLabel(pair.type).toUpperCase())}</span><strong>Earn ${DEFAULT_CZ_POINT_TARGET} CZ points for ${esc(winner)}</strong><p>${esc(typeLabel(pair.type))} pair: ${esc(winner)} vs ${esc(loser)}. Low = ${CZ_POINTS.low} · Medium = ${CZ_POINTS.medium} · High = ${CZ_POINTS.high}. Any combination of completed victories counts.</p><small><b>Report each completed CZ result in Mission Control.</b> One shared wing instance counts once for squad progress; Combat Bonds remain supporting evidence, not the point currency.</small></div></article>`;
   }
 
   function labOrder(card){

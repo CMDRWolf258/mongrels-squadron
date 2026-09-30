@@ -16,7 +16,7 @@ for(const pattern of [/\/api\/frontier\/status/,/\/api\/frontier\/sync/,/mongrel
 new Function(client);
 
 const apiSource=readFileSync('functions/api/operations/order-reports.js','utf8');
-for(const pattern of [/ALLOWED_ACCESS/,/MANAGER_ACCESS/,/order-report:/,/order-submission:/,/daily-order-report/,/CZ_WEIGHTS/,/CREDIT_TYPES/,/bounties/,/trade/,/exploration/,/normalizeCredits/,/safeMillions/,/faction:order\.faction/,/kind:order\.kind/,/source:order\.source/,/lossLow/,/disconnectLow/,/czScore/,/infScore/,/reporterCount/,/submissions/,/canModify/,/reportView/]) assert.match(apiSource,pattern);
+for(const pattern of [/ALLOWED_ACCESS/,/MANAGER_ACCESS/,/order-report:/,/order-submission:/,/daily-order-report/,/CZ_WEIGHTS/,/CZ_RESULT_OUTCOMES/,/WING_RESULT_WINDOW_MS/,/findCzResultDuplicate/,/participants/,/czResult/,/CREDIT_TYPES/,/bounties/,/trade/,/exploration/,/normalizeCredits/,/safeMillions/,/faction:order\.faction/,/kind:order\.kind/,/source:order\.source/,/lossLow/,/disconnectLow/,/czScore/,/infScore/,/reporterCount/,/submissions/,/canModify/,/reportView/]) assert.match(apiSource,pattern);
 const api=await import('../functions/api/operations/order-reports.js');
 assert.equal(typeof api.onRequestGet,'function');
 assert.equal(typeof api.onRequestPost,'function');

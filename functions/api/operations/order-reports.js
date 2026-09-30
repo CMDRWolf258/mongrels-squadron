@@ -10,6 +10,10 @@ const CURRENT_KEY = 'current';
 const LEGACY_PREFIX = 'order-report:';
 const SUBMISSION_PREFIX = 'order-submission:';
 const CZ_WEIGHTS = { low: 1, medium: 1.3, high: 1.6 };
+const CZ_RESULT_OUTCOMES = new Set(['win','loss','disconnect']);
+const CZ_RESULT_INTENSITIES = new Set(['low','medium','high']);
+const WING_RESULT_WINDOW_MS = 3 * 60 * 1000;
+const SOLO_DOUBLE_TAP_WINDOW_MS = 45 * 1000;
 const REPORT_TYPES = new Set(['cz', 'inf', 'bounties', 'trade', 'exploration']);
 const CREDIT_TYPES = new Set(['bounties', 'trade', 'exploration']);
 
@@ -28,7 +32,7 @@ export async function onRequestGet({ request, env }) {
   const wantsAdmin = new URL(request.url).searchParams.get('admin') === '1';
   const visible = wantsAdmin && canManage
     ? records
-    : records.filter(record => String(record.ownerId) === String(auth.session.sub));
+    : records.filter(record => recordIncludesUser(record,auth.session.sub));
 
   return reply({
     ok:true,
@@ -57,11 +61,28 @@ export async function onRequestPost({ request, env }) {
   const spec = reportSpec(order);
   if (!spec.type) return reply({ok:false,error:'order_reporting_not_configured'},400);
 
-  const incoming = normalizeIncoming(spec.type, body.value);
+  const czResult = spec.type === 'cz' ? normalizeCzResult(body.value?.czResult) : null;
+  const incoming = czResult ? countsForCzResult(czResult) : normalizeIncoming(spec.type, body.value);
   const bonds = spec.type === 'cz' && Boolean(body.value?.bondsRedeemed);
   if (!hasContribution(incoming, bonds)) return reply({ok:false,error:'empty_report'},400);
 
   const now = new Date().toISOString();
+  const mode=body.value?.mode === 'wing' ? 'wing' : 'solo';
+  const participant={ownerId:String(auth.session.sub||''),displayName:auth.session.displayName || auth.session.username || 'Mongrel CMDR'};
+  if(czResult){
+    const records=await listCurrentRecords(env,current);
+    const duplicate=findCzResultDuplicate(records,{
+      orderId:order.id,czResult,mode,ownerId:auth.session.sub,createdAt:now,
+    });
+    if(duplicate){
+      const participants=mergeParticipants(duplicate.participants,[participant]);
+      const updated={...duplicate,participants,updatedAt:now};
+      await env.DAILY_ORDERS.put(submissionKey(cycleId(current),duplicate.reportId),JSON.stringify(stripStorageMeta(updated)));
+      await invalidateKeyListCache(env,reportListCacheKey('submissions',cycleId(current)));
+      return mutationReply(env,current,auth.session,{...updated,storageKind:'submission'},participants.length>(duplicate.participants||[]).length?'joined-wing-result':'duplicate-result');
+    }
+  }
+
   const reportId = crypto.randomUUID();
   const record = {
     reportId,
@@ -77,9 +98,11 @@ export async function onRequestPost({ request, env }) {
     source:order.source || '',
     reportType:spec.type,
     target:spec.target,
-    mode:body.value?.mode === 'wing' ? 'wing' : 'solo',
-    displayName:auth.session.displayName || auth.session.username || 'Mongrel CMDR',
+    mode,
+    displayName:participant.displayName,
     ownerId:auth.session.sub,
+    participants:[participant],
+    czResult,
     counts:incoming,
     bondsRedeemed:bonds,
     submissions:1,
@@ -158,8 +181,8 @@ export async function onRequestDelete({ request, env }) {
     cycleId:cycleId(current),
     summaries:summarizeCurrent(current, records, auth.session.sub),
     reports:records
-      .filter(record => String(record.ownerId) === String(auth.session.sub))
-      .map(record => reportView(record, true)),
+      .filter(record => recordIncludesUser(record,auth.session.sub))
+      .map(record => reportView(record, canModify(auth.session,record))),
     canManageReports:MANAGER_ACCESS.has(auth.session.access),
   });
 }
@@ -196,8 +219,8 @@ async function mutationReply(env, current, session, record, action) {
     report:reportView(record, true),
     summaries:summarizeCurrent(current, records, session.sub),
     reports:records
-      .filter(item => String(item.ownerId) === String(session.sub))
-      .map(item => reportView(item, true)),
+      .filter(item => recordIncludesUser(item,session.sub))
+      .map(item => reportView(item, canModify(session,item))),
     canManageReports:MANAGER_ACCESS.has(session.access),
   });
 }
@@ -364,10 +387,12 @@ function summarize(order, spec, records, viewerId) {
   for (const record of records) {
     const normalized=normalizeCounts(spec.type, record.counts);
     mergeInto(squadCounts,normalized);
-    if (record.ownerId) reporters.add(String(record.ownerId));
+    const participantIds=participantIdsFor(record);
+    if(participantIds.length)participantIds.forEach(id=>reporters.add(id));
+    else if (record.ownerId) reporters.add(String(record.ownerId));
     reportCount += Math.max(1, Number(record.submissions || 1));
     if (record.bondsRedeemed) bondsRedeemedBy += 1;
-    if (String(record.ownerId)===String(viewerId)) {
+    if (recordIncludesUser(record,viewerId)) {
       mergeInto(viewerCounts,normalized);
       viewerBonds=Boolean(viewerBonds || record.bondsRedeemed);
     }
@@ -394,6 +419,8 @@ function reportView(record, canEdit) {
     mode:record.mode === 'wing' ? 'wing' : 'solo',
     displayName:record.displayName || 'Mongrel CMDR',
     ownerId:record.ownerId || '',
+    participants:normalizeParticipants(record.participants),
+    czResult:normalizeCzResult(record.czResult),
     counts,
     score:round(scoreFor(type,counts)),
     bondsRedeemed:Boolean(record.bondsRedeemed),
@@ -401,7 +428,7 @@ function reportView(record, canEdit) {
     createdAt:record.createdAt || record.updatedAt || null,
     updatedAt:record.updatedAt || null,
     legacy:record.storageKind === 'legacy',
-    canEdit:Boolean(canEdit),
+    canEdit:Boolean(canEdit && !normalizeCzResult(record.czResult)),
     canDelete:Boolean(canEdit),
   };
 }
@@ -410,6 +437,66 @@ function stripStorageMeta(record) {
   const out={...record};
   delete out.storageKind;
   return out;
+}
+
+function normalizeCzResult(value){
+  if(!value||typeof value!=='object')return null;
+  const intensity=clean(value.intensity).toLowerCase();
+  const outcome=clean(value.outcome).toLowerCase();
+  if(!CZ_RESULT_INTENSITIES.has(intensity)||!CZ_RESULT_OUTCOMES.has(outcome))return null;
+  return{intensity,outcome};
+}
+
+function countsForCzResult(result){
+  const out=normalizeCz({});
+  if(!result)return out;
+  const cap=result.intensity.charAt(0).toUpperCase()+result.intensity.slice(1);
+  const key=result.outcome==='win'?result.intensity:result.outcome==='loss'?'loss'+cap:'disconnect'+cap;
+  out[key]=1;
+  return out;
+}
+
+function normalizeParticipants(value){
+  const seen=new Set(),out=[];
+  for(const row of Array.isArray(value)?value:[]){
+    const ownerId=String(row?.ownerId||'').trim();
+    if(!ownerId||seen.has(ownerId))continue;
+    seen.add(ownerId);
+    out.push({ownerId,displayName:clean(row?.displayName)||'Mongrel CMDR'});
+    if(out.length>=8)break;
+  }
+  return out;
+}
+
+function mergeParticipants(...groups){return normalizeParticipants(groups.flat())}
+function participantIdsFor(record){
+  const participants=normalizeParticipants(record?.participants);
+  if(participants.length)return participants.map(row=>row.ownerId);
+  const ownerId=String(record?.ownerId||'').trim();
+  return ownerId?[ownerId]:[];
+}
+function recordIncludesUser(record,userId){
+  const id=String(userId||'');
+  return Boolean(id)&&participantIdsFor(record).includes(id);
+}
+
+function findCzResultDuplicate(records,{orderId,czResult,mode,ownerId,createdAt}={}){
+  if(!czResult)return null;
+  const at=Date.parse(createdAt||'');
+  if(!Number.isFinite(at))return null;
+  const windowMs=mode==='wing'?WING_RESULT_WINDOW_MS:SOLO_DOUBLE_TAP_WINDOW_MS;
+  return (Array.isArray(records)?records:[])
+    .filter(record=>
+      record?.storageKind==='submission'
+      && String(record?.orderId||'')===String(orderId||'')
+      && record?.reportType==='cz'
+      && record?.mode===mode
+      && normalizeCzResult(record?.czResult)?.intensity===czResult.intensity
+      && normalizeCzResult(record?.czResult)?.outcome===czResult.outcome
+      && (mode==='wing'||recordIncludesUser(record,ownerId))
+      && Math.abs(at-Date.parse(record?.createdAt||record?.updatedAt||''))<=windowMs
+    )
+    .sort((a,b)=>String(b?.createdAt||'').localeCompare(String(a?.createdAt||'')))[0]||null;
 }
 
 function reportSpec(order) {

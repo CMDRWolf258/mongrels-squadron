@@ -81,7 +81,7 @@ assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be gene
 
 const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
 for(const pattern of [
-  /wolf-bgs-conflicts/,/Conflict Configuration/,/conflictType/,/civil-war/,/election/,/war/,
+  /wolf-bgs-conflicts/,/Conflict Configuration/,/DEFAULT_CZ_POINT_TARGET = 10/,/Low = \$\{CZ_POINTS\.low\}/,/conflictType/,/civil-war/,/election/,/war/,
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
