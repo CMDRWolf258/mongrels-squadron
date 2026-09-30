@@ -58,6 +58,9 @@ for(const pattern of [
   /archivedRemovedOrders/,
   /archivedOrderSystems/,
   /listOrderPublications\(env,\{limit:250\}\)/,
+  /mergeFrontierBoardSnapshots/,
+  /DIRECT_BGS_SNAPSHOTS_KEY/,
+  /Frontier CAPI Journal/,
 ])assert.match(sync,pattern);
 assert.match(sync,/userId:auth\.session\.sub/,'Manual Sync Elite must continue to bind the account to the authenticated member');
 
