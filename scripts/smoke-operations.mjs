@@ -82,8 +82,16 @@ assert.doesNotMatch(activitiesSource, /Surface Operations/, 'Activities hub stil
 console.log('✓ Operations provider, naming, UI mount, client, Assistant context, and duplicate-card handling are wired');
 
 const missionPage=readFileSync('operations/index.html','utf8');
-assert.match(missionPage,/operations\.js\?v=69/);
+assert.match(missionPage,/operations\.js\?v=70/);
 const missionClient=readFileSync('js/operations.js','utf8');
+assert.match(missionPage,/data-mc-login[^>]*hidden/,'Mission Control login CTA must stay hidden until auth explicitly fails');
+assert.match(missionPage,/data-mc-retry[^>]*hidden/,'Mission Control retry CTA must exist for authenticated service failures');
+assert.match(missionClient,/setGateState\('service-error'/,'Mission Control must distinguish data-service failure from signed-out state');
+assert.match(missionClient,/fetchMissionControlWithRetry/,'Mission Control must retry transient secure-data failures');
+assert.match(missionClient,/response\.status === 401 \|\| response\.status === 403/,'Only explicit auth failures should route to the login gate');
+const missionApi=readFileSync('functions/api/operations/systems.js','utf8');
+assert.match(missionApi,/mission_control_unavailable/,'Mission Control API must expose authenticated data-build failures distinctly');
+assert.match(missionApi,/authenticated:\s*true/,'Mission Control API must preserve authenticated state when secure data building fails');
 assert.match(missionClient,/new URLSearchParams\(window\.location\.search\)\.get\('system'\)/,'Mission Control must accept system deep links from Faction Alerts');
 assert.match(missionClient,/searchEl\.value = requestedSystem/,'Faction Alert system deep links must prefill the All Systems search');
 for(const pattern of [/freshestUpdatedAt/,/freshestSource/,/Mongrel Scout \/ EDMC/,/Live Scout/,/newestScoutAt/,/dataCondition === 'current'/,/current BGS cycle/,/before current cycle/])assert.match(missionClient,pattern);
