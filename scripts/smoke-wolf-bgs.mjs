@@ -151,7 +151,7 @@ const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=20/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=21/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
@@ -159,7 +159,9 @@ assert.match(wolfMainClient,/setGateState\('service-error'/,'Wolf BGS must disti
 assert.match(wolfMainClient,/fetchWolfControlWithRetry/,'Wolf BGS must retry transient secure-service failures');
 assert.match(wolfMainClient,/response\.status === 401 \|\| response\.status === 403/,'Only explicit Wolf BGS auth failures should reveal login');
 
-assert.match(wolfMainClient,/Current BGS cycle/);
+assert.doesNotMatch(wolfMainClient,/Freshness <b>Current BGS cycle<\/b>/,'Cycle-window label must not imply an old board is fresh');
+assert.match(wolfMainClient,/BGS cycle/);
+assert.match(wolfMainClient,/Frontier CAPI/);
 assert.match(wolfMainClient,/freshnessCycle/);
 assert.doesNotMatch(wolfMainClient,/Custom freshness hours/);
 new Function(wolfMainClient);
