@@ -4,8 +4,23 @@ import { buildMissionControlData, hasMemberAccess, MANAGER_ACCESS, writeBgsStrat
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
   if (auth.response) return auth.response;
-  const payload = await buildMissionControlData(request, env, auth.session);
-  return json(payload, { headers: privateHeaders() });
+
+  try {
+    const payload = await buildMissionControlData(request, env, auth.session);
+    return json(payload, { headers: privateHeaders() });
+  } catch (error) {
+    console.error('Could not build Mission Control data', error);
+    return json({
+      ok: false,
+      error: 'mission_control_unavailable',
+      authenticated: true,
+      viewer: {
+        displayName: auth.session.displayName || auth.session.username || 'Mongrel Member',
+        username: auth.session.username || '',
+        access: auth.session.access,
+      },
+    }, { status: 503, headers: privateHeaders() });
+  }
 }
 
 export async function onRequestPut({ request, env }) {

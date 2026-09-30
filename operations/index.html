@@ -44,14 +44,15 @@
       <div class="mission-control-gate-card">
         <div class="mission-control-gate-mark" aria-hidden="true">⌁</div>
         <div>
-          <p class="eyebrow">Members Only</p>
-          <h2>Operational Picture Restricted</h2>
-          <p>Mission Control reveals where the squad is working and how leadership wants those systems managed. Sign in with an approved Mongrels Discord account to view the dashboard.</p>
+          <p class="eyebrow" data-mc-gate-eyebrow>Members Only</p>
+          <h2 data-mc-gate-title>Checking Secure Access</h2>
+          <p data-mc-gate-detail>Confirming your current Mongrels session and loading the secure operational picture.</p>
           <div class="private-order-tags"><span>Discord verified</span><span>Member access</span><span>Private priorities</span><span>Secure tasking</span></div>
         </div>
         <div class="mission-control-gate-action">
-          <span class="tag">Protected</span>
-          <a class="btn btn-primary" data-mc-login href="/api/auth/login?return=%2Foperations%2F">Sign In with Discord →</a>
+          <span class="tag" data-mc-gate-badge>Protected</span>
+          <a class="btn btn-primary" data-mc-login href="/api/auth/login?return=%2Foperations%2F" hidden>Sign In with Discord →</a>
+          <button class="btn btn-secondary" type="button" data-mc-retry hidden>Retry Mission Control</button>
           <small data-mc-gate-status>Checking secure session…</small>
         </div>
       </div>
@@ -347,7 +348,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=66"></script>
-<script src="../js/operations.js?v=69"></script>
+<script src="../js/operations.js?v=70"></script>
 <script src="../js/reward-preview.js?v=2"></script>
 <script src="../js/daily-orders.js?v=68"></script>
 <script src="../js/daily-orders-v2.js?v=19"></script>

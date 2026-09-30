@@ -2,7 +2,12 @@
   const gate = document.querySelector('[data-mc-gate]');
   const privateView = document.querySelector('[data-mission-control-private]');
   const gateStatus = document.querySelector('[data-mc-gate-status]');
+  const gateEyebrow = document.querySelector('[data-mc-gate-eyebrow]');
+  const gateTitle = document.querySelector('[data-mc-gate-title]');
+  const gateDetail = document.querySelector('[data-mc-gate-detail]');
+  const gateBadge = document.querySelector('[data-mc-gate-badge]');
   const loginLink = document.querySelector('[data-mc-login]');
+  const retryButton = document.querySelector('[data-mc-retry]');
   const viewerEl = document.querySelector('[data-mc-viewer]');
 
   const priorityEl = document.getElementById('prioritySystems');
@@ -64,6 +69,98 @@
   function setAccess(view) {
     if (gate) gate.hidden = view === 'member';
     if (privateView) privateView.hidden = view !== 'member';
+  }
+
+  function setGateState(state, detail = {}) {
+    setAccess('gate');
+
+    const signedInName = detail.displayName || detail.username || '';
+    if (state === 'checking') {
+      if (gateEyebrow) gateEyebrow.textContent = 'Members Only';
+      if (gateTitle) gateTitle.textContent = 'Checking Secure Access';
+      if (gateDetail) gateDetail.textContent = 'Confirming your current Mongrels session and loading the secure operational picture.';
+      if (gateBadge) gateBadge.textContent = 'Checking';
+      if (gateStatus) gateStatus.textContent = detail.retrying ? 'Secure service is taking longer than expected. Retrying…' : 'Checking secure session…';
+      if (loginLink) loginLink.hidden = true;
+      if (retryButton) retryButton.hidden = true;
+      return;
+    }
+
+    if (state === 'auth-required') {
+      if (gateEyebrow) gateEyebrow.textContent = 'Members Only';
+      if (gateTitle) gateTitle.textContent = detail.denied ? 'Mission Control Access Required' : 'Operational Picture Restricted';
+      if (gateDetail) gateDetail.textContent = detail.denied
+        ? 'This Discord account is signed in, but it does not currently have Mongrels member access to Mission Control.'
+        : 'Mission Control reveals where the squad is working and how leadership wants those systems managed. Sign in with an approved Mongrels Discord account to view the dashboard.';
+      if (gateBadge) gateBadge.textContent = detail.denied ? 'Restricted' : 'Protected';
+      if (gateStatus) gateStatus.textContent = detail.denied ? 'Member, Officer, or Site Admin access is required.' : 'Member sign-in required.';
+      if (loginLink) loginLink.hidden = false;
+      if (retryButton) retryButton.hidden = true;
+      return;
+    }
+
+    if (state === 'service-error') {
+      if (gateEyebrow) gateEyebrow.textContent = signedInName ? 'Session Active' : 'Secure Service';
+      if (gateTitle) gateTitle.textContent = 'Mission Control Temporarily Unavailable';
+      if (gateDetail) gateDetail.textContent = signedInName
+        ? `You are still signed in as ${signedInName}. The secure Mission Control data service did not answer correctly, so there is no need to sign in again.`
+        : 'The Mission Control data service did not answer correctly. Your browser has not been sent back through Discord authentication.';
+      if (gateBadge) gateBadge.textContent = signedInName ? 'Authenticated' : 'Unavailable';
+      if (gateStatus) gateStatus.textContent = 'Retry the secure data request in a moment.';
+      if (loginLink) loginLink.hidden = true;
+      if (retryButton) retryButton.hidden = false;
+    }
+  }
+
+  const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
+
+  async function fetchSessionState() {
+    try {
+      const response = await fetch(`/api/auth/session?_=${Date.now()}`, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function fetchMissionControlWithRetry() {
+    const delays = [0, 350, 1000];
+    let lastError = null;
+
+    for (let attempt = 0; attempt < delays.length; attempt += 1) {
+      if (delays[attempt]) await wait(delays[attempt]);
+
+      try {
+        const response = await fetch(`/api/operations/systems?_=${Date.now()}`, {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (response.status === 401 || response.status === 403 || response.ok) return response;
+
+        const payload = await response.json().catch(() => ({}));
+        const error = new Error(`Mission Control request failed (${response.status})`);
+        error.status = response.status;
+        error.payload = payload;
+        lastError = error;
+
+        if (![429, 500, 502, 503, 504].includes(response.status) || attempt === delays.length - 1) throw error;
+        setGateState('checking', { retrying:true });
+      } catch (error) {
+        lastError = error;
+        const retryable = !error?.status || [429, 500, 502, 503, 504].includes(error.status);
+        if (!retryable || attempt === delays.length - 1) throw error;
+        setGateState('checking', { retrying:true });
+      }
+    }
+
+    throw lastError || new Error('Mission Control request failed');
   }
 
   function parseDate(value) {
@@ -527,20 +624,14 @@
   nextPageEl?.addEventListener('click', () => { currentPage += 1; renderTable(); scrollAllSystemsTop(); });
 
   async function load() {
-    setAccess('gate');
+    setGateState('checking');
     try {
-      const response = await fetch(`/api/operations/systems?_=${Date.now()}`, {
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      });
+      const response = await fetchMissionControlWithRetry();
 
       if (response.status === 401 || response.status === 403) {
-        if (gateStatus) gateStatus.textContent = response.status === 401 ? 'Member sign-in required' : 'This Discord account does not have Mission Control access';
-        setAccess('gate');
+        setGateState('auth-required', { denied: response.status === 403 });
         return;
       }
-      if (!response.ok) throw new Error(`Mission Control request failed (${response.status})`);
 
       const payload = await response.json();
       systems = Array.isArray(payload.systems) ? payload.systems : [];
@@ -560,10 +651,28 @@
       window.dispatchEvent(new CustomEvent('mongrels:mission-control-loaded', { detail: { systems: systems.length, meta } }));
     } catch (error) {
       console.error('Could not load Mission Control', error);
-      if (gateStatus) gateStatus.textContent = 'Secure Mission Control service unavailable. Please try again.';
-      setAccess('gate');
+
+      const serverViewer = error?.payload?.authenticated ? error.payload.viewer : null;
+      if (serverViewer) {
+        setGateState('service-error', serverViewer);
+        return;
+      }
+
+      const session = await fetchSessionState();
+      if (session?.authenticated) {
+        setGateState('service-error', session);
+      } else if (session && session.authenticated === false) {
+        setGateState('auth-required');
+      } else {
+        setGateState('service-error');
+      }
     }
   }
+
+  retryButton?.addEventListener('click', () => {
+    if (retryButton) retryButton.disabled = true;
+    load().finally(() => { if (retryButton) retryButton.disabled = false; });
+  });
 
   load();
 })();
