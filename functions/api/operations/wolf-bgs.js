@@ -366,6 +366,14 @@ function normalizeConflictScore(value, stale = false) {
   };
 }
 
+function normalizeSystemConflictScores(value, stale=false) {
+  if(!Array.isArray(value)) return [];
+  return value.map(item=>{
+    const score=normalizeConflictScore(item,stale);
+    return score && score.faction && score.opponentFaction ? score : null;
+  }).filter(Boolean);
+}
+
 function buildSystem(row, externalBoard, control, scout = null, now = new Date()) {
   const name = String(row.name);
   const storedSettings = control.systemSettings[name] || null;
@@ -452,8 +460,9 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
   const activeConflict = factions.some(faction => factionStateArray(faction,'activeStates','state').some(item=>CONFLICT_STATES.has(norm(item))));
   const pendingConflict = factions.some(faction => factionStateArray(faction,'pendingStates','pending').some(item=>CONFLICT_STATES.has(norm(item))));
   const externalConflictScore = normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale);
+  const externalSystemConflictScores = normalizeSystemConflictScores(externalBoard?.systemConflicts, externalBoard?.systemConflictsStale);
   const scoutConflictScoreList = scoutConflictScores(scout);
-  const conflictScores = mergeConflictScores(scoutConflictScoreList);
+  const conflictScores = mergeConflictScores(externalSystemConflictScores, scoutConflictScoreList);
   const pairScore = selectPrimaryConflictScore(conflictScores,factions);
   const conflictScore = activeConflict
     ? (pairScore || (mongrelConflict ? newestConflictScore(externalConflictScore, scoutConflictScore(scout,factions)) : null))
