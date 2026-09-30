@@ -12,6 +12,8 @@ import { archivedRemovedOrders, listOrderPublications } from '../../../lib/order
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
 const MISSION_ORIGIN_BACKFILL_LOOKBACK_DAYS = 3;
+const DIRECT_BGS_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
+const MONGREL = 'Regiment of Imperial Mongrels';
 
 export async function onRequestPost({request,env}) {
   const auth = await requireMember(request, env);
@@ -188,6 +190,14 @@ export async function syncFrontierAccount({
     };
     await saveAccount(env, userId, account);
 
+    let frontierBoardRefresh=null;
+    try{
+      frontierBoardRefresh=await mergeFrontierBoardSnapshots(env,parsed.boardSnapshots,{commander:account.commander || 'Connected Mongrel'});
+    }catch(error){
+      console.error('Could not merge Frontier faction-board snapshots',error);
+      frontierBoardRefresh={found:Array.isArray(parsed.boardSnapshots)?parsed.boardSnapshots.length:0,stored:0,error:'frontier_board_merge_failed'};
+    }
+
     let memberFundedColonization=null;
     try{
       memberFundedColonization=await reconcileMemberFundedColonizationRewards(env);
@@ -247,6 +257,7 @@ export async function syncFrontierAccount({
       summary:summarizeEvents(merged),
       orderCycleId:matched.cycleId,
       verifiedOrders:rewardPreview,
+      frontierBoardRefresh,
       memberFundedColonization,
       automaticRewards,
       rewardDiscord,
@@ -301,7 +312,7 @@ function colonizationControlUrlForRequest(request){
 
 function emptyParsed(targetSystems) {
   return {
-    events:[],excluded:[],diagnostics:[],lastEventAt:null,lastSystem:'',
+    events:[],excluded:[],diagnostics:[],boardSnapshots:[],lastEventAt:null,lastSystem:'',
     targetSystems:Array.isArray(targetSystems)?targetSystems:[],
     systemAddresses:{},
     missionOrigins:{},
@@ -313,6 +324,7 @@ function mergeParsed(a,b,targetSystems) {
     events:[...(a?.events||[]),...(b?.events||[])],
     excluded:[...(a?.excluded||[]),...(b?.excluded||[])],
     diagnostics:[...(a?.diagnostics||[]),...(b?.diagnostics||[])],
+    boardSnapshots:mergeBoardSnapshotLists(a?.boardSnapshots,b?.boardSnapshots),
     lastEventAt:[a?.lastEventAt,b?.lastEventAt].filter(Boolean).sort().at(-1)||null,
     lastSystem:b?.lastSystem||a?.lastSystem||'',
     targetSystems:Array.isArray(targetSystems)?targetSystems:[],
@@ -320,6 +332,86 @@ function mergeParsed(a,b,targetSystems) {
     missionOrigins:{...(a?.missionOrigins||{}),...(b?.missionOrigins||{})},
   };
 }
+
+async function mergeFrontierBoardSnapshots(env,snapshots,{commander='Connected Mongrel'}={}){
+  const candidates=(Array.isArray(snapshots)?snapshots:[])
+    .filter(snapshot=>Array.isArray(snapshot?.factions)&&snapshot.factions.some(row=>normLocal(row?.name)===normLocal(MONGREL)));
+  if(!candidates.length)return{found:0,stored:0,systems:[]};
+  const stored=await env.DAILY_ORDERS.get(DIRECT_BGS_SNAPSHOTS_KEY,{type:'json'}).catch(()=>null);
+  const state=stored&&typeof stored==='object'
+    ? {version:1,systems:stored.systems&&typeof stored.systems==='object'?stored.systems:{},conflictHistory:stored.conflictHistory&&typeof stored.conflictHistory==='object'?stored.conflictHistory:{}}
+    : {version:1,systems:{},conflictHistory:{}};
+  let changed=false,storedCount=0;
+  const systems=[];
+  for(const snapshot of candidates){
+    const existing=findSnapshotBySystem(state.systems,snapshot.system);
+    if(existing&&compareLocalTime(snapshot.updatedAt,existing.updatedAt)<0)continue;
+    if(existing?.key&&existing.key!==snapshot.system)delete state.systems[existing.key];
+    state.systems[snapshot.system]={
+      ...snapshot,
+      receivedAt:new Date().toISOString(),
+      scoutLabel:commander,
+      source:'Frontier CAPI Journal',
+      sourceKind:'frontier-capi',
+    };
+    updateFrontierConflictHistory(state,snapshot);
+    changed=true;storedCount+=1;systems.push(snapshot.system);
+  }
+  if(changed)await env.DAILY_ORDERS.put(DIRECT_BGS_SNAPSHOTS_KEY,JSON.stringify(state));
+  return{found:candidates.length,stored:storedCount,systems};
+}
+function mergeBoardSnapshotLists(...lists){
+  const map=new Map();
+  for(const list of lists)for(const snapshot of Array.isArray(list)?list:[]){
+    const key=normLocal(snapshot?.system);if(!key)continue;
+    const current=map.get(key);
+    if(!current||compareLocalTime(snapshot.updatedAt,current.updatedAt)>=0)map.set(key,snapshot);
+  }
+  return [...map.values()];
+}
+function findSnapshotBySystem(systems,name){
+  const wanted=normLocal(name);
+  for(const [key,value] of Object.entries(systems||{})){
+    if(normLocal(value?.system || key)===wanted)return{key,...value};
+  }
+  return null;
+}
+function updateFrontierConflictHistory(state,snapshot){
+  if(!state.conflictHistory||typeof state.conflictHistory!=='object')state.conflictHistory={};
+  const observation=frontierConflictObservation(snapshot);
+  const existing=state.conflictHistory[snapshot.system];
+  if(!observation){if(existing)delete state.conflictHistory[snapshot.system];return;}
+  const sameType=existing&&normLocal(existing.detail)===normLocal(observation.detail);
+  if(!sameType||(observation.phase==='pending'&&existing?.lastPhase==='active')){
+    state.conflictHistory[snapshot.system]={system:snapshot.system,detail:observation.detail,pendingSeenAt:observation.phase==='pending'?snapshot.updatedAt:null,activeSeenAt:observation.phase==='active'?snapshot.updatedAt:null,lastPhase:observation.phase,lastSeenAt:snapshot.updatedAt};
+    return;
+  }
+  existing.lastPhase=observation.phase;
+  existing.lastSeenAt=snapshot.updatedAt;
+  if(observation.phase==='pending'&&!existing.pendingSeenAt)existing.pendingSeenAt=snapshot.updatedAt;
+  if(observation.phase==='active'&&!existing.activeSeenAt)existing.activeSeenAt=snapshot.updatedAt;
+}
+function frontierConflictObservation(snapshot){
+  const conflictName=value=>{
+    const text=normLocal(value).replaceAll('_',' ');
+    if(text==='civilwar'||text==='civil war')return'Civil War';
+    if(text==='war')return'War';
+    if(text==='election')return'Election';
+    return'';
+  };
+  const pending=[],active=[];
+  for(const faction of snapshot?.factions||[]){
+    for(const state of faction?.pendingStates||[]){const detail=conflictName(state);if(detail)pending.push(detail);}
+    for(const state of faction?.activeStates||[]){const detail=conflictName(state);if(detail)active.push(detail);}
+    const direct=conflictName(faction?.state);if(direct)active.push(direct);
+  }
+  if(pending.length)return{phase:'pending',detail:pending[0]};
+  if(active.length)return{phase:'active',detail:active[0]};
+  for(const conflict of snapshot?.conflicts||[]){const detail=conflictName(conflict?.type);if(detail)return{phase:'active',detail};}
+  return null;
+}
+function compareLocalTime(a,b){const aa=Date.parse(a||'')||0,bb=Date.parse(b||'')||0;return aa-bb;}
+function normLocal(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ');}
 
 function pruneMissionOrigins(value){
   const cutoff=Date.now()-(14*86400000);
