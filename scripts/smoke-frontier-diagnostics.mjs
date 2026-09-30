@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+const frontier=readFileSync('lib/frontier.js','utf8');
+const sync=readFileSync('functions/api/frontier/sync.js','utf8');
+
 const api=readFileSync('functions/api/frontier/admin-events.js','utf8');
 for(const pattern of [
   /site_admin_access_required/,
@@ -46,5 +49,12 @@ for(const pattern of [
 ])assert.match(css,pattern);
 
 assert.doesNotMatch(api,/onRequestPost|onRequestPut|onRequestPatch|onRequestDelete/,'diagnostics API must remain read-only');
+
+assert.match(frontier,/DIAGNOSTICS_PREFIX/,'Diagnostic journal rows need their own store');
+assert.match(frontier,/MAX_DIAGNOSTIC_EVENTS = 2000/,'Diagnostic journal store must remain bounded');
+assert.match(frontier,/mergeDiagnosticEvents/,'Diagnostic journal rows must be persistable');
+assert.match(frontier,/getDiagnosticEvents/,'Persisted diagnostic journal rows must be readable');
+assert.match(sync,/mergeDiagnosticEvents\(env,userId,parsed\.diagnostics\)/,'Site-admin sync must persist sanitized diagnostics');
+assert.match(sync,/storedDiagnosticEvents/,'Sync response should expose persisted diagnostic row count');
 
 console.log('✓ Site Admin Frontier diagnostics exposes stored activity separately from order/reward matching');

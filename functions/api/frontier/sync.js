@@ -1,4 +1,4 @@
-import { ensureAccessToken, fetchJournal, getAccount, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, syncCooldown } from '../../../lib/frontier.js';
+import { ensureAccessToken, fetchJournal, getAccount, mergeDiagnosticEvents, mergeEvents, parseJournal, privateHeaders, publicAccount, requireMember, sameOrigin, saveAccount, summarizeEvents, syncCooldown } from '../../../lib/frontier.js';
 import { json } from '../../../lib/auth.js';
 import { activeOrderSystems, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildRewardPreview, readRewardSettings } from '../../../lib/reward-rules.js';
@@ -163,6 +163,9 @@ export async function syncFrontierAccount({
       parsed=mergeParsed(historicalParsed,currentParsed,targetSystems);
     }
     const merged = await mergeEvents(env, userId, parsed.events, parsed.excluded);
+    const storedDiagnostics = diagnostics
+      ? await mergeDiagnosticEvents(env,userId,parsed.diagnostics)
+      : [];
     const matched = matchVerifiedActivity(merged, currentOrders);
     const rewardSettings = await readRewardSettings(env);
     const rewardPreview = buildRewardPreview(matched.orderTotals, rewardSettings.settings);
@@ -254,6 +257,7 @@ export async function syncFrontierAccount({
       claimTrackingEnabled:true,
       newEvents:parsed.events.length,
       storedEvents:merged.length,
+      storedDiagnosticEvents:storedDiagnostics.length,
       summary:summarizeEvents(merged),
       orderCycleId:matched.cycleId,
       verifiedOrders:rewardPreview,
