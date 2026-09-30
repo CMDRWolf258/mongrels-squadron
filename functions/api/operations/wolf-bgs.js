@@ -887,8 +887,12 @@ function scoutPresenceRow(snapshot) {
 function scoutConflictScores(snapshot) {
   if (!Array.isArray(snapshot?.conflicts)) return [];
   return snapshot.conflicts.map(conflict => {
-    const one = conflict?.faction1, two = conflict?.faction2;
-    if (!one?.name || !two?.name) return null;
+    const rawOne = conflict?.faction1, rawTwo = conflict?.faction2;
+    if (!rawOne?.name || !rawTwo?.name) return null;
+    const oneIsMongrel=norm(rawOne.name)===norm(MONGREL);
+    const twoIsMongrel=norm(rawTwo.name)===norm(MONGREL);
+    const one=twoIsMongrel&&!oneIsMongrel ? rawTwo : rawOne;
+    const two=twoIsMongrel&&!oneIsMongrel ? rawOne : rawTwo;
     return {
       faction:cleanText(one.name, '', 120),
       factionWonDays:Math.max(0,Math.round(Number(one?.wonDays) || 0)),
