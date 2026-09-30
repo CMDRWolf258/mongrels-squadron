@@ -399,13 +399,17 @@
     const cycle = system.freshnessCycle || {};
     const manualNewer = system.activeSnapshotSource === 'manual';
     const scoutActive = system.activeSnapshotSource === 'scout';
-    const snapshotSourceLabel = manualNewer ? 'Manual' : (scoutActive ? `Scout${system.scoutLabel ? ` · ${system.scoutLabel}` : ''}` : 'External');
+    const capiActive = scoutActive && String(system.scoutSourceKind || '').toLowerCase() === 'frontier-capi';
+    const directLabel = capiActive ? 'Frontier CAPI' : 'Live Scout';
+    const snapshotSourceLabel = manualNewer ? 'Manual' : (scoutActive ? `${directLabel}${system.scoutLabel ? ` · ${system.scoutLabel}` : ''}` : 'External');
     const favorite = Boolean(settings.favorite);
     const queueSelected = Boolean(settings.queueSelected);
     const boardWarning = system.boardComplete ? '' : `<div class="wolf-danger-note">A complete trusted faction board is not available for this system yet. Jump into the system with Mongrel Scout or submit a manual board as a fallback.</div>`;
     const activeBoardAge=age(system.activeSnapshotTime);
     const scoutRefreshHelp=system.scoutBoardComplete
-      ? '<div class="wolf-scout-refresh-help"><strong>Refresh with Scout:</strong> Scout updates on FSDJump, Location, or CarrierJump. If you are already parked in this system, jump out and back in to force a fresh full faction board.</div>'
+      ? (capiActive
+        ? '<div class="wolf-scout-refresh-help"><strong>Direct Frontier board:</strong> This faction board came from a connected Mongrel journal. A newer Live Scout pass, Frontier sync, or manual board will replace it automatically.</div>'
+        : '<div class="wolf-scout-refresh-help"><strong>Refresh with Scout:</strong> Live Scout updates immediately on FSDJump, Location, or CarrierJump. If you are already parked in this system, jump out and back in to force a fresh full faction board.</div>')
       : '';
     const controllerValue = manualNewer ? (system.manualController || system.control || '') : (system.control || '');
     const score = system.conflictScore || null;
@@ -439,7 +443,7 @@
         <div class="wolf-system-topline">
           ${lowWatch ? '<span class="wolf-chip low-watch">LOW 5 WATCH</span>' : ''}
           <span class="wolf-chip ${scoutActive ? 'wolf-scout-source-chip' : ''}">Active board <b>${html(snapshotSourceLabel)} · ${html(activeBoardAge)}</b></span>
-          <span class="wolf-chip">Freshness <b>Current BGS cycle</b>${cycle.cycleStartedAt ? ` · since ${html(fmt(cycle.cycleStartedAt))}` : ''}</span>
+          <span class="wolf-chip">BGS cycle <b>${html(cycle.cycleStartedAt ? `Started ${fmt(cycle.cycleStartedAt)}` : 'Current cycle window')}</b></span>
           <span class="wolf-chip">Population <b>${html(system.population ? Number(system.population).toLocaleString() : '—')}</b></span>
           ${timeline && timeline.phase !== 'none' ? `<span class="wolf-chip wolf-conflict-day-chip">Conflict day <b>${html(dayText || 'DAY ?')}</b>${daySource ? ` · ${html(daySource)}` : ''}${timeline.overdue ? ' · VERIFY' : ''}</span>` : ''}
           ${score ? `<span class="wolf-chip wolf-conflict-score-chip">Conflict score <b>${html(conflictScoreText(system))}</b>${score.opponentFaction ? ` vs ${html(score.opponentFaction)}` : ''}${scoreAge ? ` · ${html(scoreAge)}` : ''}${score.stale ? ' · last known' : ''}</span>` : ''}

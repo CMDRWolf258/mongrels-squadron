@@ -429,7 +429,7 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
     source: 'External source',
   };
   const externalFactions = normalizeExternalFactions(externalBoard?.factions);
-  const scoutFactions = normalizeScoutFactions(scout?.factions, scoutUpdated);
+  const scoutFactions = normalizeScoutFactions(scout?.factions, scoutUpdated, directSnapshotSourceLabel(scout));
   const externalUpdated = newestTimestamp(rowExternalUpdated, externalBoardUpdated);
   const externalFactionTimes=externalFactions.map(faction=>normalizeSourceTime(faction?.updatedAt)).filter(Boolean);
   const externalBoardFullyTimed=Boolean(externalFactions.length) && externalFactionTimes.length===externalFactions.length;
@@ -525,6 +525,8 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
     scoutUpdatedAt:scoutUpdated,
     scoutReceivedAt:scout?.receivedAt || null,
     scoutLabel:cleanText(scout?.scoutLabel, '', 80),
+    scoutSource:cleanText(scout?.source, '', 80),
+    scoutSourceKind:cleanText(scout?.sourceKind, '', 40),
     externalBoardOk: externalBoard ? externalBoard.ok !== false : false,
     factionCount: factions.length,
     manualUpdatedAt: manualUpdated,
@@ -895,7 +897,7 @@ function boardMap(value) {
   return map;
 }
 
-function normalizeScoutFactions(value, updatedAt = null) {
+function normalizeScoutFactions(value, updatedAt = null, sourceLabel = 'Mongrel Scout') {
   if (!Array.isArray(value)) return [];
   const snapshotUpdatedAt=normalizeSourceTime(updatedAt);
   return value.slice(0,20).map(row => {
@@ -912,13 +914,19 @@ function normalizeScoutFactions(value, updatedAt = null) {
       pendingStates,
       recoveringStates,
       updatedAt:snapshotUpdatedAt,
-      source:'Mongrel Scout',
+      source:sourceLabel,
     };
   }).filter(row => row.name);
 }
 
 function scoutHasMongrels(snapshot) {
   return Array.isArray(snapshot?.factions) && snapshot.factions.some(row => norm(row?.name) === norm(MONGREL));
+}
+
+function directSnapshotSourceLabel(snapshot) {
+  const source=cleanText(snapshot?.source,'',80);
+  if(norm(source).includes('frontier'))return 'Frontier CAPI';
+  return source || 'Mongrel Scout';
 }
 
 function scoutPresenceRow(snapshot) {
@@ -937,7 +945,7 @@ function scoutPresenceRow(snapshot) {
     security:cleanText(snapshot.security, '', 80),
     population:snapshot.population ?? null,
     sourceUpdated:snapshot.updatedAt || null,
-    source:'Mongrel Scout / EDMC',
+    source:directSnapshotSourceLabel(snapshot),
     sourceKind:'scout',
     fetchedAt:snapshot.receivedAt || snapshot.updatedAt || null,
     present:true,
