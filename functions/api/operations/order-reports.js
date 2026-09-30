@@ -428,7 +428,7 @@ function reportView(record, canEdit) {
     createdAt:record.createdAt || record.updatedAt || null,
     updatedAt:record.updatedAt || null,
     legacy:record.storageKind === 'legacy',
-    canEdit:Boolean(canEdit && !normalizeCzResult(record.czResult)),
+    canEdit:Boolean(canEdit && type!=='cz'),
     canDelete:Boolean(canEdit),
   };
 }

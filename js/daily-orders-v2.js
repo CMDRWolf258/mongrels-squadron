@@ -397,16 +397,24 @@
   }
 
   function czForm(order){
-    const wrap=document.createElement('div');wrap.className='mc-cz-form';
-    wrap.innerHTML='<div class="mc-report-mode"><button type="button" data-mode="solo" class="is-active">Solo</button><button type="button" data-mode="wing">Wing</button></div><div class="mc-form-label"><strong>CZ victories</strong><small>One shared wing instance = one result.</small></div><div class="mc-counters mc-cz-wins"></div><details class="mc-failures"><summary>Losses / disconnects <span data-failure-total>0</span></summary><div class="mc-failure-grid"><div><strong>Lost / abandoned</strong><div data-loss></div></div><div><strong>Full-instance disconnect</strong><div data-disconnect></div></div></div><small>If one wingmate drops but another Mongrel remains and wins, report the CZ as a win — not a failure.</small></details><button type="button" class="mc-bonds" aria-pressed="false">Combat Bonds not redeemed</button><div class="mc-draft-score">This report: <strong data-draft>0.0 net CZ pts</strong></div><div class="mc-cz-submit-row"><button type="button" class="mc-cancel-edit" hidden>Cancel edit</button><button type="button" class="btn btn-primary mc-submit-report">Submit Report</button></div>';
-    const wins=wrap.querySelector('.mc-cz-wins'),loss=wrap.querySelector('[data-loss]'),disc=wrap.querySelector('[data-disconnect]');
-    [['low','Low'],['medium','Medium'],['high','High']].forEach(([k,l])=>wins.append(counter(k,l)));
-    [['lossLow','Low'],['lossMedium','Medium'],['lossHigh','High']].forEach(([k,l])=>loss.append(counter(k,l)));
-    [['disconnectLow','Low'],['disconnectMedium','Medium'],['disconnectHigh','High']].forEach(([k,l])=>disc.append(counter(k,l)));
+    const wrap=document.createElement('div');wrap.className='mc-cz-form mc-cz-results-form';
+    wrap.innerHTML='<div class="mc-report-mode"><button type="button" data-mode="solo" class="is-active">Solo</button><button type="button" data-mode="wing">Wing</button></div><div class="mc-form-label"><strong>REPORT CZ VICTORY</strong><small>Tap one result after each completed instance. Low = 1.0 · Medium = 1.3 · High = 1.6 CZ points.</small></div><div class="mc-cz-result-grid" data-cz-wins></div><div class="mc-cz-wing-note"><strong>Wing mode:</strong> one shared CZ victory counts once for squad progress. Matching wing reports within 3 minutes are joined as participants instead of adding points again.</div><details class="mc-failures"><summary>Report a loss / disconnect</summary><div class="mc-failure-grid"><div><strong>Lost / abandoned</strong><div class="mc-cz-result-grid" data-cz-losses></div></div><div><strong>Full-instance disconnect</strong><div class="mc-cz-result-grid" data-cz-disconnects></div></div></div><small>If one wingmate disconnects but another Mongrel remains and the wing wins, report the shared result as a win — not a disconnect.</small></details><div class="mc-cz-evidence-note">Combat Bonds are supporting Frontier evidence and personal contribution data; they do not determine squad CZ points.</div>';
+    const makeButton=(intensity,outcome)=>{
+      const points=WEIGHTS[intensity]||0;
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='mc-cz-result-button';
+      button.dataset.czResult=outcome;
+      button.dataset.czIntensity=intensity;
+      const signed=outcome==='win'?'+':'−';
+      button.innerHTML='<strong>'+esc(intensity.charAt(0).toUpperCase()+intensity.slice(1))+' '+esc(outcome==='win'?'Win':outcome==='loss'?'Loss':'Disconnect')+'</strong><small>'+signed+fmt(points)+' CZ pts</small>';
+      button.addEventListener('click',()=>submitCzResult(order,wrap,outcome,intensity,button));
+      return button;
+    };
+    ['low','medium','high'].forEach(intensity=>wrap.querySelector('[data-cz-wins]').append(makeButton(intensity,'win')));
+    ['low','medium','high'].forEach(intensity=>wrap.querySelector('[data-cz-losses]').append(makeButton(intensity,'loss')));
+    ['low','medium','high'].forEach(intensity=>wrap.querySelector('[data-cz-disconnects]').append(makeButton(intensity,'disconnect')));
     wrap.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{wrap.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('is-active',x===btn));}));
-    const bonds=wrap.querySelector('.mc-bonds');bonds.addEventListener('click',()=>{const on=bonds.getAttribute('aria-pressed')!=='true';bonds.setAttribute('aria-pressed',String(on));bonds.textContent=on?'✓ Combat Bonds redeemed':'Combat Bonds not redeemed';});
-    wrap.querySelector('.mc-cancel-edit').addEventListener('click',()=>cancelEdit(wrap));
-    wrap.querySelector('.mc-submit-report').addEventListener('click',()=>submit(order,wrap,'cz'));
     return wrap;
   }
 
@@ -445,7 +453,9 @@
     reports.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).forEach(report=>{
       const row=document.createElement('div');row.className='mc-my-report-row';
       const legacyNote=report.legacy&&Number(report.submissions||1)>1?' · combined prior total':'';
-      row.innerHTML='<div><strong>'+esc(reportAmount(report))+'</strong><small>'+esc(reportStamp(report.updatedAt||report.createdAt))+esc(legacyNote)+'</small></div><div class="mc-my-report-actions">'+(report.canEdit?'<button type="button" data-edit-report>Edit</button>':'')+(report.canDelete?'<button type="button" data-delete-report>Delete</button>':'')+'</div>';
+      const participantNote=report.czResult&&Array.isArray(report.participants)&&report.participants.length>1?' · '+report.participants.length+' wing reporters':'';
+      const stamp=report.czResult?(report.createdAt||report.updatedAt):(report.updatedAt||report.createdAt);
+      row.innerHTML='<div><strong>'+esc(reportAmount(report))+'</strong><small>'+esc(reportStamp(stamp))+esc(participantNote)+esc(legacyNote)+'</small></div><div class="mc-my-report-actions">'+(report.canEdit?'<button type="button" data-edit-report>Edit</button>':'')+(report.canDelete?'<button type="button" data-delete-report>Delete</button>':'')+'</div>';
       row.querySelector('[data-edit-report]')?.addEventListener('click',()=>beginEdit(editor,type,report));
       row.querySelector('[data-delete-report]')?.addEventListener('click',()=>deleteSubmittedReport(report,editor.closest('.mc-report-block')));
       list.append(row);
@@ -456,6 +466,12 @@
   function reportAmount(report){
     if(report.reportType==='inf')return fmt(report.score)+' INF';
     if(CREDIT_TYPES.has(report.reportType))return fmt(report.score)+' M Cr';
+    if(report.reportType==='cz'&&report.czResult){
+      const intensity=String(report.czResult.intensity||'').toLowerCase();
+      const outcome=String(report.czResult.outcome||'').toLowerCase();
+      const label=(intensity?intensity.charAt(0).toUpperCase()+intensity.slice(1):'CZ')+' '+(outcome==='win'?'win':outcome==='loss'?'loss':'disconnect');
+      return label+' · '+(report.score>0?'+':'')+fmt(report.score)+' CZ pts'+(report.mode==='wing'?' · Wing':'');
+    }
     if(report.reportType==='cz')return fmt(report.score)+' CZ pts';
     return fmt(report.score)+' units';
   }
@@ -553,6 +569,40 @@
     const score=(c.low-c.lossLow-c.disconnectLow)*WEIGHTS.low+(c.medium-c.lossMedium-c.disconnectMedium)*WEIGHTS.medium+(c.high-c.lossHigh-c.disconnectHigh)*WEIGHTS.high;
     draft.textContent=(Math.round(score*10)/10).toFixed(1)+' net CZ pts';
     if(failureBadge)failureBadge.textContent=String(c.lossLow+c.lossMedium+c.lossHigh+c.disconnectLow+c.disconnectMedium+c.disconnectHigh);
+  }
+
+  async function submitCzResult(order,form,outcome,intensity,button){
+    const block=form.closest('.mc-report-block'),status=block?.querySelector('.mc-report-status');
+    if(!block||!status)return;
+    const mode=form.querySelector('[data-mode].is-active')?.dataset.mode||'solo';
+    const buttons=[...form.querySelectorAll('[data-cz-result]')];
+    buttons.forEach(node=>node.disabled=true);
+    status.textContent='Recording '+intensity+' CZ '+outcome+'…';status.dataset.state='working';
+    try{
+      const response=await fetch('/api/operations/order-reports',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{Accept:'application/json','Content-Type':'application/json','X-Mongrels-Request':'daily-order-report'},
+        body:JSON.stringify({orderId:order.id,mode,czResult:{outcome,intensity}}),
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||'report_failed');
+      if(data.action==='joined-wing-result'){
+        status.textContent='Matched the shared wing CZ. You were added as a participant; squad points counted once.';
+      }else if(data.action==='duplicate-result'){
+        status.textContent='That CZ result already appears to be reported. No additional squad points were added.';
+      }else{
+        const points=WEIGHTS[intensity]||0,sign=outcome==='win'?'+':'−';
+        status.textContent=(intensity.charAt(0).toUpperCase()+intensity.slice(1))+' CZ '+outcome+' recorded · '+sign+fmt(points)+' squad points.';
+      }
+      status.dataset.state='success';
+      if(!applyReportMutation(data))setTimeout(load,180);
+    }catch(error){
+      console.error(error);
+      status.textContent='Could not save CZ result. Please try again.';
+      status.dataset.state='error';
+      buttons.forEach(node=>node.disabled=false);
+      if(button)button.focus();
+    }
   }
 
   async function submit(order,form,type){
