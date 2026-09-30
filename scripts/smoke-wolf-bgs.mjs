@@ -137,11 +137,11 @@ for(const pattern of [
 ]) assert.match(economyApi,pattern);
 assert.match(economyApi,/clampNumber\(value\.explorationEmergencyMillionsPerCmdr, 0, 10/,'Exploration emergency tier must be hard-capped at 10M');
 
-const conflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
+const adaptiveConflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
 for(const pattern of [
   /wolf-bgs-conflicts-v1/,/save-system-conflicts/,/reset-system-conflicts/,/MAX_PAIRS = 3/,
   /win-a/,/win-b/,/monitor/,/session\.access !== 'site_admin'/,/X-Mongrels-Request/,
-]) assert.match(conflictApi,pattern);
+]) assert.match(adaptiveConflictApi,pattern);
 
 const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','utf8');
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);

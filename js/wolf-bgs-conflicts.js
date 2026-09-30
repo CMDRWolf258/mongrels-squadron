@@ -7,7 +7,7 @@
   const INFLUENCE_PAIR_TOLERANCE = 3;
   const previewObservers = new WeakMap();
   let remote = { systemConflicts:{}, pressureStates:{}, updatedAt:{}, updatedBy:{} };
-  const pressureSyncSignatures = new Map();
+  const pressureSyncSignatures = new Map(); // one persisted adaptive-pressure observation per score/day signature
 
   const esc = value => String(value ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
   const norm = value => String(value || '').trim().toLowerCase().replace(/\s+/g,' ');
