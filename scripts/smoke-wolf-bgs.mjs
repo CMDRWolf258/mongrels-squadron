@@ -83,7 +83,7 @@ for(const pattern of [
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
-  /wolf-conflict-preview-task/,/Conflict lock active/,/Mongrel conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/Conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
 assert.match(conflictClient,/\[data-faction="influence"\]/,'Influence changes must trigger conflict re-pairing');
