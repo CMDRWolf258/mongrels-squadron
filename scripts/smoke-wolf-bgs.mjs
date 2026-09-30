@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=7/,'Conflict client cache version should be v6');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=8/,'Conflict client cache version should be v8');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -50,6 +50,8 @@ for (const pattern of [
   /Bounty balance baseline|Influence balancing baseline/,/bountyBaselineMillions/,/bountyCounterInf/,/tradeCounterInf/,/triggerHeadroomPct/,
   /Reset Filters/,/Reset to Defaults/,/sortFactionRows/,/wolf-influence-micro/,/wolf-influence-meter/,/Preview only:/,
 ]) assert.match(rulesClient,pattern);
+assert.match(rulesClient,/WolfBgsFactionIntent/,'Conflict automation must be able to read saved faction intent');
+assert.match(rulesClient,/WolfBgsRefresh/,'Faction strategy changes must refresh strategy-aware alerts');
 assert.doesNotMatch(rulesClient,/<option value="no-action"/,'Legacy No Action intent should not remain in the UI');
 
 const slidersClient=readFileSync('js/wolf-bgs-sliders.js','utf8');
@@ -85,6 +87,10 @@ for(const pattern of [
   /ordinary influence\/counterweight work/,/Conflict Zones \+ Combat Bonds/,/non-combat\/economic mission work/,
   /wolf-conflict-preview-task/,/Conflict lock active/,/Conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
+assert.match(conflictClient,/Pending conflict prepared/,'Pending conflicts must expose pre-activation strategy preparation');
+assert.match(conflictClient,/objectiveFromStrategy/,'Support\/raise faction strategy must drive automatic conflict winner selection');
+assert.match(conflictClient,/pair\.phase==='active'/,'Only active conflicts may generate actionable conflict tasks');
+assert.match(conflictClient,/automaticPending/,'Pending conflict participants must be auto-paired when unambiguous');
 assert.match(conflictClient,/participantNames\.some\(name=>text\.includes\(name\)\)/,'Conflict participants must be removed from ordinary preview tasks');
 assert.match(conflictClient,/\[data-faction="influence"\]/,'Influence changes must trigger conflict re-pairing');
 
@@ -158,6 +164,9 @@ assert.match(wolfMainClient,/freshnessCycle/);
 assert.doesNotMatch(wolfMainClient,/Custom freshness hours/);
 new Function(wolfMainClient);
 
+assert.match(apiSource,/readAlertFactionStrategies/,'Faction alerts must read saved faction strategy');
+assert.match(apiSource,/relevantConflictAlert/,'Conflict alerts must be scoped to Mongrel involvement or explicit support');
+assert.match(apiSource,/norm\(row\?\.intent\)==='support'/,'Only explicit Support \/ raise strategy should opt a non-Mongrel conflict into alerts');
 assert.match(apiSource,/activeConflict/,'System-level conflicts must be tracked separately from Mongrel participation');
 assert.match(apiSource,/scoutConflictScores/,'Live Scout must expose scores for non-Mongrel conflict pairs');
 assert.doesNotMatch(apiSource,/const conflictScore = mongrelConflict \?/,'Conflict scores must not be gated on Mongrel participation');

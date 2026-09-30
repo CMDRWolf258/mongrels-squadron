@@ -176,9 +176,26 @@
 
   function detected(card) {
     const rows=board(card);
-    const active=rows.map(row=>({...row,type:conflictType(row.state)})).filter(row=>row.type);
-    const pending=rows.map(row=>({...row,type:conflictType(row.pending)})).filter(row=>row.type);
+    const active=rows.map(row=>({...row,type:conflictType(row.state),phase:'active'})).filter(row=>row.type);
+    const pending=rows.map(row=>({...row,type:conflictType(row.pending),phase:'pending'})).filter(row=>row.type);
     return { rows, active, pending };
+  }
+
+  function factionIntent(card,faction) {
+    if(typeof window.WolfBgsFactionIntent==='function'){
+      const value=window.WolfBgsFactionIntent(systemName(card),faction);
+      if(value)return value;
+    }
+    const row=[...card.querySelectorAll('[data-faction-strategy-row]')].find(item=>norm(item.dataset.factionName)===norm(faction));
+    return row?.querySelector('[data-faction-strategy="intent"]')?.value || 'flexible';
+  }
+
+  function objectiveFromStrategy(card,factionA,factionB,current='monitor') {
+    if(current==='win-a'||current==='win-b')return current;
+    const supportA=factionIntent(card,factionA)==='support';
+    const supportB=factionIntent(card,factionB)==='support';
+    if(supportA===supportB)return 'monitor';
+    return supportA?'win-a':'win-b';
   }
 
   function findInfluenceMatchings(rows, limit=2) {
@@ -260,7 +277,7 @@
     const system=systemName(card), savedAt=isLab(card)?null:remote.updatedAt?.[system], savedBy=isLab(card)?null:remote.updatedBy?.[system];
     return `<section class="wolf-section wolf-conflict-section" data-conflict-section>
       <h3>Conflict Configuration</h3>
-      <p class="wolf-section-intro">Active War, Civil War, and Election participants are locked out of ordinary influence/counterweight work. Two-faction groups pair automatically. For multiple same-type conflicts, influence within ±${INFLUENCE_PAIR_TOLERANCE} percentage points is used only when it produces one unique pairing; otherwise Wolf must confirm the pairs here.</p>
+      <p class="wolf-section-intro">Active War, Civil War, and Election participants are locked out of ordinary influence/counterweight work. Pending conflicts are paired early so strategy can be prepared before activation. Two-faction groups pair automatically; a participant marked <b>Support / raise</b> is selected as the intended winner unless a manual winner is already set. For multiple same-type conflicts, influence within ±${INFLUENCE_PAIR_TOLERANCE} percentage points is used only when it produces one unique pairing; otherwise Wolf must confirm the pairs here.</p>
       <div class="wolf-conflict-detection" data-conflict-detection></div>
       <div class="wolf-conflict-timeline-panel">
         <div class="wolf-conflict-timeline-readout"><span>CONFLICT TIMELINE</span><strong data-conflict-timeline-readout>${esc(timelineLabel(card))}</strong><small data-conflict-timeline-detail>${esc(timelineDetail(card))}</small></div>
@@ -291,39 +308,100 @@
 
   function syncAutoPairControls(card) {
     clearAutoPairControls(card);
-    const active=detected(card).active, configured=collectPairs(card), used=new Set(configured.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)]));
-    const automatic=autoPairsFromActive(active.filter(row=>!used.has(norm(row.name))));
+
+    // Strategy can turn an otherwise neutral saved/auto pair into an intended winner.
+    for(const row of card.querySelectorAll('[data-conflict-pair-row]')){
+      const a=row.querySelector('[data-conflict="factionA"]')?.value||'';
+      const b=row.querySelector('[data-conflict="factionB"]')?.value||'';
+      const objective=row.querySelector('[data-conflict="objective"]');
+      if(a&&b&&objective&&objective.value==='monitor'){
+        const strategic=objectiveFromStrategy(card,a,b,'monitor');
+        if(strategic!=='monitor'){
+          objective.value=strategic;
+          row.dataset.strategyObjective='true';
+        }
+      }
+    }
+
+    const {active,pending}=detected(card);
+    const configured=collectPairs(card);
+    const used=new Set(configured.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)]));
+    const automaticActive=autoPairsFromActive(active.filter(row=>!used.has(norm(row.name))));
+    const afterActive=new Set([...used,...automaticActive.pairs.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)])]);
+    const automaticPending=autoPairsFromActive(pending.filter(row=>!afterActive.has(norm(row.name))));
+    const automatic=[...automaticActive.pairs.map(pair=>({...pair,phase:'active'})),...automaticPending.pairs.map(pair=>({...pair,phase:'pending'}))];
     const blanks=[...card.querySelectorAll('[data-conflict-pair-row]')].filter(row=>!row.querySelector('[data-conflict="factionA"]')?.value&&!row.querySelector('[data-conflict="factionB"]')?.value);
-    for(const pair of automatic.pairs){
+    for(const pair of automatic){
       const row=blanks.shift(); if(!row)break;
       row.querySelector('[data-conflict="factionA"]').value=pair.factionA;
       row.querySelector('[data-conflict="factionB"]').value=pair.factionB;
-      row.querySelector('[data-conflict="objective"]').value='monitor';
+      const objective=objectiveFromStrategy(card,pair.factionA,pair.factionB,'monitor');
+      row.querySelector('[data-conflict="objective"]').value=objective;
       row.dataset.autoPair='true';
+      row.dataset.conflictPhase=pair.phase;
+      if(objective!=='monitor')row.dataset.strategyObjective='true';
     }
   }
 
+  function pairMatch(activeMap,pendingMap,pair) {
+    const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
+    const activeA=activeMap.get(keyA), activeB=activeMap.get(keyB);
+    if(activeA&&activeB&&activeA.type===activeB.type)return {a:activeA,b:activeB,phase:'active'};
+    const pendingA=pendingMap.get(keyA), pendingB=pendingMap.get(keyB);
+    if(pendingA&&pendingB&&pendingA.type===pendingB.type)return {a:pendingA,b:pendingB,phase:'pending'};
+    return null;
+  }
+
   function resolve(card) {
-    const {active,pending}=detected(card), activeMap=new Map(active.map(row=>[norm(row.name),row])), configured=collectPairs(card), used=new Set(), resolved=[], invalid=[], manualNotes=[];
-    for(const pair of configured){
-      const a=activeMap.get(norm(pair.factionA)), b=activeMap.get(norm(pair.factionB));
+    const {active,pending}=detected(card);
+    const activeMap=new Map(active.map(row=>[norm(row.name),row]));
+    const pendingMap=new Map(pending.map(row=>[norm(row.name),row]));
+    const configured=collectPairs(card), used=new Set(), resolved=[], invalid=[], manualNotes=[];
+
+    for(const rawPair of configured){
+      const pair={...rawPair,objective:objectiveFromStrategy(card,rawPair.factionA,rawPair.factionB,rawPair.objective)};
       const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
       if(used.has(keyA)||used.has(keyB)){invalid.push(`${pair.factionA} / ${pair.factionB}: a faction is already assigned to another pair.`);continue;}
-      if(!a||!b){invalid.push(`${pair.factionA} / ${pair.factionB}: both factions are not currently in an active conflict state.`);continue;}
-      if(a.type!==b.type){invalid.push(`${pair.factionA} / ${pair.factionB}: conflict types do not match (${typeLabel(a.type)} vs ${typeLabel(b.type)}).`);continue;}
+      const match=pairMatch(activeMap,pendingMap,pair);
+      if(!match){
+        invalid.push(`${pair.factionA} / ${pair.factionB}: both factions are not currently in the same active or pending conflict state.`);
+        continue;
+      }
+      const {a,b,phase}=match;
       const gap=influenceGap(a,b);
-      if(!pair.auto && gap!==null && gap>INFLUENCE_PAIR_TOLERANCE)manualNotes.push(`${pair.factionA} / ${pair.factionB} are ${gap.toFixed(1)} points apart; manual confirmation overrides the ±${INFLUENCE_PAIR_TOLERANCE} auto-pair tolerance.`);
-      used.add(keyA);used.add(keyB);resolved.push({...pair,type:a.type,gap});
+      if(!pair.auto&&gap!==null&&gap>INFLUENCE_PAIR_TOLERANCE)manualNotes.push(`${pair.factionA} / ${pair.factionB} are ${gap.toFixed(1)} points apart; manual confirmation overrides the ±${INFLUENCE_PAIR_TOLERANCE} auto-pair tolerance.`);
+      used.add(keyA);used.add(keyB);resolved.push({...pair,type:a.type,gap,phase});
     }
-    const remaining=active.filter(row=>!used.has(norm(row.name))), automatic=autoPairsFromActive(remaining);
-    for(const pair of automatic.pairs){
+
+    const remainingActive=active.filter(row=>!used.has(norm(row.name)));
+    const automaticActive=autoPairsFromActive(remainingActive);
+    for(const rawPair of automaticActive.pairs){
       if(resolved.length>=MAX_PAIRS)break;
+      const pair={...rawPair,objective:objectiveFromStrategy(card,rawPair.factionA,rawPair.factionB,rawPair.objective),phase:'active'};
       const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
       if(used.has(keyA)||used.has(keyB))continue;
       used.add(keyA);used.add(keyB);resolved.push(pair);
     }
-    const participants=active.map(row=>row.name), covered=new Set(resolved.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)])), unresolved=participants.filter(name=>!covered.has(norm(name)));
-    return {active,pending,participants,resolved,unresolved,invalid,manualNotes,auto:automatic};
+
+    const remainingPending=pending.filter(row=>!used.has(norm(row.name)));
+    const automaticPending=autoPairsFromActive(remainingPending);
+    for(const rawPair of automaticPending.pairs){
+      if(resolved.length>=MAX_PAIRS)break;
+      const pair={...rawPair,objective:objectiveFromStrategy(card,rawPair.factionA,rawPair.factionB,rawPair.objective),phase:'pending'};
+      const keyA=norm(pair.factionA), keyB=norm(pair.factionB);
+      if(used.has(keyA)||used.has(keyB))continue;
+      used.add(keyA);used.add(keyB);resolved.push(pair);
+    }
+
+    const participants=active.map(row=>row.name);
+    const pendingParticipants=pending.map(row=>row.name);
+    const covered=new Set(resolved.flatMap(pair=>[norm(pair.factionA),norm(pair.factionB)]));
+    const unresolved=participants.filter(name=>!covered.has(norm(name)));
+    const unresolvedPending=pendingParticipants.filter(name=>!covered.has(norm(name)));
+    return {
+      active,pending,participants,pendingParticipants,resolved,unresolved,unresolvedPending,invalid,manualNotes,
+      auto:{pairs:[...automaticActive.pairs,...automaticPending.pairs],ambiguous:[...automaticActive.ambiguous,...automaticPending.ambiguous]},
+    };
   }
 
   function refreshDetection(card) {
@@ -337,6 +415,7 @@
     const scoreText=scoreA!==null&&scoreB!==null?`${scoreFaction?`${scoreFaction} `:''}${scoreA}–${scoreB}${scoreOpponent?` ${scoreOpponent}`:''}${scoreAge?` · ${scoreAge}`:''}${scoreStale?' · last known':''}`:'Awaiting conflict score from source';
     const warnings=[];
     if(result.unresolved.length)warnings.push(`Unpaired active participants: ${result.unresolved.join(', ')}. Ordinary BGS work is still locked for them, but no conflict winner order will be generated.`);
+    if(result.unresolvedPending.length)warnings.push(`Unpaired pending participants: ${result.unresolvedPending.join(', ')}. The coming conflict cannot be pre-configured automatically yet.`);
     warnings.push(...result.invalid,...result.manualNotes);
     if(result.auto.ambiguous.length)warnings.push(...result.auto.ambiguous.map(group=>`${group.names.length} factions show ${typeLabel(group.type)}; ${group.reason}. Manual confirmation is required.`));
     host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Conflict day</span><strong class="wolf-conflict-day-detail">${esc(timelineLabel(card))}</strong></div><div><span>Conflict score</span><strong class="wolf-conflict-score-detail">${esc(scoreText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
@@ -344,7 +423,12 @@
     card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
       const a=row.querySelector('[data-conflict="factionA"]')?.value||'', b=row.querySelector('[data-conflict="factionB"]')?.value||'', typeHost=row.querySelector('[data-conflict-type]');
       const aa=result.active.find(item=>norm(item.name)===norm(a)), bb=result.active.find(item=>norm(item.name)===norm(b)), gap=influenceGap(aa,bb);
-      if(typeHost)typeHost.textContent=aa&&bb&&aa.type===bb.type?`${typeLabel(aa.type)}${gap===null?'':` · Δ${gap.toFixed(1)}%`}`:(a&&b?'Mismatch / inactive':'—');
+      const pa=result.pending.find(item=>norm(item.name)===norm(a)), pb=result.pending.find(item=>norm(item.name)===norm(b));
+      const one=aa&&bb&&aa.type===bb.type?aa:(pa&&pb&&pa.type===pb.type?pa:null);
+      const two=one===aa?bb:(one===pa?pb:null);
+      const phase=one?.phase||'';
+      const pairGap=influenceGap(one,two);
+      if(typeHost)typeHost.textContent=one&&two?`${typeLabel(one.type)}${phase==='pending'?' · PENDING':''}${pairGap===null?'':` · Δ${pairGap.toFixed(1)}%`}`:(a&&b?'Mismatch / inactive':'—');
     });
     processPreview(card);
   }
@@ -456,17 +540,30 @@
       if(participantNames.length){
         host.querySelectorAll('.wolf-order-task:not(.wolf-conflict-preview-task)').forEach(task=>{const text=task.textContent||'';if(participantNames.some(name=>text.includes(name)))task.remove();});
         host.querySelectorAll('.wolf-order-math').forEach(item=>{const text=item.textContent||'';if(participantNames.some(name=>text.includes(name)))item.remove();});
-        const list=host.querySelector('.wolf-order-task-list');
-        const prototypeOrder=labOrder(card);
-        if(list&&prototypeOrder){
-          const markup=labConflictTaskMarkup(prototypeOrder);
-          if(markup)list.insertAdjacentHTML('afterbegin',markup);
-        }else{
-          const orders=result.resolved.filter(pair=>pair.objective==='win-a'||pair.objective==='win-b');
-          if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map(conflictTaskMarkup).join(''));
-        }
-        const head=host.querySelector('.wolf-order-preview-head');
-        if(head)head.insertAdjacentHTML('afterend',`<div class="wolf-conflict-preview-banner"><strong>Conflict lock active</strong><span>${participantNames.length} active participant${participantNames.length===1?'':'s'} removed from ordinary influence/slider work. ${result.unresolved.length?`${result.unresolved.length} participant${result.unresolved.length===1?' is':'s are'} still unpaired.`:`${result.resolved.length} pair${result.resolved.length===1?'':'s'} resolved.`}</span></div>`);
+      }
+
+      const list=host.querySelector('.wolf-order-task-list');
+      const prototypeOrder=labOrder(card);
+      if(list&&prototypeOrder){
+        const markup=labConflictTaskMarkup(prototypeOrder);
+        if(markup)list.insertAdjacentHTML('afterbegin',markup);
+      }else{
+        const orders=result.resolved.filter(pair=>pair.phase==='active'&&(pair.objective==='win-a'||pair.objective==='win-b'));
+        if(list&&orders.length)list.insertAdjacentHTML('afterbegin',orders.map(conflictTaskMarkup).join(''));
+      }
+
+      const head=host.querySelector('.wolf-order-preview-head');
+      if(head&&participantNames.length){
+        head.insertAdjacentHTML('afterend',`<div class="wolf-conflict-preview-banner"><strong>Conflict lock active</strong><span>${participantNames.length} active participant${participantNames.length===1?'':'s'} removed from ordinary influence/slider work. ${result.unresolved.length?`${result.unresolved.length} participant${result.unresolved.length===1?' is':'s are'} still unpaired.`:`${result.resolved.filter(pair=>pair.phase==='active').length} active pair${result.resolved.filter(pair=>pair.phase==='active').length===1?'':'s'} resolved.`}</span></div>`);
+      }
+
+      const prepared=result.resolved.filter(pair=>pair.phase==='pending'&&(pair.objective==='win-a'||pair.objective==='win-b'));
+      if(head&&prepared.length){
+        const labels=prepared.map(pair=>{
+          const winner=pair.objective==='win-a'?pair.factionA:pair.factionB;
+          return `${typeLabel(pair.type)}: support ${winner}`;
+        });
+        head.insertAdjacentHTML('afterend',`<div class="wolf-conflict-preview-banner"><strong>Pending conflict prepared</strong><span>${esc(labels.join(' · '))}. The pairing and intended side are ready now; actionable conflict orders begin when the conflict becomes active. Queue Selector remains the only normal auto-queue opt-in.</span></div>`);
       }
       updateTaskCount(host);
     }finally{
@@ -525,7 +622,7 @@
   async function init(){
     try{await load();}catch(error){console.error('Could not load Wolf BGS conflict configuration',error);}
     const wait=()=>{const list=document.querySelector('[data-system-list]');if(!list){setTimeout(wait,80);return;}watch();enhanceAll();setTimeout(enhanceAll,180);setTimeout(enhanceAll,450);};wait();
-    for(const name of ['wolf-bgs-faction-strategy-updated','wolf-bgs-slider-objectives-updated','wolf-bgs-rules-updated'])window.addEventListener(name,()=>setTimeout(enhanceAll,30));
+    for(const name of ['wolf-bgs-faction-strategy-updated','wolf-bgs-slider-objectives-updated','wolf-bgs-rules-updated','wolf-bgs-rules-ready'])window.addEventListener(name,()=>setTimeout(enhanceAll,30));
   }
   init();
 })();

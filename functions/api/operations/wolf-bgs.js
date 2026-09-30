@@ -3,6 +3,7 @@ import { resolveSystemWorkCycle } from '../../../lib/daily-order-cycle.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const SCOUT_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
+const RULES_KV_KEY = 'wolf-bgs-rules-v1';
 const MONGREL = 'Regiment of Imperial Mongrels';
 const ALERT_FAMILIES = ['retreat','conflict','bust','civil-unrest'];
 const CONFLICT_STATES = new Set(['war','civil war','election']);
@@ -42,14 +43,15 @@ export async function onRequestGet({ request, env }) {
   if (auth.response) return auth.response;
 
   try {
-    const [live, boards, control, scoutState] = await Promise.all([
+    const [live, boards, control, scoutState, factionStrategyMap] = await Promise.all([
       fetchLive(request),
       fetchBoards(request),
       readControl(env),
       readScoutSnapshots(env),
+      readAlertFactionStrategies(env),
     ]);
     const payload = buildPayload(live, boards, control, auth.session, scoutState);
-    const alertsChanged = refreshAlertEpisodes(control, payload.systems, new Date().toISOString(), scoutState.conflictHistory);
+    const alertsChanged = refreshAlertEpisodes(control, payload.systems, new Date().toISOString(), scoutState.conflictHistory, factionStrategyMap);
     attachConflictTracking(payload, control);
     attachAlertData(payload, control);
     if (alertsChanged && env?.DAILY_ORDERS && typeof env.DAILY_ORDERS.put === 'function') {
@@ -166,9 +168,14 @@ export async function onRequestPut({ request, env }) {
   }
 
   control.version = 2;
-  const [live, boards, scoutState] = await Promise.all([fetchLive(request), fetchBoards(request), readScoutSnapshots(env)]);
+  const [live, boards, scoutState, factionStrategyMap] = await Promise.all([
+    fetchLive(request),
+    fetchBoards(request),
+    readScoutSnapshots(env),
+    readAlertFactionStrategies(env),
+  ]);
   const payload = buildPayload(live, boards, control, auth.session, scoutState);
-  refreshAlertEpisodes(control, payload.systems, now, scoutState.conflictHistory);
+  refreshAlertEpisodes(control, payload.systems, now, scoutState.conflictHistory, factionStrategyMap);
   attachConflictTracking(payload, control, now);
   attachAlertData(payload, control);
   await env.DAILY_ORDERS.put(CONTROL_KV_KEY, JSON.stringify(control));
@@ -236,6 +243,32 @@ async function fetchBoards(request) {
     console.error('Wolf BGS Control could not read full BGS boards', error);
     return { systems: {}, syncOk: false, successfulSystems: 0, requestedSystems: 0, errors: ['Full BGS board snapshot unavailable'] };
   }
+}
+
+async function readAlertFactionStrategies(env) {
+  if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return {};
+  try {
+    const stored = await env.DAILY_ORDERS.get(RULES_KV_KEY, {type:'json'});
+    const source = stored?.systemFactionStrategies;
+    if (!source || typeof source !== 'object') return {};
+    const out = {};
+    for (const [system, rows] of Object.entries(source)) {
+      const key=norm(system);
+      if(!key || !Array.isArray(rows)) continue;
+      out[key]=rows.slice(0,20).map(row=>({
+        faction:cleanText(row?.faction,'',120),
+        intent:cleanText(row?.intent,'flexible',40),
+      })).filter(row=>row.faction);
+    }
+    return out;
+  } catch (error) {
+    console.error('Could not read faction strategies for BGS alerts', error);
+    return {};
+  }
+}
+
+function alertStrategiesForSystem(map, system) {
+  return map?.[norm(system)] || [];
 }
 
 async function readControl(env) {
@@ -584,7 +617,35 @@ function alertKey(system, family) {
   return `${system}::${family}`;
 }
 
-function alertCondition(system, family) {
+function conflictRows(system, phase) {
+  const arrayKey=phase==='pending'?'pendingStates':'activeStates';
+  const textKey=phase==='pending'?'pending':'state';
+  return (system?.factions || []).map(faction=>{
+    const states=factionStateArray(faction,arrayKey,textKey);
+    const detail=states.find(state=>CONFLICT_STATES.has(norm(state))) || '';
+    return detail ? {name:faction.name,detail} : null;
+  }).filter(Boolean);
+}
+
+function relevantConflictAlert(rows, strategyRows, phase) {
+  if(!rows.length) return null;
+  const support=new Set(
+    (strategyRows || [])
+      .filter(row=>norm(row?.intent)==='support')
+      .map(row=>norm(row?.faction))
+      .filter(Boolean)
+  );
+  const mongrel=rows.find(row=>norm(row.name)===norm(MONGREL));
+  const supported=rows.find(row=>support.has(norm(row.name)));
+  const selected=mongrel || supported;
+  return selected ? {detail:selected.detail,phase} : null;
+}
+
+function systemHasTrackedConflict(system) {
+  return conflictRows(system,'pending').length>0 || conflictRows(system,'active').length>0;
+}
+
+function alertCondition(system, family, strategyRows=[]) {
   const active = Array.isArray(system?.activeStates) ? system.activeStates : [];
   const pending = Array.isArray(system?.pendingStates) ? system.pendingStates : [];
   const find = (items, predicate) => items.find(item => predicate(norm(item))) || '';
@@ -595,12 +656,8 @@ function alertCondition(system, family) {
     return activeDetail ? { detail:activeDetail, phase:'active' } : null;
   }
   if (family === 'conflict') {
-    const factionPending=(system?.factions || []).flatMap(faction=>factionStateArray(faction,'pendingStates','pending'));
-    const factionActive=(system?.factions || []).flatMap(faction=>factionStateArray(faction,'activeStates','state'));
-    const pendingDetail = find(factionPending.length ? factionPending : pending, value => CONFLICT_STATES.has(value));
-    if (pendingDetail) return { detail:pendingDetail, phase:'pending' };
-    const activeDetail = find(factionActive.length ? factionActive : active, value => CONFLICT_STATES.has(value));
-    return activeDetail ? { detail:activeDetail, phase:'active' } : null;
+    return relevantConflictAlert(conflictRows(system,'pending'),strategyRows,'pending')
+      || relevantConflictAlert(conflictRows(system,'active'),strategyRows,'active');
   }
   if (family === 'bust') {
     const pendingDetail = find(pending, value => value === 'bust');
@@ -617,12 +674,14 @@ function alertCondition(system, family) {
   return null;
 }
 
-function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOString(), scoutConflictHistory = {}) {
+function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOString(), scoutConflictHistory = {}, factionStrategyMap = {}) {
   if (!control.alertEpisodes || typeof control.alertEpisodes !== 'object') control.alertEpisodes = {};
   const current = new Map();
+  const systemsByName=new Map((systems || []).map(system=>[norm(system?.name),system]));
   for (const system of systems || []) {
+    const strategyRows=alertStrategiesForSystem(factionStrategyMap,system.name);
     for (const family of ALERT_FAMILIES) {
-      const condition = alertCondition(system, family);
+      const condition = alertCondition(system, family, strategyRows);
       if (condition) current.set(alertKey(system.name, family), {
         system:system.name,
         family,
@@ -636,7 +695,11 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
   for (const key of Object.keys(control.alertEpisodes)) {
     if (!current.has(key)) {
       const episode = control.alertEpisodes[key];
-      if (episode?.family === 'conflict' && control.conflictDayOverrides?.[episode.system]) {
+      if (
+        episode?.family === 'conflict'
+        && control.conflictDayOverrides?.[episode.system]
+        && !systemHasTrackedConflict(systemsByName.get(norm(episode.system)))
+      ) {
         delete control.conflictDayOverrides[episode.system];
       }
       delete control.alertEpisodes[key];

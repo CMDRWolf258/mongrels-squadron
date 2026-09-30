@@ -197,6 +197,8 @@
 
   function strategyFor(system, faction) { return (state.systemFactionStrategies?.[system] || []).find(row => norm(row.faction) === norm(faction)) || {}; }
   function intentValue(saved) { return saved?.intent === 'no-action' || !saved?.intent ? 'flexible' : saved.intent; }
+  function factionIntent(system,faction){ return intentValue(strategyFor(system,faction)); }
+  window.WolfBgsFactionIntent=factionIntent;
 
   function factionStrategyMarkup(card) {
     const system=systemName(card), rows=factionRows(card).map(rowData).filter(row=>row.name);
@@ -223,14 +225,14 @@
   async function saveFactionStrategies(card) {
     const system=systemName(card), message=card.querySelector('[data-faction-strategy-message]'), button=card.querySelector('[data-save-faction-strategy]');
     button.disabled=true; if(message) message.textContent='Saving faction strategy…';
-    try { const data=await call('save-system-faction-strategies',{system,strategies:collectFactionStrategies(card)}); state={...state,...data}; if(message) message.textContent=`Saved ${fmt(state.factionStrategyUpdatedAt?.[system])} by ${state.factionStrategyUpdatedBy?.[system]||'Wolf'}`; refreshProgrammedPreview(card); window.dispatchEvent(new CustomEvent('wolf-bgs-faction-strategy-updated',{detail:{system}})); }
+    try { const data=await call('save-system-faction-strategies',{system,strategies:collectFactionStrategies(card)}); state={...state,...data}; if(message) message.textContent=`Saved ${fmt(state.factionStrategyUpdatedAt?.[system])} by ${state.factionStrategyUpdatedBy?.[system]||'Wolf'}`; refreshProgrammedPreview(card); window.dispatchEvent(new CustomEvent('wolf-bgs-faction-strategy-updated',{detail:{system}})); if(typeof window.WolfBgsRefresh==='function')window.WolfBgsRefresh().catch(error=>console.error('Could not refresh strategy-aware alerts',error)); }
     catch(error){ console.error(error); if(message) message.textContent='Could not save faction strategy.'; } finally { button.disabled=false; }
   }
 
   async function resetFactionStrategies(card) {
     const system=systemName(card); if(!window.confirm(`Reset all faction-strategy overrides for ${system}? System Strategy and manual faction data will not be changed.`)) return;
     const message=card.querySelector('[data-faction-strategy-message]');
-    try { const data=await call('reset-system-faction-strategies',{system}); state={...state,...data}; const section=card.querySelector('[data-faction-strategy-section]'); if(section) section.outerHTML=factionStrategyMarkup(card); refreshProgrammedPreview(card); const newMessage=card.querySelector('[data-faction-strategy-message]'); if(newMessage) newMessage.textContent='Faction strategy reset.'; window.dispatchEvent(new CustomEvent('wolf-bgs-faction-strategy-updated',{detail:{system}})); }
+    try { const data=await call('reset-system-faction-strategies',{system}); state={...state,...data}; const section=card.querySelector('[data-faction-strategy-section]'); if(section) section.outerHTML=factionStrategyMarkup(card); refreshProgrammedPreview(card); const newMessage=card.querySelector('[data-faction-strategy-message]'); if(newMessage) newMessage.textContent='Faction strategy reset.'; window.dispatchEvent(new CustomEvent('wolf-bgs-faction-strategy-updated',{detail:{system}})); if(typeof window.WolfBgsRefresh==='function')window.WolfBgsRefresh().catch(error=>console.error('Could not refresh strategy-aware alerts',error)); }
     catch(error){ console.error(error); if(message) message.textContent='Could not reset faction strategy.'; }
   }
 
@@ -269,6 +271,6 @@
   function enhanceAllCards(force=false){ document.querySelectorAll('.wolf-system-card').forEach(card=>enhanceCard(card,force)); }
   function watchCards(){ const list=document.querySelector('[data-system-list]'); if(!list||list.dataset.rulesObserved==='true') return; list.dataset.rulesObserved='true'; new MutationObserver(()=>enhanceAllCards()).observe(list,{childList:true,subtree:false}); }
 
-  async function init(){ try{await loadRules();}catch(error){console.error('Could not load Wolf BGS automation rules',error);} const waitForDeck=()=>{const systems=document.querySelector('.wolf-systems-section'),list=document.querySelector('[data-system-list]'); if(!systems||!list){window.setTimeout(waitForDeck,80);return;} mountRulesPanel(); ensureResetFilters(); watchCards(); enhanceAllCards();}; waitForDeck(); }
+  async function init(){ try{await loadRules();}catch(error){console.error('Could not load Wolf BGS automation rules',error);} const waitForDeck=()=>{const systems=document.querySelector('.wolf-systems-section'),list=document.querySelector('[data-system-list]'); if(!systems||!list){window.setTimeout(waitForDeck,80);return;} mountRulesPanel(); ensureResetFilters(); watchCards(); enhanceAllCards(); window.dispatchEvent(new CustomEvent('wolf-bgs-rules-ready'));}; waitForDeck(); }
   init();
 })();
