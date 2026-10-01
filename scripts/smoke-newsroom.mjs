@@ -16,7 +16,8 @@ assert.match(api,/filter\(item=>canManage\|\|item\.status==='published'\)/,'Publ
 assert.match(api,/12000/,'Story body must have a server-side length cap');
 
 for(const pattern of [/Newsroom/,/The Morning Walk/,/data-newsroom-list/,/data-newsroom-editor/,/newsroom\.css/,/newsroom\.js/]) assert.match(page,pattern);
-for(const pattern of [/textContent/,/safe\(/,/mongrels-newsroom/,/\?story=/,/Save Draft/,/Publish/]) assert.match(client,pattern);
+for(const pattern of [/textContent/,/safe\(/,/mongrels-newsroom/,/\?story=/,/saveStory/,/publish/]) assert.match(client,pattern);
+for(const pattern of [/Save Draft/,/Publish/,/Plain text is intentional in v1/]) assert.match(page,pattern);
 for(const pattern of [/newsroom-masthead/,/newsroom-lead/,/newsroom-story-card/,/newsroom-editor/]) assert.match(css,pattern);
 assert.match(site,/root\('newsroom\/'\)/,'Community navigation must expose the Newsroom');
 assert.match(site,/about\|members\|gallery\|announcements\|newsroom/,'Newsroom must resolve to the Community navigation group');

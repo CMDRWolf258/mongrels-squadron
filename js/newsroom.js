@@ -2,7 +2,7 @@
   'use strict';
   const $=sel=>document.querySelector(sel);
   const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const state={data:null,filter:'all',editing:null};
+  const state={data:null,filter:'all',editing:null}; // Public feed and Site Admin editorial state stay separate.
   const storyId=()=>new URLSearchParams(location.search).get('story')||'';
   const when=value=>{const d=new Date(value||'');return Number.isFinite(d.getTime())?d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):''};
   const api=async(method='GET',body=null,url='/api/newsroom')=>{
