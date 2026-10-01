@@ -59,6 +59,19 @@ for (const unsafe of ['https://evil.example/', '//evil.example/', '/\\\\evil.exa
 }
 console.log('✓ OAuth return paths are constrained to normalized same-origin paths');
 
+const securityHeaders = readFileSync('_headers', 'utf8');
+for (const pattern of [
+  /^\/\*$/m,
+  /^  X-Content-Type-Options: nosniff$/m,
+  /^  Referrer-Policy: strict-origin-when-cross-origin$/m,
+  /^  X-Frame-Options: DENY$/m,
+  /^  Permissions-Policy: camera=\(\), microphone=\(\), geolocation=\(\), payment=\(\), usb=\(\)$/m,
+]) {
+  assert.match(securityHeaders, pattern);
+}
+assert.doesNotMatch(securityHeaders, /Content-Security-Policy:/i, 'CSP enforcement should remain deferred');
+console.log('✓ baseline browser security headers are configured without CSP enforcement');
+
 const providers = [
   ['Anti-Xeno', AX_ROUTES],
   ['BGS', BGS_ROUTES],
