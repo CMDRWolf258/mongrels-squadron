@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=10/,'Conflict client cache version should be v10');
+assert.match(page,/wolf-bgs-conflicts\\.js\\?v=11/,'Conflict client cache version should be v11');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -81,8 +81,9 @@ assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be gene
 
 const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
 assert.match(conflictClient,/conflictPendingDay/,'Conflict day selector should preserve an unsaved selection during card refreshes');
-for(const pattern of [/CZ_TARGETS = \{ routine:3, contested:6, heavy:15, blitz:25 \}/,/ELECTION_TARGETS = \{ routine:6, contested:15, heavy:40, blitz:60 \}/,/workloadForPair/,/syncPressure/,/observe-conflict-scores/,/BLITZ — win for faction A/,/HEAVY LOCK/]) assert.match(conflictClient,pattern);
+for(const pattern of [/CZ_TARGETS = \{ routine:3, contested:6, heavy:15, blitz:25 \}/,/ELECTION_TARGETS = \{ routine:6, contested:15, heavy:40, blitz:60 \}/,/workloadForPair/,/syncPressure/,/observe-conflict-scores/,/BLITZ — win for faction A/,/HEAVY LOCK/,/pairTimelineState/,/conflictPairTimelines/,/Conflict days are tracked separately for each pair/,/factionA,factionB,day/]) assert.match(conflictClient,pattern);
 assert.match(baseClient,/data-conflict-scores=/,'All conflict-pair scores must be exposed to adaptive pressure automation');
+assert.match(baseClient,/data-conflict-pair-timelines=/,'Pair-specific conflict timelines must be exposed to the conflict UI');
 const conflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
 for(const pattern of [/pressureStates/,/observe-conflict-scores/,/advancePressure/,/Opponent reached 3 wins while observed/,/Two observed conflict days without an opponent win/,/blitz:Boolean/]) assert.match(conflictApi,pattern);
 
@@ -91,7 +92,7 @@ for(const pattern of [
   /INFLUENCE_PAIR_TOLERANCE = 3/,/findInfluenceMatchings/,/multiple influence-compatible pairings fit/,
   /manual confirmation overrides the ±\$\{INFLUENCE_PAIR_TOLERANCE\}/,/Unpaired active participants/,
   /ordinary influence\/counterweight work/,/Adaptive conflict doctrine/,/Election: Routine 6/,
-  /wolf-conflict-preview-task/,/Conflict lock active/,/Conflict score/,/CONFLICT TIMELINE/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
+  /wolf-conflict-preview-task/,/Conflict lock active/,/Conflict score/,/CONFLICT TIMELINES/,/WolfBgsConflictLabOrder/,/labConflictTaskMarkup/,/Earn \$\{esc\(amount\)\} CZ points/,/data-order-amount="\$\{esc\(amount\)\}"/,/saveConflictDay/,/clearConflictDay/,/DAY 7\+/,/4-day minimum/,/data\.conflictScoreA|dataset\.conflictScoreA/,/conflictScoreUpdated/,/dataset\.bgsLab/,
 ]) assert.match(conflictClient,pattern);
 assert.match(conflictClient,/Pending conflict prepared/,'Pending conflicts must expose pre-activation strategy preparation');
 assert.match(conflictClient,/objectiveFromStrategy/,'Support\/raise faction strategy must drive automatic conflict winner selection');
@@ -151,13 +152,13 @@ const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 assert.match(apiSource,/wolf_bgs_unavailable/,'Wolf BGS API must expose authenticated data-build failures distinctly');
 assert.match(apiSource,/authenticated:true/,'Wolf BGS API must preserve authenticated state when secure data building fails');
 
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/,/conflictPairTimelinesFor/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=22/);
+assert.match(wolfPage,/wolf-bgs\\.js\\?v=23/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
@@ -182,7 +183,7 @@ assert.match(conflictClient,/Conflict score/,'Conflict UI must use a system-leve
 assert.doesNotMatch(conflictClient,/Mongrel conflict score/,'Conflict UI must not label every score as Mongrel-only');
 
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
-for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/]) assert.match(writeApi,pattern);
+for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/]) assert.match(writeApi,pattern);
 
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 assert.match(boardUpdater,/fetch_tracked_system_conflicts/,'Board updater must fetch active conflicts regardless of Mongrel participation');
@@ -195,7 +196,7 @@ for(const pattern of [/\.wolf-master-alert-button/,/wolf-master-alert-flash/,/\.
 const orderCss=readFileSync('css/wolf-bgs-order-preview.css','utf8');
 for (const pattern of [/\.wolf-calibration-grid/,/\.wolf-order-task/,/\.wolf-order-math/,/\.wolf-order-warnings/,/\.wolf-slider-guard\.balance-required/]) assert.match(orderCss,pattern);
 const conflictCss=readFileSync('css/wolf-bgs-conflicts.css','utf8');
-for(const pattern of [/\.wolf-conflict-pair/,/\.wolf-conflict-preview-banner/,/\.wolf-conflict-preview-task/,/\.wolf-conflict-score-detail/,/\.wolf-conflict-timeline-panel/,/\.wolf-conflict-day-controls/,/\.wolf-conflict-day-detail/]) assert.match(conflictCss,pattern);
+for(const pattern of [/\.wolf-conflict-pair/,/\.wolf-conflict-preview-banner/,/\.wolf-conflict-preview-task/,/\.wolf-conflict-score-detail/,/\.wolf-conflict-timeline-panel/,/\.wolf-conflict-day-controls/,/\.wolf-conflict-day-detail/,/\.wolf-conflict-pair-timeline/,/\.wolf-conflict-pair-day-readout/]) assert.match(conflictCss,pattern);
 const labCss=readFileSync('css/wolf-bgs-lab.css','utf8');
 for(const pattern of [/\.wolf-bgs-lab-section/,/\.wolf-lab-card/,/\.wolf-lab-scenarios/]) assert.match(labCss,pattern);
 
