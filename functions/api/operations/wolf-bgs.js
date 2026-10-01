@@ -727,10 +727,9 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
       const episode = control.alertEpisodes[key];
       if (
         episode?.family === 'conflict'
-        && control.conflictDayOverrides?.[episode.system]
         && !systemHasTrackedConflict(systemsByName.get(norm(episode.system)))
       ) {
-        delete control.conflictDayOverrides[episode.system];
+        if (control.conflictDayOverrides) delete control.conflictDayOverrides[episode.system];
         if (control.conflictPairDayOverrides) delete control.conflictPairDayOverrides[episode.system];
       }
       delete control.alertEpisodes[key];
