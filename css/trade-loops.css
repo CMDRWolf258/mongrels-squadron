@@ -88,3 +88,10 @@
 .trade-loop-toggle-field>span{display:block;color:var(--muted);font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .trade-loop-toggle-field>small{display:block;color:var(--muted);font-size:.58rem;line-height:1.4}
 .trade-loop-toggle label{position:relative}
+
+.trade-loop-card.needs-scouting{border-color:rgba(255,209,102,.34)}
+.trade-loop-card.needs-scouting::before{background:linear-gradient(90deg,var(--warning),transparent 70%)}
+.trade-loop-scout-flag{display:inline-flex;align-items:center;border:1px solid rgba(255,209,102,.36);border-radius:999px;padding:3px 7px;color:var(--warning);background:rgba(255,209,102,.055);font-size:.52rem;font-style:normal;font-weight:900;letter-spacing:.07em;white-space:nowrap}
+.trade-loop-scout-note{display:flex;flex-wrap:wrap;gap:5px 10px;align-items:baseline;margin:8px 0 2px;padding:9px 10px;border:1px solid rgba(255,209,102,.24);border-radius:8px;background:rgba(255,209,102,.035)}
+.trade-loop-scout-note strong{color:var(--warning);font-size:.65rem}
+.trade-loop-scout-note span{color:var(--muted);font-size:.61rem;line-height:1.4}

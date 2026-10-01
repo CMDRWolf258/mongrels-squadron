@@ -12,7 +12,9 @@ import {
 const control=defaultTradeControl();
 const defaultLoopQuery=normalizeLoopSearch({startSystem:'Home'},control);
 assert.equal(defaultLoopQuery.priority,'standard','routine loop searches should default to the Standard freshness profile');
-assert.equal(defaultLoopQuery.maxAgeMinutes,1440,'Standard loop searches should accept the freshest available data up to the 24-hour fresh cutoff');
+assert.equal(defaultLoopQuery.freshMinutes,1440,'Standard loop searches should classify data as fresh through 24 hours');
+assert.equal(defaultLoopQuery.maxAgeMinutes,null,'Standard loop searches must not hide older potential loops');
+assert.equal(defaultLoopQuery.hardFreshnessWindow,false);
 
 const twoQuery=normalizeLoopSearch({
   startSystem:'Home',
@@ -150,10 +152,26 @@ assert.equal(body.filters.distance.max,'50');
 assert.ok(Array.isArray(body.filters.services));
 assert.ok(Array.isArray(body.filters.type.value));
 assert.equal(body.size,200);
+assert.equal(body.filters.market_updated_at,undefined,'routine Standard loop discovery must not hide markets older than 24 hours');
+
+const highQuery=normalizeLoopSearch({startSystem:'Home',priority:'high'},control);
+assert.equal(highQuery.freshMinutes,120);
+assert.equal(highQuery.maxAgeMinutes,120,'High traffic loops should keep the 2-hour hard freshness window');
+assert.equal(highQuery.hardFreshnessWindow,true);
+const highBody=buildSpanshLoopSnapshotBody(highQuery,new Date('2026-09-25T12:00:00Z'));
+assert.ok(highBody.filters.market_updated_at,'High traffic loop searches should enforce their hard age cutoff');
 
 const sameBody=buildSpanshLoopSnapshotBody(sameQuery,new Date('2026-09-25T12:00:00Z'));
 assert.equal(sameBody.filters.system_name.value,'Home');
 assert.equal(sameBody.filters.distance,undefined);
+
+const staleTime=new Date(Date.now()-30*60*60000).toISOString();
+const staleA={...A,observedAt:staleTime};
+const staleB={...B,observedAt:staleTime};
+const staleLoops=optimizeTradeLoops([staleA,staleB],twoQuery);
+assert.ok(staleLoops.length>=1,'older routine loop candidates should remain visible');
+assert.equal(staleLoops[0].needsScouting,true,'routine loops older than 24 hours should be marked for scouting instead of hidden');
+assert.ok(staleLoops[0].scoutStops.some(stop=>stop.stationName==='Alpha Port'||stop.stationName==='Beta Port'));
 
 const now=Date.now();
 const staleExternal={
@@ -189,8 +207,8 @@ assert.match(html,/3 legs · triangle/);
 assert.match(html,/data-loop-threshold/);
 assert.match(html,/data-loop-mongrel-only/);
 assert.match(html,/Mongrel Faction Routes/);
-assert.match(html,/trade-loops\.css\?v=2/);
-assert.match(html,/trade-loops\.js\?v=5/);
+assert.match(html,/trade-loops\.css\?v=3/);
+assert.match(html,/trade-loops\.js\?v=6/);
 
 const client=readFileSync(new URL('../js/trade-loops.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-loops\/search/);
@@ -201,8 +219,9 @@ assert.match(client,/mongrelOnly/);
 assert.match(client,/sourceFaction/);
 assert.match(client,/destinationFaction/);
 assert.match(client,/mongrels:trade-route-posted/);
-assert.match(client,/FRESHNESS_POLICY_VERSION=4/);
-assert.match(client,/savedAge>1440\?'':/,'legacy loop searches broader than 24 hours should reset to the Standard fresh window once');
+assert.match(client,/FRESHNESS_POLICY_VERSION=5/);
+assert.match(client,/NEEDS SCOUTING/);
+assert.match(client,/Routine loops stay visible when older than the fresh window/);
 
 const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.meta.url),'utf8');
 assert.match(tradeApi,/normalizeRouteLegs/);
