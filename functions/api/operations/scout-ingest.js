@@ -5,6 +5,7 @@ import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discord.js';
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
+import { recordScoutMarketSnapshot } from '../../../lib/trade-market.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -37,6 +38,10 @@ export async function onRequestPost({ request, env }) {
   let body;
   try { body = await request.json(); }
   catch { return reply({ok:false,error:'invalid_json'}, 400); }
+
+  if (isMarketPayload(body)) {
+    return handleMarketSnapshot({body,auth,env});
+  }
 
   const snapshot = normalizeSnapshot(body);
   if (!snapshot) return reply({ok:false,error:'invalid_scout_snapshot'}, 400);
@@ -169,6 +174,56 @@ export async function onRequestPost({ request, env }) {
     scoutDiscord,
     bgsDiscord,
   }, 200);
+}
+
+
+function isMarketPayload(value) {
+  return value && typeof value === 'object'
+    && (String(value.kind || '').toLowerCase() === 'market' || String(value.event || '') === 'Market');
+}
+
+async function handleMarketSnapshot({body,auth,env}) {
+  if (!env?.TRADES || typeof env.TRADES.get !== 'function' || typeof env.TRADES.put !== 'function') {
+    return reply({ok:false,error:'trade_storage_not_configured'},503);
+  }
+
+  const observedAt=normalizeTime(body?.timestamp || body?.observedAt);
+  if (!observedAt) return reply({ok:false,error:'invalid_market_snapshot'},400);
+  if (new Date(observedAt).getTime() > Date.now() + 15 * 60 * 1000) {
+    return reply({ok:false,error:'journal_timestamp_in_future'},422);
+  }
+
+  const result=await recordScoutMarketSnapshot(env,{
+    ...body,
+    observedAt,
+    scoutTokenId:auth.id,
+    scoutLabel:auth.label,
+    scoutOwnerId:auth.ownerId || '',
+    scoutCommander:auth.ownerCommander || auth.label || 'Mongrel Scout',
+  });
+
+  if (!result?.stored && result?.error) {
+    return reply({ok:false,error:result.error},result.error==='trade_storage_not_configured'?503:400);
+  }
+
+  await noteTokenUse(env,auth.id,{
+    system:result.systemName || cleanText(body?.systemName || body?.system,'',140),
+    starPos:normalizeCoordinates(body?.starPos),
+    updatedAt:result.observedAt || observedAt,
+  });
+
+  return reply({
+    ok:true,
+    accepted:true,
+    kind:'market',
+    stored:Boolean(result.stored),
+    system:result.systemName,
+    station:result.stationName,
+    marketId:result.marketId,
+    updatedAt:result.observedAt,
+    commodityCount:result.commodityCount,
+    scout:auth.label,
+  },200);
 }
 
 async function authenticate(request, env) {
