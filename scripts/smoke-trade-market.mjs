@@ -5,6 +5,7 @@ import {
   buildTradeBgsContext,
   extractSpanshCommodityNames,
   normalizeMarketSearch,
+  recordScoutMarketSnapshot,
   searchTradeMarkets,
 } from '../lib/trade-market.js';
 import { defaultTradeControl } from '../lib/trade-intelligence.js';
@@ -21,6 +22,65 @@ class FakeKV {
   async delete(key){this.map.delete(key);}
   async list({prefix=''}){return{keys:[...this.map.keys()].filter(k=>k.startsWith(prefix)).map(name=>({name})),list_complete:true};}
 }
+
+const marketScoutEnv={TRADES:new FakeKV()};
+const marketScoutNow=Date.now();
+const marketWrite=await recordScoutMarketSnapshot(marketScoutEnv,{
+  marketId:'scout-market-1',
+  systemName:'Scout Market System',
+  systemAddress:'123456789',
+  starPos:[1,2,3],
+  stationName:'Lucky Exchange',
+  stationType:'Orbis Starport',
+  observedAt:new Date(marketScoutNow).toISOString(),
+  scoutLabel:'Lucky Market Run',
+  scoutCommander:'CMDR Lucky',
+  commodities:[{
+    name:'Gold',
+    category:'Metals',
+    buyPrice:40123,
+    sellPrice:70234,
+    supply:7654,
+    demand:4321,
+    meanPrice:50000,
+  }],
+});
+assert.equal(marketWrite.stored,true,'Scout market snapshot should store');
+assert.equal(marketWrite.commodityCount,1);
+assert.equal(marketScoutEnv.TRADES.map.size,1,'One station visit should use one direct Scout market KV write key before searches');
+
+const staleScoutMarketRow=[{
+  id:'scout-market-1',
+  market_id:'scout-market-1',
+  name:'Lucky Exchange',
+  type:'Orbis Starport',
+  distance_to_arrival:1200,
+  large_pads:4,medium_pads:4,small_pads:4,
+  system_id64:'123456789',
+  system_name:'Scout Market System',
+  system_x:1,system_y:2,system_z:3,
+  market_updated_at:new Date(marketScoutNow-30*60*1000).toISOString(),
+  distance:0,
+  market:[{commodity:'Gold',category:'Metals',buy_price:45000,sell_price:65000,supply:100,demand:200}],
+}];
+const directScoutSearch=await searchTradeMarkets(marketScoutEnv,{
+  commodity:'Gold',
+  direction:'buy',
+  referenceSystem:'Scout Market System',
+  radiusLy:25,
+  minVolume:1000,
+  carrierMode:'exclude',
+  maxAgeMinutes:90,
+  priority:'critical',
+  sort:'price',
+},{fetchImpl:async ()=>new Response(JSON.stringify({count:1,results:staleScoutMarketRow}),{status:200,headers:{'Content-Type':'application/json'}})});
+assert.equal(directScoutSearch.results.length,1,'newer direct Scout market observation should satisfy the query');
+assert.equal(directScoutSearch.results[0].supply,7654,'direct Scout supply should override older Spansh supply');
+assert.equal(directScoutSearch.results[0].buyPrice,40123,'direct Scout price should override older Spansh price');
+assert.equal(directScoutSearch.results[0].source,'Mongrel Scout');
+assert.equal(directScoutSearch.results[0].directScout,true);
+assert.equal(directScoutSearch.results[0].distanceLy,0,'newer Scout market data should preserve Spansh distance metadata');
+assert.equal(directScoutSearch.source,'Spansh + Mongrel Scout');
 
 const control=defaultTradeControl();
 const normalized=normalizeMarketSearch({
