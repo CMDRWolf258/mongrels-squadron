@@ -59,6 +59,7 @@ for (const path of [
   'pathway/index.html',
   'functions/api/pathway/assignments.js',
   'lib/assistant-pathway-context.js',
+  'guides/pvp/index.html',
 ]) {
   assert.ok(existsSync(path), `PvP critical file is missing: ${path}`);
 }
@@ -72,6 +73,31 @@ const assignmentsSource = readFileSync('functions/api/pathway/assignments.js', '
 assert.match(assignmentsSource, /pathway-pvp/, 'Shared assignment API is not importing PvP');
 assert.match(assignmentsSource, /seedVersion:'pvp-v1'/, 'Shared assignment API is missing the PvP provider');
 console.log('✓ PvP provider, UI mount, client, Assistant context, and duplicate-card handling are wired');
+
+const pvpGuideHtml = readFileSync('guides/pvp/index.html', 'utf8');
+for (const pattern of [
+  /PvP Field Manual/,
+  /id="foundations"/,
+  /id="survival"/,
+  /id="pips"/,
+  /id="movement"/,
+  /id="range"/,
+  /id="weapons"/,
+  /id="defense"/,
+  /id="disengage"/,
+  /id="builds"/,
+  /id="duels"/,
+  /id="wing"/,
+  /id="advanced"/,
+  /id="quick-reference"/,
+  /Combat Logging/,
+  /My Pathway/,
+]) assert.match(pvpGuideHtml, pattern, `PvP Field Manual is missing expected content: ${pattern}`);
+
+const guideHubHtml = readFileSync('guides/index.html', 'utf8');
+assert.match(guideHubHtml, /href="pvp\/"\s*>/, 'Field Manual hub is not linking to the PvP guide');
+assert.match(guideHubHtml, /Open PvP Field Manual/, 'Field Manual hub is not advertising the PvP guide');
+console.log('✓ PvP Field Manual sections and Field Manual hub linkage are wired');
 
 
 
