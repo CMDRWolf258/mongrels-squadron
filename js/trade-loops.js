@@ -21,7 +21,7 @@
   const resultsSummary=$('[data-loop-results-summary]');
   const warning=$('[data-loop-warning]');
   const STORAGE_KEY='mongrels-trade-loop-search-v1';
-  const FRESHNESS_POLICY_VERSION=4;
+  const FRESHNESS_POLICY_VERSION=5;
   let viewer=null;
   let currentSettings=null;
   let currentResults=[];
@@ -85,7 +85,7 @@
       minPad:Number(pad.value)||0,
       carrierMode:carriers.value,
       priority:priority.value,
-      maxAgeMinutes:Number(age.value)||undefined,
+      maxAgeMinutes:(priority.value==='critical'||priority.value==='high')?(Number(age.value)||undefined):undefined,
       thresholdDropPercent:Math.max(5,Math.min(90,Number(threshold.value)||25)),
       mongrelOnly:Boolean(mongrelOnly.checked),
       limit:10,
@@ -109,6 +109,13 @@
       :legCount===3
         ?'3-leg triangles are limited to 100 ly maximum per leg.'
         :'Maximum distance from the start system; each loop returns to it.';
+
+    const hardWindow=priority.value==='critical'||priority.value==='high';
+    age.disabled=!hardWindow;
+    const ageHelp=$('[data-loop-age-help]');
+    if(ageHelp)ageHelp.textContent=hardWindow
+      ?'High/Critical routes use this as a hard cutoff because traffic can deplete markets quickly.'
+      :'Routine loops stay visible when older than the fresh window; stale candidates are marked NEEDS SCOUTING instead of being hidden.';
   }
 
   async function search(event){
@@ -165,7 +172,7 @@
 
   function resultCard(route,index){
     const article=document.createElement('article');
-    article.className='trade-loop-card';
+    article.className='trade-loop-card'+(route.needsScouting?' needs-scouting':'');
     const legHtml=(route.legs||[]).map((leg,legIndex)=>`
       <div class="trade-loop-leg">
         <div class="trade-loop-stop"><span>Leg ${legIndex+1} · Load</span><strong>${safe(leg.sourceStation)}</strong><small>${safe(leg.sourceSystem)}</small>${leg.sourceFaction?`<small class="trade-loop-owner">${safe(leg.sourceFaction)}</small>`:''}</div>
@@ -175,10 +182,11 @@
       </div>`).join('');
     article.innerHTML=`
       <div class="trade-loop-card-head">
-        <div class="trade-loop-card-rank"><span>#${index+1}</span><strong>${route.legCount}-leg loop</strong></div>
+        <div class="trade-loop-card-rank"><span>#${index+1}</span><strong>${route.legCount}-leg loop</strong>${route.needsScouting?'<em class="trade-loop-scout-flag">NEEDS SCOUTING</em>':''}</div>
         <div class="trade-loop-profit"><strong>${fmt(route.loopProfit)} Cr</strong><small>estimated profit / completed loop · ${fmt(route.equivalentProfitPerTon)} Cr per cargo-ton equivalent</small></div>
       </div>
       <div class="trade-loop-legs">${legHtml}</div>
+      ${route.needsScouting?`<div class="trade-loop-scout-note"><strong>Scout before committing cargo.</strong><span>${(route.scoutStops||[]).map(stop=>safe(stop.stationName)+' · '+ageLabel(stop.observedAt)).join(' · ')||'One or more markets are older than this profile’s fresh window.'}</span></div>`:''}
       <div class="trade-loop-card-foot">
         <div class="trade-loop-card-meta"><span>${fmtLy(route.totalDistanceLy)} ly loop</span><span>${fmt(route.cargoCapacity)} t capacity</span><span>${ageLabel(route.observedAt)}</span></div>
         <button class="btn btn-primary btn-compact" type="button" data-post-loop>Post Managed Route</button>
@@ -272,5 +280,6 @@
   form.addEventListener('submit',search);
   scope.addEventListener('change',updateMode);
   legs.addEventListener('change',updateMode);
+  priority.addEventListener('change',updateMode);
   window.MongrelTradeLoops={activate};
 })();
