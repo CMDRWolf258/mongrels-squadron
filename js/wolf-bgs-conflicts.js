@@ -155,7 +155,8 @@
     if(host)host.textContent=timelineLabel(card);
     if(detail)detail.textContent=timelineDetail(card);
     if(input){
-      input.value=timeline.manualDay!==null?String(timeline.manualDay):'';
+      const pendingDay=num(card.dataset.conflictPendingDay);
+      input.value=pendingDay!==null?String(pendingDay):(timeline.manualDay!==null?String(timeline.manualDay):'');
       input.disabled=timeline.phase==='none';
     }
     const setButton=card.querySelector('[data-save-conflict-day]');
@@ -456,6 +457,7 @@
     if(button)button.disabled=true;
     try{
       const data=await requestControl('set-conflict-day',{system:systemName(card),day});
+      delete card.dataset.conflictPendingDay;
       const system=(data.systems||[]).find(row=>norm(row.name)===norm(systemName(card)));
       if(system)applyTimeline(card,system);
       refreshDetection(card);
@@ -472,6 +474,7 @@
     if(button)button.disabled=true;
     try{
       const data=await requestControl('clear-conflict-day',{system:systemName(card)});
+      delete card.dataset.conflictPendingDay;
       const system=(data.systems||[]).find(row=>norm(row.name)===norm(systemName(card)));
       if(system)applyTimeline(card,system);
       refreshDetection(card);
@@ -695,6 +698,12 @@
       if(event.target.closest('[data-reset-conflicts]'))reset(card);
     });
     card.addEventListener('change',event=>{
+      if(event.target.matches('[data-conflict-day-input]')){
+        const day=num(event.target.value);
+        if(day===null) delete card.dataset.conflictPendingDay;
+        else card.dataset.conflictPendingDay=String(day);
+        return;
+      }
       if(event.target.matches('[data-conflict]')){
         const row=event.target.closest('[data-conflict-pair-row]'); if(row)delete row.dataset.autoPair;
         setTimeout(()=>refreshDetection(card),0); return;
