@@ -350,6 +350,7 @@
         <label><span>Faction B</span><select data-conflict="factionB">${optionList(names,pair.factionB)}</select></label>
         <label><span>Objective</span><select data-conflict="objective"><option value="monitor" ${!pair.objective||pair.objective==='monitor'?'selected':''}>Monitor / no winner</option><option value="win-a" ${pair.objective==='win-a'&&!pair.blitz?'selected':''}>Win for faction A</option><option value="win-b" ${pair.objective==='win-b'&&!pair.blitz?'selected':''}>Win for faction B</option><option value="blitz-a" ${pair.objective==='win-a'&&pair.blitz?'selected':''}>BLITZ — win for faction A</option><option value="blitz-b" ${pair.objective==='win-b'&&pair.blitz?'selected':''}>BLITZ — win for faction B</option></select></label>
         <div class="wolf-conflict-type" data-conflict-type>—</div>
+        <div class="wolf-conflict-pair-timeline" data-conflict-pair-timeline></div>
       </div>`;
     }
     return html;
@@ -362,8 +363,7 @@
       <p class="wolf-section-intro">Active War, Civil War, and Election participants are locked out of ordinary influence/counterweight work. Pending conflicts are paired early so strategy can be prepared before activation. Two-faction groups pair automatically; a participant marked <b>Support / raise</b> is selected as the intended winner unless a manual winner is already set. For multiple same-type conflicts, influence within ±${INFLUENCE_PAIR_TOLERANCE} percentage points is used only when it produces one unique pairing; otherwise Wolf must confirm the pairs here.</p>
       <div class="wolf-conflict-detection" data-conflict-detection></div>
       <div class="wolf-conflict-timeline-panel">
-        <div class="wolf-conflict-timeline-readout"><span>CONFLICT TIMELINE</span><strong data-conflict-timeline-readout>${esc(timelineLabel(card))}</strong><small data-conflict-timeline-detail>${esc(timelineDetail(card))}</small></div>
-        ${isLab(card)?'<div class="wolf-conflict-day-meta">Live-system conflict-day tracking is disabled in Mandalore.</div>':`<div class="wolf-conflict-day-controls"><label><span>Manual current day</span><select data-conflict-day-input><option value="">— unknown / automation —</option>${[1,2,3,4,5,6,7].map(day=>`<option value="${day}" ${num(card.dataset.conflictManualDay)===day?'selected':''}>Day ${day}</option>`).join('')}</select></label><button type="button" class="btn btn-primary btn-compact" data-save-conflict-day>SET DAY</button><button type="button" class="btn btn-secondary btn-compact" data-clear-conflict-day>USE AUTOMATION</button></div><small class="wolf-conflict-day-meta" data-conflict-day-meta></small>`}
+        <div class="wolf-conflict-timeline-readout"><span>CONFLICT TIMELINES</span><strong data-conflict-timeline-readout>Checking conflict pairs…</strong><small data-conflict-timeline-detail>Conflict days are tracked per pair when more than one conflict is active.</small></div>
       </div>
       <div class="wolf-conflict-pairs">${pairRowsMarkup(card)}</div>
       <div class="wolf-rules-callout subtle"><strong>Adaptive conflict doctrine</strong><span>War/Civil War: Routine 3 · Contested 6 · Heavy 15 · Blitz 25 CZ points. Election: Routine 6 · Contested 15 · Heavy 40 · Blitz 60 INF. Opponent wins raise pressure; two observed opponent-winless days lower it unless Heavy is locked.</span></div>
@@ -504,8 +504,9 @@
     if(result.unresolvedPending.length)warnings.push(`Unpaired pending participants: ${result.unresolvedPending.join(', ')}. The coming conflict cannot be pre-configured automatically yet.`);
     warnings.push(...result.invalid,...result.manualNotes);
     if(result.auto.ambiguous.length)warnings.push(...result.auto.ambiguous.map(group=>`${group.names.length} factions show ${typeLabel(group.type)}; ${group.reason}. Manual confirmation is required.`));
-    host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Conflict day</span><strong class="wolf-conflict-day-detail">${esc(timelineLabel(card))}</strong></div><div><span>Conflict score</span><strong class="wolf-conflict-score-detail">${esc(scoreText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
-    refreshTimelinePanel(card);
+    const timelineSummary=conflictTimelineSummary(card,result);
+    host.innerHTML=`<div><span>Active participants</span><strong>${esc(activeText)}</strong></div><div><span>Pending conflict states</span><strong>${esc(pendingText)}</strong></div><div><span>Conflict timelines</span><strong class="wolf-conflict-day-detail">${esc(timelineSummary.label)}</strong></div><div><span>Conflict score</span><strong class="wolf-conflict-score-detail">${esc(scoreText)}</strong></div><div><span>Resolved pairs</span><strong>${result.resolved.length}</strong></div>${warnings.length?`<div class="wolf-conflict-alert"><span>Pairing attention</span><strong>${warnings.map(esc).join(' ')}</strong></div>`:''}`;
+    refreshTimelinePanel(card,result);
     card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
       const a=row.querySelector('[data-conflict="factionA"]')?.value||'', b=row.querySelector('[data-conflict="factionB"]')?.value||'', typeHost=row.querySelector('[data-conflict-type]');
       const aa=result.active.find(item=>norm(item.name)===norm(a)), bb=result.active.find(item=>norm(item.name)===norm(b)), gap=influenceGap(aa,bb);
@@ -516,48 +517,65 @@
       const pairGap=influenceGap(one,two);
       if(typeHost)typeHost.textContent=one&&two?`${typeLabel(one.type)}${phase==='pending'?' · PENDING':''}${pairGap===null?'':` · Δ${pairGap.toFixed(1)}%`}`:(a&&b?'Mismatch / inactive':'—');
     });
+    refreshPairTimelines(card,result);
     refreshPressureLabels(card,result);
     syncPressure(card,result);
     processPreview(card);
   }
 
-  async function saveConflictDay(card) {
-    if(isLab(card))return;
-    const input=card.querySelector('[data-conflict-day-input]');
-    const message=card.querySelector('[data-conflict-day-meta]');
+  async function saveConflictDay(card,row) {
+    if(isLab(card)||!row)return;
+    const input=row.querySelector('[data-conflict-day-input]');
+    const message=row.querySelector('[data-conflict-day-meta]');
     const day=num(input?.value);
+    const factionA=row.querySelector('[data-conflict="factionA"]')?.value||'';
+    const factionB=row.querySelector('[data-conflict="factionB"]')?.value||'';
     if(day===null||day<1||day>7){
       if(message)message.textContent='Choose Day 1–7 before setting a manual conflict day.';
       return;
     }
-    const button=card.querySelector('[data-save-conflict-day]');
+    if(!factionA||!factionB||norm(factionA)===norm(factionB)){
+      if(message)message.textContent='Choose a valid conflict pair before setting its day.';
+      return;
+    }
+    const button=row.querySelector('[data-save-conflict-day]');
     if(button)button.disabled=true;
     try{
-      const data=await requestControl('set-conflict-day',{system:systemName(card),day});
-      delete card.dataset.conflictPendingDay;
-      const system=(data.systems||[]).find(row=>norm(row.name)===norm(systemName(card)));
+      const data=await requestControl('set-conflict-day',{system:systemName(card),factionA,factionB,day});
+      delete row.dataset.conflictPendingDay;
+      const system=(data.systems||[]).find(item=>norm(item.name)===norm(systemName(card)));
       if(system)applyTimeline(card,system);
       refreshDetection(card);
     }catch(error){
       console.error(error);
-      if(message)message.textContent='Could not save the manual conflict day.';
+      if(message)message.textContent='Could not save this conflict pair day.';
     }finally{if(button)button.disabled=false;}
   }
 
-  async function clearConflictDay(card) {
-    if(isLab(card))return;
-    const button=card.querySelector('[data-clear-conflict-day]');
-    const message=card.querySelector('[data-conflict-day-meta]');
+  async function clearConflictDay(card,row) {
+    if(isLab(card)||!row)return;
+    const button=row.querySelector('[data-clear-conflict-day]');
+    const message=row.querySelector('[data-conflict-day-meta]');
+    const factionA=row.querySelector('[data-conflict="factionA"]')?.value||'';
+    const factionB=row.querySelector('[data-conflict="factionB"]')?.value||'';
+    if(!factionA||!factionB||norm(factionA)===norm(factionB))return;
     if(button)button.disabled=true;
     try{
-      const data=await requestControl('clear-conflict-day',{system:systemName(card)});
-      delete card.dataset.conflictPendingDay;
-      const system=(data.systems||[]).find(row=>norm(row.name)===norm(systemName(card)));
+      const result=resolve(card);
+      const pair=(result.resolved||[]).find(item=>conflictPairKey(item.factionA,item.factionB)===conflictPairKey(factionA,factionB))
+        || {factionA,factionB,phase:'active'};
+      const timeline=pairTimelineState(card,pair,result);
+      const body=timeline.legacyManual
+        ? {system:systemName(card)}
+        : {system:systemName(card),factionA,factionB};
+      const data=await requestControl('clear-conflict-day',body);
+      delete row.dataset.conflictPendingDay;
+      const system=(data.systems||[]).find(item=>norm(item.name)===norm(systemName(card)));
       if(system)applyTimeline(card,system);
       refreshDetection(card);
     }catch(error){
       console.error(error);
-      if(message)message.textContent='Could not return conflict-day tracking to automation.';
+      if(message)message.textContent='Could not return this conflict pair to automation.';
     }finally{if(button)button.disabled=false;}
   }
 
@@ -769,16 +787,21 @@
   function wire(card){
     if(card.dataset.conflictWired==='true')return;card.dataset.conflictWired='true';
     card.addEventListener('click',event=>{
-      if(event.target.closest('[data-save-conflict-day]')){saveConflictDay(card);return;}
-      if(event.target.closest('[data-clear-conflict-day]')){clearConflictDay(card);return;}
+      const saveDay=event.target.closest('[data-save-conflict-day]');
+      if(saveDay){saveConflictDay(card,saveDay.closest('[data-conflict-pair-row]'));return;}
+      const clearDay=event.target.closest('[data-clear-conflict-day]');
+      if(clearDay){clearConflictDay(card,clearDay.closest('[data-conflict-pair-row]'));return;}
       if(event.target.closest('[data-save-conflicts]')){save(card);return;}
       if(event.target.closest('[data-reset-conflicts]'))reset(card);
     });
     card.addEventListener('change',event=>{
       if(event.target.matches('[data-conflict-day-input]')){
+        const row=event.target.closest('[data-conflict-pair-row]');
         const day=num(event.target.value);
-        if(day===null) delete card.dataset.conflictPendingDay;
-        else card.dataset.conflictPendingDay=String(day);
+        if(row){
+          if(day===null) delete row.dataset.conflictPendingDay;
+          else row.dataset.conflictPendingDay=String(day);
+        }
         return;
       }
       if(event.target.matches('[data-conflict]')){
