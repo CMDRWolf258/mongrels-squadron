@@ -32,7 +32,7 @@
     if (/\/(activities|pvp|trading)\//.test(path)) return 'activities';
     if (/\/(operations|projects|carriers|escort)\//.test(path)) return 'command';
     if (/\/(guides|ships|assistant)\//.test(path)) return 'resources';
-    if (/\/(about|members|gallery|announcements)\//.test(path)) return 'community';
+    if (/\/(about|members|gallery|announcements|newsroom)\//.test(path)) return 'community';
     if (/\/(recruitment|apply)\//.test(path)) return 'join';
     return '';
   }
@@ -106,6 +106,7 @@
         { label:'The Pack', links:[
           { href:root('about/'), title:'About the Mongrels', note:'History, identity and squad rules' },
           { href:root('announcements/'), title:'Announcements', note:'Official squad notices and leadership updates' },
+          { href:root('newsroom/'), title:'Newsroom', note:'The Morning Walk and squadron dispatches' },
           { href:root('members/'), title:'Squadron Roster', note:'Members, specialties and profiles' },
           { href:root('gallery/'), title:'Gallery', note:'Ships, operations and discoveries' },
         ]},

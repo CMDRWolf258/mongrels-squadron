@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=66" sizes="32x32" type="image/png">
+  <title>Newsroom | The Morning Walk | The Mongrels</title>
+  <meta name="description" content="The Morning Walk — squadron news, field reports, dispatches, and lore from the Regiment of Imperial Mongrels.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/newsroom.css?v=1">
+</head>
+<body class="visual-page page-newsroom">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
+
+<main>
+  <section class="page-hero newsroom-hero hero-flare">
+    <div class="container newsroom-hero-grid">
+      <div>
+        <p class="eyebrow">Community Newsroom</p>
+        <h1>Newsroom</h1>
+        <p>Reports, dispatches, and stories from around the Regiment. The external galaxy feeds will join us later; for now, this desk belongs to the Mongrels.</p>
+      </div>
+      <aside class="newsroom-masthead" aria-label="The Morning Walk masthead">
+        <span>Est. 3302-ish</span>
+        <strong>The Morning Walk</strong>
+        <small>Dispatches from the Regiment of Imperial Mongrels</small>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section newsroom-publication">
+    <div class="container">
+      <div class="newsroom-toolbar">
+        <div>
+          <p class="eyebrow">The Morning Walk</p>
+          <h2>From Around the Pack</h2>
+          <p>Squadron developments, field reports, colonial dispatches, command briefings, and the occasional story that grows in the telling.</p>
+        </div>
+        <button class="btn btn-primary" type="button" data-newsroom-new hidden>Write a Story</button>
+      </div>
+
+      <div class="newsroom-filters" data-newsroom-filters aria-label="Newsroom categories"></div>
+
+      <div class="newsroom-story-view" data-newsroom-story-view hidden></div>
+
+      <div data-newsroom-index>
+        <div class="newsroom-lead" data-newsroom-lead></div>
+        <div class="newsroom-grid" data-newsroom-list></div>
+        <div class="newsroom-empty" data-newsroom-empty hidden>
+          <strong>The presses are quiet.</strong>
+          <span>The Morning Walk does not have a published story in this section yet.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section newsroom-desk" data-newsroom-desk hidden>
+    <div class="container">
+      <div class="newsroom-desk-head">
+        <div><p class="eyebrow">Site Admin</p><h2>Editorial Desk</h2><p>Drafts and retired stories live here. Nothing in Draft reaches the public Newsroom.</p></div>
+        <span data-newsroom-desk-count></span>
+      </div>
+      <div class="newsroom-desk-grid" data-newsroom-desk-list></div>
+    </div>
+  </section>
+
+  <section class="newsroom-editor-shell" data-newsroom-editor hidden aria-label="Morning Walk story editor">
+    <div class="newsroom-editor-backdrop" data-newsroom-close></div>
+    <form class="newsroom-editor" data-newsroom-form>
+      <div class="newsroom-editor-head">
+        <div><p class="eyebrow">The Morning Walk</p><h2 data-newsroom-editor-title>New Story</h2></div>
+        <button class="btn btn-secondary" type="button" data-newsroom-close>Close</button>
+      </div>
+
+      <input type="hidden" data-newsroom-id>
+      <div class="newsroom-editor-grid">
+        <label class="newsroom-editor-wide"><span>Headline</span><input type="text" maxlength="180" required data-newsroom-title placeholder="A headline worth sniffing out"></label>
+        <label><span>Desk</span><select data-newsroom-category></select></label>
+        <label><span>Byline</span><input type="text" maxlength="120" data-newsroom-byline placeholder="CMDR / correspondent name"></label>
+        <label class="newsroom-editor-wide"><span>Deck <small>Optional</small></span><textarea rows="3" maxlength="360" data-newsroom-deck placeholder="One or two sentences that set up the story."></textarea></label>
+        <label class="newsroom-editor-wide"><span>Story</span><textarea rows="16" maxlength="12000" required data-newsroom-body placeholder="Write the story here. Plain text only for the first version."></textarea><small>Plain text is intentional in v1. Paragraph breaks are preserved, but executable HTML is never accepted.</small></label>
+      </div>
+
+      <div class="newsroom-editor-actions">
+        <span data-newsroom-editor-status aria-live="polite"></span>
+        <div>
+          <button class="btn btn-secondary" type="button" data-newsroom-delete hidden>Delete Draft</button>
+          <button class="btn btn-secondary" type="button" data-newsroom-restore hidden>Restore to Draft</button>
+          <button class="btn btn-secondary" type="button" data-newsroom-archive hidden>Archive</button>
+          <button class="btn btn-secondary" type="submit" data-newsroom-save>Save Draft</button>
+          <button class="btn btn-primary" type="button" data-newsroom-publish>Publish</button>
+        </div>
+      </div>
+    </form>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=65"></script>
+<script src="../js/newsroom.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=63"></script>
+</body>
+</html>
