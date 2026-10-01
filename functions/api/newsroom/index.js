@@ -1,4 +1,10 @@
 import { json, readSession } from '../../../lib/auth.js';
+import {
+  deleteManagedNewsroomImage,
+  isManagedNewsroomImageKey,
+  newsroomImagePreviewUrl,
+  newsroomImagePublicUrl,
+} from '../../../lib/newsroom-images.js';
 
 const KV_KEY='newsroom-v1';
 const CATEGORIES=new Set(['squadron-news','field-report','command-briefing','colonial-dispatch','lore']);
@@ -13,7 +19,7 @@ export async function onRequestGet({request,env}){
   const items=document.items
     .filter(item=>canManage||item.status==='published')
     .sort(compareStories)
-    .map(item=>present(item,{canManage}));
+    .map(item=>present(item,{canManage,request}));
   return reply({
     ok:true,
     publication:{name:'The Morning Walk',tagline:'Dispatches from the Regiment of Imperial Mongrels'},
@@ -50,7 +56,7 @@ export async function onRequestPost({request,env}){
   document.items=document.items.slice(0,MAX_ITEMS);
   document.updatedAt=now;
   await writeDocument(env,document);
-  return reply({ok:true,item:present(item,{canManage:true})},201);
+  return reply({ok:true,item:present(item,{canManage:true,request})},201);
 }
 
 export async function onRequestPut({request,env}){
@@ -66,6 +72,7 @@ export async function onRequestPut({request,env}){
   if(index<0)return reply({ok:false,error:'story_not_found'},404);
 
   const existing=document.items[index];
+  const previousImageKey=existing.imageKey||'';
   const now=new Date().toISOString();
   const action=clean(body.value?.action,24).toLowerCase()||'save';
   if(!['save','publish','archive','restore'].includes(action))return reply({ok:false,error:'unsupported_action'},400);
@@ -96,7 +103,11 @@ export async function onRequestPut({request,env}){
   document.items[index]=next;
   document.updatedAt=now;
   await writeDocument(env,document);
-  return reply({ok:true,item:present(next,{canManage:true})});
+  if(previousImageKey&&previousImageKey!==next.imageKey){
+    try{await deleteManagedNewsroomImage(env,previousImageKey);}
+    catch(error){console.error('Could not clean up replaced Newsroom image',error);}
+  }
+  return reply({ok:true,item:present(next,{canManage:true,request})});
 }
 
 export async function onRequestDelete({request,env}){
@@ -110,9 +121,14 @@ export async function onRequestDelete({request,env}){
   const index=document.items.findIndex(item=>item.id===id);
   if(index<0)return reply({ok:false,error:'story_not_found'},404);
   if(document.items[index].status!=='draft')return reply({ok:false,error:'only_drafts_can_be_deleted'},409);
+  const imageKey=document.items[index].imageKey||'';
   document.items.splice(index,1);
   document.updatedAt=new Date().toISOString();
   await writeDocument(env,document);
+  if(imageKey){
+    try{await deleteManagedNewsroomImage(env,imageKey);}
+    catch(error){console.error('Could not clean up deleted Newsroom draft image',error);}
+  }
   return reply({ok:true,deletedId:id});
 }
 
@@ -148,6 +164,10 @@ function normalizeInput(value,fixed){
     body:clean(src.body ?? fixed.body,12000),
     category:normalizeCategory(src.category ?? fixed.category),
     byline:clean(src.byline ?? fixed.byline ?? fixed.authorName,120),
+    imageKey:normalizeImageKey(src.imageKey ?? fixed.imageKey),
+    imagePlacement:normalizeImagePlacement(src.imagePlacement ?? fixed.imagePlacement),
+    imageCaption:clean(src.imageCaption ?? fixed.imageCaption,300),
+    imageCredit:clean(src.imageCredit ?? fixed.imageCredit,120),
   };
 }
 
@@ -162,6 +182,10 @@ function normalizeStoredItem(value){
     body:clean(value.body,12000),
     category:normalizeCategory(value.category),
     byline:clean(value.byline||value.authorName,120),
+    imageKey:normalizeImageKey(value.imageKey),
+    imagePlacement:normalizeImagePlacement(value.imagePlacement),
+    imageCaption:clean(value.imageCaption,300),
+    imageCredit:clean(value.imageCredit,120),
     status:STATUSES.has(clean(value.status,24))?clean(value.status,24):'draft',
     authorId:clean(value.authorId,100),
     authorName:clean(value.authorName,120),
@@ -173,16 +197,21 @@ function normalizeStoredItem(value){
   };
 }
 
-function present(item,{canManage=false}={}){
+function present(item,{canManage=false,request=null}={}){
   const base={
     id:item.id,title:item.title,deck:item.deck,body:item.body,category:item.category,
     categoryLabel:categoryLabel(item.category),byline:item.byline,status:item.status,
     publishedAt:item.publishedAt,createdAt:item.createdAt,updatedAt:item.updatedAt,
+    imagePlacement:item.imagePlacement,imageCaption:item.imageCaption,imageCredit:item.imageCredit,
+    imageUrl:item.imageKey&&request
+      ?(item.status==='published'?newsroomImagePublicUrl(request,item.imageKey):canManage?newsroomImagePreviewUrl(request,item.imageKey):'')
+      :'',
   };
   if(canManage){
     base.authorName=item.authorName;
     base.updatedBy=item.updatedBy;
     base.archivedAt=item.archivedAt;
+    base.imageKey=item.imageKey||'';
   }
   return base;
 }
@@ -193,6 +222,8 @@ function compareStories(a,b){
   return bt-at;
 }
 function normalizeCategory(value){const key=clean(value,40);return CATEGORIES.has(key)?key:'squadron-news'}
+function normalizeImageKey(value){const key=clean(value,180);return isManagedNewsroomImageKey(key)?key:''}
+function normalizeImagePlacement(value){const key=clean(value,32);return['upper-left','upper-right','lower-left','lower-right'].includes(key)?key:'upper-right'}
 function categoryLabel(value){return({
   'squadron-news':'Squadron News',
   'field-report':'Field Report',

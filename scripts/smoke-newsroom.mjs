@@ -14,6 +14,12 @@ for(const pattern of [
 ]) assert.match(api,pattern);
 assert.match(api,/filter\(item=>canManage\|\|item\.status==='published'\)/,'Public Newsroom must never return drafts or archived stories');
 assert.match(api,/12000/,'Story body must have a server-side length cap');
+for(const pattern of [/imageKey/,/imagePlacement/,/imageCaption/,/imageCredit/,/newsroomImagePublicUrl/,/newsroomImagePreviewUrl/]) assert.match(api,pattern);
+const imageApi=readFileSync('functions/api/newsroom/image.js','utf8');
+const imageLib=readFileSync('lib/newsroom-images.js','utf8');
+const imageMedia=readFileSync('functions/media/newsroom/[file].js','utf8');
+for(const pattern of [/8\*1024\*1024/,/image\/png/,/image\/jpeg/,/image\/webp/,/mongrels-newsroom-image/,/site_admin_required/]) assert.match(imageApi+imageLib,pattern);
+assert.match(imageMedia,/status\|\|''\)==='published'/,'Only published stories may expose a public Newsroom image');
 
 for(const pattern of [/Newsroom/,/The Morning Walk/,/data-newsroom-list/,/data-newsroom-editor/,/newsroom\.css/,/newsroom\.js/]) assert.match(page,pattern);
 for(const pattern of [/textContent/,/safe\(/,/mongrels-newsroom/,/\?story=/,/saveStory/,/publish/]) assert.match(client,pattern);
