@@ -21,10 +21,10 @@ const imageMedia=readFileSync('functions/media/newsroom/[file].js','utf8');
 for(const pattern of [/8\*1024\*1024/,/image\/png/,/image\/jpeg/,/image\/webp/,/mongrels-newsroom-image/,/site_admin_required/]) assert.match(imageApi+imageLib,pattern);
 assert.match(imageMedia,/status\|\|''\)==='published'/,'Only published stories may expose a public Newsroom image');
 
-for(const pattern of [/Newsroom/,/The Morning Walk/,/data-newsroom-list/,/data-newsroom-editor/,/newsroom\.css/,/newsroom\.js/]) assert.match(page,pattern);
-for(const pattern of [/textContent/,/safe\(/,/mongrels-newsroom/,/\?story=/,/saveStory/,/publish/]) assert.match(client,pattern);
+for(const pattern of [/Newsroom/,/The Morning Walk/,/data-newsroom-list/,/data-newsroom-editor/,/newsroom\.css/,/newsroom\.js/,/data-newsroom-image-placement/,/Upper Left/,/Lower Right/,/data-newsroom-preview/]) assert.match(page,pattern);
+for(const pattern of [/textContent/,/safe\(/,/mongrels-newsroom/,/\?story=/,/saveStory/,/publish/,/articleMarkup/,/articleBodyMarkup/,/uploadImage/,/mongrels-newsroom-image/,/previewStory/]) assert.match(client,pattern);
 for(const pattern of [/Save Draft/,/Publish/,/Plain text is intentional in v1/]) assert.match(page,pattern);
-for(const pattern of [/newsroom-masthead/,/newsroom-lead/,/newsroom-story-card/,/newsroom-editor/]) assert.match(css,pattern);
+for(const pattern of [/newsroom-masthead/,/newsroom-lead/,/newsroom-story-card/,/newsroom-editor/,/newsroom-press-photo/,/grayscale\(1\)/,/float:left/,/float:right/,/@media\(max-width:720px\)/,/newsroom-preview-shell/]) assert.match(css,pattern);
 assert.match(site,/root\('newsroom\/'\)/,'Community navigation must expose the Newsroom');
 assert.match(site,/about\|members\|gallery\|announcements\|newsroom/,'Newsroom must resolve to the Community navigation group');
 

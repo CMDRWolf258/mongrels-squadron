@@ -8,7 +8,7 @@
   <title>Newsroom | The Morning Walk | The Mongrels</title>
   <meta name="description" content="The Morning Walk — squadron news, field reports, dispatches, and lore from the Regiment of Imperial Mongrels.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/newsroom.css?v=1">
+  <link rel="stylesheet" href="../css/newsroom.css?v=2">
 </head>
 <body class="visual-page page-newsroom">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -80,6 +80,35 @@
         <label><span>Byline</span><input type="text" maxlength="120" data-newsroom-byline placeholder="CMDR / correspondent name"></label>
         <label class="newsroom-editor-wide"><span>Deck <small>Optional</small></span><textarea rows="3" maxlength="360" data-newsroom-deck placeholder="One or two sentences that set up the story."></textarea></label>
         <label class="newsroom-editor-wide"><span>Story</span><textarea rows="16" maxlength="12000" required data-newsroom-body placeholder="Write the story here. Plain text only for the first version."></textarea><small>Plain text is intentional in v1. Paragraph breaks are preserved, but executable HTML is never accepted.</small></label>
+        <div class="newsroom-editor-wide newsroom-image-editor">
+          <div class="newsroom-image-editor-head">
+            <span>Press Photo <small>Optional · one image</small></span>
+            <small>PNG, JPG, or WebP · up to 8 MB · the original is stored, while The Morning Walk print treatment is applied in the article.</small>
+          </div>
+          <input type="hidden" data-newsroom-image-key>
+          <input type="file" accept="image/png,image/jpeg,image/webp" data-newsroom-image-file hidden>
+          <div class="newsroom-image-drop" data-newsroom-image-drop tabindex="0" role="button" aria-label="Choose Morning Walk story image">
+            <div data-newsroom-image-empty><strong>Drop a press photo here</strong><span>or click to browse</span></div>
+            <div class="newsroom-image-thumb" data-newsroom-image-thumb hidden>
+              <img alt="Morning Walk image preview" data-newsroom-image-thumb-img>
+            </div>
+          </div>
+          <div class="newsroom-image-actions">
+            <button class="btn btn-secondary btn-compact" type="button" data-newsroom-image-choose>Choose Image</button>
+            <button class="btn btn-secondary btn-compact" type="button" data-newsroom-image-remove hidden>Remove Image</button>
+            <span data-newsroom-image-status aria-live="polite"></span>
+          </div>
+          <div class="newsroom-image-meta" data-newsroom-image-meta hidden>
+            <label><span>Placement</span><select data-newsroom-image-placement>
+              <option value="upper-left">Upper Left</option>
+              <option value="upper-right">Upper Right</option>
+              <option value="lower-left">Lower Left</option>
+              <option value="lower-right">Lower Right</option>
+            </select></label>
+            <label><span>Photo Credit <small>Optional</small></span><input type="text" maxlength="120" data-newsroom-image-credit placeholder="CMDR / photographer"></label>
+            <label class="newsroom-image-caption"><span>Caption <small>Optional</small></span><textarea rows="2" maxlength="300" data-newsroom-image-caption placeholder="What is happening in the photograph?"></textarea></label>
+          </div>
+        </div>
       </div>
 
       <div class="newsroom-editor-actions">
@@ -89,16 +118,28 @@
           <button class="btn btn-secondary" type="button" data-newsroom-restore hidden>Restore to Draft</button>
           <button class="btn btn-secondary" type="button" data-newsroom-archive hidden>Archive</button>
           <button class="btn btn-secondary" type="submit" data-newsroom-save>Save Draft</button>
+          <button class="btn btn-secondary" type="button" data-newsroom-preview>Preview</button>
           <button class="btn btn-primary" type="button" data-newsroom-publish>Publish</button>
         </div>
       </div>
     </form>
   </section>
+
+  <section class="newsroom-preview-shell" data-newsroom-preview-shell hidden aria-label="Article preview">
+    <div class="newsroom-preview-backdrop" data-newsroom-preview-close></div>
+    <div class="newsroom-preview-panel">
+      <div class="newsroom-preview-head">
+        <div><p class="eyebrow">Unpublished Preview</p><strong>This is the same article layout readers will see.</strong></div>
+        <button class="btn btn-secondary" type="button" data-newsroom-preview-close>Back to Editor</button>
+      </div>
+      <div data-newsroom-preview-content></div>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=65"></script>
-<script src="../js/newsroom.js?v=1"></script>
+<script src="../js/newsroom.js?v=2"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body>
 </html>
