@@ -21,6 +21,7 @@
   const resultsSummary=$('[data-loop-results-summary]');
   const warning=$('[data-loop-warning]');
   const STORAGE_KEY='mongrels-trade-loop-search-v1';
+  const FRESHNESS_POLICY_VERSION=2;
   let viewer=null;
   let currentSettings=null;
   let currentResults=[];
@@ -57,7 +58,10 @@
     cargo.value=Number(saved.cargoCapacity)>0?Number(saved.cargoCapacity).toLocaleString('en-US'):'784';
     pad.value=['0','1','2','3'].includes(String(saved.minPad))?String(saved.minPad):'3';
     carriers.value=['include','exclude','only'].includes(saved.carrierMode)?saved.carrierMode:'exclude';
-    priority.value=['critical','high','standard','low'].includes(saved.priority)?saved.priority:'standard';
+    const savedPriority=['critical','high','standard','low'].includes(saved.priority)?saved.priority:'';
+    priority.value=saved.freshnessPolicyVersion===FRESHNESS_POLICY_VERSION
+      ?(savedPriority||'high')
+      :(savedPriority&&savedPriority!=='standard'?savedPriority:'high');
     age.value=Number(saved.maxAgeMinutes)>0?String(saved.maxAgeMinutes):'';
     threshold.value=Number(saved.thresholdDropPercent)>=5?String(saved.thresholdDropPercent):'25';
     mongrelOnly.checked=Boolean(saved.mongrelOnly);
@@ -84,6 +88,7 @@
   }
 
   function remember(value){
+    value.freshnessPolicyVersion=FRESHNESS_POLICY_VERSION;
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(value));}catch{}
   }
 

@@ -4,11 +4,15 @@ import { defaultTradeControl } from '../lib/trade-intelligence.js';
 import {
   buildSpanshLoopSnapshotBody,
   evaluateSpecificLoop,
+  mergeFreshestMarketStations,
   normalizeLoopSearch,
   optimizeTradeLoops,
 } from '../lib/trade-loop-finder.js';
 
 const control=defaultTradeControl();
+const defaultLoopQuery=normalizeLoopSearch({startSystem:'Home'},control);
+assert.equal(defaultLoopQuery.priority,'high','live loop searches should default to the High freshness profile');
+assert.equal(defaultLoopQuery.maxAgeMinutes,120,'High-priority loop searches should default to the 2-hour fresh window');
 
 const twoQuery=normalizeLoopSearch({
   startSystem:'Home',
@@ -151,6 +155,32 @@ const sameBody=buildSpanshLoopSnapshotBody(sameQuery,new Date('2026-09-25T12:00:
 assert.equal(sameBody.filters.system_name.value,'Home');
 assert.equal(sameBody.filters.distance,undefined);
 
+const now=Date.now();
+const staleExternal={
+  ...A,
+  observedAt:new Date(now-90*60000).toISOString(),
+  market:[row('Gold',{buy:100,supply:50}),row('Silver',{sell:200,demand:50})],
+};
+const freshScout={
+  ...A,
+  stationControllingFaction:'',
+  maxLandingPadSize:0,
+  distanceLy:null,
+  distanceToArrivalLs:null,
+  observedAt:new Date(now-5*60000).toISOString(),
+  source:'Mongrel Scout',
+  directScout:true,
+  market:[row('Gold',{buy:80,supply:900}),row('Silver',{sell:220,demand:900})],
+};
+const freshest=mergeFreshestMarketStations([staleExternal,B],[freshScout],twoQuery);
+assert.equal(freshest.scoutOverlayCount,1,'newer direct Scout market should replace older external data for the same MarketID');
+const freshA=freshest.stations.find(item=>item.marketId==='A');
+assert.equal(freshA.observedAt,freshScout.observedAt);
+assert.equal(freshA.market.find(item=>item.commodity==='Gold').buyPrice,80);
+assert.equal(freshA.stationControllingFaction,'Regiment of Imperial Mongrels','fresh market data should preserve useful static metadata from the external station row');
+assert.equal(freshA.maxLandingPadSize,3);
+assert.equal(freshA.distanceLy,0);
+
 const html=readFileSync(new URL('../trading/index.html',import.meta.url),'utf8');
 assert.match(html,/data-trade-loops/);
 assert.match(html,/Trade Loop Finder/);
@@ -160,7 +190,7 @@ assert.match(html,/data-loop-threshold/);
 assert.match(html,/data-loop-mongrel-only/);
 assert.match(html,/Mongrel Faction Routes/);
 assert.match(html,/trade-loops\.css\?v=2/);
-assert.match(html,/trade-loops\.js\?v=2/);
+assert.match(html,/trade-loops\.js\?v=3/);
 
 const client=readFileSync(new URL('../js/trade-loops.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-loops\/search/);

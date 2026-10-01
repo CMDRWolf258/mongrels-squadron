@@ -247,7 +247,7 @@ assert.match(html,/data-cg-form/);
 assert.match(html,/trade-cg\.css\?v=1/);
 assert.match(html,/trade-cg\.js\?v=1/);
 assert.match(html,/trading\.js\?v=87/);
-assert.match(html,/data-trading-build="93"/);
+assert.match(html,/data-trading-build="94"/);
 
 const client=readFileSync(new URL('../js/trade-cg.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-cg\/search/);

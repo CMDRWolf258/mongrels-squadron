@@ -93,7 +93,7 @@ const normalized=normalizeMarketSearch({
 assert.equal(normalized.commodity,'Soontil Relics');
 assert.equal(normalized.commodityKey,'soontillrelics');
 assert.equal(normalized.radiusLy,500);
-assert.equal(normalized.maxAgeMinutes,90,'blank max age should inherit Critical aging cutoff');
+assert.equal(normalized.maxAgeMinutes,30,'blank max age should inherit Critical fresh cutoff');
 
 const fixedNow=new Date('2026-09-25T17:30:00.000Z');
 const body=buildSpanshSearchBody(normalized,fixedNow);
@@ -529,7 +529,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="93"/);
+assert.match(html,/data-trading-build="94"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
