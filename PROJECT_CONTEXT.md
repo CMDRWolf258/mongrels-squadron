@@ -398,7 +398,7 @@ The Assistant is **read-only**. It may explain current member state but must nev
 
 ### Navigation help
 
-`lib/assistant-context.js` owns a query-selective navigation map. Current destinations include Carrier Coordination/Registry, Projects, Daily Orders/Mission Control, Member Portal/My Pathway/Profile, PvP Bounty Board, Trader's Outpost, Roster, Rules, Ship Catalogue, Engineering/Mining/BGS guides, Reference/Field Manual/Glossary, Start Here, and Recruitment.
+`lib/assistant-context.js` owns a query-selective navigation map. Current destinations include Carrier Coordination/Registry, Projects, Daily Orders/Mission Control, Member Portal/My Pathway/Profile, PvP Bounty Board, Trader's Outpost, Roster, Rules, Ship Catalogue, Engineering/Mining/BGS/PvP guides, Reference/Field Manual/Glossary, Start Here, and Recruitment.
 
 Use trusted server `{label,href}` values for Related buttons; the model should not invent arbitrary links.
 
@@ -710,6 +710,7 @@ Important guardrails:
 Primary files:
 - `lib/pathway-pvp.js`
 - `js/pathway-pvp.js`
+- PvP learning guide: `guides/pvp/index.html`
 - shared provider registration in `functions/api/pathway/assignments.js`
 - mount in `pathway/index.html`
 - focused regression suite: `scripts/smoke-pvp.mjs`
@@ -727,6 +728,17 @@ Core doctrine:
 - beginners use a rebuy-safe learning platform rather than being forced into one meta hull;
 - controlled squadmate drills teach pips, movement, legitimate disengagement, and debrief before random hostile encounters become the main teacher;
 - later progression develops range control, precision application, matchup diagnosis, focus fire, concise comms, leadership, and mentoring.
+
+Field Manual structure:
+- foundations and rebuy-safe learning platform;
+- Open-play awareness and interdiction survival;
+- active SYS / ENG / WEP pip management;
+- movement, boost purpose, lateral/vertical thrust, and short FA-Off use;
+- range control and weapon application;
+- shields, cells, module protection, heat, and Silent Running;
+- legitimate low-wake / high-wake disengagement with an explicit no-combat-logging standard;
+- build diagnosis, controlled duels, wing focus fire/comms, matchup adaptation, leadership, and a quick troubleshooting reference;
+- links back to My Pathway, the PvP hub/Bounty Board, Engineering Guide, Ship Catalogue, and Rules & ROE.
 
 ### Operations
 
