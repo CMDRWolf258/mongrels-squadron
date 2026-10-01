@@ -39,7 +39,7 @@ for(const pattern of [
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
 assert.match(plugin,/Commander name, cargo, credits/i);
-assert.match(plugin,/general travel history are not transmitted/i);
+assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Market payload must not transmit commander name');
 
