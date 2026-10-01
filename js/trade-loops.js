@@ -21,7 +21,7 @@
   const resultsSummary=$('[data-loop-results-summary]');
   const warning=$('[data-loop-warning]');
   const STORAGE_KEY='mongrels-trade-loop-search-v1';
-  const FRESHNESS_POLICY_VERSION=3;
+  const FRESHNESS_POLICY_VERSION=4;
   let viewer=null;
   let currentSettings=null;
   let currentResults=[];
@@ -64,7 +64,10 @@
       :saved.freshnessPolicyVersion===2&&savedPriority==='high'
         ?'standard'
         :(savedPriority||'standard');
-    age.value=Number(saved.maxAgeMinutes)>0?String(saved.maxAgeMinutes):'';
+    const savedAge=Number(saved.maxAgeMinutes)>0?Number(saved.maxAgeMinutes):0;
+    age.value=saved.freshnessPolicyVersion===FRESHNESS_POLICY_VERSION
+      ?(savedAge?String(savedAge):'')
+      :(savedAge>1440?'':(savedAge?String(savedAge):''));
     threshold.value=Number(saved.thresholdDropPercent)>=5?String(saved.thresholdDropPercent):'25';
     mongrelOnly.checked=Boolean(saved.mongrelOnly);
   }
