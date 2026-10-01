@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=9/,'Conflict client cache version should be v8');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=10/,'Conflict client cache version should be v10');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -80,6 +80,7 @@ for (const pattern of [
 assert.doesNotMatch(orderClient,/exobiology.*task/i,'Exobiology must not be generated as a BGS task');
 
 const conflictClient=readFileSync('js/wolf-bgs-conflicts.js','utf8');
+assert.match(conflictClient,/conflictPendingDay/,'Conflict day selector should preserve an unsaved selection during card refreshes');
 for(const pattern of [/CZ_TARGETS = \{ routine:3, contested:6, heavy:15, blitz:25 \}/,/ELECTION_TARGETS = \{ routine:6, contested:15, heavy:40, blitz:60 \}/,/workloadForPair/,/syncPressure/,/observe-conflict-scores/,/BLITZ — win for faction A/,/HEAVY LOCK/]) assert.match(conflictClient,pattern);
 assert.match(baseClient,/data-conflict-scores=/,'All conflict-pair scores must be exposed to adaptive pressure automation');
 const conflictApi=readFileSync('functions/api/operations/wolf-bgs-conflicts.js','utf8');
