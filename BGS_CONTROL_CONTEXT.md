@@ -312,7 +312,6 @@ Conflict-specific tasks are injected into the preview after the ordinary determi
 
 Future conflict work still needed:
 
-- conflict day/score tracking;
 - validated per-CMDR CZ workload targets and stretch thresholds;
 - explicit post-conflict asset-transfer handling;
 - pending-conflict pre-stage doctrine;
@@ -1535,18 +1534,22 @@ Conflict episode tracking:
 - the timeline explains whether it is before the Day-4 minimum resolution window or inside the Day 4–7 resolution window.
 
 Manual verification:
-- Conflict Configuration now contains a **Manual current day** selector for Day 1–7;
-- setting a day from an in-game faction-panel check creates a manual anchor and is treated as the authoritative current day;
-- that manual day then advances automatically on subsequent configured ticks;
-- **USE AUTOMATION** clears the manual anchor and returns to the observed Pending-derived timeline when one exists, otherwise Day returns to UNKNOWN;
-- conflict-day overrides are cleared when that conflict episode resolves or is replaced by a genuinely new conflict episode.
+- conflict day is tracked **per resolved faction pair**, not once for the whole system;
+- when only one active pair exists and its Pending → Active transition was observed, the existing inferred timeline is used automatically;
+- when multiple conflicts are active, BGS Control does not reuse one system-wide start time across every pair; each pair whose start cannot be established displays its own **Manual current day** selector for Day 1–7;
+- setting a day from the in-game faction panel creates a manual anchor only for that faction pair and is treated as authoritative for that pair;
+- that pair-specific manual day advances automatically on subsequent configured ticks;
+- a pair with an inferred day does not show an unnecessary manual selector;
+- **USE AUTOMATION** clears only that pair's manual anchor (legacy single-conflict anchors remain backwards-compatible) and returns to an inferred timeline when one can be established, otherwise that pair returns to DAY UNKNOWN;
+- the system-level Conflict Timelines panel becomes a summary such as **2 ACTIVE CONFLICTS**, while individual pair rows show their own day/source;
+- pair-day overrides are cleared when the system leaves conflict entirely or the tracked conflict episode is replaced.
 
 Score presentation:
 - conflict score remains actual source data only; no score is invented from the inferred day;
 - the Mongrel score is always the left-hand number;
 - the card header shows the score plus compact conflict-day and source-age context;
-- expanded system chips show Conflict Day and Conflict Score separately;
-- Conflict Configuration repeats the day, score, opponent, and source age;
+- expanded system chips summarize Conflict Day for a single active conflict or Conflict Timelines when multiple conflicts are active;
+- Conflict Configuration shows the timeline on each resolved pair alongside the pair's score/pressure context;
 - score age is calculated from the EliteHub conflict record's own `updatedAt` timestamp rather than from the website fetch time.
 
 
