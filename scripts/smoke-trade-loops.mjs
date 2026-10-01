@@ -190,7 +190,7 @@ assert.match(html,/data-loop-threshold/);
 assert.match(html,/data-loop-mongrel-only/);
 assert.match(html,/Mongrel Faction Routes/);
 assert.match(html,/trade-loops\.css\?v=2/);
-assert.match(html,/trade-loops\.js\?v=4/);
+assert.match(html,/trade-loops\.js\?v=5/);
 
 const client=readFileSync(new URL('../js/trade-loops.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-loops\/search/);
@@ -201,6 +201,8 @@ assert.match(client,/mongrelOnly/);
 assert.match(client,/sourceFaction/);
 assert.match(client,/destinationFaction/);
 assert.match(client,/mongrels:trade-route-posted/);
+assert.match(client,/FRESHNESS_POLICY_VERSION=4/);
+assert.match(client,/savedAge>1440\?'':/,'legacy loop searches broader than 24 hours should reset to the Standard fresh window once');
 
 const tradeApi=readFileSync(new URL('../functions/api/trades/index.js',import.meta.url),'utf8');
 assert.match(tradeApi,/normalizeRouteLegs/);
