@@ -281,9 +281,9 @@ assert.match(frontierSyncSource,/mergeFrontierBoardSnapshots/,'Frontier sync mus
 assert.match(frontierSyncSource,/Frontier CAPI Journal/,'Frontier direct BGS snapshots must retain source identity');
 
 const memberPage=readFileSync('member/index.html','utf8');
-for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/View Rewards Owed/,/rewards\/#outstanding-rewards/,/member-dashboard\.js\?v=90/])assert.match(memberPage,pattern);
+for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/View Rewards Owed/,/rewards\/#outstanding-rewards/,/member-dashboard\.js\?v=91/])assert.match(memberPage,pattern);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
-for(const pattern of [/Live Scout \(EDMC\)/,/Live Scout installation & refresh instructions/,/Recent verified activity/,/data-frontier-activity-count/,/Read README/,/Plugins → Open/,/MongrelScout FOLDER/,/jump out and back in/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
+for(const pattern of [/Live Scout \(EDMC\)/,/Live Scout installation & refresh instructions/,/Recent verified activity/,/data-frontier-activity-count/,/Read README/,/Plugins → Open/,/MongrelScout FOLDER/,/jump out and back in/,/Market updated:/,/Trader's Outpost/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
 const operationsPage=readFileSync('operations/index.html','utf8');
 assert.match(operationsPage,/Connect Elite & Scout/);
 assert.match(operationsPage,/\.\.\/member\/#mongrel-scout/);
