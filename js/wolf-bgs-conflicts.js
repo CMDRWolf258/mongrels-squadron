@@ -130,7 +130,7 @@
   function pairTimelineState(card,pair,result) {
     if(!pair?.factionA||!pair?.factionB)return{phase:'none',day:null,rawDay:null,source:'unknown',overdue:false};
     const manual=pairTimelines(card)[conflictPairKey(pair.factionA,pair.factionB)];
-    if(manual)return{...manual,phase:pair.phase||manual.phase||'active'};
+    if(manual&&pair.phase==='active')return{...manual,phase:'active'};
 
     const systemTimeline=timelineState(card);
     if(pair.phase==='pending'){
@@ -207,8 +207,8 @@
 
     const dayChip=card.querySelector('.wolf-conflict-day-chip');
     if(dayChip){
-      if(summary.label==='NO ACTIVE CONFLICT')dayChip.remove();
-      else dayChip.innerHTML=`${summary.multiple?'Conflict timelines':'Conflict day'} <b>${esc(summary.label)}</b>`;
+      dayChip.hidden=summary.label==='NO ACTIVE CONFLICT';
+      if(!dayChip.hidden)dayChip.innerHTML=`${summary.multiple?'Conflict timelines':'Conflict day'} <b>${esc(summary.label)}</b>`;
     }
   }
 
@@ -805,7 +805,11 @@
         return;
       }
       if(event.target.matches('[data-conflict]')){
-        const row=event.target.closest('[data-conflict-pair-row]'); if(row)delete row.dataset.autoPair;
+        const row=event.target.closest('[data-conflict-pair-row]');
+        if(row){
+          delete row.dataset.autoPair;
+          if(event.target.matches('[data-conflict="factionA"],[data-conflict="factionB"]'))delete row.dataset.conflictPendingDay;
+        }
         setTimeout(()=>refreshDetection(card),0); return;
       }
       if(event.target.matches('[data-faction="state"],[data-faction="pending"],[data-faction="name"],[data-faction="influence"]'))setTimeout(()=>refreshDetection(card),0);
