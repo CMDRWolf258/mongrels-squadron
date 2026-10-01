@@ -94,30 +94,61 @@
     };
   }
 
-  function timelineLabel(card) {
-    const timeline=timelineState(card);
-    if(timeline.phase==='pending'&&!timeline.day)return 'PENDING';
-    if(timeline.day!==null)return timeline.overdue?'DAY 7+':`DAY ${timeline.day}`;
-    if(timeline.phase==='active')return 'DAY UNKNOWN';
+  function timelineLabelFromState(timeline) {
+    if(timeline?.phase==='pending'&&!timeline.day)return 'PENDING';
+    if(timeline?.day!==null&&timeline?.day!==undefined)return timeline.overdue?'DAY 7+':`DAY ${timeline.day}`;
+    if(timeline?.phase==='active')return 'DAY UNKNOWN';
     return 'NO ACTIVE CONFLICT';
   }
 
-  function timelineDetail(card) {
-    const timeline=timelineState(card);
-    if(timeline.phase==='pending'&&!timeline.day){
+  function timelineDetailFromState(timeline) {
+    if(timeline?.phase==='pending'&&!timeline.day){
       return timeline.expectedActiveAt
         ? `Day 1 expected after the next configured tick · ${formatWhen(timeline.expectedActiveAt)}`
         : 'Pending conflict detected; Day 1 is expected on the next configured tick.';
     }
-    if(timeline.day!==null){
+    if(timeline?.day!==null&&timeline?.day!==undefined){
       const source=timeline.source==='manual'?'MANUAL VERIFIED':'INFERRED';
       if(timeline.overdue)return `${source} · beyond the 7-day maximum assumption — verify current state in game.`;
       if(timeline.day<4)return `${source} · 4-day minimum · earliest normal resolution is Day 4.`;
       return `${source} · inside the Day 4–7 resolution window.`;
     }
-    if(timeline.phase==='active')return 'Start point was not observed. Enter the current day from the in-game faction page to anchor the timeline.';
-    return 'No active system conflict timeline.';
+    if(timeline?.phase==='active')return 'Start point was not observed. Set the current day for this conflict pair from the in-game faction page.';
+    return 'No active conflict timeline.';
   }
+
+  function timelineLabel(card) { return timelineLabelFromState(timelineState(card)); }
+  function timelineDetail(card) { return timelineDetailFromState(timelineState(card)); }
+
+  function pairTimelines(card) {
+    try{
+      const parsed=JSON.parse(card.dataset.conflictPairTimelines||'{}');
+      return parsed&&typeof parsed==='object'?parsed:{};
+    }catch{return{};}
+  }
+
+  function pairTimelineState(card,pair,result) {
+    if(!pair?.factionA||!pair?.factionB)return{phase:'none',day:null,rawDay:null,source:'unknown',overdue:false};
+    const manual=pairTimelines(card)[conflictPairKey(pair.factionA,pair.factionB)];
+    if(manual)return{...manual,phase:pair.phase||manual.phase||'active'};
+
+    const systemTimeline=timelineState(card);
+    if(pair.phase==='pending'){
+      const pendingPairs=(result?.resolved||[]).filter(item=>item.phase==='pending');
+      if(pendingPairs.length===1&&systemTimeline.phase==='pending')return{...systemTimeline,source:systemTimeline.source||'unknown'};
+      return{phase:'pending',day:null,rawDay:null,source:'unknown',overdue:false,expectedActiveAt:''};
+    }
+    if(pair.phase!=='active')return{phase:'none',day:null,rawDay:null,source:'unknown',overdue:false};
+
+    const activePairs=(result?.resolved||[]).filter(item=>item.phase==='active');
+    if(activePairs.length===1&&systemTimeline.phase==='active'&&(systemTimeline.source==='inferred'||systemTimeline.source==='manual')){
+      return{...systemTimeline,legacyManual:systemTimeline.source==='manual'};
+    }
+    return{phase:'active',day:null,rawDay:null,source:'unknown',overdue:false,manualDay:null,manualSetAt:'',manualSetBy:''};
+  }
+
+  function pairTimelineLabel(card,pair,result){return timelineLabelFromState(pairTimelineState(card,pair,result));}
+  function pairTimelineDetail(card,pair,result){return timelineDetailFromState(pairTimelineState(card,pair,result));}
 
   function applyTimeline(card, system) {
     const timeline=system?.conflictTimeline||{};
@@ -132,42 +163,88 @@
     card.dataset.conflictManualDay=timeline.manualDay??'';
     card.dataset.conflictManualSetAt=timeline.manualSetAt||'';
     card.dataset.conflictManualSetBy=timeline.manualSetBy||'';
+    card.dataset.conflictPairTimelines=JSON.stringify(system?.conflictPairTimelines||{});
     if(score.updatedAt)card.dataset.conflictScoreUpdated=score.updatedAt;
+  }
+
+  function conflictTimelineSummary(card,result) {
+    const activePairs=(result?.resolved||[]).filter(pair=>pair.phase==='active');
+    const pendingPairs=(result?.resolved||[]).filter(pair=>pair.phase==='pending');
+    const activeCount=Math.max(activePairs.length,Math.floor((result?.active?.length||0)/2));
+    const pendingCount=Math.max(pendingPairs.length,Math.floor((result?.pending?.length||0)/2));
+
+    if(activeCount>1){
+      return{
+        label:`${activeCount} ACTIVE CONFLICTS`,
+        detail:'Conflict days are tracked separately for each pair below. Unknown starts require a one-time manual day anchor.',
+        multiple:true,
+      };
+    }
+    if(activeCount===1){
+      if(activePairs[0]){
+        return{label:pairTimelineLabel(card,activePairs[0],result),detail:pairTimelineDetail(card,activePairs[0],result),multiple:false};
+      }
+      return{label:'1 ACTIVE CONFLICT · DAY UNKNOWN',detail:'Confirm the conflict pair below, then set its current day from the in-game faction page.',multiple:false};
+    }
+    if(pendingCount>1)return{label:`${pendingCount} PENDING CONFLICTS`,detail:'Pending conflicts are tracked per pair. Day 1 begins when each pair becomes active.',multiple:true};
+    if(pendingCount===1){
+      if(pendingPairs[0])return{label:'PENDING',detail:pairTimelineDetail(card,pendingPairs[0],result),multiple:false};
+      return{label:'PENDING',detail:'Pair the pending participants below so the coming conflict can be tracked.',multiple:false};
+    }
+    return{label:'NO ACTIVE CONFLICT',detail:'No active system conflict timeline.',multiple:false};
+  }
+
+  function refreshTimelinePanel(card,result) {
+    const host=card.querySelector('[data-conflict-timeline-readout]');
+    const detail=card.querySelector('[data-conflict-timeline-detail]');
+    const summary=conflictTimelineSummary(card,result);
+    if(host)host.textContent=summary.label;
+    if(detail)detail.textContent=summary.detail;
 
     const scoreAge=age(card.dataset.conflictScoreUpdated||'');
     const summaryMeta=card.querySelector('.wolf-conflict-score-stat small');
-    if(summaryMeta)summaryMeta.textContent=[timelineLabel(card),scoreAge].filter(Boolean).join(' · ')||'—';
+    if(summaryMeta)summaryMeta.textContent=[summary.label,scoreAge].filter(Boolean).join(' · ')||'—';
 
     const dayChip=card.querySelector('.wolf-conflict-day-chip');
     if(dayChip){
-      const state=timelineState(card);
-      const source=state.source==='manual'?'MANUAL VERIFIED':state.source==='inferred'?'INFERRED':'';
-      dayChip.innerHTML=`Conflict day <b>${esc(timelineLabel(card))}</b>${source?` · ${esc(source)}`:''}${state.overdue?' · VERIFY':''}`;
+      if(summary.label==='NO ACTIVE CONFLICT')dayChip.remove();
+      else dayChip.innerHTML=`${summary.multiple?'Conflict timelines':'Conflict day'} <b>${esc(summary.label)}</b>`;
     }
   }
 
-  function refreshTimelinePanel(card) {
-    const host=card.querySelector('[data-conflict-timeline-readout]');
-    const detail=card.querySelector('[data-conflict-timeline-detail]');
-    const input=card.querySelector('[data-conflict-day-input]');
-    const meta=card.querySelector('[data-conflict-day-meta]');
-    const timeline=timelineState(card);
-    if(host)host.textContent=timelineLabel(card);
-    if(detail)detail.textContent=timelineDetail(card);
-    if(input){
-      const pendingDay=num(card.dataset.conflictPendingDay);
-      input.value=pendingDay!==null?String(pendingDay):(timeline.manualDay!==null?String(timeline.manualDay):'');
-      input.disabled=timeline.phase==='none';
+  function pairTimelineMarkup(card,row,pair,result) {
+    if(!pair||!pair.factionA||!pair.factionB)return '<span class="wolf-conflict-pair-day-empty">Choose a valid conflict pair to track its day.</span>';
+    if(isLab(card))return '<span class="wolf-conflict-pair-day-empty">Live-system conflict-day tracking is disabled in Mandalore.</span>';
+
+    const timeline=pairTimelineState(card,pair,result);
+    const label=timelineLabelFromState(timeline);
+    const detail=timelineDetailFromState(timeline);
+    const pendingDay=num(row?.dataset.conflictPendingDay);
+
+    if(timeline.phase==='active'&&timeline.day===null){
+      return `<div class="wolf-conflict-pair-day-readout"><span>CONFLICT DAY</span><strong>${esc(label)}</strong><small>${esc(detail)}</small></div>
+        <div class="wolf-conflict-day-controls"><label><span>Manual current day</span><select data-conflict-day-input><option value="">— choose day —</option>${[1,2,3,4,5,6,7].map(day=>`<option value="${day}" ${pendingDay===day?'selected':''}>Day ${day}</option>`).join('')}</select></label><button type="button" class="btn btn-primary btn-compact" data-save-conflict-day>SET DAY</button></div>
+        <small class="wolf-conflict-day-meta" data-conflict-day-meta>Automation could not establish this pair's start. Set the current day once; it will advance automatically after each tick.</small>`;
     }
-    const setButton=card.querySelector('[data-save-conflict-day]');
-    const clearButton=card.querySelector('[data-clear-conflict-day]');
-    if(setButton)setButton.disabled=timeline.phase==='none';
-    if(clearButton)clearButton.disabled=timeline.phase==='none'||timeline.manualDay===null;
-    if(meta){
-      meta.textContent=timeline.manualDay!==null
-        ? `Manual anchor: Day ${timeline.manualDay} set ${formatWhen(timeline.manualSetAt)} by ${timeline.manualSetBy||'Wolf'}.`
-        : 'Automation uses an observed Pending → expected next-tick activation when available. Otherwise the day remains unknown.';
-    }
+
+    const source=timeline.source==='manual'?'MANUAL VERIFIED':timeline.source==='inferred'?'INFERRED':'';
+    const manualMeta=timeline.source==='manual'
+      ? `Manual anchor: Day ${timeline.manualDay} set ${formatWhen(timeline.manualSetAt)} by ${timeline.manualSetBy||'Wolf'}.`
+      : detail;
+    return `<div class="wolf-conflict-pair-day-readout"><span>CONFLICT DAY</span><strong>${esc(label)}${source?` · ${esc(source)}`:''}</strong><small>${esc(manualMeta)}</small></div>${timeline.source==='manual'?'<button type="button" class="btn btn-secondary btn-compact wolf-conflict-pair-auto" data-clear-conflict-day>USE AUTOMATION</button>':''}`;
+  }
+
+  function refreshPairTimelines(card,result) {
+    card.querySelectorAll('[data-conflict-pair-row]').forEach(row=>{
+      const host=row.querySelector('[data-conflict-pair-timeline]');
+      if(!host)return;
+      const a=row.querySelector('[data-conflict="factionA"]')?.value||'';
+      const b=row.querySelector('[data-conflict="factionB"]')?.value||'';
+      const key=conflictPairKey(a,b);
+      const pair=(result?.resolved||[]).find(item=>conflictPairKey(item.factionA,item.factionB)===key)
+        || (a&&b?{factionA:a,factionB:b,phase:'none'}:null);
+      host.innerHTML=pairTimelineMarkup(card,row,pair,result);
+    });
   }
 
   function board(card) {
