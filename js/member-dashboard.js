@@ -192,13 +192,13 @@
     const badge = card.querySelector('.member-command-badge');
     if (badge) badge.textContent = 'Frontier + EDMC';
     const paragraph = card.querySelector('p:not(.eyebrow)');
-    if (paragraph) paragraph.textContent = 'Connect Elite for reward verification, and use Live Scout when you want fresh faction-board data sent directly into Wolf BGS Control.';
+    if (paragraph) paragraph.textContent = 'Connect Elite for reward verification, and use Live Scout for fresh faction-board data plus direct station-market updates.';
     const oldActions = card.querySelector('.member-scout-actions');
     if (oldActions) oldActions.innerHTML = '<a class="btn btn-primary" href="/api/frontier/login" data-frontier-card-connect>Connect Elite Account</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Scout & Setup</a><a class="btn btn-ghost" href="/operations/#scout-jobs">Scout Jobs</a>';
 
     panel.innerHTML = `
       <div class="member-panel-heading"><div><p class="eyebrow">Member Elite Tools</p><h3>Elite Connection & Live Scout</h3></div><span data-frontier-badge>Checking…</span></div>
-      <p><strong>Connect Elite</strong> is used for reward verification. <strong>Live Scout (EDMC)</strong> is the separate tool that sends fresh faction-board snapshots to Wolf BGS Control.</p>
+      <p><strong>Connect Elite</strong> is used for reward verification. <strong>Live Scout (EDMC)</strong> sends fresh faction-board snapshots to Wolf BGS Control and fresh visited-station market snapshots to Trader's Outpost.</p>
       <div class="frontier-scout-grid">
         <div class="frontier-scout-box"><strong>Elite connection</strong><span data-frontier-connection>Checking Frontier integration…</span></div>
         <div class="frontier-scout-box"><strong>Verification scope</strong><span data-frontier-system>Waiting for Daily Orders, Colonization Jobs, or claim tracking…</span></div>
@@ -213,7 +213,7 @@
       <section class="frontier-live-scout-callout" aria-labelledby="liveScoutHeading">
         <p class="eyebrow">Live faction-board reporting</p>
         <h4 id="liveScoutHeading">Live Scout (EDMC)</h4>
-        <p>Use Live Scout when you want Wolf BGS Control to receive a fresh faction board from the system you are visiting. <strong>Read the README first</strong>; it shows exactly which EDMC plugin folder to use and which folder to copy.</p>
+        <p>Use Live Scout when you want Wolf BGS Control to receive a fresh faction board, or Trader's Outpost to receive a fresh market from a station you visit. <strong>Read the README first</strong>; it shows exactly which EDMC plugin folder to use and which folder to copy.</p>
         <div class="frontier-live-scout-actions">
           <a class="btn btn-primary" href="/operations/#scout-jobs">Open Scout Jobs</a>
           <a class="btn btn-ghost" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a>
@@ -230,7 +230,7 @@
           <div class="member-scout-step"><b>3. Reveal the real plugin folder</b><span>In EDMC open <strong>File → Settings → Plugins → Open</strong>. Use the folder EDMC opens; do not guess from Program Files.</span></div>
           <div class="member-scout-step"><b>4. Copy the whole folder</b><span>Copy the extracted <strong>MongrelScout FOLDER</strong> into the plugin folder EDMC revealed. Do not copy the individual files by themselves.</span></div>
           <div class="member-scout-step"><b>5. Restart & authorize</b><span>Restart EDMC, open Settings → Mongrel Scout, paste the Scout token issued by leadership, and enable Scout.</span></div>
-          <div class="member-scout-step"><b>6. Get a fresh board</b><span>Jump into the Mongrel system. If you are already sitting there and need a fresh post-tick board, <strong>jump out and back in</strong>. EDMC should show <strong>Updated &lt;system&gt;</strong>.</span></div>
+          <div class="member-scout-step"><b>6. Get fresh data</b><span>For BGS, jump into the Mongrel system; if already parked there, <strong>jump out and back in</strong>. For market data, visit the actual station or port. EDMC shows <strong>Updated &lt;system&gt;</strong> for BGS or <strong>Market updated: &lt;station&gt;</strong> for a market.</span></div>
         </div>
         <div class="member-scout-actions"><a class="btn btn-primary" href="/downloads/mongrel-scout/README.md" target="_blank" rel="noopener">Read README</a><a class="btn btn-ghost" href="/api/downloads/mongrel-scout">Download Live Scout</a></div>
       </details>
