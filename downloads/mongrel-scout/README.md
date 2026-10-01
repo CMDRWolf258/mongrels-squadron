@@ -26,6 +26,8 @@ For BGS scouting, the current system's fields from `FSDJump`, `Location`, or `Ca
 - local conflict type/status, participants, stakes and WonDays score;
 - the journal event timestamp.
 
+System coordinates are used by the Scout Board for straight-line distance calculations between systems.
+
 For market scouting, a station `Market` snapshot:
 - system and station name, market ID, station type, and system coordinates when already known;
 - commodity name/category plus buy price, sell price, supply, demand, and mean price;
