@@ -148,7 +148,7 @@ export async function onRequestPut({ request, env }) {
       }
       control.conflictPairDayOverrides = normalizeConflictPairDayOverrides(control.conflictPairDayOverrides);
       if (!control.conflictPairDayOverrides[name]) control.conflictPairDayOverrides[name] = {};
-      control.conflictPairDayOverrides[name][conflictPairKey(factionA,factionB)] = { factionA, factionB, day, setAt:now, setBy:actor };
+      control.conflictPairDayOverrides[name][conflictPairNamesKey(factionA,factionB)] = { factionA, factionB, day, setAt:now, setBy:actor };
     } else {
       // Legacy single-conflict anchor retained for backwards compatibility.
       control.conflictDayOverrides = control.conflictDayOverrides && typeof control.conflictDayOverrides === 'object' ? control.conflictDayOverrides : {};
@@ -164,7 +164,7 @@ export async function onRequestPut({ request, env }) {
         return json({ ok:false, error:'conflict_pair_invalid' }, { status:400, headers:privateHeaders() });
       }
       control.conflictPairDayOverrides = normalizeConflictPairDayOverrides(control.conflictPairDayOverrides);
-      const key = conflictPairKey(factionA,factionB);
+      const key = conflictPairNamesKey(factionA,factionB);
       if (control.conflictPairDayOverrides[name]) {
         delete control.conflictPairDayOverrides[name][key];
         if (!Object.keys(control.conflictPairDayOverrides[name]).length) delete control.conflictPairDayOverrides[name];
@@ -834,7 +834,7 @@ function normalizeConflictDayOverrides(value) {
   return out;
 }
 
-function conflictPairKey(a,b) {
+function conflictPairNamesKey(a,b) {
   return [norm(a), norm(b)].sort().join('::');
 }
 
@@ -850,7 +850,7 @@ function normalizeConflictPairDayOverrides(value) {
       const factionB = cleanText(item?.factionB, '', 120);
       const day = Math.round(Number(item?.day));
       if (!factionA || !factionB || norm(factionA) === norm(factionB) || !Number.isFinite(day) || day < 1 || day > 7) continue;
-      normalized[conflictPairKey(factionA,factionB)] = {
+      normalized[conflictPairNamesKey(factionA,factionB)] = {
         factionA,
         factionB,
         day,
