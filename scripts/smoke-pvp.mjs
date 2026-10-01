@@ -95,7 +95,7 @@ for (const pattern of [
 ]) assert.match(pvpGuideHtml, pattern, `PvP Field Manual is missing expected content: ${pattern}`);
 
 const guideHubHtml = readFileSync('guides/index.html', 'utf8');
-assert.match(guideHubHtml, /href="pvp/"/, 'Field Manual hub is not linking to the PvP guide');
+assert.match(guideHubHtml, /href="pvp\/"\s*>/, 'Field Manual hub is not linking to the PvP guide');
 assert.match(guideHubHtml, /Open PvP Field Manual/, 'Field Manual hub is not advertising the PvP guide');
 console.log('✓ PvP Field Manual sections and Field Manual hub linkage are wired');
 
