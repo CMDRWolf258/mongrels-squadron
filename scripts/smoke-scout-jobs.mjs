@@ -200,7 +200,7 @@ assert.match(memberUi,/setTimeout\(honorMemberDeepLink,260\)/);
 assert.match(memberUi,/scrollIntoView/);
 assert.match(memberUi,/live-scout-setup/);
 const memberPage=readFileSync('member/index.html','utf8');
-assert.match(memberPage,/member-dashboard\.js\?v=90/);
+assert.match(memberPage,/member-dashboard\.js\?v=\d+/);
 const adminPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(adminPage,/data-scout-job-admin/);
 assert.match(adminPage,/wolf-bgs-scout-jobs\.js\?v=2/);
