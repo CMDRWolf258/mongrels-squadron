@@ -93,7 +93,7 @@ const normalized=normalizeMarketSearch({
 assert.equal(normalized.commodity,'Soontil Relics');
 assert.equal(normalized.commodityKey,'soontillrelics');
 assert.equal(normalized.radiusLy,500);
-assert.equal(normalized.maxAgeMinutes,90,'blank max age should inherit Critical aging cutoff');
+assert.equal(normalized.maxAgeMinutes,30,'blank max age should inherit Critical fresh cutoff');
 
 const fixedNow=new Date('2026-09-25T17:30:00.000Z');
 const body=buildSpanshSearchBody(normalized,fixedNow);
