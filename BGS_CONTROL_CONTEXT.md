@@ -1561,17 +1561,15 @@ Wolf BGS Control now supports a first-party **Mongrel Scout** EDMarketConnector 
 - Wolf opens **Scout Network** in BGS Control and creates an individually named scout token.
 - The raw token is displayed **once**. The server stores only its SHA-256 hash.
 - The scout installs the one-file EDMC plugin from `/downloads/mongrel-scout/load.py`, pastes the token once in EDMC Settings, and leaves the plugin enabled.
-- The plugin listens only to `FSDJump`, `Location`, and `CarrierJump` journal events that contain a full faction board.
-- The plugin checks locally for **Regiment of Imperial Mongrels**. Non-Mongrel systems are discarded locally and never uploaded.
+- For BGS, the plugin listens to `FSDJump`, `Location`, and `CarrierJump` journal events that contain a full faction board and checks locally for **Regiment of Imperial Mongrels** before uploading.
+- For market scouting, the plugin also accepts EDMC's enriched `Market` journal event when it contains commodity rows. A scout must visit the actual station/port; entering the system alone does not refresh that market.
 - When accepted, the Scout Network records the token label, last uplink time, last system, and journal-event time. Wolf can revoke one scout without affecting any other scout.
 - While Wolf BGS Control is open, the Scout Network polls token activity every 30 seconds. A new scout uplink triggers a background refresh of the BGS deck so direct data appears without a page reload.
 
 ### Privacy boundary
-The plugin deliberately does **not** transmit commander name, cargo, credits, ship/loadout, materials, missions, or general travel history. The direct payload contains only:
-- system name/address, controller, security, population when the journal supplies them;
-- faction names, influence, active/pending/recovering states, happiness;
-- local conflicts: type/status, both factions, stakes, WonDays score;
-- journal event timestamp.
+The plugin deliberately does **not** transmit commander name, cargo, credits, ship/loadout, materials, missions, or general travel history. BGS payloads contain only system/faction/conflict fields plus the journal timestamp. Market payloads contain only public station-market information: system/station, MarketID, station type, coordinates when already known, commodity name/category, buy/sell prices, supply/demand/mean price, and the market timestamp.
+
+The server derives the Scout identity from the issued token rather than from a Commander name in the plugin payload. That attribution is retained with a market snapshot so future paid market-scout jobs can be verified without expanding the plugin's personal-data scope.
 
 The EDMC plugin follows the current Python 3 plugin interface (`plugin_start3`, `plugin_prefs`, `prefs_changed`, `journal_entry`), uses EDMC's supported `config` API, Live-galaxy check, `timeout_session` HTTP client, and a worker thread so network requests do not block EDMC.
 
@@ -1591,7 +1589,12 @@ System cards identify Scout-sourced data with dedicated Scout chips. Faction ale
 - Admin token management endpoint: `/api/operations/scout-tokens` (site-admin session + same-origin write protection).
 - Scout ingest endpoint: `/api/operations/scout-ingest` (Bearer scout token; no Discord/site session required).
 - Token KV key: `wolf-bgs-scout-tokens-v1`.
-- Snapshot KV key: `wolf-bgs-scout-snapshots-v1`.
+- BGS snapshot KV key: `wolf-bgs-scout-snapshots-v1`.
+- Market snapshot KV key: `trade-market-scout-snapshots-v1` in the existing TRADES namespace.
+- A station market visit is stored as **one bounded station snapshot**, not one write per commodity. Up to 300 recent markets are retained, each with up to 250 commodity rows. This keeps the new path deliberately low-write.
+- Trader's Outpost performs one additional Scout-market cache read during a market search and overlays a newer direct Scout observation on older Spansh data for the same MarketID. Spansh metadata such as pad size/distance is preserved when available.
+- Direct Scout-only observations with unknown distance are not allowed to bypass a radius filter outside the reference system; rare-source searches remain radius-unlimited by design.
+- Market visits do **not** create ordinary BGS Scout Job completions or rewards. The submitting token/owner attribution is stored so a separate paid market-scout job type can be added later without conflating the two reward systems.
 - Raw scout tokens are never persisted by the server.
 
 
@@ -1607,7 +1610,7 @@ Scout tokens now carry server-side access permissions. Changing those permission
 - The ingest endpoint enforces scope server-side. A restricted token submitting an unassigned system receives `403 system_not_authorized`; the EDMC plugin shows **Not assigned: <system>**.
 - Every token has a KV-backed fixed-window limit of **120 upload attempts per hour**. Attempts beyond the limit receive HTTP 429 plus `Retry-After`; EDMC shows **Scout rate limit reached**.
 - The rate counter is stored separately from Scout snapshots/token metadata and expires after two hours.
-- The threat boundary remains deliberate: a Scout credential cannot sign into Wolf BGS Control, alter automation settings, manage tokens, or publish Mission Control orders. Its meaningful write capability is Scout BGS observations within its allowed scope. A malicious holder can still falsify BGS observations for systems their token is permitted to submit, so Restricted access is the default for new/unproven members and revocation remains the emergency cutoff.
+- The threat boundary remains deliberate: a Scout credential cannot sign into Wolf BGS Control, alter automation settings, manage tokens, or publish Mission Control orders. Its write capability now includes BGS observations within its allowed BGS scope plus public station-market observations. A malicious holder could falsify a market snapshot, so direct market rows remain visibly attributable to Mongrel Scout and are not automatically rewarded; revocation remains the emergency cutoff.
 
 ### Installation packaging
 The site now serves **MongrelScout.zip** from `/downloads/mongrel-scout.zip`. It contains a ready-made `MongrelScout/` folder with `load.py` and the README, so the member can unzip it and copy the folder directly into EDMC's Plugins directory. The raw source files remain under `/downloads/mongrel-scout/` for maintenance.
