@@ -529,7 +529,7 @@ assert.match(html,/data-trade-return-quantity/);
 assert.match(tradeClient,/trade-route-line-return/);
 assert.match(tradeClient,/returnCommodity/);
 
-assert.match(html,/data-trading-build="93"/);
+assert.match(html,/data-trading-build="94"/);
 assert.match(html,/__mongrel_build_check/);
 assert.match(html,/pageshow/);
 assert.match(html,/event\.persisted/);
