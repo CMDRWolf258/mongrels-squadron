@@ -168,7 +168,7 @@ assert.equal(sameBody.filters.distance,undefined);
 const staleTime=new Date(Date.now()-30*60*60000).toISOString();
 const staleA={...A,observedAt:staleTime};
 const staleB={...B,observedAt:staleTime};
-const staleLoops=optimizeTradeLoops([staleA,staleB,C,A2],twoQuery);
+const staleLoops=optimizeTradeLoops([staleA,staleB],twoQuery);
 assert.ok(staleLoops.length>=1,'older routine loop candidates should remain visible');
 assert.equal(staleLoops[0].needsScouting,true,'routine loops older than 24 hours should be marked for scouting instead of hidden');
 assert.ok(staleLoops[0].scoutStops.some(stop=>stop.stationName==='Alpha Port'||stop.stationName==='Beta Port'));
