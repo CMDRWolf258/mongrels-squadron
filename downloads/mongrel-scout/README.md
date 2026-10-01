@@ -18,6 +18,8 @@ After that, just play Elite. Jumping into a Mongrel system is enough when the jo
 
 For **market data**, the scout must visit the actual station or port. When Elite/EDMC supplies the station's `Market` event with commodity rows, Mongrel Scout sends that market snapshot directly to Trader's Outpost. Merely entering the system does not refresh station prices, supply, or demand. The direct Scout snapshot is preferred over an older external-market observation when Trader's Outpost searches that station.
 
+Market visits do not currently complete ordinary BGS Scout Jobs or issue a payout automatically. They are stored with Scout-token attribution so a separate paid market-scout job can be added cleanly if leadership chooses to use that workflow.
+
 ## What is transmitted
 
 For BGS scouting, the current system's fields from `FSDJump`, `Location`, or `CarrierJump`:
