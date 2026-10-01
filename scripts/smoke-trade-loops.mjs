@@ -11,8 +11,8 @@ import {
 
 const control=defaultTradeControl();
 const defaultLoopQuery=normalizeLoopSearch({startSystem:'Home'},control);
-assert.equal(defaultLoopQuery.priority,'high','live loop searches should default to the High freshness profile');
-assert.equal(defaultLoopQuery.maxAgeMinutes,120,'High-priority loop searches should default to the 2-hour fresh window');
+assert.equal(defaultLoopQuery.priority,'standard','routine loop searches should default to the Standard freshness profile');
+assert.equal(defaultLoopQuery.maxAgeMinutes,1440,'Standard loop searches should accept the freshest available data up to the 24-hour fresh cutoff');
 
 const twoQuery=normalizeLoopSearch({
   startSystem:'Home',
@@ -190,7 +190,7 @@ assert.match(html,/data-loop-threshold/);
 assert.match(html,/data-loop-mongrel-only/);
 assert.match(html,/Mongrel Faction Routes/);
 assert.match(html,/trade-loops\.css\?v=2/);
-assert.match(html,/trade-loops\.js\?v=3/);
+assert.match(html,/trade-loops\.js\?v=4/);
 
 const client=readFileSync(new URL('../js/trade-loops.js',import.meta.url),'utf8');
 assert.match(client,/\/api\/trade-loops\/search/);
