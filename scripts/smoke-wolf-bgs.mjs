@@ -15,7 +15,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\\.js\\?v=11/,'Conflict client cache version should be v11');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=11/,'Conflict client cache version should be v11');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -158,7 +158,7 @@ const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\\.js\\?v=23/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=23/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
