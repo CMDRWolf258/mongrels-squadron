@@ -135,17 +135,43 @@ export async function onRequestPut({ request, env }) {
     };
   } else if (action === 'set-conflict-day') {
     const name = cleanText(body?.system, '', 140);
+    const factionA = cleanText(body?.factionA, '', 120);
+    const factionB = cleanText(body?.factionB, '', 120);
     const day = Math.round(Number(body?.day));
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
     if (!Number.isFinite(day) || day < 1 || day > 7) {
       return json({ ok: false, error: 'conflict_day_invalid' }, { status: 400, headers: privateHeaders() });
     }
-    control.conflictDayOverrides = control.conflictDayOverrides && typeof control.conflictDayOverrides === 'object' ? control.conflictDayOverrides : {};
-    control.conflictDayOverrides[name] = { day, setAt: now, setBy: actor };
+    if (factionA || factionB) {
+      if (!factionA || !factionB || norm(factionA) === norm(factionB)) {
+        return json({ ok:false, error:'conflict_pair_invalid' }, { status:400, headers:privateHeaders() });
+      }
+      control.conflictPairDayOverrides = normalizeConflictPairDayOverrides(control.conflictPairDayOverrides);
+      if (!control.conflictPairDayOverrides[name]) control.conflictPairDayOverrides[name] = {};
+      control.conflictPairDayOverrides[name][conflictPairNamesKey(factionA,factionB)] = { factionA, factionB, day, setAt:now, setBy:actor };
+    } else {
+      // Legacy single-conflict anchor retained for backwards compatibility.
+      control.conflictDayOverrides = control.conflictDayOverrides && typeof control.conflictDayOverrides === 'object' ? control.conflictDayOverrides : {};
+      control.conflictDayOverrides[name] = { day, setAt: now, setBy: actor };
+    }
   } else if (action === 'clear-conflict-day') {
     const name = cleanText(body?.system, '', 140);
+    const factionA = cleanText(body?.factionA, '', 120);
+    const factionB = cleanText(body?.factionB, '', 120);
     if (!name) return json({ ok: false, error: 'system_required' }, { status: 400, headers: privateHeaders() });
-    if (control.conflictDayOverrides) delete control.conflictDayOverrides[name];
+    if (factionA || factionB) {
+      if (!factionA || !factionB || norm(factionA) === norm(factionB)) {
+        return json({ ok:false, error:'conflict_pair_invalid' }, { status:400, headers:privateHeaders() });
+      }
+      control.conflictPairDayOverrides = normalizeConflictPairDayOverrides(control.conflictPairDayOverrides);
+      const key = conflictPairNamesKey(factionA,factionB);
+      if (control.conflictPairDayOverrides[name]) {
+        delete control.conflictPairDayOverrides[name][key];
+        if (!Object.keys(control.conflictPairDayOverrides[name]).length) delete control.conflictPairDayOverrides[name];
+      }
+    } else if (control.conflictDayOverrides) {
+      delete control.conflictDayOverrides[name];
+    }
   } else if (action === 'ack-alerts') {
     control.alertEpisodes = control.alertEpisodes && typeof control.alertEpisodes === 'object' ? control.alertEpisodes : {};
     for (const episode of Object.values(control.alertEpisodes)) {
@@ -284,6 +310,7 @@ async function readControl(env) {
     manualSnapshots: {},
     alertEpisodes: {},
     conflictDayOverrides: {},
+    conflictPairDayOverrides: {},
   };
   if (!env?.DAILY_ORDERS || typeof env.DAILY_ORDERS.get !== 'function') return empty;
   try {
@@ -302,6 +329,7 @@ async function readControl(env) {
       manualSnapshots: normalizeSnapshotMap(stored.manualSnapshots),
       alertEpisodes: normalizeAlertEpisodes(stored.alertEpisodes),
       conflictDayOverrides: normalizeConflictDayOverrides(stored.conflictDayOverrides),
+      conflictPairDayOverrides: normalizeConflictPairDayOverrides(stored.conflictPairDayOverrides),
     };
   } catch (error) {
     console.error('Could not read Wolf BGS Control state', error);
@@ -699,10 +727,10 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
       const episode = control.alertEpisodes[key];
       if (
         episode?.family === 'conflict'
-        && control.conflictDayOverrides?.[episode.system]
         && !systemHasTrackedConflict(systemsByName.get(norm(episode.system)))
       ) {
-        delete control.conflictDayOverrides[episode.system];
+        if (control.conflictDayOverrides) delete control.conflictDayOverrides[episode.system];
+        if (control.conflictPairDayOverrides) delete control.conflictPairDayOverrides[episode.system];
       }
       delete control.alertEpisodes[key];
       changed = true;
@@ -715,6 +743,9 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
     if (!sameEvent) {
       if (condition.family === 'conflict' && control.conflictDayOverrides?.[condition.system]) {
         delete control.conflictDayOverrides[condition.system];
+      }
+      if (condition.family === 'conflict' && control.conflictPairDayOverrides?.[condition.system]) {
+        delete control.conflictPairDayOverrides[condition.system];
       }
       const scoutHistory = condition.family === 'conflict' ? scoutConflictHistory?.[condition.system] : null;
       const matchingScoutHistory = scoutHistory && norm(scoutHistory.detail) === norm(condition.detail) ? scoutHistory : null;
@@ -803,6 +834,35 @@ function normalizeConflictDayOverrides(value) {
   return out;
 }
 
+function conflictPairNamesKey(a,b) {
+  return [norm(a), norm(b)].sort().join('::');
+}
+
+function normalizeConflictPairDayOverrides(value) {
+  if (!value || typeof value !== 'object') return {};
+  const out = {};
+  for (const [system, pairs] of Object.entries(value)) {
+    const name = cleanText(system, '', 140);
+    if (!name || !pairs || typeof pairs !== 'object') continue;
+    const normalized = {};
+    for (const item of Object.values(pairs)) {
+      const factionA = cleanText(item?.factionA, '', 120);
+      const factionB = cleanText(item?.factionB, '', 120);
+      const day = Math.round(Number(item?.day));
+      if (!factionA || !factionB || norm(factionA) === norm(factionB) || !Number.isFinite(day) || day < 1 || day > 7) continue;
+      normalized[conflictPairNamesKey(factionA,factionB)] = {
+        factionA,
+        factionB,
+        day,
+        setAt:item?.setAt || null,
+        setBy:cleanText(item?.setBy, '', 120),
+      };
+    }
+    if (Object.keys(normalized).length) out[name] = normalized;
+  }
+  return out;
+}
+
 function tickParts(value) {
   const match = String(value || '').match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return { hour:19, minute:0 };
@@ -878,9 +938,39 @@ function conflictTimelineFor(system, control, nowIso) {
   };
 }
 
+
+function conflictPairTimelinesFor(system, control, nowIso) {
+  const tick = system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick;
+  const overrides = control.conflictPairDayOverrides?.[system.name] || {};
+  const out = {};
+  for (const [key, override] of Object.entries(overrides)) {
+    const rawDay = override.day + ticksElapsedAfter(override.setAt, nowIso, tick);
+    out[key] = {
+      pairKey:key,
+      factionA:override.factionA,
+      factionB:override.factionB,
+      phase:'active',
+      day:Math.min(7, rawDay),
+      rawDay,
+      source:'manual',
+      tick,
+      anchoredAt:override.setAt || null,
+      manualDay:override.day,
+      manualSetAt:override.setAt || null,
+      manualSetBy:override.setBy || '',
+      minimumDays:4,
+      maximumDays:7,
+      minimumReached:rawDay >= 4,
+      overdue:rawDay > 7,
+    };
+  }
+  return out;
+}
+
 function attachConflictTracking(payload, control, nowIso = new Date().toISOString()) {
   for (const system of payload.systems || []) {
     system.conflictTimeline = conflictTimelineFor(system, control, nowIso);
+    system.conflictPairTimelines = conflictPairTimelinesFor(system, control, nowIso);
   }
 }
 

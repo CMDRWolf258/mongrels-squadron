@@ -22,7 +22,7 @@
 
 .wolf-conflict-score-detail{color:#ffe1a6!important;font-size:1rem!important;letter-spacing:.025em}
 
-.wolf-conflict-timeline-panel{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(360px,1.2fr);gap:12px;align-items:center;margin:0 0 16px;padding:12px;border:1px solid rgba(102,196,255,.2);background:linear-gradient(135deg,rgba(20,44,59,.18),rgba(0,0,0,.16))}
+.wolf-conflict-timeline-panel{display:grid;grid-template-columns:1fr;gap:12px;align-items:center;margin:0 0 16px;padding:12px;border:1px solid rgba(102,196,255,.2);background:linear-gradient(135deg,rgba(20,44,59,.18),rgba(0,0,0,.16))}
 .wolf-conflict-timeline-readout span{display:block;font-size:.68rem;font-weight:850;letter-spacing:.09em;color:#8ebfd5}
 .wolf-conflict-timeline-readout strong{display:block;margin:.15rem 0;color:#dff5ff;font-size:1.2rem;letter-spacing:.035em}
 .wolf-conflict-timeline-readout small{display:block;color:var(--muted);line-height:1.4}
@@ -33,3 +33,14 @@
 .wolf-conflict-day-detail{color:#cbefff!important;font-size:1rem!important;letter-spacing:.025em}
 @media(max-width:900px){.wolf-conflict-timeline-panel{grid-template-columns:1fr}.wolf-conflict-day-controls{grid-template-columns:1fr auto auto}}
 @media(max-width:620px){.wolf-conflict-day-controls{grid-template-columns:1fr 1fr}.wolf-conflict-day-controls label{grid-column:1/-1}.wolf-conflict-day-controls .btn{width:100%}}
+
+.wolf-conflict-pair-timeline{grid-column:1/-1;display:grid;grid-template-columns:minmax(240px,1fr) minmax(300px,1.2fr);gap:10px;align-items:end;margin-top:2px;padding:10px 12px;border-top:1px solid rgba(102,196,255,.14);background:rgba(20,44,59,.08)}
+.wolf-conflict-pair-day-readout span{display:block;font-size:.64rem;font-weight:850;letter-spacing:.09em;color:#8ebfd5}
+.wolf-conflict-pair-day-readout strong{display:block;margin:.1rem 0;color:#dff5ff;font-size:.94rem;letter-spacing:.025em}
+.wolf-conflict-pair-day-readout small{display:block;color:var(--muted);font-size:.72rem;line-height:1.35}
+.wolf-conflict-pair-day-empty{grid-column:1/-1;color:var(--muted);font-size:.72rem;line-height:1.35}
+.wolf-conflict-pair-timeline .wolf-conflict-day-controls{grid-template-columns:minmax(170px,1fr) auto}
+.wolf-conflict-pair-timeline .wolf-conflict-day-meta{grid-column:1/-1}
+.wolf-conflict-pair-auto{justify-self:end;align-self:center}
+@media(max-width:900px){.wolf-conflict-pair-timeline{grid-template-columns:1fr}.wolf-conflict-pair-auto{justify-self:start}}
+@media(max-width:620px){.wolf-conflict-pair-timeline .wolf-conflict-day-controls{grid-template-columns:1fr}.wolf-conflict-pair-timeline .wolf-conflict-day-controls label{grid-column:auto}.wolf-conflict-pair-timeline .wolf-conflict-day-controls .btn{width:100%}}
