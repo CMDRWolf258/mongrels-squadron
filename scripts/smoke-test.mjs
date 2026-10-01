@@ -50,6 +50,14 @@ import {
   assistantPathwayIntent,
   buildAssistantPathwayContext,
 } from '../lib/assistant-pathway-context.js';
+import { safeReturnPath } from '../lib/auth.js';
+
+assert.equal(safeReturnPath('/member/#mongrel-scout'), '/member/#mongrel-scout');
+assert.equal(safeReturnPath('/wolf-bgs/?tab=conflicts'), '/wolf-bgs/?tab=conflicts');
+for (const unsafe of ['https://evil.example/', '//evil.example/', '/\\\\evil.example/', '///evil.example/', '\\\\evil.example', 'javascript:alert(1)', '/member/\n//evil.example']) {
+  assert.equal(safeReturnPath(unsafe), '/member/', `unsafe return path was accepted: ${JSON.stringify(unsafe)}`);
+}
+console.log('✓ OAuth return paths are constrained to normalized same-origin paths');
 
 const providers = [
   ['Anti-Xeno', AX_ROUTES],
