@@ -21,6 +21,9 @@ for(const pattern of [
   /FSDJump/,
   /Location/,
   /CarrierJump/,
+  /Market/,
+  /_build_market_payload/,
+  /Market updated:/,
   /monitor\.is_live_galaxy/,
   /timeout_session\.new_session/,
   /threading\.Thread/,
@@ -29,14 +32,16 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.1\.0"/,
+  /PLUGIN_VERSION = "1\.2\.0"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
 assert.match(plugin,/Commander name, cargo, credits/i);
-assert.match(plugin,/general travel history are not transmitted/i);
+assert.match(plugin,/history are not transmitted/i);
+assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
+assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Market payload must not transmit commander name');
 
 const tokenApi=readFileSync('functions/api/operations/scout-tokens.js','utf8');
 for(const pattern of [
@@ -69,6 +74,9 @@ for(const pattern of [
   /FSDJump/,
   /Location/,
   /CarrierJump/,
+  /handleMarketSnapshot/,
+  /recordScoutMarketSnapshot/,
+  /trade_storage_not_configured/,
   /systemAuthorized/,
   /system_not_authorized/,
   /scout_rate_limit_reached/,
@@ -273,9 +281,9 @@ assert.match(frontierSyncSource,/mergeFrontierBoardSnapshots/,'Frontier sync mus
 assert.match(frontierSyncSource,/Frontier CAPI Journal/,'Frontier direct BGS snapshots must retain source identity');
 
 const memberPage=readFileSync('member/index.html','utf8');
-for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/View Rewards Owed/,/rewards\/#outstanding-rewards/,/member-dashboard\.js\?v=90/])assert.match(memberPage,pattern);
+for(const pattern of [/Elite Connection & Scout/,/data-frontier-card-connect/,/Connect Elite Account/,/Scout & Setup/,/Read README/,/View Rewards Owed/,/rewards\/#outstanding-rewards/,/member-dashboard\.js\?v=\d+/])assert.match(memberPage,pattern);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
-for(const pattern of [/Live Scout \(EDMC\)/,/Live Scout installation & refresh instructions/,/Recent verified activity/,/data-frontier-activity-count/,/Read README/,/Plugins → Open/,/MongrelScout FOLDER/,/jump out and back in/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
+for(const pattern of [/Live Scout \(EDMC\)/,/Live Scout installation & refresh instructions/,/Recent verified activity/,/data-frontier-activity-count/,/Read README/,/Plugins → Open/,/MongrelScout FOLDER/,/jump out and back in/,/Market updated:/,/Trader's Outpost/,/data-frontier-card-connect/,/Frontier \+ EDMC/])assert.match(memberUi,pattern);
 const operationsPage=readFileSync('operations/index.html','utf8');
 assert.match(operationsPage,/Connect Elite & Scout/);
 assert.match(operationsPage,/\.\.\/member\/#mongrel-scout/);
@@ -318,7 +326,7 @@ const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/])assert.match(scoutReadme,pattern);
+for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/included `load\.py`/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
