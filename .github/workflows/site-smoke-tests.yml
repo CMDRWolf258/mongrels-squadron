@@ -77,6 +77,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-reward-discord.mjs
           node --experimental-default-type=module scripts/smoke-discord-webhook.mjs
           node --experimental-default-type=module scripts/smoke-announcements.mjs
+          node --experimental-default-type=module scripts/smoke-newsroom.mjs
           node --experimental-default-type=module scripts/smoke-squad-events.mjs
           node --experimental-default-type=module scripts/smoke-squad-structure.mjs
           node --experimental-default-type=module scripts/smoke-pursuits.mjs
