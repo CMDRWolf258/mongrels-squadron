@@ -15,7 +15,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.1.0"
+PLUGIN_VERSION = "1.2.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -32,6 +32,9 @@ _endpoint_var: Optional[tk.StringVar] = None
 _send_lock = threading.Lock()
 _status_lock = threading.Lock()
 _pending_status = ""
+_last_system_name = ""
+_last_system_address: Any = None
+_last_star_pos: Any = None
 _session = timeout_session.new_session(timeout=8)
 
 
@@ -66,7 +69,7 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     frame = nb.Frame(parent)
     frame.columnconfigure(1, weight=1)
 
-    nb.Label(frame, text="Direct BGS scout uplink").grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(4, 8))
+    nb.Label(frame, text="Direct BGS + market scout uplink").grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(4, 8))
     nb.Checkbutton(frame, text="Enable Mongrel Scout", variable=_enabled_var).grid(row=1, column=0, columnspan=2, sticky=tk.W)
 
     nb.Label(frame, text="Scout token").grid(row=2, column=0, sticky=tk.W, pady=(8, 0))
@@ -78,10 +81,12 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     endpoint_entry.grid(row=3, column=1, sticky=tk.EW, padx=(8, 0), pady=(8, 0))
 
     privacy = (
-        "Only FSDJump / Location / CarrierJump BGS fields are sent, and only when "
-        "the Regiment of Imperial Mongrels is present. System coordinates are included "
-        "to support Scout distance sorting. Commander name, cargo, credits, ship build, "
-        "materials, and general travel history are not transmitted."
+        "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
+        "Regiment of Imperial Mongrels is present. When Elite supplies a Market event, "
+        "Scout also sends that station's market ID, commodity prices, supply and demand "
+        "for direct Trader's Outpost freshness. System coordinates support distance sorting. "
+        "Commander name, cargo, credits, ship build, materials, missions, and general travel "
+        "history are not transmitted."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
         row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
@@ -121,6 +126,27 @@ def journal_entry(
             pass
 
     event = str(entry.get("event") or "")
+    if event in {"FSDJump", "Location", "CarrierJump"}:
+        _remember_location(entry, system)
+
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if event == "Market":
+        if not token:
+            _set_status("Needs scout token")
+            return None
+        payload = _build_market_payload(entry, system, station)
+        if payload is None:
+            return None
+        endpoint = (config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT).strip()
+        _set_status(f"Sending market: {payload['stationName']}…")
+        threading.Thread(
+            target=_send_snapshot,
+            args=(endpoint, token, payload),
+            name="MongrelScoutMarketUpload",
+            daemon=True,
+        ).start()
+        return None
+
     if event not in {"FSDJump", "Location", "CarrierJump"}:
         return None
 
@@ -128,7 +154,6 @@ def journal_entry(
     if not isinstance(factions, list) or not _contains_mongrels(factions):
         return None
 
-    token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
         _set_status("Needs scout token")
         return None
@@ -146,6 +171,78 @@ def journal_entry(
         daemon=True,
     ).start()
     return None
+
+
+
+def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
+    global _last_system_name, _last_system_address, _last_star_pos
+    system_name = str(entry.get("StarSystem") or fallback_system or "").strip()
+    if system_name:
+        _last_system_name = system_name
+    if entry.get("SystemAddress") is not None:
+        _last_system_address = entry.get("SystemAddress")
+    star_pos = entry.get("StarPos")
+    if isinstance(star_pos, (list, tuple)) and len(star_pos) >= 3:
+        _last_star_pos = list(star_pos[:3])
+
+
+def _build_market_payload(
+    entry: Mapping[str, Any],
+    fallback_system: str,
+    fallback_station: str,
+) -> Optional[dict[str, Any]]:
+    items = entry.get("Items")
+    if not isinstance(items, list) or not items:
+        return None
+
+    system_name = str(entry.get("StarSystem") or fallback_system or _last_system_name or "").strip()
+    station_name = str(entry.get("StationName") or fallback_station or "").strip()
+    timestamp = str(entry.get("timestamp") or "").strip()
+    market_id = entry.get("MarketID")
+    if not system_name or not station_name or not timestamp or market_id is None:
+        return None
+
+    commodities = []
+    for row in items[:250]:
+        if not isinstance(row, Mapping):
+            continue
+        raw_name = str(row.get("Name") or "").strip()
+        local_name = str(row.get("Name_Localised") or "").strip()
+        if not raw_name and not local_name:
+            continue
+        commodities.append(
+            {
+                "name": raw_name or local_name,
+                "nameLocalised": local_name,
+                "category": str(row.get("Category") or ""),
+                "categoryLocalised": str(row.get("Category_Localised") or ""),
+                "meanPrice": row.get("MeanPrice", 0),
+                "buyPrice": row.get("BuyPrice", 0),
+                "sellPrice": row.get("SellPrice", 0),
+                "supply": row.get("Stock", 0),
+                "demand": row.get("Demand", 0),
+            }
+        )
+
+    if not commodities:
+        return None
+
+    return {
+        "version": 1,
+        "kind": "market",
+        "event": "Market",
+        "timestamp": timestamp,
+        "system": system_name,
+        "systemName": system_name,
+        "systemAddress": entry.get("SystemAddress", _last_system_address),
+        "starPos": entry.get("StarPos", _last_star_pos),
+        "station": station_name,
+        "stationName": station_name,
+        "stationType": str(entry.get("StationType") or ""),
+        "marketId": market_id,
+        "carrierDockingAccess": str(entry.get("CarrierDockingAccess") or ""),
+        "commodities": commodities,
+    }
 
 
 def _build_payload(entry: Mapping[str, Any], fallback_system: str) -> Optional[dict[str, Any]]:
@@ -264,7 +361,13 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
                     result = response.json()
                 except Exception:
                     result = {}
-                if result.get("stored") is False:
+                if payload.get("kind") == "market":
+                    station_name = str(payload.get("stationName") or "station")
+                    if result.get("stored") is False:
+                        _set_status(f"Market already newer: {station_name}")
+                    else:
+                        _set_status(f"Market updated: {station_name}")
+                elif result.get("stored") is False:
                     _set_status(f"Already newer: {payload['system']}")
                 else:
                     _set_status(f"Updated {payload['system']}")
