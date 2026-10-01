@@ -26,7 +26,7 @@
   const published=()=>Array.isArray(state.data?.items)?state.data.items.filter(item=>item.status==='published'):[];
   const categoryLabel=id=>state.data?.categories?.find(x=>x.id===id)?.label||'Squadron News';
 
-  function storyHref(id){return '?story='+encodeURIComponent(id)}
+  function storyHref(id){return '?story='+encodeURIComponent(id)+'#morning-walk-story-title'}
   function renderFilters(){
     const host=$('[data-newsroom-filters]'); if(!host)return;
     const options=[{id:'all',label:'All'},...(state.data?.categories||[])];
@@ -74,7 +74,7 @@
   }
   function articleMarkup(item,{preview=false}={}){
     const date=preview?'Unpublished preview':when(item.publishedAt||item.updatedAt);
-    return `<article class="newsroom-article ${preview?'is-preview':''}">${preview?'':'<a class="newsroom-article-back" href="./">← Back to The Morning Walk</a>'}<span class="newsroom-kicker">${safe(categoryLabel(item.category))}</span><h2>${safe(item.title||'Untitled Story')}</h2>${item.deck?`<p class="newsroom-deck">${safe(item.deck)}</p>`:''}<div class="newsroom-article-meta"><span>By ${safe(item.byline||'The Morning Walk')}</span><span>•</span><span>${safe(date)}</span></div>${articleBodyMarkup(item)}</article>`;
+    return `<article class="newsroom-article ${preview?'is-preview':''}">${preview?'':'<a class="newsroom-article-back" href="./">← Back to The Morning Walk</a>'}<span class="newsroom-kicker">${safe(categoryLabel(item.category))}</span><h2${preview?'':' id="morning-walk-story-title"'}>${safe(item.title||'Untitled Story')}</h2>${item.deck?`<p class="newsroom-deck">${safe(item.deck)}</p>`:''}<div class="newsroom-article-meta"><span>By ${safe(item.byline||'The Morning Walk')}</span><span>•</span><span>${safe(date)}</span></div>${articleBodyMarkup(item)}</article>`;
   }
 
   function renderIndex(){
@@ -85,6 +85,9 @@
     if(selected){
       index.hidden=true;view.hidden=false;
       view.innerHTML=articleMarkup(selected);
+      if(location.hash==='#morning-walk-story-title'){
+        requestAnimationFrame(()=>view.querySelector('#morning-walk-story-title')?.scrollIntoView({block:'start'}));
+      }
       return;
     }
     view.hidden=true;view.replaceChildren();index.hidden=false;
