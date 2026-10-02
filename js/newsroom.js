@@ -10,6 +10,8 @@
   }; // Public feed and Site Admin editorial state stay separate.
   const storyId=()=>new URLSearchParams(location.search).get('story')||'';
   const when=value=>{const d=new Date(value||'');return Number.isFinite(d.getTime())?d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):''};
+  const externalHttps=value=>{try{const url=new URL(String(value||''));return url.protocol==='https:'?url.href:''}catch{return''}};
+  const galnetWhen=item=>String(item?.galnetDate||'').trim()||when(item?.published);
   const api=async(method='GET',body=null,url='/api/newsroom')=>{
     const options={method,credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}};
     if(body!==null){
@@ -288,6 +290,57 @@
     }catch(error){setEditorStatus(error.message||'Unable to delete draft.','error');}
   }
 
+  function galnetLeadMarkup(item){
+    const url=externalHttps(item?.url);
+    const image=externalHttps(item?.imageUrl);
+    const visual=image
+      ?`<div class="galnet-wire-visual"><img src="${safe(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`
+      :'<div class="galnet-wire-mark" aria-hidden="true"><span>GN</span></div>';
+    return `<article class="galnet-wire-lead-card">${visual}<div class="galnet-wire-copy"><span class="galnet-wire-date">${safe(galnetWhen(item))} · Latest</span><h3>${safe(item?.title||'GalNet Dispatch')}</h3>${item?.teaser?`<p>${safe(item.teaser)}</p>`:''}${url?`<a class="newsroom-read-link" href="${safe(url)}" target="_blank" rel="noopener noreferrer">Read on GalNet →</a>`:''}</div></article>`;
+  }
+
+  function galnetStoryMarkup(item){
+    const url=externalHttps(item?.url);
+    const image=externalHttps(item?.imageUrl);
+    return `<article class="galnet-wire-card">${image?`<div class="galnet-wire-card-image"><img src="${safe(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`:''}<div class="galnet-wire-card-copy"><span class="galnet-wire-date">${safe(galnetWhen(item))}</span><h3>${safe(item?.title||'GalNet Dispatch')}</h3>${item?.teaser?`<p>${safe(item.teaser)}</p>`:''}${url?`<a href="${safe(url)}" target="_blank" rel="noopener noreferrer">Read dispatch →</a>`:''}</div></article>`;
+  }
+
+  function renderGalnet(payload){
+    const lead=$('[data-galnet-lead]'),list=$('[data-galnet-list]'),empty=$('[data-galnet-empty]'),status=$('[data-galnet-status]');
+    if(!lead||!list||!empty)return;
+    const items=Array.isArray(payload?.items)?payload.items:[];
+    if(!items.length){
+      lead.innerHTML='';list.innerHTML='';empty.hidden=false;
+      if(status)status.textContent='Feed unavailable';
+      return;
+    }
+    empty.hidden=true;
+    lead.innerHTML=galnetLeadMarkup(items[0]);
+    list.innerHTML=items.slice(1).map(galnetStoryMarkup).join('');
+    if(status){
+      const stamp=when(payload?.fetchedAt);
+      status.textContent=payload?.stale
+        ?'Last known feed'+(stamp?' · '+stamp:'')
+        :'Live wire'+(stamp?' · refreshed '+stamp:'');
+      status.dataset.stale=payload?.stale?'true':'false';
+      if(payload?.warning)status.title=payload.warning;
+    }
+  }
+
+  async function loadGalnet(){
+    try{
+      const response=await fetch('/api/galnet',{headers:{Accept:'application/json'}});
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(payload.message||payload.error||'GalNet unavailable');
+      renderGalnet(payload);
+    }catch(error){
+      const status=$('[data-galnet-status]');
+      const empty=$('[data-galnet-empty]');
+      if(status)status.textContent='Feed unavailable';
+      if(empty)empty.hidden=false;
+    }
+  }
+
   async function load(){
     try{
       const {response,payload}=await api();
@@ -326,4 +379,5 @@
   });
   window.addEventListener('popstate',renderIndex);
   load();
+  loadGalnet();
 })();

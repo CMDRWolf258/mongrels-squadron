@@ -1,6 +1,6 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-09-25_
+_Last updated: 2026-10-02_
 
 ## Read this first
 
@@ -1312,6 +1312,34 @@ Application statuses:
 - declined
 
 Accepted/Declined are terminal in the normal workflow. Discord Member role assignment must succeed before website acceptance is finalized. Private officer notes never become applicant-facing decline text.
+
+---
+
+## Newsroom / The Morning Walk / GalNet Wire
+
+Primary files:
+- `newsroom/index.html`
+- `js/newsroom.js`
+- `css/newsroom.css`
+- `functions/api/newsroom/index.js`
+- `functions/api/galnet.js`
+- `lib/galnet.js`
+- `scripts/smoke-newsroom.mjs`
+
+Architecture:
+- **The Morning Walk** remains the Mongrels' own publication and keeps its existing Site Admin draft/publish/archive workflow in `PROJECTS` under `newsroom-v1`.
+- **GalNet Wire** is a separate read-only external feed. GalNet records are never inserted into the Morning Walk editorial document and cannot be edited or published through the Morning Walk desk.
+- The browser reads `/api/galnet`; it does not call the external provider directly.
+- The current replaceable provider is EDData's documented `/v2/news/galnet` JSON endpoint. The backend normalizes each item to publication/GalNet date, headline, concise teaser, source link and optional image.
+- Reuse the existing `PROJECTS` binding for the small `galnet-wire-v1` last-known-good cache; no new Cloudflare binding is required.
+- A successful upstream result is treated as fresh for 15 minutes. If refresh fails, the API may return the last successful feed marked stale so The Morning Walk remains unaffected by external outages.
+- Only concise teasers are exposed by the Mongrels API; full GalNet articles remain linked to their original/source URL.
+- GalNet source URLs/images must be HTTPS. Client-rendered external links open separately with `noopener noreferrer`.
+- The feed is public and additive. Existing Morning Walk authoring, images, categories and permissions must remain independent.
+
+Validation:
+- `scripts/smoke-newsroom.mjs` covers the external feed wiring and normalization in addition to the existing Morning Walk publishing checks.
+- CI success does not prove the upstream provider is reachable from Cloudflare production; verify the deployed `/api/galnet` response and Newsroom layout after merge.
 
 ---
 

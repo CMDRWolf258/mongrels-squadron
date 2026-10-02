@@ -8,7 +8,7 @@
   <title>Newsroom | The Morning Walk | The Mongrels</title>
   <meta name="description" content="The Morning Walk — squadron news, field reports, dispatches, and lore from the Regiment of Imperial Mongrels.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/newsroom.css?v=3">
+  <link rel="stylesheet" href="../css/newsroom.css?v=4">
 </head>
 <body class="visual-page page-newsroom">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../about/">About</a><a href="../operations/">Command</a><a href="../projects/">Projects</a><a href="../gallery/">Gallery</a><a href="../recruitment/">Join Us</a></nav></div></header>
@@ -19,7 +19,7 @@
       <div>
         <p class="eyebrow">Community Newsroom</p>
         <h1>Newsroom</h1>
-        <p>Reports, dispatches, and stories from around the Regiment. The external galaxy feeds will join us later; for now, this desk belongs to the Mongrels.</p>
+        <p>Reports, dispatches, and stories from around the Regiment, with a live GalNet wire carrying the wider galaxy into the newsroom.</p>
       </div>
       <aside class="newsroom-masthead" aria-label="The Morning Walk masthead">
         <span>Est. 3302-ish</span>
@@ -51,6 +51,25 @@
           <strong>The presses are quiet.</strong>
           <span>The Morning Walk does not have a published story in this section yet.</span>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section newsroom-galnet" data-galnet-wire aria-labelledby="galnet-wire-title">
+    <div class="container">
+      <div class="galnet-wire-head">
+        <div>
+          <p class="eyebrow">GalNet Wire</p>
+          <h2 id="galnet-wire-title">Across the Galaxy</h2>
+          <p>Recent official GalNet dispatches, delivered as an external wire alongside The Morning Walk.</p>
+        </div>
+        <span class="galnet-wire-status" data-galnet-status aria-live="polite">Connecting to GalNet…</span>
+      </div>
+      <div class="galnet-wire-lead" data-galnet-lead></div>
+      <div class="galnet-wire-grid" data-galnet-list></div>
+      <div class="newsroom-empty galnet-wire-empty" data-galnet-empty hidden>
+        <strong>GalNet is off the wire.</strong>
+        <span>The Morning Walk is still available while the external feed reconnects.</span>
       </div>
     </div>
   </section>
@@ -139,7 +158,7 @@
 
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=65"></script>
-<script src="../js/newsroom.js?v=3"></script>
+<script src="../js/newsroom.js?v=4"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body>
 </html>
