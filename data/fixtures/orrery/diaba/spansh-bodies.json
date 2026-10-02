@@ -1,0 +1,3052 @@
+[
+  {
+    "id64": "2558022062802",
+    "record": {
+      "age": 11350.0,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 0.0,
+      "belts": [
+        {
+          "inner_radius": 992400000.0,
+          "mass": 138150000000000.0,
+          "name": "Diaba A Belt",
+          "outer_radius": 2418400000.0,
+          "type": "Rocky"
+        },
+        {
+          "inner_radius": 3335500000.0,
+          "mass": 52605000000000.0,
+          "name": "Diaba B Belt",
+          "outer_radius": 128070000000.0,
+          "type": "Rocky"
+        }
+      ],
+      "body_id": 0,
+      "distance_to_arrival": 0.0,
+      "estimated_mapping_value": 4601,
+      "estimated_scan_value": 1214,
+      "id64": "2558022062802",
+      "is_main_star": true,
+      "is_rotational_period_tidally_locked": false,
+      "luminosity_class": "Va",
+      "name": "Diaba",
+      "rotational_period": 4.93472870885417,
+      "solar_masses": 0.816406,
+      "solar_radius": 0.864776557872035,
+      "spectral_class": "K2",
+      "subtype": "K (Yellow-Orange) Star",
+      "surface_temperature": 4847.0,
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "type": "Star",
+      "updated_at": "2026-09-19T05:34:27Z"
+    }
+  },
+  {
+    "id64": "468376919268594386",
+    "record": {
+      "arg_of_periapsis": 144.599145,
+      "atmosphere": "No atmosphere",
+      "atmosphere_composition": [
+        {
+          "name": "Helium",
+          "share": 25.615507
+        },
+        {
+          "name": "Hydrogen",
+          "share": 74.384491
+        }
+      ],
+      "axis_tilt": -0.156595,
+      "body_id": 13,
+      "distance_to_arrival": 676.520266,
+      "earth_masses": 449.419891,
+      "estimated_mapping_value": 102415,
+      "estimated_scan_value": 28188,
+      "gravity": 3.22559651269501,
+      "id64": "468376919268594386",
+      "is_landable": false,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": false,
+      "name": "Diaba 1",
+      "orbital_eccentricity": 0.001921,
+      "orbital_inclination": -0.000537,
+      "orbital_period": 639.320972065127,
+      "orbital_synchronicity": 638.768899175833,
+      "parents": [
+        {
+          "id64": "2558022062802",
+          "subtype": "K (Yellow-Orange) Star",
+          "type": "Star"
+        }
+      ],
+      "radius": 75250.208,
+      "rotational_period": 0.552072889293981,
+      "semi_major_axis": 1.35832272922173,
+      "subtype": "Class II gas giant",
+      "surface_pressure": 0.0,
+      "surface_temperature": 225.92485,
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-08-27T20:04:54Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "504405716287558354",
+    "record": {
+      "arg_of_periapsis": 274.630428,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.285494,
+      "body_id": 14,
+      "distance_to_arrival": 674.150091,
+      "earth_masses": 0.001577,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.0957696543285408,
+      "id64": "504405716287558354",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "landmark_value": 0,
+      "landmarks": [
+        {
+          "id": "218232",
+          "latitude": -32.685001,
+          "longitude": -168.754837,
+          "subtype": "Surface Station",
+          "type": "Surface Station",
+          "value": 0
+        }
+      ],
+      "materials": [
+        {
+          "name": "Cadmium",
+          "share": 1.611404
+        },
+        {
+          "name": "Carbon",
+          "share": 16.888273
+        },
+        {
+          "name": "Iron",
+          "share": 20.750931
+        },
+        {
+          "name": "Nickel",
+          "share": 15.695135
+        },
+        {
+          "name": "Niobium",
+          "share": 1.418216
+        },
+        {
+          "name": "Phosphorus",
+          "share": 10.812162
+        },
+        {
+          "name": "Selenium",
+          "share": 3.143262
+        },
+        {
+          "name": "Sulphur",
+          "share": 20.083654
+        },
+        {
+          "name": "Tellurium",
+          "share": 1.548025
+        },
+        {
+          "name": "Zinc",
+          "share": 5.639326
+        },
+        {
+          "name": "Zirconium",
+          "share": 2.409611
+        }
+      ],
+      "name": "Diaba 1 a",
+      "orbital_eccentricity": 1.8E-05,
+      "orbital_inclination": -0.07523,
+      "orbital_period": 3.68168398186343,
+      "orbital_synchronicity": 0.000163072384260055,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 817.9899375,
+      "rotational_period": 3.68184705424769,
+      "semi_major_axis": 0.00515700941560401,
+      "signal_count": 2,
+      "signals": [
+        {
+          "count": 2,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2025-09-20T19:37:57Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 0.0
+        },
+        {
+          "name": "Metal",
+          "share": 9.0089
+        },
+        {
+          "name": "Rock",
+          "share": 90.9911
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Expansion",
+          "distance_to_arrival": 677.074178,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916935936,
+          "medium_pads": 0,
+          "name": "Moy Engineering Forge",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "distance_to_arrival": 681.640396,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916936192,
+          "medium_pads": 1,
+          "name": "Vogel Command Garrison",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Rocky body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 179.704132,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Standard",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "540434513306522322",
+    "record": {
+      "arg_of_periapsis": 140.267876,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.500151,
+      "body_id": 15,
+      "distance_to_arrival": 677.966017,
+      "earth_masses": 0.001975,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.103365555215662,
+      "id64": "540434513306522322",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Antimony",
+          "share": 1.213861
+        },
+        {
+          "name": "Carbon",
+          "share": 16.218918
+        },
+        {
+          "name": "Iron",
+          "share": 19.928482
+        },
+        {
+          "name": "Manganese",
+          "share": 8.230259
+        },
+        {
+          "name": "Nickel",
+          "share": 15.073069
+        },
+        {
+          "name": "Niobium",
+          "share": 1.362005
+        },
+        {
+          "name": "Phosphorus",
+          "share": 10.383629
+        },
+        {
+          "name": "Sulphur",
+          "share": 19.287651
+        },
+        {
+          "name": "Tungsten",
+          "share": 1.094274
+        },
+        {
+          "name": "Vanadium",
+          "share": 4.893742
+        },
+        {
+          "name": "Zirconium",
+          "share": 2.314107
+        }
+      ],
+      "name": "Diaba 1 b",
+      "orbital_eccentricity": 0.001154,
+      "orbital_inclination": -0.005201,
+      "orbital_period": 5.63503063663194,
+      "orbital_synchronicity": 0.000249415324080182,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 881.21725,
+      "rotational_period": 5.63528005195602,
+      "semi_major_axis": 0.00684906202603126,
+      "signal_count": 6,
+      "signals": [
+        {
+          "count": 6,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2024-05-17T01:35:17Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 0.0
+        },
+        {
+          "name": "Metal",
+          "share": 9.0089
+        },
+        {
+          "name": "Rock",
+          "share": 90.9911
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Civil Unrest",
+          "distance_to_arrival": 679.851065,
+          "has_large_pad": true,
+          "has_market": true,
+          "has_outfitting": true,
+          "large_pads": 4,
+          "market_id": 3516453888,
+          "medium_pads": 4,
+          "name": "Anthony de la Roche Horizons",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Outfitting",
+            "Crew Lounge",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Tuning",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Powerplay",
+            "Search and Rescue",
+            "Station Menu",
+            "Shop",
+            "Livery",
+            "Social Space",
+            "Bartender",
+            "Vista Genomics",
+            "Pioneer Supplies",
+            "Apex Interstellar",
+            "Frontline Solutions",
+            "System Colonisation"
+          ],
+          "small_pads": 4,
+          "type": "Planetary Outpost"
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "has_large_pad": false,
+          "market_id": 3516455424,
+          "name": "Stephenson Base"
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 681.185225,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916933888,
+          "medium_pads": 0,
+          "name": "Murata Chemical Workshop",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "distance_to_arrival": 681.174379,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916934144,
+          "medium_pads": 0,
+          "name": "Schaeffer Astrophysics Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916934400,
+          "name": "Khatri Agricultural Holdings",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        }
+      ],
+      "subtype": "Rocky body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 178.08345,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Standard",
+          "name": "High Velocity Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "High Velocity Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        },
+        {
+          "level": "Basic",
+          "name": "Sub-Surface Displacement Munitions"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-09-02T16:41:18Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "576463310325486290",
+    "record": {
+      "arg_of_periapsis": 213.280911,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.202558,
+      "body_id": 16,
+      "distance_to_arrival": 681.317257,
+      "earth_masses": 0.00206,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.104852452329968,
+      "id64": "576463310325486290",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "landmark_value": 0,
+      "landmarks": [
+        {
+          "id": "200642",
+          "latitude": 39.141937,
+          "longitude": 138.114944,
+          "subtype": "Settlement",
+          "type": "Surface Station",
+          "value": 0
+        },
+        {
+          "id": "200642",
+          "latitude": 39.141937,
+          "longitude": 138.114944,
+          "subtype": "Settlement",
+          "type": "Surface Station",
+          "value": 0
+        }
+      ],
+      "materials": [
+        {
+          "name": "Cadmium",
+          "share": 1.447611
+        },
+        {
+          "name": "Carbon",
+          "share": 15.171649
+        },
+        {
+          "name": "Chromium",
+          "share": 8.383783
+        },
+        {
+          "name": "Iron",
+          "share": 18.641682
+        },
+        {
+          "name": "Manganese",
+          "share": 7.698824
+        },
+        {
+          "name": "Nickel",
+          "share": 14.099787
+        },
+        {
+          "name": "Phosphorus",
+          "share": 9.713149
+        },
+        {
+          "name": "Sulphur",
+          "share": 18.042231
+        },
+        {
+          "name": "Tin",
+          "share": 1.110089
+        },
+        {
+          "name": "Vanadium",
+          "share": 4.577748
+        },
+        {
+          "name": "Yttrium",
+          "share": 1.113445
+        }
+      ],
+      "name": "Diaba 1 c",
+      "orbital_eccentricity": 0.001084,
+      "orbital_inclination": -0.023868,
+      "orbital_period": 9.41384763077546,
+      "orbital_synchronicity": 0.000416566620369707,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 893.5628125,
+      "rotational_period": 9.41426419739583,
+      "semi_major_axis": 0.00964298903444009,
+      "signal_count": 5,
+      "signals": [
+        {
+          "count": 5,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2023-10-16T21:38:59Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 0.0
+        },
+        {
+          "name": "Metal",
+          "share": 9.0089
+        },
+        {
+          "name": "Rock",
+          "share": 90.9911
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Diaba Gang",
+          "distance_to_arrival": 681.726931,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916930816,
+          "medium_pads": 0,
+          "name": "Banerjee Agricultural Estate",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Black Market",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Interstellar Factors Contact",
+            "Flight Controller",
+            "Station Operations",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 672.030645,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916931072,
+          "medium_pads": 0,
+          "name": "Okoye's Nursery",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 676.87785,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916931328,
+          "medium_pads": 0,
+          "name": "Hartmann Mining Exchange",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "distance_to_arrival": 677.000287,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916931584,
+          "medium_pads": 1,
+          "name": "Penfold Territories",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Rocky body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 176.411789,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "High Velocity Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "612492107344450258",
+    "record": {
+      "arg_of_periapsis": 289.584042,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.126225,
+      "body_id": 17,
+      "distance_to_arrival": 683.238993,
+      "earth_masses": 0.002376,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.110054858774345,
+      "id64": "612492107344450258",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Arsenic",
+          "share": 2.510928
+        },
+        {
+          "name": "Cadmium",
+          "share": 1.513731
+        },
+        {
+          "name": "Carbon",
+          "share": 15.864618
+        },
+        {
+          "name": "Chromium",
+          "share": 8.766715
+        },
+        {
+          "name": "Iron",
+          "share": 19.493147
+        },
+        {
+          "name": "Nickel",
+          "share": 14.743799
+        },
+        {
+          "name": "Niobium",
+          "share": 1.332253
+        },
+        {
+          "name": "Phosphorus",
+          "share": 10.1568
+        },
+        {
+          "name": "Sulphur",
+          "share": 18.866316
+        },
+        {
+          "name": "Tellurium",
+          "share": 1.454194
+        },
+        {
+          "name": "Zinc",
+          "share": 5.297507
+        }
+      ],
+      "name": "Diaba 1 d",
+      "orbital_eccentricity": 0.000899,
+      "orbital_inclination": -1.80849,
+      "orbital_period": 15.5362928355208,
+      "orbital_synchronicity": 0.000686953414399838,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 936.68375,
+      "rotational_period": 15.5369797889352,
+      "semi_major_axis": 0.0134668232624483,
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 0.0
+        },
+        {
+          "name": "Metal",
+          "share": 9.0089
+        },
+        {
+          "name": "Rock",
+          "share": 90.9911
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916934912,
+          "name": "Prabhune Botanical Estate",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 681.220955,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916935168,
+          "medium_pads": 0,
+          "name": "Konashevych Mineralogic Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Rocky body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 175.033707,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "648520904363414226",
+    "record": {
+      "arg_of_periapsis": 101.949828,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 0.463837,
+      "body_id": 18,
+      "distance_to_arrival": 674.242994,
+      "earth_masses": 0.003668,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.127572142347303,
+      "id64": "648520904363414226",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Cadmium",
+          "share": 1.440034
+        },
+        {
+          "name": "Carbon",
+          "share": 15.092238
+        },
+        {
+          "name": "Chromium",
+          "share": 8.339902
+        },
+        {
+          "name": "Iron",
+          "share": 18.544111
+        },
+        {
+          "name": "Manganese",
+          "share": 7.658528
+        },
+        {
+          "name": "Nickel",
+          "share": 14.025988
+        },
+        {
+          "name": "Phosphorus",
+          "share": 9.66231
+        },
+        {
+          "name": "Ruthenium",
+          "share": 1.145217
+        },
+        {
+          "name": "Sulphur",
+          "share": 17.947798
+        },
+        {
+          "name": "Tin",
+          "share": 1.104279
+        },
+        {
+          "name": "Zinc",
+          "share": 5.039595
+        }
+      ],
+      "name": "Diaba 1 e",
+      "orbital_eccentricity": 0.004739,
+      "orbital_inclination": 2.969942,
+      "orbital_period": 25.5320241881713,
+      "orbital_synchronicity": 0.00113252273150266,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 1080.977625,
+      "rotational_period": 25.5331567109028,
+      "semi_major_axis": 0.0187538512240132,
+      "signal_count": 2,
+      "signals": [
+        {
+          "count": 2,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2024-07-14T13:46:38Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 0.0
+        },
+        {
+          "name": "Metal",
+          "share": 9.0089
+        },
+        {
+          "name": "Rock",
+          "share": 90.9911
+        }
+      ],
+      "stations": [
+        {
+          "has_large_pad": false,
+          "market_id": 3516454912,
+          "name": "Fuca's Folly"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 683.882028,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916935424,
+          "medium_pads": 0,
+          "name": "Lusmore Synthetics Exchange",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Rocky body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 173.876633,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "684549701382378194",
+    "record": {
+      "arg_of_periapsis": 3.04161,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 2.677968,
+      "body_id": 19,
+      "distance_to_arrival": 675.241741,
+      "earth_masses": 0.006855,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.139778015703069,
+      "id64": "684549701382378194",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": false,
+      "materials": [
+        {
+          "name": "Cadmium",
+          "share": 1.371989
+        },
+        {
+          "name": "Carbon",
+          "share": 17.785334
+        },
+        {
+          "name": "Germanium",
+          "share": 5.06577
+        },
+        {
+          "name": "Iron",
+          "share": 17.66785
+        },
+        {
+          "name": "Manganese",
+          "share": 7.296642
+        },
+        {
+          "name": "Nickel",
+          "share": 13.363221
+        },
+        {
+          "name": "Phosphorus",
+          "share": 11.386476
+        },
+        {
+          "name": "Selenium",
+          "share": 3.310224
+        },
+        {
+          "name": "Sulphur",
+          "share": 21.150444
+        },
+        {
+          "name": "Technetium",
+          "share": 0.631908
+        },
+        {
+          "name": "Tungsten",
+          "share": 0.970143
+        }
+      ],
+      "name": "Diaba 1 f",
+      "orbital_eccentricity": 0.001206,
+      "orbital_inclination": 2.470027,
+      "orbital_period": 39.6249919301968,
+      "orbital_synchronicity": 79.2517375506482,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 1411.758375,
+      "rotational_period": -39.6267456204514,
+      "semi_major_axis": 0.0251389067980293,
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 20.0732
+        },
+        {
+          "name": "Metal",
+          "share": 7.3843
+        },
+        {
+          "name": "Rock",
+          "share": 72.5425
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916931840,
+          "name": "Contreras Genetics Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 679.951623,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916932096,
+          "medium_pads": 0,
+          "name": "Takeda Hydroponics Complex",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "distance_to_arrival": 665.957899,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916932352,
+          "medium_pads": 0,
+          "name": "Furnival Hydroponics Estate",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "distance_to_arrival": 664.299657,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916932608,
+          "medium_pads": 0,
+          "name": "Bravo Extraction Complex",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Rocky Ice world",
+      "surface_pressure": 0.0,
+      "surface_temperature": 153.227005,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        },
+        {
+          "level": "Basic",
+          "name": "Sub-Surface Displacement Munitions"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "720578498401342162",
+    "record": {
+      "arg_of_periapsis": 20.805736,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.091123,
+      "body_id": 20,
+      "distance_to_arrival": 675.240911,
+      "earth_masses": 0.000377,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.0453349648210462,
+      "id64": "720578498401342162",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Antimony",
+          "share": 1.036016
+        },
+        {
+          "name": "Arsenic",
+          "share": 2.190908
+        },
+        {
+          "name": "Carbon",
+          "share": 20.549231
+        },
+        {
+          "name": "Germanium",
+          "share": 4.899019
+        },
+        {
+          "name": "Iron",
+          "share": 14.731143
+        },
+        {
+          "name": "Manganese",
+          "share": 6.083813
+        },
+        {
+          "name": "Nickel",
+          "share": 11.14202
+        },
+        {
+          "name": "Niobium",
+          "share": 1.006795
+        },
+        {
+          "name": "Phosphorus",
+          "share": 13.155972
+        },
+        {
+          "name": "Sulphur",
+          "share": 24.437292
+        },
+        {
+          "name": "Tin",
+          "share": 0.767784
+        }
+      ],
+      "name": "Diaba 1 f a",
+      "orbital_eccentricity": 0.0,
+      "orbital_inclination": 0.613593,
+      "orbital_period": 1.99232457412037,
+      "orbital_synchronicity": 0.0540006589930599,
+      "parents": [
+        {
+          "id64": "684549701382378194",
+          "subtype": "Rocky Ice world",
+          "type": "Planet"
+        }
+      ],
+      "radius": 581.0588125,
+      "rotational_period": 2.04632523311343,
+      "semi_major_axis": 8.6453365146607E-05,
+      "signal_count": 4,
+      "signals": [
+        {
+          "count": 3,
+          "name": "Geological"
+        },
+        {
+          "count": 1,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2023-12-14T21:39:59Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 42.7538
+        },
+        {
+          "name": "Metal",
+          "share": 1.8123
+        },
+        {
+          "name": "Rock",
+          "share": 55.4339
+        }
+      ],
+      "subtype": "Rocky Ice world",
+      "surface_pressure": 0.0,
+      "surface_temperature": 153.227005,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "Major Water Geysers"
+    }
+  },
+  {
+    "id64": "756607295420306130",
+    "record": {
+      "arg_of_periapsis": 51.617881,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 0.263445,
+      "body_id": 21,
+      "distance_to_arrival": 682.571839,
+      "earth_masses": 0.002732,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.101337921892526,
+      "id64": "756607295420306130",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Carbon",
+          "share": 18.233931
+        },
+        {
+          "name": "Germanium",
+          "share": 5.140644
+        },
+        {
+          "name": "Iron",
+          "share": 17.847622
+        },
+        {
+          "name": "Molybdenum",
+          "share": 1.165439
+        },
+        {
+          "name": "Nickel",
+          "share": 13.499191
+        },
+        {
+          "name": "Phosphorus",
+          "share": 11.673676
+        },
+        {
+          "name": "Polonium",
+          "share": 0.459695
+        },
+        {
+          "name": "Sulphur",
+          "share": 21.683922
+        },
+        {
+          "name": "Tin",
+          "share": 1.062804
+        },
+        {
+          "name": "Vanadium",
+          "share": 4.382755
+        },
+        {
+          "name": "Zinc",
+          "share": 4.850315
+        }
+      ],
+      "name": "Diaba 1 g",
+      "orbital_eccentricity": 0.000598,
+      "orbital_inclination": 6.778483,
+      "orbital_period": 61.3019304970949,
+      "orbital_synchronicity": 0.00271123855319644,
+      "parents": [
+        {
+          "id64": "468376919268594386",
+          "subtype": "Class II gas giant",
+          "type": "Planet"
+        }
+      ],
+      "radius": 1046.8030625,
+      "rotational_period": 61.3046417356481,
+      "semi_major_axis": 0.0336266043143157,
+      "signal_count": 7,
+      "signals": [
+        {
+          "count": 7,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2025-04-13T15:50:54Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 21.2545
+        },
+        {
+          "name": "Metal",
+          "share": 7.0941
+        },
+        {
+          "name": "Rock",
+          "share": 71.6514
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "distance_to_arrival": 663.409476,
+          "has_large_pad": true,
+          "has_market": true,
+          "has_outfitting": true,
+          "large_pads": 4,
+          "market_id": 3516453632,
+          "medium_pads": 4,
+          "name": "Pryor Keep",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Outfitting",
+            "Crew Lounge",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Tuning",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Powerplay",
+            "Search and Rescue",
+            "Station Menu",
+            "Shop",
+            "Livery",
+            "Social Space",
+            "Bartender",
+            "Vista Genomics",
+            "Pioneer Supplies",
+            "Apex Interstellar",
+            "Frontline Solutions",
+            "System Colonisation"
+          ],
+          "small_pads": 4,
+          "type": "Planetary Outpost"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 694.854965,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916927232,
+          "medium_pads": 1,
+          "name": "Owen Defence Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "distance_to_arrival": 692.442802,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916927488,
+          "medium_pads": 0,
+          "name": "Pasternak Command Point",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 690.647893,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916927744,
+          "medium_pads": 0,
+          "name": "Prevost Manufacturing Installation",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916928000,
+          "name": "Rawlins Engineering Complex",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ]
+        }
+      ],
+      "subtype": "Rocky Ice world",
+      "surface_pressure": 0.0,
+      "surface_temperature": 152.561646,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "FSD"
+        },
+        {
+          "level": "Basic",
+          "name": "High Velocity Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "828664889458234066",
+    "record": {
+      "arg_of_periapsis": 256.055869,
+      "atmosphere": "No atmosphere",
+      "atmosphere_composition": [
+        {
+          "name": "Helium",
+          "share": 25.60453
+        },
+        {
+          "name": "Hydrogen",
+          "share": 74.3526
+        }
+      ],
+      "axis_tilt": -0.22565,
+      "body_id": 23,
+      "distance_to_arrival": 1002.068356,
+      "earth_masses": 12.390148,
+      "estimated_mapping_value": 2488,
+      "estimated_scan_value": 580,
+      "gravity": 0.489904456000816,
+      "id64": "828664889458234066",
+      "is_landable": false,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": false,
+      "name": "Diaba 2",
+      "orbital_eccentricity": 0.000966,
+      "orbital_inclination": 0.200357,
+      "orbital_period": 1147.64263508497,
+      "orbital_synchronicity": 1145.86996701754,
+      "parents": [
+        {
+          "id64": "2558022062802",
+          "subtype": "K (Yellow-Orange) Star",
+          "type": "Star"
+        }
+      ],
+      "radius": 32060.418,
+      "rotational_period": 1.77266806743056,
+      "semi_major_axis": 2.00629500157572,
+      "subtype": "Gas giant with ammonia-based life",
+      "surface_pressure": 0.0,
+      "surface_temperature": 136.09407,
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-08-22T09:00:38Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "864693686477198034",
+    "record": {
+      "arg_of_periapsis": 272.165679,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 0.404923,
+      "body_id": 24,
+      "distance_to_arrival": 1002.058645,
+      "earth_masses": 0.00027,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.0335749974508004,
+      "id64": "864693686477198034",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Cadmium",
+          "share": 0.942171
+        },
+        {
+          "name": "Carbon",
+          "share": 22.449299
+        },
+        {
+          "name": "Chromium",
+          "share": 5.456544
+        },
+        {
+          "name": "Germanium",
+          "share": 3.494621
+        },
+        {
+          "name": "Iron",
+          "share": 12.132847
+        },
+        {
+          "name": "Nickel",
+          "share": 9.176777
+        },
+        {
+          "name": "Phosphorus",
+          "share": 14.372426
+        },
+        {
+          "name": "Selenium",
+          "share": 4.178285
+        },
+        {
+          "name": "Sulphur",
+          "share": 26.696863
+        },
+        {
+          "name": "Technetium",
+          "share": 0.433943
+        },
+        {
+          "name": "Tungsten",
+          "share": 0.666215
+        }
+      ],
+      "name": "Diaba 2 a",
+      "orbital_eccentricity": 8.1E-05,
+      "orbital_inclination": 0.003986,
+      "orbital_period": 5.11318024385417,
+      "orbital_synchronicity": 1.41685305869213,
+      "parents": [
+        {
+          "id64": "828664889458234066",
+          "subtype": "Gas giant with ammonia-based life",
+          "type": "Planet"
+        }
+      ],
+      "radius": 571.275875,
+      "rotational_period": 6.5300333025463,
+      "semi_major_axis": 0.00193927193150928,
+      "signal_count": 6,
+      "signals": [
+        {
+          "count": 2,
+          "name": "Geological"
+        },
+        {
+          "count": 4,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2021-06-15T09:31:46Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 82.3938
+        },
+        {
+          "name": "Metal",
+          "share": 1.5861
+        },
+        {
+          "name": "Rock",
+          "share": 16.02
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916932864,
+          "name": "Wright Arms Base",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 1000.89548,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916933120,
+          "medium_pads": 0,
+          "name": "Hammond Genetics Institution",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "HIP 29444 Empire Consulate",
+          "controlling_minor_faction_state": "Election",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916933632,
+          "name": "Taschieri Agricultural Estate",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        }
+      ],
+      "subtype": "Icy body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 122.135284,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        },
+        {
+          "level": "Basic",
+          "name": "Sub-Surface Displacement Munitions"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "Minor Methane Magma"
+    }
+  },
+  {
+    "id64": "900722483496162002",
+    "record": {
+      "arg_of_periapsis": 39.277314,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": -0.204209,
+      "body_id": 25,
+      "distance_to_arrival": 1001.93082,
+      "earth_masses": 0.00029,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.0343881921076782,
+      "id64": "900722483496162002",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Arsenic",
+          "share": 1.580004
+        },
+        {
+          "name": "Carbon",
+          "share": 22.695824
+        },
+        {
+          "name": "Chromium",
+          "share": 5.516465
+        },
+        {
+          "name": "Iron",
+          "share": 12.266085
+        },
+        {
+          "name": "Manganese",
+          "share": 5.065767
+        },
+        {
+          "name": "Molybdenum",
+          "share": 0.800968
+        },
+        {
+          "name": "Nickel",
+          "share": 9.277552
+        },
+        {
+          "name": "Niobium",
+          "share": 0.838321
+        },
+        {
+          "name": "Phosphorus",
+          "share": 14.530256
+        },
+        {
+          "name": "Sulphur",
+          "share": 26.990036
+        },
+        {
+          "name": "Technetium",
+          "share": 0.438708
+        }
+      ],
+      "name": "Diaba 2 b",
+      "orbital_eccentricity": 4.3E-05,
+      "orbital_inclination": -0.003683,
+      "orbital_period": 22.0919772982639,
+      "orbital_synchronicity": 6.9134365723727,
+      "parents": [
+        {
+          "id64": "828664889458234066",
+          "subtype": "Gas giant with ammonia-based life",
+          "type": "Planet"
+        }
+      ],
+      "radius": 584.9514375,
+      "rotational_period": 29.0054138706366,
+      "semi_major_axis": 0.00514439540311454,
+      "signal_count": 4,
+      "signals": [
+        {
+          "count": 4,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2024-07-15T01:59:53Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 82.3938
+        },
+        {
+          "name": "Metal",
+          "share": 1.5861
+        },
+        {
+          "name": "Rock",
+          "share": 16.02
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 997.841808,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916928512,
+          "medium_pads": 0,
+          "name": "Batterham Astrophysics Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Universal Cartographics",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 998.177903,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916928768,
+          "medium_pads": 0,
+          "name": "Osuigwe Agricultural Exchange",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 2,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Anhuanga Empire Pact",
+          "has_large_pad": false,
+          "has_market": true,
+          "market_id": 3916929024,
+          "name": "Marchand Agricultural Range",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ]
+        }
+      ],
+      "subtype": "Icy body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 122.089241,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Plasma Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "936751280515125970",
+    "record": {
+      "arg_of_periapsis": 129.558074,
+      "atmosphere": "No atmosphere",
+      "axis_tilt": 0.334912,
+      "body_id": 26,
+      "distance_to_arrival": 1003.894951,
+      "earth_masses": 0.000453,
+      "estimated_mapping_value": 2221,
+      "estimated_scan_value": 500,
+      "gravity": 0.0399767513000918,
+      "id64": "936751280515125970",
+      "is_landable": true,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": true,
+      "materials": [
+        {
+          "name": "Carbon",
+          "share": 23.1085
+        },
+        {
+          "name": "Iron",
+          "share": 12.489117
+        },
+        {
+          "name": "Nickel",
+          "share": 9.446244
+        },
+        {
+          "name": "Niobium",
+          "share": 0.853564
+        },
+        {
+          "name": "Phosphorus",
+          "share": 14.794458
+        },
+        {
+          "name": "Polonium",
+          "share": 0.321678
+        },
+        {
+          "name": "Selenium",
+          "share": 4.300977
+        },
+        {
+          "name": "Sulphur",
+          "share": 27.480793
+        },
+        {
+          "name": "Tin",
+          "share": 0.743711
+        },
+        {
+          "name": "Vanadium",
+          "share": 3.066892
+        },
+        {
+          "name": "Zinc",
+          "share": 3.394074
+        }
+      ],
+      "name": "Diaba 2 c",
+      "orbital_eccentricity": 0.001814,
+      "orbital_inclination": 3.377279,
+      "orbital_period": 49.2882659589815,
+      "orbital_synchronicity": 15.8696120537847,
+      "parents": [
+        {
+          "id64": "828664889458234066",
+          "subtype": "Gas giant with ammonia-based life",
+          "type": "Planet"
+        }
+      ],
+      "radius": 678.716375,
+      "rotational_period": 65.1578780127662,
+      "semi_major_axis": 0.00878362245408373,
+      "signal_count": 7,
+      "signals": [
+        {
+          "count": 7,
+          "name": "Human"
+        }
+      ],
+      "signals_updated_at": "2025-04-19T07:07:51Z",
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 82.3938
+        },
+        {
+          "name": "Metal",
+          "share": 1.5861
+        },
+        {
+          "name": "Rock",
+          "share": 16.02
+        }
+      ],
+      "stations": [
+        {
+          "controlling_minor_faction": "Diaba Movement",
+          "controlling_minor_faction_state": "Election",
+          "distance_to_arrival": 1004.627526,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916929280,
+          "medium_pads": 0,
+          "name": "Xie Industrial Holdings",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 998.153135,
+          "has_large_pad": true,
+          "has_market": true,
+          "large_pads": 1,
+          "market_id": 3916929792,
+          "medium_pads": 0,
+          "name": "Macleod Manufacturing Site",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu",
+            "Refinery Contact"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Diaba Gang",
+          "distance_to_arrival": 1005.447058,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916930048,
+          "medium_pads": 1,
+          "name": "Coulstock-Cockeram Arms Garrison",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Black Market",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Interstellar Factors Contact",
+            "Flight Controller",
+            "Station Operations",
+            "Station Menu"
+          ],
+          "small_pads": 1,
+          "type": "Settlement"
+        },
+        {
+          "controlling_minor_faction": "Regiment of Imperial Mongrels",
+          "controlling_minor_faction_state": "Boom",
+          "distance_to_arrival": 1004.627561,
+          "has_large_pad": false,
+          "has_market": true,
+          "large_pads": 0,
+          "market_id": 3916930304,
+          "medium_pads": 1,
+          "name": "Kook Military Base",
+          "services": [
+            "Dock",
+            "Autodock",
+            "Market",
+            "Contacts",
+            "Missions",
+            "Restock",
+            "Refuel",
+            "Repair",
+            "Workshop",
+            "Missions Generated",
+            "Flight Controller",
+            "Station Operations",
+            "Search and Rescue",
+            "Station Menu"
+          ],
+          "small_pads": 0,
+          "type": "Settlement"
+        }
+      ],
+      "subtype": "Icy body",
+      "surface_pressure": 0.0,
+      "surface_temperature": 122.072357,
+      "synthesis_recipes": [
+        {
+          "level": "Basic",
+          "name": "AX Remote Flak Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Configurable Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Explosive Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "High Velocity Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Large Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "Life Support"
+        },
+        {
+          "level": "Basic",
+          "name": "Limpets"
+        },
+        {
+          "level": "Basic",
+          "name": "Small Calibre Munitions"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Ammo"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Refuel"
+        },
+        {
+          "level": "Basic",
+          "name": "SRV Repair"
+        }
+      ],
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "No volcanism"
+    }
+  },
+  {
+    "id64": "1080866468590981842",
+    "record": {
+      "arg_of_periapsis": 43.843377,
+      "atmosphere": "Hot thick Methane-rich",
+      "atmosphere_composition": [
+        {
+          "name": "Ammonia",
+          "share": 33.175728
+        },
+        {
+          "name": "Methane",
+          "share": 33.175728
+        },
+        {
+          "name": "Nitrogen",
+          "share": 33.175728
+        }
+      ],
+      "axis_tilt": -0.03964,
+      "body_id": 30,
+      "distance_to_arrival": 1343.915629,
+      "earth_masses": 3.537803,
+      "estimated_mapping_value": 2281,
+      "estimated_scan_value": 518,
+      "gravity": 1.11365300295707,
+      "id64": "1080866468590981842",
+      "is_landable": false,
+      "is_main_star": null,
+      "is_rotational_period_tidally_locked": false,
+      "name": "Diaba 3",
+      "orbital_eccentricity": 0.001506,
+      "orbital_inclination": -0.125499,
+      "orbital_period": 1785.67858205902,
+      "orbital_synchronicity": 1784.5547630413,
+      "parents": [
+        {
+          "id64": "2558022062802",
+          "subtype": "K (Yellow-Orange) Star",
+          "type": "Star"
+        }
+      ],
+      "radius": 11362.621,
+      "reserve_level": "Major",
+      "rings": [
+        {
+          "inner_radius": 19194000.0,
+          "mass": 7600800000.0,
+          "name": "Diaba 3 A Ring",
+          "outer_radius": 53046000.0,
+          "type": "Icy"
+        }
+      ],
+      "rotational_period": 1.12381901771991,
+      "semi_major_axis": 2.69396867607005,
+      "solid_composition": [
+        {
+          "name": "Ice",
+          "share": 67.7516
+        },
+        {
+          "name": "Metal",
+          "share": 10.4343
+        },
+        {
+          "name": "Rock",
+          "share": 21.0772
+        }
+      ],
+      "subtype": "Icy body",
+      "surface_pressure": 14662.6845497163,
+      "surface_temperature": 596.944641,
+      "system_controlling_power": "Aisling Duval",
+      "system_id64": "2558022062802",
+      "system_name": "Diaba",
+      "system_power_state": "Stronghold",
+      "system_region": "Inner Orion Spur",
+      "system_x": 164.0,
+      "system_y": -99.6875,
+      "system_z": 6.96875,
+      "terraforming_state": "Not terraformable",
+      "type": "Planet",
+      "updated_at": "2026-07-24T00:33:44Z",
+      "volcanism_type": "Major Water Geysers"
+    }
+  }
+]
