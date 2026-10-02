@@ -1,5 +1,5 @@
 {
   "schemaVersion": 1,
   "defaultSystemId": "ngc-2546-uz-g-d10-16",
-  "systems": [{ "id": "ngc-2546-uz-g-d10-16", "name": "NGC 2546 Sector UZ-G d10-16", "file": "ngc-2546-uz-g-d10-16.json", "locationProvider": { "url": "resource-locations.json" } }]
+  "systems": [{ "id": "ngc-2546-uz-g-d10-16", "name": "NGC 2546 Sector UZ-G d10-16", "file": "ngc-2546-uz-g-d10-16.json", "locationProvider": { "url": "https://ten16-archive.pages.dev/api/mining?format=poi" } }]
 }
