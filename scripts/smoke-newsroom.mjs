@@ -9,7 +9,7 @@ const css=readFileSync('css/newsroom.css','utf8');
 const site=readFileSync('js/site.js','utf8');
 const galnetApi=readFileSync('functions/api/galnet.js','utf8');
 const galnetLib=readFileSync('lib/galnet.js','utf8');
-for(const pattern of [/galnet-wire-v3/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/resolveArticleLinks/,/method:'HEAD'/,/response\.status===404\|\|response\.status===410/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
+for(const pattern of [/galnet-wire-v4/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/resolveArticleLinks/,/method:'HEAD'/,/response\.status===404\|\|response\.status===410/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
 const normalizedGalnet=normalizeGalnetFeed([{
   published:'2026-10-02T12:00:00Z',
   date:'02 OCT 3312',
@@ -44,6 +44,22 @@ assert.equal(normalizedFrontierGalnet[0].teaser,'Official & direct from Frontier
 assert.equal(normalizedFrontierGalnet[0].url,'https://www.elitedangerous.com/news/galnet/frontier-test-dispatch');
 assert.equal(normalizedFrontierGalnet[0].fallbackUrl,'https://community.elitedangerous.com/galnet/uid/test-guid');
 assert.equal(normalizedFrontierGalnet[0].imageUrl,'https://hosting.zaonce.net/elite-dangerous/galnet/test_image.png');
+
+const normalizedMissingSlug=normalizeGalnetFeed({data:[{
+  type:'node--galnet_article',
+  attributes:{
+    published_at:'2026-10-02T14:00:00Z',
+    field_galnet_date:'01 OCT 3312',
+    title:'Mass Prison Breakout Reported at EVE-597 Reformatory',
+    body:{value:'<p>Latest Frontier article.</p>'},
+    field_slug:'',
+    field_galnet_guid:'6abbbcb7ab11b969530fc317',
+    field_galnet_image:'eve_597_breakout',
+  },
+}]});
+assert.equal(normalizedMissingSlug.length,1);
+assert.equal(normalizedMissingSlug[0].url,'https://www.elitedangerous.com/news/galnet/mass-prison-breakout-reported-at-eve-597-reformatory');
+assert.equal(normalizedMissingSlug[0].fallbackUrl,'https://community.elitedangerous.com/galnet/uid/6abbbcb7ab11b969530fc317');
 
 for(const pattern of [
   /newsroom-v1/,/The Morning Walk/,/squadron-news/,/field-report/,/command-briefing/,
