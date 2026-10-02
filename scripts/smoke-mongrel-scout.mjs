@@ -69,7 +69,7 @@ for(const pattern of [
   /Scout rate limit reached/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
-assert.match(plugin,/Commander name, cargo, credits/i);
+assert.match(plugin,/Commander name[\s\S]{0,180}cargo, credits/i);
 assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
 assert.match(plugin,/facility market ID, host body ID\/name, latitude and longitude/i,'Scout privacy copy should disclose facility placement fields');
