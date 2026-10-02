@@ -256,10 +256,39 @@
     })).filter(row=>row.name);
   }
 
+  function validatedServerRows(card,phase) {
+    const key=phase==='pending'?'conflictPendingRows':'conflictActiveRows';
+    try{
+      const parsed=JSON.parse(card.dataset[key]||'[]');
+      return Array.isArray(parsed)?parsed.filter(row=>row?.name&&row?.detail):[];
+    }catch{return[];}
+  }
+
+  function validatedStateRows(rows,phase) {
+    const sourceKey=phase==='pending'?'pending':'state';
+    const candidates=rows
+      .map(row=>({...row,type:conflictType(row[sourceKey]),phase}))
+      .filter(row=>row.type);
+    const counts=new Map();
+    for(const row of candidates)counts.set(row.type,(counts.get(row.type)||0)+1);
+    return candidates.filter(row=>(counts.get(row.type)||0)>=2);
+  }
+
   function detected(card) {
     const rows=board(card);
-    const active=rows.map(row=>({...row,type:conflictType(row.state),phase:'active'})).filter(row=>row.type);
-    const pending=rows.map(row=>({...row,type:conflictType(row.pending),phase:'pending'})).filter(row=>row.type);
+    const localActive=validatedStateRows(rows,'active');
+    const localPending=validatedStateRows(rows,'pending');
+    const mergeValidated=(local,server,phase)=>{
+      const map=new Map(local.map(row=>[norm(row.name),row]));
+      for(const item of server){
+        const boardRow=rows.find(row=>norm(row.name)===norm(item.name));
+        const type=conflictType(item.detail);
+        if(boardRow&&type)map.set(norm(boardRow.name),{...boardRow,type,phase});
+      }
+      return [...map.values()];
+    };
+    const active=mergeValidated(localActive,validatedServerRows(card,'active'),'active');
+    const pending=mergeValidated(localPending,validatedServerRows(card,'pending'),'pending');
     return { rows, active, pending };
   }
 
