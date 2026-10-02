@@ -15,7 +15,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.2.0"
+PLUGIN_VERSION = "1.3.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -84,7 +84,9 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
         "Regiment of Imperial Mongrels is present. When Elite supplies a Market event, "
         "Scout also sends that station's market ID, commodity prices, supply and demand "
-        "for direct Trader's Outpost freshness. System coordinates support distance sorting. "
+        "for direct Trader's Outpost freshness. ApproachSettlement events also send the public "
+        "facility market ID, host body ID/name, latitude and longitude so the System Orrery can "
+        "replace schematic surface markers with verified positions. System coordinates support distance sorting. "
         "Commander name, cargo, credits, ship build, materials, missions, and general travel "
         "history are not transmitted."
     )
@@ -130,6 +132,23 @@ def journal_entry(
         _remember_location(entry, system)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
+    if event == "ApproachSettlement":
+        if not token:
+            _set_status("Needs scout token")
+            return None
+        payload = _build_facility_payload(entry, system)
+        if payload is None:
+            return None
+        endpoint = (config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT).strip()
+        _set_status(f"Mapping facility: {payload['facilityName']}…")
+        threading.Thread(
+            target=_send_snapshot,
+            args=(endpoint, token, payload),
+            name="MongrelScoutFacilityUpload",
+            daemon=True,
+        ).start()
+        return None
+
     if event == "Market":
         if not token:
             _set_status("Needs scout token")
@@ -184,6 +203,58 @@ def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
     star_pos = entry.get("StarPos")
     if isinstance(star_pos, (list, tuple)) and len(star_pos) >= 3:
         _last_star_pos = list(star_pos[:3])
+
+
+def _build_facility_payload(
+    entry: Mapping[str, Any],
+    fallback_system: str,
+) -> Optional[dict[str, Any]]:
+    system_name = str(entry.get("StarSystem") or fallback_system or _last_system_name or "").strip()
+    facility_name = str(entry.get("Name_Localised") or entry.get("Name") or "").strip()
+    body_name = str(entry.get("BodyName") or "").strip()
+    timestamp = str(entry.get("timestamp") or "").strip()
+    system_address = entry.get("SystemAddress", _last_system_address)
+    market_id = entry.get("MarketID")
+    body_id = entry.get("BodyID")
+    latitude = entry.get("Latitude")
+    longitude = entry.get("Longitude")
+
+    try:
+        system_address_text = str(int(system_address))
+        market_id_text = str(int(market_id))
+        body_id_value = int(body_id)
+        latitude_value = float(latitude)
+        longitude_value = float(longitude)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+    if (
+        not system_name
+        or not facility_name
+        or not timestamp
+        or not system_address_text.isdigit()
+        or not market_id_text.isdigit()
+        or body_id_value < 0
+        or not (-90.0 <= latitude_value <= 90.0)
+        or not (-180.0 <= longitude_value <= 180.0)
+    ):
+        return None
+
+    return {
+        "version": 1,
+        "kind": "facility",
+        "event": "ApproachSettlement",
+        "timestamp": timestamp,
+        "system": system_name,
+        "systemName": system_name,
+        "systemAddress": system_address_text,
+        "facilityName": facility_name,
+        "marketId": market_id_text,
+        "bodyId": body_id_value,
+        "bodyName": body_name,
+        "latitude": latitude_value,
+        "longitude": longitude_value,
+    }
 
 
 def _build_market_payload(
@@ -367,6 +438,12 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
                         _set_status(f"Market already newer: {station_name}")
                     else:
                         _set_status(f"Market updated: {station_name}")
+                elif payload.get("kind") == "facility":
+                    facility_name = str(payload.get("facilityName") or "facility")
+                    if result.get("stored") is False:
+                        _set_status(f"Facility already mapped: {facility_name}")
+                    else:
+                        _set_status(f"Facility mapped: {facility_name}")
                 elif result.get("stored") is False:
                     _set_status(f"Already newer: {payload['system']}")
                 else:

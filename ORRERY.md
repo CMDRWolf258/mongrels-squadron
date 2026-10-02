@@ -1,6 +1,6 @@
 # System Orrery prototype
 
-The public `/orrery/` page explores NGC 2546 Sector UZ-G d10-16 and Diaba with a true 3D camera, selectable celestial bodies and known installations. 10-16 remains the default system. The page uses the site's existing dark/cyan theme and shared navigation. The prototype adds no server binding, authentication requirement or build step.
+The public `/orrery/` page explores NGC 2546 Sector UZ-G d10-16 and Diaba with a true 3D camera, selectable celestial bodies and known installations. 10-16 remains the default system. The page uses the site's existing dark/cyan theme and shared navigation. The Orrery remains public and adds no new Cloudflare binding or build step; verified Mongrel Scout facility observations reuse the existing `DAILY_ORDERS` binding.
 
 ## Architecture
 
@@ -10,6 +10,8 @@ The public `/orrery/` page explores NGC 2546 Sector UZ-G d10-16 and Diaba with a
 - `js/orrery/camera.js` chooses a touch orbit pivot from projected body positions at rotation gesture boundaries. It leaves two-finger pan/zoom and desktop controls to the vendored OrbitControls.
 - `lib/orrery-model.js` supplies validation, deterministic visual layout, latitude/longitude projection, searchable records and stable-ID location joins. It is shared by the browser and offline tests.
 - `lib/orrery-locations.js` loads a configured reusable canonical location provider and maps journal body IDs/ring names to the selected system without changing the provider's source identity.
+- `lib/orrery-facility-observations.js` overlays sanitized Mongrel Scout `ApproachSettlement` observations onto existing imported facilities by Market ID + exact system identity. It can upgrade schematic/unplaced surface facilities to verified latitude/longitude placement without creating new facility identities or overwriting existing exact source coordinates.
+- `lib/scout-facility-observations.js`, `/api/operations/scout-ingest`, and `/api/orrery/facility-observations` store and expose only the public facility-placement facts needed by the Orrery.
 - `data/orrery/systems.json` registers available system documents. `data/orrery/ngc-2546-uz-g-d10-16.json` is the dated initial snapshot and `data/orrery/diaba.json` supplies the second system; their field meanings, import process and provenance are documented in `data/orrery/README.md`.
 - `scripts/import-orrery-edsm.mjs` normalizes EDSM bodies/stations and matching Spansh body records into the shared schema. Optional paired `--system-name` and `--system-id` arguments select another system and its output filename; omitting them retains the 10-16 import default.
 
@@ -47,6 +49,14 @@ Each system catalog entry may declare `locationProvider.url`, resolved relative 
 
 Provider results must match the selected system, reference existing bodies/rings, and pass coordinate validation. Unknown coordinates remain null; no display coordinate is promoted to measured data. Providers preserve their established access and publication rules; private records must not be copied into a public snapshot. Provider failure leaves the system snapshot usable and is disclosed in data coverage.
 
+### Mongrel Scout facility placement
+
+Mongrel Scout v1.3.0 listens for Elite's `ApproachSettlement` journal event. Elite supplies the settlement name, Market ID, system address, body ID/name, latitude and longitude for that event. Scout transmits those public location facts plus the journal timestamp; it does not add Commander name, ship, cargo, credits, materials, missions or route history.
+
+Facility observations are authenticated through the existing Scout token and accepted only when the token is allowed to scout that system (or has an active Scout claim). They do not complete ordinary Scout Jobs or issue rewards. Storage uses per-system keys under the existing `DAILY_ORDERS` namespace and retains the newest observation per Market ID. Public Orrery reads expose only Market ID, facility name, body identity, coordinates, observation time and source label—never Scout/token/member identity.
+
+At load time the Orrery matches an observation to exactly one imported facility by Market ID and verifies the selected system and journal body ID. A known imported host must agree with the observed body; conflicts are ignored rather than guessed. Existing exact imported coordinates are not silently replaced. A verified observation therefore upgrades only a schematic/unplaced matching surface facility to exact placement. The imported EDSM/Spansh facility record remains the facility identity/provenance; `positionObservation` records the separate Scout placement provenance. A missing/unavailable facility-observation API never prevents the core Orrery or curated POI layer from loading.
+
 ## Validation and scope
 
 Run the existing site smoke workflow plus:
@@ -62,4 +72,4 @@ The model suite checks graph integrity, null barycentres, invalid references/coo
 
 Browser checks should exercise system switching, orbit/zoom/pan, click/tap selection, directory search, filters, body focus, WebGL failure/retry, and desktop/tablet/phone layouts for both Diaba and 10-16. CI success is distinct from browser verification and confirmed Cloudflare production deployment.
 
-Live orbital simulation, a new location editor, additional systems and navigation coordinates for unknown installations are future work. Curated mining edits continue through the personal site's established workflow. Changes to other operational workflows, data authority or access rules require deliberate review rather than being implied by renderer development.
+Live orbital simulation, a new location editor, additional systems and orbital/navigation coordinates for non-surface installations are future work. Curated mining edits continue through the personal site's established workflow. Changes to other operational workflows, data authority or access rules require deliberate review rather than being implied by renderer development.

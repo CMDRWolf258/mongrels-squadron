@@ -7,6 +7,7 @@ import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runt
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 import { recordScoutMarketSnapshot } from '../../../lib/trade-market.js';
 import { validatedConflictObservation } from '../../../lib/bgs-conflict-validation.js';
+import { normalizeScoutFacilityObservation, recordScoutFacilityObservation } from '../../../lib/scout-facility-observations.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -42,6 +43,9 @@ export async function onRequestPost({ request, env }) {
 
   if (isMarketPayload(body)) {
     return handleMarketSnapshot({body,auth,env});
+  }
+  if (isFacilityPayload(body)) {
+    return handleFacilityObservation({body,auth,env});
   }
 
   const snapshot = normalizeSnapshot(body);
@@ -181,6 +185,48 @@ export async function onRequestPost({ request, env }) {
 function isMarketPayload(value) {
   return value && typeof value === 'object'
     && (String(value.kind || '').toLowerCase() === 'market' || String(value.event || '') === 'Market');
+}
+
+function isFacilityPayload(value) {
+  return value && typeof value === 'object'
+    && (String(value.kind || '').toLowerCase() === 'facility' || String(value.event || '') === 'ApproachSettlement');
+}
+
+async function handleFacilityObservation({body,auth,env}) {
+  const observation=normalizeScoutFacilityObservation(body);
+  if(!observation)return reply({ok:false,error:'invalid_facility_observation'},400);
+  if(Date.parse(observation.observedAt)>Date.now()+15*60*1000){
+    return reply({ok:false,error:'journal_timestamp_in_future'},422);
+  }
+  if(!systemAuthorized(auth,observation.system)){
+    const claimAuthorized=auth.ownerId
+      ? await hasActiveScoutClaim(env,{system:observation.system,ownerId:auth.ownerId,at:new Date()})
+      : false;
+    if(!claimAuthorized){
+      return reply({ok:false,error:'system_not_authorized',system:observation.system},403);
+    }
+  }
+
+  const result=await recordScoutFacilityObservation(env,body);
+  if(result?.error){
+    const status=result.error==='bgs_storage_not_configured'?503
+      : result.error==='journal_timestamp_in_future'?422
+      : 400;
+    return reply({ok:false,error:result.error},status);
+  }
+
+  return reply({
+    ok:true,
+    accepted:true,
+    kind:'facility',
+    stored:Boolean(result.stored),
+    system:observation.system,
+    facility:observation.facilityName,
+    marketId:observation.marketId,
+    bodyId:observation.bodyJournalId,
+    updatedAt:observation.observedAt,
+    scout:auth.label,
+  },200);
 }
 
 async function handleMarketSnapshot({body,auth,env}) {
