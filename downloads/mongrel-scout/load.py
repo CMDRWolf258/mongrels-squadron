@@ -922,6 +922,8 @@ def _initial_status() -> str:
         return "Disabled"
     if not (config.get_str(KEY_TOKEN) or "").strip():
         return "Needs scout token"
+    if _hud_error:
+        return "Armed · HUD bridge unavailable"
     return "Armed"
 
 
