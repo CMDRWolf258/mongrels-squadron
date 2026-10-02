@@ -22,7 +22,8 @@ const normalizedGalnet=normalizeGalnetFeed([{
 assert.equal(normalizedGalnet.length,1);
 assert.equal(normalizedGalnet[0].galnetDate,'02 OCT 3312');
 assert.equal(normalizedGalnet[0].teaser,'One & two from GalNet.');
-assert.equal(normalizedGalnet[0].url,'https://example.com/article');
+assert.equal(normalizedGalnet[0].url,'https://www.elitedangerous.com/news/galnet/test-dispatch');
+assert.equal(normalizedGalnet[0].fallbackUrl,'https://example.com/article');
 assert.equal(normalizedGalnet[0].imageUrl,'https://example.com/image.jpg');
 
 const normalizedFrontierGalnet=normalizeGalnetFeed({data:[{
