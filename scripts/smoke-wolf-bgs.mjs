@@ -239,6 +239,11 @@ assert.doesNotMatch(conflictClient,/Mongrel conflict score/,'Conflict UI must no
 const writeApi=readFileSync('functions/api/operations/wolf-bgs-write.js','utf8');
 for (const pattern of [/normalizeSparseSettingsMap/,/normalizeSystemOverrides/,/Values equal to the old System Defaults are inheritance/,/freshnessMode: 'tick-cycle'/,/raw\.version = 3/,/session\.access !== 'site_admin'/,/toggle-queue-selector/,/queueSelected/,/ack-alerts/,/remove-alert/,/removedAt/,/alertEpisodes/,/set-conflict-day/,/clear-conflict-day/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/]) assert.match(writeApi,pattern);
 
+const scoutIngest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
+assert.match(scoutIngest,/validatedConflictObservation/,'Live Scout conflict history must use pair validation');
+const frontierSync=readFileSync('functions/api/frontier/sync.js','utf8');
+assert.match(frontierSync,/validatedConflictObservation/,'Frontier CAPI conflict history must use pair validation');
+
 const boardUpdater=readFileSync('scripts/enrich_bgs_boards.py','utf8');
 assert.match(boardUpdater,/fetch_tracked_system_conflicts/,'Board updater must fetch active conflicts regardless of Mongrel participation');
 assert.match(boardUpdater,/systemConflicts/,'Board updater must persist system-level conflict scores');
