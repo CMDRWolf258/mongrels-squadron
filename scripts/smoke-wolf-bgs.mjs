@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { validatedConflictObservation, validatedConflictRows } from '../lib/bgs-conflict-validation.js';
 
 const critical = [
   'wolf-bgs/index.html', 'css/wolf-bgs.css', 'css/wolf-bgs-rules.css', 'css/wolf-bgs-sliders.css', 'css/wolf-bgs-order-preview.css', 'css/wolf-bgs-conflicts.css', 'css/wolf-bgs-conflict-lab-v2.css', 'css/wolf-bgs-publish.css', 'css/wolf-bgs-reports.css', 'css/wolf-bgs-lab.css',
   'js/wolf-bgs-inheritance.js', 'js/wolf-bgs.js', 'js/wolf-bgs-rules.js', 'js/wolf-bgs-sliders.js', 'js/wolf-bgs-order-preview.js', 'js/wolf-bgs-conflicts.js', 'js/wolf-bgs-contribution-options.js', 'js/wolf-bgs-conflict-lab-v2.js', 'js/wolf-bgs-publish.js', 'js/wolf-bgs-reports.js', 'js/wolf-bgs-lab.js',
-  'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js', 'functions/api/operations/wolf-bgs-conflicts.js',
+  'functions/api/operations/wolf-bgs.js', 'functions/api/operations/wolf-bgs-write.js', 'functions/api/operations/wolf-bgs-rules.js', 'functions/api/operations/wolf-bgs-sliders.js', 'functions/api/operations/wolf-bgs-economy-rules.js', 'functions/api/operations/wolf-bgs-conflicts.js', 'lib/bgs-conflict-validation.js',
   'scripts/enrich_bgs_boards.py', 'data/live-bgs-boards.json',
 ];
 for (const path of critical) assert.ok(existsSync(path), `Wolf BGS Control critical file is missing: ${path}`);
@@ -15,7 +16,7 @@ assert.match(page,/<option value="20" selected>20<\/option>/,'Results-per-page d
 assert.match(page,/<option value="influence-desc" selected>Influence high → low<\/option>/,'Influence high-to-low should be default');
 assert.match(page,/wolf-bgs-order-preview\.css/,'Order Preview stylesheet is not loaded');
 assert.match(page,/wolf-bgs-order-preview\.js\?v=6/,'Order Preview cache version should be v6');
-assert.match(page,/wolf-bgs-conflicts\.js\?v=11/,'Conflict client cache version should be v11');
+assert.match(page,/wolf-bgs-conflicts\.js\?v=12/,'Conflict client cache version should be v12');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.js\?v=5/,'Conflict prototype cache version should be v5');
 assert.match(page,/wolf-bgs-conflict-lab-v2\.css\?v=4/,'Conflict prototype stylesheet cache version should be v4');
 assert.match(page,/BGS Lab — Mandalore/,'Mandalore BGS Lab is missing');
@@ -148,6 +149,55 @@ for(const pattern of [
 const slidersApi=readFileSync('functions/api/operations/wolf-bgs-sliders.js','utf8');
 for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-slider-objectives-v1/,/save-system-slider-objectives/,/reset-system-slider-objectives/,/economyObjective/,/securityObjective/,/'locked'/,/X-Mongrels-Request/]) assert.match(slidersApi,pattern);
 
+const loneWarFactions=[
+  {name:'The Consortium',state:'War',activeStates:[],pendingStates:[]},
+  {name:'Wolf 258 Dynasty',state:'Boom',activeStates:['Boom'],pendingStates:[]},
+];
+assert.deepEqual(
+  validatedConflictRows({factions:loneWarFactions,phase:'active'}),
+  [],
+  'A lone faction War state must not create a system conflict',
+);
+assert.equal(
+  validatedConflictObservation({factions:loneWarFactions,conflicts:[]}),
+  null,
+  'A lone FactionState=War with no conflict pair must not enter conflict history',
+);
+
+const pairedWarFactions=[
+  {name:'Faction One',state:'War',activeStates:['War'],pendingStates:[]},
+  {name:'Faction Two',state:'War',activeStates:['War'],pendingStates:[]},
+];
+assert.equal(
+  validatedConflictRows({factions:pairedWarFactions,phase:'active'}).length,
+  2,
+  'Two factions reporting the same active conflict state validate the conflict',
+);
+
+const explicitWarRows=validatedConflictRows({
+  factions:loneWarFactions,
+  conflicts:[{
+    type:'War',
+    status:'Active',
+    faction1:{name:'The Consortium'},
+    faction2:{name:'Faction Two'},
+  }],
+  phase:'active',
+});
+assert.equal(explicitWarRows.length,2,'An explicit Frontier Conflicts pair must validate both participants even if faction state rows are incomplete');
+assert.ok(explicitWarRows.some(row=>row.name==='The Consortium'));
+assert.ok(explicitWarRows.some(row=>row.name==='Faction Two'));
+
+const mismatchedStates=[
+  {name:'Faction One',state:'War',activeStates:['War']},
+  {name:'Faction Two',state:'Election',activeStates:['Election']},
+];
+assert.equal(
+  validatedConflictRows({factions:mismatchedStates,phase:'active'}).length,
+  0,
+  'Different conflict types must not be paired together',
+);
+
 const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 assert.match(apiSource,/wolf_bgs_unavailable/,'Wolf BGS API must expose authenticated data-build failures distinctly');
 assert.match(apiSource,/authenticated:true/,'Wolf BGS API must preserve authenticated state when secure data building fails');
@@ -158,7 +208,7 @@ const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
 assert.match(wolfPage,/Current BGS cycle/);
 assert.doesNotMatch(wolfPage,/Maximum data age/);
-assert.match(wolfPage,/wolf-bgs\.js\?v=23/);
+assert.match(wolfPage,/wolf-bgs\.js\?v=24/);
 const wolfMainClient=readFileSync('js/wolf-bgs.js','utf8');
 assert.match(wolfPage,/data-wolf-login[^>]*hidden/,'Wolf BGS login CTA must stay hidden until auth explicitly fails');
 assert.match(wolfPage,/data-wolf-retry[^>]*hidden/,'Wolf BGS retry CTA must exist for authenticated service failures');
@@ -177,6 +227,10 @@ assert.match(apiSource,/readAlertFactionStrategies/,'Faction alerts must read sa
 assert.match(apiSource,/relevantConflictAlert/,'Conflict alerts must be scoped to Mongrel involvement or explicit support');
 assert.match(apiSource,/norm\(row\?\.intent\)==='support'/,'Only explicit Support \/ raise strategy should opt a non-Mongrel conflict into alerts');
 assert.match(apiSource,/activeConflict/,'System-level conflicts must be tracked separately from Mongrel participation');
+assert.match(apiSource,/validatedConflictRows/,'System conflict detection must require validated participant pairs');
+assert.match(wolfMainClient,/data-conflict-active-rows/,'Validated active conflict participants must be passed to the conflict client');
+assert.match(conflictClient,/validatedStateRows/,'Conflict configuration must reject lone conflict-state rows');
+assert.match(conflictClient,/counts\.get\(row\.type\).*>=2/,'Client-side conflict state fallback must require at least two same-type participants');
 assert.match(apiSource,/scoutConflictScores/,'Live Scout must expose scores for non-Mongrel conflict pairs');
 assert.doesNotMatch(apiSource,/const conflictScore = mongrelConflict \?/,'Conflict scores must not be gated on Mongrel participation');
 assert.match(conflictClient,/Conflict score/,'Conflict UI must use a system-level score label');
