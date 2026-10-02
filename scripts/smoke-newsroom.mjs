@@ -9,7 +9,7 @@ const css=readFileSync('css/newsroom.css','utf8');
 const site=readFileSync('js/site.js','utf8');
 const galnetApi=readFileSync('functions/api/galnet.js','utf8');
 const galnetLib=readFileSync('lib/galnet.js','utf8');
-for(const pattern of [/galnet-wire-v1/,/api\.eddata\.dev\/v2\/news\/galnet/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
+for(const pattern of [/galnet-wire-v1/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
 const normalizedGalnet=normalizeGalnetFeed([{
   published:'2026-10-02T12:00:00Z',
   date:'02 OCT 3312',
@@ -24,6 +24,24 @@ assert.equal(normalizedGalnet[0].galnetDate,'02 OCT 3312');
 assert.equal(normalizedGalnet[0].teaser,'One & two from GalNet.');
 assert.equal(normalizedGalnet[0].url,'https://example.com/article');
 assert.equal(normalizedGalnet[0].imageUrl,'https://example.com/image.jpg');
+
+const normalizedFrontierGalnet=normalizeGalnetFeed({data:[{
+  type:'node--galnet_article',
+  attributes:{
+    published_at:'2026-10-02T13:00:00Z',
+    field_galnet_date:'02 OCT 3312',
+    title:'Frontier Test Dispatch',
+    body:{value:'<p>Official &amp; direct from Frontier.</p>'},
+    field_slug:'frontier-test-dispatch',
+    field_galnet_guid:'test-guid',
+    field_galnet_image:'test_image',
+  },
+}]});
+assert.equal(normalizedFrontierGalnet.length,1);
+assert.equal(normalizedFrontierGalnet[0].galnetDate,'02 OCT 3312');
+assert.equal(normalizedFrontierGalnet[0].teaser,'Official & direct from Frontier.');
+assert.equal(normalizedFrontierGalnet[0].url,'https://www.elitedangerous.com/news/galnet/frontier-test-dispatch');
+assert.equal(normalizedFrontierGalnet[0].imageUrl,'https://hosting.zaonce.net/elite-dangerous/galnet/test_image.png');
 
 for(const pattern of [
   /newsroom-v1/,/The Morning Walk/,/squadron-news/,/field-report/,/command-briefing/,
