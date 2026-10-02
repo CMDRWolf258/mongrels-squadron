@@ -9,7 +9,7 @@ const css=readFileSync('css/newsroom.css','utf8');
 const site=readFileSync('js/site.js','utf8');
 const galnetApi=readFileSync('functions/api/galnet.js','utf8');
 const galnetLib=readFileSync('lib/galnet.js','utf8');
-for(const pattern of [/galnet-wire-v2/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
+for(const pattern of [/galnet-wire-v3/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/resolveArticleLinks/,/method:'HEAD'/,/response\.status===404\|\|response\.status===410/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
 const normalizedGalnet=normalizeGalnetFeed([{
   published:'2026-10-02T12:00:00Z',
   date:'02 OCT 3312',
@@ -40,7 +40,8 @@ const normalizedFrontierGalnet=normalizeGalnetFeed({data:[{
 assert.equal(normalizedFrontierGalnet.length,1);
 assert.equal(normalizedFrontierGalnet[0].galnetDate,'02 OCT 3312');
 assert.equal(normalizedFrontierGalnet[0].teaser,'Official & direct from Frontier.');
-assert.equal(normalizedFrontierGalnet[0].url,'https://community.elitedangerous.com/galnet/uid/test-guid');
+assert.equal(normalizedFrontierGalnet[0].url,'https://www.elitedangerous.com/news/galnet/frontier-test-dispatch');
+assert.equal(normalizedFrontierGalnet[0].fallbackUrl,'https://community.elitedangerous.com/galnet/uid/test-guid');
 assert.equal(normalizedFrontierGalnet[0].imageUrl,'https://hosting.zaonce.net/elite-dangerous/galnet/test_image.png');
 
 for(const pattern of [
