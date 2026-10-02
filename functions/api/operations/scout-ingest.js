@@ -6,6 +6,7 @@ import { loadBgsDiscordView, syncBgsDiscordBoard } from '../../../lib/bgs-discor
 import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runtime.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 import { recordScoutMarketSnapshot } from '../../../lib/trade-market.js';
+import { validatedConflictObservation } from '../../../lib/bgs-conflict-validation.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -396,23 +397,7 @@ async function readSnapshots(env) {
   } catch { return {version:1,systems:{},conflictHistory:{}}; }
 }
 function conflictObservation(snapshot) {
-  const conflictName = value => {
-    const text = norm(value).replaceAll('_',' ');
-    if (text === 'civilwar' || text === 'civil war') return 'Civil War';
-    if (text === 'war') return 'War';
-    if (text === 'election') return 'Election';
-    return '';
-  };
-  const pending=[], active=[];
-  for(const faction of snapshot.factions || []){
-    for(const state of faction?.pendingStates || []){const detail=conflictName(state);if(detail)pending.push(detail);}
-    for(const state of faction?.activeStates || []){const detail=conflictName(state);if(detail)active.push(detail);}
-    const direct=conflictName(faction?.state); if(direct)active.push(direct);
-  }
-  if(pending.length) return {phase:'pending',detail:pending[0]};
-  if(active.length) return {phase:'active',detail:active[0]};
-  for(const conflict of snapshot.conflicts || []){const detail=conflictName(conflict?.type);if(detail)return {phase:'active',detail};}
-  return null;
+  return validatedConflictObservation(snapshot);
 }
 
 function updateConflictHistory(state, snapshot) {
