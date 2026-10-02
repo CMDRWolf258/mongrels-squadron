@@ -8,6 +8,7 @@ import { reconcileAutomaticRewardEntries } from '../../../lib/reward-engine-runt
 import { syncAllColonizationJobsDiscord } from '../../../lib/colonization-discord.js';
 import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/reward-discord.js';
 import { archivedRemovedOrders, listOrderPublications } from '../../../lib/order-history.js';
+import { validatedConflictObservation } from '../../../lib/bgs-conflict-validation.js';
 
 const HISTORICAL_LOOKBACK_DAYS = 3;
 export const MISSION_ORIGIN_BACKFILL_VERSION = 1;
@@ -396,24 +397,9 @@ function updateFrontierConflictHistory(state,snapshot){
   if(observation.phase==='active'&&!existing.activeSeenAt)existing.activeSeenAt=snapshot.updatedAt;
 }
 function frontierConflictObservation(snapshot){
-  const conflictName=value=>{
-    const text=normLocal(value).replaceAll('_',' ');
-    if(text==='civilwar'||text==='civil war')return'Civil War';
-    if(text==='war')return'War';
-    if(text==='election')return'Election';
-    return'';
-  };
-  const pending=[],active=[];
-  for(const faction of snapshot?.factions||[]){
-    for(const state of faction?.pendingStates||[]){const detail=conflictName(state);if(detail)pending.push(detail);}
-    for(const state of faction?.activeStates||[]){const detail=conflictName(state);if(detail)active.push(detail);}
-    const direct=conflictName(faction?.state);if(direct)active.push(direct);
-  }
-  if(pending.length)return{phase:'pending',detail:pending[0]};
-  if(active.length)return{phase:'active',detail:active[0]};
-  for(const conflict of snapshot?.conflicts||[]){const detail=conflictName(conflict?.type);if(detail)return{phase:'active',detail};}
-  return null;
+  return validatedConflictObservation(snapshot);
 }
+
 function compareLocalTime(a,b){const aa=Date.parse(a||'')||0,bb=Date.parse(b||'')||0;return aa-bb;}
 function normLocal(value){return String(value||'').trim().toLowerCase().replace(/\s+/g,' ');}
 
