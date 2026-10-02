@@ -255,6 +255,394 @@ def plugin_stop() -> None:
     _stop_hud_bridge()
 
 
+class _HudBridgeHandler(BaseHTTPRequestHandler):
+    """Loopback-only read API for the future Mongrel HUD/voice companion."""
+
+    server_version = "MongrelScoutHUD/1.0"
+
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/v1/health":
+            with _hud_condition:
+                payload = {
+                    "ok": True,
+                    "bridgeVersion": HUD_BRIDGE_VERSION,
+                    "pluginVersion": PLUGIN_VERSION,
+                    "host": HUD_BRIDGE_HOST,
+                    "port": HUD_BRIDGE_PORT,
+                    "latestSeq": _hud_seq,
+                }
+            self._write_json(payload)
+            return
+
+        if parsed.path == "/v1/state":
+            self._write_json(_hud_state_snapshot())
+            return
+
+        if parsed.path == "/v1/events":
+            params = parse_qs(parsed.query)
+            try:
+                after = max(0, int((params.get("after") or ["0"])[0]))
+            except (TypeError, ValueError):
+                after = 0
+            try:
+                wait_seconds = float((params.get("wait") or ["0"])[0])
+            except (TypeError, ValueError):
+                wait_seconds = 0.0
+            wait_seconds = max(0.0, min(25.0, wait_seconds))
+            payload = _hud_events_after(after, wait_seconds)
+            self._write_json(payload)
+            return
+
+        self._write_json({"ok": False, "error": "not_found"}, status=404)
+
+    def log_message(self, format: str, *args: Any) -> None:
+        # Keep EDMC's log clean during high-frequency overlay polling.
+        return
+
+    def _write_json(self, payload: Mapping[str, Any], status: int = 200) -> None:
+        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        # Intentionally no Access-Control-Allow-Origin header. The bridge is for
+        # a local companion, not arbitrary web pages.
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def _start_hud_bridge() -> None:
+    global _hud_server, _hud_thread, _hud_error
+    if _hud_server is not None:
+        return
+    try:
+        server = ThreadingHTTPServer((HUD_BRIDGE_HOST, HUD_BRIDGE_PORT), _HudBridgeHandler)
+        server.daemon_threads = True
+        thread = threading.Thread(
+            target=server.serve_forever,
+            name="MongrelScoutHudBridge",
+            daemon=True,
+        )
+        _hud_server = server
+        _hud_thread = thread
+        _hud_error = ""
+        thread.start()
+    except OSError as error:
+        _hud_server = None
+        _hud_thread = None
+        _hud_error = str(error)
+
+
+def _stop_hud_bridge() -> None:
+    global _hud_server, _hud_thread
+    server = _hud_server
+    _hud_server = None
+    _hud_thread = None
+    if server is None:
+        return
+    try:
+        server.shutdown()
+        server.server_close()
+    except Exception:
+        pass
+
+
+def _hud_state_snapshot() -> dict[str, Any]:
+    with _hud_condition:
+        return json.loads(json.dumps(_hud_state))
+
+
+def _hud_events_after(after: int, wait_seconds: float) -> dict[str, Any]:
+    deadline = time.monotonic() + wait_seconds
+    with _hud_condition:
+        while _hud_seq <= after and wait_seconds > 0:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            _hud_condition.wait(timeout=remaining)
+        events = [event for event in _hud_events if int(event.get("seq") or 0) > after]
+        return {
+            "bridgeVersion": HUD_BRIDGE_VERSION,
+            "pluginVersion": PLUGIN_VERSION,
+            "after": after,
+            "latestSeq": _hud_seq,
+            "events": json.loads(json.dumps(events)),
+        }
+
+
+def _publish_hud_event(
+    cmdr: str,
+    fallback_system: str,
+    fallback_station: str,
+    entry: Mapping[str, Any],
+) -> None:
+    normalized = _normalize_hud_event(cmdr, fallback_system, fallback_station, entry)
+    if normalized is None:
+        return
+    global _hud_seq
+    with _hud_condition:
+        _hud_seq += 1
+        normalized["seq"] = _hud_seq
+        _hud_events.append(normalized)
+        _update_hud_state_locked(normalized)
+        _hud_condition.notify_all()
+
+
+def _normalize_hud_event(
+    cmdr: str,
+    fallback_system: str,
+    fallback_station: str,
+    entry: Mapping[str, Any],
+) -> Optional[dict[str, Any]]:
+    journal_event = str(entry.get("event") or "").strip()
+    event_type = HUD_EVENT_TYPES.get(journal_event)
+    if not event_type:
+        return None
+
+    if journal_event == "CarrierStats":
+        carrier = _carrier_identity(entry)
+        if carrier:
+            _save_owner_carrier(carrier)
+    else:
+        carrier = None
+
+    system_name = str(entry.get("StarSystem") or fallback_system or _last_system_name or "").strip()
+    system_address = _decimal_text(entry.get("SystemAddress", _last_system_address))
+    station_name = str(entry.get("StationName") or fallback_station or "").strip()
+    station_type = str(entry.get("StationType") or "").strip()
+    market_id = _decimal_text(entry.get("MarketID"))
+
+    if journal_event == "ApproachSettlement":
+        station_name = str(entry.get("Name_Localised") or entry.get("Name") or station_name).strip()
+    elif journal_event == "CarrierStats" and carrier:
+        station_name = carrier.get("name") or carrier.get("callsign") or station_name
+        station_type = "Fleet Carrier"
+        market_id = carrier.get("carrierId")
+
+    payload: dict[str, Any] = {
+        "type": event_type,
+        "journalEvent": journal_event,
+        "timestamp": str(entry.get("timestamp") or "").strip(),
+        "commander": str(cmdr or "").strip(),
+        "system": system_name,
+        "systemAddress": system_address,
+        "stationName": station_name,
+        "stationType": station_type,
+        "marketId": market_id,
+    }
+
+    if market_id:
+        payload["relationship"] = _relationship_for_market(market_id)
+
+    if journal_event == "DockingGranted":
+        landing_pad = _optional_int(entry.get("LandingPad"))
+        if landing_pad is not None:
+            payload["landingPad"] = landing_pad
+
+    if journal_event == "DockingDenied":
+        reason = str(entry.get("Reason") or "").strip()
+        if reason:
+            payload["reason"] = reason
+
+    if journal_event == "Location":
+        payload["docked"] = bool(entry.get("Docked"))
+
+    if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
+        body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()
+        body_id = _optional_int(entry.get("BodyID"))
+        if body_name:
+            payload["bodyName"] = body_name
+        if body_id is not None:
+            payload["bodyId"] = body_id
+
+    if journal_event == "SupercruiseExit":
+        body_type = str(entry.get("BodyType") or "").strip()
+        if body_type:
+            payload["bodyType"] = body_type
+
+    if journal_event == "ApproachSettlement":
+        latitude = _optional_float(entry.get("Latitude"))
+        longitude = _optional_float(entry.get("Longitude"))
+        if latitude is not None and -90.0 <= latitude <= 90.0:
+            payload["latitude"] = latitude
+        if longitude is not None and -180.0 <= longitude <= 180.0:
+            payload["longitude"] = longitude
+
+    if carrier:
+        payload["carrier"] = carrier
+        payload["relationship"] = "owner"
+
+    return payload
+
+
+def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
+    _hud_state["bridgeVersion"] = HUD_BRIDGE_VERSION
+    _hud_state["pluginVersion"] = PLUGIN_VERSION
+    _hud_state["seq"] = event.get("seq", _hud_state.get("seq", 0))
+    _hud_state["commander"] = event.get("commander") or _hud_state.get("commander", "")
+    _hud_state["lastEvent"] = {
+        "type": event.get("type"),
+        "journalEvent": event.get("journalEvent"),
+        "timestamp": event.get("timestamp"),
+        "seq": event.get("seq"),
+    }
+    _hud_state["updatedAt"] = event.get("timestamp") or _hud_state.get("updatedAt")
+
+    if event.get("system"):
+        _hud_state["system"] = {
+            "name": event.get("system"),
+            "address": event.get("systemAddress"),
+        }
+
+    event_type = str(event.get("type") or "")
+    station = _station_identity(event)
+
+    if event_type in {"docking.requested", "docking.granted", "docking.denied", "docking.cancelled", "docking.timeout"}:
+        _hud_state["docking"] = {
+            "status": event_type.split(".", 1)[1],
+            "station": station,
+            "landingPad": event.get("landingPad"),
+            "reason": event.get("reason"),
+            "timestamp": event.get("timestamp"),
+        }
+
+    if event_type == "docking.docked":
+        _hud_state["station"] = station
+        _hud_state["docking"] = {
+            "status": "docked",
+            "station": station,
+            "timestamp": event.get("timestamp"),
+        }
+
+    if event_type == "docking.undocked":
+        _hud_state["station"] = None
+        _hud_state["docking"] = {
+            "status": "undocked",
+            "station": station,
+            "timestamp": event.get("timestamp"),
+        }
+
+    if event_type == "location.current":
+        if bool(event.get("docked")) and station:
+            _hud_state["station"] = station
+        elif not bool(event.get("docked")):
+            _hud_state["station"] = None
+
+    if event_type == "carrier.jump" and station:
+        _hud_state["station"] = station
+
+    if event_type in {"travel.fsd_jump", "travel.supercruise_entry"}:
+        _hud_state["supercruise"] = True
+    elif event_type == "travel.supercruise_exit":
+        _hud_state["supercruise"] = False
+
+    if event_type == "facility.approach":
+        _hud_state["lastFacility"] = {
+            "name": event.get("stationName"),
+            "marketId": event.get("marketId"),
+            "bodyId": event.get("bodyId"),
+            "bodyName": event.get("bodyName"),
+            "latitude": event.get("latitude"),
+            "longitude": event.get("longitude"),
+            "timestamp": event.get("timestamp"),
+        }
+
+    if event_type == "carrier.stats" and isinstance(event.get("carrier"), Mapping):
+        _hud_state["ownerCarrier"] = dict(event["carrier"])
+        current_station = _hud_state.get("station")
+        if isinstance(current_station, dict) and current_station.get("marketId") == event["carrier"].get("carrierId"):
+            current_station["relationship"] = "owner"
+
+
+def _station_identity(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    name = str(event.get("stationName") or "").strip()
+    market_id = str(event.get("marketId") or "").strip()
+    station_type = str(event.get("stationType") or "").strip()
+    if not name and not market_id:
+        return None
+    return {
+        "name": name,
+        "type": station_type,
+        "marketId": market_id or None,
+        "relationship": str(event.get("relationship") or "unknown"),
+    }
+
+
+def _carrier_identity(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    carrier_id = _decimal_text(entry.get("CarrierID"))
+    callsign = str(entry.get("Callsign") or "").strip()
+    name = str(entry.get("Name") or "").strip()
+    docking_access = str(entry.get("DockingAccess") or "").strip()
+    if not carrier_id:
+        return None
+    return {
+        "carrierId": carrier_id,
+        "callsign": callsign,
+        "name": name,
+        "dockingAccess": docking_access,
+        "updatedAt": str(entry.get("timestamp") or "").strip(),
+    }
+
+
+def _restore_owner_carrier() -> None:
+    raw = config.get_str(KEY_OWNER_CARRIER) or ""
+    if not raw:
+        return
+    try:
+        value = json.loads(raw)
+    except Exception:
+        return
+    if not isinstance(value, Mapping) or not _decimal_text(value.get("carrierId")):
+        return
+    with _hud_condition:
+        _hud_state["ownerCarrier"] = dict(value)
+
+
+def _save_owner_carrier(carrier: Mapping[str, Any]) -> None:
+    try:
+        config.set(KEY_OWNER_CARRIER, json.dumps(dict(carrier), separators=(",", ":")))
+    except Exception:
+        pass
+
+
+def _relationship_for_market(market_id: str) -> str:
+    owner = _hud_state.get("ownerCarrier")
+    if isinstance(owner, Mapping) and str(owner.get("carrierId") or "") == str(market_id):
+        return "owner"
+    return "unknown"
+
+
+def _decimal_text(value: Any) -> Optional[str]:
+    if value is None or value == "":
+        return None
+    try:
+        text = str(int(value))
+    except (TypeError, ValueError, OverflowError):
+        text = str(value).strip()
+    return text if text.isdigit() else None
+
+
+def _optional_int(value: Any) -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _optional_float(value: Any) -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return result if result == result and result not in (float("inf"), float("-inf")) else None
+
+
 def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
     global _last_system_name, _last_system_address, _last_star_pos
     system_name = str(entry.get("StarSystem") or fallback_system or "").strip()
