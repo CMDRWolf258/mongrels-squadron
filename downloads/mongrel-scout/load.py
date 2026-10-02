@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 import tkinter as tk
+from collections import deque
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping, MutableMapping, Optional
+from urllib.parse import parse_qs, urlparse
 
 import myNotebook as nb
 import timeout_session
@@ -15,15 +19,36 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.3.0"
+PLUGIN_VERSION = "1.4.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
+HUD_BRIDGE_HOST = "127.0.0.1"
+HUD_BRIDGE_PORT = 43857
+HUD_BRIDGE_VERSION = 1
+HUD_EVENT_LIMIT = 256
+HUD_EVENT_TYPES = {
+    "DockingRequested": "docking.requested",
+    "DockingGranted": "docking.granted",
+    "DockingDenied": "docking.denied",
+    "DockingCancelled": "docking.cancelled",
+    "DockingTimeout": "docking.timeout",
+    "Docked": "docking.docked",
+    "Undocked": "docking.undocked",
+    "Location": "location.current",
+    "CarrierJump": "carrier.jump",
+    "CarrierStats": "carrier.stats",
+    "FSDJump": "travel.fsd_jump",
+    "SupercruiseEntry": "travel.supercruise_entry",
+    "SupercruiseExit": "travel.supercruise_exit",
+    "ApproachSettlement": "facility.approach",
+}
 
 KEY_VERSION = "MongrelScoutConfigVersion"
 KEY_ENABLED = "MongrelScoutEnabled"
 KEY_TOKEN = "MongrelScoutToken"
 KEY_ENDPOINT = "MongrelScoutEndpoint"
+KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -36,6 +61,26 @@ _last_system_name = ""
 _last_system_address: Any = None
 _last_star_pos: Any = None
 _session = timeout_session.new_session(timeout=8)
+_hud_condition = threading.Condition()
+_hud_events: deque[dict[str, Any]] = deque(maxlen=HUD_EVENT_LIMIT)
+_hud_state: dict[str, Any] = {
+    "bridgeVersion": HUD_BRIDGE_VERSION,
+    "pluginVersion": PLUGIN_VERSION,
+    "seq": 0,
+    "commander": "",
+    "system": None,
+    "station": None,
+    "docking": None,
+    "supercruise": None,
+    "ownerCarrier": None,
+    "lastFacility": None,
+    "lastEvent": None,
+    "updatedAt": None,
+}
+_hud_seq = 0
+_hud_server: Optional[ThreadingHTTPServer] = None
+_hud_thread: Optional[threading.Thread] = None
+_hud_error = ""
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -44,6 +89,9 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_VERSION, 1)
         config.set(KEY_ENABLED, 1)
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
+    _restore_owner_carrier()
+    if config.get_bool(KEY_ENABLED):
+        _start_hud_bridge()
     return PLUGIN_NAME
 
 
@@ -87,8 +135,10 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "for direct Trader's Outpost freshness. ApproachSettlement events also send the public "
         "facility market ID, host body ID/name, latitude and longitude so the System Orrery can "
         "replace schematic surface markers with verified positions. System coordinates support distance sorting. "
-        "Commander name, cargo, credits, ship build, materials, missions, and general travel "
-        "history are not transmitted."
+        "Docking, station/carrier, travel and CarrierStats triggers are also normalized for the local "
+        "HUD/voice bridge on 127.0.0.1 only; those local events are not uploaded. Commander name may "
+        "exist in that local-only bridge state for future owner/squad greetings, but Commander name, "
+        "cargo, credits, ship build, materials, missions, and general travel history are not transmitted."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
         row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
@@ -105,6 +155,10 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     if _endpoint_var is not None:
         endpoint = _endpoint_var.get().strip() or DEFAULT_ENDPOINT
         config.set(KEY_ENDPOINT, endpoint)
+    if config.get_bool(KEY_ENABLED):
+        _start_hud_bridge()
+    else:
+        _stop_hud_bridge()
     _set_status(_initial_status())
 
 
@@ -130,6 +184,9 @@ def journal_entry(
     event = str(entry.get("event") or "")
     if event in {"FSDJump", "Location", "CarrierJump"}:
         _remember_location(entry, system)
+
+    # HUD/voice triggers remain local. Publish them before any cloud-token checks.
+    _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if event == "ApproachSettlement":
@@ -191,6 +248,11 @@ def journal_entry(
     ).start()
     return None
 
+
+
+def plugin_stop() -> None:
+    """Stop the local loopback bridge when EDMC unloads the plugin."""
+    _stop_hud_bridge()
 
 
 def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
