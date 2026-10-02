@@ -1523,7 +1523,7 @@ Authoritative operational assumptions:
 - a Mongrel War / Civil War / Election observed as **Pending** is expected to become active on the **next configured BGS tick**;
 - once active, a conflict is assumed to last a **minimum of 4 days and a maximum of 7 days**;
 - the configured per-system tick override is used when present; otherwise the Global Automation Default tick is used;
-- tick-time arithmetic is performed against the configured daily tick in UTC, matching the existing BGS tick scheduling model.
+- conflict-day tick arithmetic uses the same `America/Chicago` wall-clock conversion as Daily Orders. A configured `19:00` therefore means **7:00 PM Central**, with CDT/CST handled automatically; it must never be reinterpreted as 19:00 UTC.
 
 Conflict episode tracking:
 - when Pending is first observed, the episode stores `pendingSeenAt` and an `expectedActiveAt` equal to the next configured tick;
@@ -1539,6 +1539,7 @@ Manual verification:
 - when multiple conflicts are active, BGS Control does not reuse one system-wide start time across every pair; each pair whose start cannot be established displays its own **Manual current day** selector for Day 1–7;
 - setting a day from the in-game faction panel creates a manual anchor only for that faction pair and is treated as authoritative for that pair;
 - that pair-specific manual day advances automatically on subsequent configured ticks;
+- Example: if Day 4 is manually anchored before the `19:00` CT tick, the next BGS Control payload fetched after 7:00 PM Central reports Day 5. If the anchor is set after that tick, Day 4 remains current until the following local-day tick.
 - a pair with an inferred day does not show an unnecessary manual selector;
 - **USE AUTOMATION** clears only that pair's manual anchor (legacy single-conflict anchors remain backwards-compatible) and returns to an inferred timeline when one can be established, otherwise that pair returns to DAY UNKNOWN;
 - the system-level Conflict Timelines panel becomes a summary such as **2 ACTIVE CONFLICTS**, while individual pair rows show their own day/source;
