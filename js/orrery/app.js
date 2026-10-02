@@ -1,5 +1,6 @@
 import { validateSystem, getRecords, filterRecords, classifyLocationPlacement, locationPlacementText } from '../../lib/orrery-model.js';
 import { loadLocationProvider } from '../../lib/orrery-locations.js';
+import { loadFacilityObservationProvider } from '../../lib/orrery-facility-observations.js';
 
 const $ = id => document.getElementById(`orrery-${id}`);
 const state = { system:null, records:new Map(), renderer:null, selectedId:null, catalog:null, loadVersion:0, rendererVersion:0 };
@@ -85,9 +86,15 @@ function renderDetails(record) {
     if (record.controllingFaction) pair('Faction', record.controllingFaction);
     if (record.latitude != null) { pair('Latitude', number(record.latitude, '°', 6)); pair('Longitude', number(record.longitude, '°', 6)); }
     else pair('Coordinates', 'Unknown');
+    if (record.positionObservation?.source) pair('Placement source', record.positionObservation.source);
+    if (record.positionObservation?.observedAt) {
+      const observed = new Date(record.positionObservation.observedAt);
+      pair('Position observed', Number.isFinite(observed.getTime()) ? observed.toLocaleString() : record.positionObservation.observedAt);
+    }
     if (record.ringId) pair('Ring', state.records.get(record.ringId)?.name || record.ringId);
   }
   root.append(dl);
+  if (record.positionObservation) root.append(node('p', 'Exact surface placement was upgraded from a verified Mongrel Scout ApproachSettlement observation. Imported source notes below may describe the older snapshot before this visit.'));
   if (record.notes) root.append(node('p', record.notes));
   if (record.recordType === 'location' && ['host', 'ring'].includes(classifyLocationPlacement(record))) root.append(node('p', 'The amber diamond marks an association only. Dashed lanes arrange host markers for readability; they do not establish an actual orbit or surface position. Use the in-game navigation panel for this destination’s actual position.'));
   if (record.recordType === 'body' && record.kind === 'barycentre') root.append(node('p', 'Shared parent preserved from the real hierarchy. Orbital elements for this centre are unreported; display placement is schematic.'));
@@ -169,6 +176,16 @@ async function loadSystem(id, objectId) {
         providerStatus = count ? `${count} location records loaded from the shared resource interface.` : 'Shared resource interface connected · no canonical location records supplied yet.';
       } catch { providerStatus = 'Shared resource source unavailable. The body catalogue and sourced snapshot locations remain usable.'; }
     }
+    let facilityStatus = 'Mongrel Scout facility placement is not available.';
+    try {
+      const facilityUrl = new URL('../api/orrery/facility-observations', location.href);
+      facilityUrl.searchParams.set('systemId64', String(system.id64));
+      const facilityResult = await loadFacilityObservationProvider(system, facilityUrl.href, { signal:AbortSignal.timeout(4000) });
+      system = facilityResult.system;
+      facilityStatus = facilityResult.applied
+        ? `${facilityResult.applied} surface ${facilityResult.applied === 1 ? 'facility' : 'facilities'} placed from verified Mongrel Scout observations.`
+        : 'Mongrel Scout facility placement connected · no schematic facilities have verified surface coordinates yet.';
+    } catch { facilityStatus = 'Mongrel Scout facility placement unavailable · imported and curated locations remain usable.'; }
     if (version !== state.loadVersion) return;
     state.system = system; state.records = new Map(getRecords(system).map(record => [record.id, record])); state.selectedId = null;
     $('system-name').textContent = system.name;
@@ -178,7 +195,7 @@ async function loadSystem(id, objectId) {
     $('resource').value = names.includes(resource) ? resource : 'all';
     const notes = $('source-notes'); notes.replaceChildren();
     const physical = system.bodies.filter(body => body.kind !== 'barycentre').length, placed = system.locations.filter(item => item.bodyId).length;
-    notes.append(node('p', `${physical} celestial bodies · ${system.bodies.length - physical} shared orbital centres · ${system.locations.length} locations (${placed} with known host bodies). Source snapshots may be incomplete or stale.`), node('p', providerStatus));
+    notes.append(node('p', `${physical} celestial bodies · ${system.bodies.length - physical} shared orbital centres · ${system.locations.length} locations (${placed} with known host bodies). Source snapshots may be incomplete or stale.`), node('p', providerStatus), node('p', facilityStatus));
     const sources = node('ul');
     for (const source of system.sources || []) { const li = node('li'); li.append(source.url ? safeLink(source.name, source.url) : node('span', source.name)); if (source.retrievedAt) li.append(document.createTextNode(` · Snapshot ${new Date(source.retrievedAt).toLocaleDateString()}`)); sources.append(li); }
     notes.append(sources);
