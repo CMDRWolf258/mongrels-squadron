@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { configuredTicksElapsed, nextConfiguredTickAfter, resolveSystemWorkCycle } from '../../../lib/daily-order-cycle.js';
+import { validatedConflictRows } from '../../../lib/bgs-conflict-validation.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const SCOUT_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
@@ -504,7 +505,6 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
   const boardNewestUpdatedAt=factionTimes.reduce((latest,value)=>newestTimestamp(latest,value), null) || newest;
   const boardAgeSpreadHours=timestampSpreadHours(boardOldestUpdatedAt,boardNewestUpdatedAt);
   const boardMixedAge=boardAgeSpreadHours !== null && boardAgeSpreadHours >= 1;
-  const conflictWords = factions.map(faction => `${faction.state || ''} ${faction.pending || ''}`).join(' ').toLowerCase();
   const freshnessCycle = resolveSystemWorkCycle(name, {
     defaults:{
       defaultTick:control.defaults?.defaultTick || DEFAULTS.defaultTick,
@@ -517,16 +517,21 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
   const boardComplete = activeSource==='manual'
     ? Boolean(manual?.factions?.length)
     : (activeSource==='scout' ? Boolean(scoutFactions.length) : Boolean(externalFactions.length));
-  const mongrelConflict = activeStates.some(item => CONFLICT_STATES.has(norm(item)));
-  const activeConflict = factions.some(faction => factionStateArray(faction,'activeStates','state').some(item=>CONFLICT_STATES.has(norm(item))));
-  const pendingConflict = factions.some(faction => factionStateArray(faction,'pendingStates','pending').some(item=>CONFLICT_STATES.has(norm(item))));
   const externalConflictScore = normalizeConflictScore(externalBoard?.conflict, externalBoard?.conflictStale);
   const externalSystemConflictScores = normalizeSystemConflictScores(externalBoard?.systemConflicts, externalBoard?.systemConflictsStale);
   const scoutConflictScoreList = scoutConflictScores(scout);
   const conflictScores = mergeConflictScores(externalSystemConflictScores, scoutConflictScoreList);
-  const pairScore = selectPrimaryConflictScore(conflictScores,factions);
+  const sourceConflictScores = activeSource==='scout'
+    ? scoutConflictScoreList
+    : (activeSource==='external' ? externalSystemConflictScores : []);
+  const activeConflictRows = validatedConflictRows({factions,conflicts:sourceConflictScores,phase:'active'});
+  const pendingConflictRows = validatedConflictRows({factions,conflicts:sourceConflictScores,phase:'pending'});
+  const activeConflict = activeConflictRows.length >= 2;
+  const pendingConflict = pendingConflictRows.length >= 2;
+  const mongrelConflict = activeConflictRows.some(item => norm(item?.name) === norm(MONGREL));
+  const pairScore = selectPrimaryConflictScore(conflictScores,factions,activeConflictRows);
   const conflictScore = activeConflict
-    ? (pairScore || (mongrelConflict ? newestConflictScore(externalConflictScore, scoutConflictScore(scout,factions)) : null))
+    ? (pairScore || (mongrelConflict ? newestConflictScore(externalConflictScore, scoutConflictScore(scout,factions,activeConflictRows)) : null))
     : null;
 
   return {
@@ -574,10 +579,12 @@ function buildSystem(row, externalBoard, control, scout = null, now = new Date()
     manualNotes: manual?.notes || '',
     settings,
     hasCustomSettings: Boolean(storedSettings?.updatedAt),
-    conflict: /\bwar\b|civil war|election/.test(conflictWords),
+    conflict: activeConflict || pendingConflict,
     activeConflict,
     pendingConflict,
     mongrelConflict,
+    activeConflictRows,
+    pendingConflictRows,
     conflictScores,
     conflictScore,
     retreatPending: pendingStates.some(item => norm(item) === 'retreat'),
@@ -648,13 +655,9 @@ function alertKey(system, family) {
 }
 
 function conflictRows(system, phase) {
-  const arrayKey=phase==='pending'?'pendingStates':'activeStates';
-  const textKey=phase==='pending'?'pending':'state';
-  return (system?.factions || []).map(faction=>{
-    const states=factionStateArray(faction,arrayKey,textKey);
-    const detail=states.find(state=>CONFLICT_STATES.has(norm(state))) || '';
-    return detail ? {name:faction.name,detail} : null;
-  }).filter(Boolean);
+  const stored=phase==='pending'?system?.pendingConflictRows:system?.activeConflictRows;
+  if(Array.isArray(stored))return stored.filter(row=>row?.name&&row?.detail);
+  return validatedConflictRows({factions:system?.factions || [],phase});
 }
 
 function relevantConflictAlert(rows, strategyRows, phase) {
@@ -1062,14 +1065,16 @@ function activeConflictFactionNames(factions) {
   }
   return names;
 }
-function selectPrimaryConflictScore(scores,factions) {
-  const active=activeConflictFactionNames(factions);
+function selectPrimaryConflictScore(scores,factions,validatedRows=null) {
+  const active=Array.isArray(validatedRows)&&validatedRows.length
+    ? new Set(validatedRows.map(row=>norm(row?.name)).filter(Boolean))
+    : activeConflictFactionNames(factions);
   const matches=(scores || []).filter(score=>active.has(norm(score.faction)) && active.has(norm(score.opponentFaction)));
   if(matches.length===1) return matches[0];
   return matches.find(score=>norm(score.faction)===norm(MONGREL) || norm(score.opponentFaction)===norm(MONGREL)) || null;
 }
-function scoutConflictScore(snapshot,factions=[]) {
-  return selectPrimaryConflictScore(scoutConflictScores(snapshot),factions);
+function scoutConflictScore(snapshot,factions=[],validatedRows=null) {
+  return selectPrimaryConflictScore(scoutConflictScores(snapshot),factions,validatedRows);
 }
 
 function newestConflictScore(a,b) {
