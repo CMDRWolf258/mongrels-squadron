@@ -9,7 +9,7 @@ const css=readFileSync('css/newsroom.css','utf8');
 const site=readFileSync('js/site.js','utf8');
 const galnetApi=readFileSync('functions/api/galnet.js','utf8');
 const galnetLib=readFileSync('lib/galnet.js','utf8');
-for(const pattern of [/galnet-wire-v4/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/resolveArticleLinks/,/method:'HEAD'/,/response\.status===404\|\|response\.status===410/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
+for(const pattern of [/galnet-wire-v5/,/cms\.zaonce\.net\/en-GB\/jsonapi\/node\/galnet_article/,/api\.eddata\.dev\/v2\/news\/galnet/,/PROVIDERS/,/publicArticle/,/FRESH_MS/,/Last successful feed|last successful feed/,/PROJECTS/]) assert.match(galnetApi+galnetLib,pattern);
 const normalizedGalnet=normalizeGalnetFeed([{
   published:'2026-10-02T12:00:00Z',
   date:'02 OCT 3312',
