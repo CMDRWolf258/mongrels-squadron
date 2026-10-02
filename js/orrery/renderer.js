@@ -1,6 +1,7 @@
 import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { buildLayout, surfaceVector } from '../../lib/orrery-model.js';
+import { createCameraNavigation } from './camera.js';
 
 const ACCENT = 0x22d3ee;
 const BODY_COLOURS = [0x97a3b2, 0xc59a72, 0x688eb1, 0xbfcbd3, 0x9ea39c];
@@ -269,6 +270,11 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointer = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
+  const cameraNavigation = createCameraNavigation({ camera, controls,
+    getBodyPositions: () => Array.from(objects.values())
+      .filter(object => object.kind === 'body' && object.mesh.visible)
+      .map(object => object.mesh.position),
+  });
 
   function requestRender() {
     if (!disposed && !contextLost && !animationFrame) animationFrame = requestAnimationFrame(render);
@@ -376,6 +382,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   function focus(id) {
     const object = objects.get(id);
     if (!object) return;
+    cameraNavigation.suspend();
     const parent = layout.get(object.bodyId);
     const target = object.mesh.position.clone();
     const distance = object.kind === 'location'
@@ -391,10 +398,12 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     camera.position.copy(target).addScaledVector(direction, distance);
     camera.lookAt(target);
     controls.update();
+    cameraNavigation.reset();
     requestRender();
   }
 
   function reset() {
+    cameraNavigation.suspend();
     // Finish any damped gesture before replacing the camera and its target.
     controls.enableDamping = false;
     controls.update();
@@ -422,6 +431,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     camera.position.copy(centre).addScaledVector(direction, Math.min(fitDistance, controls.maxDistance));
     camera.lookAt(centre);
     controls.update();
+    cameraNavigation.reset();
     requestRender();
   }
 
@@ -560,6 +570,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       window.removeEventListener('resize', resize);
       for (const [name, listener] of Object.entries(events)) canvas.removeEventListener(name, listener);
       controls.removeEventListener('change', requestRender);
+      cameraNavigation.dispose();
       controls.dispose();
       scene.traverse(object => {
         if (object.geometry) disposables.add(object.geometry);

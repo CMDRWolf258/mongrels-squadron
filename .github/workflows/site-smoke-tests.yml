@@ -90,7 +90,7 @@ jobs:
           python3 -m py_compile downloads/mongrel-scout/load.py
 
       - name: Run Orrery model and wiring checks
-        run: node --experimental-default-type=module scripts/smoke-orrery.mjs
+        run: node --experimental-default-type=module scripts/smoke-orrery.mjs && node --experimental-default-type=module scripts/smoke-orrery-camera.mjs
 
       - name: Run Orrery data checks
         run: node --experimental-default-type=module scripts/smoke-orrery-data.mjs
