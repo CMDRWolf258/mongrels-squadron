@@ -95,7 +95,7 @@ export function createCameraNavigation({ camera, controls, getBodyPositions = ()
   for (const [name, listener] of Object.entries(events)) canvas.addEventListener(name, listener, { capture: true });
   return {
     reset,
-    suspend() { reset(); stopInertia(); },
+    suspend: reset,
     dispose() {
       for (const [name, listener] of Object.entries(events)) canvas.removeEventListener(name, listener, { capture: true });
       reset();
