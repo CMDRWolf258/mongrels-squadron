@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { resolveSystemWorkCycle } from '../../../lib/daily-order-cycle.js';
+import { configuredTicksElapsed, nextConfiguredTickAfter, resolveSystemWorkCycle } from '../../../lib/daily-order-cycle.js';
 
 const CONTROL_KV_KEY = 'wolf-bgs-control-v1';
 const SCOUT_SNAPSHOTS_KEY = 'wolf-bgs-scout-snapshots-v1';
@@ -761,7 +761,7 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
         firstSeenAt:timestamp,
         lastSeenAt:timestamp,
         pendingSeenAt,
-        expectedActiveAt:pendingSeenAt ? nextTickAfter(pendingSeenAt, condition.tick) : null,
+        expectedActiveAt:pendingSeenAt ? nextConfiguredTickAfter(pendingSeenAt, condition.tick) : null,
         activeSeenAt:condition.family === 'conflict' && condition.phase === 'active' ? (matchingScoutHistory?.activeSeenAt || timestamp) : null,
         reviewedAt:null,
         removedAt:null,
@@ -775,12 +775,12 @@ function refreshAlertEpisodes(control, systems, timestamp = new Date().toISOStri
       const matchingScoutHistory = scoutHistory && norm(scoutHistory.detail) === norm(condition.detail) ? scoutHistory : null;
       if (!existing.pendingSeenAt && matchingScoutHistory?.pendingSeenAt) {
         existing.pendingSeenAt = matchingScoutHistory.pendingSeenAt;
-        existing.expectedActiveAt = existing.expectedActiveAt || nextTickAfter(existing.pendingSeenAt, condition.tick);
+        existing.expectedActiveAt = existing.expectedActiveAt || nextConfiguredTickAfter(existing.pendingSeenAt, condition.tick);
         existing.firstPhase = 'pending';
         changed = true;
       } else if (condition.phase === 'pending' && !existing.pendingSeenAt) {
         existing.pendingSeenAt = existing.firstPhase === 'pending' ? (existing.firstSeenAt || timestamp) : timestamp;
-        existing.expectedActiveAt = existing.expectedActiveAt || nextTickAfter(existing.pendingSeenAt, condition.tick);
+        existing.expectedActiveAt = existing.expectedActiveAt || nextConfiguredTickAfter(existing.pendingSeenAt, condition.tick);
         changed = true;
       }
 
@@ -863,34 +863,6 @@ function normalizeConflictPairDayOverrides(value) {
   return out;
 }
 
-function tickParts(value) {
-  const match = String(value || '').match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return { hour:19, minute:0 };
-  const hour = Number(match[1]), minute = Number(match[2]);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return { hour:19, minute:0 };
-  return { hour, minute };
-}
-
-function nextTickAfter(timestamp, tick) {
-  const start = new Date(timestamp);
-  if (!Number.isFinite(start.getTime())) return null;
-  const { hour, minute } = tickParts(tick);
-  let tickMs = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), hour, minute, 0, 0);
-  if (tickMs <= start.getTime()) tickMs += 86400000;
-  return new Date(tickMs).toISOString();
-}
-
-function ticksElapsedAfter(anchor, now, tick) {
-  const start = new Date(anchor);
-  const end = new Date(now);
-  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return 0;
-  const first = nextTickAfter(anchor, tick);
-  if (!first) return 0;
-  const firstMs = new Date(first).getTime();
-  if (end.getTime() < firstMs) return 0;
-  return 1 + Math.floor((end.getTime() - firstMs) / 86400000);
-}
-
 function conflictTimelineFor(system, control, nowIso) {
   const episode = control.alertEpisodes?.[alertKey(system.name, 'conflict')] || null;
   const override = control.conflictDayOverrides?.[system.name] || null;
@@ -905,7 +877,7 @@ function conflictTimelineFor(system, control, nowIso) {
   let anchoredAt = null;
 
   if (override && phase !== 'none') {
-    rawDay = override.day + ticksElapsedAfter(override.setAt, nowIso, tick);
+    rawDay = override.day + configuredTicksElapsed(override.setAt, nowIso, tick);
     day = Math.min(7, rawDay);
     source = 'manual';
     anchoredAt = override.setAt;
@@ -944,7 +916,7 @@ function conflictPairTimelinesFor(system, control, nowIso) {
   const overrides = control.conflictPairDayOverrides?.[system.name] || {};
   const out = {};
   for (const [key, override] of Object.entries(overrides)) {
-    const rawDay = override.day + ticksElapsedAfter(override.setAt, nowIso, tick);
+    const rawDay = override.day + configuredTicksElapsed(override.setAt, nowIso, tick);
     out[key] = {
       pairKey:key,
       factionA:override.factionA,
