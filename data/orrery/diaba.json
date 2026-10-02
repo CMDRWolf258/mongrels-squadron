@@ -1,0 +1,2456 @@
+{
+  "schemaVersion": 1,
+  "id": "diaba",
+  "name": "Diaba",
+  "edsmId": 15246,
+  "id64": "2558022062802",
+  "sources": [
+    {
+      "name": "EDSM celestial bodies API",
+      "url": "https://www.edsm.net/api-system-v1/bodies?systemName=Diaba",
+      "retrievedAt": "2026-10-02T20:36:48Z"
+    },
+    {
+      "name": "EDSM stations API",
+      "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+      "retrievedAt": "2026-10-02T20:36:48Z"
+    },
+    {
+      "name": "Spansh celestial body surveys",
+      "url": "https://spansh.co.uk/system/2558022062802",
+      "retrievedAt": "2026-10-02T20:36:48Z",
+      "notes": "Station associations, additional named facilities and ring hotspot counts are taken from matching body records. EDSM facilities take precedence by market ID. Source survey timestamps are retained."
+    }
+  ],
+  "notes": [
+    "Sizes and orbit spacing are visually compressed by the renderer. Positions are schematic, not live ephemerides.",
+    "0 shared barycentres are preserved from EDSM parent chains; their unreported orbital elements remain null.",
+    "Raw material percentages are body composition data, not commodity deposits. Ring hotspot records report commodity signal counts; exact positions and overlaps are unknown. No surface resource sites are inferred from body signal counts.",
+    "Curated resource locations are an independent optional layer supplied through the reusable canonical location interface, rather than copied into this celestial snapshot."
+  ],
+  "bodies": [
+    {
+      "id": "body-0",
+      "bodyId": 0,
+      "name": "Diaba",
+      "shortName": "Primary star",
+      "kind": "star",
+      "parentId": null,
+      "subType": "K (Yellow-Orange) Star",
+      "radiusKm": 601625.0513115744,
+      "solarRadius": 0.8647765578720346,
+      "isLandable": false,
+      "isScoopable": true,
+      "gravity": null,
+      "temperatureK": 4847,
+      "distanceToArrivalLs": 0,
+      "atmosphere": null,
+      "volcanism": null,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [
+        {
+          "id": "body-0-belt-1",
+          "name": "Diaba A Belt",
+          "type": "Rocky",
+          "innerRadiusKm": 992400,
+          "outerRadiusKm": 2418400
+        },
+        {
+          "id": "body-0-belt-2",
+          "name": "Diaba B Belt",
+          "type": "Rocky",
+          "innerRadiusKm": 3335500,
+          "outerRadiusKm": 128070000
+        }
+      ],
+      "materials": [],
+      "sourceUpdatedAt": "2021-03-27 17:59:56",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2558022062802",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-13",
+      "bodyId": 13,
+      "name": "Diaba 1",
+      "shortName": "1",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Class II gas giant",
+      "radiusKm": 75250.208,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 3.2285380597541384,
+      "temperatureK": 225,
+      "distanceToArrivalLs": 679,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 1.3583227292217068,
+        "periodDays": 639.3209720651273,
+        "eccentricity": 0.001921,
+        "inclinationDeg": -0.000537,
+        "argOfPeriapsisDeg": 144.599145
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/468376919268594386",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-14",
+      "bodyId": 14,
+      "name": "Diaba 1 a",
+      "shortName": "1 a",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky body",
+      "radiusKm": 817.9899375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.09587487278055597,
+      "temperatureK": 179,
+      "distanceToArrivalLs": 676,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0051570094156040015,
+        "periodDays": 3.681683981863426,
+        "eccentricity": 0.000018,
+        "inclinationDeg": -0.07523,
+        "argOfPeriapsisDeg": 274.630428
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 20.75
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 20.08
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.89
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.7
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.81
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.64
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.14
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.41
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.61
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.55
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.42
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 2
+        }
+      ],
+      "signalsUpdatedAt": "2025-09-20T19:37:57Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/504405716287558354",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-15",
+      "bodyId": 15,
+      "name": "Diaba 1 b",
+      "shortName": "1 b",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky body",
+      "radiusKm": 881.21725,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.10345944631325789,
+      "temperatureK": 178,
+      "distanceToArrivalLs": 676,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0068490620260312305,
+        "periodDays": 5.635030636631944,
+        "eccentricity": 0.001154,
+        "inclinationDeg": -0.005201,
+        "argOfPeriapsisDeg": 140.267876
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.93
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.29
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.22
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.07
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.38
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.23
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.89
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.31
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.36
+        },
+        {
+          "name": "Antimony",
+          "percentage": 1.21
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.09
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 6
+        }
+      ],
+      "signalsUpdatedAt": "2024-05-17T01:35:17Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/540434513306522322",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-16",
+      "bodyId": 16,
+      "name": "Diaba 1 c",
+      "shortName": "1 c",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky body",
+      "radiusKm": 893.5628125,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.10495087829336384,
+      "temperatureK": 176,
+      "distanceToArrivalLs": 681,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.00964298903444018,
+        "periodDays": 9.413847630775463,
+        "eccentricity": 0.001084,
+        "inclinationDeg": -0.023868,
+        "argOfPeriapsisDeg": 213.280911
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.64
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.04
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.17
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.1
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.71
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.38
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.7
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.58
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.45
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.11
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.11
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 5
+        }
+      ],
+      "signalsUpdatedAt": "2023-10-16T21:38:59Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/576463310325486290",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-17",
+      "bodyId": 17,
+      "name": "Diaba 1 d",
+      "shortName": "1 d",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky body",
+      "radiusKm": 936.68375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.11016141208013318,
+      "temperatureK": 175,
+      "distanceToArrivalLs": 683,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.013466823262448347,
+        "periodDays": 15.536292835520834,
+        "eccentricity": 0.000899,
+        "inclinationDeg": -1.80849,
+        "argOfPeriapsisDeg": 289.584042
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.49
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.87
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.86
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.74
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.16
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.77
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.3
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.51
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.51
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.45
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.33
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/612492107344450258",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-18",
+      "bodyId": 18,
+      "name": "Diaba 1 e",
+      "shortName": "1 e",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky body",
+      "radiusKm": 1080.977625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.12769236996147038,
+      "temperatureK": 173,
+      "distanceToArrivalLs": 678,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.018753851224013445,
+        "periodDays": 25.532024188171295,
+        "eccentricity": 0.004739,
+        "inclinationDeg": 2.969942,
+        "argOfPeriapsisDeg": 101.949828
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.54
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 17.95
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.09
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.03
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.66
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.34
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.66
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.04
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.44
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.15
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.1
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 2
+        }
+      ],
+      "signalsUpdatedAt": "2024-07-14T13:46:38Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/648520904363414226",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-19",
+      "bodyId": 19,
+      "name": "Diaba 1 f",
+      "shortName": "1 f",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky Ice world",
+      "radiusKm": 1411.758375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.13991225083862366,
+      "temperatureK": 153,
+      "distanceToArrivalLs": 675,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.025138906798029045,
+        "periodDays": 39.624991930196764,
+        "eccentricity": 0.001206,
+        "inclinationDeg": 2.470027,
+        "argOfPeriapsisDeg": 3.04161
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 21.15
+        },
+        {
+          "name": "Carbon",
+          "percentage": 17.79
+        },
+        {
+          "name": "Iron",
+          "percentage": 17.67
+        },
+        {
+          "name": "Nickel",
+          "percentage": 13.36
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 11.39
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.3
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.07
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.31
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.37
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 0.97
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.63
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/684549701382378194",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-20",
+      "bodyId": 20,
+      "name": "Diaba 1 f a",
+      "shortName": "1 f a",
+      "kind": "moon",
+      "parentId": "body-19",
+      "subType": "Rocky Ice world",
+      "radiusKm": 581.0588125,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.04542241235672869,
+      "temperatureK": 153,
+      "distanceToArrivalLs": 675,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Major Water Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.000086453365146607,
+        "periodDays": 1.9923245741203703,
+        "eccentricity": null,
+        "inclinationDeg": 0.613593,
+        "argOfPeriapsisDeg": 20.805736
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 24.44
+        },
+        {
+          "name": "Carbon",
+          "percentage": 20.55
+        },
+        {
+          "name": "Iron",
+          "percentage": 14.73
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 13.16
+        },
+        {
+          "name": "Nickel",
+          "percentage": 11.14
+        },
+        {
+          "name": "Manganese",
+          "percentage": 6.08
+        },
+        {
+          "name": "Germanium",
+          "percentage": 4.9
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.19
+        },
+        {
+          "name": "Antimony",
+          "percentage": 1.04
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.01
+        },
+        {
+          "name": "Tin",
+          "percentage": 0.77
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Geological",
+          "count": 3
+        },
+        {
+          "name": "Human",
+          "count": 1
+        }
+      ],
+      "signalsUpdatedAt": "2023-12-14T21:39:59Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720578498401342162",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-21",
+      "bodyId": 21,
+      "name": "Diaba 1 g",
+      "shortName": "1 g",
+      "kind": "moon",
+      "parentId": "body-13",
+      "subType": "Rocky Ice world",
+      "radiusKm": 1046.8030625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.101419100815564,
+      "temperatureK": 152,
+      "distanceToArrivalLs": 683,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.03362660431431595,
+        "periodDays": 61.30193049709491,
+        "eccentricity": 0.000598,
+        "inclinationDeg": 6.778483,
+        "argOfPeriapsisDeg": 51.617881
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 21.68
+        },
+        {
+          "name": "Carbon",
+          "percentage": 18.23
+        },
+        {
+          "name": "Iron",
+          "percentage": 17.85
+        },
+        {
+          "name": "Nickel",
+          "percentage": 13.5
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 11.67
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.14
+        },
+        {
+          "name": "Zinc",
+          "percentage": 4.85
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.38
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.17
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.06
+        },
+        {
+          "name": "Polonium",
+          "percentage": 0.46
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 7
+        }
+      ],
+      "signalsUpdatedAt": "2025-04-13T15:50:54Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/756607295420306130",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-23",
+      "bodyId": 23,
+      "name": "Diaba 2",
+      "shortName": "2",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Gas giant with ammonia-based life",
+      "radiusKm": 32060.418,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 0.49035111049992053,
+      "temperatureK": 136,
+      "distanceToArrivalLs": 1000,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 2.0062950015757144,
+        "periodDays": 1147.6426350849654,
+        "eccentricity": 0.000966,
+        "inclinationDeg": 0.200357,
+        "argOfPeriapsisDeg": 256.055869
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828664889458234066",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-24",
+      "bodyId": 24,
+      "name": "Diaba 2 a",
+      "shortName": "2 a",
+      "kind": "moon",
+      "parentId": "body-23",
+      "subType": "Icy body",
+      "radiusKm": 571.275875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.03365433594354902,
+      "temperatureK": 122,
+      "distanceToArrivalLs": 1000,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Minor Methane Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.00193927193150925,
+        "periodDays": 5.113180243854167,
+        "eccentricity": 0.000081,
+        "inclinationDeg": 0.003986,
+        "argOfPeriapsisDeg": 272.165679
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 26.7
+        },
+        {
+          "name": "Carbon",
+          "percentage": 22.45
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 14.37
+        },
+        {
+          "name": "Iron",
+          "percentage": 12.13
+        },
+        {
+          "name": "Nickel",
+          "percentage": 9.18
+        },
+        {
+          "name": "Chromium",
+          "percentage": 5.46
+        },
+        {
+          "name": "Selenium",
+          "percentage": 4.18
+        },
+        {
+          "name": "Germanium",
+          "percentage": 3.49
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 0.94
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 0.67
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.43
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Geological",
+          "count": 2
+        },
+        {
+          "name": "Human",
+          "count": 4
+        }
+      ],
+      "signalsUpdatedAt": "2021-06-15T09:31:46Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/864693686477198034",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-25",
+      "bodyId": 25,
+      "name": "Diaba 2 b",
+      "shortName": "2 b",
+      "kind": "moon",
+      "parentId": "body-23",
+      "subType": "Icy body",
+      "radiusKm": 584.9514375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.034476835964257824,
+      "temperatureK": 122,
+      "distanceToArrivalLs": 1001,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.005144395403114518,
+        "periodDays": 22.09197729826389,
+        "eccentricity": 0.000043,
+        "inclinationDeg": -0.003683,
+        "argOfPeriapsisDeg": 39.277314
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 26.99
+        },
+        {
+          "name": "Carbon",
+          "percentage": 22.7
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 14.53
+        },
+        {
+          "name": "Iron",
+          "percentage": 12.27
+        },
+        {
+          "name": "Nickel",
+          "percentage": 9.28
+        },
+        {
+          "name": "Chromium",
+          "percentage": 5.52
+        },
+        {
+          "name": "Manganese",
+          "percentage": 5.07
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 1.58
+        },
+        {
+          "name": "Niobium",
+          "percentage": 0.84
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 0.8
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.44
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 4
+        }
+      ],
+      "signalsUpdatedAt": "2024-07-15T01:59:53Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/900722483496162002",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-26",
+      "bodyId": 26,
+      "name": "Diaba 2 c",
+      "shortName": "2 c",
+      "kind": "moon",
+      "parentId": "body-23",
+      "subType": "Icy body",
+      "radiusKm": 678.716375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.040002817166185284,
+      "temperatureK": 122,
+      "distanceToArrivalLs": 1001,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0087836224540835,
+        "periodDays": 49.28826595898148,
+        "eccentricity": 0.001814,
+        "inclinationDeg": 3.377279,
+        "argOfPeriapsisDeg": 129.558074
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 27.48
+        },
+        {
+          "name": "Carbon",
+          "percentage": 23.11
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 14.79
+        },
+        {
+          "name": "Iron",
+          "percentage": 12.49
+        },
+        {
+          "name": "Nickel",
+          "percentage": 9.45
+        },
+        {
+          "name": "Selenium",
+          "percentage": 4.3
+        },
+        {
+          "name": "Zinc",
+          "percentage": 3.39
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 3.07
+        },
+        {
+          "name": "Niobium",
+          "percentage": 0.85
+        },
+        {
+          "name": "Tin",
+          "percentage": 0.74
+        },
+        {
+          "name": "Polonium",
+          "percentage": 0.32
+        }
+      ],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [
+        {
+          "name": "Human",
+          "count": 7
+        }
+      ],
+      "signalsUpdatedAt": "2025-04-19T07:07:51Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/936751280515125970",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    },
+    {
+      "id": "body-30",
+      "bodyId": 30,
+      "name": "Diaba 3",
+      "shortName": "3",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Icy body",
+      "radiusKm": 11362.621,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 1.11466825686165,
+      "temperatureK": 596,
+      "distanceToArrivalLs": 1344,
+      "atmosphere": "Hot thick Methane-rich",
+      "volcanism": "Major Water Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 2.6939686760700665,
+        "periodDays": 1785.6785820590278,
+        "eccentricity": 0.001506,
+        "inclinationDeg": -0.125499,
+        "argOfPeriapsisDeg": 43.843377
+      },
+      "rings": [
+        {
+          "id": "body-30-ring-1",
+          "name": "Diaba 3 A Ring",
+          "type": "Icy",
+          "innerRadiusKm": 19194,
+          "outerRadiusKm": 53046
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-07-24 00:33:44",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080866468590981842",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      }
+    }
+  ],
+  "locations": [
+    {
+      "id": "edsm-station-493041",
+      "name": "HFW-75F",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 0,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3712587520,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Crew Lounge",
+        "Fleet carrier administration"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-01-22 02:43:54"
+    },
+    {
+      "id": "edsm-station-74205",
+      "name": "T3L-3VJ",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 0,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3703771904,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Crew Lounge",
+        "Fleet carrier administration"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2022-09-28 02:02:25"
+    },
+    {
+      "id": "edsm-station-55363",
+      "name": "Pryor Keep",
+      "kind": "station",
+      "bodyId": "body-21",
+      "type": "Planetary Outpost",
+      "latitude": 40.201,
+      "longitude": -37.974,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 683,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3516453632,
+      "economy": "Military",
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Market",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Tuning",
+        "Search and Rescue",
+        "Bartender",
+        "Apex Interstellar Transport",
+        "Frontline Solutions",
+        "Pioneer Supplies",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-19 00:44:15"
+    },
+    {
+      "id": "edsm-station-349032",
+      "name": "Bravo Extraction Complex",
+      "kind": "settlement",
+      "bodyId": "body-19",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 675,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916932608,
+      "economy": "Extraction",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-458295",
+      "name": "Furnival Hydroponics Estate",
+      "kind": "settlement",
+      "bodyId": "body-19",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 665.957899,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916932352,
+      "economy": "Agriculture",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/684549701382378194",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-349031",
+      "name": "Okoye's Nursery",
+      "kind": "settlement",
+      "bodyId": "body-16",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 681,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916931072,
+      "economy": "Agriculture",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-22709",
+      "name": "Niijima Station",
+      "kind": "station",
+      "bodyId": "body-14",
+      "type": "Coriolis Starport",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM supplies coordinate fields for this non-surface facility; they are not treated as a measured surface position.",
+      "distanceToArrivalLs": 676,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3224814080,
+      "economy": "Industrial",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Tuning",
+        "Search and Rescue",
+        "Bartender",
+        "Apex Interstellar Transport",
+        "Frontline Solutions",
+        "Pioneer Supplies",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-12 05:06:56"
+    },
+    {
+      "id": "edsm-station-349025",
+      "name": "Hartmann Mining Exchange",
+      "kind": "settlement",
+      "bodyId": "body-16",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 681,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916931328,
+      "economy": "Extraction",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-333568",
+      "name": "Penfold Territories",
+      "kind": "settlement",
+      "bodyId": "body-16",
+      "type": "Odyssey Settlement",
+      "latitude": -64.6725,
+      "longitude": -39.2174,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 681,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916931584,
+      "economy": "Extraction",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-465528",
+      "name": "Moy Engineering Forge",
+      "kind": "settlement",
+      "bodyId": "body-14",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 677.074178,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916935936,
+      "economy": "Industrial",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/504405716287558354",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-80111",
+      "name": "UZF-L4W",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 677.491173,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3704918272,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Crew Lounge",
+        "Fleet carrier administration"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2022-09-24 03:37:04"
+    },
+    {
+      "id": "edsm-station-55362",
+      "name": "Anthony de la Roche Horizons",
+      "kind": "station",
+      "bodyId": "body-15",
+      "type": "Planetary Outpost",
+      "latitude": 4.42734,
+      "longitude": -87.1383,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 676,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3516453888,
+      "economy": "Colony",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Tuning",
+        "Search and Rescue",
+        "Bartender",
+        "Apex Interstellar Transport",
+        "Frontline Solutions",
+        "Pioneer Supplies",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-329609",
+      "name": "Takeda Hydroponics Complex",
+      "kind": "settlement",
+      "bodyId": "body-19",
+      "type": "Odyssey Settlement",
+      "latitude": 7.02865,
+      "longitude": 139.065,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 675,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916932096,
+      "economy": "Agriculture",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-523240",
+      "name": "Schaeffer Astrophysics Site",
+      "kind": "settlement",
+      "bodyId": "body-15",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 676,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916934144,
+      "economy": "High Tech",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-332768",
+      "name": "Murata Chemical Workshop",
+      "kind": "settlement",
+      "bodyId": "body-15",
+      "type": "Odyssey Settlement",
+      "latitude": -35.8801,
+      "longitude": -157.291,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 676,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916933888,
+      "economy": "Industrial",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-344953",
+      "name": "Konashevych Mineralogic Site",
+      "kind": "settlement",
+      "bodyId": "body-17",
+      "type": "Odyssey Settlement",
+      "latitude": 44.7649,
+      "longitude": 127.887,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 683,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916935168,
+      "economy": "Extraction",
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-19 00:44:15"
+    },
+    {
+      "id": "edsm-station-523228",
+      "name": "Vogel Command Garrison",
+      "kind": "settlement",
+      "bodyId": "body-14",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 676,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916936192,
+      "economy": "Military",
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-19 00:44:15"
+    },
+    {
+      "id": "edsm-station-148267",
+      "name": "Banerjee Agricultural Estate",
+      "kind": "settlement",
+      "bodyId": "body-16",
+      "type": "Odyssey Settlement",
+      "latitude": 39.1419,
+      "longitude": 138.115,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 681,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916930816,
+      "economy": "Agriculture",
+      "controllingFaction": "Diaba Gang",
+      "services": [
+        "Market",
+        "Black Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-01-07 19:44:55"
+    },
+    {
+      "id": "edsm-station-229468",
+      "name": "Lusmore Synthetics Exchange",
+      "kind": "settlement",
+      "bodyId": "body-18",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 678,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916935424,
+      "economy": "Industrial",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-410025",
+      "name": "Prevost Manufacturing Installation",
+      "kind": "settlement",
+      "bodyId": "body-21",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 683,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916927744,
+      "economy": "Industrial",
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-19 00:44:15"
+    },
+    {
+      "id": "edsm-station-333573",
+      "name": "Pasternak Command Point",
+      "kind": "settlement",
+      "bodyId": "body-21",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 692.442802,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916927488,
+      "economy": "Military",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/756607295420306130",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-465561",
+      "name": "Owen Defence Site",
+      "kind": "settlement",
+      "bodyId": "body-21",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 694.854965,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916927232,
+      "economy": "Military",
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/756607295420306130",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 05:54:04"
+    },
+    {
+      "id": "edsm-station-465564",
+      "name": "Batterham Astrophysics Site",
+      "kind": "settlement",
+      "bodyId": "body-25",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 997.841808,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916928512,
+      "economy": "High Tech",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/900722483496162002",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-329610",
+      "name": "Macleod Manufacturing Site",
+      "kind": "settlement",
+      "bodyId": "body-26",
+      "type": "Odyssey Settlement",
+      "latitude": -17.4739,
+      "longitude": 106.121,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 1001,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916929792,
+      "economy": "Industrial",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-465551",
+      "name": "Hammond Genetics Institution",
+      "kind": "settlement",
+      "bodyId": "body-24",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 1000.89548,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916933120,
+      "economy": "High Tech",
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/864693686477198034",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-19 00:44:15"
+    },
+    {
+      "id": "edsm-station-283920",
+      "name": "Xie Industrial Holdings",
+      "kind": "settlement",
+      "bodyId": "body-26",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 1001,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916929280,
+      "economy": "Industrial",
+      "controllingFaction": "Diaba Ltd",
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-07-25 14:30:25"
+    },
+    {
+      "id": "edsm-station-329541",
+      "name": "Kook Military Base",
+      "kind": "settlement",
+      "bodyId": "body-26",
+      "type": "Odyssey Settlement",
+      "latitude": -54.8246,
+      "longitude": -60.8059,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 1001,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916930304,
+      "economy": "Military",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-09-03 16:28:45"
+    },
+    {
+      "id": "edsm-station-245146",
+      "name": "Coulstock-Cockeram Arms Garrison",
+      "kind": "settlement",
+      "bodyId": "body-26",
+      "type": "Odyssey Settlement",
+      "latitude": 5.24102,
+      "longitude": -137.275,
+      "commodities": [],
+      "notes": "Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.",
+      "distanceToArrivalLs": 1001,
+      "positionKnown": true,
+      "coordinatesKnown": true,
+      "marketId": 3916930048,
+      "economy": "Military",
+      "controllingFaction": "Diaba Gang",
+      "services": [
+        "Market",
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=Diaba",
+        "retrievedAt": "2026-10-02T20:36:48Z"
+      },
+      "sourceUpdatedAt": "2026-08-29 06:16:18"
+    },
+    {
+      "id": "spansh-station-3516455424",
+      "name": "Stephenson Base",
+      "kind": "station",
+      "bodyId": "body-15",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3516455424,
+      "economy": null,
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/540434513306522322",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-09-02T16:41:18Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916934400",
+      "name": "Khatri Agricultural Holdings",
+      "kind": "station",
+      "bodyId": "body-15",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916934400,
+      "economy": null,
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/540434513306522322",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-09-02T16:41:18Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916934912",
+      "name": "Prabhune Botanical Estate",
+      "kind": "station",
+      "bodyId": "body-17",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916934912,
+      "economy": null,
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/612492107344450258",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3516454912",
+      "name": "Fuca's Folly",
+      "kind": "station",
+      "bodyId": "body-18",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3516454912,
+      "economy": null,
+      "controllingFaction": null,
+      "services": [],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/648520904363414226",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916931840",
+      "name": "Contreras Genetics Site",
+      "kind": "station",
+      "bodyId": "body-19",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916931840,
+      "economy": null,
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/684549701382378194",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916928000",
+      "name": "Rawlins Engineering Complex",
+      "kind": "station",
+      "bodyId": "body-21",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916928000,
+      "economy": null,
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu",
+        "Refinery Contact"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/756607295420306130",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916932864",
+      "name": "Wright Arms Base",
+      "kind": "station",
+      "bodyId": "body-24",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916932864,
+      "economy": null,
+      "controllingFaction": "Diaba Movement",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/864693686477198034",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916933632",
+      "name": "Taschieri Agricultural Estate",
+      "kind": "station",
+      "bodyId": "body-24",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916933632,
+      "economy": null,
+      "controllingFaction": "HIP 29444 Empire Consulate",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/864693686477198034",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916928768",
+      "name": "Osuigwe Agricultural Exchange",
+      "kind": "settlement",
+      "bodyId": "body-25",
+      "type": "Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": 998.177903,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916928768,
+      "economy": null,
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/900722483496162002",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "spansh-station-3916929024",
+      "name": "Marchand Agricultural Range",
+      "kind": "station",
+      "bodyId": "body-25",
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.",
+      "distanceToArrivalLs": null,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3916929024,
+      "economy": null,
+      "controllingFaction": "Anhuanga Empire Pact",
+      "services": [
+        "Dock",
+        "Autodock",
+        "Market",
+        "Contacts",
+        "Missions",
+        "Refuel",
+        "Repair",
+        "Workshop",
+        "Missions Generated",
+        "Flight Controller",
+        "Station Operations",
+        "Search and Rescue",
+        "Station Menu"
+      ],
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/900722483496162002",
+        "retrievedAt": "2026-10-02T20:36:48Z",
+        "recordUpdatedAt": "2026-07-24T00:33:44Z"
+      },
+      "sourceUpdatedAt": null
+    }
+  ]
+}

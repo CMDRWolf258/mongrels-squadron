@@ -1,12 +1,10 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validateSystem } from '../lib/orrery-model.js';
 
-const SYSTEM_NAME = 'NGC 2546 Sector UZ-G d10-16';
-const SYSTEM_ID = 'ngc-2546-uz-g-d10-16';
+const DEFAULT_SYSTEM = { name:'NGC 2546 Sector UZ-G d10-16', id:'ngc-2546-uz-g-d10-16' };
 const API_ROOT = 'https://www.edsm.net/api-system-v1/';
-const BODY_URL = `${API_ROOT}bodies?systemName=${encodeURIComponent(SYSTEM_NAME)}`;
-const STATION_URL = `${API_ROOT}stations?systemName=${encodeURIComponent(SYSTEM_NAME)}`;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 // Only names present in the EDSM station snapshot are enriched. The source
@@ -48,8 +46,14 @@ function normalizeRings(rows, bodyId, prefix='ring') {
   }));
 }
 
-export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, spanshBodies=[]) {
-  if (bodySnapshot?.name !== SYSTEM_NAME || stationSnapshot?.name !== SYSTEM_NAME) throw new Error('Snapshot system name does not match 10-16');
+export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, spanshBodies=[], system=DEFAULT_SYSTEM) {
+  const { name:SYSTEM_NAME, id:SYSTEM_ID } = system;
+  if (typeof SYSTEM_NAME !== 'string' || !SYSTEM_NAME.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(SYSTEM_ID || '')) throw new Error('Invalid system name or catalog ID');
+  const BODY_URL = `${API_ROOT}bodies?systemName=${encodeURIComponent(SYSTEM_NAME)}`;
+  const STATION_URL = `${API_ROOT}stations?systemName=${encodeURIComponent(SYSTEM_NAME)}`;
+  if (bodySnapshot?.name !== SYSTEM_NAME || stationSnapshot?.name !== SYSTEM_NAME) throw new Error(`Snapshot system name does not match ${SYSTEM_NAME}`);
+  if (stationSnapshot.id64 != null && String(stationSnapshot.id64) !== String(bodySnapshot.id64)) throw new Error('Snapshot system address mismatch');
+  const useLegacyPlan = SYSTEM_NAME === DEFAULT_SYSTEM.name && SYSTEM_ID === DEFAULT_SYSTEM.id && String(bodySnapshot.id64) === '560820275507';
   if (!Array.isArray(bodySnapshot.bodies) || !bodySnapshot.bodies.length || !Array.isArray(stationSnapshot.stations)) throw new Error('Incomplete EDSM snapshots');
   const rawBodies = bodySnapshot.bodies;
   const knownIds = new Set(rawBodies.map(body => body.bodyId));
@@ -129,6 +133,7 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
   const spanshStations = new Map();
   const hotspotLocations = [];
   for (const entry of spanshBodies) {
+    if (typeof entry.id64 !== 'string' || !/^\d+$/.test(entry.id64)) throw new Error('Spansh body address must be a decimal string');
     const record = entry.record;
     if (!record || record.system_name !== SYSTEM_NAME || !knownIds.has(record.body_id)) throw new Error('Spansh body does not match the system snapshot');
     const body = bodies.find(row => row.bodyId === record.body_id);
@@ -140,7 +145,10 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     body.signalsUpdatedAt = record.signals_updated_at || null;
     body.signalSource = source;
     for (const station of record.stations || []) {
-      if (station.market_id) spanshStations.set(station.market_id,{ bodyId:body.id, source });
+      if (!Number.isSafeInteger(station.market_id) || !station.name) continue;
+      const existing = spanshStations.get(station.market_id);
+      if (existing && existing.bodyId !== body.id) throw new Error(`Conflicting Spansh station host: ${station.market_id}`);
+      spanshStations.set(station.market_id,{ bodyId:body.id, source, station, bodyUpdatedAt:record.updated_at || null });
     }
     for (const rawRing of record.rings || []) {
       const ring = body.rings.find(row => row.name === rawRing.name);
@@ -172,20 +180,27 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     const edsmParent = physicalIds.get(station.body?.id) || nameIds.get(station.body?.name) || null;
     const spanshAssociation = spanshStations.get(station.marketId);
     const canonicalName = station.name.replace(/^(Planetary|Orbital) Construction Site:\s*/i, '');
-    const plan = PLAN_ASSOCIATIONS[canonicalName];
+    const plan = useLegacyPlan ? PLAN_ASSOCIATIONS[canonicalName] : null;
     const parentId = edsmParent || spanshAssociation?.bodyId || (plan && knownIds.has(plan[0]) ? `body-${plan[0]}` : null);
     const planSource = !edsmParent && !spanshAssociation && parentId ? {
       name:'Mongrel SRVSurvey plan screenshot',
       reference:`sources/${plan[1]}`,
       notes:'User-supplied plan confirms the body association; screenshot has no capture date. Current completion state is taken only from the EDSM snapshot.',
     } : null;
+    // EDSM sometimes attaches coordinate fields to orbital stations. Only
+    // recognised surface facility types can establish a surface position.
+    const surfaceFacility = ['Odyssey Settlement', 'Planetary Outpost', 'Planetary Port'].includes(station.type);
+    const latitude = finite(station.body?.latitude), longitude = finite(station.body?.longitude);
+    const coordinatesKnown = Boolean(edsmParent && surfaceFacility && latitude !== null && longitude !== null);
     const notes = [];
     if (!edsmParent && spanshAssociation) notes.push('Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body.');
     if (planSource) notes.push('Body association comes from the Mongrel SRVSurvey plan; the public EDSM snapshot has no associated body.');
     if (!parentId) notes.push('Associated body is not recorded in this snapshot. This location is listed without a 3D marker.');
+    else if (coordinatesKnown) notes.push('Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.');
     else notes.push('Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.');
+    if (!surfaceFacility && (latitude !== null || longitude !== null)) notes.push('EDSM supplies coordinate fields for this non-surface facility; they are not treated as a measured surface position.');
     if (/construction site/i.test(station.name)) notes.push('EDSM identifies a construction site. Its completion state may lag in-game progress.');
-    if (canonicalName === 'Eon Blue Apocalypse') notes.push('The supplied Mongrel plan showed this as an active build. EDSM now lists an Orbis Starport; consult current in-game status.');
+    if (useLegacyPlan && canonicalName === 'Eon Blue Apocalypse') notes.push('The supplied Mongrel plan showed this as an active build. EDSM now lists an Orbis Starport; consult current in-game status.');
     if (station.type === 'Fleet Carrier') notes.push('Fleet carriers can move; this is a dated location snapshot.');
     return {
       id:`edsm-station-${station.id}`,
@@ -193,13 +208,13 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
       kind:station.type === 'Fleet Carrier' ? 'carrier' : /settlement/i.test(station.type || '') ? 'settlement' : /installation/i.test(station.type || '') ? 'installation' : 'station',
       bodyId:parentId,
       type:station.type || (/Planetary Construction/i.test(station.name) ? 'Planetary construction site' : /Orbital Construction/i.test(station.name) ? 'Orbital construction site' : 'Unknown installation type'),
-      latitude:null,
-      longitude:null,
+      latitude:coordinatesKnown ? latitude : null,
+      longitude:coordinatesKnown ? longitude : null,
       commodities:[],
       notes:notes.join(' '),
       distanceToArrivalLs:finite(station.distanceToArrival),
       positionKnown:Boolean(parentId),
-      coordinatesKnown:false,
+      coordinatesKnown,
       marketId:station.marketId || null,
       economy:station.economy || null,
       controllingFaction:station.controllingFaction?.name || null,
@@ -210,7 +225,35 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     };
   });
 
-  return {
+  // Body records may report named facilities missing from the EDSM snapshot.
+  // Union by market ID, keeping EDSM's richer record when both sources report it.
+  const edsmMarkets = new Set(stationSnapshot.stations.map(station => station.marketId));
+  for (const [marketId, { station, bodyId, source, bodyUpdatedAt }] of spanshStations) {
+    if (edsmMarkets.has(marketId)) continue;
+    const kind = station.type === 'Fleet Carrier' ? 'carrier' : /settlement/i.test(station.type || '') ? 'settlement' : /installation/i.test(station.type || '') ? 'installation' : 'station';
+    locations.push({
+      id:`spansh-station-${marketId}`,
+      name:station.name,
+      kind,
+      bodyId,
+      type:station.type || 'Unknown installation type',
+      latitude:null,
+      longitude:null,
+      commodities:[],
+      notes:'Named facility and host body are reported by Spansh but absent from this EDSM station snapshot. Exact coordinates or station orbital position are unavailable; marker is schematic. Source coverage and facility state may be stale.',
+      distanceToArrivalLs:finite(station.distance_to_arrival),
+      positionKnown:true,
+      coordinatesKnown:false,
+      marketId,
+      economy:station.economy || null,
+      controllingFaction:station.controlling_minor_faction || null,
+      services:Array.isArray(station.services) ? [...station.services] : [],
+      source:{ ...source, recordUpdatedAt:bodyUpdatedAt },
+      sourceUpdatedAt:station.updated_at || null,
+    });
+  }
+
+  return validateSystem({
     schemaVersion:1,
     id:SYSTEM_ID,
     name:SYSTEM_NAME,
@@ -219,18 +262,18 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     sources:[
       { name:'EDSM celestial bodies API', url:BODY_URL, retrievedAt },
       { name:'EDSM stations API', url:STATION_URL, retrievedAt },
-      ...(spanshBodies.length ? [{ name:'Spansh celestial body surveys', url:`https://spansh.co.uk/system/${bodySnapshot.id64}`, retrievedAt, notes:'Station associations and ring hotspot counts are taken from matching body records. Source survey timestamps are retained.' }] : []),
-      { name:'Mongrel SRVSurvey colonization plan', reference:'ChatGPT Elite Dangerous project sources/*.png', retrievedAt, notes:'Used only when both public providers lack a body association for an exact matching EDSM station name; proposed NATO-named facilities are excluded.' },
+      ...(spanshBodies.length ? [{ name:'Spansh celestial body surveys', url:`https://spansh.co.uk/system/${bodySnapshot.id64}`, retrievedAt, notes:'Station associations, additional named facilities and ring hotspot counts are taken from matching body records. EDSM facilities take precedence by market ID. Source survey timestamps are retained.' }] : []),
+      ...(useLegacyPlan ? [{ name:'Mongrel SRVSurvey colonization plan', reference:'ChatGPT Elite Dangerous project sources/*.png', retrievedAt, notes:'Used only when both public providers lack a body association for an exact matching EDSM station name; proposed NATO-named facilities are excluded.' }] : []),
     ],
     notes:[
       'Sizes and orbit spacing are visually compressed by the renderer. Positions are schematic, not live ephemerides.',
-      'Four shared barycentres are preserved from EDSM parent chains; their unreported orbital elements remain null.',
-      'No confirmed surface mining coordinates were present in the inspected repository or supplied plan screenshots. Raw material percentages are body composition data, not commodity deposits. Ring hotspot records report commodity signal counts; exact positions and overlaps are unknown.',
-      'Mongrel surface sites on the separate personal website should be supplied through a reusable canonical location document shared by both websites, rather than copied into this celestial snapshot.',
+      `${missingBarycentres.size} shared barycentres are preserved from EDSM parent chains; their unreported orbital elements remain null.`,
+      'Raw material percentages are body composition data, not commodity deposits. Ring hotspot records report commodity signal counts; exact positions and overlaps are unknown. No surface resource sites are inferred from body signal counts.',
+      'Curated resource locations are an independent optional layer supplied through the reusable canonical location interface, rather than copied into this celestial snapshot.',
     ],
     bodies,
     locations:[...locations,...hotspotLocations],
-  };
+  });
 }
 
 async function readSnapshot(path, url) {
@@ -245,10 +288,14 @@ async function main() {
   const options = {};
   for (let index=0; index<args.length; index+=2) {
     const name = args[index];
-    if (!['--bodies','--stations','--spansh-bodies','--output','--retrieved-at'].includes(name) || !args[index+1]) throw new Error('Usage: node scripts/import-orrery-edsm.mjs [--bodies file --stations file --spansh-bodies file] [--retrieved-at ISO-date] [--output file]');
+    if (!['--system-name','--system-id','--bodies','--stations','--spansh-bodies','--output','--retrieved-at'].includes(name) || !args[index+1]) throw new Error('Usage: node scripts/import-orrery-edsm.mjs [--system-name name --system-id catalog-id] [--bodies file --stations file --spansh-bodies file] [--retrieved-at ISO-date] [--output file]');
     options[name] = args[index+1];
   }
   if (Boolean(options['--bodies']) !== Boolean(options['--stations'])) throw new Error('Provide both body and station snapshots for an offline import');
+  if (Boolean(options['--system-name']) !== Boolean(options['--system-id'])) throw new Error('Provide both system name and catalog ID');
+  const system = options['--system-name'] ? { name:options['--system-name'], id:options['--system-id'] } : DEFAULT_SYSTEM;
+  const BODY_URL = `${API_ROOT}bodies?systemName=${encodeURIComponent(system.name)}`;
+  const STATION_URL = `${API_ROOT}stations?systemName=${encodeURIComponent(system.name)}`;
   const retrievedAt = options['--retrieved-at'] || new Date().toISOString();
   if (Number.isNaN(Date.parse(retrievedAt))) throw new Error('Invalid retrieval timestamp');
   const [bodySnapshot, stationSnapshot] = await Promise.all([
@@ -263,7 +310,7 @@ async function main() {
     if (!response.ok) throw new Error(`Spansh system request failed (${response.status})`);
     const exactJSON = (await response.text()).replace(/("(?:id|id64)"\s*:\s*)(\d+)/g,'$1"$2"');
     const spanshSystem = JSON.parse(exactJSON);
-    if (spanshSystem.record?.name !== SYSTEM_NAME) throw new Error('Spansh system mismatch');
+    if (spanshSystem.record?.name !== system.name) throw new Error('Spansh system mismatch');
     const references = spanshSystem.record.bodies;
     // A small bounded batch avoids hammering the community API.
     for (let offset=0; offset<references.length; offset+=4) {
@@ -271,8 +318,8 @@ async function main() {
       spanshBodies.push(...rows);
     }
   }
-  const data = normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, spanshBodies);
-  const output = options['--output'] ? resolve(options['--output']) : resolve(REPO_ROOT, 'data/orrery', `${SYSTEM_ID}.json`);
+  const data = normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, spanshBodies, system);
+  const output = options['--output'] ? resolve(options['--output']) : resolve(REPO_ROOT, 'data/orrery', `${system.id}.json`);
   await mkdir(dirname(output), { recursive:true });
   await writeFile(output, `${JSON.stringify(data,null,2)}\n`, 'utf8');
   console.log(`Imported ${data.bodies.length} hierarchy nodes and ${data.locations.length} locations into ${output}`);
