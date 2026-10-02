@@ -1,6 +1,6 @@
 # Mongrel Scout EDMC Plugin
 
-Mongrel Scout sends sanitized BGS snapshots directly to Wolf BGS Control, fresh station commodity-market snapshots to Trader's Outpost, and verified public surface-facility coordinates to the System Orrery.
+Mongrel Scout sends sanitized BGS snapshots directly to Wolf BGS Control, fresh station commodity-market snapshots to Trader's Outpost, verified public surface-facility coordinates to the System Orrery, and a local-only event bridge for future Mongrel HUD/voice features.
 
 ## Install
 
@@ -45,7 +45,28 @@ For Orrery facility placement, an `ApproachSettlement` observation:
 
 Facility observations store only the public location facts needed by the Orrery. The public Orrery feed does not expose the Scout token, Discord account, Commander identity, or route history.
 
-The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
+The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. The local HUD bridge is separate from those cloud uploads and may hold the current Commander name and docking/travel trigger state only on the local PC. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
+
+## Local HUD / voice bridge
+
+Mongrel Scout v1.4.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+
+The local event vocabulary is:
+- `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
+- `location.current`, `travel.fsd_jump`, `travel.supercruise_entry`, `travel.supercruise_exit`;
+- `carrier.jump`, `carrier.stats`;
+- `facility.approach`.
+
+The bridge exposes read-only JSON endpoints for a local companion:
+- `GET /v1/health` — bridge/plugin version and latest sequence;
+- `GET /v1/state` — current local Commander/system/station/docking/supercruise/owner-carrier state;
+- `GET /v1/events?after=<seq>&wait=<seconds>` — ordered event delivery with optional long polling, capped at 25 seconds.
+
+The in-memory event queue retains the newest 256 normalized events. No raw journal dump is exposed.
+
+`CarrierStats` is used locally to learn the current Commander's own Fleet Carrier identity (Carrier ID, callsign, name and docking access). That owner-carrier identity is persisted in EDMC's local configuration so later docking events can be labeled `relationship: owner` even after EDMC restarts. It is **not uploaded** by this v1.4.0 bridge. Other carriers remain `relationship: unknown` until a future squad carrier registry provides a trusted mapping.
+
+The local bridge may include the current Commander name because owner/squadmate greetings need to know who is flying, but that identity stays on the PC. The existing cloud payload privacy boundary is unchanged.
 
 ## Scout workflow
 
