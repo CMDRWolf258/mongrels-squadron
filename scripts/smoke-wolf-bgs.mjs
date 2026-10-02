@@ -152,7 +152,7 @@ const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 assert.match(apiSource,/wolf_bgs_unavailable/,'Wolf BGS API must expose authenticated data-build failures distinctly');
 assert.match(apiSource,/authenticated:true/,'Wolf BGS API must preserve authenticated state when secure data building fails');
 
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/,/conflictPairTimelinesFor/,/set-conflict-day/,/clear-conflict-day/,/nextTickAfter/,/ticksElapsedAfter/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/,/conflictPairTimelinesFor/,/set-conflict-day/,/clear-conflict-day/,/nextConfiguredTickAfter/,/configuredTicksElapsed/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
@@ -215,6 +215,8 @@ assert.equal(typeof slidersModule.onRequestPut,'function');
 const mainModule=await import('../functions/api/operations/wolf-bgs.js');
 assert.equal(typeof mainModule.onRequestGet,'function');
 assert.equal(typeof mainModule.onRequestPut,'function');
+assert.match(apiSource,/from '\.\.\/\.\.\/\.\.\/lib\/daily-order-cycle\.js'/,'Conflict timelines should reuse the shared Central-time tick helpers');
+assert.doesNotMatch(apiSource,/Date\.UTC\(start\.getUTCFullYear\(\)/,'Conflict timeline must not reinterpret configured CT tick clocks as UTC');
 assert.doesNotMatch(apiSource,/freshnessHours:/,'BGS Control API should no longer expose hour-based freshness defaults');
 assert.doesNotMatch(writeApi,/freshnessHours:/,'BGS Control write API should no longer persist hour-based freshness overrides');
 
