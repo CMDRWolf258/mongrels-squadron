@@ -54,6 +54,10 @@ assert.equal(locations.get('Hara Astrophysics Expedition').bodyId, 'body-86');
 assert.equal(locations.get('Saturn Ascending').bodyId, 'body-20');
 assert.equal(locations.get('Eon Blue Apocalypse').bodyId, 'body-90');
 assert.equal(locations.get('Rivers Hub').bodyId, null, 'Arrival distance alone cannot establish a body association');
+assert.equal(locations.get("King's Mountain View").bodyId, 'body-51', 'Existing archive explicitly associates this facility with the unique Earth-like world');
+assert.match(locations.get("King's Mountain View").associationSource.url, /\/bafb1a2c2fdc7a24801082f8d69ed233759b77df\/system.html$/);
+assert.equal(locations.get("King's Mountain View").type, 'Planetary Outpost', 'Host recovery does not silently correct a conflicting source type');
+assert.equal(data.locations.filter(location => !location.bodyId).length, 9);
 for (const location of data.locations) {
   assert.equal(location.positionKnown,Boolean(location.bodyId));
   if (location.bodyId) assert.ok(bodies.has(location.bodyId), `Invalid body for ${location.name}`);
@@ -101,6 +105,16 @@ assert.equal(imported.bodies.find(body => body.id === 'body-20').orbit.semiMajor
 const legacyPlanImported = normalizeEDSMSystem(fixtureBodies,{...fixtureStations,stations:[{id:902,name:'Saturn Ascending',type:'Outpost',body:null}]},'2026-10-02');
 assert.equal(legacyPlanImported.locations[0].bodyId,'body-20','The default 10-16 import retains its verified legacy association');
 assert.match(legacyPlanImported.locations[0].associationSource.reference,/^sources\/.+\.png$/);
+const archiveBodies = {...fixtureBodies,bodies:[...fixtureBodies.bodies,{id:151,bodyId:51,name:`${data.name} 8`,type:'Planet',subType:'Earth-like world',parents:[{Star:0}]}]};
+const archiveStation = {id:722440,marketId:4374964995,name:"King's Mountain View",type:'Planetary Outpost',body:null};
+const archiveImport = (bodyRows=archiveBodies,station=archiveStation) => normalizeEDSMSystem(bodyRows,{...fixtureStations,stations:[station]},'2026-10-02');
+assert.equal(archiveImport().locations[0].bodyId,'body-51','Explicit archive host survives a repeat import');
+assert.equal(archiveImport().locations[0].latitude,null,'Archive does not supply measured coordinates');
+assert.equal(archiveImport(archiveBodies,{...archiveStation,marketId:999}).locations[0].bodyId,null,'Name alone cannot establish the archive association');
+assert.equal(archiveImport({...archiveBodies,bodies:[...archiveBodies.bodies,{...archiveBodies.bodies.at(-1),id:152,bodyId:52,name:`${data.name} 9`}]}).locations[0].bodyId,null,'Ambiguous body descriptions remain unplaced');
+assert.equal(archiveImport(archiveBodies,{...archiveStation,body:{id:101,name:`${data.name} 4`}}).locations[0].bodyId,'body-20','Direct provider evidence takes precedence over the archive');
+const archiveOtherSystem = {name:'Independent archive fixture',id:'independent-archive-fixture'};
+assert.equal(normalizeEDSMSystem({...archiveBodies,name:archiveOtherSystem.name,id64:'999',bodies:archiveBodies.bodies.map(body=>({...body,name:body.name.replace(data.name,archiveOtherSystem.name)}))},{name:archiveOtherSystem.name,stations:[archiveStation]},'2026-10-02',[],archiveOtherSystem).locations[0].bodyId,null,'10-16 archive cannot establish a host in another system');
 assert.throws(() => normalizeEDSMSystem({...fixtureBodies,name:'Wrong system'},fixtureStations,'2026-10-02'),/system name/);
 assert.throws(() => normalizeEDSMSystem({...fixtureBodies,bodies:[...fixtureBodies.bodies,fixtureBodies.bodies[0]]},fixtureStations,'2026-10-02'),/Duplicate/);
 assert.throws(() => normalizeEDSMSystem({...fixtureBodies,bodies:[fixtureBodies.bodies[0],{...fixtureBodies.bodies[1],parents:[{Planet:999},{Star:0}]}]},fixtureStations,'2026-10-02'),/Missing physical parent/);
