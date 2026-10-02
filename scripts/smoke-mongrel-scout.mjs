@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
+import { applyFacilityObservationPayload } from '../lib/orrery-facility-observations.js';
+import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
   'downloads/mongrel-scout/README.md',
   'functions/api/operations/scout-tokens.js',
   'functions/api/operations/scout-ingest.js',
+  'functions/api/orrery/facility-observations.js',
+  'lib/orrery-facility-observations.js',
+  'lib/scout-facility-observations.js',
   'js/wolf-bgs-scout.js',
   'functions/downloads/mongrel-scout.zip.js',
 ];
@@ -23,8 +28,11 @@ for(const pattern of [
   /Location/,
   /CarrierJump/,
   /Market/,
+  /ApproachSettlement/,
   /_build_market_payload/,
+  /_build_facility_payload/,
   /Market updated:/,
+  /Facility mapped:/,
   /monitor\.is_live_galaxy/,
   /timeout_session\.new_session/,
   /threading\.Thread/,
@@ -33,7 +41,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.2\.0"/,
+  /PLUGIN_VERSION = "1\.3\.0"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
@@ -42,6 +50,7 @@ assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit comman
 assert.match(plugin,/Commander name, cargo, credits/i);
 assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
+assert.match(plugin,/facility market ID, host body ID\/name, latitude and longitude/i,'Scout privacy copy should disclose facility placement fields');
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Market payload must not transmit commander name');
 
 const tokenApi=readFileSync('functions/api/operations/scout-tokens.js','utf8');
@@ -77,6 +86,9 @@ for(const pattern of [
   /CarrierJump/,
   /handleMarketSnapshot/,
   /recordScoutMarketSnapshot/,
+  /handleFacilityObservation/,
+  /recordScoutFacilityObservation/,
+  /ApproachSettlement/,
   /trade_storage_not_configured/,
   /systemAuthorized/,
   /system_not_authorized/,
@@ -91,13 +103,15 @@ for(const pattern of [
 
 const ingestFactory=new Function(
   ingest.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
-  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,DEFAULT_RATE_LIMIT_PER_HOUR};'
+  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,isFacilityPayload,DEFAULT_RATE_LIMIT_PER_HOUR};'
 );
 const ingestHelpers=ingestFactory();
 assert.equal(ingestHelpers.systemAuthorized({scope:'trusted',allowedSystems:[]},'Anywhere'),true);
 assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'  baldur  '),true);
 assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:['Baldur','Miwae']},'Diaba'),false);
 assert.equal(ingestHelpers.DEFAULT_RATE_LIMIT_PER_HOUR,120);
+assert.equal(ingestHelpers.isFacilityPayload({event:'ApproachSettlement'}),true);
+assert.equal(ingestHelpers.isFacilityPayload({kind:'facility'}),true);
 assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
 assert.deepEqual(ingestHelpers.normalizeCoordinates({x:1,y:2,z:3}),{x:1,y:2,z:3});
 assert.equal(ingestHelpers.normalizeCoordinates(['bad',2,3]),null);
@@ -110,6 +124,66 @@ const rateEnv={DAILY_ORDERS:{
 let lastRate;
 for(let i=0;i<121;i++)lastRate=await ingestHelpers.consumeRateLimit(rateEnv,'test-token');
 assert.equal(lastRate.allowed,false,'121st Scout request in one hour should be rate-limited');
+
+const orrerySystem=JSON.parse(readFileSync('data/orrery/ngc-2546-uz-g-d10-16.json','utf8'));
+const targetFacility=orrerySystem.locations.find(item=>String(item.marketId)==='4374918915');
+assert.ok(targetFacility,'Expected 10-16 settlement fixture must exist');
+assert.equal(targetFacility.latitude,null);
+const targetBody=orrerySystem.bodies.find(item=>item.id===targetFacility.bodyId);
+assert.ok(targetBody&&Number.isInteger(targetBody.bodyId));
+const observedAt=new Date(Date.now()-60000).toISOString();
+const rawFacilityObservation={
+  event:'ApproachSettlement',
+  system:orrerySystem.name,
+  systemAddress:String(orrerySystem.id64),
+  facilityName:targetFacility.name,
+  marketId:String(targetFacility.marketId),
+  bodyId:targetBody.bodyId,
+  bodyName:targetBody.name,
+  latitude:21.123456,
+  longitude:-44.654321,
+  timestamp:observedAt,
+};
+const normalizedFacility=normalizeScoutFacilityObservation(rawFacilityObservation);
+assert.equal(normalizedFacility.systemId64,String(orrerySystem.id64),'64-bit system address stays exact decimal text');
+assert.equal(normalizedFacility.marketId,String(targetFacility.marketId));
+assert.equal(normalizedFacility.bodyJournalId,targetBody.bodyId);
+assert.equal(normalizedFacility.source,'Mongrel Scout / EDMC');
+
+const facilityStore=new Map();
+const facilityEnv={DAILY_ORDERS:{
+  async get(key){return facilityStore.has(key)?JSON.parse(facilityStore.get(key)):null;},
+  async put(key,value){facilityStore.set(key,value);},
+}};
+const firstFacilityWrite=await recordScoutFacilityObservation(facilityEnv,rawFacilityObservation);
+assert.equal(firstFacilityWrite.stored,true);
+const olderFacilityWrite=await recordScoutFacilityObservation(facilityEnv,{...rawFacilityObservation,timestamp:new Date(Date.parse(observedAt)-60000).toISOString(),latitude:1});
+assert.equal(olderFacilityWrite.stored,false,'Older facility coordinates cannot replace a newer Scout observation');
+const facilityEnvelope=await readScoutFacilityObservationPayload(facilityEnv,String(orrerySystem.id64));
+assert.equal(facilityEnvelope.observations.length,1);
+assert.equal(facilityEnvelope.observations[0].latitude,21.123456);
+assert.doesNotMatch(JSON.stringify(facilityEnvelope),/scoutToken|ownerId|commander/i,'Public facility feed must not expose Scout identity');
+
+const facilityOverlay=applyFacilityObservationPayload(orrerySystem,facilityEnvelope);
+assert.equal(facilityOverlay.applied,1);
+const upgraded=facilityOverlay.system.locations.find(item=>item.id===targetFacility.id);
+assert.equal(upgraded.bodyId,targetFacility.bodyId);
+assert.equal(upgraded.latitude,21.123456);
+assert.equal(upgraded.longitude,-44.654321);
+assert.equal(upgraded.coordinatesKnown,true);
+assert.equal(upgraded.positionObservation.event,'ApproachSettlement');
+assert.equal(upgraded.source.reference,targetFacility.source.reference,'Scout placement must preserve imported facility provenance');
+
+const wrongBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==targetFacility.bodyId);
+const conflictEnvelope={...facilityEnvelope,observations:[{...facilityEnvelope.observations[0],bodyJournalId:wrongBody.bodyId,bodyName:wrongBody.name}]};
+const conflicted=applyFacilityObservationPayload(orrerySystem,conflictEnvelope);
+assert.equal(conflicted.applied,0,'A Scout body mismatch must not move an imported facility');
+assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id).latitude,null);
+assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
+
+const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/public, max-age=30/])assert.match(publicFacilityApi,pattern);
+console.log('✓ Scout settlement observations upgrade Orrery facilities without exposing Commander identity');
 
 
 const bgsApi=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
@@ -328,7 +402,7 @@ const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/])assert.match(scoutReadme,pattern);
+for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/,/ApproachSettlement/,/Facility mapped: <facility>/,/latitude and longitude/i])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/included `load\.py`/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
