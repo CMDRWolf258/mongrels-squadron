@@ -270,7 +270,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointer = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
-  const cameraNavigation = createCameraNavigation({ camera, controls, objects, getSelectedId: () => selectedId });
+  const cameraNavigation = createCameraNavigation({ camera, controls, touchPreferred: window.matchMedia('(pointer: coarse)').matches });
 
   function requestRender() {
     if (!disposed && !contextLost && !animationFrame) animationFrame = requestAnimationFrame(render);
@@ -378,7 +378,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   function focus(id) {
     const object = objects.get(id);
     if (!object) return;
-    cameraNavigation.setFocus(id);
+    cameraNavigation.suspend();
     const parent = layout.get(object.bodyId);
     const target = object.mesh.position.clone();
     const distance = object.kind === 'location'
@@ -394,11 +394,12 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     camera.position.copy(target).addScaledVector(direction, distance);
     camera.lookAt(target);
     controls.update();
+    cameraNavigation.reset();
     requestRender();
   }
 
   function reset() {
-    cameraNavigation.reset();
+    cameraNavigation.suspend();
     // Finish any damped gesture before replacing the camera and its target.
     controls.enableDamping = false;
     controls.update();
@@ -426,6 +427,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     camera.position.copy(centre).addScaledVector(direction, Math.min(fitDistance, controls.maxDistance));
     camera.lookAt(centre);
     controls.update();
+    cameraNavigation.reset();
     requestRender();
   }
 
