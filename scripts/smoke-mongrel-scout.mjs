@@ -182,7 +182,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/public, max-age=30/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/headers\(30\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 console.log('✓ Scout settlement observations upgrade Orrery facilities without exposing Commander identity');
 
 
