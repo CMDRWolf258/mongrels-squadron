@@ -94,3 +94,6 @@ jobs:
 
       - name: Run Orrery data checks
         run: node --experimental-default-type=module scripts/smoke-orrery-data.mjs
+
+      - name: Run curated POI integration checks
+        run: node --experimental-default-type=module scripts/smoke-curated-pois.mjs

@@ -70,6 +70,12 @@ function renderDetails(record) {
     pair('Arrival distance', number(record.distanceToArrivalLs, 'ls', 0));
     pair('Map placement', record.latitude != null ? 'Surface coordinates' : record.ringId ? 'Ring survey only' : record.bodyId ? 'Host association only' : 'Unplaced · host unknown');
     if (record.hotspotCount != null) pair('Surveyed signals', number(record.hotspotCount, '', 0));
+    if (record.surfaceMining?.signal != null) pair('Mining location signal', String(record.surfaceMining.signal));
+    if (record.surfaceMining?.rigs != null) pair('Mining rigs', String(record.surfaceMining.rigs));
+    if (typeof record.surfaceMining?.preferred === 'boolean') pair('Preferred site', record.surfaceMining.preferred ? 'Yes' : 'No');
+    if (record.surfaceMining?.bodyType) pair('Recorded body type', record.surfaceMining.bodyType);
+    if (record.materialAmount != null) pair('Reported material amount', String(record.materialAmount));
+    if (record.materialUpdatedAt) pair('Material report updated', record.materialUpdatedAt);
     if (record.economy) pair('Economy', record.economy);
     if (record.controllingFaction) pair('Faction', record.controllingFaction);
     if (record.latitude != null) { pair('Latitude', number(record.latitude, '°', 6)); pair('Longitude', number(record.longitude, '°', 6)); }
@@ -87,6 +93,7 @@ function renderDetails(record) {
     root.append(materials, node('p', 'Body composition does not identify a commodity deposit or a surveyed mining site.'));
   }
   if (record.commodities?.length) root.append(node('h4', 'Known commodities'), node('p', record.commodities.join(', ')));
+  if (record.resourceTags?.length) root.append(node('h4', 'Resource tags'), node('p', record.resourceTags.join(', ')));
   if (record.services?.length) root.append(node('h4', 'Reported services'), node('p', record.services.join(' · ')));
   const related = record.recordType === 'body' ? [
     ...state.system.bodies.filter(body => body.parentId === record.id),
@@ -103,7 +110,8 @@ function renderDetails(record) {
   if (record.sourceUpdatedAt) root.append(node('p', `Source record updated: ${record.sourceUpdatedAt} UTC. Snapshot data can lag the game.`));
   const source = record.source;
   if (source?.url) root.append(safeLink(`Source: ${source.name || 'EDSM'} ↗`, source.url));
-  else if (record.recordType === 'body' || record.recordType === 'ring') root.append(safeLink('EDSM body catalogue ↗', `https://www.edsm.net/en/system/bodies/id/${state.system.edsmId}`));
+  if (source?.reference) root.append(node('p', `${source.name || 'Source'} · ${source.reference}`));
+  if (!source?.url && (record.recordType === 'body' || record.recordType === 'ring')) root.append(safeLink('EDSM body catalogue ↗', `https://www.edsm.net/en/system/bodies/id/${state.system.edsmId}`));
   if (record.associationSource) root.append(node('p', `Host association: ${record.associationSource.name || 'Mongrel reference'}${record.associationSource.reference ? ` · ${record.associationSource.reference.split('/').pop()}` : ''}`));
 }
 
