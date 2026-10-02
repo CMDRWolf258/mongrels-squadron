@@ -1,24 +1,31 @@
 import { json } from '../../lib/auth.js';
-import { GALNET_SOURCE_NAME, GALNET_SOURCE_URL, normalizeGalnetFeed } from '../../lib/galnet.js';
+import {
+  GALNET_FALLBACK_NAME,
+  GALNET_FALLBACK_URL,
+  GALNET_SOURCE_NAME,
+  GALNET_SOURCE_URL,
+  normalizeGalnetFeed,
+} from '../../lib/galnet.js';
 
 const CACHE_KEY='galnet-wire-v1';
 const FRESH_MS=15*60*1000;
 const FETCH_TIMEOUT_MS=8000;
+const PROVIDERS=[
+  {name:GALNET_SOURCE_NAME,url:GALNET_SOURCE_URL},
+  {name:GALNET_FALLBACK_NAME,url:GALNET_FALLBACK_URL},
+];
 
 export async function onRequestGet({env}){
   const cached=await readCache(env);
   if(isFresh(cached))return respond(cached,{cache:'fresh'});
 
   try{
-    const document=await fetchUpstream();
-    const items=normalizeGalnetFeed(document,{limit:10});
-    if(!items.length)throw new Error('GalNet provider returned no usable articles.');
-
+    const upstream=await fetchLatestGalnet();
     const next={
       version:1,
       fetchedAt:new Date().toISOString(),
-      source:{name:GALNET_SOURCE_NAME,url:GALNET_SOURCE_URL},
-      items,
+      source:{name:upstream.provider.name,url:upstream.provider.url},
+      items:upstream.items,
     };
     await writeCache(env,next);
     return respond(next,{cache:'refreshed'});
@@ -35,15 +42,33 @@ export async function onRequestGet({env}){
   }
 }
 
-async function fetchUpstream(){
+async function fetchLatestGalnet(){
+  const errors=[];
+  for(const provider of PROVIDERS){
+    try{
+      const document=await fetchProvider(provider.url);
+      const items=normalizeGalnetFeed(document,{limit:10});
+      if(!items.length)throw new Error('returned no usable articles');
+      return{provider,items};
+    }catch(error){
+      errors.push(`${provider.name}: ${error?.message||error}`);
+    }
+  }
+  throw new Error(errors.join(' | ')||'No GalNet providers available');
+}
+
+async function fetchProvider(url){
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),FETCH_TIMEOUT_MS);
   try{
-    const response=await fetch(GALNET_SOURCE_URL,{
-      headers:{Accept:'application/json','User-Agent':'MongrelsSquadron-Newsroom/1.0'},
+    const response=await fetch(url,{
+      headers:{
+        Accept:'application/vnd.api+json, application/json',
+        'User-Agent':'MongrelsSquadron-Newsroom/1.0',
+      },
       signal:controller.signal,
     });
-    if(!response.ok)throw new Error('GalNet provider HTTP '+response.status);
+    if(!response.ok)throw new Error('HTTP '+response.status);
     return await response.json();
   }finally{
     clearTimeout(timeout);

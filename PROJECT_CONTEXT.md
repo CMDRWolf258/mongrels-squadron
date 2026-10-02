@@ -1330,7 +1330,7 @@ Architecture:
 - **The Morning Walk** remains the Mongrels' own publication and keeps its existing Site Admin draft/publish/archive workflow in `PROJECTS` under `newsroom-v1`.
 - **GalNet Wire** is a separate read-only external feed. GalNet records are never inserted into the Morning Walk editorial document and cannot be edited or published through the Morning Walk desk.
 - The browser reads `/api/galnet`; it does not call the external provider directly.
-- The current replaceable provider is EDData's documented `/v2/news/galnet` JSON endpoint. The backend normalizes each item to publication/GalNet date, headline, concise teaser, source link and optional image.
+- The primary provider is Frontier's official GalNet JSON:API CMS endpoint at `cms.zaonce.net`; EDData's documented `/v2/news/galnet` endpoint is retained as a fallback. The backend normalizes either source to publication/GalNet date, headline, concise teaser, source link and optional image.
 - Reuse the existing `PROJECTS` binding for the small `galnet-wire-v1` last-known-good cache; no new Cloudflare binding is required.
 - A successful upstream result is treated as fresh for 15 minutes. If refresh fails, the API may return the last successful feed marked stale so The Morning Walk remains unaffected by external outages.
 - Only concise teasers are exposed by the Mongrels API; full GalNet articles remain linked to their original/source URL.
