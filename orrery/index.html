@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <link rel="icon" href="../assets/images/branding/favicon-32x32.png?v=70" sizes="32x32" type="image/png">
+  <title>System Orrery | The Mongrels</title>
+  <meta name="description" content="Explore Mongrel systems in interactive 3D. Find bodies, rings and known installations in Elite Dangerous.">
+  <link rel="stylesheet" href="../css/global.css?v=70">
+  <link rel="stylesheet" href="../css/orrery.css?v=1">
+</head>
+<body class="page-orrery">
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../guides/">Field Manual</a><a href="./" aria-current="page">System Orrery</a></nav></div></header>
+<main class="orrery-page">
+  <div class="orrery-heading"><div><p class="eyebrow">Mongrel Navigation / Prototype 01</p><h1>System Orrery</h1><p>Explore the system. Find your next destination.</p></div><a class="btn btn-ghost" href="../guides/mining/">Mining Field Manual ↗</a></div>
+  <section class="orrery-workspace" aria-label="Interactive system explorer">
+    <div class="orrery-system-bar"><div><label class="orrery-kicker" for="orrery-system">Mongrel system</label><select id="orrery-system" aria-label="Select star system"><option>Loading…</option></select><h2 id="orrery-system-name">NGC 2546 Sector UZ-G d10-16</h2></div><span class="orrery-badge">Visual scale</span></div>
+    <div class="orrery-toolbar">
+      <label class="orrery-search"><span>Search bodies & locations</span><input id="orrery-search" type="search" placeholder="Body, station, resource…" autocomplete="off"></label>
+      <label><span>Object type</span><select id="orrery-kind"><option value="all">All objects</option><option value="bodies">Stars, planets & moons</option><option value="ring">Rings</option><option value="facilities">Stations & installations</option><option value="surface-deposit">Surface deposits</option><option value="ring-hotspot">Ring hotspots</option><option value="custom">Mongrel POIs & notes</option></select></label>
+      <label><span>Known resource</span><select id="orrery-resource"><option value="all">All resources</option></select></label>
+      <button id="orrery-clear" class="orrery-button" type="button">Clear filters</button>
+    </div>
+    <div class="orrery-explorer">
+      <div class="orrery-map-column">
+        <div id="orrery-viewport" class="orrery-viewport" aria-label="3D system view" aria-describedby="orrery-controls-help">
+          <div class="orrery-map-header"><span id="orrery-status" role="status">Loading system…</span><span class="orrery-map-axis" aria-hidden="true">3D / ORBITAL VIEW</span></div>
+          <div id="orrery-fallback" class="orrery-fallback" hidden><strong>3D view unavailable</strong><p id="orrery-fallback-message">You can still search and select every known object below.</p><button id="orrery-retry" type="button" class="orrery-button">Retry 3D view</button></div>
+          <div class="orrery-camera-bar" aria-label="Camera controls"><button id="orrery-reset" type="button" title="Reset camera">Overview</button><button id="orrery-zoom-in" type="button" aria-label="Zoom in">+</button><button id="orrery-zoom-out" type="button" aria-label="Zoom out">−</button><button id="orrery-pan-left" type="button" aria-label="Pan left">←</button><button id="orrery-pan-right" type="button" aria-label="Pan right">→</button><button id="orrery-pan-up" type="button" aria-label="Pan up">↑</button><button id="orrery-pan-down" type="button" aria-label="Pan down">↓</button></div>
+        </div>
+        <div class="orrery-view-options"><label><input id="orrery-orbits" type="checkbox" checked> Orbital paths</label><label><input id="orrery-labels" type="checkbox" checked> Body labels</label><span><i class="orrery-dot"></i> Body <i class="orrery-dot orrery-dot-location"></i> Location</span></div>
+        <p id="orrery-controls-help" class="orrery-help">Drag to orbit · Wheel to zoom · Right-drag to pan · Touch: one finger to orbit, two to zoom/pan · Tap an object to select. Focus a body to inspect its moons.</p>
+        <p class="orrery-scale-note">Sizes and orbital spacing are compressed for navigation. Positions are schematic, not a live ephemeris. Installation markers identify the host body; they do not represent navigation coordinates.</p>
+      </div>
+      <aside class="orrery-info" aria-label="Selected object information"><div id="orrery-details"><p class="orrery-kicker">Object details</p><h3>Select a destination</h3><p>Tap a body in the map or choose an object from the list.</p></div></aside>
+    </div>
+    <details class="orrery-directory" open><summary>Object directory <span id="orrery-count">Loading…</span></summary><div id="orrery-results" class="orrery-results" aria-label="Search results"></div></details>
+  </section>
+  <details class="orrery-data-notes"><summary>Data coverage & sources</summary><div id="orrery-source-notes"></div><p>Surface sites, commodity hotspots and Mongrel notes appear only when sourced location records are available. Missing records do not mean the system has no deposits or hotspots. Raw material percentages are distinct from mining commodities.</p><p>Known surface-resource coordinates live on Wolf’s separate Elite Dangerous website. The prototype’s shared location interface is ready for a canonical source consumed by both websites; surface-resource records are empty until that source is connected.</p></details>
+  <noscript><p class="orrery-error">JavaScript is required for the interactive explorer. <a href="https://www.edsm.net/en/system/bodies/id/87035900/name/NGC+2546+Sector+UZ-G+d10-16">View the EDSM body catalogue</a>.</p></noscript>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
+<script src="../js/site.js?v=71"></script>
+<script type="module" src="../js/orrery/app.js?v=1"></script>
+<script src="../js/mongrel-assistant.js?v=66"></script>
+</body>
+</html>

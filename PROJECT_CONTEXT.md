@@ -1368,3 +1368,15 @@ Implemented but **not yet production-validated unless Wolf later confirms/live c
 - complete First Engineering Win in-game sequence.
 
 Production deployment can lag GitHub commits. Always distinguish **committed / CI-checked** from **confirmed live / production-validated**.
+
+---
+
+## System Orrery prototype
+
+The additive public `/orrery/` feature uses local Three.js/OrbitControls, the shared navigation/theme, and a reusable data-driven renderer for NGC 2546 Sector UZ-G d10-16. `ORRERY.md` documents its architecture, controls, scale, data authority and validation. `data/orrery/README.md` documents the dated EDSM snapshot, supplementary sourced installation associations and offline import procedure.
+
+Primary files are `js/orrery/app.js`, `js/orrery/renderer.js`, `lib/orrery-model.js`, `data/orrery/systems.json`, `orrery/index.html` and `css/orrery.css`. Add future systems through schema-compatible data and catalog entries. Real immediate-parent relationships, shared barycentres and moons of moons are retained; visual sizes, spacing, phases and installation markers are schematic rather than a live navigation solution. Unknown body associations remain unplaced; unknown coordinates/orbits remain null.
+
+Body raw-material percentages are distinct from commodity deposits/hotspots. Known Mongrel surface records are maintained on Wolf's separate personal Elite site, which remains authoritative. The reusable `lib/orrery-locations.js` provider interface consumes `{schemaVersion:1, systemId64, locations}` records with original IDs, journal body IDs, exact optional ring names, coordinates, commodities, notes and provenance. It validates system/host references, preserves `canonicalId`, and joins namespaced stable IDs rather than duplicating a disconnected mining dataset. The default `resource-locations.json` is explicitly empty until the canonical endpoint is configured; no substitute coordinates/hotspots are added. Preserve the provider's existing access/publication rules and avoid a duplicate editing system. This prototype adds no Cloudflare binding or operational workflow change.
+
+`scripts/smoke-orrery.mjs` covers the shared model and page/module/vendor wiring; `scripts/smoke-orrery-data.mjs` covers real-system relationships, provenance and offline import. Both run in the existing site smoke workflow. Smoke success does not establish mouse/touch behavior or production deployment; browser checks remain necessary for camera, selection, filters, fallback and desktop/iPad/phone layouts.
