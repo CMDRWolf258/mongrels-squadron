@@ -1,6 +1,6 @@
 # Mongrel Scout EDMC Plugin
 
-Mongrel Scout sends sanitized BGS snapshots directly to Wolf BGS Control and can also send fresh station commodity-market snapshots directly to Trader's Outpost.
+Mongrel Scout sends sanitized BGS snapshots directly to Wolf BGS Control, fresh station commodity-market snapshots to Trader's Outpost, and verified public surface-facility coordinates to the System Orrery.
 
 ## Install
 
@@ -20,6 +20,8 @@ For **market data**, the scout must visit the actual station or port. When Elite
 
 Market visits do not currently complete ordinary BGS Scout Jobs or issue a payout automatically. They are stored with Scout-token attribution so a separate paid market-scout job can be added cleanly if leadership chooses to use that workflow.
 
+For **surface facilities**, simply approach the settlement normally. When Elite writes an `ApproachSettlement` journal event, Scout sends the facility's public Market ID, system address, host body ID/name, latitude, longitude, and event time. The Orrery can then match that observation to an existing imported facility and replace a schematic marker with exact surface placement automatically. You do not need to land, type coordinates, or submit a separate form. This passive facility observation does not complete a Scout Job or issue a payout.
+
 ## What is transmitted
 
 For BGS scouting, the current system's fields from `FSDJump`, `Location`, or `CarrierJump`:
@@ -35,11 +37,19 @@ For market scouting, a station `Market` snapshot:
 - commodity name/category plus buy price, sell price, supply, demand, and mean price;
 - the market event timestamp.
 
-The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. The server already knows which issued Scout token submitted the update, allowing verified market-scout work to be attributed later without transmitting the Commander's name in the plugin payload.
+For Orrery facility placement, an `ApproachSettlement` observation:
+- system name and exact 64-bit system address;
+- facility name and Market ID;
+- host body ID/name plus latitude and longitude;
+- the journal event timestamp.
+
+Facility observations store only the public location facts needed by the Orrery. The public Orrery feed does not expose the Scout token, Discord account, Commander identity, or route history.
+
+The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
 
 ## Scout workflow
 
-Start EDMC before or with Elite Dangerous, confirm **Mongrel Scout: Armed**, then fly the assigned systems. After a successful BGS update the EDMC status line changes to **Updated <system>**. After a market update it changes to **Market updated: <station>**.
+Start EDMC before or with Elite Dangerous, confirm **Mongrel Scout: Armed**, then fly the assigned systems. After a successful BGS update the EDMC status line changes to **Updated <system>**. After a market update it changes to **Market updated: <station>**. After a verified settlement observation it changes to **Facility mapped: <facility>**.
 
 The direct endpoint is authenticated with an individually revocable scout token. Scout access is controlled server-side, so Wolf can change a scout between **Restricted** and **Trusted** access—or change a Restricted Scout's allowed systems—without issuing a new token.
 
