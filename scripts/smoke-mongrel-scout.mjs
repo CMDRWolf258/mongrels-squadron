@@ -33,6 +33,28 @@ for(const pattern of [
   /_build_facility_payload/,
   /Market updated:/,
   /Facility mapped:/,
+  /HUD_BRIDGE_HOST = "127\.0\.0\.1"/,
+  /HUD_BRIDGE_PORT = 43857/,
+  /DockingRequested/,
+  /DockingGranted/,
+  /DockingDenied/,
+  /DockingCancelled/,
+  /DockingTimeout/,
+  /Docked/,
+  /Undocked/,
+  /CarrierStats/,
+  /SupercruiseEntry/,
+  /SupercruiseExit/,
+  /docking\.granted/,
+  /carrier\.stats/,
+  /ThreadingHTTPServer/,
+  /\/v1\/health/,
+  /\/v1\/state/,
+  /\/v1\/events/,
+  /def plugin_stop/,
+  /def _publish_hud_event/,
+  /def _normalize_hud_event/,
+  /MongrelScoutOwnerCarrier/,
   /monitor\.is_live_galaxy/,
   /timeout_session\.new_session/,
   /threading\.Thread/,
@@ -41,7 +63,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.3\.0"/,
+  /PLUGIN_VERSION = "1\.4\.0"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
@@ -51,6 +73,10 @@ assert.match(plugin,/Commander name, cargo, credits/i);
 assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
 assert.match(plugin,/facility market ID, host body ID\/name, latitude and longitude/i,'Scout privacy copy should disclose facility placement fields');
+assert.match(plugin,/local-only bridge state/i,'Scout privacy copy should distinguish local HUD identity from cloud uploads');
+assert.match(plugin,/Intentionally no Access-Control-Allow-Origin header/,'Local bridge must not opt arbitrary web pages into CORS');
+assert.doesNotMatch(plugin,/send_header\("Access-Control-Allow-Origin"/,'Local HUD bridge must not emit a permissive CORS header');
+assert.match(plugin,/_publish_hud_event\(cmdr, system, station, entry\)[\s\S]*token = \(config\.get_str\(KEY_TOKEN\)/,'Local HUD events must publish before cloud token checks');
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Market payload must not transmit commander name');
 
 const tokenApi=readFileSync('functions/api/operations/scout-tokens.js','utf8');
@@ -402,7 +428,7 @@ const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/,/ApproachSettlement/,/Facility mapped: <facility>/,/latitude and longitude/i])assert.match(scoutReadme,pattern);
+for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/,/ApproachSettlement/,/Facility mapped: <facility>/,/latitude and longitude/i,/Local HUD \/ voice bridge/,/127\.0\.0\.1:43857/,/docking\.granted/,/CarrierStats/,/relationship: owner/,/not uploaded/i])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/included `load\.py`/);
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
@@ -410,4 +436,4 @@ for(const path of ['functions/api/operations/scout-tokens.js','functions/api/ope
   new Function(source);
 }
 
-console.log('✓ Mongrel Scout direct EDMC uplink, privacy boundary, token security, and BGS integration are wired');
+console.log('✓ Mongrel Scout cloud uplink, local HUD event contract, privacy boundary, token security, and BGS integration are wired');
