@@ -31,7 +31,7 @@
     if (/\/start\//.test(path)) return 'start';
     if (/\/(activities|pvp|trading)\//.test(path)) return 'activities';
     if (/\/(operations|projects|carriers|escort)\//.test(path)) return 'command';
-    if (/\/(guides|ships|assistant)\//.test(path)) return 'resources';
+    if (/\/(guides|ships|assistant|orrery)\//.test(path)) return 'resources';
     if (/\/(about|members|gallery|announcements|newsroom)\//.test(path)) return 'community';
     if (/\/(recruitment|apply)\//.test(path)) return 'join';
     return '';
@@ -97,6 +97,7 @@
           { href:root('guides/glossary/'), title:'Glossary', note:'Acronyms and Elite terminology' },
         ]},
         { label:'Build & Tools', links:[
+          { href:root('orrery/'), title:'System Orrery', note:'Interactive 3D bodies, locations and resource lookup' },
           { href:root('ships/'), title:'Ship Catalogue', note:'Mongrel builds and EDSY links' },
           { href:root('guides/resources/'), title:'Mongrel Toolbox', note:'Trusted specialist tools, apps and databases' },
           { href:root('assistant/'), title:'Ask the Mongrels', note:'Ask questions and get routed to the right knowledge' },

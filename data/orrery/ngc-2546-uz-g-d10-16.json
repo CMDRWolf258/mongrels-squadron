@@ -1,0 +1,5700 @@
+{
+  "schemaVersion": 1,
+  "id": "ngc-2546-uz-g-d10-16",
+  "name": "NGC 2546 Sector UZ-G d10-16",
+  "edsmId": 87035900,
+  "id64": "560820275507",
+  "sources": [
+    {
+      "name": "EDSM celestial bodies API",
+      "url": "https://www.edsm.net/api-system-v1/bodies?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+      "retrievedAt": "2026-10-02T04:35:21.585Z"
+    },
+    {
+      "name": "EDSM stations API",
+      "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+      "retrievedAt": "2026-10-02T04:35:21.585Z"
+    },
+    {
+      "name": "Spansh celestial body surveys",
+      "url": "https://spansh.co.uk/system/560820275507",
+      "retrievedAt": "2026-10-02T04:35:21.585Z",
+      "notes": "Station associations and ring hotspot counts are taken from matching body records. Source survey timestamps are retained."
+    },
+    {
+      "name": "Mongrel SRVSurvey colonization plan",
+      "reference": "ChatGPT Elite Dangerous project sources/*.png",
+      "retrievedAt": "2026-10-02T04:35:21.585Z",
+      "notes": "Used only when both public providers lack a body association for an exact matching EDSM station name; proposed NATO-named facilities are excluded."
+    }
+  ],
+  "notes": [
+    "Sizes and orbit spacing are visually compressed by the renderer. Positions are schematic, not live ephemerides.",
+    "Four shared barycentres are preserved from EDSM parent chains; their unreported orbital elements remain null.",
+    "No confirmed surface mining coordinates were present in the inspected repository or supplied plan screenshots. Raw material percentages are body composition data, not commodity deposits. Ring hotspot records report commodity signal counts; exact positions and overlaps are unknown.",
+    "Mongrel surface sites on the separate personal website should be supplied through a reusable canonical location document shared by both websites, rather than copied into this celestial snapshot."
+  ],
+  "bodies": [
+    {
+      "id": "body-0",
+      "bodyId": 0,
+      "name": "NGC 2546 Sector UZ-G d10-16",
+      "shortName": "Primary star",
+      "kind": "star",
+      "parentId": null,
+      "subType": "F (White) Star",
+      "radiusKm": 800071.9248655643,
+      "solarRadius": 1.150024327821711,
+      "isLandable": false,
+      "isScoopable": true,
+      "gravity": null,
+      "temperatureK": 6568,
+      "distanceToArrivalLs": 0,
+      "atmosphere": null,
+      "volcanism": null,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [
+        {
+          "id": "body-0-belt-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 A Belt",
+          "type": "Metal Rich",
+          "innerRadiusKm": 115130000,
+          "outerRadiusKm": 182750000
+        }
+      ],
+      "materials": [],
+      "sourceUpdatedAt": "2024-09-25 00:25:13",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/560820275507",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-1",
+      "bodyId": 1,
+      "name": "NGC 2546 Sector UZ-G d10-16 1",
+      "shortName": "1",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Metal-rich body",
+      "radiusKm": 3955.693,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 1.3129388187719493,
+      "temperatureK": 1075,
+      "distanceToArrivalLs": 40,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Minor Metallic Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.08038700412751931,
+        "periodDays": 7.601557437465278,
+        "eccentricity": 0.000001,
+        "inclinationDeg": -0.015236,
+        "argOfPeriapsisDeg": 5.459456
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 32.7
+        },
+        {
+          "name": "Nickel",
+          "percentage": 24.73
+        },
+        {
+          "name": "Chromium",
+          "percentage": 14.7
+        },
+        {
+          "name": "Manganese",
+          "percentage": 13.5
+        },
+        {
+          "name": "Zinc",
+          "percentage": 8.89
+        },
+        {
+          "name": "Tin",
+          "percentage": 2.17
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 2.14
+        },
+        {
+          "name": "Technetium",
+          "percentage": 1.17
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:46:11",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 19
+        },
+        {
+          "name": "Geological",
+          "count": 2
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:46:10Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/36029357839239475",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-2",
+      "bodyId": 2,
+      "name": "NGC 2546 Sector UZ-G d10-16 2",
+      "shortName": "2",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "High metal content world",
+      "radiusKm": 12874.351,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 3.9720180438148724,
+      "temperatureK": 3455,
+      "distanceToArrivalLs": 70,
+      "atmosphere": "Hot thick Carbon dioxide-rich",
+      "volcanism": "Major Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.1410697908717694,
+        "periodDays": 17.671558178136575,
+        "eccentricity": 0.000017,
+        "inclinationDeg": -0.007894,
+        "argOfPeriapsisDeg": 280.178803
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:50:21",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/72058154858203443",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-3",
+      "bodyId": 3,
+      "name": "NGC 2546 Sector UZ-G d10-16 3",
+      "shortName": "3",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "High metal content world",
+      "radiusKm": 9136.214,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 2.021119564295254,
+      "temperatureK": 612,
+      "distanceToArrivalLs": 123,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Major Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.2473617367736906,
+        "periodDays": 41.031985095254626,
+        "eccentricity": 0.000193,
+        "inclinationDeg": 0.001944,
+        "argOfPeriapsisDeg": 193.170672
+      },
+      "rings": [
+        {
+          "id": "body-3-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 3 A Ring",
+          "type": "Metallic",
+          "innerRadiusKm": 34348,
+          "outerRadiusKm": 38209
+        },
+        {
+          "id": "body-3-ring-2",
+          "name": "NGC 2546 Sector UZ-G d10-16 3 B Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 38283,
+          "outerRadiusKm": 54492
+        }
+      ],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 22.84
+        },
+        {
+          "name": "Nickel",
+          "percentage": 17.27
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 16.18
+        },
+        {
+          "name": "Carbon",
+          "percentage": 13.6
+        },
+        {
+          "name": "Manganese",
+          "percentage": 9.43
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 8.71
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 5.61
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.14
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.56
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.41
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.25
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:04",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 17
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:03Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-6",
+      "bodyId": 6,
+      "name": "NGC 2546 Sector UZ-G d10-16 3 a",
+      "shortName": "3 a",
+      "kind": "moon",
+      "parentId": "body-3",
+      "subType": "Rocky body",
+      "radiusKm": 433.65884375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.0501834598064364,
+      "temperatureK": 612,
+      "distanceToArrivalLs": 124,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.000782836872406968,
+        "periodDays": 2.2666777863541667,
+        "eccentricity": 0.000204,
+        "inclinationDeg": -0.000112,
+        "argOfPeriapsisDeg": 97.028684
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.79
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.32
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.25
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.97
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.4
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.17
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.38
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.3
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.48
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.09
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.86
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:11",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 11
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:10Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/216173342934059315",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-7",
+      "bodyId": 7,
+      "name": "NGC 2546 Sector UZ-G d10-16 3 b",
+      "shortName": "3 b",
+      "kind": "moon",
+      "parentId": "body-3",
+      "subType": "Rocky body",
+      "radiusKm": 420.63565625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.0487408078151104,
+      "temperatureK": 612,
+      "distanceToArrivalLs": 124,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0010604355913394693,
+        "periodDays": 3.5736273836226853,
+        "eccentricity": 0.001051,
+        "inclinationDeg": 3.365429,
+        "argOfPeriapsisDeg": 263.702303
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.57
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.11
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.07
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.8
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.29
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.8
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.64
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.52
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.34
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.17
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.7
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:16",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 9
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:15Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/252202139953023283",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-19",
+      "bodyId": 19,
+      "name": "NGC 2546 Sector UZ-G d10-16 4 / 5 barycentre",
+      "shortName": "4 / 5 barycentre",
+      "kind": "barycentre",
+      "parentId": "body-0",
+      "subType": "Shared orbital centre",
+      "radiusKm": null,
+      "isLandable": false,
+      "distanceToArrivalLs": null,
+      "displayDistanceHintLs": 207,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "notes": "Parent relationship is recorded by EDSM. Barycentre orbital elements are absent; its display orbit uses schematic spacing.",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "body-20",
+      "bodyId": 20,
+      "name": "NGC 2546 Sector UZ-G d10-16 4",
+      "shortName": "4",
+      "kind": "planet",
+      "parentId": "body-19",
+      "subType": "High metal content world",
+      "radiusKm": 9414.36,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 2.12677856846409,
+      "temperatureK": 472,
+      "distanceToArrivalLs": 208,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Major Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.0031918026798088642,
+        "periodDays": 80.86708339827545,
+        "eccentricity": 0.071412,
+        "inclinationDeg": -4.226686,
+        "argOfPeriapsisDeg": 101.987237
+      },
+      "rings": [
+        {
+          "id": "body-20-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 4 A Ring",
+          "type": "Metal Rich",
+          "innerRadiusKm": 49036,
+          "outerRadiusKm": 83327
+        }
+      ],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 22.8
+        },
+        {
+          "name": "Nickel",
+          "percentage": 17.24
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 16.15
+        },
+        {
+          "name": "Carbon",
+          "percentage": 13.58
+        },
+        {
+          "name": "Chromium",
+          "percentage": 10.25
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 8.7
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 5.6
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.13
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.48
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.25
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.82
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:45:39",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 10
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:45:39Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-22",
+      "bodyId": 22,
+      "name": "NGC 2546 Sector UZ-G d10-16 4 a",
+      "shortName": "4 a",
+      "kind": "moon",
+      "parentId": "body-20",
+      "subType": "Rocky body",
+      "radiusKm": 619.2465,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.07213579480368293,
+      "temperatureK": 472,
+      "distanceToArrivalLs": 208,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.001000000721212939,
+        "periodDays": 3.095903399363426,
+        "eccentricity": 0.003,
+        "inclinationDeg": 0.62035,
+        "argOfPeriapsisDeg": 123.13645
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 20.13
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.66
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.53
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.23
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.58
+        },
+        {
+          "name": "Chromium",
+          "percentage": 9.05
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.08
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.34
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.56
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.31
+        },
+        {
+          "name": "Polonium",
+          "percentage": 0.52
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:45:54",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 23
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:45:54Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/792634095237482803",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-23",
+      "bodyId": 23,
+      "name": "NGC 2546 Sector UZ-G d10-16 5",
+      "shortName": "5",
+      "kind": "planet",
+      "parentId": "body-19",
+      "subType": "High metal content world",
+      "radiusKm": 7626.5865,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 1.5181400466307462,
+      "temperatureK": 472,
+      "distanceToArrivalLs": 206,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Minor Metallic Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.006814425497079619,
+        "periodDays": 80.86708339827545,
+        "eccentricity": 0.071412,
+        "inclinationDeg": -4.226686,
+        "argOfPeriapsisDeg": 281.987232
+      },
+      "rings": [
+        {
+          "id": "body-23-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 5 A Ring",
+          "type": "Metal Rich",
+          "innerRadiusKm": 29803,
+          "outerRadiusKm": 56695
+        }
+      ],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 21.25
+        },
+        {
+          "name": "Nickel",
+          "percentage": 16.07
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 15.06
+        },
+        {
+          "name": "Carbon",
+          "percentage": 12.66
+        },
+        {
+          "name": "Chromium",
+          "percentage": 9.56
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.78
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 8.11
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 5.22
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.38
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.17
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.76
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:45:32",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 13
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:45:32Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828662892256446771",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-30",
+      "bodyId": 30,
+      "name": "NGC 2546 Sector UZ-G d10-16 6",
+      "shortName": "6",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Class II gas giant",
+      "radiusKm": 69672.368,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 2.230247866350973,
+      "temperatureK": 246,
+      "distanceToArrivalLs": 968,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 1.9392202548217152,
+        "periodDays": 900.6675677718981,
+        "eccentricity": 0.000703,
+        "inclinationDeg": -0.055145,
+        "argOfPeriapsisDeg": 318.625504
+      },
+      "rings": [
+        {
+          "id": "body-30-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 6 A Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 110760,
+          "outerRadiusKm": 125470
+        },
+        {
+          "id": "body-30-ring-2",
+          "name": "NGC 2546 Sector UZ-G d10-16 6 B Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 125570,
+          "outerRadiusKm": 223930
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:49:22",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-33",
+      "bodyId": 33,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 a",
+      "shortName": "6 a",
+      "kind": "moon",
+      "parentId": "body-30",
+      "subType": "Rocky body",
+      "radiusKm": 739.5594375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.08642293095954118,
+      "temperatureK": 226,
+      "distanceToArrivalLs": 967,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0036274513004921397,
+        "periodDays": 2.822524971435185,
+        "eccentricity": 0.000181,
+        "inclinationDeg": 0.000205,
+        "argOfPeriapsisDeg": 345.261391
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.46
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.98
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.72
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.23
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.75
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.61
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.26
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.51
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.33
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.16
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:40",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 21
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:39Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1188950862446086451",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-34",
+      "bodyId": 34,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 b",
+      "shortName": "6 b",
+      "kind": "moon",
+      "parentId": "body-30",
+      "subType": "Rocky body",
+      "radiusKm": 607.8496875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.07079255831331217,
+      "temperatureK": 225,
+      "distanceToArrivalLs": 966,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.004969246454416948,
+        "periodDays": 4.52554929587963,
+        "eccentricity": 0.004064,
+        "inclinationDeg": 0.126124,
+        "argOfPeriapsisDeg": 139.532213
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.46
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.98
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.72
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.23
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.04
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.61
+        },
+        {
+          "name": "Selenium",
+          "percentage": 2.97
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.51
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.33
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.16
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:36",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 8
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:36Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1224979659465050419",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-35",
+      "bodyId": 35,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 c",
+      "shortName": "6 c",
+      "kind": "moon",
+      "parentId": "body-30",
+      "subType": "Rocky body",
+      "radiusKm": 554.4861875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.06443421275068063,
+      "temperatureK": 224,
+      "distanceToArrivalLs": 968,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.006568972427008014,
+        "periodDays": 6.87830853792824,
+        "eccentricity": 0.000402,
+        "inclinationDeg": 0.08756,
+        "argOfPeriapsisDeg": 180.341033
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.64
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.18
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.13
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.85
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.33
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.11
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.34
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.17
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.17
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.08
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:45",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 12
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:44Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1261008456484014387",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-36",
+      "bodyId": 36,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 d / 6 e barycentre",
+      "shortName": "6 d / 6 e barycentre",
+      "kind": "barycentre",
+      "parentId": "body-30",
+      "subType": "Shared orbital centre",
+      "radiusKm": null,
+      "isLandable": false,
+      "distanceToArrivalLs": null,
+      "displayDistanceHintLs": 969,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "notes": "Parent relationship is recorded by EDSM. Barycentre orbital elements are absent; its display orbit uses schematic spacing.",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "body-37",
+      "bodyId": 37,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 d",
+      "shortName": "6 d",
+      "kind": "moon",
+      "parentId": "body-36",
+      "subType": "Rocky body",
+      "radiusKm": 557.5024375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.06478592854425758,
+      "temperatureK": 223,
+      "distanceToArrivalLs": 969,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.000015115245847179027,
+        "periodDays": 1.1572668604861112,
+        "eccentricity": 0.17162,
+        "inclinationDeg": -0.217184,
+        "argOfPeriapsisDeg": 49.531883
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.96
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.52
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.57
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.34
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.97
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.83
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.47
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.15
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.47
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.42
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.3
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:50",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 17
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:50Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1333066050521942323",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-38",
+      "bodyId": 38,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 e",
+      "shortName": "6 e",
+      "kind": "moon",
+      "parentId": "body-36",
+      "subType": "Rocky body",
+      "radiusKm": 550.374625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.06392329858000657,
+      "temperatureK": 223,
+      "distanceToArrivalLs": 969,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Minor Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.000015713185762636657,
+        "periodDays": 1.1572668604861112,
+        "eccentricity": 0.17162,
+        "inclinationDeg": -0.217184,
+        "argOfPeriapsisDeg": 229.531857
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.9
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.45
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.52
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.29
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.93
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.5
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.45
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.14
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.47
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.23
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.13
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:54",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 12
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:53Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1369094847540906291",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-40",
+      "bodyId": 40,
+      "name": "NGC 2546 Sector UZ-G d10-16 6 f",
+      "shortName": "6 f",
+      "kind": "moon",
+      "parentId": "body-30",
+      "subType": "Rocky body",
+      "radiusKm": 1030.4160625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.12148986006299724,
+      "temperatureK": 222,
+      "distanceToArrivalLs": 966,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.015955827134814294,
+        "periodDays": 26.038406347789355,
+        "eccentricity": 0.0006,
+        "inclinationDeg": -0.499341,
+        "argOfPeriapsisDeg": 169.210482
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.93
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.49
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.55
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.32
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.95
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.51
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.46
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.15
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.47
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.13
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.04
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:29",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 7
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:29Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1441152441578834227",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-46",
+      "bodyId": 46,
+      "name": "NGC 2546 Sector UZ-G d10-16 7 / 8 barycentre",
+      "shortName": "7 / 8 barycentre",
+      "kind": "barycentre",
+      "parentId": "body-0",
+      "subType": "Shared orbital centre",
+      "radiusKm": null,
+      "isLandable": false,
+      "distanceToArrivalLs": null,
+      "displayDistanceHintLs": 1271.5,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "notes": "Parent relationship is recorded by EDSM. Barycentre orbital elements are absent; its display orbit uses schematic spacing.",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "body-47",
+      "bodyId": 47,
+      "name": "NGC 2546 Sector UZ-G d10-16 7",
+      "shortName": "7",
+      "kind": "planet",
+      "parentId": "body-46",
+      "subType": "Class III gas giant",
+      "radiusKm": 75637.424,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 8.344458906042256,
+      "temperatureK": 392,
+      "distanceToArrivalLs": 1276,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.00009231516298188862,
+        "periodDays": 107.12725489780094,
+        "eccentricity": 0.082768,
+        "inclinationDeg": -9.866822,
+        "argOfPeriapsisDeg": 123.565687
+      },
+      "rings": [
+        {
+          "id": "body-47-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 7 A Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 120880,
+          "outerRadiusKm": 367210
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2024-09-25 00:31:20",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1693354020711582003",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-49",
+      "bodyId": 49,
+      "name": "NGC 2546 Sector UZ-G d10-16 7 a",
+      "shortName": "7 a",
+      "kind": "moon",
+      "parentId": "body-47",
+      "subType": "Rocky body",
+      "radiusKm": 773.48325,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.09049930803252679,
+      "temperatureK": 238,
+      "distanceToArrivalLs": 1276,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Minor Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.0037155483389087435,
+        "periodDays": 1.3934050997106482,
+        "eccentricity": 0.001336,
+        "inclinationDeg": 0.152724,
+        "argOfPeriapsisDeg": 321.112765
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.59
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.13
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.09
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.82
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.3
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.09
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.65
+        },
+        {
+          "name": "Selenium",
+          "percentage": 2.99
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.28
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.21
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.86
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:52:14",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 7
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:52:13Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1765411614749509939",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-50",
+      "bodyId": 50,
+      "name": "NGC 2546 Sector UZ-G d10-16 7 b",
+      "shortName": "7 b",
+      "kind": "moon",
+      "parentId": "body-47",
+      "subType": "Rocky body",
+      "radiusKm": 813.8976875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.09530619204221014,
+      "temperatureK": 220,
+      "distanceToArrivalLs": 1278,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.00938685634137973,
+        "periodDays": 5.595298621944445,
+        "eccentricity": 0.002169,
+        "inclinationDeg": 3.49739,
+        "argOfPeriapsisDeg": 49.754411
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 20.08
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.61
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.49
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.19
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.56
+        },
+        {
+          "name": "Chromium",
+          "percentage": 9.03
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.07
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.33
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.56
+        },
+        {
+          "name": "Antimony",
+          "percentage": 1.22
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.88
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:52:07",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 26
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:52:06Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1801440411768473907",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-51",
+      "bodyId": 51,
+      "name": "NGC 2546 Sector UZ-G d10-16 8",
+      "shortName": "8",
+      "kind": "planet",
+      "parentId": "body-46",
+      "subType": "Earth-like world",
+      "radiusKm": 7002.581,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 1.3390279510533931,
+      "temperatureK": 292,
+      "distanceToArrivalLs": 1267,
+      "atmosphere": "Suitable for water-based life",
+      "volcanism": "Minor Metallic Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.06711816792143686,
+        "periodDays": 107.12725489780094,
+        "eccentricity": 0.082768,
+        "inclinationDeg": -9.866822,
+        "argOfPeriapsisDeg": 303.565681
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:46:43",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1837469208787437875",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-53",
+      "bodyId": 53,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 / 10 barycentre",
+      "shortName": "9 / 10 barycentre",
+      "kind": "barycentre",
+      "parentId": "body-0",
+      "subType": "Shared orbital centre",
+      "radiusKm": null,
+      "isLandable": false,
+      "distanceToArrivalLs": null,
+      "displayDistanceHintLs": 2314.5,
+      "orbit": {
+        "semiMajorAxisAu": null,
+        "periodDays": null,
+        "eccentricity": null,
+        "inclinationDeg": null,
+        "argOfPeriapsisDeg": null
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "notes": "Parent relationship is recorded by EDSM. Barycentre orbital elements are absent; its display orbit uses schematic spacing.",
+      "sourceUpdatedAt": null
+    },
+    {
+      "id": "body-54",
+      "bodyId": 54,
+      "name": "NGC 2546 Sector UZ-G d10-16 9",
+      "shortName": "9",
+      "kind": "planet",
+      "parentId": "body-53",
+      "subType": "Class III gas giant",
+      "radiusKm": 67245.128,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 26.70981394551694,
+      "temperatureK": 798,
+      "distanceToArrivalLs": 2314,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.006479402184641188,
+        "periodDays": 487.73926855237266,
+        "eccentricity": 0.070356,
+        "inclinationDeg": -5.926442,
+        "argOfPeriapsisDeg": 90.87719
+      },
+      "rings": [
+        {
+          "id": "body-54-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 9 A Ring",
+          "type": "Metal Rich",
+          "innerRadiusKm": 110950,
+          "outerRadiusKm": 164830
+        },
+        {
+          "id": "body-54-ring-2",
+          "name": "NGC 2546 Sector UZ-G d10-16 9 B Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 164930,
+          "outerRadiusKm": 517560
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:48:22",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-57",
+      "bodyId": 57,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 a",
+      "shortName": "9 a",
+      "kind": "moon",
+      "parentId": "body-54",
+      "subType": "Rocky body",
+      "radiusKm": 917.7968125,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.10783622166342405,
+      "temperatureK": 280,
+      "distanceToArrivalLs": 2316,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Metallic Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.0041299849344010086,
+        "periodDays": 1.0266058284953703,
+        "eccentricity": 0.000019,
+        "inclinationDeg": -0.18922,
+        "argOfPeriapsisDeg": 13.992189
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.05
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.6
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.64
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.41
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.02
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.57
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.49
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.18
+        },
+        {
+          "name": "Antimony",
+          "percentage": 1.16
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.05
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.83
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:01",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 14
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:01Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2053641990901221683",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-58",
+      "bodyId": 58,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 b",
+      "shortName": "9 b",
+      "kind": "moon",
+      "parentId": "body-54",
+      "subType": "Rocky body",
+      "radiusKm": 919.1025625,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 0.1080115875880418,
+      "temperatureK": 875,
+      "distanceToArrivalLs": 2315,
+      "atmosphere": "Hot thick Sulphur dioxide",
+      "volcanism": "Major Rocky Magma",
+      "orbit": {
+        "semiMajorAxisAu": 0.005829194905509975,
+        "periodDays": 1.7214479545717594,
+        "eccentricity": 0.0042,
+        "inclinationDeg": 0.001255,
+        "argOfPeriapsisDeg": 286.342454
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:48:51",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2089670787920185651",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-59",
+      "bodyId": 59,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 c",
+      "shortName": "9 c",
+      "kind": "moon",
+      "parentId": "body-54",
+      "subType": "Rocky body",
+      "radiusKm": 1248.265875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.14826092404773716,
+      "temperatureK": 240,
+      "distanceToArrivalLs": 2317,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.00806714131724804,
+        "periodDays": 2.8025954961805555,
+        "eccentricity": 0.000539,
+        "inclinationDeg": 0.044139,
+        "argOfPeriapsisDeg": 17.81008
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.55
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.09
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.21
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.03
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.74
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.34
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.66
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.04
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.21
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.11
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.02
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:48:56",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 11
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:48:56Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2125699584939149619",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-60",
+      "bodyId": 60,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 d",
+      "shortName": "9 d",
+      "kind": "moon",
+      "parentId": "body-54",
+      "subType": "Rocky body",
+      "radiusKm": 1241.87125,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.14739144654240113,
+      "temperatureK": 214,
+      "distanceToArrivalLs": 2319,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.014341958205085601,
+        "periodDays": 6.643450163576389,
+        "eccentricity": 0.011617,
+        "inclinationDeg": 1.816829,
+        "argOfPeriapsisDeg": 31.196626
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.1
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.65
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.68
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.45
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.04
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.89
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.51
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.19
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.48
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.18
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.83
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:48:33",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 24
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:48:32Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2161728381958113587",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-61",
+      "bodyId": 61,
+      "name": "NGC 2546 Sector UZ-G d10-16 9 e",
+      "shortName": "9 e",
+      "kind": "moon",
+      "parentId": "body-54",
+      "subType": "Rocky body",
+      "radiusKm": 1342.129125,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.159864612869472,
+      "temperatureK": 196,
+      "distanceToArrivalLs": 2307,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.025154709425499865,
+        "periodDays": 15.43156595693287,
+        "eccentricity": 0.010023,
+        "inclinationDeg": 9.418786,
+        "argOfPeriapsisDeg": 39.373886
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.62
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.17
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.28
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.09
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.78
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.38
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.69
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.57
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.39
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.22
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.81
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:48:40",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 7
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:48:39Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2197757178977077555",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-62",
+      "bodyId": 62,
+      "name": "NGC 2546 Sector UZ-G d10-16 10",
+      "shortName": "10",
+      "kind": "planet",
+      "parentId": "body-53",
+      "subType": "Gas giant with water-based life",
+      "radiusKm": 53195.78,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 1.1188532299457408,
+      "temperatureK": 161,
+      "distanceToArrivalLs": 2315,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.24716034909644605,
+        "periodDays": 487.73926855237266,
+        "eccentricity": 0.070356,
+        "inclinationDeg": -5.926442,
+        "argOfPeriapsisDeg": 270.877185
+      },
+      "rings": [
+        {
+          "id": "body-62-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 10 A Ring",
+          "type": "Metal Rich",
+          "innerRadiusKm": 100080,
+          "outerRadiusKm": 148640
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:48:13",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2233785975996041523",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-64",
+      "bodyId": 64,
+      "name": "NGC 2546 Sector UZ-G d10-16 10 a",
+      "shortName": "10 a",
+      "kind": "moon",
+      "parentId": "body-62",
+      "subType": "Rocky body",
+      "radiusKm": 936.51175,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.11029464287071065,
+      "temperatureK": 159,
+      "distanceToArrivalLs": 2314,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0026505745223810197,
+        "periodDays": 3.2599651841087964,
+        "eccentricity": 0.001892,
+        "inclinationDeg": 0.307527,
+        "argOfPeriapsisDeg": 73.998659
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.66
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.1
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.06
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.87
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.28
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.12
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.34
+        },
+        {
+          "name": "Selenium",
+          "percentage": 2.99
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.28
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.21
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.08
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:49:09",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 9
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:49:09Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2305843570033969459",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-65",
+      "bodyId": 65,
+      "name": "NGC 2546 Sector UZ-G d10-16 11",
+      "shortName": "11",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Class I gas giant",
+      "radiusKm": 46144.144,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 0.9448850122198599,
+      "temperatureK": 141,
+      "distanceToArrivalLs": 2317,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 4.723748799755276,
+        "periodDays": 3424.1592166600694,
+        "eccentricity": 0.018692,
+        "inclinationDeg": 1.211614,
+        "argOfPeriapsisDeg": 207.31427
+      },
+      "rings": [
+        {
+          "id": "body-65-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 11 A Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 76138,
+          "outerRadiusKm": 86463
+        },
+        {
+          "id": "body-65-ring-2",
+          "name": "NGC 2546 Sector UZ-G d10-16 11 B Ring",
+          "type": "Metal Rich",
+          "innerRadiusKm": 86563,
+          "outerRadiusKm": 138600
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:47:10",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-68",
+      "bodyId": 68,
+      "name": "NGC 2546 Sector UZ-G d10-16 11 a",
+      "shortName": "11 a",
+      "kind": "moon",
+      "parentId": "body-65",
+      "subType": "Rocky body",
+      "radiusKm": 937.364,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 0.11064973812240347,
+      "temperatureK": 259,
+      "distanceToArrivalLs": 2316,
+      "atmosphere": "Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0018604424316677791,
+        "periodDays": 2.4047351131828703,
+        "eccentricity": 0.000051,
+        "inclinationDeg": -0.036357,
+        "argOfPeriapsisDeg": 204.027026
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:47:48",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2449958758109825331",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-69",
+      "bodyId": 69,
+      "name": "NGC 2546 Sector UZ-G d10-16 11 b",
+      "shortName": "11 b",
+      "kind": "moon",
+      "parentId": "body-65",
+      "subType": "Rocky body",
+      "radiusKm": 598.9295,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.06974173324604553,
+      "temperatureK": 159,
+      "distanceToArrivalLs": 2315,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.008194552043196962,
+        "periodDays": 22.229552958854168,
+        "eccentricity": 0.010049,
+        "inclinationDeg": -0.386969,
+        "argOfPeriapsisDeg": 92.371308
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.47
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.01
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.99
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.72
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.23
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.04
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.61
+        },
+        {
+          "name": "Selenium",
+          "percentage": 2.98
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.45
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.33
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.16
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:47:31",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 20
+        },
+        {
+          "name": "Biological",
+          "count": 4
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:47:30Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2485987555128789299",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-70",
+      "bodyId": 70,
+      "name": "NGC 2546 Sector UZ-G d10-16 11 c",
+      "shortName": "11 c",
+      "kind": "moon",
+      "parentId": "body-65",
+      "subType": "Rocky body",
+      "radiusKm": 617.346625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.07194005572727499,
+      "temperatureK": 160,
+      "distanceToArrivalLs": 2309,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.011741568957975148,
+        "periodDays": 38.126951290497686,
+        "eccentricity": 0.001125,
+        "inclinationDeg": 0.041284,
+        "argOfPeriapsisDeg": 221.856009
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.06
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.62
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.66
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.42
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.02
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.87
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.5
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.18
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.48
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.14
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.05
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:57:10",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 17
+        },
+        {
+          "name": "Biological",
+          "count": 3
+        },
+        {
+          "name": "Human",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:57:09Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2522016352147753267",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-72",
+      "bodyId": 72,
+      "name": "NGC 2546 Sector UZ-G d10-16 11 d",
+      "shortName": "11 d",
+      "kind": "moon",
+      "parentId": "body-65",
+      "subType": "Rocky body",
+      "radiusKm": 767.1129375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.08979653243452347,
+      "temperatureK": 163,
+      "distanceToArrivalLs": 2315,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.015174873254123127,
+        "periodDays": 56.018373342581015,
+        "eccentricity": 0.009942,
+        "inclinationDeg": 0.002034,
+        "argOfPeriapsisDeg": 76.016358
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.86
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.36
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.28
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.02
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.42
+        },
+        {
+          "name": "Manganese",
+          "percentage": 8.2
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.88
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.31
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.36
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.23
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.09
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:47:57",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 29
+        },
+        {
+          "name": "Biological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:47:56Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2594073946185681203",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-74",
+      "bodyId": 74,
+      "name": "NGC 2546 Sector UZ-G d10-16 11 e",
+      "shortName": "11 e",
+      "kind": "moon",
+      "parentId": "body-65",
+      "subType": "Rocky body",
+      "radiusKm": 622.214,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.07250009293494941,
+      "temperatureK": 160,
+      "distanceToArrivalLs": 2306,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.02026982410771773,
+        "periodDays": 86.48044050291666,
+        "eccentricity": 0.040799,
+        "inclinationDeg": -3.144585,
+        "argOfPeriapsisDeg": 317.307602
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.97
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.51
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.4
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.11
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.5
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.98
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.05
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.32
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.55
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.37
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.23
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:47:37",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 6
+        },
+        {
+          "name": "Biological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:47:37Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2666131540223609139",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-79",
+      "bodyId": 79,
+      "name": "NGC 2546 Sector UZ-G d10-16 12",
+      "shortName": "12",
+      "kind": "planet",
+      "parentId": "body-0",
+      "subType": "Class IV gas giant",
+      "radiusKm": 65283.08,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 30.451915050666976,
+      "temperatureK": 840,
+      "distanceToArrivalLs": 3216,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 6.489652058399385,
+        "periodDays": 5513.861982358796,
+        "eccentricity": 0.01548,
+        "inclinationDeg": -3.413206,
+        "argOfPeriapsisDeg": 108.893231
+      },
+      "rings": [
+        {
+          "id": "body-79-ring-1",
+          "name": "NGC 2546 Sector UZ-G d10-16 12 A Ring",
+          "type": "Rocky",
+          "innerRadiusKm": 110810,
+          "outerRadiusKm": 512500
+        }
+      ],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:50:38",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2846275525318428979",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-81",
+      "bodyId": 81,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 a",
+      "shortName": "12 a",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 989.54925,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.11652713464370612,
+      "temperatureK": 210,
+      "distanceToArrivalLs": 3218,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0112046617206825,
+        "periodDays": 4.4254913098263895,
+        "eccentricity": 0.000062,
+        "inclinationDeg": -0.005769,
+        "argOfPeriapsisDeg": 256.083374
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.21
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.76
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.77
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.53
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.1
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.93
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.22
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.72
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.31
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.25
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.19
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:51:38",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 20
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:51:37Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2918333119356356915",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-82",
+      "bodyId": 82,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 b",
+      "shortName": "12 b",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1522.6395,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.18352977424016328,
+      "temperatureK": 198,
+      "distanceToArrivalLs": 3220,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.014797029411181318,
+        "periodDays": 6.71622460638889,
+        "eccentricity": 0.000425,
+        "inclinationDeg": -0.02813,
+        "argOfPeriapsisDeg": 275.437818
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.53
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.77
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.78
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.77
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.1
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.78
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.31
+        },
+        {
+          "name": "Selenium",
+          "percentage": 2.94
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.52
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.33
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.17
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:47",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 25
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:47Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2954361916375320883",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-83",
+      "bodyId": 83,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 b a",
+      "shortName": "12 b a",
+      "kind": "moon",
+      "parentId": "body-82",
+      "subType": "Rocky body",
+      "radiusKm": 547.376875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.06109541960453785,
+      "temperatureK": 198,
+      "distanceToArrivalLs": 3217,
+      "atmosphere": "No atmosphere",
+      "volcanism": "Major Silicate Vapour Geysers",
+      "orbit": {
+        "semiMajorAxisAu": 0.00003992423145939202,
+        "periodDays": 0.5090214381018519,
+        "eccentricity": 0,
+        "inclinationDeg": 86.526763,
+        "argOfPeriapsisDeg": 37.094013
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 19.37
+        },
+        {
+          "name": "Iron",
+          "percentage": 17.3
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.29
+        },
+        {
+          "name": "Nickel",
+          "percentage": 13.08
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.43
+        },
+        {
+          "name": "Chromium",
+          "percentage": 7.78
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.14
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.72
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.03
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 0.95
+        },
+        {
+          "name": "Tin",
+          "percentage": 0.91
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:52",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 5
+        },
+        {
+          "name": "Geological",
+          "count": 3
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:49Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2990390713394284851",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-84",
+      "bodyId": 84,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 c",
+      "shortName": "12 c",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1732.905625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.20908642679143424,
+      "temperatureK": 177,
+      "distanceToArrivalLs": 3209,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.02737476582220966,
+        "periodDays": 16.900090569699074,
+        "eccentricity": 0.000088,
+        "inclinationDeg": -0.408107,
+        "argOfPeriapsisDeg": 189.039484
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.13
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.68
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.7
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.47
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.05
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.6
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.2
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.7
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.25
+        },
+        {
+          "name": "Antimony",
+          "percentage": 1.17
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.05
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:51:30",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 17
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:51:29Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3026419510413248819",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-85",
+      "bodyId": 85,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 d",
+      "shortName": "12 d",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1614.201375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.19397689416204644,
+      "temperatureK": 173,
+      "distanceToArrivalLs": 3222,
+      "atmosphere": "Thin Ammonia",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.03371336497048216,
+        "periodDays": 23.0975814715625,
+        "eccentricity": 0.005205,
+        "inclinationDeg": 0.32091,
+        "argOfPeriapsisDeg": 161.010358
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 19.45
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.99
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.97
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.71
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.22
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.75
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.61
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.26
+        },
+        {
+          "name": "Cadmium",
+          "percentage": 1.51
+        },
+        {
+          "name": "Tellurium",
+          "percentage": 1.45
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.07
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:51:08",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 18
+        },
+        {
+          "name": "Biological",
+          "count": 5
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:51:08Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3062448307432212787",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-86",
+      "bodyId": 86,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 e",
+      "shortName": "12 e",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1669.569375,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.20101115951773438,
+      "temperatureK": 164,
+      "distanceToArrivalLs": 3208,
+      "atmosphere": "Thin Ammonia",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.04844084560851106,
+        "periodDays": 39.781483097210646,
+        "eccentricity": 0.000778,
+        "inclinationDeg": 0.454286,
+        "argOfPeriapsisDeg": 323.236114
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 20.83
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 20.33
+        },
+        {
+          "name": "Carbon",
+          "percentage": 17.1
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.75
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.95
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.66
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.18
+        },
+        {
+          "name": "Zirconium",
+          "percentage": 2.42
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.36
+        },
+        {
+          "name": "Ruthenium",
+          "percentage": 1.29
+        },
+        {
+          "name": "Tungsten",
+          "percentage": 1.14
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:51:32",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 16
+        },
+        {
+          "name": "Biological",
+          "count": 5
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:51:32Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3098477104451176755",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-87",
+      "bodyId": 87,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 f",
+      "shortName": "12 f",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1442.506625,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.17234749618672932,
+      "temperatureK": 152,
+      "distanceToArrivalLs": 3236,
+      "atmosphere": "No atmosphere",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.08360662512129592,
+        "periodDays": 90.20372052435185,
+        "eccentricity": 0.005057,
+        "inclinationDeg": 0.347572,
+        "argOfPeriapsisDeg": 29.87464
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 18.69
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 18.25
+        },
+        {
+          "name": "Carbon",
+          "percentage": 15.34
+        },
+        {
+          "name": "Nickel",
+          "percentage": 14.14
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 9.82
+        },
+        {
+          "name": "Chromium",
+          "percentage": 8.41
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.72
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 4.59
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.12
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.12
+        },
+        {
+          "name": "Mercury",
+          "percentage": 0.82
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:55",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 18
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:54Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3134505901470140723",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-89",
+      "bodyId": 89,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 g",
+      "shortName": "12 g",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 2332.8175,
+      "solarRadius": null,
+      "isLandable": false,
+      "isScoopable": false,
+      "gravity": 0.2887194176585906,
+      "temperatureK": 205,
+      "distanceToArrivalLs": 3188,
+      "atmosphere": "Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.11605174775781751,
+        "periodDays": 147.5166115495949,
+        "eccentricity": 0.000405,
+        "inclinationDeg": 5.136221,
+        "argOfPeriapsisDeg": 110.623858
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [],
+      "sourceUpdatedAt": "2026-09-29 16:51:16",
+      "signals": [],
+      "signalsUpdatedAt": null,
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3206563495508068659",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-90",
+      "bodyId": 90,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 g a",
+      "shortName": "12 g a",
+      "kind": "moon",
+      "parentId": "body-89",
+      "subType": "Rocky body",
+      "radiusKm": 832.206,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.09344961666306549,
+      "temperatureK": 173,
+      "distanceToArrivalLs": 3188,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.0003191343964539664,
+        "periodDays": 5.991718214421296,
+        "eccentricity": 0,
+        "inclinationDeg": 24.525375,
+        "argOfPeriapsisDeg": 207.299602
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Sulphur",
+          "percentage": 20.27
+        },
+        {
+          "name": "Iron",
+          "percentage": 18.04
+        },
+        {
+          "name": "Carbon",
+          "percentage": 17.04
+        },
+        {
+          "name": "Nickel",
+          "percentage": 13.64
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.91
+        },
+        {
+          "name": "Manganese",
+          "percentage": 7.45
+        },
+        {
+          "name": "Germanium",
+          "percentage": 5.98
+        },
+        {
+          "name": "Selenium",
+          "percentage": 3.17
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.23
+        },
+        {
+          "name": "Molybdenum",
+          "percentage": 1.18
+        },
+        {
+          "name": "Yttrium",
+          "percentage": 1.08
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:51:21",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 10
+        },
+        {
+          "name": "Biological",
+          "count": 4
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:51:20Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3242592292527032627",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    },
+    {
+      "id": "body-92",
+      "bodyId": 92,
+      "name": "NGC 2546 Sector UZ-G d10-16 12 h",
+      "shortName": "12 h",
+      "kind": "moon",
+      "parentId": "body-79",
+      "subType": "Rocky body",
+      "radiusKm": 1709.624875,
+      "solarRadius": null,
+      "isLandable": true,
+      "isScoopable": false,
+      "gravity": 0.2061071730491793,
+      "temperatureK": 189,
+      "distanceToArrivalLs": 3259,
+      "atmosphere": "Thin Carbon dioxide",
+      "volcanism": "No volcanism",
+      "orbit": {
+        "semiMajorAxisAu": 0.14973300305789045,
+        "periodDays": 216.1920415582523,
+        "eccentricity": 0.012068,
+        "inclinationDeg": 4.668414,
+        "argOfPeriapsisDeg": 125.09987
+      },
+      "rings": [],
+      "belts": [],
+      "materials": [
+        {
+          "name": "Iron",
+          "percentage": 20.45
+        },
+        {
+          "name": "Sulphur",
+          "percentage": 19.97
+        },
+        {
+          "name": "Carbon",
+          "percentage": 16.79
+        },
+        {
+          "name": "Nickel",
+          "percentage": 15.47
+        },
+        {
+          "name": "Phosphorus",
+          "percentage": 10.75
+        },
+        {
+          "name": "Zinc",
+          "percentage": 5.56
+        },
+        {
+          "name": "Vanadium",
+          "percentage": 5.02
+        },
+        {
+          "name": "Arsenic",
+          "percentage": 2.64
+        },
+        {
+          "name": "Niobium",
+          "percentage": 1.4
+        },
+        {
+          "name": "Tin",
+          "percentage": 1.22
+        },
+        {
+          "name": "Technetium",
+          "percentage": 0.73
+        }
+      ],
+      "sourceUpdatedAt": "2026-09-29 16:50:59",
+      "signals": [
+        {
+          "name": "Planetary Mining Location",
+          "count": 20
+        },
+        {
+          "name": "Biological",
+          "count": 9
+        }
+      ],
+      "signalsUpdatedAt": "2026-09-29T16:50:58Z",
+      "signalSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3314649886564960563",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      }
+    }
+  ],
+  "locations": [
+    {
+      "id": "edsm-station-66396",
+      "name": "TBG-B0G",
+      "kind": "carrier",
+      "bodyId": "body-3",
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 123,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3701258240,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Crew Lounge",
+        "Fleet carrier administration",
+        "Bartender",
+        "Pioneer Supplies",
+        "Vista Genomics"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-10-01 22:39:08"
+    },
+    {
+      "id": "edsm-station-722372",
+      "name": "Verquerre Astrophysics Site",
+      "kind": "settlement",
+      "bodyId": "body-3",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 123.457284,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4374918915,
+      "economy": "High Tech",
+      "controllingFaction": "Perez Ring Brewery",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-722367",
+      "name": "Romano Territories",
+      "kind": "settlement",
+      "bodyId": "body-3",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 123,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4374917123,
+      "economy": "Extraction",
+      "controllingFaction": "The Consortium",
+      "services": [
+        "Market",
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-752249",
+      "name": "Watanabe Mining Exchange",
+      "kind": "settlement",
+      "bodyId": "body-3",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 123,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4387730947,
+      "economy": "Extraction",
+      "controllingFaction": "The Consortium",
+      "services": [
+        "Market",
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-761998",
+      "name": "Arkwright Vista",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 123.781962,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 4388504067,
+      "economy": "Refinery",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-737885",
+      "name": "Planetary Construction Site: Haxel City",
+      "kind": "station",
+      "bodyId": "body-23",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 204.092135,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4380936451,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828662892256446771",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-01 19:33:04"
+    },
+    {
+      "id": "edsm-station-739932",
+      "name": "Griffin Hospitality Resort",
+      "kind": "settlement",
+      "bodyId": "body-23",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 204.177219,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381921027,
+      "economy": "Tourism",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828662892256446771",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-739928",
+      "name": "Huntley Tourism Lodge",
+      "kind": "settlement",
+      "bodyId": "body-23",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 204.177326,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381919491,
+      "economy": "Tourism",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828662892256446771",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-721811",
+      "name": "Saturn Ascending",
+      "kind": "station",
+      "bodyId": "body-20",
+      "type": "Coriolis Starport",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association comes from the Mongrel SRVSurvey plan; the public EDSM snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 209.062744,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4374632451,
+      "economy": "Military",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Mongrel SRVSurvey plan screenshot",
+        "reference": "sources/1B2FDA68-681D-416D-9B6F-D86FA9E2758D.png",
+        "notes": "User-supplied plan confirms the body association; screenshot has no capture date. Current completion state is taken only from the EDSM snapshot."
+      },
+      "sourceUpdatedAt": "2026-10-02 02:48:53"
+    },
+    {
+      "id": "edsm-station-752243",
+      "name": "Planetary Construction Site: Keita Command Outpost",
+      "kind": "station",
+      "bodyId": "body-20",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 209.087521,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4387727363,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-04 05:50:08"
+    },
+    {
+      "id": "edsm-station-725279",
+      "name": "Aryabhata Prominence",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Unknown installation type",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 209.093486,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3964798978,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact",
+        "Search and Rescue",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-07-07 03:36:55"
+    },
+    {
+      "id": "edsm-station-722366",
+      "name": "Ladipo Munitions Stockade",
+      "kind": "settlement",
+      "bodyId": "body-20",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 209.095156,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4374914819,
+      "economy": "Military",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-324567",
+      "name": "TZV-18X",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 209.105006,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3710084096,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Crew Lounge",
+        "Fleet carrier administration",
+        "Bartender",
+        "Vista Genomics"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:58:23"
+    },
+    {
+      "id": "edsm-station-754006",
+      "name": "Rival Monkeys Foundry",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Coriolis Starport",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 969.895338,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 4388359171,
+      "economy": "Refinery",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-10-01 22:31:11"
+    },
+    {
+      "id": "edsm-station-526791",
+      "name": "R1MM",
+      "kind": "carrier",
+      "bodyId": "body-3",
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 123,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 3713237248,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Shipyard",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Crew Lounge",
+        "Fleet carrier administration",
+        "Bartender",
+        "Pioneer Supplies",
+        "Vista Genomics"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-10-02 03:03:11"
+    },
+    {
+      "id": "edsm-station-725238",
+      "name": "Gao Base",
+      "kind": "station",
+      "bodyId": "body-38",
+      "type": "Planetary Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 969,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4375494403,
+      "economy": "Refinery",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-10-02 03:39:08"
+    },
+    {
+      "id": "edsm-station-726774",
+      "name": "Planetary Construction Site: Drexler Prospect",
+      "kind": "station",
+      "bodyId": "body-38",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 970.860116,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4376611587,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1369094847540906291",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-07-10 02:35:11"
+    },
+    {
+      "id": "edsm-station-722440",
+      "name": "King's Mountain View",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Planetary Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 1263.341167,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 4374964995,
+      "economy": "Tourism",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Technology Broker",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-10-02 02:53:43"
+    },
+    {
+      "id": "edsm-station-726123",
+      "name": "Extra Pens And Clean Sheets",
+      "kind": "station",
+      "bodyId": "body-70",
+      "type": "Planetary Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 2309,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4376376323,
+      "economy": "Industrial",
+      "controllingFaction": "Perez Ring Brewery",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 17:00:40"
+    },
+    {
+      "id": "edsm-station-763482",
+      "name": "Boltzmann Vision",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Planetary Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 2313.088918,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 4392466179,
+      "economy": "Industrial",
+      "controllingFaction": "The Consortium",
+      "services": [
+        "Market",
+        "Outfitting",
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Interstellar Factors Contact",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-726282",
+      "name": "Planetary Construction Site: Sherlock Engineering",
+      "kind": "station",
+      "bodyId": "body-57",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 2315.701293,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4376443139,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2053641990901221683",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-07-09 04:57:34"
+    },
+    {
+      "id": "edsm-station-738674",
+      "name": "Osuigwe Manufacturing Depot",
+      "kind": "settlement",
+      "bodyId": "body-70",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 2320.603995,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381327363,
+      "economy": "Industrial",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2522016352147753267",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-738666",
+      "name": "Planetary Construction Site: Lavoie Astrophysics Institution",
+      "kind": "station",
+      "bodyId": "body-70",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 2320.614964,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381326595,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2522016352147753267",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-03 01:29:11"
+    },
+    {
+      "id": "edsm-station-748772",
+      "name": "Planetary Construction Site: Ruiz Mining Rigs",
+      "kind": "station",
+      "bodyId": "body-64",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 2360.230841,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4386111235,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2305843570033969459",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-27 02:25:47"
+    },
+    {
+      "id": "edsm-station-748759",
+      "name": "Eon Blue Apocalypse",
+      "kind": "station",
+      "bodyId": "body-90",
+      "type": "Orbis Starport",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association comes from the Mongrel SRVSurvey plan; the public EDSM snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. The supplied Mongrel plan showed this as an active build. EDSM now lists an Orbis Starport; consult current in-game status.",
+      "distanceToArrivalLs": 3190.839221,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4386105091,
+      "economy": "High Tech",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Shipyard",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "Vista Genomics",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Mongrel SRVSurvey plan screenshot",
+        "reference": "sources/8D41A6BE-60A0-4925-AB20-C90AEE4BA90E.png",
+        "notes": "User-supplied plan confirms the body association; screenshot has no capture date. Current completion state is taken only from the EDSM snapshot."
+      },
+      "sourceUpdatedAt": "2026-10-01 23:33:08"
+    },
+    {
+      "id": "edsm-station-748812",
+      "name": "Vega's Astrophysics",
+      "kind": "settlement",
+      "bodyId": "body-90",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 3192.039021,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4386133251,
+      "economy": "High Tech",
+      "controllingFaction": "Daily Routine Incorporated",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3242592292527032627",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-748831",
+      "name": "Planetary Construction Site: Godiva Terminal",
+      "kind": "station",
+      "bodyId": "body-90",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 3192.847882,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4386141187,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3242592292527032627",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-27 05:35:51"
+    },
+    {
+      "id": "edsm-station-726613",
+      "name": "Orbital Construction Site: Kirkwood Relay",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Orbital construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 3193.17438,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3966536450,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-26 22:50:20"
+    },
+    {
+      "id": "edsm-station-726100",
+      "name": "Hara Astrophysics Expedition",
+      "kind": "settlement",
+      "bodyId": "body-86",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 3208,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4376370179,
+      "economy": "High Tech",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-726086",
+      "name": "Xie Cultivations",
+      "kind": "settlement",
+      "bodyId": "body-85",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 3210.059245,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4376365059,
+      "economy": "Agriculture",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3062448307432212787",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-501287",
+      "name": "W0W-G2V",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 3223.110981,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3712586240,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Crew Lounge",
+        "Fleet carrier administration"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-06 21:18:28"
+    },
+    {
+      "id": "edsm-station-737879",
+      "name": "Mendez Entertainment Resort",
+      "kind": "settlement",
+      "bodyId": "body-92",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 3233.471801,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4380933123,
+      "economy": "Tourism",
+      "controllingFaction": "Regiment of Imperial Mongrels",
+      "services": [
+        "Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Search and Rescue"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3314649886564960563",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-739919",
+      "name": "Planetary Construction Site: Kava Leisure Site",
+      "kind": "station",
+      "bodyId": "body-92",
+      "type": "Planetary construction site",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic. EDSM identifies a construction site. Its completion state may lag in-game progress.",
+      "distanceToArrivalLs": 3242.99061,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381916163,
+      "economy": "Colony",
+      "controllingFaction": "Brewer Corporation",
+      "services": [
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "colonisationcontribution"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3314649886564960563",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-08-11 23:18:47"
+    },
+    {
+      "id": "edsm-station-739909",
+      "name": "Rivera Leisure Resort",
+      "kind": "settlement",
+      "bodyId": "body-92",
+      "type": "Odyssey Settlement",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body. Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.",
+      "distanceToArrivalLs": 3245.414302,
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "marketId": 4381912835,
+      "economy": "Tourism",
+      "controllingFaction": "The Consortium",
+      "services": [
+        "Black Market",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Missions",
+        "Interstellar Factors Contact"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "associationSource": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/3314649886564960563",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-763131",
+      "name": "Rivers Hub",
+      "kind": "station",
+      "bodyId": null,
+      "type": "Outpost",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "distanceToArrivalLs": 3260.545561,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 4391607555,
+      "economy": "Tourism",
+      "controllingFaction": "Daily Routine Incorporated",
+      "services": [
+        "Market",
+        "Outfitting",
+        "Restock",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Universal Cartographics",
+        "Missions",
+        "Crew Lounge",
+        "Search and Rescue",
+        "System colonisation"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-29 05:28:32"
+    },
+    {
+      "id": "edsm-station-78941",
+      "name": "V5F-7HW",
+      "kind": "carrier",
+      "bodyId": null,
+      "type": "Fleet Carrier",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [],
+      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker. Fleet carriers can move; this is a dated location snapshot.",
+      "distanceToArrivalLs": 4683.178386,
+      "positionKnown": false,
+      "coordinatesKnown": false,
+      "marketId": 3703671552,
+      "economy": "Fleet Carrier",
+      "controllingFaction": null,
+      "services": [
+        "Market",
+        "Refuel",
+        "Repair",
+        "Contacts",
+        "Crew Lounge",
+        "Fleet carrier administration"
+      ],
+      "source": {
+        "name": "EDSM stations API",
+        "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-07-01 19:10:53"
+    },
+    {
+      "id": "body-3-ring-1-hotspot-painite",
+      "name": "Painite hotspots · 3 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-3",
+      "ringId": "body-3-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Painite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Painite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:04:01Z"
+    },
+    {
+      "id": "body-3-ring-1-hotspot-platinum",
+      "name": "Platinum hotspots · 3 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-3",
+      "ringId": "body-3-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Platinum"
+      ],
+      "hotspotCount": 3,
+      "notes": "3 Platinum hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:04:01Z"
+    },
+    {
+      "id": "body-3-ring-1-hotspot-rhodplumsite",
+      "name": "Rhodplumsite hotspots · 3 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-3",
+      "ringId": "body-3-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Rhodplumsite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Rhodplumsite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:04:01Z"
+    },
+    {
+      "id": "body-3-ring-1-hotspot-serendibite",
+      "name": "Serendibite hotspots · 3 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-3",
+      "ringId": "body-3-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Serendibite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/108086951877167411",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:04:01Z"
+    },
+    {
+      "id": "body-20-ring-1-hotspot-painite",
+      "name": "Painite hotspots · 4 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-20",
+      "ringId": "body-20-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Painite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Painite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:01:41Z"
+    },
+    {
+      "id": "body-20-ring-1-hotspot-rhodplumsite",
+      "name": "Rhodplumsite hotspots · 4 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-20",
+      "ringId": "body-20-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Rhodplumsite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Rhodplumsite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:01:41Z"
+    },
+    {
+      "id": "body-20-ring-1-hotspot-serendibite",
+      "name": "Serendibite hotspots · 4 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-20",
+      "ringId": "body-20-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Serendibite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/720576501199554867",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:01:41Z"
+    },
+    {
+      "id": "body-30-ring-1-hotspot-alexandrite",
+      "name": "Alexandrite hotspots · 6 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-30",
+      "ringId": "body-30-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Alexandrite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Alexandrite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-16T23:50:35Z"
+    },
+    {
+      "id": "body-30-ring-1-hotspot-benitoite",
+      "name": "Benitoite hotspots · 6 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-30",
+      "ringId": "body-30-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Benitoite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Benitoite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-16T23:50:35Z"
+    },
+    {
+      "id": "body-30-ring-1-hotspot-musgravite",
+      "name": "Musgravite hotspots · 6 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-30",
+      "ringId": "body-30-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Musgravite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Musgravite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-16T23:50:35Z"
+    },
+    {
+      "id": "body-30-ring-2-hotspot-benitoite",
+      "name": "Benitoite hotspots · 6 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-30",
+      "ringId": "body-30-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Benitoite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Benitoite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-16T23:50:35Z"
+    },
+    {
+      "id": "body-30-ring-2-hotspot-serendibite",
+      "name": "Serendibite hotspots · 6 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-30",
+      "ringId": "body-30-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Serendibite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1080864471389194547",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-16T23:50:35Z"
+    },
+    {
+      "id": "body-23-ring-1-hotspot-platinum",
+      "name": "Platinum hotspots · 5 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-23",
+      "ringId": "body-23-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Platinum"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Platinum hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/828662892256446771",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-24T05:01:41Z"
+    },
+    {
+      "id": "body-47-ring-1-hotspot-alexandrite",
+      "name": "Alexandrite hotspots · 7 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-47",
+      "ringId": "body-47-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Alexandrite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Alexandrite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1693354020711582003",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-14T06:40:21Z"
+    },
+    {
+      "id": "body-47-ring-1-hotspot-benitoite",
+      "name": "Benitoite hotspots · 7 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-47",
+      "ringId": "body-47-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Benitoite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Benitoite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1693354020711582003",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-14T06:40:21Z"
+    },
+    {
+      "id": "body-47-ring-1-hotspot-musgravite",
+      "name": "Musgravite hotspots · 7 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-47",
+      "ringId": "body-47-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Musgravite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Musgravite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1693354020711582003",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-14T06:40:21Z"
+    },
+    {
+      "id": "body-54-ring-1-hotspot-monazite",
+      "name": "Monazite hotspots · 9 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Monazite"
+      ],
+      "hotspotCount": 3,
+      "notes": "3 Monazite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-54-ring-1-hotspot-painite",
+      "name": "Painite hotspots · 9 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Painite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Painite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-54-ring-1-hotspot-platinum",
+      "name": "Platinum hotspots · 9 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Platinum"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Platinum hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-54-ring-1-hotspot-rhodplumsite",
+      "name": "Rhodplumsite hotspots · 9 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Rhodplumsite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Rhodplumsite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-54-ring-1-hotspot-serendibite",
+      "name": "Serendibite hotspots · 9 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Serendibite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-54-ring-2-hotspot-alexandrite",
+      "name": "Alexandrite hotspots · 9 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Alexandrite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Alexandrite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:49:30Z"
+    },
+    {
+      "id": "body-54-ring-2-hotspot-benitoite",
+      "name": "Benitoite hotspots · 9 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Benitoite"
+      ],
+      "hotspotCount": 5,
+      "notes": "5 Benitoite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:49:30Z"
+    },
+    {
+      "id": "body-54-ring-2-hotspot-monazite",
+      "name": "Monazite hotspots · 9 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Monazite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Monazite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:49:30Z"
+    },
+    {
+      "id": "body-54-ring-2-hotspot-musgravite",
+      "name": "Musgravite hotspots · 9 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Musgravite"
+      ],
+      "hotspotCount": 3,
+      "notes": "3 Musgravite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:49:30Z"
+    },
+    {
+      "id": "body-54-ring-2-hotspot-serendibite",
+      "name": "Serendibite hotspots · 9 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-54",
+      "ringId": "body-54-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Serendibite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/1945555599844329779",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:49:30Z"
+    },
+    {
+      "id": "body-65-ring-1-hotspot-alexandrite",
+      "name": "Alexandrite hotspots · 11 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Alexandrite"
+      ],
+      "hotspotCount": 3,
+      "notes": "3 Alexandrite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:53:58Z"
+    },
+    {
+      "id": "body-65-ring-1-hotspot-benitoite",
+      "name": "Benitoite hotspots · 11 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Benitoite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Benitoite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:53:58Z"
+    },
+    {
+      "id": "body-65-ring-1-hotspot-monazite",
+      "name": "Monazite hotspots · 11 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Monazite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Monazite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:53:58Z"
+    },
+    {
+      "id": "body-65-ring-1-hotspot-musgravite",
+      "name": "Musgravite hotspots · 11 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Musgravite"
+      ],
+      "hotspotCount": 4,
+      "notes": "4 Musgravite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:53:58Z"
+    },
+    {
+      "id": "body-65-ring-1-hotspot-serendibite",
+      "name": "Serendibite hotspots · 11 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 3,
+      "notes": "3 Serendibite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:53:58Z"
+    },
+    {
+      "id": "body-65-ring-2-hotspot-monazite",
+      "name": "Monazite hotspots · 11 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Monazite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Monazite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-11T03:36:37Z"
+    },
+    {
+      "id": "body-65-ring-2-hotspot-painite",
+      "name": "Painite hotspots · 11 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Painite"
+      ],
+      "hotspotCount": 2,
+      "notes": "2 Painite hotspot signals reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-11T03:36:37Z"
+    },
+    {
+      "id": "body-65-ring-2-hotspot-rhodplumsite",
+      "name": "Rhodplumsite hotspots · 11 B Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-65",
+      "ringId": "body-65-ring-2",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Rhodplumsite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Rhodplumsite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2341872367052933427",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-11T03:36:37Z"
+    },
+    {
+      "id": "body-62-ring-1-hotspot-serendibite",
+      "name": "Serendibite hotspots · 10 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-62",
+      "ringId": "body-62-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Serendibite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Serendibite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2233785975996041523",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2026-09-21T05:02:22Z"
+    },
+    {
+      "id": "body-79-ring-1-hotspot-musgravite",
+      "name": "Musgravite hotspots · 12 A Ring",
+      "kind": "ring-hotspot",
+      "bodyId": "body-79",
+      "ringId": "body-79-ring-1",
+      "latitude": null,
+      "longitude": null,
+      "commodities": [
+        "Musgravite"
+      ],
+      "hotspotCount": 1,
+      "notes": "1 Musgravite hotspot signal reported in this ring. Exact hotspot positions and overlap geometry are unavailable; this record represents a ring survey, not a measured individual marker. Use the DSS to locate hotspots in game.",
+      "positionKnown": true,
+      "coordinatesKnown": false,
+      "positionPrecision": "ring",
+      "source": {
+        "name": "Spansh body database",
+        "url": "https://spansh.co.uk/api/body/2846275525318428979",
+        "retrievedAt": "2026-10-02T04:35:21.585Z"
+      },
+      "sourceUpdatedAt": "2025-10-06T17:56:02Z"
+    }
+  ]
+}
