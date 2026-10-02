@@ -1,122 +1,104 @@
-import { MathUtils, Vector3 } from '../../vendor/three/three.module.js';
+import { Vector3 } from '../../vendor/three/three.module.js';
 
-/** Touch navigation has a view-centred, zoom-scaled pivot, independent of scene data. */
-export function createCameraNavigation({ camera, controls, touchPreferred = false }) {
+/** Choose a touch orbit anchor at gesture boundaries, leaving two-finger navigation native. */
+export function createCameraNavigation({ camera, controls, getBodyPositions = () => [] }) {
   const canvas = controls.domElement;
   const pointers = new Map();
-  const minZoom = controls.minDistance;
-  const maxZoom = controls.maxDistance;
+  const projected = new Vector3();
   const forward = new Vector3();
-  let touchMode = touchPreferred;
-  let referenceDistance;
-  let zoomDistance;
-  let frameDistance;
-  let recenterOnMove = false;
+  let needsPivot = false;
 
-  function floatingDistance() {
-    const ratio = zoomDistance / referenceDistance;
-    const local = Math.min(referenceDistance, 12) * ratio;
-    // Preserve the wide view, then blend into a short pivot between 2x and 3x zoom.
-    return MathUtils.clamp(MathUtils.lerp(local, zoomDistance, MathUtils.smoothstep(ratio, 0.35, 0.5)), minZoom, maxZoom);
-  }
-
-  function centerTarget(distance) {
-    camera.getWorldDirection(forward);
-    controls.target.copy(camera.position).addScaledVector(forward, distance);
-    frameDistance = distance;
-  }
-
-  function freezeAndCenter(distance) {
+  function stopInertia() {
     const position = camera.position.clone();
     const quaternion = camera.quaternion.clone();
+    const target = controls.target.clone();
     const damping = controls.enableDamping;
+    // Drain pending pan/rotation before using the current frame for a new gesture.
     controls.enableDamping = false;
     controls.update();
     camera.position.copy(position);
     camera.quaternion.copy(quaternion);
-    centerTarget(distance);
+    controls.target.copy(target);
     controls.enableDamping = damping;
     controls.update();
   }
 
-  function change() {
-    const radius = controls.getDistance();
-    if (!touchMode || !(radius > 0)) {
-      zoomDistance = MathUtils.clamp(radius, minZoom, maxZoom);
-      frameDistance = radius;
-      return;
+  function choosePivot() {
+    const distance = controls.getDistance();
+    camera.updateMatrixWorld();
+    camera.getWorldDirection(forward);
+    // Measure screen distance in pixels so portrait and landscape use the same circle.
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const limit = Math.min(width, height) * 0.1;
+    let nearest = null;
+    let best = limit * limit;
+    let nearestDepth = Infinity;
+    for (const position of getBodyPositions()) {
+      const depth = projected.copy(position).sub(camera.position).dot(forward);
+      if (depth <= camera.near) continue;
+      const radius = projected.length();
+      if (radius < controls.minDistance || radius > controls.maxDistance) continue;
+      projected.copy(position).project(camera);
+      if (projected.z < -1 || projected.z > 1 || Math.abs(projected.x) > 1 || Math.abs(projected.y) > 1) continue;
+      const score = (projected.x * width / 2) ** 2 + (projected.y * height / 2) ** 2;
+      if (score < best || (nearest && Math.abs(score - best) < 1e-8 && depth < nearestDepth)) {
+        best = score;
+        nearestDepth = depth;
+        nearest = position;
+      }
     }
-    const scale = frameDistance > 0 ? radius / frameDistance : 1;
-    if (Math.abs(scale - 1) > 1e-9) {
-      zoomDistance = MathUtils.clamp(zoomDistance * scale, minZoom, maxZoom);
-    }
-    const distance = floatingDistance();
-    centerTarget(distance);
+    // An empty-space pivot keeps the current depth; no arbitrary short distance
+    // reduces the normal OrbitControls pan/zoom travel.
+    controls.target.copy(nearest ?? camera.position.clone().addScaledVector(forward, distance));
+    controls.update();
   }
 
-  function desktop() {
-    if (!touchMode) return;
-    touchMode = false;
-    controls.minDistance = minZoom;
-    controls.maxDistance = maxZoom;
-    freezeAndCenter(zoomDistance);
-  }
+  function touches() { return [...pointers.values()].filter(pointer => pointer.type === 'touch').length; }
 
   function pointerDown(event) {
-    pointers.set(event.pointerId, event.pointerType);
-    if (event.pointerType !== 'touch') { desktop(); return; }
-    touchMode = true;
-    // Keep pinch centred: r180 mixes page/client coordinates in cursor zoom.
+    if (!controls.enabled) return;
+    pointers.set(event.pointerId, { type: event.pointerType, x: event.clientX, y: event.clientY });
+    if (event.pointerType !== 'touch') { needsPivot = false; return; }
+    // Keep the native centred pinch path, including on a scrolled page.
     controls.zoomToCursor = false;
-    const touches = [...pointers.values()].filter(type => type === 'touch').length;
-    if (touches === 1) {
-      const distance = floatingDistance();
-      // Stop old local inertia at the current frame before a new local orbit.
-      if (zoomDistance / referenceDistance < 0.5) freezeAndCenter(distance);
-      else centerTarget(distance);
-      recenterOnMove = false;
+    if (touches() === 1) needsPivot = true;
+    else {
+      needsPivot = false;
+      stopInertia();
     }
   }
 
   function pointerMove(event) {
-    if (event.pointerType !== 'touch' || !recenterOnMove) return;
-    recenterOnMove = false;
-    if (zoomDistance / referenceDistance < 0.5) freezeAndCenter(floatingDistance());
-    else centerTarget(floatingDistance());
+    const pointer = pointers.get(event.pointerId);
+    if (!pointer) return;
+    const moved = event.clientX !== pointer.x || event.clientY !== pointer.y;
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    if (!controls.enabled || !controls.enableRotate || event.pointerType !== 'touch' || touches() !== 1 || !needsPivot || !moved) return;
+    needsPivot = false;
+    stopInertia();
+    choosePivot();
   }
 
   function pointerEnd(event) {
     pointers.delete(event.pointerId);
-    recenterOnMove = [...pointers.values()].filter(type => type === 'touch').length === 1;
+    needsPivot = touches() === 1;
   }
-
-  function wheel() { if (!pointers.size) desktop(); }
 
   function reset() {
     pointers.clear();
-    recenterOnMove = false;
-    controls.minDistance = minZoom;
-    controls.maxDistance = maxZoom;
-    zoomDistance = MathUtils.clamp(controls.getDistance(), minZoom, maxZoom);
-    referenceDistance = zoomDistance;
-    frameDistance = controls.getDistance();
-    touchMode = touchPreferred;
-    controls.zoomToCursor = false;
+    needsPivot = false;
   }
 
-  reset();
-  const events = { pointerdown: pointerDown, pointermove: pointerMove, pointerup: pointerEnd, pointercancel: pointerEnd, wheel };
+  const events = { pointerdown: pointerDown, pointermove: pointerMove, pointerup: pointerEnd, pointercancel: pointerEnd };
   for (const [name, listener] of Object.entries(events)) canvas.addEventListener(name, listener, { capture: true });
-  controls.addEventListener('change', change);
   return {
     reset,
-    suspend() { desktop(); touchMode = false; },
+    suspend() { reset(); stopInertia(); },
     dispose() {
-      controls.removeEventListener('change', change);
       for (const [name, listener] of Object.entries(events)) canvas.removeEventListener(name, listener, { capture: true });
-      pointers.clear();
-      controls.minDistance = minZoom;
-      controls.maxDistance = maxZoom;
+      reset();
     },
   };
 }

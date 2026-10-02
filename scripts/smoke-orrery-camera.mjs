@@ -49,7 +49,7 @@ class Surface {
   releasePointerCapture(id) { this.captured.delete(id); }
 }
 
-function harness({ helper = true, touch = false, scrollY = 0, distance = 1000 } = {}) {
+function harness({ helper = true, touch = false, scrollY = 0, distance = 1000, bodies = [] } = {}) {
   const root = new Surface(), canvas = new Surface(root);
   const camera = new PerspectiveCamera(45, 800 / 600, 0.01, 1e6);
   camera.position.set(0, 0, distance);
@@ -58,9 +58,9 @@ function harness({ helper = true, touch = false, scrollY = 0, distance = 1000 } 
   controls.rotateSpeed = 0.7; controls.zoomSpeed = 0.9; controls.panSpeed = 0.85;
   controls.screenSpacePanning = true; controls.minDistance = 0.25; controls.maxDistance = 1e5;
   controls.listenToKeyEvents(canvas); controls.update();
-  const navigation = helper ? createCameraNavigation({ camera, controls, touchPreferred: touch }) : null;
+  const navigation = helper ? createCameraNavigation({ camera, controls, getBodyPositions: () => bodies }) : null;
   return {
-    camera, controls, canvas, root, navigation,
+    camera, controls, canvas, root, navigation, bodies,
     pointer(type, id, x, y, { pointerType = touch ? 'touch' : 'mouse', button = 0 } = {}) {
       camera.updateMatrixWorld();
       return canvas.dispatch(type, { pointerId:id, pointerType, button,
@@ -102,24 +102,39 @@ function pinchEnd(h,left=50,right=750,y=300) {
   h.pointer('pointerup',2,right,y,{pointerType:'touch'});
   h.pointer('pointerup',1,left,y,{pointerType:'touch'}); h.settle();
 }
-function zoomIn(h) {
-  h.controls.enablePan=false; pinchStart(h);
-  h.pointer('pointermove',1,50,300,{pointerType:'touch'});
-  h.pointer('pointermove',2,750,300,{pointerType:'touch'});
-  pinchEnd(h); h.controls.enablePan=true;
-}
 function test(name,fn) { fn(); console.log('✓ '+name); }
 
-test('Desktop mouse orbit, wheel and right pan are unchanged at wide and close distances',()=>{
+function screenBody(h, x, y = 0, depth = 10) {
+  const halfHeight = depth * Math.tan(h.camera.fov * Math.PI / 360);
+  return new Vector3(x * halfHeight * h.camera.aspect, y * halfHeight, h.camera.position.z - depth);
+}
+function beginOrbit(h, dx = 1) {
+  h.pointer('pointerdown',1,400,300,{pointerType:'touch'});
+  h.pointer('pointermove',1,400+dx,300,{pointerType:'touch'});
+}
+function endOrbit(h, dx = 1) {
+  h.pointer('pointerup',1,400+dx,300,{pointerType:'touch'}); h.settle();
+}
+function twoFingerDrag(h) {
+  pinchStart(h);
+  for (let step=1;step<=20;step++) {
+    h.pointer('pointermove',1,300+step*4,300+step*2,{pointerType:'touch'});
+    h.pointer('pointermove',2,500+step*4,300+step*2,{pointerType:'touch'});
+  }
+  pinchEnd(h,380,580,340);
+}
+
+test('Desktop mouse orbit, wheel and right pan remain unchanged with bodies present',()=>{
   for(const distance of [1000,4]) {
     const h=harness({distance}), baseline=harness({helper:false,distance});
+    h.bodies.push(screenBody(h,0,0, distance/2));
     for(const action of [drag,h=>{h.wheel();h.settle();},h=>drag(h,{button:2})]) {
       action(h);action(baseline);samePose(pose(h),pose(baseline),'desktop'); centered(h);
     }
     h.dispose();baseline.dispose();
   }
 });
-test('Wide touch overview retains the original orbit, pan and small-pinch response',()=>{
+test('Empty wide touch overview retains the native orbit, pan and pinch response',()=>{
   const h=harness({touch:true}), baseline=harness({helper:false,touch:true});
   for(const action of [h=>drag(h,{touch:true}),h=>{
     pinchStart(h);h.pointer('pointermove',2,530,315);h.pointer('pointermove',1,285,315);pinchEnd(h,285,530,315);
@@ -128,107 +143,151 @@ test('Wide touch overview retains the original orbit, pan and small-pinch respon
   }
   h.dispose();baseline.dispose();
 });
-test('Zoom in empty space creates a short floating pivot with natural local zoom travel',()=>{
+test('Touch orbit chooses the body nearest screen centre, rather than the nearest camera body',()=>{
   const h=harness({touch:true});
-  zoomIn(h);
-  assert.ok(h.controls.getDistance()<5,'The orbit pivot must be local, even without any bodies');
-  assert.ok(h.controls.target.distanceTo(new Vector3())>300,'Pivot must leave the old system centre');
-  centered(h);
-  const before=pose(h); h.pointer('pointerdown',1,400,300);
-  samePose(pose(h),before,'new local gesture');
-  h.pointer('pointermove',1,420,300);h.pointer('pointerup',1,420,300);h.settle();
-  assert.ok(h.camera.position.distanceTo(before.position)<1,'Small orbit must not sweep around the old distant centre');
-  centered(h);h.dispose();
+  const central=screenBody(h,0.02,0,40), nearer=screenBody(h,0.1,0,10);
+  h.bodies.push(nearer,central);const position=h.camera.position.clone();
+  beginOrbit(h);
+  assert.ok(h.controls.target.distanceTo(central)<1e-8);
+  assert.ok(h.camera.position.distanceTo(position)<1,'Small orbit stays local to the central body');
+  assert.ok(h.controls.getDistance()>39 && h.controls.getDistance()<41);
+  centered(h);endOrbit(h);h.dispose();
 });
-test('Floating pivot depth changes smoothly through zoom-in and zoom-out',()=>{
-  const h=harness({touch:true});h.controls.enablePan=false;
-  pinchStart(h);
-  let previous=h.controls.getDistance(),maxStep=0;
-  for(let right=501;right<=1100;right++) {
-    h.pointer('pointermove',2,right,300);
-    const current=h.controls.getDistance();
-    assert.ok(current<=previous+1e-7,'Zoom-in pivot distance must decrease monotonically');
-    maxStep=Math.max(maxStep,previous-current);previous=current;centered(h);
+test('Equally centred bodies choose the foreground depth',()=>{
+  const h=harness({touch:true}),far=screenBody(h,0,0,40),near=screenBody(h,0,0,10);
+  h.bodies.push(far,near);beginOrbit(h);
+  assert.ok(h.controls.target.distanceTo(near)<1e-8);endOrbit(h);h.dispose();
+});
+test('Off-centre, offscreen and behind-camera bodies leave an empty-space pivot at current depth',()=>{
+  const h=harness({touch:true});
+  h.bodies.push(screenBody(h,0.3),screenBody(h,1.2),new Vector3(0,0,1100));
+  const before=h.controls.target.clone(), distance=h.controls.getDistance();
+  beginOrbit(h);assert.ok(h.controls.target.distanceTo(before)<1e-8);
+  assert.ok(Math.abs(h.controls.getDistance()-distance)<1e-8);centered(h);endOrbit(h);h.dispose();
+});
+test('The central-body circle uses pixels consistently in portrait and landscape',()=>{
+  for (const [width,height] of [[834,1112],[1112,834]]) {
+    const h=harness({touch:true});
+    h.canvas.clientWidth=width;h.canvas.clientHeight=height;
+    h.camera.aspect=width/height;h.camera.updateProjectionMatrix();
+    const outside=screenBody(h,2*Math.min(width,height)*0.12/width);
+    const inside=screenBody(h,2*Math.min(width,height)*0.08/width,0,40);
+    h.bodies.push(outside,inside);beginOrbit(h);
+    assert.ok(h.controls.target.distanceTo(inside)<1e-8);endOrbit(h);h.dispose();
   }
-  assert.ok(maxStep<10,'Local transition must not jump between distant and short pivots');
-  for(let right=1099;right>=500;right--) {h.pointer('pointermove',2,right,300);centered(h);}
-  pinchEnd(h,300,500);
-  assert.ok(Math.abs(h.controls.getDistance()-1000)<1e-7,'Zoom out restores the wide-view orbit distance');
-  centered(h);h.dispose();
 });
-test('Local two-finger pan translates the camera and pivot by the same amount',()=>{
-  const h=harness({touch:true});zoomIn(h);
-  h.controls.enableZoom=false;const before=pose(h);pinchStart(h);
-  h.pointer('pointermove',1,340,330);h.pointer('pointermove',2,540,330);pinchEnd(h,340,540,330);
+test('Starting a two-finger gesture does not acquire an orbit body or change the frame',()=>{
+  const h=harness({touch:true});h.bodies.push(screenBody(h,0.05,0,10));
+  const before=pose(h);pinchStart(h);samePose(pose(h),before,'two-finger start');
+  pinchEnd(h,300,500);samePose(pose(h),before,'stationary two-finger');h.dispose();
+});
+test('Two-finger drag with pinch enabled matches native travel at wide and close distances',()=>{
+  for(const distance of [1000,10]) {
+    const h=harness({touch:true,distance}),baseline=harness({helper:false,touch:true,distance});
+    h.bodies.push(screenBody(h,0.02,0,distance/2));
+    const before=pose(h);twoFingerDrag(h);twoFingerDrag(baseline);
+    samePose(pose(h),pose(baseline),'native two-finger drag');
+    assert.ok(h.camera.position.distanceTo(before.position)>distance*0.05,'Drag must retain useful camera travel');
+    centered(h);h.dispose();baseline.dispose();
+  }
+});
+test('Body pivot stays fixed during rotation even if another body becomes more central',()=>{
+  const h=harness({touch:true});const body=screenBody(h,0,0,30);
+  h.bodies.push(body);beginOrbit(h);
+  h.bodies.splice(0,h.bodies.length,screenBody(h,0,0,5));
+  h.pointer('pointermove',1,435,310,{pointerType:'touch'});
+  assert.ok(h.controls.target.distanceTo(body)<1e-8);endOrbit(h,35);h.dispose();
+});
+test('Pan carries camera and acquired body pivot together without reacquiring the body',()=>{
+  const h=harness({touch:true}),body=screenBody(h,0,0,30);h.bodies.push(body);
+  beginOrbit(h);endOrbit(h);h.controls.enableZoom=false;
+  const before=pose(h);twoFingerDrag(h);
   const positionDelta=h.camera.position.clone().sub(before.position);
   const targetDelta=h.controls.target.clone().sub(before.target);
-  assert.ok(positionDelta.length()>0.02);
+  assert.ok(positionDelta.length()>1);
   assert.ok(positionDelta.distanceTo(targetDelta)<1e-8,'Pan must carry the pivot with the camera');
-  centered(h);h.dispose();
+  assert.ok(h.controls.target.distanceTo(body)>1);centered(h);h.dispose();
 });
-test('Pinch-to-one-finger orbit freezes the current centered frame without a jump',()=>{
+test('Pinch zoom uses natural body-relative distance and keeps the anchor steady',()=>{
+  const h=harness({touch:true}),body=screenBody(h,0,0,30);h.bodies.push(body);
+  beginOrbit(h);endOrbit(h);h.controls.enablePan=false;
+  const distance=h.controls.getDistance();pinchStart(h);
+  h.pointer('pointermove',2,700,300,{pointerType:'touch'});
+  assert.ok(Math.abs(h.controls.getDistance()-distance/(2**0.9))<1e-8);
+  assert.ok(h.controls.target.distanceTo(body)<1e-8);pinchEnd(h,300,700);centered(h);h.dispose();
+});
+test('Panning away from a previously acquired body leaves the next orbit in empty space',()=>{
+  const h=harness({touch:true}),body=screenBody(h,0,0,30);h.bodies.push(body);
+  beginOrbit(h);endOrbit(h);h.controls.enableZoom=false;twoFingerDrag(h);
+  const target=h.controls.target.clone(),distance=h.controls.getDistance();
+  beginOrbit(h);
+  assert.ok(h.controls.target.distanceTo(target)<1e-8,'Off-centre old body must not pull the pivot back');
+  assert.ok(Math.abs(h.controls.getDistance()-distance)<1e-8);centered(h);endOrbit(h);h.dispose();
+});
+test('Pinch-to-one-finger orbit chooses the current central body only when rotation starts',()=>{
   const h=harness({touch:true});h.controls.enablePan=false;pinchStart(h);
-  h.pointer('pointermove',1,50,300);h.pointer('pointermove',2,750,300);
-  h.pointer('pointerup',2,750,300);const before=pose(h);
-  h.pointer('pointermove',1,50,300);samePose(pose(h),before,'pinch transition');
-  h.pointer('pointermove',1,70,300);h.pointer('pointerup',1,70,300);h.settle();
-  assert.ok(h.camera.position.distanceTo(before.position)<1);centered(h);h.dispose();
+  h.pointer('pointermove',2,700,300);h.pointer('pointerup',2,700,300);
+  const before=pose(h),body=screenBody(h,0.01,0,20);h.bodies.push(body);
+  h.pointer('pointermove',1,300,300);samePose(pose(h),before,'stationary pinch transition');
+  h.pointer('pointermove',1,310,300);
+  assert.ok(h.controls.target.distanceTo(body)<1e-8);
+  assert.ok(h.camera.position.distanceTo(before.position)<1);centered(h);
+  h.pointer('pointerup',1,310,300);h.settle();h.dispose();
 });
-test('Scrolled iPad-style touch gestures have identical view-centered behavior',()=>{
+test('Scrolled iPad-style gestures preserve central-body orbit and two-finger pan',()=>{
   const h=harness({touch:true,scrollY:850}),baseline=harness({touch:true});
-  for(const action of [zoomIn,h=>drag(h,{touch:true}),h=>{
-    h.controls.enableZoom=false;pinchStart(h);
-    h.pointer('pointermove',1,340,330);h.pointer('pointermove',2,540,330);pinchEnd(h,340,540,330);
-  }]) {action(h);action(baseline);samePose(pose(h),pose(baseline),'page scroll');centered(h);}
+  h.bodies.push(screenBody(h,0.01,0,40));baseline.bodies.push(screenBody(baseline,0.01,0,40));
+  for(const action of [h=>drag(h,{touch:true}),twoFingerDrag]) {
+    action(h);action(baseline);samePose(pose(h),pose(baseline),'page scroll');centered(h);
+  }
   h.dispose();baseline.dispose();
 });
-test('Explicit Focus establishes an exact object pivot before normal navigation resumes',()=>{
-  const h=harness({touch:true});zoomIn(h);
-  h.navigation.suspend();
-  const target=new Vector3(130,8,21);
+test('Explicit Focus retains its chosen anchor and normal pan can move away',()=>{
+  const h=harness({touch:true});h.navigation.suspend();
+  const target=new Vector3(130,8,21);h.bodies.push(target);
   h.controls.target.copy(target);h.camera.position.copy(target).add(new Vector3(4,6,9));
   h.camera.lookAt(target);h.controls.update();h.navigation.reset();
-  const before=pose(h);h.pointer('pointerdown',1,400,300);
-  samePose(pose(h),before,'explicit Focus');assert.ok(h.controls.target.distanceTo(target)<1e-8);
-  h.pointer('pointerup',1,400,300);
-  h.controls.enableZoom=false;pinchStart(h);
-  h.pointer('pointermove',1,340,330);h.pointer('pointermove',2,540,330);pinchEnd(h,340,540,330);
-  assert.ok(h.controls.target.distanceTo(target)>0.1,'Normal pan must move the pivot away from the Focus anchor');
-  centered(h);h.dispose();
+  h.pointer('pointerdown',1,400,300);const before=pose(h);
+  h.pointer('pointermove',1,401,300);
+  assert.ok(h.controls.target.distanceTo(target)<1e-8);
+  assert.ok(h.camera.position.distanceTo(before.position)<0.2);endOrbit(h);h.controls.enableZoom=false;
+  twoFingerDrag(h);assert.ok(h.controls.target.distanceTo(target)>1);centered(h);h.dispose();
 });
-test('Overview reset restores the original wide pivot and camera response',()=>{
-  const h=harness({touch:true});zoomIn(h);h.navigation.suspend();
+test('Overview reset restores wide native camera response',()=>{
+  const h=harness({touch:true});h.bodies.push(screenBody(h,0,0,30));beginOrbit(h);endOrbit(h);
+  h.navigation.suspend();h.bodies.length=0;
   h.controls.target.set(0,0,0);h.camera.position.set(0,0,1000);h.camera.lookAt(h.controls.target);
   h.controls.update();h.navigation.reset();
-  const baseline=harness({helper:false,touch:true});
-  drag(h,{touch:true});drag(baseline,{touch:true});
+  const baseline=harness({helper:false,touch:true});drag(h,{touch:true});drag(baseline,{touch:true});
   samePose(pose(h),pose(baseline),'Overview reset');centered(h);h.dispose();baseline.dispose();
 });
-test('Local zoom respects the original near and far orbit-distance limits',()=>{
+test('Native distance limits remain finite through extreme touch zoom',()=>{
   const h=harness({touch:true});h.controls.enablePan=false;pinchStart(h);
   h.pointer('pointermove',2,10000000,300);centered(h);
-  assert.ok(Math.abs(h.controls.getDistance()-0.25)<1e-8,'Local zoom stops at the original near orbit limit');
+  assert.ok(Math.abs(h.controls.getDistance()-0.25)<1e-8);
   h.pointer('pointermove',2,300.0000001,300);centered(h);
-  assert.ok(h.camera.position.length()<=100000+1e-7);
-  pinchEnd(h,300,300.0000001);h.dispose();
+  assert.ok(h.controls.getDistance()<=1e5+1e-7);pinchEnd(h,300,300.0000001);h.dispose();
 });
-test('Switching from touch to mouse restores normal mouse navigation without reframing',()=>{
+test('Switching from touch to mouse keeps the current frame and native mouse response',()=>{
   const h=harness({touch:true}),baseline=harness({helper:false});
-  zoomIn(h);const before=pose(h);
-  h.pointer('pointerdown',1,400,300,{pointerType:'mouse'});
-  samePose(pose(h),before,'mouse switch',false);
+  h.bodies.push(screenBody(h,0.01,0,30));beginOrbit(h);endOrbit(h);const before=pose(h);
+  h.pointer('pointerdown',1,400,300,{pointerType:'mouse'});samePose(pose(h),before,'mouse switch');
   h.pointer('pointerup',1,400,300,{pointerType:'mouse'});
   baseline.camera.position.copy(h.camera.position);baseline.controls.target.copy(h.controls.target);baseline.controls.update();
   for(const action of [drag,h=>{h.wheel();h.settle();},h=>drag(h,{button:2})]) {
     action(h);action(baseline);samePose(pose(h),pose(baseline),'hybrid mouse');centered(h);
   }
-  assert.equal(h.controls.minDistance,0.25);h.dispose();baseline.dispose();
+  h.dispose();baseline.dispose();
 });
-test('Disposal removes touch listeners and restores original control limits',()=>{
-  const h=harness({touch:true});zoomIn(h);
-  assert.ok(h.canvas.count(true)>0);
-  h.navigation.dispose();assert.equal(h.canvas.count(true),0);assert.equal(h.controls.minDistance,0.25);
+test('Disabled controls ignore touch pivot changes',()=>{
+  const h=harness({touch:true});h.bodies.push(screenBody(h,0,0,10));h.controls.enabled=false;
+  const before=pose(h);beginOrbit(h);endOrbit(h);samePose(pose(h),before,'disabled controls');h.dispose();
+});
+test('Disposal removes capture listeners without changing native control settings',()=>{
+  const h=harness({touch:true});beginOrbit(h);endOrbit(h);
+  assert.ok(h.canvas.count(true)>0);h.navigation.dispose();assert.equal(h.canvas.count(true),0);
+  assert.equal(h.controls.minDistance,0.25);assert.equal(h.controls.maxDistance,1e5);
   h.controls.dispose();assert.equal(h.canvas.count(),0);assert.equal(h.root.count(),0);
   assert.equal(h.canvas.captured.size,0);assert.equal(h.canvas.style.touchAction,'auto');
 });
-console.log('Orrery floating-camera smoke checks passed.');
+console.log('Orrery screen-centred body-pivot smoke checks passed.');

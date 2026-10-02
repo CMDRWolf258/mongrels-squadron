@@ -270,7 +270,11 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointer = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
-  const cameraNavigation = createCameraNavigation({ camera, controls, touchPreferred: window.matchMedia('(pointer: coarse)').matches });
+  const cameraNavigation = createCameraNavigation({ camera, controls,
+    getBodyPositions: () => Array.from(objects.values())
+      .filter(object => object.kind === 'body' && object.mesh.visible)
+      .map(object => object.mesh.position),
+  });
 
   function requestRender() {
     if (!disposed && !contextLost && !animationFrame) animationFrame = requestAnimationFrame(render);
