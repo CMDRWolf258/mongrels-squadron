@@ -181,11 +181,22 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     const spanshAssociation = spanshStations.get(station.marketId);
     const canonicalName = station.name.replace(/^(Planetary|Orbital) Construction Site:\s*/i, '');
     const plan = useLegacyPlan ? PLAN_ASSOCIATIONS[canonicalName] : null;
-    const parentId = edsmParent || spanshAssociation?.bodyId || (plan && knownIds.has(plan[0]) ? `body-${plan[0]}` : null);
-    const planSource = !edsmParent && !spanshAssociation && parentId ? {
+    // The existing personal archive explicitly places this identified facility
+    // at the Earth-like world. Match source IDs and the unique reported body
+    // classification; never derive a host from a facility name or arrival distance.
+    const earthLikeWorlds = bodies.filter(body => body.subType === 'Earth-like world');
+    const archiveHost = useLegacyPlan && station.id === 722440 && station.marketId === 4374964995 && earthLikeWorlds.length === 1
+      ? earthLikeWorlds[0].id : null;
+    const parentId = edsmParent || spanshAssociation?.bodyId || (plan && knownIds.has(plan[0]) ? `body-${plan[0]}` : null) || archiveHost;
+    const planSource = !edsmParent && !spanshAssociation && plan && knownIds.has(plan[0]) ? {
       name:'Mongrel SRVSurvey plan screenshot',
       reference:`sources/${plan[1]}`,
       notes:'User-supplied plan confirms the body association; screenshot has no capture date. Current completion state is taken only from the EDSM snapshot.',
+    } : null;
+    const archiveSource = !edsmParent && !spanshAssociation && !planSource && archiveHost ? {
+      name:'Existing Mongrel personal archive · Strategic Locations',
+      url:'https://github.com/CMDRWolf258/cmdrwolf258.github.io/blob/bafb1a2c2fdc7a24801082f8d69ed233759b77df/system.html',
+      notes:'The archive explicitly places King’s Mountain View at the Earth-like world. The snapshot contains one such body. Host association only; no coordinates or facility type correction are supplied.',
     } : null;
     // EDSM sometimes attaches coordinate fields to orbital stations. Only
     // recognised surface facility types can establish a surface position.
@@ -195,6 +206,7 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
     const notes = [];
     if (!edsmParent && spanshAssociation) notes.push('Body association is independently recorded by the Spansh body database; the EDSM station snapshot has no associated body.');
     if (planSource) notes.push('Body association comes from the Mongrel SRVSurvey plan; the public EDSM snapshot has no associated body.');
+    if (archiveSource) notes.push('Body association comes from the existing Mongrel personal archive’s explicit Earth-like-world landmark description. EDSM’s facility type is retained despite the archive describing a starport.');
     if (!parentId) notes.push('Associated body is not recorded in this snapshot. This location is listed without a 3D marker.');
     else if (coordinatesKnown) notes.push('Surface coordinates are reported by the EDSM station snapshot; source precision and update time are retained.');
     else notes.push('Associated body is known; exact surface coordinates or station orbital position are not recorded. Map marker is schematic.');
@@ -220,7 +232,7 @@ export function normalizeEDSMSystem(bodySnapshot, stationSnapshot, retrievedAt, 
       controllingFaction:station.controllingFaction?.name || null,
       services:[...(station.haveMarket ? ['Market'] : []), ...(station.haveShipyard ? ['Shipyard'] : []), ...(station.haveOutfitting ? ['Outfitting'] : []), ...(station.otherServices || [])],
       source:{ name:'EDSM stations API', url:STATION_URL, retrievedAt },
-      ...(!edsmParent && spanshAssociation ? { associationSource:spanshAssociation.source } : planSource ? { associationSource:planSource } : {}),
+      ...(!edsmParent && spanshAssociation ? { associationSource:spanshAssociation.source } : planSource ? { associationSource:planSource } : archiveSource ? { associationSource:archiveSource } : {}),
       sourceUpdatedAt:station.updateTime?.information || null,
     };
   });

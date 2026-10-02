@@ -4192,14 +4192,14 @@
       "id": "edsm-station-722440",
       "name": "King's Mountain View",
       "kind": "station",
-      "bodyId": null,
+      "bodyId": "body-51",
       "type": "Planetary Outpost",
       "latitude": null,
       "longitude": null,
       "commodities": [],
-      "notes": "Associated body is not recorded in this snapshot. This location is listed without a 3D marker.",
+      "notes": "Body association comes from the existing Mongrel personal archive’s explicit Earth-like-world landmark description. Associated body is known; exact coordinates and orbital position are not recorded. Map marker is schematic. EDSM’s facility type is retained despite the archive describing a starport.",
       "distanceToArrivalLs": 1263.341167,
-      "positionKnown": false,
+      "positionKnown": true,
       "coordinatesKnown": false,
       "marketId": 4374964995,
       "economy": "Tourism",
@@ -4225,7 +4225,12 @@
         "url": "https://www.edsm.net/api-system-v1/stations?systemName=NGC%202546%20Sector%20UZ-G%20d10-16",
         "retrievedAt": "2026-10-02T04:35:21.585Z"
       },
-      "sourceUpdatedAt": "2026-10-02 02:53:43"
+      "sourceUpdatedAt": "2026-10-02 02:53:43",
+      "associationSource": {
+        "name": "Existing Mongrel personal archive · Strategic Locations",
+        "url": "https://github.com/CMDRWolf258/cmdrwolf258.github.io/blob/bafb1a2c2fdc7a24801082f8d69ed233759b77df/system.html",
+        "notes": "The archive explicitly places King’s Mountain View at the Earth-like world. The snapshot contains one such body: 8 (journal body 51). Host association only; no coordinates or facility type correction are supplied."
+      }
     },
     {
       "id": "edsm-station-726123",

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateSystem, surfaceVector, buildLayout, getRecords, filterRecords, joinLocations } from '../lib/orrery-model.js';
+import { validateSystem, surfaceVector, buildLayout, getRecords, filterRecords, joinLocations, classifyLocationPlacement, buildLocationLayout, buildRingLayout } from '../lib/orrery-model.js';
 import { applyLocationPayload, loadLocationProvider } from '../lib/orrery-locations.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -201,4 +201,73 @@ assert.match(renderer, /from ['"]\.\.\/\.\.\/vendor\/three\/OrbitControls\.js['"
 for (const file of ['vendor/three/three.module.js','vendor/three/three.core.js','vendor/three/OrbitControls.js','vendor/three/LICENSE']) assert.ok(existsSync(resolve(root,file)), `Missing local dependency: ${file}`);
 assert.doesNotMatch(read('vendor/three/OrbitControls.js'), /from ['"]three['"]/, 'OrbitControls resolves its local Three.js dependency');
 console.log('✓ Orrery catalog, page, modules and local WebGL dependencies are wired');
+// Test the actual placement offsets consumed by the renderer, including joined
+// canonical locations, without needing WebGL or substituting source coordinates.
+const distance = (a, b) => Math.hypot(...a.map((value, index) => value - b[index]));
+const ordered = map => [...map].sort(([a], [b]) => a.localeCompare(b));
+for (const system of [fixture, withCanonical, ...systems.map(entry => JSON.parse(read(`data/orrery/${entry.file}`)))]) {
+  const before = JSON.stringify(system), bodyLayout = buildLayout(system);
+  const places = buildLocationLayout(system, bodyLayout);
+  const reversed = copy(system); reversed.locations.reverse();
+  assert.deepEqual(ordered(buildLocationLayout(reversed)), ordered(places), 'Input reordering does not scatter facilities or ring POIs');
+  for (const location of system.locations) {
+    const placement = classifyLocationPlacement(location), entry = places.get(location.id);
+    if (placement === 'unplaced') {
+      assert.equal(entry, undefined, 'Unplaced locations receive no display position');
+      assert.ok(getRecords(system).some(record => record.id === location.id), 'Unplaced records remain listed');
+      continue;
+    }
+    assert.equal(entry.placement, placement);
+    const value = bodyLayout.get(location.bodyId);
+    if (placement === 'surface') {
+      assert.deepEqual(entry.offset, surfaceVector(location.latitude, location.longitude, value.radius + entry.markerRadius * 1.1), 'Measured sites retain their exact latitude/longitude direction');
+      assert.equal(entry.laneRadius, undefined, 'Measured positions never join a schematic lane');
+    } else if (placement === 'ring') {
+      const body = system.bodies.find(body => body.id === location.bodyId);
+      const band = buildRingLayout(body, value).get(location.ringId);
+      const [x, y, z] = entry.offset, i = value.inclination;
+      const alongPlane = -y * Math.sin(i) + z * Math.cos(i);
+      const normal = y * Math.cos(i) + z * Math.sin(i);
+      near(Math.hypot(x, alongPlane), (band.inner + band.outer) / 2, 'POI stays midway in its own annulus');
+      near(normal, entry.markerRadius * 0.6, 'Ring marker shares its ring orientation');
+    } else {
+      near(Math.hypot(...entry.offset), entry.laneRadius, 'Host markers share a clean circular lane');
+      const body = system.bodies.find(body => body.id === location.bodyId);
+      const outer = Math.max(value.radius, ...[...buildRingLayout(body, value).values()].map(band => band.outer));
+      assert.ok(entry.laneRadius - entry.markerRadius > outer, 'Schematic facilities clear their host and its rings');
+    }
+  }
+  const schematic = system.locations.filter(location => ['host', 'ring'].includes(classifyLocationPlacement(location)));
+  for (const [index, a] of schematic.entries()) for (const b of schematic.slice(index + 1)) {
+    if (a.bodyId !== b.bodyId) continue;
+    const ap = places.get(a.id), bp = places.get(b.id);
+    assert.ok(distance(ap.offset, bp.offset) > (ap.markerRadius + bp.markerRadius) * 1.5, 'Schematic markers around the same host remain distinguishable');
+  }
+  for (const body of system.bodies) {
+    let previousOuter = 0;
+    for (const band of buildRingLayout(body, bodyLayout.get(body.id)).values()) {
+      assert.ok(band.inner > previousOuter, 'Different ring associations have separate visual annuli');
+      previousOuter = band.outer;
+    }
+  }
+  assert.equal(JSON.stringify(system), before, 'Display layout leaves resources, source coordinates and associations unchanged');
+}
+const crowded = copy(fixture);
+crowded.locations.push(...Array.from({length:37}, (_, index) => ({id:`crowded-${String(index).padStart(2, '0')}`, name:`Unknown-position facility ${index}`, kind:'station', bodyId:'planet', latitude:null, longitude:null})));
+const crowdedPlaces = buildLocationLayout(crowded);
+assert.equal(new Set(crowded.locations.filter(location => location.id.startsWith('crowded-')).map(location => crowdedPlaces.get(location.id).lane)).size, 4, 'Dense hosts use spaced lanes');
+for (const [index, a] of crowded.locations.entries()) for (const b of crowded.locations.slice(index + 1)) {
+  if (!a.id.startsWith('crowded-') || !b.id.startsWith('crowded-')) continue;
+  const ap = crowdedPlaces.get(a.id), bp = crowdedPlaces.get(b.id);
+  assert.ok(distance(ap.offset, bp.offset) > 3 * ap.markerRadius, 'Dense lane markers do not overlap');
+}
+const baselinePlaces = buildLocationLayout(fixture);
+const extraExact = copy(fixture);
+extraExact.locations.push({id:'extra-measured', name:'Measured addition', kind:'surface-deposit', bodyId:'submoon', latitude:0, longitude:0});
+assert.deepEqual(buildLocationLayout(extraExact).get('station'), baselinePlaces.get('station'), 'Surface additions do not change a facility slot');
+const extraRing = copy(fixture);
+extraRing.locations.push({id:'extra-ring', name:'Ring addition', kind:'ring-hotspot', bodyId:'planet', ringId:'ring'});
+assert.deepEqual(buildLocationLayout(extraRing).get('station'), baselinePlaces.get('station'), 'Ring additions do not change a facility slot');
+assert.ok(filterRecords(fixture, {query:'Unknown association'}).some(record => record.id === 'unplaced'), 'Unplaced facilities remain searchable');
+console.log('✓ Measured, host, ring and unplaced locations retain evidence and deterministic, separated display placement');
 console.log('All Orrery smoke checks passed.');

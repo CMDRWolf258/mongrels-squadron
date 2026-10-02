@@ -1,11 +1,10 @@
 import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
-import { buildLayout, surfaceVector } from '../../lib/orrery-model.js';
+import { buildLayout, buildRingLayout, buildLocationLayout, locationPlacementText } from '../../lib/orrery-model.js';
 import { createCameraNavigation } from './camera.js';
 
 const ACCENT = 0x22d3ee;
 const BODY_COLOURS = [0x97a3b2, 0xc59a72, 0x688eb1, 0xbfcbd3, 0x9ea39c];
-const isNumber = value => typeof value === 'number' && Number.isFinite(value);
 
 function hash(value) {
   let result = 2166136261;
@@ -51,11 +50,14 @@ function circleGeometry(radius, inclination = 0, segments = 160) {
 export function createOrrery({ container, system, onSelect = () => {}, onError = () => {} }) {
   if (!container || !system) throw new Error('An Orrery container and system are required.');
   const layout = buildLayout(system);
+  const locationLayout = buildLocationLayout(system, layout);
   const bodies = new Map(system.bodies.map(body => [body.id, body]));
   const objects = new Map();
   const labels = new Map();
   const pickable = [];
   const orbits = [];
+  const locationGuides = new Map();
+  let showOrbits = true;
   const disposables = new Set();
   const pointerStarts = new Map();
   let selectedId = null;
@@ -203,59 +205,49 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       scene.add(path);
     }
 
-    for (const [index, ring] of (body.rings || []).entries()) {
-      const physicalInner = Number(ring.innerRadius || ring.innerRadiusKm);
-      const physicalOuter = Number(ring.outerRadius || ring.outerRadiusKm);
-      const ratio = physicalOuter > physicalInner && physicalInner > 0 ? Math.min(physicalOuter / physicalInner, 1.7) : 1.35;
-      const inner = value.radius * (1.45 + index * 0.68);
-      const outer = inner * ratio;
+    for (const [ringId, { inner, outer }] of buildRingLayout(body, value)) {
       const material = new THREE.MeshBasicMaterial({ color: 0xab9d8c, side: THREE.DoubleSide, transparent: true, opacity: 0.48, depthWrite: false });
       const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 80), material);
       ringMesh.rotation.x = -Math.PI / 2 + (value.inclination || 0);
       ringMesh.position.copy(position);
-      register(ring.id, ringMesh, 'ring', body.id, outer);
+      register(ringId, ringMesh, 'ring', body.id, outer);
     }
   }
 
-  const locationCounts = new Map();
   for (const location of system.locations || []) {
+    const placement = locationLayout.get(location.id);
+    if (!placement) continue;
     const value = layout.get(location.bodyId);
-    if (!value) continue;
     const bodyPosition = new THREE.Vector3(...value.position);
-    const slot = locationCounts.get(location.bodyId) || 0;
-    locationCounts.set(location.bodyId, slot + 1);
-    const coordinateKnown = isNumber(location.latitude) && isNumber(location.longitude);
-    let markerPosition;
-    let markerRadius;
-    let geometry;
-    if (coordinateKnown) {
-      markerRadius = Math.max(value.radius * 0.035, 0.035);
-      markerPosition = new THREE.Vector3(...surfaceVector(location.latitude, location.longitude, value.radius + markerRadius * 1.1));
-      geometry = new THREE.SphereGeometry(markerRadius, 12, 8);
-    } else if (location.ringId && objects.has(location.ringId)) {
-      const ringMesh = objects.get(location.ringId).mesh;
-      const { innerRadius, outerRadius } = ringMesh.geometry.parameters;
-      const radius = (innerRadius + outerRadius) / 2;
-      const angle = hash(location.id) / 4294967296 * Math.PI * 2;
-      markerPosition = new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.06).applyQuaternion(ringMesh.quaternion);
-      markerRadius = Math.max(value.radius * 0.09, 0.06);
-      geometry = new THREE.OctahedronGeometry(markerRadius);
-    } else {
-      // No location is inferred from unknown coordinates. These diamonds are
-      // schematic association markers beside their parent body, labelled as such.
-      const angle = slot * 2.4 + hash(location.bodyId) / 4294967296 * Math.PI * 2;
-      const distance = value.radius * (2.2 + slot * 0.2);
-      markerPosition = new THREE.Vector3(Math.cos(angle) * distance, value.radius * 0.5, Math.sin(angle) * distance);
-      markerRadius = Math.max(value.radius * 0.085, 0.055);
-      geometry = new THREE.OctahedronGeometry(markerRadius);
-    }
+    const coordinateKnown = placement.placement === 'surface';
+    const { markerRadius } = placement;
+    const markerPosition = new THREE.Vector3(...placement.offset);
+    const geometry = coordinateKnown ? new THREE.SphereGeometry(markerRadius, 12, 8) : new THREE.OctahedronGeometry(markerRadius);
     markerPosition.add(bodyPosition);
     const material = new THREE.MeshBasicMaterial({ color: coordinateKnown ? 0x81edba : 0xf3bf6b, transparent: true, opacity: 0.9 });
     const marker = new THREE.Mesh(geometry, material);
     marker.position.copy(markerPosition);
     register(location.id, marker, 'location', location.bodyId, markerRadius);
     addLabel(location.id, location.name, markerPosition, 'location', location.bodyId);
-    if (!coordinateKnown) labels.get(location.id).button.setAttribute('aria-label', `Select ${location.name}. Schematic body association; exact position unknown.`);
+    const button = labels.get(location.id).button;
+    button.classList.add('orrery-location-label');
+    button.dataset.placement = placement.placement;
+    button.title = `${location.name} · ${locationPlacementText[placement.placement]}`;
+    button.setAttribute('aria-label', `Select ${location.name}. ${locationPlacementText[placement.placement]}.`);
+    if (!coordinateKnown) button.append(document.createTextNode(' · schematic'));
+    if (placement.placement === 'host') {
+      const key = `${location.bodyId}:${placement.lane}`;
+      if (!locationGuides.has(key)) {
+        const guide = new THREE.LineLoop(circleGeometry(placement.laneRadius, value.inclination || 0),
+          new THREE.LineDashedMaterial({ color:0xf3bf6b, transparent:true, opacity:0.3, dashSize:value.radius * 0.12, gapSize:value.radius * 0.12 }));
+        guide.computeLineDistances();
+        guide.position.copy(bodyPosition);
+        guide.visible = false;
+        scene.add(guide);
+        locationGuides.set(key, { guide, bodyId:location.bodyId, ids:[] });
+      }
+      locationGuides.get(key).ids.push(location.id);
+    }
   }
 
   const selection = new THREE.LineLoop(
@@ -283,10 +275,17 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   function hasBodyMatch(id) { return !bodyIds || bodyIds.has(id); }
   function hasLocationMatch(id) { return !locationIds || locationIds.has(id); }
 
+  function updateLocationGuides() {
+    const host = objects.get(selectedId)?.bodyId;
+    for (const { guide, bodyId, ids } of locationGuides.values()) {
+      guide.visible = showOrbits && host === bodyId && ids.some(hasLocationMatch);
+    }
+  }
+
   function updateLabels() {
     const occupied = [];
     camera.getWorldDirection(cameraDirection);
-    const sorted = Array.from(labels.entries()).sort(([a], [b]) => Number(b === selectedId) - Number(a === selectedId));
+    const sorted = Array.from(labels.entries()).sort(([a], [b]) => Number(b === selectedId) - Number(a === selectedId) || (a < b ? -1 : a > b ? 1 : 0));
     for (const [id, label] of sorted) {
       const body = bodies.get(label.bodyId);
       const parent = body && bodies.get(body.parentId);
@@ -316,8 +315,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
           continue;
         }
       }
-      const labelWidth = Math.min(210, Math.max(55, label.button.textContent.length * 6.5 + 20));
-      const box = { left: x - labelWidth / 2, right: x + labelWidth / 2, top: y - 30, bottom: y };
+      label.button.hidden = false;
+      const labelWidth = label.button.offsetWidth, labelHeight = label.button.offsetHeight;
+      const box = { left: x - labelWidth / 2 - 3, right: x + labelWidth / 2 + 3, top: y - labelHeight - 3, bottom: y };
       const overlaps = occupied.some(rect => box.left < rect.right && box.right > rect.left && box.top < rect.bottom && box.bottom > rect.top);
       label.button.hidden = overlaps && !selected;
       if (!label.button.hidden) occupied.push(box);
@@ -371,6 +371,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       selection.scale.setScalar(object.radius * 1.3 + 0.08);
     }
     if (shouldFocus) focus(id);
+    updateLocationGuides();
     requestRender();
   }
 
@@ -470,6 +471,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       }
     }
     for (const orbit of orbits) orbit.material.opacity = hasBodyMatch(orbit.userData.bodyId) ? 0.48 : 0.12;
+    updateLocationGuides();
     requestRender();
   }
 
@@ -560,7 +562,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     zoom,
     pan,
     setFilters,
-    setOrbits(visible) { for (const orbit of orbits) orbit.visible = Boolean(visible); requestRender(); },
+    setOrbits(visible) { showOrbits = Boolean(visible); for (const orbit of orbits) orbit.visible = showOrbits; updateLocationGuides(); requestRender(); },
     setLabels(visible) { showLabels = Boolean(visible); requestRender(); },
     dispose() {
       if (disposed) return;

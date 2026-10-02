@@ -1,4 +1,4 @@
-import { validateSystem, getRecords, filterRecords } from '../../lib/orrery-model.js';
+import { validateSystem, getRecords, filterRecords, classifyLocationPlacement, locationPlacementText } from '../../lib/orrery-model.js';
 import { loadLocationProvider } from '../../lib/orrery-locations.js';
 
 const $ = id => document.getElementById(`orrery-${id}`);
@@ -33,6 +33,11 @@ function renderResults() {
     button.setAttribute('aria-pressed', String(record.id === state.selectedId));
     const host = state.system.bodies.find(body => body.id === record.bodyId);
     button.append(node('strong', title), node('small', `${friendlyKind(record.kind)}${record.recordType === 'body' ? ` · ${record.subType || ''}` : host ? ` · ${host.shortName || host.name}` : ' · Host unknown'}`));
+    if (record.recordType === 'location') {
+      const placement = classifyLocationPlacement(record);
+      button.dataset.placement = placement;
+      button.append(node('small', locationPlacementText[placement]));
+    }
     root.append(button);
   }
   if (!matches.length) root.append(node('p', 'No known records match these filters. Data coverage is incomplete; clear filters to see all objects.', 'orrery-empty'));
@@ -68,7 +73,7 @@ function renderDetails(record) {
     pair('Type', record.type || 'Unknown'); pair('Inner radius', number(record.innerRadiusKm, 'km', 0)); pair('Outer radius', number(record.outerRadiusKm, 'km', 0));
   } else {
     pair('Arrival distance', number(record.distanceToArrivalLs, 'ls', 0));
-    pair('Map placement', record.latitude != null ? 'Surface coordinates' : record.ringId ? 'Ring survey only' : record.bodyId ? 'Host association only' : 'Unplaced · host unknown');
+    pair('Map placement', locationPlacementText[classifyLocationPlacement(record)]);
     if (record.hotspotCount != null) pair('Surveyed signals', number(record.hotspotCount, '', 0));
     if (record.surfaceMining?.signal != null) pair('Mining location signal', String(record.surfaceMining.signal));
     if (record.surfaceMining?.rigs != null) pair('Mining rigs', String(record.surfaceMining.rigs));
@@ -84,7 +89,7 @@ function renderDetails(record) {
   }
   root.append(dl);
   if (record.notes) root.append(node('p', record.notes));
-  if (record.recordType === 'location' && record.bodyId && record.latitude == null) root.append(node('p', 'The marker is schematic. Use the in-game navigation panel for this destination’s actual position.'));
+  if (record.recordType === 'location' && ['host', 'ring'].includes(classifyLocationPlacement(record))) root.append(node('p', 'The amber diamond marks an association only. Dashed lanes arrange host markers for readability; they do not establish an actual orbit or surface position. Use the in-game navigation panel for this destination’s actual position.'));
   if (record.recordType === 'body' && record.kind === 'barycentre') root.append(node('p', 'Shared parent preserved from the real hierarchy. Orbital elements for this centre are unreported; display placement is schematic.'));
   if (record.materials?.length) {
     root.append(node('h4', 'Engineering raw materials'));
@@ -113,6 +118,7 @@ function renderDetails(record) {
   if (source?.reference) root.append(node('p', `${source.name || 'Source'} · ${source.reference}`));
   if (!source?.url && (record.recordType === 'body' || record.recordType === 'ring')) root.append(safeLink('EDSM body catalogue ↗', `https://www.edsm.net/en/system/bodies/id/${state.system.edsmId}`));
   if (record.associationSource) root.append(node('p', `Host association: ${record.associationSource.name || 'Mongrel reference'}${record.associationSource.reference ? ` · ${record.associationSource.reference.split('/').pop()}` : ''}`));
+  if (record.associationSource?.url) root.append(safeLink('Host association source ↗', record.associationSource.url));
 }
 
 function select(id, focus = false) {
