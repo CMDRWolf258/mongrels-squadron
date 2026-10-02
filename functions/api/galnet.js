@@ -7,7 +7,7 @@ import {
   normalizeGalnetFeed,
 } from '../../lib/galnet.js';
 
-const CACHE_KEY='galnet-wire-v2';
+const CACHE_KEY='galnet-wire-v3';
 const FRESH_MS=15*60*1000;
 const FETCH_TIMEOUT_MS=8000;
 const PROVIDERS=[
@@ -47,8 +47,9 @@ async function fetchLatestGalnet(){
   for(const provider of PROVIDERS){
     try{
       const document=await fetchProvider(provider.url);
-      const items=normalizeGalnetFeed(document,{limit:10});
-      if(!items.length)throw new Error('returned no usable articles');
+      const normalized=normalizeGalnetFeed(document,{limit:10});
+      if(!normalized.length)throw new Error('returned no usable articles');
+      const items=await resolveArticleLinks(normalized);
       return{provider,items};
     }catch(error){
       errors.push(`${provider.name}: ${error?.message||error}`);
@@ -70,6 +71,37 @@ async function fetchProvider(url){
     });
     if(!response.ok)throw new Error('HTTP '+response.status);
     return await response.json();
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+
+async function resolveArticleLinks(items){
+  return Promise.all(items.map(resolveArticleLink));
+}
+
+async function resolveArticleLink(item){
+  const primary=item?.url||'';
+  const fallback=item?.fallbackUrl||'';
+  const cleaned={...item};
+  delete cleaned.fallbackUrl;
+  if(!primary||!fallback||primary===fallback)return cleaned;
+
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),3500);
+  try{
+    const response=await fetch(primary,{
+      method:'HEAD',
+      redirect:'manual',
+      headers:{'User-Agent':'MongrelsSquadron-Newsroom/1.0'},
+      signal:controller.signal,
+    });
+    if(response.status===404||response.status===410){
+      cleaned.url=fallback;
+    }
+    return cleaned;
+  }catch{
+    return cleaned;
   }finally{
     clearTimeout(timeout);
   }
