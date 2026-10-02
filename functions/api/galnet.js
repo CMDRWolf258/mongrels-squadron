@@ -7,7 +7,7 @@ import {
   normalizeGalnetFeed,
 } from '../../lib/galnet.js';
 
-const CACHE_KEY='galnet-wire-v3';
+const CACHE_KEY='galnet-wire-v4';
 const FRESH_MS=15*60*1000;
 const FETCH_TIMEOUT_MS=8000;
 const PROVIDERS=[
