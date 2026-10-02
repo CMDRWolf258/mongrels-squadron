@@ -4,7 +4,9 @@ import { readFileSync } from 'node:fs';
 import { buildOrderRewardPolicies, DEFAULT_REWARD_SETTINGS } from '../lib/reward-rules.js';
 import {
   DAILY_ORDER_TICK_TIMEZONE,
+  configuredTicksElapsed,
   decorateDailyOrdersForTiming,
+  nextConfiguredTickAfter,
   resolveOrderWorkCycle,
   workCycleForTimestamp,
 } from '../lib/daily-order-cycle.js';
@@ -35,6 +37,28 @@ const baseOrder={
 };
 
 assert.equal(DAILY_ORDER_TICK_TIMEZONE,'America/Chicago');
+
+assert.equal(
+  nextConfiguredTickAfter('2026-10-01T23:30:00.000Z','19:00'),
+  '2026-10-02T00:00:00.000Z',
+  '6:30 PM CDT should advance to the same-day 7:00 PM Central tick',
+);
+assert.equal(
+  nextConfiguredTickAfter('2026-10-02T00:30:00.000Z','19:00'),
+  '2026-10-03T00:00:00.000Z',
+  '7:30 PM CDT should advance to the next local-day 7:00 PM Central tick',
+);
+assert.equal(
+  configuredTicksElapsed('2026-10-01T23:30:00.000Z','2026-10-02T00:29:00.000Z','19:00'),
+  1,
+  'A manual conflict-day anchor before 7 PM CT must advance once after the 7 PM CT tick',
+);
+assert.equal(
+  configuredTicksElapsed('2026-10-31T23:00:00.000Z','2026-11-02T01:30:00.000Z','19:00'),
+  2,
+  'Configured tick counting must remain correct across the CDT to CST transition',
+);
+console.log('✓ Shared configured-tick helpers use America/Chicago wall-clock time across DST');
 
 const defaultOrder={...baseOrder,system:'Default System'};
 const userScenario=resolveOrderWorkCycle(defaultOrder,{
