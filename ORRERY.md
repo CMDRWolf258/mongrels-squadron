@@ -17,6 +17,8 @@ Future systems such as Diaba or NGC 2546 Sector OQ-H b38-0 should be added by su
 
 Drag with the left mouse button or one finger to orbit. Use the wheel or a two-finger gesture to zoom; right-drag or two fingers also pan. Camera buttons provide overview, zoom and pan without requiring gestures. Select an object in the scene or directory, then focus its host body to inspect a local moon system.
 
+Overview gestures retain their existing response. Beside a visible nearby body, touch navigation replaces an outdated distant pivot with a local point along the current view, preserving camera position and orientation. This also happens when a pinch becomes a one-finger orbit. A close focused view retains its existing pivot, and distant or fully offscreen selections do not redirect the camera. Local mouse-wheel zoom follows the cursor; touch zoom stays centred to avoid page-scroll coordinate offsets. Rotation, zoom and pan speeds remain unchanged.
+
 Body sizes and orbital spacing are compressed for legibility. The real immediate-parent hierarchy is retained, including shared barycentres and moons of moons. Source orbital elements remain available in the information panel; rendered positions use deterministic schematic phases and are not live ephemerides. Invisible barycentres preserve relationships without appearing as selectable celestial bodies.
 
 Installation markers identify associated host bodies. Their display positions are schematic unless a sourced surface latitude/longitude exists. Locations with unknown body associations remain searchable and selectable in the directory without a scene marker. Null coordinates and orbital elements remain unknown rather than being converted to measured values.
@@ -42,9 +44,10 @@ Run the existing site smoke workflow plus:
 ```text
 node --experimental-default-type=module scripts/smoke-orrery.mjs
 node --experimental-default-type=module scripts/smoke-orrery-data.mjs
+node --experimental-default-type=module scripts/smoke-orrery-camera.mjs
 ```
 
-The model suite checks graph integrity, null barycentres, invalid references/coordinates, deterministic inclined parent-relative layouts, search/resource filtering, stable-ID joins, page wiring and local dependencies. The data suite checks the real 10-16 body hierarchy, known associations, provenance and offline importer behavior. Neither suite makes network requests.
+The model suite checks graph integrity, null barycentres, invalid references/coordinates, deterministic inclined parent-relative layouts, search/resource filtering, stable-ID joins, page wiring and local dependencies. The data suite checks the real 10-16 body hierarchy, known associations, provenance and offline importer behavior. The camera suite exercises the vendored PerspectiveCamera and OrbitControls with synthetic DOM events: unchanged overview gestures, local pivots without camera jumps, damping, pinch transitions, scrolled-page touch, cursor wheel zoom, ignored wheel events and cleanup. These suites make no network requests; camera checks do not require WebGL and complement browser verification.
 
 Browser checks should exercise orbit/zoom/pan, click/tap selection, directory search, filters, body focus, WebGL failure/retry, and desktop/tablet/phone layouts. CI success is distinct from browser verification and confirmed Cloudflare production deployment.
 
