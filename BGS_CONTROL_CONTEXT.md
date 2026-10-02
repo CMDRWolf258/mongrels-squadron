@@ -1525,6 +1525,14 @@ Authoritative operational assumptions:
 - the configured per-system tick override is used when present; otherwise the Global Automation Default tick is used;
 - conflict-day tick arithmetic uses the same `America/Chicago` wall-clock conversion as Daily Orders. A configured `19:00` therefore means **7:00 PM Central**, with CDT/CST handled automatically; it must never be reinterpreted as 19:00 UTC.
 
+Conflict validation:
+- a single faction row saying **War / Civil War / Election** is not sufficient to create a system conflict;
+- the preferred authority is an explicit current conflict record with **two distinct faction participants** (Frontier journal `Conflicts[]`, Scout-derived equivalent, or the current external conflict pair);
+- when no explicit pair is available, faction-state fallback requires **at least two distinct factions reporting the same conflict type** in the same phase (active or pending);
+- mismatched types such as one faction in War and another in Election do not validate each other;
+- a lone/stale `FactionState=War` may still be displayed on that faction row as source data, but it must not trigger the system Conflict badge, conflict lock, alert episode, timeline, or paid conflict work by itself;
+- Frontier-sync and Live Scout conflict-history tracking use the same pair-validation rule so a stray one-faction state cannot seed a false future timeline.
+
 Conflict episode tracking:
 - when Pending is first observed, the episode stores `pendingSeenAt` and an `expectedActiveAt` equal to the next configured tick;
 - when the same episode becomes active, it remains the same alert/episode and records the first active observation;

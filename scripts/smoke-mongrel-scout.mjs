@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
+import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -126,10 +127,11 @@ for(const pattern of [
 
 const bgsFactory=new Function(
   'resolveSystemWorkCycle',
+  'validatedConflictRows',
   bgsApi.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
   '; return {buildPayload,DEFAULTS,SYSTEM_DEFAULTS};'
 );
-const bgs=bgsFactory(resolveSystemWorkCycle);
+const bgs=bgsFactory(resolveSystemWorkCycle,validatedConflictRows);
 const control={
   defaults:{...bgs.DEFAULTS},
   systemDefaults:{...bgs.SYSTEM_DEFAULTS},
