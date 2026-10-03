@@ -4,6 +4,7 @@ import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
 import { applyFacilityObservationPayload } from '../lib/orrery-facility-observations.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
+import { normalizeScoutFacilityVisit, deriveStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -13,6 +14,7 @@ const required=[
   'functions/api/orrery/facility-observations.js',
   'lib/orrery-facility-observations.js',
   'lib/scout-facility-observations.js',
+  'lib/scout-facility-visits.js',
   'js/wolf-bgs-scout.js',
   'functions/downloads/mongrel-scout.zip.js',
 ];
@@ -26,10 +28,11 @@ for(const pattern of [
   /def journal_entry/,
   /def dashboard_entry/,
   /destinationBodyId/,
-  /Destination\.Body/,
-  /StationHost/,
-  /facility_host/,
-  /Host reported:/,
+  /lastDestination/,
+  /facility_visit/,
+  /_build_station_visit_payload/,
+  /Station context recorded:/,
+  /Host verified:/,
   /FSDJump/,
   /Location/,
   /CarrierJump/,
@@ -69,7 +72,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.4\.2"/,
+  /PLUGIN_VERSION = "1\.4\.3"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
@@ -119,9 +122,13 @@ for(const pattern of [
   /handleMarketSnapshot/,
   /recordScoutMarketSnapshot/,
   /handleFacilityObservation/,
+  /handleFacilityVisitObservation/,
   /handleFacilityHostObservation/,
   /recordScoutFacilityObservation/,
+  /recordScoutFacilityVisit/,
+  /deriveStationHostCandidate/,
   /ApproachSettlement/,
+  /facility_visit/,
   /StationHost/,
   /trade_storage_not_configured/,
   /systemAuthorized/,
@@ -137,7 +144,7 @@ for(const pattern of [
 
 const ingestFactory=new Function(
   ingest.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
-  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,isFacilityPayload,isFacilityHostPayload,DEFAULT_RATE_LIMIT_PER_HOUR};'
+  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,isFacilityPayload,isFacilityVisitPayload,isFacilityHostPayload,DEFAULT_RATE_LIMIT_PER_HOUR};'
 );
 const ingestHelpers=ingestFactory();
 assert.equal(ingestHelpers.systemAuthorized({scope:'trusted',allowedSystems:[]},'Anywhere'),true);
@@ -146,6 +153,7 @@ assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:[
 assert.equal(ingestHelpers.DEFAULT_RATE_LIMIT_PER_HOUR,120);
 assert.equal(ingestHelpers.isFacilityPayload({event:'ApproachSettlement'}),true);
 assert.equal(ingestHelpers.isFacilityPayload({kind:'facility'}),true);
+assert.equal(ingestHelpers.isFacilityVisitPayload({kind:'facility_visit'}),true);
 assert.equal(ingestHelpers.isFacilityHostPayload({event:'StationHost'}),true);
 assert.equal(ingestHelpers.isFacilityHostPayload({kind:'facility_host'}),true);
 assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
@@ -160,6 +168,96 @@ const rateEnv={DAILY_ORDERS:{
 let lastRate;
 for(let i=0;i<121;i++)lastRate=await ingestHelpers.consumeRateLimit(rateEnv,'test-token');
 assert.equal(lastRate.allowed,false,'121st Scout request in one hour should be rate-limited');
+
+const rawStationVisit={
+  kind:'facility_visit',
+  event:'DockingRequested',
+  timestamp:'2026-10-03T01:15:00Z',
+  system:'NGC 2546 Sector UZ-G d10-16',
+  systemAddress:'668059324240760',
+  stationName:'Rivers Hub',
+  stationType:'Outpost',
+  marketId:'4391607555',
+  currentBody:{name:'NGC 2546 Sector UZ-G d10-16 9 a',bodyId:61,bodyType:'Planet'},
+  journalBody:{name:'',bodyId:null,bodyType:''},
+  dashboard:{
+    timestamp:'2026-10-03T01:14:59Z',
+    bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
+    destination:{name:'Rivers Hub',bodyId:61,systemAddress:'668059324240760'},
+    lastDestination:{name:'Rivers Hub',bodyId:61,systemAddress:'668059324240760',observedAt:'2026-10-03T01:14:59Z'},
+  },
+  context:{
+    ApproachBody:{timestamp:'2026-10-03T01:14:20Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',bodyId:61,bodyType:'Planet'},
+    SupercruiseExit:{timestamp:'2026-10-03T01:14:58Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'Rivers Hub',bodyId:90,bodyType:'Station'},
+  },
+};
+const normalizedVisit=normalizeScoutFacilityVisit(rawStationVisit);
+assert.equal(normalizedVisit.marketId,'4391607555');
+assert.equal(normalizedVisit.destination.bodyId,61);
+assert.equal(normalizedVisit.currentBody.bodyId,61);
+assert.deepEqual(deriveStationHostCandidate(normalizedVisit),{
+  bodyJournalId:61,
+  bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
+  evidence:['destination_body','edmc_current_body','dashboard_body_name'],
+},'Three agreeing independent signals may resolve a station host');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  currentBody:{name:'NGC 2546 Sector UZ-G d10-16 9 b',bodyId:62,bodyType:'Planet'},
+  dashboard:{...rawStationVisit.dashboard,bodyName:'NGC 2546 Sector UZ-G d10-16 9 b'},
+})),null,'A closer/wrong nearby moon must not be promoted when it disagrees with Destination.Body');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  dashboard:{...rawStationVisit.dashboard,bodyName:'NGC 2546 Sector UZ-G d10-16 9 b'},
+})),null,'Dashboard/body disagreement must block stale EDMC body state');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  dashboard:{...rawStationVisit.dashboard,destination:{name:'Another Station',bodyId:61,systemAddress:'668059324240760'}},
+})),null,'Changing targets before docking must block automatic host resolution');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  dashboard:{...rawStationVisit.dashboard,destination:{name:'Rivers Hub',bodyId:null,systemAddress:'668059324240760'}},
+})),null,'Missing Destination.Body must remain unresolved');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  currentBody:{name:'Rivers Hub',bodyId:90,bodyType:'Station'},
+  dashboard:{...rawStationVisit.dashboard,bodyName:'Rivers Hub',destination:{name:'Rivers Hub',bodyId:90,systemAddress:'668059324240760'}},
+})),null,'A station reported as the current Body must never become its own host');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  dashboard:{...rawStationVisit.dashboard,destination:{name:'Rivers Hub',bodyId:61,systemAddress:'999'}},
+})),null,'Destination system mismatch must block host resolution');
+
+assert.ok(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  currentBody:{name:'NGC 2546 Sector UZ-G d10-16 A',bodyId:0,bodyType:'Star'},
+  dashboard:{...rawStationVisit.dashboard,bodyName:'NGC 2546 Sector UZ-G d10-16 A',destination:{name:'Rivers Hub',bodyId:0,systemAddress:'668059324240760'}},
+})),'A fixed station orbiting a star remains resolvable');
+
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  stationType:'MegaShip',
+})),null,'Mobile megaships must never receive an automatic host');
+
+const visitStore=new Map();
+const visitEnv={DAILY_ORDERS:{
+  async get(key){return visitStore.has(key)?JSON.parse(visitStore.get(key)):null;},
+  async put(key,value){visitStore.set(key,value);},
+}};
+const visitWrite=await recordScoutFacilityVisit(visitEnv,rawStationVisit);
+assert.equal(visitWrite.stored,true);
+const duplicateVisitWrite=await recordScoutFacilityVisit(visitEnv,rawStationVisit);
+assert.equal(duplicateVisitWrite.stored,false);
+const savedVisits=await readScoutFacilityVisits(visitEnv,'668059324240760');
+assert.equal(savedVisits.visits.length,1);
+assert.equal(savedVisits.visits[0].context.SupercruiseExit.bodyType,'Station');
+assert.doesNotMatch(JSON.stringify(savedVisits),/commander|cargo|credits|materials|missions/i,'Raw host evidence must remain sanitized');
+
 
 const orrerySystem=JSON.parse(readFileSync('data/orrery/ngc-2546-uz-g-d10-16.json','utf8'));
 const targetFacility=orrerySystem.locations.find(item=>String(item.marketId)==='4374918915');
@@ -261,7 +359,7 @@ assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvel
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
 for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/headers\(30\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
-console.log('✓ Scout settlement and host-only observations upgrade Orrery facilities without exposing Commander identity');
+console.log('✓ Scout station visits retain raw evidence, reject edge-case guesses, and only promote verified hosts');
 
 
 const bgsApi=readFileSync('functions/api/operations/wolf-bgs.js','utf8');

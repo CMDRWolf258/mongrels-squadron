@@ -19,7 +19,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.4.2"
+PLUGIN_VERSION = "1.4.3"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -62,9 +62,19 @@ _last_system_address: Any = None
 _last_star_pos: Any = None
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
+    "timestamp": "",
+    "bodyName": "",
     "destinationName": "",
     "destinationBodyId": None,
     "destinationSystem": None,
+    "lastDestination": None,
+}
+_journal_context_lock = threading.Lock()
+_journal_context: dict[str, Any] = {
+    "ApproachBody": None,
+    "LeaveBody": None,
+    "SupercruiseEntry": None,
+    "SupercruiseExit": None,
 }
 _session = timeout_session.new_session(timeout=8)
 _hud_condition = threading.Condition()
@@ -141,11 +151,12 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "for direct Trader's Outpost freshness. ApproachSettlement events also send the public "
         "facility market ID, host body ID/name, latitude and longitude so the System Orrery can "
         "replace schematic surface markers with verified positions. System coordinates support distance sorting. "
-        "Orbital station visits may also send the station market ID plus Elite's selected Destination.Body "
-        "when the selected destination name matches the station being docked with, so the Orrery can attach "
-        "an otherwise-unplaced station to the correct body without claiming "
-        "an exact orbital position. Docking, station/carrier, travel and CarrierStats triggers are also "
-        "normalized for the local HUD/voice bridge on 127.0.0.1; only the explicit host association is uploaded. Commander name may "
+        "Orbital station visits send sanitized station context: station/market identity, Elite's selected "
+        "Destination fields, EDMC's current Body fields, the live dashboard BodyName, and only the latest "
+        "relevant ApproachBody/LeaveBody/Supercruise context. The server stores those facts and only promotes "
+        "a host association when independent signals agree; Scout does not guess from proximity. Docking, "
+        "station/carrier, travel and CarrierStats triggers are also normalized for the local HUD/voice bridge "
+        "on 127.0.0.1. Commander name may "
         "exist in that local-only bridge state for future owner/squad greetings, but Commander name, "
         "cargo, credits, ship build, materials, missions, and general travel history are not transmitted."
     )
@@ -172,7 +183,7 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
 
 
 def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
-    """Track Elite's selected destination for host-only orbital-station placement."""
+    """Track a small sanitized Status.json context for later station-host resolution."""
     if is_beta or not config.get_bool(KEY_ENABLED):
         return None
 
@@ -185,10 +196,20 @@ def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
         destination_body_id = _optional_int(destination.get("Body"))
         destination_system = destination.get("System")
 
+    snapshot = {
+        "name": destination_name,
+        "bodyId": destination_body_id,
+        "systemAddress": destination_system,
+        "observedAt": str(entry.get("timestamp") or "").strip(),
+    }
     with _dashboard_context_lock:
+        _dashboard_context["timestamp"] = str(entry.get("timestamp") or "").strip()
+        _dashboard_context["bodyName"] = str(entry.get("BodyName") or "").strip()
         _dashboard_context["destinationName"] = destination_name
         _dashboard_context["destinationBodyId"] = destination_body_id
         _dashboard_context["destinationSystem"] = destination_system
+        if destination_name:
+            _dashboard_context["lastDestination"] = snapshot
     return None
 
 
@@ -214,6 +235,8 @@ def journal_entry(
     event = str(entry.get("event") or "")
     if event in {"FSDJump", "Location", "CarrierJump"}:
         _remember_location(entry, system)
+    if event in {"ApproachBody", "LeaveBody", "SupercruiseEntry", "SupercruiseExit"}:
+        _remember_journal_context(entry, system)
 
     # HUD/voice triggers remain local. Publish them before any cloud-token checks.
     _publish_hud_event(cmdr, system, station, entry)
@@ -221,17 +244,17 @@ def journal_entry(
     token = (config.get_str(KEY_TOKEN) or "").strip()
 
     if event in {"DockingRequested", "Docked"}:
-        host_payload = _build_station_host_payload(entry, state, system, station)
-        if host_payload is not None:
+        visit_payload = _build_station_visit_payload(entry, state, system, station)
+        if visit_payload is not None:
             if not token:
                 _set_status("Needs scout token")
                 return None
             endpoint = (config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT).strip()
-            _set_status(f"Mapping host: {host_payload['facilityName']}…")
+            _set_status(f"Recording station context: {visit_payload['stationName']}…")
             threading.Thread(
                 target=_send_snapshot,
-                args=(endpoint, token, host_payload),
-                name="MongrelScoutStationHostUpload",
+                args=(endpoint, token, visit_payload),
+                name="MongrelScoutStationVisitUpload",
                 daemon=True,
             ).start()
 
@@ -701,7 +724,27 @@ def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
         _last_star_pos = list(star_pos[:3])
 
 
-def _build_station_host_payload(
+def _context_event_snapshot(entry: Mapping[str, Any], fallback_system: str) -> dict[str, Any]:
+    return {
+        "event": str(entry.get("event") or "").strip(),
+        "timestamp": str(entry.get("timestamp") or "").strip(),
+        "system": str(entry.get("StarSystem") or fallback_system or _last_system_name or "").strip(),
+        "systemAddress": _decimal_text(entry.get("SystemAddress", _last_system_address)),
+        "bodyName": str(entry.get("BodyName") or entry.get("Body") or "").strip(),
+        "bodyId": _optional_int(entry.get("BodyID")),
+        "bodyType": str(entry.get("BodyType") or "").strip(),
+    }
+
+
+def _remember_journal_context(entry: Mapping[str, Any], fallback_system: str) -> None:
+    event = str(entry.get("event") or "").strip()
+    if event not in _journal_context:
+        return
+    with _journal_context_lock:
+        _journal_context[event] = _context_event_snapshot(entry, fallback_system)
+
+
+def _build_station_visit_payload(
     entry: Mapping[str, Any],
     state: Mapping[str, Any],
     fallback_system: str,
@@ -717,52 +760,55 @@ def _build_station_host_payload(
     system_address = entry.get("SystemAddress", state.get("SystemAddress", _last_system_address))
     timestamp = str(entry.get("timestamp") or "").strip()
 
-    try:
-        market_id_text = str(int(market_id))
-        system_address_text = str(int(system_address))
-    except (TypeError, ValueError, OverflowError):
-        return None
-    if not market_id_text.isdigit() or not system_address_text.isdigit() or not system_name or not timestamp:
+    market_id_text = _decimal_text(market_id)
+    system_address_text = _decimal_text(system_address)
+    if not market_id_text or not system_address_text or not system_name or not timestamp:
         return None
 
-    # Do not infer the host from proximity, current SOI, or the last body flown near.
-    # Only accept Elite's selected Destination.Body when the selected destination
-    # name is the same station that generated the docking event.
     with _dashboard_context_lock:
-        destination_name = str(_dashboard_context.get("destinationName") or "").strip()
-        destination_body_id = _dashboard_context.get("destinationBodyId")
-        destination_system = _dashboard_context.get("destinationSystem")
+        dashboard = {
+            "timestamp": str(_dashboard_context.get("timestamp") or "").strip(),
+            "bodyName": str(_dashboard_context.get("bodyName") or "").strip(),
+            "destination": {
+                "name": str(_dashboard_context.get("destinationName") or "").strip(),
+                "bodyId": _optional_int(_dashboard_context.get("destinationBodyId")),
+                "systemAddress": _decimal_text(_dashboard_context.get("destinationSystem")),
+            },
+            "lastDestination": dict(_dashboard_context["lastDestination"])
+            if isinstance(_dashboard_context.get("lastDestination"), Mapping)
+            else None,
+        }
 
-    if not destination_name or destination_name.casefold() != station_name.casefold():
-        return None
-    body_id = _optional_int(destination_body_id)
-    if body_id is None:
-        return None
+    with _journal_context_lock:
+        journal_context = json.loads(json.dumps(_journal_context))
 
-    try:
-        if destination_system is not None and system_address is not None:
-            if int(destination_system) != int(system_address):
-                return None
-    except (TypeError, ValueError, OverflowError):
-        return None
-
-    body_name = ""
+    current_body = {
+        "name": str(state.get("Body") or "").strip(),
+        "bodyId": _optional_int(state.get("BodyID")),
+        "bodyType": str(state.get("BodyType") or "").strip(),
+    }
+    journal_body = {
+        "name": str(entry.get("BodyName") or entry.get("Body") or "").strip(),
+        "bodyId": _optional_int(entry.get("BodyID")),
+        "bodyType": str(entry.get("BodyType") or "").strip(),
+    }
 
     return {
         "version": 1,
-        "kind": "facility_host",
-        "event": "StationHost",
+        "kind": "facility_visit",
+        "event": str(entry.get("event") or "").strip(),
         "timestamp": timestamp,
         "system": system_name,
         "systemName": system_name,
         "systemAddress": system_address_text,
-        "facilityName": station_name,
-        "marketId": market_id_text,
+        "stationName": station_name,
         "stationType": station_type,
-        "bodyId": body_id,
-        "bodyName": body_name,
+        "marketId": market_id_text,
+        "currentBody": current_body,
+        "journalBody": journal_body,
+        "dashboard": dashboard,
+        "context": journal_context,
     }
-
 
 def _build_facility_payload(
     entry: Mapping[str, Any],
@@ -1003,12 +1049,16 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
                         _set_status(f"Facility already mapped: {facility_name}")
                     else:
                         _set_status(f"Facility mapped: {facility_name}")
+                elif payload.get("kind") == "facility_visit":
+                    station_name = str(payload.get("stationName") or "station")
+                    if result.get("hostResolved") is True:
+                        body_name = str(result.get("hostBodyName") or result.get("hostBodyId") or "host")
+                        _set_status(f"Host verified: {station_name} → {body_name}")
+                    else:
+                        _set_status(f"Station context recorded: {station_name}")
                 elif payload.get("kind") == "facility_host":
                     facility_name = str(payload.get("facilityName") or "station")
-                    if result.get("stored") is False:
-                        _set_status(f"Host already newer: {facility_name}")
-                    else:
-                        _set_status(f"Host reported: {facility_name}")
+                    _set_status(f"Host candidate quarantined: {facility_name}")
                 elif result.get("stored") is False:
                     _set_status(f"Already newer: {payload['system']}")
                 else:

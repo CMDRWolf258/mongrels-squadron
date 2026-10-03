@@ -22,7 +22,7 @@ Market visits do not currently complete ordinary BGS Scout Jobs or issue a payou
 
 For **surface facilities**, simply approach the settlement normally. When Elite writes an `ApproachSettlement` journal event, Scout sends the facility's public Market ID, system address, host body ID/name, latitude, longitude, and event time. The Orrery can then match that observation to an existing imported facility and replace a schematic marker with exact surface placement automatically. You do not need to land, type coordinates, or submit a separate form. This passive facility observation does not complete a Scout Job or issue a payout.
 
-For **orbital stations whose host body is still unknown**, keep the station targeted as you approach it. Scout reads Elite's live `Status.json` selected destination. When a `DockingRequested` or `Docked` event confirms the same station, Scout may send the selected `Destination.Body` as a host-only observation. The Orrery then attaches the station schematically to that body while leaving exact orbital position unknown. Scout does **not** use current/nearest body, sphere-of-influence, arrival distance, or the last body flown near, so close-orbiting moons cannot change the association merely because the ship passes nearer to one of them.
+For **orbital stations whose host body is still unknown**, keep the station targeted as you approach it and request docking normally. Scout sends a sanitized station-visit observation containing the station/Market ID, Elite's selected destination fields, EDMC's current Body fields, the live dashboard BodyName, and only the latest relevant ApproachBody/LeaveBody/Supercruise context. **Scout itself does not choose the host.** The server stores the raw facts and automatically promotes a host only when the selected destination body, EDMC current body ID, and live dashboard body name all agree. If they disagree—such as when a nearby moon temporarily owns the ship's sphere of influence—the host stays unresolved rather than being guessed.
 
 ## What is transmitted
 
@@ -41,16 +41,17 @@ For market scouting, a station `Market` snapshot:
 
 For Orrery facility placement:
 - an `ApproachSettlement` observation sends system name/address, facility name/Market ID, host body ID/name, latitude/longitude, and event time;
-- a `StationHost` observation for an orbital station sends system name/address, station name/Market ID, and Elite's selected `Destination.Body` only when the selected destination name matches the docking station;
+- an orbital `facility_visit` sends station/Market identity plus sanitized destination/body context and only the latest relevant travel-body events;
+- the server may promote a host-only `StationHost` record only when independent destination/current-body/dashboard signals agree;
 - host-only observations never claim an exact orbital position.
 
-Facility observations store only the public location facts needed by the Orrery. The public Orrery feed does not expose the Scout token, Discord account, Commander identity, or route history.
+Raw orbital visit context is kept server-side for resolver improvements and is not part of the public Orrery feed. The public feed exposes only verified location facts and does not expose the Scout token, Discord account, Commander identity, or route history.
 
 The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. The local HUD bridge is separate from those cloud uploads and may hold the current Commander name and docking/travel trigger state only on the local PC. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.4.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.4.3 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -65,13 +66,13 @@ The bridge exposes read-only JSON endpoints for a local companion:
 
 The in-memory event queue retains the newest 256 normalized events. No raw journal dump is exposed.
 
-`CarrierStats` is used locally to learn the current Commander's own Fleet Carrier identity (Carrier ID, callsign, name and docking access). That owner-carrier identity is persisted in EDMC's local configuration so later docking events can be labeled `relationship: owner` even after EDMC restarts. It is **not uploaded** by this v1.4.0 bridge. Other carriers remain `relationship: unknown` until a future squad carrier registry provides a trusted mapping.
+`CarrierStats` is used locally to learn the current Commander's own Fleet Carrier identity (Carrier ID, callsign, name and docking access). That owner-carrier identity is persisted in EDMC's local configuration so later docking events can be labeled `relationship: owner` even after EDMC restarts. It is **not uploaded** by this v1.4.3 bridge. Other carriers remain `relationship: unknown` until a future squad carrier registry provides a trusted mapping.
 
 The local bridge may include the current Commander name because owner/squadmate greetings need to know who is flying, but that identity stays on the PC. The existing cloud payload privacy boundary is unchanged.
 
 ## Scout workflow
 
-Start EDMC before or with Elite Dangerous, confirm **Mongrel Scout: Armed**, then fly the assigned systems. After a successful BGS update the EDMC status line changes to **Updated <system>**. After a market update it changes to **Market updated: <station>**. After a verified settlement observation it changes to **Facility mapped: <facility>**.
+Start EDMC before or with Elite Dangerous, confirm **Mongrel Scout: Armed**, then fly the assigned systems. After a successful BGS update the EDMC status line changes to **Updated <system>**. After a market update it changes to **Market updated: <station>**. After a verified settlement observation it changes to **Facility mapped: <facility>**. Orbital visits report **Station context recorded: <station>** when evidence is retained but unresolved, or **Host verified: <station> → <body>** when all host signals agree.
 
 The direct endpoint is authenticated with an individually revocable scout token. Scout access is controlled server-side, so Wolf can change a scout between **Restricted** and **Trusted** access—or change a Restricted Scout's allowed systems—without issuing a new token.
 

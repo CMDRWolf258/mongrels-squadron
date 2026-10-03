@@ -8,6 +8,7 @@ import { loadRewardDiscordView, syncRewardDiscordBoard } from '../../../lib/rewa
 import { recordScoutMarketSnapshot } from '../../../lib/trade-market.js';
 import { validatedConflictObservation } from '../../../lib/bgs-conflict-validation.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation } from '../../../lib/scout-facility-observations.js';
+import { normalizeScoutFacilityVisit, deriveStationHostCandidate, recordScoutFacilityVisit } from '../../../lib/scout-facility-visits.js';
 
 const MONGREL = 'Regiment of Imperial Mongrels';
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
@@ -43,6 +44,9 @@ export async function onRequestPost({ request, env }) {
 
   if (isMarketPayload(body)) {
     return handleMarketSnapshot({body,auth,env});
+  }
+  if (isFacilityVisitPayload(body)) {
+    return handleFacilityVisitObservation({body,auth,env});
   }
   if (isFacilityHostPayload(body)) {
     return handleFacilityHostObservation({body,auth,env});
@@ -195,14 +199,19 @@ function isFacilityPayload(value) {
     && (String(value.kind || '').toLowerCase() === 'facility' || String(value.event || '') === 'ApproachSettlement');
 }
 
+function isFacilityVisitPayload(value) {
+  return value && typeof value === 'object'
+    && String(value.kind || '').toLowerCase() === 'facility_visit';
+}
+
 function isFacilityHostPayload(value) {
   return value && typeof value === 'object'
     && (String(value.kind || '').toLowerCase() === 'facility_host' || String(value.event || '') === 'StationHost');
 }
 
-async function handleFacilityHostObservation({body,auth,env}) {
-  const observation=normalizeScoutFacilityObservation(body);
-  if(!observation||observation.hostOnly!==true)return reply({ok:false,error:'invalid_facility_host_observation'},400);
+async function handleFacilityVisitObservation({body,auth,env}) {
+  const observation=normalizeScoutFacilityVisit(body);
+  if(!observation)return reply({ok:false,error:'invalid_facility_visit'},400);
   if(Date.parse(observation.observedAt)>Date.now()+15*60*1000){
     return reply({ok:false,error:'journal_timestamp_in_future'},422);
   }
@@ -215,25 +224,61 @@ async function handleFacilityHostObservation({body,auth,env}) {
     }
   }
 
-  const result=await recordScoutFacilityObservation(env,body);
-  if(result?.error){
-    const status=result.error==='bgs_storage_not_configured'?503
-      : result.error==='journal_timestamp_in_future'?422
+  const visitResult=await recordScoutFacilityVisit(env,body);
+  if(visitResult?.error){
+    const status=visitResult.error==='bgs_storage_not_configured'?503
+      : visitResult.error==='journal_timestamp_in_future'?422
       : 400;
-    return reply({ok:false,error:result.error},status);
+    return reply({ok:false,error:visitResult.error},status);
+  }
+
+  const candidate=deriveStationHostCandidate(observation);
+  let hostWrite=null;
+  if(candidate){
+    hostWrite=await recordScoutFacilityObservation(env,{
+      event:'StationHost',
+      kind:'facility_host',
+      timestamp:observation.observedAt,
+      system:observation.system,
+      systemName:observation.system,
+      systemAddress:observation.systemId64,
+      facilityName:observation.stationName,
+      marketId:observation.marketId,
+      bodyId:candidate.bodyJournalId,
+      bodyName:candidate.bodyName,
+    });
   }
 
   return reply({
     ok:true,
     accepted:true,
-    kind:'facility_host',
-    stored:Boolean(result.stored),
+    kind:'facility_visit',
+    stored:Boolean(visitResult.stored),
     system:observation.system,
-    facility:observation.facilityName,
+    station:observation.stationName,
     marketId:observation.marketId,
-    bodyId:observation.bodyJournalId,
-    bodyName:observation.bodyName,
     updatedAt:observation.observedAt,
+    hostResolved:Boolean(candidate),
+    hostStored:Boolean(hostWrite?.stored),
+    hostBodyId:candidate?.bodyJournalId??null,
+    hostBodyName:candidate?.bodyName||'',
+    scout:auth.label,
+  },200);
+}
+
+async function handleFacilityHostObservation({body,auth,env}) {
+  // v1.4.1/1.4.2 guessed a host inside the plugin. Accept those requests so
+  // older installs do not error, but never promote them into the public Orrery.
+  const system=cleanText(body?.systemName||body?.system,'',140);
+  const marketId=safeInteger(body?.marketId);
+  return reply({
+    ok:true,
+    accepted:true,
+    kind:'facility_host',
+    stored:false,
+    quarantined:true,
+    system,
+    marketId,
     scout:auth.label,
   },200);
 }
