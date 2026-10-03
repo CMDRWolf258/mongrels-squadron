@@ -72,7 +72,7 @@ with tempfile.TemporaryDirectory() as td:
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","/api/layout","/api/panel","/api/layout-reset","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","Mission Control","Trader's Outpost","Scout Board","LEADERSHIP ALERTS","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source

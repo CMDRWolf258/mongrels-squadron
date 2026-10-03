@@ -5,7 +5,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 ## Requirements
 
 - Windows PC running Elite Dangerous.
-- EDMC with **Mongrel Scout v1.6.0 or newer** installed and enabled.
+- EDMC with **Mongrel Scout v1.7.0 or newer** installed and enabled.
 - No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
@@ -18,7 +18,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 5. Open that address on the iPad and enter the PIN.
 6. If Windows Firewall or SmartScreen asks, allow the app on **Private networks only**. The current prototype is unsigned, so Windows may show an "unrecognized app" warning.
 
-Combat is rendered as independent top-most transparent panels rather than one large overlay window. In normal **LOCKED** mode the panels are click-through. From the iPad controller, choose **UNLOCK LAYOUT** to expose draggable panel headers on the PC, move them wherever you want, adjust each panel to 75–150% size, then lock the layout again. Panel positions, visibility and scale persist in the local state file. **Reset Layout** restores the default positions. The small PC control window remains available for show/hide, lock/unlock and pairing.
+The HUD is rendered as independent top-most transparent panels rather than one large overlay window. In normal **LOCKED** mode the panels are click-through. From the iPad controller, choose **UNLOCK LAYOUT** to expose draggable panel headers on the PC, move them wherever you want, adjust each panel to 75–150% size, then lock the layout again. Panel positions, visibility and scale persist in the local state file. **Reset Layout** restores the default positions. The small PC control window remains available for show/hide, lock/unlock and pairing.
 
 ## Profiles
 
@@ -52,3 +52,12 @@ Mongrel Scout itself remains loopback-only on **127.0.0.1:43857**. It is not exp
 Only this companion listens on LAN port **43858**. The controller API requires the pairing PIN, uses an HttpOnly same-site session cookie, rejects cross-origin POSTs, and deliberately emits no permissive CORS header.
 
 This prototype uses ordinary HTTP because it is intended for a trusted private LAN. Do not port-forward 43858 or expose it directly to the internet.
+
+
+## Global information panels
+
+Mongrel HUD 0.4.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
+
+Scout 1.7.0 fetches the authenticated site summaries with its existing bound Scout token. The HUD companion never receives the raw token. Current faction operational alerts, active payout requests, recent material Daily Order changes, and degraded/unavailable managed trade routes become leadership alerts. Unacknowledged alerts flash on the PC overlay and can be acknowledged individually or all at once from the iPad; acknowledgements are stored by the website for the token owner.
+
+HUD Notes are intentionally local-first. Up to 4,000 characters can be entered on the iPad controller and displayed in the Notes overlay. Notes are stored in the local Mongrel HUD state file and are not uploaded to the website in this version.
