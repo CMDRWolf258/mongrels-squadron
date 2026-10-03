@@ -1,7 +1,12 @@
 from __future__ import annotations
 import sys
 import tempfile
+import types
 from pathlib import Path
+
+# GitHub's Linux runner does not ship Tk. The smoke test exercises the
+# non-GUI companion core, so provide an import-only stub.
+sys.modules.setdefault("tkinter", types.ModuleType("tkinter"))
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
