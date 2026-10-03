@@ -64,10 +64,11 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.4.3"
+assert plugin.PLUGIN_VERSION == "1.5.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
+assert plugin.HUD_BRIDGE_VERSION == 2
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -84,6 +85,9 @@ expected_types = {
     "SupercruiseEntry": "travel.supercruise_entry",
     "SupercruiseExit": "travel.supercruise_exit",
     "ApproachSettlement": "facility.approach",
+    "ShipTargeted": "combat.target",
+    "HullDamage": "ship.hull",
+    "Loadout": "ship.loadout",
 }
 assert plugin.HUD_EVENT_TYPES == expected_types
 
@@ -187,6 +191,41 @@ assert [row["type"] for row in latest["events"]] == [
 assert all(row["commander"] == "Wolf258" for row in latest["events"])
 assert plugin._hud_events_after(4, 0)["events"][0]["type"] == "travel.supercruise_exit"
 
+# Dashboard status feeds surface position and own-shield state without entering the event queue.
+seq_before_status = plugin._hud_events_after(0, 0)["latestSeq"]
+plugin.dashboard_entry("Wolf258", False, {
+    "timestamp":"2026-10-02T22:04:10Z","Flags":(1<<3)|(1<<21)|(1<<26),"Flags2":0,
+    "BodyName":"NGC 2546 Sector UZ-G d10-16 7 b","Latitude":-22.7738,"Longitude":-98.8161,
+    "Altitude":14.0,"Heading":42.0,"PlanetRadius":1234567.0,
+    "Destination":{"System":668059324240760,"Body":77,"Name":"Surface Signal #10"},
+})
+state = plugin._hud_state_snapshot()
+assert state["status"]["shieldsUp"] is True
+assert state["status"]["hasLatLong"] is True
+assert state["status"]["inSrv"] is True
+assert state["status"]["latitude"] == -22.7738
+assert plugin._hud_events_after(0, 0)["latestSeq"] == seq_before_status
+
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
+    "event":"ShipTargeted","timestamp":"2026-10-02T22:04:20Z","TargetLocked":True,
+    "Ship":"ferdelance","Ship_Localised":"Fer-de-Lance","PilotName":"Test Target","PilotRank":"Elite","ScanStage":3,
+    "ShieldHealth":73.5,"HullHealth":88.0,"LegalStatus":"Wanted","Bounty":3842610,
+    "SubSystem":"int_powerplant","SubSystem_Localised":"Power Plant","SubSystemHealth":62.0,
+})
+state = plugin._hud_state_snapshot()
+assert state["target"]["pilotName"] == "Test Target"
+assert state["target"]["bounty"] == 3842610
+assert state["target"]["modules"]["power plant"]["health"] == 62.0
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
+    "event":"ShipTargeted","timestamp":"2026-10-02T22:04:21Z","TargetLocked":True,
+    "Ship":"ferdelance","Ship_Localised":"Fer-de-Lance","PilotName":"Test Target",
+    "SubSystem":"int_hyperdrive","SubSystem_Localised":"Frame Shift Drive","SubSystemHealth":71.0,
+})
+state = plugin._hud_state_snapshot()
+assert set(state["target"]["modules"]) == {"power plant","frame shift drive"}
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"HullDamage","timestamp":"2026-10-02T22:04:22Z","Health":0.873})
+assert plugin._hud_state_snapshot()["ship"]["hullHealth"] == 87.3
+
 # Unknown journal events do not enter the local bridge.
 assert plugin._normalize_hud_event("Wolf258", "Diaba", "", {"event": "Cargo"}) is None
 
@@ -261,4 +300,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.4.3 local HUD bridge normalizes owner-carrier, docking and travel events without cloud identity leakage")
+print("✓ Mongrel Scout v1.5.0 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")

@@ -19,13 +19,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.4.3"
+PLUGIN_VERSION = "1.5.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 1
+HUD_BRIDGE_VERSION = 2
 HUD_EVENT_LIMIT = 256
 HUD_EVENT_TYPES = {
     "DockingRequested": "docking.requested",
@@ -42,6 +42,9 @@ HUD_EVENT_TYPES = {
     "SupercruiseEntry": "travel.supercruise_entry",
     "SupercruiseExit": "travel.supercruise_exit",
     "ApproachSettlement": "facility.approach",
+    "ShipTargeted": "combat.target",
+    "HullDamage": "ship.hull",
+    "Loadout": "ship.loadout",
 }
 
 KEY_VERSION = "MongrelScoutConfigVersion"
@@ -90,6 +93,9 @@ _hud_state: dict[str, Any] = {
     "supercruise": None,
     "ownerCarrier": None,
     "lastFacility": None,
+    "status": None,
+    "ship": {"hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "target": None,
     "lastEvent": None,
     "updatedAt": None,
 }
@@ -210,7 +216,50 @@ def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
         _dashboard_context["destinationSystem"] = destination_system
         if destination_name:
             _dashboard_context["lastDestination"] = snapshot
+    _update_hud_status(cmdr, entry)
     return None
+
+
+def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
+    """Expose a minimal local Status.json snapshot for the HUD companion."""
+    flags = _optional_int(entry.get("Flags")) or 0
+    destination = entry.get("Destination")
+    destination_payload = None
+    if isinstance(destination, Mapping):
+        destination_payload = {
+            "name": str(destination.get("Name_Localised") or destination.get("Name") or "").strip(),
+            "bodyId": _optional_int(destination.get("Body")),
+            "systemAddress": _decimal_text(destination.get("System")),
+        }
+    status = {
+        "timestamp": str(entry.get("timestamp") or "").strip(),
+        "flags": flags,
+        "flags2": _optional_int(entry.get("Flags2")) or 0,
+        "bodyName": str(entry.get("BodyName") or "").strip(),
+        "latitude": _optional_float(entry.get("Latitude")),
+        "longitude": _optional_float(entry.get("Longitude")),
+        "altitude": _optional_float(entry.get("Altitude")),
+        "heading": _optional_float(entry.get("Heading")),
+        "planetRadius": _optional_float(entry.get("PlanetRadius")),
+        "shieldsUp": bool(flags & (1 << 3)),
+        "hasLatLong": bool(flags & (1 << 21)),
+        "inSrv": bool(flags & (1 << 26)),
+        "legalState": str(entry.get("LegalState") or "").strip(),
+        "destination": destination_payload,
+    }
+    with _hud_condition:
+        _hud_state["bridgeVersion"] = HUD_BRIDGE_VERSION
+        _hud_state["pluginVersion"] = PLUGIN_VERSION
+        _hud_state["commander"] = str(cmdr or "").strip() or _hud_state.get("commander", "")
+        _hud_state["status"] = status
+        ship = _hud_state.get("ship")
+        if not isinstance(ship, dict):
+            ship = {"hullHealth": None}
+            _hud_state["ship"] = ship
+        ship["shieldsUp"] = status["shieldsUp"]
+        ship["timestamp"] = status["timestamp"]
+        _hud_state["updatedAt"] = status["timestamp"] or _hud_state.get("updatedAt")
+        _hud_condition.notify_all()
 
 
 def journal_entry(
@@ -518,6 +567,27 @@ def _normalize_hud_event(
     if journal_event == "Location":
         payload["docked"] = bool(entry.get("Docked"))
 
+    if journal_event == "ShipTargeted":
+        locked = bool(entry.get("TargetLocked"))
+        payload["targetLocked"] = locked
+        if locked:
+            payload["ship"] = str(entry.get("Ship_Localised") or entry.get("Ship") or "").strip()
+            payload["pilotName"] = str(entry.get("PilotName_Localised") or entry.get("PilotName") or "").strip()
+            payload["pilotRank"] = str(entry.get("PilotRank") or "").strip()
+            payload["scanStage"] = _optional_int(entry.get("ScanStage"))
+            payload["shieldHealth"] = _normalize_percent(entry.get("ShieldHealth"))
+            payload["hullHealth"] = _normalize_percent(entry.get("HullHealth"))
+            payload["faction"] = str(entry.get("Faction") or "").strip()
+            payload["legalStatus"] = str(entry.get("LegalStatus") or "").strip()
+            payload["bounty"] = _optional_int(entry.get("Bounty"))
+            payload["subsystemName"] = str(entry.get("SubSystem_Localised") or entry.get("SubSystem") or "").strip()
+            payload["subsystemHealth"] = _normalize_percent(entry.get("SubSystemHealth"))
+
+    if journal_event == "HullDamage":
+        payload["hullHealth"] = _normalize_percent(entry.get("Health"), fraction=True)
+    elif journal_event == "Loadout":
+        payload["hullHealth"] = _normalize_percent(entry.get("HullHealth"), fraction=True)
+
     if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
         body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()
         body_id = _optional_int(entry.get("BodyID"))
@@ -567,6 +637,52 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
 
     event_type = str(event.get("type") or "")
     station = _station_identity(event)
+
+    if event_type in {"ship.hull", "ship.loadout"}:
+        hull_health = event.get("hullHealth")
+        ship = _hud_state.get("ship")
+        if not isinstance(ship, dict):
+            ship = {"hullHealth": None, "shieldsUp": None, "timestamp": None}
+            _hud_state["ship"] = ship
+        if hull_health is not None:
+            ship["hullHealth"] = hull_health
+        ship["timestamp"] = event.get("timestamp") or ship.get("timestamp")
+
+    if event_type == "combat.target":
+        if not bool(event.get("targetLocked")):
+            _hud_state["target"] = None
+        else:
+            current = _hud_state.get("target")
+            same_target = isinstance(current, dict) and bool(current.get("locked"))
+            if same_target:
+                old_pilot = str(current.get("pilotName") or "").strip().casefold()
+                new_pilot = str(event.get("pilotName") or "").strip().casefold()
+                old_ship = str(current.get("ship") or "").strip().casefold()
+                new_ship = str(event.get("ship") or "").strip().casefold()
+                if old_pilot and new_pilot and old_pilot != new_pilot:
+                    same_target = False
+                elif old_ship and new_ship and old_ship != new_ship:
+                    same_target = False
+            if not same_target:
+                current = {"locked": True, "modules": {}}
+            for key in ("ship", "pilotName", "pilotRank", "scanStage", "shieldHealth", "hullHealth", "faction", "legalStatus", "bounty"):
+                value = event.get(key)
+                if value is not None and (not isinstance(value, str) or value):
+                    current[key] = value
+            current["locked"] = True
+            current["timestamp"] = event.get("timestamp")
+            subsystem_name = str(event.get("subsystemName") or "").strip()
+            if subsystem_name:
+                subsystem = {"name": subsystem_name, "health": event.get("subsystemHealth"), "observedAt": event.get("timestamp")}
+                current["subsystem"] = subsystem
+                modules = current.get("modules")
+                if not isinstance(modules, dict):
+                    modules = {}
+                    current["modules"] = modules
+                modules[subsystem_name.casefold()] = dict(subsystem)
+            else:
+                current["subsystem"] = None
+            _hud_state["target"] = current
 
     if event_type in {"docking.requested", "docking.granted", "docking.denied", "docking.cancelled", "docking.timeout"}:
         _hud_state["docking"] = {
@@ -710,6 +826,15 @@ def _optional_float(value: Any) -> Optional[float]:
     except (TypeError, ValueError, OverflowError):
         return None
     return result if result == result and result not in (float("inf"), float("-inf")) else None
+
+
+def _normalize_percent(value: Any, *, fraction: bool = False) -> Optional[float]:
+    result = _optional_float(value)
+    if result is None:
+        return None
+    if fraction:
+        result *= 100.0
+    return max(0.0, min(100.0, result))
 
 
 def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
