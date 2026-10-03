@@ -1,7 +1,10 @@
-import { json } from '../../../lib/auth.js';
+import { json, readSession } from '../../../lib/auth.js';
 import { diagnoseStationHostCandidate, readScoutFacilityVisits } from '../../../lib/scout-facility-visits.js';
 
 export async function onRequestGet({request,env}){
+  const session=await readSession(request,env);
+  if(!session)return json({ok:false,error:'authentication_required'},{status:401,headers:noStore()});
+  if(!['officer','site_admin'].includes(session.access))return json({ok:false,error:'officer_access_required'},{status:403,headers:noStore()});
   const url=new URL(request.url);
   const systemId64=url.searchParams.get('systemId64')||'';
   const marketId=url.searchParams.get('marketId')||'';

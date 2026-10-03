@@ -3,7 +3,7 @@ import { loadLocationProvider } from '../../lib/orrery-locations.js';
 import { loadFacilityObservationProvider } from '../../lib/orrery-facility-observations.js';
 
 const $ = id => document.getElementById(`orrery-${id}`);
-const state = { system:null, records:new Map(), renderer:null, selectedId:null, catalog:null, loadVersion:0, rendererVersion:0 };
+const state = { system:null, records:new Map(), renderer:null, selectedId:null, catalog:null, loadVersion:0, rendererVersion:0, viewer:null };
 const initial = new URLSearchParams(location.search);
 const friendlyKind = kind => ({ 'surface-deposit':'Surface deposit', 'ring-hotspot':'Ring hotspot', barycentre:'Shared orbital centre', carrier:'Fleet carrier' }[kind] || kind.charAt(0).toUpperCase() + kind.slice(1));
 const number = (value, unit = '', digits = 2) => typeof value === 'number' && Number.isFinite(value) ? `${value.toLocaleString(undefined, { maximumFractionDigits:digits })}${unit ? ` ${unit}` : ''}` : 'Unknown';
@@ -38,6 +38,8 @@ function renderResults() {
       const placement = classifyLocationPlacement(record);
       button.dataset.placement = placement;
       button.append(node('small', locationPlacementText[placement]));
+      if(record.positionObservation?.status==='estimated')button.append(node('small','Host confidence · Estimated'));
+      else if(record.positionObservation?.status==='verified')button.append(node('small','Host confidence · Verified'));
     }
     root.append(button);
   }
@@ -87,6 +89,8 @@ function renderDetails(record) {
     if (record.latitude != null) { pair('Latitude', number(record.latitude, '°', 6)); pair('Longitude', number(record.longitude, '°', 6)); }
     else pair('Coordinates', 'Unknown');
     if (record.positionObservation?.source) pair('Placement source', record.positionObservation.source);
+    if (record.positionObservation?.status) pair('Host confidence', record.positionObservation.status === 'estimated' ? 'Estimated' : 'Verified');
+    if (record.positionObservation?.confidenceScore != null) pair('Estimate confidence', `${Math.round(record.positionObservation.confidenceScore * 100)}%`);
     if (record.positionObservation?.observedAt) {
       const observed = new Date(record.positionObservation.observedAt);
       pair('Position observed', Number.isFinite(observed.getTime()) ? observed.toLocaleString() : record.positionObservation.observedAt);
@@ -94,7 +98,12 @@ function renderDetails(record) {
     if (record.ringId) pair('Ring', state.records.get(record.ringId)?.name || record.ringId);
   }
   root.append(dl);
-  if (record.positionObservation) root.append(node('p', 'Exact surface placement was upgraded from a verified Mongrel Scout ApproachSettlement observation. Imported source notes below may describe the older snapshot before this visit.'));
+  if (canManageHosts() && record.recordType === 'location' && record.marketId && record.latitude == null && record.longitude == null && ['station','settlement','installation'].includes(record.kind)) {
+    root.append(buildHostEditor(record));
+  }
+  if (record.positionObservation?.event === 'ApproachSettlement') root.append(node('p', 'Exact surface placement was upgraded from a verified Mongrel Scout ApproachSettlement observation. Imported source notes below may describe the older snapshot before this visit.'));
+  else if (record.positionObservation?.event === 'StationHostEstimate') root.append(node('p', 'Host body is an automated geometric estimate based on arrival distance and a strong runner-up margin. Officers can confirm or correct it below.'));
+  else if (record.positionObservation?.event === 'StationHostOverride') root.append(node('p', 'Host body was confirmed or corrected by Mongrel leadership.'));
   if (record.notes) root.append(node('p', record.notes));
   if (record.recordType === 'location' && ['host', 'ring'].includes(classifyLocationPlacement(record))) root.append(node('p', 'The amber diamond marks an association only. Dashed lanes arrange host markers for readability; they do not establish an actual orbit or surface position. Use the in-game navigation panel for this destination’s actual position.'));
   if (record.recordType === 'body' && record.kind === 'barycentre') root.append(node('p', 'Shared parent preserved from the real hierarchy. Orbital elements for this centre are unreported; display placement is schematic.'));
@@ -126,6 +135,56 @@ function renderDetails(record) {
   if (!source?.url && (record.recordType === 'body' || record.recordType === 'ring')) root.append(safeLink('EDSM body catalogue ↗', `https://www.edsm.net/en/system/bodies/id/${state.system.edsmId}`));
   if (record.associationSource) root.append(node('p', `Host association: ${record.associationSource.name || 'Mongrel reference'}${record.associationSource.reference ? ` · ${record.associationSource.reference.split('/').pop()}` : ''}`));
   if (record.associationSource?.url) root.append(safeLink('Host association source ↗', record.associationSource.url));
+}
+
+function canManageHosts() {
+  return ['officer','site_admin'].includes(state.viewer?.access);
+}
+
+function buildHostEditor(record) {
+  const box=node('div',null,'orrery-host-editor');
+  box.append(node('h4','Host body control'));
+  const label=node('label');
+  label.append(node('span','Confirmed host body'));
+  const selectEl=node('select');
+  const bodies=state.system.bodies
+    .filter(body=>body.kind!=='barycentre'&&Number.isInteger(body.bodyId))
+    .sort((a,b)=>a.bodyId-b.bodyId);
+  for(const body of bodies)selectEl.append(new Option(body.shortName||body.name,String(body.bodyId)));
+  const current=state.system.bodies.find(body=>body.id===record.bodyId);
+  if(current)selectEl.value=String(current.bodyId);
+  label.append(selectEl);
+  const actions=node('div',null,'orrery-host-editor-actions');
+  const save=action('Confirm host',async()=>{
+    const body=state.system.bodies.find(item=>String(item.bodyId)===selectEl.value);
+    if(!body)return;
+    save.disabled=true;
+    $('status').textContent=`Saving host for ${record.name}…`;
+    try{
+      const response=await fetch('../api/orrery/host-override',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'orrery-host-editor'},
+        body:JSON.stringify({
+          systemId64:String(state.system.id64),
+          marketId:String(record.marketId),
+          facilityName:record.name,
+          bodyJournalId:body.bodyId,
+          bodyName:body.name,
+        }),
+      });
+      const data=await response.json();
+      if(!response.ok||!data?.ok)throw new Error(data?.error||'save_failed');
+      const systemId=state.system.id;
+      await loadSystem(systemId,record.id);
+      $('status').textContent=`Verified host saved: ${record.name} → ${body.shortName||body.name}`;
+    }catch{
+      $('status').textContent='Host update failed · check sign-in and try again';
+      save.disabled=false;
+    }
+  });
+  actions.append(save);
+  box.append(label,actions);
+  return box;
 }
 
 function select(id, focus = false) {
@@ -182,9 +241,10 @@ async function loadSystem(id, objectId) {
       facilityUrl.searchParams.set('systemId64', String(system.id64));
       const facilityResult = await loadFacilityObservationProvider(system, facilityUrl.href, { signal:AbortSignal.timeout(4000) });
       system = facilityResult.system;
-      facilityStatus = facilityResult.applied
-        ? `${facilityResult.applied} surface ${facilityResult.applied === 1 ? 'facility' : 'facilities'} placed from verified Mongrel Scout observations.`
-        : 'Mongrel Scout facility placement connected · no schematic facilities have verified surface coordinates yet.';
+      const verified=facilityResult.verifiedApplied||0,estimated=facilityResult.estimatedApplied||0;
+      facilityStatus = verified || estimated
+        ? [verified ? `${verified} verified placement${verified === 1 ? '' : 's'}` : '', estimated ? `${estimated} estimated host${estimated === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')
+        : 'Mongrel Scout facility placement connected · no verified or high-confidence estimated upgrades yet.';
     } catch { facilityStatus = 'Mongrel Scout facility placement unavailable · imported and curated locations remain usable.'; }
     if (version !== state.loadVersion) return;
     state.system = system; state.records = new Map(getRecords(system).map(record => [record.id, record])); state.selectedId = null;
@@ -209,8 +269,15 @@ async function loadSystem(id, objectId) {
 
 async function init() {
   try {
-    const response = await fetch('../data/orrery/systems.json'); if (!response.ok) throw new Error('Catalogue unavailable');
+    const [response,sessionResponse] = await Promise.all([
+      fetch('../data/orrery/systems.json'),
+      fetch('../api/auth/session').catch(()=>null),
+    ]);
+    if (!response.ok) throw new Error('Catalogue unavailable');
     state.catalog = await response.json();
+    if(sessionResponse?.ok){
+      try{state.viewer=await sessionResponse.json();}catch{state.viewer=null;}
+    }
     if (state.catalog.schemaVersion !== 1 || !Array.isArray(state.catalog.systems) || !state.catalog.systems.length) throw new Error('Invalid catalogue');
     $('system').replaceChildren(); for (const entry of state.catalog.systems) $('system').append(new Option(entry.name, entry.id));
     const id = state.catalog.systems.some(item => item.id === initial.get('system')) ? initial.get('system') : state.catalog.defaultSystemId;

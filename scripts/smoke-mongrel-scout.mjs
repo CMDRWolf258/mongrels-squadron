@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
-import { applyFacilityObservationPayload } from '../lib/orrery-facility-observations.js';
+import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides, estimateHostBody } from '../lib/orrery-facility-observations.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
 import { normalizeScoutFacilityVisit, deriveStationHostCandidate, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
+import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -15,6 +16,8 @@ const required=[
   'lib/orrery-facility-observations.js',
   'lib/scout-facility-observations.js',
   'lib/scout-facility-visits.js',
+  'lib/orrery-facility-host-overrides.js',
+  'functions/api/orrery/host-override.js',
   'js/wolf-bgs-scout.js',
   'functions/downloads/mongrel-scout.zip.js',
 ];
@@ -355,6 +358,60 @@ assert.equal(hostUpgraded.coordinatesKnown,false);
 assert.equal(hostUpgraded.positionKnown,true);
 assert.equal(hostUpgraded.positionObservation.event,'StationHost');
 
+const riversStation=orrerySystem.locations.find(item=>item.name==='Rivers Hub');
+assert.ok(riversStation&&riversStation.bodyId===null);
+const riversEstimate=estimateHostBody(orrerySystem,riversStation);
+assert.equal(riversEstimate?.body?.bodyId,92,'Rivers Hub should strongly estimate body 12 h');
+assert.ok(riversEstimate.confidenceScore>=0.78);
+const estimatedRivers=applyHostEstimates(orrerySystem,[{
+  marketId:String(riversStation.marketId),
+  stationName:riversStation.name,
+  observedAt:'2026-10-03T02:31:24Z',
+}]);
+assert.equal(estimatedRivers.applied,1);
+const riversPlaced=estimatedRivers.system.locations.find(item=>item.id===riversStation.id);
+assert.equal(riversPlaced.bodyId,'body-92');
+assert.equal(riversPlaced.positionObservation.status,'estimated');
+assert.equal(riversPlaced.positionObservation.event,'StationHostEstimate');
+
+const ambiguousStation=orrerySystem.locations.find(item=>item.name==='Arkwright Vista');
+assert.ok(ambiguousStation&&ambiguousStation.bodyId===null);
+assert.equal(estimateHostBody(orrerySystem,ambiguousStation),null,'Tied nearby moons must remain unresolved');
+
+const overrideRaw={
+  systemId64:String(orrerySystem.id64),
+  marketId:String(riversStation.marketId),
+  facilityName:riversStation.name,
+  bodyJournalId:87,
+  bodyName:orrerySystem.bodies.find(item=>item.bodyId===87).name,
+};
+const normalizedOverride=normalizeFacilityHostOverride(overrideRaw,{updatedAt:'2026-10-03T03:00:00Z',updatedBy:'Officer'});
+assert.equal(normalizedOverride.bodyJournalId,87);
+const corrected=applyHostOverrides(estimatedRivers.system,[{
+  marketId:String(riversStation.marketId),
+  facilityName:riversStation.name,
+  bodyJournalId:87,
+  bodyName:normalizedOverride.bodyName,
+  updatedAt:'2026-10-03T03:00:00Z',
+}]);
+assert.equal(corrected.applied,1);
+const correctedRivers=corrected.system.locations.find(item=>item.id===riversStation.id);
+assert.equal(correctedRivers.bodyId,'body-87');
+assert.equal(correctedRivers.positionObservation.status,'verified');
+assert.equal(correctedRivers.positionObservation.event,'StationHostOverride');
+
+const overrideStore=new Map();
+const overrideEnv={DAILY_ORDERS:{
+  async get(key){return overrideStore.has(key)?JSON.parse(overrideStore.get(key)):null;},
+  async put(key,value){overrideStore.set(key,value);},
+}};
+const overrideWrite=await recordFacilityHostOverride(overrideEnv,overrideRaw,{updatedAt:'2026-10-03T03:00:00Z',updatedBy:'Officer'});
+assert.equal(overrideWrite.stored,true);
+const overridePayload=await readFacilityHostOverridePayload(overrideEnv,String(orrerySystem.id64));
+assert.equal(overridePayload.overrides.length,1);
+assert.equal(overridePayload.overrides[0].verified,true);
+
+
 const wrongBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==targetFacility.bodyId);
 const conflictEnvelope={...facilityEnvelope,observations:[{...facilityEnvelope.observations[0],bodyJournalId:wrongBody.bodyId,bodyName:wrongBody.name}]};
 const conflicted=applyFacilityObservationPayload(orrerySystem,conflictEnvelope);
@@ -363,7 +420,11 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/headers\(30\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/readFacilityHostOverridePayload/,/stationVisits/,/hostOverrides/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
+for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
+const orreryApp=readFileSync('js/orrery/app.js','utf8');
+for(const pattern of [/Host confidence/,/Estimated/,/Verified/,/buildHostEditor/,/api\/orrery\/host-override/,/Confirm host/])assert.match(orreryApp,pattern);
 console.log('✓ Scout station visits retain raw evidence, reject edge-case guesses, and only promote verified hosts');
 
 
