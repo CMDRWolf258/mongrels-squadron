@@ -69,6 +69,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-wolf-bgs-health.mjs
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
           node --experimental-default-type=module scripts/smoke-mongrel-scout.mjs
+          node --experimental-default-type=module scripts/smoke-hud-feed.mjs
           python3 scripts/smoke-mongrel-hud.py
           python3 scripts/smoke-mongrel-hud-companion.py
           node --experimental-default-type=module scripts/smoke-scout-jobs.mjs
