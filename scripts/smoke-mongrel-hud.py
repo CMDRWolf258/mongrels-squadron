@@ -190,6 +190,57 @@ assert plugin._hud_events_after(4, 0)["events"][0]["type"] == "travel.supercruis
 # Unknown journal events do not enter the local bridge.
 assert plugin._normalize_hud_event("Wolf258", "Diaba", "", {"event": "Cargo"}) is None
 
+# Station-host telemetry preserves 64-bit system IDs exactly and survives a target clear.
+plugin._last_system_address = 668059324240760
+plugin.dashboard_entry(
+    "Wolf258",
+    False,
+    {
+        "timestamp": "2026-10-02T22:04:30Z",
+        "BodyName": "NGC 2546 Sector UZ-G d10-16 9 a",
+        "Destination": {
+            "System": 668059324240760,
+            "Body": 61,
+            "Name": "Rivers Hub",
+        },
+    },
+)
+plugin.dashboard_entry(
+    "Wolf258",
+    False,
+    {
+        "timestamp": "2026-10-02T22:04:31Z",
+        "BodyName": "NGC 2546 Sector UZ-G d10-16 9 a",
+    },
+)
+visit = plugin._build_station_visit_payload(
+    {
+        "event": "DockingRequested",
+        "timestamp": "2026-10-02T22:04:32Z",
+        "StarSystem": "NGC 2546 Sector UZ-G d10-16",
+        "SystemAddress": 668059324240760,
+        "StationName": "Rivers Hub",
+        "StationType": "Outpost",
+        "MarketID": 4391607555,
+    },
+    {
+        "SystemAddress": 668059324240760,
+        "Body": "NGC 2546 Sector UZ-G d10-16 9 a",
+        "BodyID": 61,
+        "BodyType": "Planet",
+    },
+    "NGC 2546 Sector UZ-G d10-16",
+    "Rivers Hub",
+)
+assert visit is not None
+assert visit["kind"] == "facility_visit"
+assert visit["systemAddress"] == "668059324240760"
+assert visit["dashboard"]["destination"]["name"] == ""
+assert visit["dashboard"]["lastDestination"]["name"] == "Rivers Hub"
+assert visit["dashboard"]["lastDestination"]["systemAddress"] == "668059324240760"
+assert "commander" not in visit
+assert "cmdr" not in visit
+
 # Local Commander identity never changes the existing cloud facility payload.
 facility = plugin._build_facility_payload(
     {

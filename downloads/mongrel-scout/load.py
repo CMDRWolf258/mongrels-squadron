@@ -194,7 +194,7 @@ def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
     if isinstance(destination, Mapping):
         destination_name = str(destination.get("Name_Localised") or destination.get("Name") or "").strip()
         destination_body_id = _optional_int(destination.get("Body"))
-        destination_system = destination.get("System")
+        destination_system = _decimal_text(destination.get("System"))
 
     snapshot = {
         "name": destination_name,
