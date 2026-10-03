@@ -40,7 +40,7 @@ For market scouting, a station `Market` snapshot:
 - the market event timestamp.
 
 For Orrery facility placement:
-- an `ApproachSettlement` observation sends system name/address, facility name/Market ID, host body ID/name, latitude/longitude, and event time;
+- an `ApproachSettlement` observation sends system name/address, facility name/Market ID, host body ID/name, latitude and longitude, and event time;
 - an orbital `facility_visit` sends station/Market identity plus sanitized destination/body context and only the latest relevant travel-body events;
 - the server may promote a host-only `StationHost` record only when independent destination/current-body/dashboard signals agree;
 - host-only observations never claim an exact orbital position.
