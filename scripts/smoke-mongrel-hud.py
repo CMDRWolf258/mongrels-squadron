@@ -64,12 +64,12 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.7.0"
+assert plugin.PLUGIN_VERSION == "1.8.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
 assert plugin.HUD_SITE_FEED_REFRESH_SECONDS == 30.0
-assert plugin.HUD_BRIDGE_VERSION == 4
+assert plugin.HUD_BRIDGE_VERSION == 5
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -211,6 +211,7 @@ assert state["status"]["latitude"] == -22.7738
 assert state["status"]["pips"] == [2.0, 1.0, 3.0]
 assert state["status"]["fuelMain"] == 27.5
 assert state["status"]["cargo"] == 12
+assert state["status"]["fuelReserve"] == 0.8
 assert "siteFeed" in state and "siteFeedStatus" in state
 assert plugin._hud_events_after(0, 0)["latestSeq"] == seq_before_status
 
@@ -231,9 +232,19 @@ plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
 })
 state = plugin._hud_state_snapshot()
 assert set(state["target"]["modules"]) == {"power plant","frame shift drive"}
-plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"Loadout","timestamp":"2026-10-02T22:04:22Z","Ship":"cutter","ShipName":"Honey Badger","ShipIdent":"MONGRL","MaxJumpRange":31.4567,"CargoCapacity":512,"FuelCapacity":{"Main":64.0},"Modules":[]})
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
+    "event":"Loadout","timestamp":"2026-10-02T22:04:22Z","Ship":"cutter","ShipName":"Honey Badger","ShipIdent":"MONGRL",
+    "UnladenMass":1000.0,"MaxJumpRange":31.127644,"CargoCapacity":512,"FuelCapacity":{"Main":64.0,"Reserve":1.0},
+    "Modules":[
+        {"Slot":"FrameShiftDrive","Item":"int_hyperdrive_size6_class5","Engineering":{"Modifiers":[{"Label":"FSDOptimalMass","Value":1800.0,"OriginalValue":1800.0}]}},
+        {"Slot":"Slot01_Size5","Item":"int_guardianfsdbooster_size5_class1"}
+    ]
+})
 ship_state=plugin._hud_state_snapshot()["ship"]
-assert ship_state["name"]=="Honey Badger" and ship_state["maxJumpRange"]==31.4567 and ship_state["fuelCapacity"]==64.0
+assert ship_state["name"]=="Honey Badger" and ship_state["maxJumpRange"]==31.127644 and ship_state["fuelCapacity"]==64.0
+assert ship_state["unladenMass"]==1000.0 and ship_state["jumpModel"]["class"]==6 and ship_state["jumpModel"]["rating"]=="A"
+assert 31.59 < ship_state["currentJumpRange"] < 31.61
+assert ship_state["currentMass"]==1040.3 and ship_state["jumpFuelUsed"]==8.0
 plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"HullDamage","timestamp":"2026-10-02T22:04:23Z","Health":0.873})
 assert plugin._hud_state_snapshot()["ship"]["hullHealth"] == 87.3
 bounty_event=plugin._normalize_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"Bounty","timestamp":"2026-10-02T22:04:24Z","TotalReward":842615,"Target":"python"})

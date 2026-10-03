@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.5.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.8.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -86,4 +86,9 @@ The direct endpoint is authenticated with an individually revocable scout token.
 
 ## HUD leadership feed
 
-When a Scout token is bound to a website account, Scout 1.7.0 also refreshes a compact authenticated HUD feed containing Mission Control, Trader's Outpost, Scout Board and permitted leadership-alert summaries. The feed is exposed only through Scout's loopback HUD bridge; the raw Scout token is never returned to the HUD companion or iPad. Alert acknowledgements made in Mongrel HUD are forwarded through the same loopback boundary and stored by the website for that token owner.
+When a Scout token is bound to a website account, Scout 1.8.0 also refreshes a compact authenticated HUD feed containing Mission Control, Trader's Outpost, Scout Board and permitted leadership-alert summaries. The feed is exposed only through Scout's loopback HUD bridge; the raw Scout token is never returned to the HUD companion or iPad. Alert acknowledgements made in Mongrel HUD are forwarded through the same loopback boundary and stored by the website for that token owner.
+
+
+## Live current jump range
+
+Scout 1.8.0 calculates a local **current normal jump range** for Mongrel HUD from Elite's own loadout and Status data. The calculation uses the installed standard/SCO FSD class and rating, engineered FSD optimal mass when reported, maximum fuel per jump, Guardian FSD Booster range, unladen ship mass, current cargo, and current main + reserve fuel. It uses the same published FSD equation used by established Elite tools rather than a per-ship fitted percentage. Temporary synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now. The ship/loadout inputs remain local to the HUD bridge and are not added to Scout's cloud BGS payload.

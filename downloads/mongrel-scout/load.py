@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import secrets
 import threading
 import time
@@ -20,15 +21,65 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.7.0"
+PLUGIN_VERSION = "1.8.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 4
+HUD_BRIDGE_VERSION = 5
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
+FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
+FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
+FSD_RATING_CONSTANT = {
+    "standard": {"E": 11.0, "D": 10.0, "C": 8.0, "B": 10.0, "A": 12.0},
+    "sco": {"E": 8.0, "D": 12.0, "C": 12.0, "B": 12.0, "A": 13.0},
+    "mkii": {"A": 11.0},
+}
+FSD_MAX_FUEL = {
+    "standard": {
+        "2E": 0.60, "2D": 0.60, "2C": 0.60, "2B": 0.80, "2A": 0.90,
+        "3E": 1.20, "3D": 1.20, "3C": 1.20, "3B": 1.50, "3A": 1.80,
+        "4E": 2.00, "4D": 2.00, "4C": 2.00, "4B": 2.50, "4A": 3.00,
+        "5E": 3.30, "5D": 3.30, "5C": 3.30, "5B": 4.10, "5A": 5.00,
+        "6E": 5.30, "6D": 5.30, "6C": 5.30, "6B": 6.60, "6A": 8.00,
+        "7E": 8.50, "7D": 8.50, "7C": 8.50, "7B": 10.60, "7A": 12.80,
+        "8E": 13.60, "8D": 13.60, "8C": 13.60, "8B": 17.00, "8A": 20.40,
+    },
+    "sco": {
+        "2E": 0.60, "2D": 0.90, "2C": 0.90, "2B": 0.90, "2A": 1.00,
+        "3E": 1.20, "3D": 1.80, "3C": 1.80, "3B": 1.80, "3A": 1.90,
+        "4E": 2.00, "4D": 3.00, "4C": 3.00, "4B": 3.00, "4A": 3.20,
+        "5E": 3.30, "5D": 5.00, "5C": 5.00, "5B": 5.00, "5A": 5.20,
+        "6E": 5.30, "6D": 8.00, "6C": 8.00, "6B": 8.00, "6A": 8.30,
+        "7E": 8.50, "7D": 12.80, "7C": 12.80, "7B": 12.80, "7A": 13.10,
+        "8E": 13.80, "8D": 20.40, "8C": 20.40, "8B": 20.40, "8A": 20.70,
+    },
+    "mkii": {"8A": 6.80},
+}
+FSD_OPTIMAL_MASS = {
+    "standard": {
+        "2E": 48.0, "2D": 54.0, "2C": 60.0, "2B": 75.0, "2A": 90.0,
+        "3E": 80.0, "3D": 90.0, "3C": 100.0, "3B": 125.0, "3A": 150.0,
+        "4E": 280.0, "4D": 315.0, "4C": 350.0, "4B": 438.0, "4A": 525.0,
+        "5E": 560.0, "5D": 630.0, "5C": 700.0, "5B": 875.0, "5A": 1050.0,
+        "6E": 960.0, "6D": 1080.0, "6C": 1200.0, "6B": 1500.0, "6A": 1800.0,
+        "7E": 1440.0, "7D": 1620.0, "7C": 1800.0, "7B": 2250.0, "7A": 2700.0,
+        "8E": 2800.0, "8D": 4200.0, "8C": 4200.0, "8B": 4200.0, "8A": 4670.0,
+    },
+    "sco": {
+        "2E": 60.0, "2D": 90.0, "2C": 90.0, "2B": 90.0, "2A": 100.0,
+        "3E": 100.0, "3D": 150.0, "3C": 150.0, "3B": 150.0, "3A": 167.0,
+        "4E": 350.0, "4D": 525.0, "4C": 525.0, "4B": 525.0, "4A": 585.0,
+        "5E": 700.0, "5D": 1050.0, "5C": 1050.0, "5B": 1050.0, "5A": 1175.0,
+        "6E": 1200.0, "6D": 1800.0, "6C": 1800.0, "6B": 1800.0, "6A": 2000.0,
+        "7E": 1800.0, "7D": 2700.0, "7C": 2700.0, "7B": 2700.0, "7A": 3000.0,
+        "8E": 1800.0, "8D": 2700.0, "8C": 2700.0, "8B": 2700.0, "8A": 3000.0,
+    },
+    "mkii": {"8A": 4670.0},
+}
+GUARDIAN_FSD_BOOST = {1: 4.00, 2: 6.00, 3: 7.75, 4: 9.25, 5: 10.50}
 HUD_EVENT_TYPES = {
     "DockingRequested": "docking.requested",
     "DockingGranted": "docking.granted",
@@ -103,7 +154,7 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
-    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "cargoCapacity": None, "fuelCapacity": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "target": None,
     "lastEvent": None,
     "updatedAt": None,
@@ -300,6 +351,7 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
             _hud_state["ship"] = ship
         ship["shieldsUp"] = status["shieldsUp"]
         ship["timestamp"] = status["timestamp"]
+        _update_current_jump_range_locked(ship, status)
         _hud_state["updatedAt"] = status["timestamp"] or _hud_state.get("updatedAt")
         _hud_condition.notify_all()
 
@@ -426,6 +478,7 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
             "ident": str(state.get("ShipIdent") or "").strip(),
             "type": str(state.get("ShipType") or "").strip(),
             "maxJumpRange": _optional_float(state.get("MaxJumpRange")),
+            "unladenMass": _optional_float(state.get("UnladenMass")),
             "cargoCapacity": _optional_int(state.get("CargoCapacity")),
         }
         fuel_capacity = state.get("FuelCapacity")
@@ -434,6 +487,9 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         for key, value in updates.items():
             if value is not None and (not isinstance(value, str) or value):
                 ship[key] = value
+        status = _hud_state.get("status")
+        if isinstance(status, Mapping):
+            _update_current_jump_range_locked(ship, status)
         _hud_condition.notify_all()
 
 
@@ -852,10 +908,14 @@ def _normalize_hud_event(
         payload["shipIdent"] = str(entry.get("ShipIdent") or "").strip()
         payload["shipType"] = str(entry.get("Ship_Localised") or entry.get("Ship") or "").strip()
         payload["maxJumpRange"] = _optional_float(entry.get("MaxJumpRange"))
+        payload["unladenMass"] = _optional_float(entry.get("UnladenMass"))
         payload["cargoCapacity"] = _optional_int(entry.get("CargoCapacity"))
         fuel_capacity = entry.get("FuelCapacity")
         if isinstance(fuel_capacity, Mapping):
             payload["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+        jump_model = _extract_jump_model(entry)
+        if jump_model:
+            payload["jumpModel"] = jump_model
 
     if journal_event == "Bounty":
         payload["totalReward"] = _optional_int(entry.get("TotalReward"))
@@ -931,12 +991,18 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
                 ("shipIdent", "ident"),
                 ("shipType", "type"),
                 ("maxJumpRange", "maxJumpRange"),
+                ("unladenMass", "unladenMass"),
                 ("cargoCapacity", "cargoCapacity"),
                 ("fuelCapacity", "fuelCapacity"),
             ):
                 value = event.get(source)
                 if value is not None and (not isinstance(value, str) or value):
                     ship[dest] = value
+            if isinstance(event.get("jumpModel"), Mapping):
+                ship["jumpModel"] = dict(event["jumpModel"])
+            status = _hud_state.get("status")
+            if isinstance(status, Mapping):
+                _update_current_jump_range_locked(ship, status)
         ship["timestamp"] = event.get("timestamp") or ship.get("timestamp")
 
     if event_type == "combat.target":
@@ -1117,6 +1183,127 @@ def _optional_float(value: Any) -> Optional[float]:
     except (TypeError, ValueError, OverflowError):
         return None
     return result if result == result and result not in (float("inf"), float("-inf")) else None
+
+
+def _fsd_module_key(item: str) -> tuple[str, int, str] | None:
+    text = str(item or "").strip().casefold()
+    match = re.search(r"size(\d+)_class(\d+)", text)
+    if not match:
+        return None
+    size = int(match.group(1))
+    grade = FSD_GRADE_BY_CLASS.get(int(match.group(2)))
+    if not grade:
+        return None
+    if "overchargebooster_mkii" in text:
+        kind = "mkii"
+    elif "hyperdrive_overcharge" in text:
+        kind = "sco"
+    elif "hyperdrive" in text:
+        kind = "standard"
+    else:
+        return None
+    return kind, size, grade
+
+
+def _engineering_value(module: Mapping[str, Any], label: str) -> Optional[float]:
+    engineering = module.get("Engineering")
+    modifiers = engineering.get("Modifiers") if isinstance(engineering, Mapping) else None
+    if not isinstance(modifiers, list):
+        return None
+    wanted = label.casefold()
+    for modifier in modifiers:
+        if not isinstance(modifier, Mapping):
+            continue
+        if str(modifier.get("Label") or "").strip().casefold() != wanted:
+            continue
+        return _optional_float(modifier.get("Value"))
+    return None
+
+
+def _extract_jump_model(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    modules = entry.get("Modules")
+    if not isinstance(modules, list):
+        return None
+    fsd_module: Optional[Mapping[str, Any]] = None
+    guardian_boost = 0.0
+    for module in modules:
+        if not isinstance(module, Mapping):
+            continue
+        item = str(module.get("Item") or "").strip()
+        slot = str(module.get("Slot") or "").strip().casefold()
+        if fsd_module is None and (slot == "frameshiftdrive" or "hyperdrive" in item.casefold()):
+            fsd_module = module
+        if "guardianfsdbooster" in item.casefold():
+            size_match = re.search(r"size(\d+)", item.casefold())
+            if size_match:
+                guardian_boost = max(guardian_boost, GUARDIAN_FSD_BOOST.get(int(size_match.group(1)), 0.0))
+    if fsd_module is None:
+        return None
+    item = str(fsd_module.get("Item") or "").strip()
+    parsed = _fsd_module_key(item)
+    if not parsed:
+        return None
+    kind, size, grade = parsed
+    key = f"{size}{grade}"
+    optimal_mass = _engineering_value(fsd_module, "FSDOptimalMass")
+    if optimal_mass is None:
+        optimal_mass = FSD_OPTIMAL_MASS.get(kind, {}).get(key)
+    max_fuel = _engineering_value(fsd_module, "MaxFuelPerJump")
+    if max_fuel is None:
+        max_fuel = FSD_MAX_FUEL.get(kind, {}).get(key)
+    rating_constant = FSD_RATING_CONSTANT.get(kind, {}).get(grade)
+    power_constant = 2.5025 if kind == "mkii" and size == 8 else FSD_POWER_CONSTANT.get(size)
+    values = (optimal_mass, max_fuel, rating_constant, power_constant)
+    if any(value is None or float(value) <= 0 for value in values):
+        return None
+    return {
+        "item": item,
+        "kind": kind,
+        "class": size,
+        "rating": grade,
+        "optimalMass": float(optimal_mass),
+        "maxFuelPerJump": float(max_fuel),
+        "ratingConstant": float(rating_constant),
+        "powerConstant": float(power_constant),
+        "guardianBoost": float(guardian_boost),
+    }
+
+
+def _update_current_jump_range_locked(ship: MutableMapping[str, Any], status: Mapping[str, Any]) -> None:
+    ship["currentJumpRange"] = None
+    ship["currentMass"] = None
+    ship["jumpFuelUsed"] = None
+    model = ship.get("jumpModel")
+    if not isinstance(model, Mapping):
+        return
+    unladen = _optional_float(ship.get("unladenMass"))
+    fuel_main = _optional_float(status.get("fuelMain"))
+    fuel_reserve = _optional_float(status.get("fuelReserve"))
+    cargo = _optional_float(status.get("cargo"))
+    optimal_mass = _optional_float(model.get("optimalMass"))
+    max_fuel = _optional_float(model.get("maxFuelPerJump"))
+    rating_constant = _optional_float(model.get("ratingConstant"))
+    power_constant = _optional_float(model.get("powerConstant"))
+    guardian_boost = _optional_float(model.get("guardianBoost")) or 0.0
+    if None in (unladen, fuel_main, cargo, optimal_mass, max_fuel, rating_constant, power_constant):
+        return
+    current_fuel = max(0.0, float(fuel_main)) + max(0.0, float(fuel_reserve or 0.0))
+    current_mass = float(unladen) + max(0.0, float(cargo)) + current_fuel
+    if current_mass <= 0:
+        return
+    fuel_used = min(current_fuel, max(0.0, float(max_fuel)))
+    ship["currentMass"] = round(current_mass, 6)
+    ship["jumpFuelUsed"] = round(fuel_used, 6)
+    ship["currentFuel"] = round(current_fuel, 6)
+    ship["jumpRangeMethod"] = "elite_fsd_formula"
+    if fuel_used <= 0:
+        ship["currentJumpRange"] = 0.0
+        return
+    try:
+        base_range = float(optimal_mass) / current_mass * ((fuel_used * 1000.0 / float(rating_constant)) ** (1.0 / float(power_constant)))
+        ship["currentJumpRange"] = round(max(0.0, base_range + guardian_boost), 6)
+    except (ArithmeticError, OverflowError, ValueError):
+        ship["currentJumpRange"] = None
 
 
 def _normalize_percent(value: Any, *, fraction: bool = False) -> Optional[float]:
