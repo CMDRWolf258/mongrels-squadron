@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mongrel HUD Controller</title>
+<style>
+:root{color-scheme:dark;--bg:#061018;--panel:#0c1921;--line:#244451;--text:#d8edf4;--muted:#8fa8b2;--accent:#55d7ef;--warn:#ffc857}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-weight:800;letter-spacing:.12em}.status{color:var(--muted);font-size:.85rem}
+.profiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}button,input,textarea{font:inherit}.profiles button,.site-btn,.action{min-height:52px;border:1px solid var(--line);border-radius:10px;background:#10232d;color:var(--text);font-weight:700}.profiles button.active,.site-btn.active{border-color:var(--accent);color:var(--accent);background:#0d303b}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;margin:12px 0}.card h2{margin:0 0 12px;font-size:1rem;letter-spacing:.06em}.big{font-size:clamp(1.35rem,5vw,2.2rem);font-weight:800}.row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)}.row:last-child{border:0}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sites{display:flex;flex-wrap:wrap;gap:8px}.site-btn{min-width:72px;padding:8px 12px}
+label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);font-size:16px}textarea{min-height:80px}.action{width:100%;margin-top:12px;background:#12323e}.notice{color:var(--warn);min-height:24px;margin-top:8px}.hidden{display:none!important}
+#pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div id="pair">
+  <div class="box card"><h2>PAIR WITH MONGREL HUD</h2><p class="muted">Enter the six-digit PIN shown on the PC.</p><input id="pin" inputmode="numeric" maxlength="6" placeholder="000000"><button class="action" id="pairButton">PAIR</button><div class="notice" id="pairNotice"></div></div>
+</div>
+<main>
+  <div class="top"><div class="brand">MONGREL HUD</div><div class="status" id="connection">Connecting…</div></div>
+  <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button></div>
+
+  <section id="combatPanel">
+    <div class="card"><h2>YOUR SHIP</h2><div class="grid"><div><span class="muted">Shields</span><div class="big" id="ownShields">—</div></div><div><span class="muted">Hull</span><div class="big" id="ownHull">—</div></div></div></div>
+    <div class="card"><h2>CURRENT TARGET</h2><div class="big" id="targetName">NO TARGET</div><div class="row"><span>Shields</span><strong id="targetShields">—</strong></div><div class="row"><span>Hull</span><strong id="targetHull">—</strong></div><div class="row"><span>Status / bounty</span><strong id="targetBounty">—</strong></div><div class="row"><span>Subsystem</span><strong id="targetSubsystem">—</strong></div></div>
+    <div class="card"><h2>LAST SEEN MODULES</h2><div class="modules" id="modules"><span class="muted">No modules observed yet.</span></div></div>
+  </section>
+
+  <section id="surfacePanel" class="hidden">
+    <div class="card"><h2>SURFACE POSITION</h2><div class="big" id="surfaceBody">—</div><div class="row"><span>System</span><strong id="surfaceSystem">—</strong></div><div class="row"><span>Coordinates</span><strong id="coords">—</strong></div><div class="row"><span>Active site</span><strong id="activeSite">—</strong></div><div class="row"><span>Center range</span><strong id="siteRange">—</strong></div><div class="row"><span>Direction</span><strong id="siteDirection">—</strong></div></div>
+    <div class="card"><h2>SITES ON THIS BODY</h2><div class="sites" id="sites"><span class="muted">No saved sites.</span></div></div>
+    <div class="card"><h2>SET SITE CENTER</h2><div class="grid"><div><label for="siteNumber">Site number</label><input id="siteNumber" type="number" min="1" max="999" placeholder="10"></div><div><label for="siteCommodity">Commodity (optional)</label><input id="siteCommodity" placeholder="Periclase"></div></div><button class="action" id="setCenter">SET SITE CENTER</button><div class="notice" id="siteNotice"></div></div>
+    <div class="card"><h2>REPORT DEPOSIT</h2><div class="grid"><div><label for="depositCommodity">Commodity</label><input id="depositCommodity" placeholder="Periclase"></div><div><label for="rigs">Mining rigs</label><input id="rigs" type="number" min="0" max="1000" value="0"></div></div><label for="notes">Notes</label><textarea id="notes" placeholder="Deposit size, terrain, approach notes…"></textarea><button class="action" id="reportDeposit">REPORT DEPOSIT</button><div class="notice" id="depositNotice"></div></div>
+  </section>
+</main>
+<script>
+(function(){
+"use strict";
+var state=null;
+function el(id){return document.getElementById(id)}
+function pct(v){return typeof v==="number"?Math.round(v)+"%":"—"}
+function dist(m){if(typeof m!=="number")return "—";return m<1000?Math.round(m)+" m":m<100000?(m/1000).toFixed(2)+" km":(m/1000).toFixed(1)+" km"}
+async function api(path,body){
+  var opt={headers:{"Content-Type":"application/json"}};
+  if(body!==undefined){opt.method="POST";opt.body=JSON.stringify(body)}
+  var r=await fetch(path,opt);var data=await r.json().catch(function(){return {}});
+  if(!r.ok)throw new Error(data.error||"request_failed");return data
+}
+function age(v){if(!v)return "?";var s=Math.max(0,Math.floor((Date.now()-Date.parse(v))/1000));return s<60?s+"s":Math.floor(s/60)+"m"}
+function render(){
+  if(!state)return;
+  el("connection").textContent=state.connected?"Scout connected":"Scout waiting";
+  var profile=state.profile||"combat";
+  el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
+  el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
+  var scout=state.scout||{},own=scout.ship||{},target=scout.target||{};
+  el("ownShields").textContent=own.shieldsUp===true?"UP":own.shieldsUp===false?"DOWN":"—";el("ownHull").textContent=pct(own.hullHealth);
+  el("targetName").textContent=target.pilotName||target.ship||"NO TARGET";el("targetShields").textContent=pct(target.shieldHealth);el("targetHull").textContent=pct(target.hullHealth);
+  var bounty=(target.legalStatus||"").toUpperCase();if(typeof target.bounty==="number"&&target.bounty>0)bounty+=(bounty?" · ":"")+target.bounty.toLocaleString()+" CR";el("targetBounty").textContent=bounty||"—";
+  var sub=target.subsystem||{};el("targetSubsystem").textContent=sub.name?(sub.name+" · "+pct(sub.health)):"—";
+  var mods=Object.values(target.modules||{}).sort(function(a,b){return String(b.observedAt||"").localeCompare(String(a.observedAt||""))});
+  el("modules").innerHTML=mods.length?mods.slice(0,8).map(function(m){return '<div class="row"><span>'+escapeHtml(m.name||"Module")+'</span><strong>'+pct(m.health)+' · '+age(m.observedAt)+' ago</strong></div>'}).join(""):'<span class="muted">No modules observed yet.</span>';
+  var status=scout.status||{},sys=scout.system||{};el("surfaceBody").textContent=status.bodyName||"—";el("surfaceSystem").textContent=sys.name||"—";
+  el("coords").textContent=typeof status.latitude==="number"&&typeof status.longitude==="number"?status.latitude.toFixed(6)+", "+status.longitude.toFixed(6):"—";
+  var active=state.activeSite||{};el("activeSite").textContent=active.siteNumber?"#"+active.siteNumber+(active.commodity?" · "+active.commodity:""):"—";
+  var nav=state.surfaceNav;el("siteRange").textContent=nav?dist(nav.distance):"—";el("siteDirection").textContent=nav?(Math.round(nav.bearing)+"°"+(typeof nav.relative==="number"?" · "+(Math.abs(nav.relative)<=5?"AHEAD":Math.round(Math.abs(nav.relative))+"° "+(nav.relative>0?"RIGHT":"LEFT")):"")):"—";
+  var sites=state.sites||[];el("sites").innerHTML=sites.length?sites.map(function(s){return '<button class="site-btn '+(active.id===s.id?"active":"")+'" data-site="'+escapeAttr(s.id)+'">#'+s.siteNumber+(s.commodity?" · "+escapeHtml(s.commodity):"")+"</button>"}).join(""):'<span class="muted">No saved sites on this body.</span>';
+  document.querySelectorAll("[data-site]").forEach(function(b){b.onclick=async function(){try{await api("/api/site-select",{siteId:b.getAttribute("data-site")});await load()}catch(e){el("siteNotice").textContent=e.message}}});
+}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function escapeAttr(v){return escapeHtml(v)}
+async function load(){try{state=await api("/api/state");el("pair").classList.add("hidden");render()}catch(e){if(e.message==="pair_required")el("pair").classList.remove("hidden")}}
+el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
+document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){await api("/api/profile",{profile:b.getAttribute("data-profile")});await load()}});
+el("setCenter").onclick=async function(){try{var r=await api("/api/site-center",{siteNumber:Number(el("siteNumber").value),commodity:el("siteCommodity").value});el("siteNotice").textContent="Saved site #"+r.site.siteNumber+" center.";await load()}catch(e){el("siteNotice").textContent=e.message}};
+el("reportDeposit").onclick=async function(){try{var r=await api("/api/deposit",{commodity:el("depositCommodity").value,rigs:Number(el("rigs").value||0),notes:el("notes").value});el("depositNotice").textContent="Deposit saved at "+r.deposit.latitude.toFixed(6)+", "+r.deposit.longitude.toFixed(6);el("notes").value="";await load()}catch(e){el("depositNotice").textContent=e.message}};
+load();setInterval(load,500);
+})();
+</script>
+</body>
+</html>
