@@ -6,17 +6,17 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 
 - Windows PC running Elite Dangerous.
 - EDMC with **Mongrel Scout v1.5.0 or newer** installed and enabled.
-- Python 3 for Windows for this prototype. After the flight-test phase the companion can be packaged as a standalone executable so Python is no longer required.
+- No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
 ## Start
 
 1. Install/update Mongrel Scout and restart EDMC.
-2. Extract this ZIP anywhere convenient.
-3. Double-click **run.bat**.
+2. Extract **MongrelHUD-Windows.zip** anywhere convenient.
+3. Double-click **MongrelHUD.exe**.
 4. The PC window shows the local iPad address and a six-digit pairing PIN.
 5. Open that address on the iPad and enter the PIN.
-6. If Windows Firewall asks, permit the companion on **Private networks only**.
+6. If Windows Firewall or SmartScreen asks, allow the app on **Private networks only**. The current prototype is unsigned, so Windows may show an "unrecognized app" warning.
 
 The transparent overlay is top-most and click-through on Windows. Use the small PC control window to show/hide it or generate a new pairing PIN.
 

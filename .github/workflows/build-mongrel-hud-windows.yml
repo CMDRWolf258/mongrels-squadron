@@ -1,0 +1,53 @@
+name: Build Mongrel HUD Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'downloads/mongrel-hud/**'
+      - '.github/workflows/build-mongrel-hud-windows.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mongrel-hud-windows
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: python -m pip install --disable-pip-version-check pyinstaller
+
+      - name: Build standalone executable
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
+          Copy-Item downloads/mongrel-hud/README.md package/README.md
+          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Windows.zip -Force
+
+      - name: Publish rolling Windows build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view mongrel-hud-latest *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create mongrel-hud-latest --title "Mongrel HUD Windows" --notes "Rolling Windows build for the Mongrel HUD prototype."
+          }
+          gh release upload mongrel-hud-latest MongrelHUD-Windows.zip --clobber

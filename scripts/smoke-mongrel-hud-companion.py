@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.1.0"
+assert hud.APP_VERSION=="0.1.1"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -48,6 +48,7 @@ source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf
 assert "Access-Control-Allow-Origin" not in source
 assert 'CONTROLLER_HOST = "0.0.0.0"' in source
 api=(ROOT/"functions"/"api"/"downloads"/"mongrel-hud.js").read_text(encoding="utf-8")
-for token in ["MongrelHUD/mongrel_hud.py","MongrelHUD/controller.html","MongrelHUD-Prototype.zip","application/zip"]:
+for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]:
     assert token in api
+assert "resource_path" in source and "_MEIPASS" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")

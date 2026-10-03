@@ -6,6 +6,7 @@ import math
 import os
 import secrets
 import socket
+import sys
 import threading
 import time
 import tkinter as tk
@@ -18,11 +19,16 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
+
+
+def resource_path(name: str) -> Path:
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return base / name
 
 
 def local_ipv4() -> str:
@@ -510,8 +516,7 @@ def make_handler(app: MongrelHudApp):
 
 
 def main() -> None:
-    here = Path(__file__).resolve().parent
-    controller = (here / "controller.html").read_text(encoding="utf-8")
+    controller = resource_path("controller.html").read_text(encoding="utf-8")
     data_dir = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "MongrelHUD"
     app = MongrelHudApp(LocalStore(data_dir / "state.json"), controller)
     threading.Thread(target=app.poll_scout, name="MongrelHudScoutPoll", daemon=True).start()
