@@ -70,6 +70,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
           node --experimental-default-type=module scripts/smoke-mongrel-scout.mjs
           python3 scripts/smoke-mongrel-hud.py
+          python3 scripts/smoke-mongrel-hud-companion.py
           node --experimental-default-type=module scripts/smoke-scout-jobs.mjs
           node --experimental-default-type=module scripts/smoke-frontier-diagnostics.mjs
           node --experimental-default-type=module scripts/smoke-frontier-auto-sync.mjs
@@ -89,6 +90,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-gallery-submissions.mjs
           node --experimental-default-type=module scripts/smoke-daily-orders-discord.mjs
           python3 -m py_compile downloads/mongrel-scout/load.py
+          python3 -m py_compile downloads/mongrel-hud/mongrel_hud.py
 
       - name: Run Orrery model and wiring checks
         run: node --experimental-default-type=module scripts/smoke-orrery.mjs && node --experimental-default-type=module scripts/smoke-orrery-camera.mjs
