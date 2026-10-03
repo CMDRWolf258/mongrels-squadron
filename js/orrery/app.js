@@ -98,9 +98,6 @@ function renderDetails(record) {
     if (record.ringId) pair('Ring', state.records.get(record.ringId)?.name || record.ringId);
   }
   root.append(dl);
-  if (canManageHosts() && record.recordType === 'location' && record.marketId && record.latitude == null && record.longitude == null && ['station','settlement','installation'].includes(record.kind)) {
-    root.append(buildHostEditor(record));
-  }
   if (record.positionObservation?.event === 'ApproachSettlement') root.append(node('p', 'Exact surface placement was upgraded from a verified Mongrel Scout ApproachSettlement observation. Imported source notes below may describe the older snapshot before this visit.'));
   else if (record.positionObservation?.event === 'StationHostEstimate') root.append(node('p', 'Host body is an automated geometric estimate based on arrival distance and a strong runner-up margin. Officers can confirm or correct it below.'));
   else if (record.positionObservation?.event === 'StationHostOverride') root.append(node('p', 'Host body was confirmed or corrected by Mongrel leadership.'));
@@ -135,6 +132,9 @@ function renderDetails(record) {
   if (!source?.url && (record.recordType === 'body' || record.recordType === 'ring')) root.append(safeLink('EDSM body catalogue ↗', `https://www.edsm.net/en/system/bodies/id/${state.system.edsmId}`));
   if (record.associationSource) root.append(node('p', `Host association: ${record.associationSource.name || 'Mongrel reference'}${record.associationSource.reference ? ` · ${record.associationSource.reference.split('/').pop()}` : ''}`));
   if (record.associationSource?.url) root.append(safeLink('Host association source ↗', record.associationSource.url));
+  if (canManageHosts() && record.recordType === 'location' && record.marketId && record.latitude == null && record.longitude == null && ['station','settlement','installation'].includes(record.kind)) {
+    root.append(buildHostEditor(record));
+  }
 }
 
 function canManageHosts() {
