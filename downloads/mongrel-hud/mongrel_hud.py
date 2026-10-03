@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -585,10 +585,20 @@ class MongrelHudApp:
         own_hull = own.get("hullHealth")
         hull_text = f"{own_hull:.0f}%" if isinstance(own_hull, (int, float)) else "—"
         ship_name = str(own.get("name") or own.get("type") or "YOUR SHIP").strip()
-        jump = own.get("maxJumpRange")
-        jump_text = f"{jump:.2f} LY" if isinstance(jump, (int, float)) else "—"
-        fuel = status.get("fuelMain")
-        fuel_text = f"{fuel:.1f} t" if isinstance(fuel, (int, float)) else "—"
+        current_jump = own.get("currentJumpRange")
+        current_jump_text = f"{current_jump:.2f} LY" if isinstance(current_jump, (int, float)) else "—"
+        unladen_jump = own.get("maxJumpRange")
+        unladen_jump_text = f"{unladen_jump:.2f} LY" if isinstance(unladen_jump, (int, float)) else "—"
+        fuel_main = status.get("fuelMain")
+        fuel_reserve = status.get("fuelReserve")
+        total_fuel = None
+        if isinstance(fuel_main, (int, float)):
+            total_fuel = float(fuel_main) + (float(fuel_reserve) if isinstance(fuel_reserve, (int, float)) else 0.0)
+        fuel_text = f"{total_fuel:.1f} t" if isinstance(total_fuel, (int, float)) else "—"
+        cargo = status.get("cargo")
+        cargo_text = f"{int(cargo)} t" if isinstance(cargo, (int, float)) else "—"
+        current_mass = own.get("currentMass")
+        mass_text = f"{current_mass:.1f} t" if isinstance(current_mass, (int, float)) else "—"
         pips = status.get("pips")
         pip_text = "—"
         if isinstance(pips, list) and len(pips) >= 3:
@@ -596,7 +606,9 @@ class MongrelHudApp:
         own_lines = [
             ship_name.upper(),
             f"SHIELDS {own_shield:<4}   HULL {hull_text:>4}",
-            f"MAX JUMP {jump_text}   FUEL {fuel_text}",
+            f"CURRENT JUMP {current_jump_text}",
+            f"UNLADEN {unladen_jump_text}   FUEL {fuel_text}",
+            f"CARGO {cargo_text}   MASS {mass_text}",
             pip_text,
         ]
         warnings = []
@@ -667,15 +679,23 @@ class MongrelHudApp:
         own_hull = own.get("hullHealth")
         hull_text = f"{own_hull:.0f}%" if isinstance(own_hull, (int, float)) else "—"
         ship_name = str(own.get("name") or own.get("type") or "YOUR SHIP").strip()
-        jump = own.get("maxJumpRange")
-        jump_text = f"{jump:.2f} LY" if isinstance(jump, (int, float)) else "—"
-        fuel = status.get("fuelMain")
-        fuel_text = f"{fuel:.1f} t" if isinstance(fuel, (int, float)) else "—"
+        current_jump = own.get("currentJumpRange")
+        current_jump_text = f"{current_jump:.2f} LY" if isinstance(current_jump, (int, float)) else "—"
+        unladen_jump = own.get("maxJumpRange")
+        unladen_jump_text = f"{unladen_jump:.2f} LY" if isinstance(unladen_jump, (int, float)) else "—"
+        fuel_main = status.get("fuelMain")
+        fuel_reserve = status.get("fuelReserve")
+        total_fuel = float(fuel_main) + (float(fuel_reserve) if isinstance(fuel_reserve, (int, float)) else 0.0) if isinstance(fuel_main, (int, float)) else None
+        fuel_text = f"{total_fuel:.1f} t" if isinstance(total_fuel, (int, float)) else "—"
+        cargo = status.get("cargo")
+        cargo_text = f"{int(cargo)} t" if isinstance(cargo, (int, float)) else "—"
+        current_mass = own.get("currentMass")
+        mass_text = f"{current_mass:.1f} t" if isinstance(current_mass, (int, float)) else "—"
         pips = status.get("pips")
         pip_text = "—"
         if isinstance(pips, list) and len(pips) >= 3:
             pip_text = f"SYS {pips[0]:.1f}  ENG {pips[1]:.1f}  WEP {pips[2]:.1f}"
-        lines = ["COMBAT", f"{ship_name.upper()}   MAX JUMP {jump_text}   FUEL {fuel_text}", f"SHIELDS {own_shield:<4}   HULL {hull_text:>4}   PIPS {pip_text}"]
+        lines = ["COMBAT", f"{ship_name.upper()}   CURRENT {current_jump_text}   UNLADEN {unladen_jump_text}", f"FUEL {fuel_text}   CARGO {cargo_text}   MASS {mass_text}", f"SHIELDS {own_shield:<4}   HULL {hull_text:>4}   PIPS {pip_text}"]
         warnings = []
         for key, label in (("massLocked", "MASS LOCK"), ("silentRunning", "SILENT"), ("lowFuel", "LOW FUEL"), ("overheating", "OVERHEAT")):
             if status.get(key):

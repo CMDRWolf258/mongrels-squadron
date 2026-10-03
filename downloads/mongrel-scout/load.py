@@ -487,6 +487,11 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         for key, value in updates.items():
             if value is not None and (not isinstance(value, str) or value):
                 ship[key] = value
+        cached_modules = state.get("Modules")
+        if isinstance(cached_modules, Mapping):
+            jump_model = _extract_jump_model({"Modules": cached_modules})
+            if jump_model:
+                ship["jumpModel"] = jump_model
         status = _hud_state.get("status")
         if isinstance(status, Mapping):
             _update_current_jump_range_locked(ship, status)
@@ -1221,8 +1226,12 @@ def _engineering_value(module: Mapping[str, Any], label: str) -> Optional[float]
 
 
 def _extract_jump_model(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:
-    modules = entry.get("Modules")
-    if not isinstance(modules, list):
+    modules_raw = entry.get("Modules")
+    if isinstance(modules_raw, Mapping):
+        modules = list(modules_raw.values())
+    elif isinstance(modules_raw, list):
+        modules = modules_raw
+    else:
         return None
     fsd_module: Optional[Mapping[str, Any]] = None
     guardian_boost = 0.0

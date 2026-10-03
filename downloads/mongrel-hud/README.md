@@ -5,7 +5,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 ## Requirements
 
 - Windows PC running Elite Dangerous.
-- EDMC with **Mongrel Scout v1.7.0 or newer** installed and enabled.
+- EDMC with **Mongrel Scout v1.8.0 or newer** installed and enabled.
 - No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
@@ -26,7 +26,7 @@ The HUD is rendered as independent top-most transparent panels rather than one l
 
 The first pass keeps information visible when cockpit head movement pushes Elite's normal HUD out of view:
 
-- your ship name, max jump range, current fuel, SYS/ENG/WEP pips, shield **UP/DOWN** state and last reported hull percentage;
+- your ship name, **live current normal jump range**, Frontier unladen range, current fuel/cargo/mass, SYS/ENG/WEP pips, shield **UP/DOWN** state and last reported hull percentage;
 - a persistent tracked bounty ledger with a zero floor, plus this-run earnings, kill count and last bounty;
 - Wanted/legal status and bounty when the completed target scan reports one;
 - current targeted subsystem;
@@ -56,8 +56,13 @@ This prototype uses ordinary HTTP because it is intended for a trusted private L
 
 ## Global information panels
 
-Mongrel HUD 0.4.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
+Mongrel HUD 0.5.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
 
 Scout 1.7.0 fetches the authenticated site summaries with its existing bound Scout token. The HUD companion never receives the raw token. Current faction operational alerts, active payout requests, recent material Daily Order changes, and degraded/unavailable managed trade routes become leadership alerts. Unacknowledged alerts flash on the PC overlay and can be acknowledged individually or all at once from the iPad; acknowledgements are stored by the website for the token owner.
 
 HUD Notes are intentionally local-first. Up to 4,000 characters can be entered on the iPad controller and displayed in the Notes overlay. Notes are stored in the local Mongrel HUD state file and are not uploaded to the website in this version.
+
+
+## Current jump calculator
+
+Mongrel HUD 0.5.0 displays Scout 1.8.0's live normal jump calculation as **CURRENT JUMP** and keeps Frontier's Loadout value beside it as **UNLADEN**. The current value responds to live cargo and fuel mass and uses the fitted FSD's class/rating, SCO/standard characteristics, engineering optimal-mass modifier, maximum fuel per jump and Guardian FSD Booster. The iPad diagnostic card also shows current cargo and calculated ship mass so flight testing can compare the result against Elite directly. Synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now.
