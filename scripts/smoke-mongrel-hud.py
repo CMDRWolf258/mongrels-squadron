@@ -64,11 +64,12 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.6.0"
+assert plugin.PLUGIN_VERSION == "1.7.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
-assert plugin.HUD_BRIDGE_VERSION == 3
+assert plugin.HUD_SITE_FEED_REFRESH_SECONDS == 30.0
+assert plugin.HUD_BRIDGE_VERSION == 4
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -210,6 +211,7 @@ assert state["status"]["latitude"] == -22.7738
 assert state["status"]["pips"] == [2.0, 1.0, 3.0]
 assert state["status"]["fuelMain"] == 27.5
 assert state["status"]["cargo"] == 12
+assert "siteFeed" in state and "siteFeedStatus" in state
 assert plugin._hud_events_after(0, 0)["latestSeq"] == seq_before_status
 
 plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
@@ -315,4 +317,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.6.0 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")
+print("✓ Mongrel Scout v1.7.0 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")

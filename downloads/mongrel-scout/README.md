@@ -82,3 +82,8 @@ The direct endpoint is authenticated with an individually revocable scout token.
 - All scout tokens have a server-side limit of 120 upload attempts per hour.
 - If EDMC says **Not assigned: <system>**, that system is outside the token's current Restricted Scout permissions.
 - If EDMC says **Token rejected**, ask Wolf for a replacement token.
+
+
+## HUD leadership feed
+
+When a Scout token is bound to a website account, Scout 1.7.0 also refreshes a compact authenticated HUD feed containing Mission Control, Trader's Outpost, Scout Board and permitted leadership-alert summaries. The feed is exposed only through Scout's loopback HUD bridge; the raw Scout token is never returned to the HUD companion or iPad. Alert acknowledgements made in Mongrel HUD are forwarded through the same loopback boundary and stored by the website for that token owner.

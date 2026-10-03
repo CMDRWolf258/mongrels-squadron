@@ -20,14 +20,15 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.6.0"
+PLUGIN_VERSION = "1.7.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 3
+HUD_BRIDGE_VERSION = 4
 HUD_EVENT_LIMIT = 256
+HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_EVENT_TYPES = {
     "DockingRequested": "docking.requested",
     "DockingGranted": "docking.granted",
@@ -91,6 +92,8 @@ _hud_state: dict[str, Any] = {
     "bridgeVersion": HUD_BRIDGE_VERSION,
     "pluginVersion": PLUGIN_VERSION,
     "sessionId": _hud_session_id,
+    "siteFeed": None,
+    "siteFeedStatus": {"ok": False, "updatedAt": None, "error": "not_started"},
     "seq": 0,
     "commander": "",
     "system": None,
@@ -109,6 +112,8 @@ _hud_seq = 0
 _hud_server: Optional[ThreadingHTTPServer] = None
 _hud_thread: Optional[threading.Thread] = None
 _hud_error = ""
+_hud_site_feed_thread: Optional[threading.Thread] = None
+_hud_site_feed_stop = threading.Event()
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -120,6 +125,7 @@ def plugin_start3(plugin_dir: str) -> str:
     _restore_owner_carrier()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
+        _start_hud_site_feed()
     return PLUGIN_NAME
 
 
@@ -170,7 +176,10 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "station/carrier, travel and CarrierStats triggers are also normalized for the local HUD/voice bridge "
         "on 127.0.0.1. Commander name may "
         "exist in that local-only bridge state for future owner/squad greetings, but Commander name, "
-        "cargo, credits, ship build, materials, missions, and general travel history are not transmitted."
+        "cargo, credits, ship build, materials, missions, and general travel history are not transmitted. "
+        "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
+        "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
+        "The token itself is never exposed through the local HUD bridge; personal HUD notes stay local on the PC."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
         row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
@@ -189,7 +198,9 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
         config.set(KEY_ENDPOINT, endpoint)
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
+        _start_hud_site_feed()
     else:
+        _stop_hud_site_feed()
         _stop_hud_bridge()
     _set_status(_initial_status())
 
@@ -454,7 +465,8 @@ def cmdr_data(data: Any, is_beta: bool) -> None:
 
 
 def plugin_stop() -> None:
-    """Stop the local loopback bridge when EDMC unloads the plugin."""
+    """Stop the local HUD services when EDMC unloads the plugin."""
+    _stop_hud_site_feed()
     _stop_hud_bridge()
 
 
@@ -500,6 +512,42 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
         self._write_json({"ok": False, "error": "not_found"}, status=404)
 
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path != "/v1/site-feed/ack":
+            self._write_json({"ok": False, "error": "not_found"}, status=404)
+            return
+        try:
+            length = min(max(0, int(self.headers.get("Content-Length", "0"))), 16384)
+        except Exception:
+            length = 0
+        try:
+            body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+        except Exception:
+            self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+        if not isinstance(body, Mapping):
+            self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+        action = str(body.get("action") or "ack").strip().lower()
+        requested = body.get("alertIds") if action == "ack-all" else [body.get("alertId")]
+        ids = []
+        if isinstance(requested, list):
+            for value in requested[:40]:
+                alert_id = str(value or "").strip()[:500]
+                if alert_id and alert_id not in ids:
+                    ids.append(alert_id)
+        with _hud_condition:
+            feed = _hud_state.get("siteFeed")
+            rows = feed.get("alerts") if isinstance(feed, Mapping) and isinstance(feed.get("alerts"), list) else []
+            known = {str(row.get("id") or "") for row in rows if isinstance(row, Mapping)}
+        ids = [value for value in ids if value in known]
+        if not ids:
+            self._write_json({"ok": False, "error": "alert_not_current"}, status=409)
+            return
+        result = _ack_hud_site_alerts(ids, action)
+        self._write_json(result, status=200 if result.get("ok") else 502)
+
     def log_message(self, format: str, *args: Any) -> None:
         # Keep EDMC's log clean during high-frequency overlay polling.
         return
@@ -515,6 +563,131 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
         # a local companion, not arbitrary web pages.
         self.end_headers()
         self.wfile.write(body)
+
+
+
+def _hud_site_feed_endpoint() -> str:
+    configured = (config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT).strip()
+    parsed = urlparse(configured)
+    if not parsed.scheme or not parsed.netloc:
+        parsed = urlparse(DEFAULT_ENDPOINT)
+    return f"{parsed.scheme}://{parsed.netloc}/api/hud/feed"
+
+
+def _site_feed_headers(token: str) -> dict[str, str]:
+    return {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+        "User-Agent": f"{_session.headers.get('User-Agent', 'EDMarketConnector')} MongrelScout/{PLUGIN_VERSION}",
+    }
+
+
+def _set_site_feed_status(*, ok: bool, error: str = "") -> None:
+    with _hud_condition:
+        _hud_state["siteFeedStatus"] = {
+            "ok": bool(ok),
+            "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "error": str(error or "")[:160],
+        }
+        _hud_condition.notify_all()
+
+
+def _refresh_hud_site_feed_once() -> bool:
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        _set_site_feed_status(ok=False, error="scout_token_missing")
+        return False
+    try:
+        response = _session.get(_hud_site_feed_endpoint(), headers=_site_feed_headers(token))
+        if not (200 <= response.status_code < 300):
+            try:
+                error = str(response.json().get("error") or f"http_{response.status_code}")
+            except Exception:
+                error = f"http_{response.status_code}"
+            _set_site_feed_status(ok=False, error=error)
+            return False
+        payload = response.json()
+        if not isinstance(payload, Mapping) or payload.get("ok") is not True:
+            _set_site_feed_status(ok=False, error="invalid_hud_feed")
+            return False
+        with _hud_condition:
+            _hud_state["siteFeed"] = dict(payload)
+            _hud_state["siteFeedStatus"] = {
+                "ok": True,
+                "updatedAt": str(payload.get("generatedAt") or "").strip() or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "error": "",
+            }
+            _hud_condition.notify_all()
+        return True
+    except Exception:
+        _set_site_feed_status(ok=False, error="network")
+        return False
+
+
+def _hud_site_feed_loop() -> None:
+    while not _hud_site_feed_stop.is_set():
+        _refresh_hud_site_feed_once()
+        if _hud_site_feed_stop.wait(HUD_SITE_FEED_REFRESH_SECONDS):
+            break
+
+
+def _start_hud_site_feed() -> None:
+    global _hud_site_feed_thread
+    if _hud_site_feed_thread is not None and _hud_site_feed_thread.is_alive():
+        return
+    _hud_site_feed_stop.clear()
+    thread = threading.Thread(target=_hud_site_feed_loop, name="MongrelScoutHudSiteFeed", daemon=True)
+    _hud_site_feed_thread = thread
+    thread.start()
+
+
+def _stop_hud_site_feed() -> None:
+    global _hud_site_feed_thread
+    _hud_site_feed_stop.set()
+    _hud_site_feed_thread = None
+
+
+def _mark_site_alerts_acknowledged(ids: list[str], acknowledged_at: str = "") -> None:
+    wanted = set(ids)
+    with _hud_condition:
+        feed = _hud_state.get("siteFeed")
+        if not isinstance(feed, dict):
+            return
+        alerts = feed.get("alerts")
+        if not isinstance(alerts, list):
+            return
+        for row in alerts:
+            if isinstance(row, dict) and str(row.get("id") or "") in wanted:
+                row["acknowledged"] = True
+                row["acknowledgedAt"] = acknowledged_at or row.get("acknowledgedAt")
+        feed["unacknowledgedCount"] = sum(
+            1 for row in alerts if isinstance(row, Mapping) and not bool(row.get("acknowledged"))
+        )
+        _hud_condition.notify_all()
+
+
+def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return {"ok": False, "error": "scout_token_missing"}
+    payload: dict[str, Any] = {"action": "ack-all" if action == "ack-all" else "ack"}
+    if action == "ack-all":
+        payload["alertIds"] = ids
+    else:
+        payload["alertId"] = ids[0]
+    try:
+        response = _session.post(_hud_site_feed_endpoint(), json=payload, headers=_site_feed_headers(token))
+        try:
+            result = response.json()
+        except Exception:
+            result = {}
+        if not (200 <= response.status_code < 300) or not isinstance(result, Mapping) or result.get("ok") is not True:
+            return {"ok": False, "error": str(result.get("error") or f"http_{response.status_code}")}
+        acknowledged = [str(value) for value in result.get("acknowledged", ids) if str(value)]
+        _mark_site_alerts_acknowledged(acknowledged, str(result.get("acknowledgedAt") or ""))
+        return {"ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
+    except Exception:
+        return {"ok": False, "error": "network"}
 
 
 def _start_hud_bridge() -> None:
