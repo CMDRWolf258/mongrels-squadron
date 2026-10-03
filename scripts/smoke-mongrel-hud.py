@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.5.0"
+assert plugin.PLUGIN_VERSION == "1.5.1"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -210,7 +210,7 @@ plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
     "event":"ShipTargeted","timestamp":"2026-10-02T22:04:20Z","TargetLocked":True,
     "Ship":"ferdelance","Ship_Localised":"Fer-de-Lance","PilotName":"Test Target","PilotRank":"Elite","ScanStage":3,
     "ShieldHealth":73.5,"HullHealth":88.0,"LegalStatus":"Wanted","Bounty":3842610,
-    "SubSystem":"int_powerplant","SubSystem_Localised":"Power Plant","SubSystemHealth":62.0,
+    "Subsystem":"int_powerplant","Subsystem_Localised":"Power Plant","SubsystemHealth":62.0,
 })
 state = plugin._hud_state_snapshot()
 assert state["target"]["pilotName"] == "Test Target"
@@ -219,7 +219,7 @@ assert state["target"]["modules"]["power plant"]["health"] == 62.0
 plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
     "event":"ShipTargeted","timestamp":"2026-10-02T22:04:21Z","TargetLocked":True,
     "Ship":"ferdelance","Ship_Localised":"Fer-de-Lance","PilotName":"Test Target",
-    "SubSystem":"int_hyperdrive","SubSystem_Localised":"Frame Shift Drive","SubSystemHealth":71.0,
+    "Subsystem":"int_hyperdrive","Subsystem_Localised":"Frame Shift Drive","SubsystemHealth":71.0,
 })
 state = plugin._hud_state_snapshot()
 assert set(state["target"]["modules"]) == {"power plant","frame shift drive"}
@@ -300,4 +300,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.5.0 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")
+print("✓ Mongrel Scout v1.5.1 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")
