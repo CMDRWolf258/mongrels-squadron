@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.4.0"
+assert plugin.PLUGIN_VERSION == "1.4.3"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -210,4 +210,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.4 local HUD bridge normalizes owner-carrier, docking and travel events without cloud identity leakage")
+print("✓ Mongrel Scout v1.4.3 local HUD bridge normalizes owner-carrier, docking and travel events without cloud identity leakage")
