@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.3.0"
+assert hud.APP_VERSION=="0.4.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -28,6 +28,7 @@ with tempfile.TemporaryDirectory() as td:
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"668059324240760"},
         "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"pips":[2.0,1.0,3.0]},
         "ship":{"name":"Honey Badger","maxJumpRange":31.4567,"hullHealth":87.3,"shieldsUp":True},
+        "siteFeed":{"ok":True,"generatedAt":"2026-10-03T21:00:00Z","mission":{"orderCount":1,"attentionCount":1,"orders":[{"system":"Diaba","priority":"HIGH","task":"Win CZs"}],"attention":[{"system":"Diaba","influence":51.2,"alerts":["Conflict active"]}]},"trade":{"activeCount":1,"routes":[{"title":"Platinum Loop","loopProfit":16500000,"state":"healthy"}]},"scout":{"summary":{"available":1,"claimed":0,"priority":1},"jobs":[{"system":"Miwae","status":"available","rewardMillions":10}]},"alerts":[{"id":"a1","type":"payout","severity":"high","title":"PAYOUT REQUEST · Test","detail":"100,000,000 Cr","acknowledged":False}],"unacknowledgedCount":1},"siteFeedStatus":{"ok":True,"updatedAt":"2026-10-03T21:00:00Z","error":""},
         "target":{"pilotName":"Test Target","ship":"Fer-de-Lance","shieldHealth":73.5,"hullHealth":88.0,"legalStatus":"Wanted","bounty":3842610,"subsystem":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"modules":{"power plant":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"beam laser":{"name":"Beam Laser","health":81.0,"observedAt":"2026-10-03T06:00:01Z"},"cargo hatch":{"name":"Cargo Hatch","health":99.0,"observedAt":"2026-10-03T06:00:02Z"}}},
     },True,"")
     site=app.set_site_center(10,"Periclase")
@@ -52,9 +53,17 @@ with tempfile.TemporaryDirectory() as td:
     assert layout["locked"] is True and set(layout["panels"])==set(hud.PANEL_IDS)
     app.set_layout_locked(False)
     assert app.layout_snapshot()["locked"] is False
-    app.set_panel_settings("subsystems",visible=False,scale=1.25)
+    app.set_panel_settings("subsystems",visible=False,scale=1.25,profiles=["combat","surface"])
     assert app.layout_snapshot()["panels"]["subsystems"]["visible"] is False
     assert app.layout_snapshot()["panels"]["subsystems"]["scale"]==1.25
+    assert app.layout_snapshot()["panels"]["subsystems"]["profiles"]==["combat","surface"]
+    app.set_notes("Check tick after dinner")
+    assert app.notes_text()=="Check tick after dinner"
+    site_panels=app.site_panel_texts()
+    assert "MISSION CONTROL" in site_panels["mission"]
+    assert "Platinum Loop" in site_panels["trade"]
+    assert "Miwae" in site_panels["scoutboard"]
+    assert "PAYOUT REQUEST" in site_panels["alerts"]
     app.save_panel_position("target",-120,333)
     assert app.layout_snapshot()["panels"]["target"]["x"]==-120
     app.reset_layout()
@@ -73,4 +82,5 @@ for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]
     assert token in api
 assert "resource_path" in source and "_MEIPASS" in source
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
+assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")

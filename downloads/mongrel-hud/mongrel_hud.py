@@ -19,19 +19,26 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.4.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
+SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "mission", "trade", "scoutboard", "alerts", "notes")
+VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
     "subsystems": "SUBSYSTEMS",
     "bounties": "BOUNTIES",
     "surface": "SURFACE MINING",
+    "mission": "MISSION CONTROL",
+    "trade": "TRADER'S OUTPOST",
+    "scoutboard": "SCOUT BOARD",
+    "alerts": "LEADERSHIP ALERTS",
+    "notes": "NOTES",
 }
 
 
@@ -40,11 +47,16 @@ def default_layout() -> dict[str, Any]:
         "locked": True,
         "masterVisible": True,
         "panels": {
-            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0},
-            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0},
-            "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0},
-            "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0},
-            "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0},
+            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
+            "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
+            "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "surface"]},
         },
     }
 
@@ -73,11 +85,19 @@ def normalized_layout(value: Any) -> dict[str, Any]:
             y = int(raw.get("y", base["y"]))
         except (TypeError, ValueError):
             y = int(base["y"])
+        raw_profiles = raw.get("profiles")
+        if isinstance(raw_profiles, list):
+            profiles = [profile for profile in VALID_PROFILES if profile in raw_profiles]
+        else:
+            profiles = list(base.get("profiles") or VALID_PROFILES)
+        if not profiles:
+            profiles = list(base.get("profiles") or VALID_PROFILES)
         out["panels"][panel_id] = {
             "x": x,
             "y": y,
             "visible": bool(raw.get("visible", base["visible"])),
             "scale": max(0.75, min(1.5, scale)),
+            "profiles": profiles,
         }
     return out
 
@@ -157,7 +177,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout()}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": ""}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
 
@@ -304,7 +324,7 @@ class MongrelHudApp:
             self.layout_revision += 1
         return self.layout_snapshot()
 
-    def set_panel_settings(self, panel_id: str, *, visible: Any = None, scale: Any = None) -> dict[str, Any]:
+    def set_panel_settings(self, panel_id: str, *, visible: Any = None, scale: Any = None, profiles: Any = None) -> dict[str, Any]:
         if panel_id not in PANEL_IDS:
             raise ValueError("invalid_panel")
         with self.store.lock:
@@ -320,6 +340,13 @@ class MongrelHudApp:
                 if not 0.75 <= parsed <= 1.5:
                     raise ValueError("invalid_scale")
                 panel["scale"] = round(parsed, 2)
+            if profiles is not None:
+                if not isinstance(profiles, list):
+                    raise ValueError("invalid_profiles")
+                selected = [profile for profile in VALID_PROFILES if profile in profiles]
+                if not selected:
+                    raise ValueError("invalid_profiles")
+                panel["profiles"] = selected
             self.store.data["layout"] = layout
             self.store.save()
         with self.lock:
@@ -347,6 +374,45 @@ class MongrelHudApp:
             layout["panels"][panel_id]["y"] = int(y)
             self.store.data["layout"] = layout
             self.store.save()
+
+    def notes_text(self) -> str:
+        with self.store.lock:
+            return str(self.store.data.get("notes") or "")
+
+    def set_notes(self, value: str) -> str:
+        text = str(value or "").replace("\r\n", "\n").replace("\r", "\n")[:4000]
+        with self.store.lock:
+            self.store.data["notes"] = text
+            self.store.save()
+        return text
+
+    def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
+        ids: list[str] = []
+        for value in alert_ids[:40]:
+            alert_id = str(value or "").strip()[:500]
+            if alert_id and alert_id not in ids:
+                ids.append(alert_id)
+        if not ids:
+            raise ValueError("alert_id_required")
+        payload: dict[str, Any] = {"action": "ack" if len(ids) == 1 else "ack-all"}
+        if len(ids) == 1:
+            payload["alertId"] = ids[0]
+        else:
+            payload["alertIds"] = ids
+        request = urllib.request.Request(
+            SCOUT_ALERT_ACK_URL,
+            data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10.0) as response:
+                result = json.load(response)
+        except Exception as exc:
+            raise ValueError("alert_ack_failed") from exc
+        if not isinstance(result, dict) or result.get("ok") is not True:
+            raise ValueError(str(result.get("error") if isinstance(result, dict) else "alert_ack_failed"))
+        return result
 
     def set_profile(self, profile: str) -> None:
         if profile not in {"combat", "surface"}:
@@ -469,6 +535,9 @@ class MongrelHudApp:
             "surfaceNav": self.surface_nav(),
             "bounty": self.bounty_ledger(),
             "layout": self.layout_snapshot(),
+            "notes": self.notes_text(),
+            "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
+            "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
         }
 
     @staticmethod
@@ -663,10 +732,122 @@ class MongrelHudApp:
             lines += ["", f"{float(lat):.6f}, {float(lon):.6f}"]
         return lines
 
+    @staticmethod
+    def compact_credits(value: Any) -> str:
+        try:
+            amount = max(0.0, float(value))
+        except (TypeError, ValueError):
+            return "0"
+        if amount >= 1_000_000_000:
+            return f"{amount / 1_000_000_000:.1f}B"
+        if amount >= 1_000_000:
+            return f"{amount / 1_000_000:.1f}M"
+        if amount >= 1_000:
+            return f"{amount / 1_000:.0f}K"
+        return f"{amount:.0f}"
+
+    @staticmethod
+    def clip_line(value: Any, length: int = 72) -> str:
+        text = " ".join(str(value or "").split())
+        return text if len(text) <= length else text[: max(1, length - 1)] + "…"
+
+    def site_panel_texts(self) -> dict[str, str]:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        feed_status = state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else {}
+        if not feed:
+            reason = str(feed_status.get("error") or "waiting").replace("_", " ").upper()
+            waiting = f"SITE FEED\n{reason}"
+            return {
+                "mission": waiting,
+                "trade": waiting,
+                "scoutboard": waiting,
+                "alerts": "LEADERSHIP ALERTS\nWAITING FOR SITE FEED",
+            }
+
+        mission = feed.get("mission") if isinstance(feed.get("mission"), dict) else {}
+        mission_lines = [
+            "MISSION CONTROL",
+            f"ORDERS {int(mission.get('orderCount') or 0)}   ATTENTION {int(mission.get('attentionCount') or 0)}",
+        ]
+        orders = mission.get("orders") if isinstance(mission.get("orders"), list) else []
+        for row in orders[:5]:
+            if not isinstance(row, dict):
+                continue
+            prefix = str(row.get("priority") or "").upper()
+            label = f"{row.get('system') or 'Squad-wide'} · {row.get('task') or 'Operational task'}"
+            mission_lines.append(self.clip_line((prefix + "  " if prefix else "") + label, 78))
+        attention = mission.get("attention") if isinstance(mission.get("attention"), list) else []
+        if attention:
+            mission_lines.extend(["", "WATCH"])
+            for row in attention[:4]:
+                if not isinstance(row, dict):
+                    continue
+                influence = row.get("influence")
+                inf = f" {float(influence):.1f}%" if isinstance(influence, (int, float)) else ""
+                alerts = row.get("alerts") if isinstance(row.get("alerts"), list) else []
+                detail = alerts[0] if alerts else row.get("objective") or ""
+                mission_lines.append(self.clip_line(f"{row.get('system') or 'System'}{inf} · {detail}", 78))
+
+        trade = feed.get("trade") if isinstance(feed.get("trade"), dict) else {}
+        trade_lines = ["TRADER'S OUTPOST", f"ACTIVE {int(trade.get('activeCount') or 0)}"]
+        routes = trade.get("routes") if isinstance(trade.get("routes"), list) else []
+        for row in routes[:6]:
+            if not isinstance(row, dict):
+                continue
+            state_text = str(row.get("state") or "").upper()
+            profit = row.get("loopProfit") or row.get("profitPerTon") or 0
+            suffix = f" · {self.compact_credits(profit)} CR"
+            if state_text and state_text != "HEALTHY":
+                suffix += f" · {state_text}"
+            trade_lines.append(self.clip_line(f"{row.get('title') or 'Trade Route'}{suffix}", 78))
+
+        scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
+        summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
+        scout_lines = [
+            "SCOUT BOARD",
+            f"AVAILABLE {int(summary.get('available') or 0)}   CLAIMED {int(summary.get('claimed') or 0)}   PRIORITY {int(summary.get('priority') or 0)}",
+        ]
+        jobs = scout.get("jobs") if isinstance(scout.get("jobs"), list) else []
+        for row in jobs[:6]:
+            if not isinstance(row, dict):
+                continue
+            reward = float(row.get("rewardMillions") or 0)
+            status = str(row.get("status") or "").upper()
+            line = f"{row.get('system') or 'System'} · {status}"
+            if reward > 0:
+                line += f" · {reward:g}M"
+            if row.get("claimMine"):
+                line += " · YOUR CLAIM"
+            elif row.get("claimCommander"):
+                line += f" · {row.get('claimCommander')}"
+            scout_lines.append(self.clip_line(line, 78))
+
+        alert_rows = feed.get("alerts") if isinstance(feed.get("alerts"), list) else []
+        unacked = [row for row in alert_rows if isinstance(row, dict) and not bool(row.get("acknowledged"))]
+        if unacked:
+            alert_lines = [f"⚠ LEADERSHIP ALERTS · {len(unacked)} UNACKNOWLEDGED"]
+            for row in unacked[:6]:
+                alert_lines.append(self.clip_line(f"{str(row.get('type') or '').upper()} · {row.get('title') or 'Alert'}", 78))
+                if row.get("detail"):
+                    alert_lines.append("  " + self.clip_line(row.get("detail"), 74))
+        else:
+            alert_lines = ["LEADERSHIP ALERTS", "CLEAR"]
+
+        return {
+            "mission": "\n".join(mission_lines),
+            "trade": "\n".join(trade_lines),
+            "scoutboard": "\n".join(scout_lines),
+            "alerts": "\n".join(alert_lines),
+        }
+
     def panel_texts(self) -> dict[str, str]:
-        combat = self.combat_panel_texts()
-        combat["surface"] = "\n".join(self.surface_lines())
-        return combat
+        panels = self.combat_panel_texts()
+        panels["surface"] = "\n".join(self.surface_lines())
+        panels.update(self.site_panel_texts())
+        notes = self.notes_text().strip()
+        panels["notes"] = "NOTES\n" + (notes if notes else "No notes.")
+        return panels
 
     def _layout_revision(self) -> int:
         with self.lock:
@@ -692,7 +873,7 @@ class MongrelHudApp:
         revision = self._layout_revision()
         for panel_id, info in self.panel_windows.items():
             panel_cfg = layout["panels"][panel_id]
-            active_for_profile = panel_id == "surface" if profile == "surface" else panel_id != "surface"
+            active_for_profile = profile in (panel_cfg.get("profiles") or [])
             should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True))
             window = info["window"]
             if not should_show:
@@ -700,8 +881,14 @@ class MongrelHudApp:
                 continue
             window.deiconify()
             scale = float(panel_cfg.get("scale") or 1.0)
-            base_size = 12 if panel_id in {"bounties", "subsystems"} else 13
-            info["body"].config(text=texts.get(panel_id, ""), font=("Consolas", max(9, round(base_size * scale)), "bold"))
+            base_size = 11 if panel_id in {"mission", "trade", "scoutboard", "alerts", "notes"} else (12 if panel_id in {"bounties", "subsystems"} else 13)
+            foreground = "#aeeeff"
+            if panel_id == "alerts":
+                state = self.scout_state()
+                feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+                if int(feed.get("unacknowledgedCount") or 0) > 0:
+                    foreground = "#ff5c5c" if int(time.time() * 2) % 2 == 0 else "#ffd166"
+            info["body"].config(text=texts.get(panel_id, ""), fg=foreground, font=("Consolas", max(9, round(base_size * scale)), "bold"))
             if info.get("appliedLocked") != locked:
                 self._apply_panel_edit_mode(panel_id, locked)
                 info["appliedLocked"] = locked
@@ -943,9 +1130,15 @@ def make_handler(app: MongrelHudApp):
                         raise ValueError("layout_setting_required")
                 elif path == "/api/panel":
                     panel_id = str(body.get("panel") or "")
-                    result = {"ok": True, "layout": app.set_panel_settings(panel_id, visible=body.get("visible") if "visible" in body else None, scale=body.get("scale") if "scale" in body else None)}
+                    result = {"ok": True, "layout": app.set_panel_settings(panel_id, visible=body.get("visible") if "visible" in body else None, scale=body.get("scale") if "scale" in body else None, profiles=body.get("profiles") if "profiles" in body else None)}
                 elif path == "/api/layout-reset":
                     result = {"ok": True, "layout": app.reset_layout()}
+                elif path == "/api/notes":
+                    result = {"ok": True, "notes": app.set_notes(str(body.get("notes") or ""))}
+                elif path == "/api/alert-ack":
+                    values = body.get("alertIds")
+                    ids = values if isinstance(values, list) else [body.get("alertId")]
+                    result = app.acknowledge_alerts(ids)
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/site-select":
