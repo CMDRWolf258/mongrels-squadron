@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import threading
 import time
 import tkinter as tk
@@ -19,13 +20,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.5.1"
+PLUGIN_VERSION = "1.6.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 2
+HUD_BRIDGE_VERSION = 3
 HUD_EVENT_LIMIT = 256
 HUD_EVENT_TYPES = {
     "DockingRequested": "docking.requested",
@@ -45,6 +46,9 @@ HUD_EVENT_TYPES = {
     "ShipTargeted": "combat.target",
     "HullDamage": "ship.hull",
     "Loadout": "ship.loadout",
+    "Bounty": "bounty.awarded",
+    "RedeemVoucher": "bounty.redeemed",
+    "Died": "ship.died",
 }
 
 KEY_VERSION = "MongrelScoutConfigVersion"
@@ -81,10 +85,12 @@ _journal_context: dict[str, Any] = {
 }
 _session = timeout_session.new_session(timeout=8)
 _hud_condition = threading.Condition()
+_hud_session_id = secrets.token_hex(8)
 _hud_events: deque[dict[str, Any]] = deque(maxlen=HUD_EVENT_LIMIT)
 _hud_state: dict[str, Any] = {
     "bridgeVersion": HUD_BRIDGE_VERSION,
     "pluginVersion": PLUGIN_VERSION,
+    "sessionId": _hud_session_id,
     "seq": 0,
     "commander": "",
     "system": None,
@@ -94,7 +100,7 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
-    "ship": {"hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "cargoCapacity": None, "fuelCapacity": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "target": None,
     "lastEvent": None,
     "updatedAt": None,
@@ -231,6 +237,20 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
             "bodyId": _optional_int(destination.get("Body")),
             "systemAddress": _decimal_text(destination.get("System")),
         }
+    pips_raw = entry.get("Pips")
+    pips = None
+    if isinstance(pips_raw, (list, tuple)) and len(pips_raw) >= 3:
+        parsed_pips = [_optional_float(value) for value in pips_raw[:3]]
+        if all(value is not None for value in parsed_pips):
+            pips = [float(value) / 2.0 for value in parsed_pips]
+
+    fuel_main = None
+    fuel_reserve = None
+    fuel = entry.get("Fuel")
+    if isinstance(fuel, Mapping):
+        fuel_main = _optional_float(fuel.get("FuelMain"))
+        fuel_reserve = _optional_float(fuel.get("FuelReservoir"))
+
     status = {
         "timestamp": str(entry.get("timestamp") or "").strip(),
         "flags": flags,
@@ -242,9 +262,20 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         "heading": _optional_float(entry.get("Heading")),
         "planetRadius": _optional_float(entry.get("PlanetRadius")),
         "shieldsUp": bool(flags & (1 << 3)),
+        "hardpointsDeployed": bool(flags & (1 << 6)),
+        "silentRunning": bool(flags & (1 << 10)),
+        "massLocked": bool(flags & (1 << 16)),
+        "lowFuel": bool(flags & (1 << 19)),
+        "overheating": bool(flags & (1 << 20)),
         "hasLatLong": bool(flags & (1 << 21)),
+        "inDanger": bool(flags & (1 << 22)),
         "inSrv": bool(flags & (1 << 26)),
         "legalState": str(entry.get("LegalState") or "").strip(),
+        "pips": pips,
+        "fuelMain": fuel_main,
+        "fuelReserve": fuel_reserve,
+        "cargo": _optional_int(entry.get("Cargo")),
+        "fireGroup": _optional_int(entry.get("FireGroup")),
         "destination": destination_payload,
     }
     with _hud_condition:
@@ -287,7 +318,8 @@ def journal_entry(
     if event in {"ApproachBody", "LeaveBody", "SupercruiseEntry", "SupercruiseExit"}:
         _remember_journal_context(entry, system)
 
-    # HUD/voice triggers remain local. Publish them before any cloud-token checks.
+    # HUD/voice triggers remain local. Seed current ship facts from EDMC state, then publish the event.
+    _update_hud_ship_from_edmc_state(state)
     _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
@@ -368,6 +400,59 @@ def journal_entry(
 
 
 
+
+def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
+    """Seed stable local ship identity/range facts from EDMC's current state."""
+    if not isinstance(state, Mapping):
+        return
+    with _hud_condition:
+        ship = _hud_state.get("ship")
+        if not isinstance(ship, dict):
+            ship = {}
+            _hud_state["ship"] = ship
+        updates = {
+            "name": str(state.get("ShipName") or "").strip(),
+            "ident": str(state.get("ShipIdent") or "").strip(),
+            "type": str(state.get("ShipType") or "").strip(),
+            "maxJumpRange": _optional_float(state.get("MaxJumpRange")),
+            "cargoCapacity": _optional_int(state.get("CargoCapacity")),
+        }
+        fuel_capacity = state.get("FuelCapacity")
+        if isinstance(fuel_capacity, Mapping):
+            updates["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+        for key, value in updates.items():
+            if value is not None and (not isinstance(value, str) or value):
+                ship[key] = value
+        _hud_condition.notify_all()
+
+
+def cmdr_data(data: Any, is_beta: bool) -> None:
+    """Use Frontier CAPI as a trustworthy hull-health seed when available."""
+    if is_beta or not config.get_bool(KEY_ENABLED):
+        return None
+    try:
+        ship_data = data.get("ship") if data is not None else None
+    except Exception:
+        ship_data = None
+    if not isinstance(ship_data, Mapping):
+        return None
+    health = ship_data.get("health")
+    hull = _normalize_auto_percent(health.get("hull")) if isinstance(health, Mapping) else None
+    with _hud_condition:
+        ship = _hud_state.get("ship")
+        if not isinstance(ship, dict):
+            ship = {}
+            _hud_state["ship"] = ship
+        if hull is not None:
+            ship["hullHealth"] = hull
+        name = str(ship_data.get("shipName") or "").strip()
+        if name:
+            ship["name"] = name
+        ship["timestamp"] = str(getattr(data, "query_time", "") or ship.get("timestamp") or "")
+        _hud_condition.notify_all()
+    return None
+
+
 def plugin_stop() -> None:
     """Stop the local loopback bridge when EDMC unloads the plugin."""
     _stop_hud_bridge()
@@ -386,6 +471,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                     "ok": True,
                     "bridgeVersion": HUD_BRIDGE_VERSION,
                     "pluginVersion": PLUGIN_VERSION,
+                    "sessionId": _hud_session_id,
                     "host": HUD_BRIDGE_HOST,
                     "port": HUD_BRIDGE_PORT,
                     "latestSeq": _hud_seq,
@@ -484,6 +570,7 @@ def _hud_events_after(after: int, wait_seconds: float) -> dict[str, Any]:
         return {
             "bridgeVersion": HUD_BRIDGE_VERSION,
             "pluginVersion": PLUGIN_VERSION,
+            "sessionId": _hud_session_id,
             "after": after,
             "latestSeq": _hud_seq,
             "events": json.loads(json.dumps(events)),
@@ -503,6 +590,7 @@ def _publish_hud_event(
     with _hud_condition:
         _hud_seq += 1
         normalized["seq"] = _hud_seq
+        normalized["sessionId"] = _hud_session_id
         _hud_events.append(normalized)
         _update_hud_state_locked(normalized)
         _hud_condition.notify_all()
@@ -587,6 +675,24 @@ def _normalize_hud_event(
         payload["hullHealth"] = _normalize_percent(entry.get("Health"), fraction=True)
     elif journal_event == "Loadout":
         payload["hullHealth"] = _normalize_percent(entry.get("HullHealth"), fraction=True)
+        payload["shipName"] = str(entry.get("ShipName") or "").strip()
+        payload["shipIdent"] = str(entry.get("ShipIdent") or "").strip()
+        payload["shipType"] = str(entry.get("Ship_Localised") or entry.get("Ship") or "").strip()
+        payload["maxJumpRange"] = _optional_float(entry.get("MaxJumpRange"))
+        payload["cargoCapacity"] = _optional_int(entry.get("CargoCapacity"))
+        fuel_capacity = entry.get("FuelCapacity")
+        if isinstance(fuel_capacity, Mapping):
+            payload["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+
+    if journal_event == "Bounty":
+        payload["totalReward"] = _optional_int(entry.get("TotalReward"))
+        payload["target"] = str(entry.get("Target_Localised") or entry.get("Target") or "").strip()
+        payload["pilotName"] = str(entry.get("PilotName_Localised") or entry.get("PilotName") or "").strip()
+
+    if journal_event == "RedeemVoucher":
+        if str(entry.get("Type") or "").strip().casefold() != "bounty":
+            return None
+        payload["amount"] = _optional_int(entry.get("Amount"))
 
     if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
         body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()
@@ -642,10 +748,22 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
         hull_health = event.get("hullHealth")
         ship = _hud_state.get("ship")
         if not isinstance(ship, dict):
-            ship = {"hullHealth": None, "shieldsUp": None, "timestamp": None}
+            ship = {}
             _hud_state["ship"] = ship
         if hull_health is not None:
             ship["hullHealth"] = hull_health
+        if event_type == "ship.loadout":
+            for source, dest in (
+                ("shipName", "name"),
+                ("shipIdent", "ident"),
+                ("shipType", "type"),
+                ("maxJumpRange", "maxJumpRange"),
+                ("cargoCapacity", "cargoCapacity"),
+                ("fuelCapacity", "fuelCapacity"),
+            ):
+                value = event.get(source)
+                if value is not None and (not isinstance(value, str) or value):
+                    ship[dest] = value
         ship["timestamp"] = event.get("timestamp") or ship.get("timestamp")
 
     if event_type == "combat.target":
@@ -833,6 +951,15 @@ def _normalize_percent(value: Any, *, fraction: bool = False) -> Optional[float]
     if result is None:
         return None
     if fraction:
+        result *= 100.0
+    return max(0.0, min(100.0, result))
+
+
+def _normalize_auto_percent(value: Any) -> Optional[float]:
+    result = _optional_float(value)
+    if result is None:
+        return None
+    if 0.0 <= result <= 1.0:
         result *= 100.0
     return max(0.0, min(100.0, result))
 

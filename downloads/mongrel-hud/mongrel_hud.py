@@ -19,8 +19,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.2.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
+SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
@@ -100,7 +101,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": []}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}}
         self.load()
 
     def load(self) -> None:
@@ -140,6 +141,9 @@ class MongrelHudApp:
         self.status_label: tk.Label | None = None
         self.profile_label: tk.Label | None = None
         self.pin_label: tk.Label | None = None
+        self.run_bounty = 0
+        self.run_kills = 0
+        self.last_bounty = 0
 
     def scout_state(self) -> dict[str, Any]:
         with self.lock:
@@ -152,11 +156,72 @@ class MongrelHudApp:
                     data = json.load(response)
                 with self.lock:
                     self.snapshot = ScoutSnapshot(data, True, "")
+                try:
+                    self.poll_scout_events(data)
+                except Exception:
+                    pass
             except Exception as exc:
                 with self.lock:
                     self.snapshot.connected = False
                     self.snapshot.error = str(exc)
             time.sleep(POLL_SECONDS)
+
+    def poll_scout_events(self, state: dict[str, Any]) -> None:
+        session_id = str(state.get("sessionId") or "")
+        if not session_id:
+            return
+        with self.store.lock:
+            cursor = self.store.data.get("eventCursor")
+            if not isinstance(cursor, dict):
+                cursor = {"sessionId": "", "seq": 0}
+            after = int(cursor.get("seq") or 0) if str(cursor.get("sessionId") or "") == session_id else 0
+        url = f"{SCOUT_EVENTS_URL}?after={after}&wait=0"
+        with urllib.request.urlopen(url, timeout=1.0) as response:
+            payload = json.load(response)
+        events = payload.get("events") or []
+        for event in events:
+            if isinstance(event, dict):
+                self.process_scout_event(event)
+        latest = int(payload.get("latestSeq") or after)
+        with self.store.lock:
+            self.store.data["eventCursor"] = {"sessionId": session_id, "seq": latest}
+            self.store.save()
+
+    def process_scout_event(self, event: dict[str, Any]) -> None:
+        event_type = str(event.get("type") or "")
+        if event_type == "bounty.awarded":
+            amount = max(0, int(event.get("totalReward") or 0))
+            if amount <= 0:
+                return
+            self.run_bounty += amount
+            self.run_kills += 1
+            self.last_bounty = amount
+            with self.store.lock:
+                ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
+                ledger["unclaimed"] = max(0, int(ledger.get("unclaimed") or 0) + amount)
+                self.store.save()
+        elif event_type == "bounty.redeemed":
+            amount = max(0, int(event.get("amount") or 0))
+            with self.store.lock:
+                ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
+                ledger["unclaimed"] = max(0, int(ledger.get("unclaimed") or 0) - amount)
+                self.store.save()
+        elif event_type == "ship.died":
+            with self.store.lock:
+                ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
+                ledger["unclaimed"] = 0
+                self.store.save()
+
+    def bounty_ledger(self) -> dict[str, int]:
+        with self.store.lock:
+            ledger = self.store.data.get("bounty") or {}
+            unclaimed = max(0, int(ledger.get("unclaimed") or 0))
+        return {
+            "unclaimed": unclaimed,
+            "runEarned": max(0, int(self.run_bounty)),
+            "runKills": max(0, int(self.run_kills)),
+            "last": max(0, int(self.last_bounty)),
+        }
 
     def set_profile(self, profile: str) -> None:
         if profile not in {"combat", "surface"}:
@@ -277,44 +342,97 @@ class MongrelHudApp:
             "sites": self.sites_for_current_body(),
             "activeSite": self.active_site(),
             "surfaceNav": self.surface_nav(),
+            "bounty": self.bounty_ledger(),
         }
+
+    @staticmethod
+    def module_category(name: str) -> str:
+        text = name.casefold()
+        hardpoint_words = ("cannon", "laser", "rail", "plasma", "missile", "torpedo", "fragment", "multi-cannon", "multicannon", "accelerator", "launcher", "mining laser", "abrasion blaster", "seismic charge", "displacement missile")
+        critical_words = ("power plant", "thruster", "drive", "frame shift", "shield generator", "power distributor", "life support", "sensor")
+        if any(word in text for word in hardpoint_words) and not any(word in text for word in ("heat sink", "chaff", "shield cell")):
+            return "hardpoints"
+        if any(word in text for word in critical_words):
+            return "critical"
+        return "secondary"
+
+    def module_groups(self, target: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+        groups = {"hardpoints": [], "critical": [], "secondary": []}
+        modules = target.get("modules") or {}
+        if isinstance(modules, dict):
+            for module in modules.values():
+                if isinstance(module, dict):
+                    groups[self.module_category(str(module.get("name") or ""))].append(module)
+        return groups
+
+    @staticmethod
+    def module_cell(module: dict[str, Any] | None, width: int = 34) -> str:
+        if not module:
+            return " " * width
+        name = str(module.get("name") or "Module")
+        if len(name) > 20:
+            name = name[:19] + "…"
+        health = module.get("health")
+        hp = f"{health:.0f}%" if isinstance(health, (int, float)) else "—"
+        age = iso_age(module.get("observedAt"))
+        text = f"{name:<20} {hp:>4} {age:>5}"
+        return text[:width].ljust(width)
 
     def combat_lines(self) -> list[str]:
         state = self.scout_state()
         own = state.get("ship") or {}
+        status = state.get("status") or {}
         target = state.get("target") or {}
+        ledger = self.bounty_ledger()
         shields = own.get("shieldsUp")
         own_shield = "UP" if shields is True else "DOWN" if shields is False else "—"
         own_hull = own.get("hullHealth")
-        lines = ["COMBAT", f"YOU   SHIELDS {own_shield}   HULL {own_hull:.0f}%" if isinstance(own_hull, (int, float)) else f"YOU   SHIELDS {own_shield}   HULL —"]
+        hull_text = f"{own_hull:.0f}%" if isinstance(own_hull, (int, float)) else "—"
+        ship_name = str(own.get("name") or own.get("type") or "YOUR SHIP").strip()
+        jump = own.get("maxJumpRange")
+        jump_text = f"{jump:.2f} LY" if isinstance(jump, (int, float)) else "—"
+        fuel = status.get("fuelMain")
+        fuel_text = f"{fuel:.1f} t" if isinstance(fuel, (int, float)) else "—"
+        pips = status.get("pips")
+        pip_text = "—"
+        if isinstance(pips, list) and len(pips) >= 3:
+            pip_text = f"SYS {pips[0]:.1f}  ENG {pips[1]:.1f}  WEP {pips[2]:.1f}"
+        lines = ["COMBAT", f"{ship_name.upper()}   MAX JUMP {jump_text}   FUEL {fuel_text}", f"SHIELDS {own_shield:<4}   HULL {hull_text:>4}   PIPS {pip_text}"]
+        warnings = []
+        for key, label in (("massLocked", "MASS LOCK"), ("silentRunning", "SILENT"), ("lowFuel", "LOW FUEL"), ("overheating", "OVERHEAT")):
+            if status.get(key):
+                warnings.append(label)
+        if warnings:
+            lines.append("STATUS   " + " · ".join(warnings))
+        lines += ["", f"BOUNTIES   UNCLAIMED {ledger['unclaimed']:,} CR   THIS RUN {ledger['runEarned']:,} CR   KILLS {ledger['runKills']}   LAST {ledger['last']:,} CR"]
         if not target:
             return lines + ["", "NO TARGET"]
         name = str(target.get("pilotName") or target.get("ship") or "TARGET")
-        ship = str(target.get("ship") or "")
-        lines += ["", f"{name}  {ship}".strip()]
-        th, ts = target.get("hullHealth"), target.get("shieldHealth")
-        h = f"{th:.0f}%" if isinstance(th, (int, float)) else "—"
-        s = f"{ts:.0f}%" if isinstance(ts, (int, float)) else "—"
-        lines.append(f"TARGET   SHIELDS {s}   HULL {h}")
-        legal = str(target.get("legalStatus") or "")
+        target_ship = str(target.get("ship") or "")
+        legal = str(target.get("legalStatus") or "").upper()
         bounty = target.get("bounty")
-        if legal or bounty:
-            text = legal.upper()
-            if isinstance(bounty, int) and bounty > 0:
-                text += f"   {bounty:,} CR"
-            lines.append(text.strip())
+        target_bits = [f"{name}  {target_ship}".strip()]
+        if legal:
+            target_bits.append(legal)
+        if isinstance(bounty, int) and bounty > 0:
+            target_bits.append(f"{bounty:,} CR")
+        lines += ["", "TARGET   " + "   ".join(target_bits)]
         subsystem = target.get("subsystem") or {}
         if subsystem.get("name"):
             hp = subsystem.get("health")
-            lines += ["", f"CURRENT  {subsystem['name']}  {hp:.0f}%" if isinstance(hp, (int, float)) else f"CURRENT  {subsystem['name']}"]
-        modules = list((target.get("modules") or {}).values())
-        if modules:
-            lines += ["", "LAST SEEN MODULES"]
-            modules.sort(key=lambda x: str(x.get("observedAt") or ""), reverse=True)
-            for module in modules[:6]:
-                hp = module.get("health")
-                hp_text = f"{hp:.0f}%" if isinstance(hp, (int, float)) else "—"
-                lines.append(f"{module.get('name','Module')}  {hp_text}  · {iso_age(module.get('observedAt'))} ago")
+            hp_text = f"{hp:.0f}%" if isinstance(hp, (int, float)) else "—"
+            lines.append(f"CURRENT  {str(subsystem['name']):<28} {hp_text:>4}   · {iso_age(subsystem.get('observedAt'))} ago")
+        groups = self.module_groups(target)
+        if any(groups.values()):
+            width, gap = 34, "   "
+            lines += ["", f"{'HARDPOINTS':<{width}}{gap}{'CRITICAL SYSTEMS':<{width}}{gap}{'SECONDARY':<{width}}"]
+            rows = max(len(groups["hardpoints"]), len(groups["critical"]), len(groups["secondary"]))
+            for index in range(rows):
+                cells = []
+                for key in ("hardpoints", "critical", "secondary"):
+                    module = groups[key][index] if index < len(groups[key]) else None
+                    cells.append(self.module_cell(module, width))
+                lines.append(gap.join(cells))
         return lines
 
     def surface_lines(self) -> list[str]:
@@ -390,22 +508,23 @@ class MongrelHudApp:
         overlay = tk.Toplevel(root)
         self.overlay = overlay
         overlay.title("Mongrel HUD Overlay")
-        overlay.geometry("440x430-40+70")
+        overlay.overrideredirect(True)
+        overlay.geometry("1180x680-40+70")
         overlay.attributes("-topmost", True)
         overlay.configure(bg="black")
         try:
             overlay.attributes("-transparentcolor", "black")
         except tk.TclError:
             overlay.attributes("-alpha", 0.88)
-        label = tk.Label(overlay, text="", justify="left", anchor="nw", bg="black", fg="#aeeeff", font=("Consolas", 14, "bold"), padx=12, pady=10)
+        label = tk.Label(overlay, text="", justify="left", anchor="nw", bg="black", fg="#aeeeff", font=("Consolas", 13, "bold"), padx=0, pady=0)
         self.overlay_label = label
         label.pack(fill="both", expand=True)
         overlay.update_idletasks()
         if os.name == "nt":
             try:
-                hwnd = ctypes.windll.user32.GetParent(overlay.winfo_id())
+                hwnd = ctypes.windll.user32.GetParent(overlay.winfo_id()) or overlay.winfo_id()
                 style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
-                ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x00000020 | 0x00080000 | 0x00000080)
+                ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x00000020 | 0x00080000 | 0x00000080 | 0x08000000)
             except Exception:
                 pass
         root.after(200, self.refresh_ui)

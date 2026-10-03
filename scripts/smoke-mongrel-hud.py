@@ -64,11 +64,11 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.5.1"
+assert plugin.PLUGIN_VERSION == "1.6.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
-assert plugin.HUD_BRIDGE_VERSION == 2
+assert plugin.HUD_BRIDGE_VERSION == 3
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -88,6 +88,9 @@ expected_types = {
     "ShipTargeted": "combat.target",
     "HullDamage": "ship.hull",
     "Loadout": "ship.loadout",
+    "Bounty": "bounty.awarded",
+    "RedeemVoucher": "bounty.redeemed",
+    "Died": "ship.died",
 }
 assert plugin.HUD_EVENT_TYPES == expected_types
 
@@ -196,7 +199,7 @@ seq_before_status = plugin._hud_events_after(0, 0)["latestSeq"]
 plugin.dashboard_entry("Wolf258", False, {
     "timestamp":"2026-10-02T22:04:10Z","Flags":(1<<3)|(1<<21)|(1<<26),"Flags2":0,
     "BodyName":"NGC 2546 Sector UZ-G d10-16 7 b","Latitude":-22.7738,"Longitude":-98.8161,
-    "Altitude":14.0,"Heading":42.0,"PlanetRadius":1234567.0,
+    "Altitude":14.0,"Heading":42.0,"PlanetRadius":1234567.0,"Pips":[4,2,6],"Fuel":{"FuelMain":27.5,"FuelReservoir":0.8},"Cargo":12,"FireGroup":3,
     "Destination":{"System":668059324240760,"Body":77,"Name":"Surface Signal #10"},
 })
 state = plugin._hud_state_snapshot()
@@ -204,6 +207,9 @@ assert state["status"]["shieldsUp"] is True
 assert state["status"]["hasLatLong"] is True
 assert state["status"]["inSrv"] is True
 assert state["status"]["latitude"] == -22.7738
+assert state["status"]["pips"] == [2.0, 1.0, 3.0]
+assert state["status"]["fuelMain"] == 27.5
+assert state["status"]["cargo"] == 12
 assert plugin._hud_events_after(0, 0)["latestSeq"] == seq_before_status
 
 plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
@@ -223,8 +229,17 @@ plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{
 })
 state = plugin._hud_state_snapshot()
 assert set(state["target"]["modules"]) == {"power plant","frame shift drive"}
-plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"HullDamage","timestamp":"2026-10-02T22:04:22Z","Health":0.873})
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"Loadout","timestamp":"2026-10-02T22:04:22Z","Ship":"cutter","ShipName":"Honey Badger","ShipIdent":"MONGRL","MaxJumpRange":31.4567,"CargoCapacity":512,"FuelCapacity":{"Main":64.0},"Modules":[]})
+ship_state=plugin._hud_state_snapshot()["ship"]
+assert ship_state["name"]=="Honey Badger" and ship_state["maxJumpRange"]==31.4567 and ship_state["fuelCapacity"]==64.0
+plugin._publish_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"HullDamage","timestamp":"2026-10-02T22:04:23Z","Health":0.873})
 assert plugin._hud_state_snapshot()["ship"]["hullHealth"] == 87.3
+bounty_event=plugin._normalize_hud_event("Wolf258","NGC 2546 Sector UZ-G d10-16","",{"event":"Bounty","timestamp":"2026-10-02T22:04:24Z","TotalReward":842615,"Target":"python"})
+assert bounty_event and bounty_event["type"]=="bounty.awarded" and bounty_event["totalReward"]==842615
+redeem_event=plugin._normalize_hud_event("Wolf258","Diaba","",{"event":"RedeemVoucher","timestamp":"2026-10-02T22:04:25Z","Type":"bounty","Amount":900000})
+assert redeem_event and redeem_event["type"]=="bounty.redeemed" and redeem_event["amount"]==900000
+plugin.cmdr_data({"ship":{"shipName":"Honey Badger","health":{"hull":0.941}}},False)
+assert plugin._hud_state_snapshot()["ship"]["hullHealth"]==94.1
 
 # Unknown journal events do not enter the local bridge.
 assert plugin._normalize_hud_event("Wolf258", "Diaba", "", {"event": "Cargo"}) is None
@@ -300,4 +315,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.5.1 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")
+print("✓ Mongrel Scout v1.6.0 local HUD bridge covers docking/travel plus combat and surface HUD state without cloud identity leakage")

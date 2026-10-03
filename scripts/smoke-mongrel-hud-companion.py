@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.1.1"
+assert hud.APP_VERSION=="0.2.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -26,9 +26,9 @@ with tempfile.TemporaryDirectory() as td:
     app=hud.MongrelHudApp(store,"<html></html>")
     app.snapshot=hud.ScoutSnapshot({
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"668059324240760"},
-        "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True},
-        "ship":{"hullHealth":87.3,"shieldsUp":True},
-        "target":{"pilotName":"Test Target","ship":"Fer-de-Lance","shieldHealth":73.5,"hullHealth":88.0,"legalStatus":"Wanted","bounty":3842610,"subsystem":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"modules":{"power plant":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"}}},
+        "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"pips":[2.0,1.0,3.0]},
+        "ship":{"name":"Honey Badger","maxJumpRange":31.4567,"hullHealth":87.3,"shieldsUp":True},
+        "target":{"pilotName":"Test Target","ship":"Fer-de-Lance","shieldHealth":73.5,"hullHealth":88.0,"legalStatus":"Wanted","bounty":3842610,"subsystem":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"modules":{"power plant":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"beam laser":{"name":"Beam Laser","health":81.0,"observedAt":"2026-10-03T06:00:01Z"},"cargo hatch":{"name":"Cargo Hatch","health":99.0,"observedAt":"2026-10-03T06:00:02Z"}}},
     },True,"")
     site=app.set_site_center(10,"Periclase")
     assert site["siteNumber"]==10 and site["body"].endswith("7 b")
@@ -37,7 +37,17 @@ with tempfile.TemporaryDirectory() as td:
     assert dep["siteNumber"]==10 and dep["rigs"]==2
     state=app.controller_state()
     assert state["connected"] is True and state["activeSite"]["siteNumber"]==10
-    assert "3,842,610 CR" in "\n".join(app.combat_lines())
+    app.process_scout_event({"type":"bounty.awarded","totalReward":842615})
+    app.process_scout_event({"type":"bounty.awarded","totalReward":100000})
+    app.process_scout_event({"type":"bounty.redeemed","amount":2000000})
+    assert app.bounty_ledger()["unclaimed"]==0
+    app.process_scout_event({"type":"bounty.awarded","totalReward":500000})
+    assert app.bounty_ledger()["unclaimed"]==500000
+    combat="\n".join(app.combat_lines())
+    assert "HONEY BADGER" in combat and "31.46 LY" in combat and "SYS 2.0" in combat
+    assert "HARDPOINTS" in combat and "CRITICAL SYSTEMS" in combat and "SECONDARY" in combat
+    assert hud.MongrelHudApp.module_category("Power Plant")=="critical"
+    assert hud.MongrelHudApp.module_category("Beam Laser")=="hardpoints"
     app.set_profile("surface")
     assert store.data["profile"]=="surface"
 
