@@ -24,6 +24,10 @@ for(const pattern of [
   /def plugin_prefs/,
   /def prefs_changed/,
   /def journal_entry/,
+  /def dashboard_entry/,
+  /StationHost/,
+  /facility_host/,
+  /Host reported:/,
   /FSDJump/,
   /Location/,
   /CarrierJump/,
@@ -63,7 +67,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.4\.0"/,
+  /PLUGIN_VERSION = "1\.4\.1"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
@@ -113,8 +117,10 @@ for(const pattern of [
   /handleMarketSnapshot/,
   /recordScoutMarketSnapshot/,
   /handleFacilityObservation/,
+  /handleFacilityHostObservation/,
   /recordScoutFacilityObservation/,
   /ApproachSettlement/,
+  /StationHost/,
   /trade_storage_not_configured/,
   /systemAuthorized/,
   /system_not_authorized/,
@@ -129,7 +135,7 @@ for(const pattern of [
 
 const ingestFactory=new Function(
   ingest.replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'')+
-  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,isFacilityPayload,DEFAULT_RATE_LIMIT_PER_HOUR};'
+  '; return {systemAuthorized,normalizeAllowedSystems,normalizeScope,normalizeCoordinates,consumeRateLimit,isFacilityPayload,isFacilityHostPayload,DEFAULT_RATE_LIMIT_PER_HOUR};'
 );
 const ingestHelpers=ingestFactory();
 assert.equal(ingestHelpers.systemAuthorized({scope:'trusted',allowedSystems:[]},'Anywhere'),true);
@@ -138,6 +144,8 @@ assert.equal(ingestHelpers.systemAuthorized({scope:'restricted',allowedSystems:[
 assert.equal(ingestHelpers.DEFAULT_RATE_LIMIT_PER_HOUR,120);
 assert.equal(ingestHelpers.isFacilityPayload({event:'ApproachSettlement'}),true);
 assert.equal(ingestHelpers.isFacilityPayload({kind:'facility'}),true);
+assert.equal(ingestHelpers.isFacilityHostPayload({event:'StationHost'}),true);
+assert.equal(ingestHelpers.isFacilityHostPayload({kind:'facility_host'}),true);
 assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
 assert.deepEqual(ingestHelpers.normalizeCoordinates({x:1,y:2,z:3}),{x:1,y:2,z:3});
 assert.equal(ingestHelpers.normalizeCoordinates(['bad',2,3]),null);
@@ -200,6 +208,48 @@ assert.equal(upgraded.coordinatesKnown,true);
 assert.equal(upgraded.positionObservation.event,'ApproachSettlement');
 assert.equal(upgraded.source.reference,targetFacility.source.reference,'Scout placement must preserve imported facility provenance');
 
+const unplacedStation=orrerySystem.locations.find(item=>item.name==='Rivers Hub');
+assert.ok(unplacedStation&&unplacedStation.bodyId===null,'Rivers Hub fixture should start unplaced');
+const hostOnlyRaw={
+  event:'StationHost',
+  kind:'facility_host',
+  system:orrerySystem.name,
+  systemAddress:String(orrerySystem.id64),
+  facilityName:unplacedStation.name,
+  marketId:String(unplacedStation.marketId),
+  bodyName:targetBody.name,
+  timestamp:observedAt,
+};
+const normalizedHostOnly=normalizeScoutFacilityObservation(hostOnlyRaw);
+assert.equal(normalizedHostOnly.hostOnly,true);
+assert.equal(normalizedHostOnly.bodyJournalId,null);
+assert.equal(normalizedHostOnly.bodyName,targetBody.name);
+const hostOnlyEnvelope={
+  schemaVersion:1,
+  systemId64:String(orrerySystem.id64),
+  observations:[{
+    event:'StationHost',
+    hostOnly:true,
+    marketId:String(unplacedStation.marketId),
+    facilityName:unplacedStation.name,
+    bodyJournalId:null,
+    bodyName:targetBody.name,
+    latitude:null,
+    longitude:null,
+    observedAt,
+    source:'Mongrel Scout / EDMC',
+  }],
+};
+const hostOverlay=applyFacilityObservationPayload(orrerySystem,hostOnlyEnvelope);
+assert.equal(hostOverlay.applied,1,'Host-only Scout observation should place an unassociated orbital station');
+const hostUpgraded=hostOverlay.system.locations.find(item=>item.id===unplacedStation.id);
+assert.equal(hostUpgraded.bodyId,targetBody.id);
+assert.equal(hostUpgraded.latitude,null);
+assert.equal(hostUpgraded.longitude,null);
+assert.equal(hostUpgraded.coordinatesKnown,false);
+assert.equal(hostUpgraded.positionKnown,true);
+assert.equal(hostUpgraded.positionObservation.event,'StationHost');
+
 const wrongBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==targetFacility.bodyId);
 const conflictEnvelope={...facilityEnvelope,observations:[{...facilityEnvelope.observations[0],bodyJournalId:wrongBody.bodyId,bodyName:wrongBody.name}]};
 const conflicted=applyFacilityObservationPayload(orrerySystem,conflictEnvelope);
@@ -209,7 +259,7 @@ assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvel
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
 for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/headers\(30\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
-console.log('✓ Scout settlement observations upgrade Orrery facilities without exposing Commander identity');
+console.log('✓ Scout settlement and host-only observations upgrade Orrery facilities without exposing Commander identity');
 
 
 const bgsApi=readFileSync('functions/api/operations/wolf-bgs.js','utf8');

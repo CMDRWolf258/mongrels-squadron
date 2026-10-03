@@ -44,6 +44,9 @@ export async function onRequestPost({ request, env }) {
   if (isMarketPayload(body)) {
     return handleMarketSnapshot({body,auth,env});
   }
+  if (isFacilityHostPayload(body)) {
+    return handleFacilityHostObservation({body,auth,env});
+  }
   if (isFacilityPayload(body)) {
     return handleFacilityObservation({body,auth,env});
   }
@@ -190,6 +193,49 @@ function isMarketPayload(value) {
 function isFacilityPayload(value) {
   return value && typeof value === 'object'
     && (String(value.kind || '').toLowerCase() === 'facility' || String(value.event || '') === 'ApproachSettlement');
+}
+
+function isFacilityHostPayload(value) {
+  return value && typeof value === 'object'
+    && (String(value.kind || '').toLowerCase() === 'facility_host' || String(value.event || '') === 'StationHost');
+}
+
+async function handleFacilityHostObservation({body,auth,env}) {
+  const observation=normalizeScoutFacilityObservation(body);
+  if(!observation||observation.hostOnly!==true)return reply({ok:false,error:'invalid_facility_host_observation'},400);
+  if(Date.parse(observation.observedAt)>Date.now()+15*60*1000){
+    return reply({ok:false,error:'journal_timestamp_in_future'},422);
+  }
+  if(!systemAuthorized(auth,observation.system)){
+    const claimAuthorized=auth.ownerId
+      ? await hasActiveScoutClaim(env,{system:observation.system,ownerId:auth.ownerId,at:new Date()})
+      : false;
+    if(!claimAuthorized){
+      return reply({ok:false,error:'system_not_authorized',system:observation.system},403);
+    }
+  }
+
+  const result=await recordScoutFacilityObservation(env,body);
+  if(result?.error){
+    const status=result.error==='bgs_storage_not_configured'?503
+      : result.error==='journal_timestamp_in_future'?422
+      : 400;
+    return reply({ok:false,error:result.error},status);
+  }
+
+  return reply({
+    ok:true,
+    accepted:true,
+    kind:'facility_host',
+    stored:Boolean(result.stored),
+    system:observation.system,
+    facility:observation.facilityName,
+    marketId:observation.marketId,
+    bodyId:observation.bodyJournalId,
+    bodyName:observation.bodyName,
+    updatedAt:observation.observedAt,
+    scout:auth.label,
+  },200);
 }
 
 async function handleFacilityObservation({body,auth,env}) {
