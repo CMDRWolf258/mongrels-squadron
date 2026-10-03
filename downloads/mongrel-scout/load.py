@@ -19,7 +19,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.5.0"
+PLUGIN_VERSION = "1.5.1"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -580,8 +580,8 @@ def _normalize_hud_event(
             payload["faction"] = str(entry.get("Faction") or "").strip()
             payload["legalStatus"] = str(entry.get("LegalStatus") or "").strip()
             payload["bounty"] = _optional_int(entry.get("Bounty"))
-            payload["subsystemName"] = str(entry.get("SubSystem_Localised") or entry.get("SubSystem") or "").strip()
-            payload["subsystemHealth"] = _normalize_percent(entry.get("SubSystemHealth"))
+            payload["subsystemName"] = str(entry.get("Subsystem_Localised") or entry.get("Subsystem") or entry.get("SubSystem_Localised") or entry.get("SubSystem") or "").strip()
+            payload["subsystemHealth"] = _normalize_percent(entry.get("SubsystemHealth") if entry.get("SubsystemHealth") is not None else entry.get("SubSystemHealth"))
 
     if journal_event == "HullDamage":
         payload["hullHealth"] = _normalize_percent(entry.get("Health"), fraction=True)
