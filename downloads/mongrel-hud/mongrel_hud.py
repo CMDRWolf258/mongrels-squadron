@@ -19,12 +19,68 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface")
+PANEL_TITLES = {
+    "own": "OWN SHIP",
+    "target": "TARGET",
+    "subsystems": "SUBSYSTEMS",
+    "bounties": "BOUNTIES",
+    "surface": "SURFACE MINING",
+}
+
+
+def default_layout() -> dict[str, Any]:
+    return {
+        "locked": True,
+        "masterVisible": True,
+        "panels": {
+            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0},
+            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0},
+            "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0},
+            "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0},
+            "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0},
+        },
+    }
+
+
+def normalized_layout(value: Any) -> dict[str, Any]:
+    defaults = default_layout()
+    layout = value if isinstance(value, dict) else {}
+    out = {
+        "locked": bool(layout.get("locked", defaults["locked"])),
+        "masterVisible": bool(layout.get("masterVisible", defaults["masterVisible"])),
+        "panels": {},
+    }
+    panels = layout.get("panels") if isinstance(layout.get("panels"), dict) else {}
+    for panel_id in PANEL_IDS:
+        base = defaults["panels"][panel_id]
+        raw = panels.get(panel_id) if isinstance(panels.get(panel_id), dict) else {}
+        try:
+            scale = float(raw.get("scale", base["scale"]))
+        except (TypeError, ValueError):
+            scale = float(base["scale"])
+        try:
+            x = int(raw.get("x", base["x"]))
+        except (TypeError, ValueError):
+            x = int(base["x"])
+        try:
+            y = int(raw.get("y", base["y"]))
+        except (TypeError, ValueError):
+            y = int(base["y"])
+        out["panels"][panel_id] = {
+            "x": x,
+            "y": y,
+            "visible": bool(raw.get("visible", base["visible"])),
+            "scale": max(0.75, min(1.5, scale)),
+        }
+    return out
+
 
 
 def resource_path(name: str) -> Path:
@@ -101,8 +157,9 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout()}
         self.load()
+        self.data["layout"] = normalized_layout(self.data.get("layout"))
 
     def load(self) -> None:
         try:
@@ -136,8 +193,8 @@ class MongrelHudApp:
         self.session = secrets.token_urlsafe(32)
         self.overlay_visible = True
         self.root: tk.Tk | None = None
-        self.overlay: tk.Toplevel | None = None
-        self.overlay_label: tk.Label | None = None
+        self.panel_windows: dict[str, dict[str, Any]] = {}
+        self.layout_revision = 0
         self.status_label: tk.Label | None = None
         self.profile_label: tk.Label | None = None
         self.pin_label: tk.Label | None = None
@@ -222,6 +279,74 @@ class MongrelHudApp:
             "runKills": max(0, int(self.run_kills)),
             "last": max(0, int(self.last_bounty)),
         }
+
+    def layout_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            return json.loads(json.dumps(normalized_layout(self.store.data.get("layout"))))
+
+    def set_layout_locked(self, locked: bool) -> dict[str, Any]:
+        with self.store.lock:
+            layout = normalized_layout(self.store.data.get("layout"))
+            layout["locked"] = bool(locked)
+            self.store.data["layout"] = layout
+            self.store.save()
+        with self.lock:
+            self.layout_revision += 1
+        return self.layout_snapshot()
+
+    def set_master_overlay(self, visible: bool) -> dict[str, Any]:
+        with self.store.lock:
+            layout = normalized_layout(self.store.data.get("layout"))
+            layout["masterVisible"] = bool(visible)
+            self.store.data["layout"] = layout
+            self.store.save()
+        with self.lock:
+            self.layout_revision += 1
+        return self.layout_snapshot()
+
+    def set_panel_settings(self, panel_id: str, *, visible: Any = None, scale: Any = None) -> dict[str, Any]:
+        if panel_id not in PANEL_IDS:
+            raise ValueError("invalid_panel")
+        with self.store.lock:
+            layout = normalized_layout(self.store.data.get("layout"))
+            panel = layout["panels"][panel_id]
+            if visible is not None:
+                panel["visible"] = bool(visible)
+            if scale is not None:
+                try:
+                    parsed = float(scale)
+                except (TypeError, ValueError):
+                    raise ValueError("invalid_scale")
+                if not 0.75 <= parsed <= 1.5:
+                    raise ValueError("invalid_scale")
+                panel["scale"] = round(parsed, 2)
+            self.store.data["layout"] = layout
+            self.store.save()
+        with self.lock:
+            self.layout_revision += 1
+        return self.layout_snapshot()
+
+    def reset_layout(self) -> dict[str, Any]:
+        with self.store.lock:
+            current = normalized_layout(self.store.data.get("layout"))
+            reset = default_layout()
+            reset["locked"] = current["locked"]
+            reset["masterVisible"] = current["masterVisible"]
+            self.store.data["layout"] = reset
+            self.store.save()
+        with self.lock:
+            self.layout_revision += 1
+        return self.layout_snapshot()
+
+    def save_panel_position(self, panel_id: str, x: int, y: int) -> None:
+        if panel_id not in PANEL_IDS:
+            return
+        with self.store.lock:
+            layout = normalized_layout(self.store.data.get("layout"))
+            layout["panels"][panel_id]["x"] = int(x)
+            layout["panels"][panel_id]["y"] = int(y)
+            self.store.data["layout"] = layout
+            self.store.save()
 
     def set_profile(self, profile: str) -> None:
         if profile not in {"combat", "surface"}:
@@ -343,6 +468,7 @@ class MongrelHudApp:
             "activeSite": self.active_site(),
             "surfaceNav": self.surface_nav(),
             "bounty": self.bounty_ledger(),
+            "layout": self.layout_snapshot(),
         }
 
     @staticmethod
@@ -377,6 +503,89 @@ class MongrelHudApp:
         age = iso_age(module.get("observedAt"))
         text = f"{name:<20} {hp:>4} {age:>5}"
         return text[:width].ljust(width)
+
+    def combat_panel_texts(self) -> dict[str, str]:
+        state = self.scout_state()
+        own = state.get("ship") or {}
+        status = state.get("status") or {}
+        target = state.get("target") or {}
+        ledger = self.bounty_ledger()
+
+        shields = own.get("shieldsUp")
+        own_shield = "UP" if shields is True else "DOWN" if shields is False else "—"
+        own_hull = own.get("hullHealth")
+        hull_text = f"{own_hull:.0f}%" if isinstance(own_hull, (int, float)) else "—"
+        ship_name = str(own.get("name") or own.get("type") or "YOUR SHIP").strip()
+        jump = own.get("maxJumpRange")
+        jump_text = f"{jump:.2f} LY" if isinstance(jump, (int, float)) else "—"
+        fuel = status.get("fuelMain")
+        fuel_text = f"{fuel:.1f} t" if isinstance(fuel, (int, float)) else "—"
+        pips = status.get("pips")
+        pip_text = "—"
+        if isinstance(pips, list) and len(pips) >= 3:
+            pip_text = f"SYS {pips[0]:.1f}  ENG {pips[1]:.1f}  WEP {pips[2]:.1f}"
+        own_lines = [
+            ship_name.upper(),
+            f"SHIELDS {own_shield:<4}   HULL {hull_text:>4}",
+            f"MAX JUMP {jump_text}   FUEL {fuel_text}",
+            pip_text,
+        ]
+        warnings = []
+        for key, label in (("massLocked", "MASS LOCK"), ("silentRunning", "SILENT"), ("lowFuel", "LOW FUEL"), ("overheating", "OVERHEAT")):
+            if status.get(key):
+                warnings.append(label)
+        if warnings:
+            own_lines.append(" · ".join(warnings))
+
+        bounty_text = "\n".join([
+            "BOUNTIES",
+            f"UNCLAIMED  {ledger['unclaimed']:>12,} CR",
+            f"THIS RUN   {ledger['runEarned']:>12,} CR",
+            f"KILLS      {ledger['runKills']:>12}",
+            f"LAST       {ledger['last']:>12,} CR",
+        ])
+
+        if target:
+            name = str(target.get("pilotName") or target.get("ship") or "TARGET")
+            target_ship = str(target.get("ship") or "")
+            target_lines = ["TARGET", f"{name}  {target_ship}".strip()]
+            legal = str(target.get("legalStatus") or "").upper()
+            bounty = target.get("bounty")
+            legal_line = legal
+            if isinstance(bounty, int) and bounty > 0:
+                legal_line = (legal_line + "   " if legal_line else "") + f"{bounty:,} CR"
+            if legal_line:
+                target_lines.append(legal_line)
+            subsystem = target.get("subsystem") or {}
+            if subsystem.get("name"):
+                hp = subsystem.get("health")
+                hp_text = f"{hp:.0f}%" if isinstance(hp, (int, float)) else "—"
+                target_lines += ["", f"CURRENT  {str(subsystem['name']):<24} {hp_text:>4}", f"LAST SEEN {iso_age(subsystem.get('observedAt'))} AGO"]
+            target_text = "\n".join(target_lines)
+        else:
+            target_text = "TARGET\nNO TARGET"
+
+        groups = self.module_groups(target)
+        subsystem_lines = []
+        if any(groups.values()):
+            width, gap = 31, "   "
+            subsystem_lines.append(f"{'HARDPOINTS':<{width}}{gap}{'CRITICAL SYSTEMS':<{width}}{gap}{'SECONDARY':<{width}}")
+            rows = max(len(groups["hardpoints"]), len(groups["critical"]), len(groups["secondary"]))
+            for index in range(rows):
+                cells = []
+                for key in ("hardpoints", "critical", "secondary"):
+                    module = groups[key][index] if index < len(groups[key]) else None
+                    cells.append(self.module_cell(module, width))
+                subsystem_lines.append(gap.join(cells))
+        else:
+            subsystem_lines = ["SUBSYSTEMS", "No modules observed yet."]
+
+        return {
+            "own": "\n".join(own_lines),
+            "target": target_text,
+            "subsystems": "\n".join(subsystem_lines),
+            "bounties": bounty_text,
+        }
 
     def combat_lines(self) -> list[str]:
         state = self.scout_state()
@@ -454,10 +663,14 @@ class MongrelHudApp:
             lines += ["", f"{float(lat):.6f}, {float(lon):.6f}"]
         return lines
 
-    def overlay_text(self) -> str:
-        with self.store.lock:
-            profile = self.store.data.get("profile", "combat")
-        return "\n".join(self.surface_lines() if profile == "surface" else self.combat_lines())
+    def panel_texts(self) -> dict[str, str]:
+        combat = self.combat_panel_texts()
+        combat["surface"] = "\n".join(self.surface_lines())
+        return combat
+
+    def _layout_revision(self) -> int:
+        with self.lock:
+            return self.layout_revision
 
     def refresh_ui(self) -> None:
         if not self.root:
@@ -467,17 +680,139 @@ class MongrelHudApp:
             error = self.snapshot.error
         if self.status_label:
             self.status_label.config(text="Scout: CONNECTED" if connected else f"Scout: WAITING ({error[:45]})")
+        with self.store.lock:
+            profile = str(self.store.data.get("profile", "combat"))
         if self.profile_label:
-            with self.store.lock:
-                self.profile_label.config(text=f"Profile: {str(self.store.data.get('profile','combat')).upper()}")
-        if self.overlay_label:
-            self.overlay_label.config(text=self.overlay_text())
+            self.profile_label.config(text=f"Profile: {profile.upper()}")
+
+        layout = self.layout_snapshot()
+        texts = self.panel_texts()
+        locked = bool(layout.get("locked"))
+        master_visible = bool(layout.get("masterVisible"))
+        revision = self._layout_revision()
+        for panel_id, info in self.panel_windows.items():
+            panel_cfg = layout["panels"][panel_id]
+            active_for_profile = panel_id == "surface" if profile == "surface" else panel_id != "surface"
+            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True))
+            window = info["window"]
+            if not should_show:
+                window.withdraw()
+                continue
+            window.deiconify()
+            scale = float(panel_cfg.get("scale") or 1.0)
+            base_size = 12 if panel_id in {"bounties", "subsystems"} else 13
+            info["body"].config(text=texts.get(panel_id, ""), font=("Consolas", max(9, round(base_size * scale)), "bold"))
+            if info.get("appliedLocked") != locked:
+                self._apply_panel_edit_mode(panel_id, locked)
+                info["appliedLocked"] = locked
+            if info.get("appliedRevision") != revision:
+                window.geometry(f"+{int(panel_cfg['x'])}+{int(panel_cfg['y'])}")
+                info["appliedRevision"] = revision
         self.root.after(200, self.refresh_ui)
 
     def toggle_overlay(self) -> None:
-        self.overlay_visible = not self.overlay_visible
-        if self.overlay:
-            self.overlay.deiconify() if self.overlay_visible else self.overlay.withdraw()
+        layout = self.layout_snapshot()
+        self.set_master_overlay(not bool(layout.get("masterVisible")))
+
+    def toggle_layout_lock(self) -> None:
+        layout = self.layout_snapshot()
+        self.set_layout_locked(not bool(layout.get("locked")))
+
+    def _set_clickthrough(self, window: tk.Toplevel, enabled: bool) -> None:
+        if os.name != "nt":
+            return
+        try:
+            window.update_idletasks()
+            hwnd = ctypes.windll.user32.GetParent(window.winfo_id()) or window.winfo_id()
+            style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
+            transparent = 0x00000020
+            layered = 0x00080000
+            toolwindow = 0x00000080
+            noactivate = 0x08000000
+            style |= layered | toolwindow
+            if enabled:
+                style |= transparent | noactivate
+            else:
+                style &= ~transparent
+                style &= ~noactivate
+            ctypes.windll.user32.SetWindowLongW(hwnd, -20, style)
+        except Exception:
+            pass
+
+    def _apply_panel_edit_mode(self, panel_id: str, locked: bool) -> None:
+        info = self.panel_windows.get(panel_id)
+        if not info:
+            return
+        window = info["window"]
+        header = info["header"]
+        frame = info["frame"]
+        body = info["body"]
+        if locked:
+            header.pack_forget()
+            frame.config(bg="black", highlightthickness=0)
+            body.config(padx=0, pady=0)
+        else:
+            header.pack(fill="x", before=body)
+            frame.config(bg="#16303b", highlightbackground="#56d7ef", highlightthickness=1)
+            body.config(padx=8, pady=7)
+        self._set_clickthrough(window, locked)
+
+    def _begin_panel_drag(self, panel_id: str, event: Any) -> None:
+        if self.layout_snapshot().get("locked"):
+            return
+        info = self.panel_windows.get(panel_id)
+        if not info:
+            return
+        window = info["window"]
+        info["dragOffset"] = (event.x_root - window.winfo_x(), event.y_root - window.winfo_y())
+
+    def _drag_panel(self, panel_id: str, event: Any) -> None:
+        if self.layout_snapshot().get("locked"):
+            return
+        info = self.panel_windows.get(panel_id)
+        if not info:
+            return
+        offset = info.get("dragOffset")
+        if not offset:
+            return
+        x = int(event.x_root - offset[0])
+        y = int(event.y_root - offset[1])
+        info["window"].geometry(f"+{x}+{y}")
+
+    def _end_panel_drag(self, panel_id: str, event: Any) -> None:
+        info = self.panel_windows.get(panel_id)
+        if not info:
+            return
+        window = info["window"]
+        self.save_panel_position(panel_id, window.winfo_x(), window.winfo_y())
+        info["dragOffset"] = None
+
+    def _create_panel_window(self, panel_id: str) -> None:
+        if not self.root:
+            return
+        layout = self.layout_snapshot()
+        panel_cfg = layout["panels"][panel_id]
+        window = tk.Toplevel(self.root)
+        window.title(f"Mongrel HUD - {PANEL_TITLES[panel_id]}")
+        window.overrideredirect(True)
+        window.geometry(f"+{int(panel_cfg['x'])}+{int(panel_cfg['y'])}")
+        window.attributes("-topmost", True)
+        window.configure(bg="black")
+        try:
+            window.attributes("-transparentcolor", "black")
+        except tk.TclError:
+            window.attributes("-alpha", 0.90)
+
+        frame = tk.Frame(window, bg="black", highlightthickness=0)
+        frame.pack(fill="both", expand=True)
+        header = tk.Label(frame, text=f"  {PANEL_TITLES[panel_id]}  · DRAG TO MOVE", anchor="w", bg="#16303b", fg="#56d7ef", font=("Segoe UI", 9, "bold"), padx=5, pady=4)
+        body = tk.Label(frame, text="", justify="left", anchor="nw", bg="black", fg="#aeeeff", font=("Consolas", 13, "bold"), padx=0, pady=0)
+        body.pack(fill="both", expand=True)
+        self.panel_windows[panel_id] = {"window": window, "frame": frame, "header": header, "body": body, "dragOffset": None, "appliedLocked": None, "appliedRevision": -1}
+        header.bind("<ButtonPress-1>", lambda event, pid=panel_id: self._begin_panel_drag(pid, event))
+        header.bind("<B1-Motion>", lambda event, pid=panel_id: self._drag_panel(pid, event))
+        header.bind("<ButtonRelease-1>", lambda event, pid=panel_id: self._end_panel_drag(pid, event))
+        self._apply_panel_edit_mode(panel_id, bool(layout.get("locked")))
 
     def regenerate_pin(self) -> None:
         self.pin = f"{secrets.randbelow(1000000):06d}"
@@ -489,7 +824,7 @@ class MongrelHudApp:
         root = tk.Tk()
         self.root = root
         root.title("Mongrel HUD")
-        root.geometry("460x245")
+        root.geometry("460x285")
         root.configure(bg="#091017")
         fg, muted, accent = "#d9edf5", "#8ca5b0", "#56d7ef"
         tk.Label(root, text="MONGREL HUD", bg="#091017", fg=accent, font=("Segoe UI", 17, "bold")).pack(anchor="w", padx=18, pady=(16, 4))
@@ -504,29 +839,10 @@ class MongrelHudApp:
         buttons.pack(anchor="w", padx=18)
         tk.Button(buttons, text="Show / Hide Overlay", command=self.toggle_overlay).pack(side="left", padx=(0, 8))
         tk.Button(buttons, text="New Pairing PIN", command=self.regenerate_pin).pack(side="left")
+        tk.Button(root, text="Lock / Unlock Layout", command=self.toggle_layout_lock).pack(anchor="w", padx=18, pady=(10, 0))
 
-        overlay = tk.Toplevel(root)
-        self.overlay = overlay
-        overlay.title("Mongrel HUD Overlay")
-        overlay.overrideredirect(True)
-        overlay.geometry("1180x680-40+70")
-        overlay.attributes("-topmost", True)
-        overlay.configure(bg="black")
-        try:
-            overlay.attributes("-transparentcolor", "black")
-        except tk.TclError:
-            overlay.attributes("-alpha", 0.88)
-        label = tk.Label(overlay, text="", justify="left", anchor="nw", bg="black", fg="#aeeeff", font=("Consolas", 13, "bold"), padx=0, pady=0)
-        self.overlay_label = label
-        label.pack(fill="both", expand=True)
-        overlay.update_idletasks()
-        if os.name == "nt":
-            try:
-                hwnd = ctypes.windll.user32.GetParent(overlay.winfo_id()) or overlay.winfo_id()
-                style = ctypes.windll.user32.GetWindowLongW(hwnd, -20)
-                ctypes.windll.user32.SetWindowLongW(hwnd, -20, style | 0x00000020 | 0x00080000 | 0x00000080 | 0x08000000)
-            except Exception:
-                pass
+        for panel_id in PANEL_IDS:
+            self._create_panel_window(panel_id)
         root.after(200, self.refresh_ui)
         root.mainloop()
 
@@ -618,6 +934,18 @@ def make_handler(app: MongrelHudApp):
                 if path == "/api/profile":
                     app.set_profile(str(body.get("profile") or ""))
                     result = {"ok": True}
+                elif path == "/api/layout":
+                    if "locked" in body:
+                        result = {"ok": True, "layout": app.set_layout_locked(bool(body.get("locked")))}
+                    elif "masterVisible" in body:
+                        result = {"ok": True, "layout": app.set_master_overlay(bool(body.get("masterVisible")))}
+                    else:
+                        raise ValueError("layout_setting_required")
+                elif path == "/api/panel":
+                    panel_id = str(body.get("panel") or "")
+                    result = {"ok": True, "layout": app.set_panel_settings(panel_id, visible=body.get("visible") if "visible" in body else None, scale=body.get("scale") if "scale" in body else None)}
+                elif path == "/api/layout-reset":
+                    result = {"ok": True, "layout": app.reset_layout()}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/site-select":

@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.2.0"
+assert hud.APP_VERSION=="0.3.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -48,11 +48,22 @@ with tempfile.TemporaryDirectory() as td:
     assert "HARDPOINTS" in combat and "CRITICAL SYSTEMS" in combat and "SECONDARY" in combat
     assert hud.MongrelHudApp.module_category("Power Plant")=="critical"
     assert hud.MongrelHudApp.module_category("Beam Laser")=="hardpoints"
+    layout=app.layout_snapshot()
+    assert layout["locked"] is True and set(layout["panels"])==set(hud.PANEL_IDS)
+    app.set_layout_locked(False)
+    assert app.layout_snapshot()["locked"] is False
+    app.set_panel_settings("subsystems",visible=False,scale=1.25)
+    assert app.layout_snapshot()["panels"]["subsystems"]["visible"] is False
+    assert app.layout_snapshot()["panels"]["subsystems"]["scale"]==1.25
+    app.save_panel_position("target",-120,333)
+    assert app.layout_snapshot()["panels"]["target"]["x"]==-120
+    app.reset_layout()
+    assert app.layout_snapshot()["panels"]["target"]["x"]==40
     app.set_profile("surface")
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","/api/layout","/api/panel","/api/layout-reset","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -61,4 +72,5 @@ api=(ROOT/"functions"/"api"/"downloads"/"mongrel-hud.js").read_text(encoding="ut
 for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]:
     assert token in api
 assert "resource_path" in source and "_MEIPASS" in source
+assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")

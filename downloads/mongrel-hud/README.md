@@ -18,7 +18,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 5. Open that address on the iPad and enter the PIN.
 6. If Windows Firewall or SmartScreen asks, allow the app on **Private networks only**. The current prototype is unsigned, so Windows may show an "unrecognized app" warning.
 
-The transparent overlay is top-most and click-through on Windows. Use the small PC control window to show/hide it or generate a new pairing PIN.
+Combat is rendered as independent top-most transparent panels rather than one large overlay window. In normal **LOCKED** mode the panels are click-through. From the iPad controller, choose **UNLOCK LAYOUT** to expose draggable panel headers on the PC, move them wherever you want, adjust each panel to 75–150% size, then lock the layout again. Panel positions, visibility and scale persist in the local state file. **Reset Layout** restores the default positions. The small PC control window remains available for show/hide, lock/unlock and pairing.
 
 ## Profiles
 
@@ -33,7 +33,7 @@ The first pass keeps information visible when cockpit head movement pushes Elite
 - observed subsystems grouped into stable **Hardpoints / Critical Systems / Secondary** columns. Rows stay in first-seen order so health updates do not make the list bounce around. Health and observation age remain visible because module values refresh when Elite reports them, not as a guaranteed continuous stream;
 - the target shield/hull scan snapshot is kept out of the desktop overlay because it is not a reliable live damage feed.
 
-The desktop overlay is now borderless, transparent and click-through; only the HUD text is visible over Elite.
+The Combat HUD is split into independent **Own Ship**, **Target**, **Subsystems**, and **Bounties** windows. In locked mode each is borderless, transparent and click-through; only the HUD text is visible over Elite. The Surface Mining profile uses its own independently positioned panel.
 
 No game inputs are generated. The companion is read-only with respect to Elite controls.
 

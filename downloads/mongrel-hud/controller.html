@@ -8,12 +8,12 @@
 :root{color-scheme:dark;--bg:#061018;--panel:#0c1921;--line:#244451;--text:#d8edf4;--muted:#8fa8b2;--accent:#55d7ef;--warn:#ffc857}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-weight:800;letter-spacing:.12em}.status{color:var(--muted);font-size:.85rem}
-.profiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}button,input,textarea{font:inherit}.profiles button,.site-btn,.action{min-height:52px;border:1px solid var(--line);border-radius:10px;background:#10232d;color:var(--text);font-weight:700}.profiles button.active,.site-btn.active{border-color:var(--accent);color:var(--accent);background:#0d303b}
+.profiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}button,input,textarea,select{font:inherit}.profiles button,.site-btn,.action{min-height:52px;border:1px solid var(--line);border-radius:10px;background:#10232d;color:var(--text);font-weight:700}.profiles button.active,.site-btn.active{border-color:var(--accent);color:var(--accent);background:#0d303b}
 .card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;margin:12px 0}.card h2{margin:0 0 12px;font-size:1rem;letter-spacing:.06em}.big{font-size:clamp(1.35rem,5vw,2.2rem);font-weight:800}.row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)}.row:last-child{border:0}.muted{color:var(--muted)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sites{display:flex;flex-wrap:wrap;gap:8px}.site-btn{min-width:72px;padding:8px 12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sites{display:flex;flex-wrap:wrap;gap:8px}.site-btn{min-width:72px;padding:8px 12px}.layout-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.layout-actions button,.panel-toggle{min-height:44px;border:1px solid var(--line);border-radius:9px;background:#10232d;color:var(--text);font-weight:700}.layout-actions button.active,.panel-toggle.active{border-color:var(--accent);color:var(--accent);background:#0d303b}.panel-control{display:grid;grid-template-columns:minmax(0,1fr) 80px 110px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}.panel-control:last-child{border:0}.panel-control select{min-height:44px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);padding:8px}.layout-hint{margin:10px 0;color:var(--muted);font-size:.85rem}
 label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);font-size:16px}textarea{min-height:80px}.action{width:100%;margin-top:12px;background:#12323e}.notice{color:var(--warn);min-height:24px;margin-top:8px}.hidden{display:none!important}
 #pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}.module-group{margin-top:12px}.module-group h3{margin:0 0 5px;color:var(--accent);font-size:.78rem;letter-spacing:.08em}.module-row{display:grid;grid-template-columns:minmax(0,1fr) 4.5em 5em;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}.module-health,.module-age{text-align:right;font-variant-numeric:tabular-nums}
-@media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.layout-actions{grid-template-columns:1fr}.panel-control{grid-template-columns:minmax(0,1fr) 76px 98px}}
 </style>
 </head>
 <body>
@@ -23,6 +23,19 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <main>
   <div class="top"><div class="brand">MONGREL HUD</div><div class="status" id="connection">Connecting…</div></div>
   <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button></div>
+
+  <div class="card">
+    <h2>OVERLAY LAYOUT</h2>
+    <div class="layout-actions"><button id="overlayMaster">OVERLAY ON</button><button id="layoutLock">UNLOCK LAYOUT</button><button id="layoutReset">RESET LAYOUT</button></div>
+    <div class="layout-hint" id="layoutHint">Locked: overlays are transparent and click-through.</div>
+    <div id="panelControls">
+      <div class="panel-control" data-profile-panel="combat"><strong>Own Ship</strong><button class="panel-toggle" data-panel-visible="own">ON</button><select data-panel-scale="own" aria-label="Own Ship panel size"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></div>
+      <div class="panel-control" data-profile-panel="combat"><strong>Target</strong><button class="panel-toggle" data-panel-visible="target">ON</button><select data-panel-scale="target" aria-label="Target panel size"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></div>
+      <div class="panel-control" data-profile-panel="combat"><strong>Subsystems</strong><button class="panel-toggle" data-panel-visible="subsystems">ON</button><select data-panel-scale="subsystems" aria-label="Subsystems panel size"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></div>
+      <div class="panel-control" data-profile-panel="combat"><strong>Bounties</strong><button class="panel-toggle" data-panel-visible="bounties">ON</button><select data-panel-scale="bounties" aria-label="Bounties panel size"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></div>
+      <div class="panel-control hidden" data-profile-panel="surface"><strong>Surface Navigation</strong><button class="panel-toggle" data-panel-visible="surface">ON</button><select data-panel-scale="surface" aria-label="Surface panel size"><option value="0.75">75%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select></div>
+    </div>
+  </div>
 
   <section id="combatPanel">
     <div class="card"><h2>YOUR SHIP</h2><div class="big" id="ownShipName">—</div><div class="grid"><div><span class="muted">Shields</span><div class="big" id="ownShields">—</div></div><div><span class="muted">Hull</span><div class="big" id="ownHull">—</div></div></div><div class="row"><span>Max jump</span><strong id="ownJump">—</strong></div><div class="row"><span>Fuel</span><strong id="ownFuel">—</strong></div><div class="row"><span>Pips</span><strong id="ownPips">—</strong></div></div>
@@ -58,6 +71,13 @@ function render(){
   var profile=state.profile||"combat";
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
+  document.querySelectorAll("[data-profile-panel]").forEach(function(row){row.classList.toggle("hidden",row.getAttribute("data-profile-panel")!==profile)});
+  var layout=state.layout||{},panels=layout.panels||{};
+  el("overlayMaster").textContent=layout.masterVisible===false?"OVERLAY OFF":"OVERLAY ON";el("overlayMaster").classList.toggle("active",layout.masterVisible!==false);
+  el("layoutLock").textContent=layout.locked===false?"LOCK LAYOUT":"UNLOCK LAYOUT";el("layoutLock").classList.toggle("active",layout.locked===false);
+  el("layoutHint").textContent=layout.locked===false?"Unlocked: drag the labeled panel headers on the PC, adjust sizes here, then lock the layout.":"Locked: overlays are transparent and click-through.";
+  document.querySelectorAll("[data-panel-visible]").forEach(function(button){var id=button.getAttribute("data-panel-visible"),cfg=panels[id]||{};button.textContent=cfg.visible===false?"OFF":"ON";button.classList.toggle("active",cfg.visible!==false)});
+  document.querySelectorAll("[data-panel-scale]").forEach(function(select){var id=select.getAttribute("data-panel-scale"),cfg=panels[id]||{},value=String(cfg.scale||1);if(select.value!==value)select.value=value});
   var scout=state.scout||{},own=scout.ship||{},target=scout.target||{},status=scout.status||{};
   el("ownShipName").textContent=own.name||own.type||"YOUR SHIP";
   el("ownShields").textContent=own.shieldsUp===true?"UP":own.shieldsUp===false?"DOWN":"—";el("ownHull").textContent=pct(own.hullHealth);
@@ -84,6 +104,11 @@ function escapeAttr(v){return escapeHtml(v)}
 async function load(){try{state=await api("/api/state");el("pair").classList.add("hidden");render()}catch(e){if(e.message==="pair_required")el("pair").classList.remove("hidden")}}
 el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
 document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){await api("/api/profile",{profile:b.getAttribute("data-profile")});await load()}});
+el("overlayMaster").onclick=async function(){var layout=(state&&state.layout)||{};await api("/api/layout",{masterVisible:layout.masterVisible===false});await load()};
+el("layoutLock").onclick=async function(){var layout=(state&&state.layout)||{};await api("/api/layout",{locked:layout.locked===false});await load()};
+el("layoutReset").onclick=async function(){await api("/api/layout-reset",{});await load()};
+document.querySelectorAll("[data-panel-visible]").forEach(function(button){button.onclick=async function(){var id=button.getAttribute("data-panel-visible"),cfg=((state&&state.layout&&state.layout.panels)||{})[id]||{};await api("/api/panel",{panel:id,visible:cfg.visible===false});await load()}});
+document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.onchange=async function(){await api("/api/panel",{panel:select.getAttribute("data-panel-scale"),scale:Number(select.value)});await load()}});
 el("setCenter").onclick=async function(){try{var r=await api("/api/site-center",{siteNumber:Number(el("siteNumber").value),commodity:el("siteCommodity").value});el("siteNotice").textContent="Saved site #"+r.site.siteNumber+" center.";await load()}catch(e){el("siteNotice").textContent=e.message}};
 el("reportDeposit").onclick=async function(){try{var r=await api("/api/deposit",{commodity:el("depositCommodity").value,rigs:Number(el("rigs").value||0),notes:el("notes").value});el("depositNotice").textContent="Deposit saved at "+r.deposit.latitude.toFixed(6)+", "+r.deposit.longitude.toFixed(6);el("notes").value="";await load()}catch(e){el("depositNotice").textContent=e.message}};
 load();setInterval(load,500);
