@@ -66,4 +66,25 @@ jobs:
           walk(system)
           print("SPANSH_SYSTEM_MATCHES")
           print(json.dumps(matches,indent=2,sort_keys=True)[:30000])
+
+          record=system.get("record") or {}
+          target=3260.545561
+          near=[]
+          for body in record.get("bodies") or []:
+              dist=body.get("distance_to_arrival")
+              if isinstance(dist,(int,float)):
+                  near.append({
+                      "name":body.get("name"),
+                      "body_id":body.get("body_id"),
+                      "id64":body.get("id64"),
+                      "type":body.get("type"),
+                      "subtype":body.get("subtype"),
+                      "distance_to_arrival":dist,
+                      "delta_ls":abs(dist-target),
+                      "parents":body.get("parents"),
+                      "rings":body.get("rings"),
+                  })
+          near.sort(key=lambda row:row["delta_ls"])
+          print("SPANSH_NEAREST_BODIES")
+          print(json.dumps(near[:15],indent=2,sort_keys=True))
           PY
