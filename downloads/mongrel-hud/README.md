@@ -5,7 +5,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 ## Requirements
 
 - Windows PC running Elite Dangerous.
-- EDMC with **Mongrel Scout v1.5.0 or newer** installed and enabled.
+- EDMC with **Mongrel Scout v1.6.0 or newer** installed and enabled.
 - No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
@@ -26,11 +26,14 @@ The transparent overlay is top-most and click-through on Windows. Use the small 
 
 The first pass keeps information visible when cockpit head movement pushes Elite's normal HUD out of view:
 
-- your own shield **UP/DOWN** state and last reported hull percentage;
-- current target hull/shield percentage when Elite reports it;
+- your ship name, max jump range, current fuel, SYS/ENG/WEP pips, shield **UP/DOWN** state and last reported hull percentage;
+- a persistent tracked bounty ledger with a zero floor, plus this-run earnings, kill count and last bounty;
 - Wanted/legal status and bounty when the completed target scan reports one;
 - current targeted subsystem;
-- a **last seen module** list that remembers subsystem health as you manually view modules. The age is shown because cached module values are not guaranteed current.
+- observed subsystems grouped into stable **Hardpoints / Critical Systems / Secondary** columns. Rows stay in first-seen order so health updates do not make the list bounce around. Health and observation age remain visible because module values refresh when Elite reports them, not as a guaranteed continuous stream;
+- the target shield/hull scan snapshot is kept out of the desktop overlay because it is not a reliable live damage feed.
+
+The desktop overlay is now borderless, transparent and click-through; only the HUD text is visible over Elite.
 
 No game inputs are generated. The companion is read-only with respect to Elite controls.
 

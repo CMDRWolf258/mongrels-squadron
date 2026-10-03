@@ -12,7 +12,7 @@ main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:
 .card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;margin:12px 0}.card h2{margin:0 0 12px;font-size:1rem;letter-spacing:.06em}.big{font-size:clamp(1.35rem,5vw,2.2rem);font-weight:800}.row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06)}.row:last-child{border:0}.muted{color:var(--muted)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sites{display:flex;flex-wrap:wrap;gap:8px}.site-btn{min-width:72px;padding:8px 12px}
 label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);font-size:16px}textarea{min-height:80px}.action{width:100%;margin-top:12px;background:#12323e}.notice{color:var(--warn);min-height:24px;margin-top:8px}.hidden{display:none!important}
-#pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}
+#pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}.module-group{margin-top:12px}.module-group h3{margin:0 0 5px;color:var(--accent);font-size:.78rem;letter-spacing:.08em}.module-row{display:grid;grid-template-columns:minmax(0,1fr) 4.5em 5em;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}.module-health,.module-age{text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
@@ -25,9 +25,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button></div>
 
   <section id="combatPanel">
-    <div class="card"><h2>YOUR SHIP</h2><div class="grid"><div><span class="muted">Shields</span><div class="big" id="ownShields">—</div></div><div><span class="muted">Hull</span><div class="big" id="ownHull">—</div></div></div></div>
-    <div class="card"><h2>CURRENT TARGET</h2><div class="big" id="targetName">NO TARGET</div><div class="row"><span>Shields</span><strong id="targetShields">—</strong></div><div class="row"><span>Hull</span><strong id="targetHull">—</strong></div><div class="row"><span>Status / bounty</span><strong id="targetBounty">—</strong></div><div class="row"><span>Subsystem</span><strong id="targetSubsystem">—</strong></div></div>
-    <div class="card"><h2>LAST SEEN MODULES</h2><div class="modules" id="modules"><span class="muted">No modules observed yet.</span></div></div>
+    <div class="card"><h2>YOUR SHIP</h2><div class="big" id="ownShipName">—</div><div class="grid"><div><span class="muted">Shields</span><div class="big" id="ownShields">—</div></div><div><span class="muted">Hull</span><div class="big" id="ownHull">—</div></div></div><div class="row"><span>Max jump</span><strong id="ownJump">—</strong></div><div class="row"><span>Fuel</span><strong id="ownFuel">—</strong></div><div class="row"><span>Pips</span><strong id="ownPips">—</strong></div></div>
+    <div class="card"><h2>BOUNTIES</h2><div class="row"><span>Tracked unclaimed</span><strong id="unclaimedBounties">0 CR</strong></div><div class="row"><span>This run</span><strong id="runBounties">0 CR</strong></div><div class="row"><span>Kills / last</span><strong id="runKills">0 · 0 CR</strong></div></div>
+    <div class="card"><h2>CURRENT TARGET</h2><div class="big" id="targetName">NO TARGET</div><div class="row"><span>Status / bounty</span><strong id="targetBounty">—</strong></div><div class="row"><span>Current subsystem</span><strong id="targetSubsystem">—</strong></div><div class="row"><span>Scan snapshot</span><strong id="targetSnapshot">—</strong></div></div>
+    <div class="card"><h2>OBSERVED SUBSYSTEMS</h2><div class="modules" id="modules"><span class="muted">No modules observed yet.</span></div></div>
   </section>
 
   <section id="surfacePanel" class="hidden">
@@ -57,14 +58,21 @@ function render(){
   var profile=state.profile||"combat";
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
-  var scout=state.scout||{},own=scout.ship||{},target=scout.target||{};
+  var scout=state.scout||{},own=scout.ship||{},target=scout.target||{},status=scout.status||{};
+  el("ownShipName").textContent=own.name||own.type||"YOUR SHIP";
   el("ownShields").textContent=own.shieldsUp===true?"UP":own.shieldsUp===false?"DOWN":"—";el("ownHull").textContent=pct(own.hullHealth);
-  el("targetName").textContent=target.pilotName||target.ship||"NO TARGET";el("targetShields").textContent=pct(target.shieldHealth);el("targetHull").textContent=pct(target.hullHealth);
+  el("ownJump").textContent=typeof own.maxJumpRange==="number"?own.maxJumpRange.toFixed(2)+" LY":"—";
+  el("ownFuel").textContent=typeof status.fuelMain==="number"?status.fuelMain.toFixed(1)+" t":"—";
+  var p=status.pips;el("ownPips").textContent=Array.isArray(p)&&p.length>=3?("SYS "+p[0].toFixed(1)+" · ENG "+p[1].toFixed(1)+" · WEP "+p[2].toFixed(1)):"—";
+  var ledger=state.bounty||{};el("unclaimedBounties").textContent=(ledger.unclaimed||0).toLocaleString()+" CR";el("runBounties").textContent=(ledger.runEarned||0).toLocaleString()+" CR";el("runKills").textContent=(ledger.runKills||0)+" · "+(ledger.last||0).toLocaleString()+" CR";
+  el("targetName").textContent=target.pilotName||target.ship||"NO TARGET";
   var bounty=(target.legalStatus||"").toUpperCase();if(typeof target.bounty==="number"&&target.bounty>0)bounty+=(bounty?" · ":"")+target.bounty.toLocaleString()+" CR";el("targetBounty").textContent=bounty||"—";
-  var sub=target.subsystem||{};el("targetSubsystem").textContent=sub.name?(sub.name+" · "+pct(sub.health)):"—";
-  var mods=Object.values(target.modules||{}).sort(function(a,b){return String(b.observedAt||"").localeCompare(String(a.observedAt||""))});
-  el("modules").innerHTML=mods.length?mods.slice(0,8).map(function(m){return '<div class="row"><span>'+escapeHtml(m.name||"Module")+'</span><strong>'+pct(m.health)+' · '+age(m.observedAt)+' ago</strong></div>'}).join(""):'<span class="muted">No modules observed yet.</span>';
-  var status=scout.status||{},sys=scout.system||{};el("surfaceBody").textContent=status.bodyName||"—";el("surfaceSystem").textContent=sys.name||"—";
+  var sub=target.subsystem||{};el("targetSubsystem").textContent=sub.name?(sub.name+" · "+pct(sub.health)+" · "+age(sub.observedAt)+" ago"):"—";
+  el("targetSnapshot").textContent=target&&(typeof target.shieldHealth==="number"||typeof target.hullHealth==="number")?("S "+pct(target.shieldHealth)+" · H "+pct(target.hullHealth)):"—";
+  function cat(name){name=String(name||"").toLowerCase();var hard=["cannon","laser","rail","plasma","missile","torpedo","fragment","multicannon","multi-cannon","accelerator","launcher","abrasion blaster","seismic charge","displacement missile"];var critical=["power plant","thruster","drive","frame shift","shield generator","power distributor","life support","sensor"];if(hard.some(function(x){return name.includes(x)})&&!["heat sink","chaff","shield cell"].some(function(x){return name.includes(x)}))return "HARDPOINTS";if(critical.some(function(x){return name.includes(x)}))return "CRITICAL SYSTEMS";return "SECONDARY"}
+  var groups={"HARDPOINTS":[],"CRITICAL SYSTEMS":[],"SECONDARY":[]};Object.values(target.modules||{}).forEach(function(m){groups[cat(m.name)].push(m)});
+  var html="";Object.keys(groups).forEach(function(key){if(!groups[key].length)return;html+='<div class="module-group"><h3>'+key+'</h3>'+groups[key].map(function(m){return '<div class="module-row"><span>'+escapeHtml(m.name||"Module")+'</span><strong class="module-health">'+pct(m.health)+'</strong><span class="module-age muted">'+age(m.observedAt)+' ago</span></div>'}).join("")+'</div>'});el("modules").innerHTML=html||'<span class="muted">No modules observed yet.</span>';
+  var sys=scout.system||{};el("surfaceBody").textContent=status.bodyName||"—";el("surfaceSystem").textContent=sys.name||"—";
   el("coords").textContent=typeof status.latitude==="number"&&typeof status.longitude==="number"?status.latitude.toFixed(6)+", "+status.longitude.toFixed(6):"—";
   var active=state.activeSite||{};el("activeSite").textContent=active.siteNumber?"#"+active.siteNumber+(active.commodity?" · "+active.commodity:""):"—";
   var nav=state.surfaceNav;el("siteRange").textContent=nav?dist(nav.distance):"—";el("siteDirection").textContent=nav?(Math.round(nav.bearing)+"°"+(typeof nav.relative==="number"?" · "+(Math.abs(nav.relative)<=5?"AHEAD":Math.round(Math.abs(nav.relative))+"° "+(nav.relative>0?"RIGHT":"LEFT")):"")):"—";
