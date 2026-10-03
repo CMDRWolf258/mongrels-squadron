@@ -4,7 +4,7 @@ import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
 import { applyFacilityObservationPayload } from '../lib/orrery-facility-observations.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
-import { normalizeScoutFacilityVisit, deriveStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
+import { normalizeScoutFacilityVisit, deriveStationHostCandidate, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -206,6 +206,11 @@ assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   currentBody:{name:'NGC 2546 Sector UZ-G d10-16 9 b',bodyId:62,bodyType:'Planet'},
   dashboard:{...rawStationVisit.dashboard,bodyName:'NGC 2546 Sector UZ-G d10-16 9 b'},
 })),null,'A closer/wrong nearby moon must not be promoted when it disagrees with Destination.Body');
+assert.equal(diagnoseStationHostCandidate(normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  currentBody:{name:'Rivers Hub',bodyId:90,bodyType:'Station'},
+  dashboard:{...rawStationVisit.dashboard,bodyName:'Rivers Hub'},
+})).reason,'current_body_is_station');
 
 assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   ...rawStationVisit,
