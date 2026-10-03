@@ -19,7 +19,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.4.1"
+PLUGIN_VERSION = "1.4.2"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -63,8 +63,8 @@ _last_star_pos: Any = None
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "destinationName": "",
-    "lastBodyName": "",
-    "lastBodySeenMonotonic": 0.0,
+    "destinationBodyId": None,
+    "destinationSystem": None,
 }
 _session = timeout_session.new_session(timeout=8)
 _hud_condition = threading.Condition()
@@ -141,8 +141,9 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "for direct Trader's Outpost freshness. ApproachSettlement events also send the public "
         "facility market ID, host body ID/name, latitude and longitude so the System Orrery can "
         "replace schematic surface markers with verified positions. System coordinates support distance sorting. "
-        "Orbital station visits may also send the station market ID plus a recent host-body name/ID "
-        "so the Orrery can attach an otherwise-unplaced station to the correct body without claiming "
+        "Orbital station visits may also send the station market ID plus Elite's selected Destination.Body "
+        "when the selected destination name matches the station being docked with, so the Orrery can attach "
+        "an otherwise-unplaced station to the correct body without claiming "
         "an exact orbital position. Docking, station/carrier, travel and CarrierStats triggers are also "
         "normalized for the local HUD/voice bridge on 127.0.0.1; only the explicit host association is uploaded. Commander name may "
         "exist in that local-only bridge state for future owner/squad greetings, but Commander name, "
@@ -171,30 +172,23 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
 
 
 def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
-    """Track live Status.json body context for host-only orbital-station placement."""
+    """Track Elite's selected destination for host-only orbital-station placement."""
     if is_beta or not config.get_bool(KEY_ENABLED):
         return None
 
     destination = entry.get("Destination")
     destination_name = ""
+    destination_body_id: Optional[int] = None
+    destination_system: Any = None
     if isinstance(destination, Mapping):
         destination_name = str(destination.get("Name_Localised") or destination.get("Name") or "").strip()
+        destination_body_id = _optional_int(destination.get("Body"))
+        destination_system = destination.get("System")
 
-    body_name = str(entry.get("BodyName") or "").strip()
-    now = time.monotonic()
     with _dashboard_context_lock:
-        previous_destination = str(_dashboard_context.get("destinationName") or "")
-        if destination_name.casefold() != previous_destination.casefold():
-            _dashboard_context["destinationName"] = destination_name
-            _dashboard_context["lastBodyName"] = ""
-            _dashboard_context["lastBodySeenMonotonic"] = 0.0
-        if (
-            destination_name
-            and body_name
-            and body_name.casefold() != destination_name.casefold()
-        ):
-            _dashboard_context["lastBodyName"] = body_name
-            _dashboard_context["lastBodySeenMonotonic"] = now
+        _dashboard_context["destinationName"] = destination_name
+        _dashboard_context["destinationBodyId"] = destination_body_id
+        _dashboard_context["destinationSystem"] = destination_system
     return None
 
 
@@ -707,22 +701,6 @@ def _remember_location(entry: Mapping[str, Any], fallback_system: str) -> None:
         _last_star_pos = list(star_pos[:3])
 
 
-def _recent_dashboard_host(station_name: str) -> str:
-    if not station_name:
-        return ""
-    with _dashboard_context_lock:
-        destination_name = str(_dashboard_context.get("destinationName") or "").strip()
-        body_name = str(_dashboard_context.get("lastBodyName") or "").strip()
-        seen = float(_dashboard_context.get("lastBodySeenMonotonic") or 0.0)
-    if not destination_name or destination_name.casefold() != station_name.casefold():
-        return ""
-    if not body_name or body_name.casefold() == station_name.casefold():
-        return ""
-    if seen <= 0 or time.monotonic() - seen > 30.0:
-        return ""
-    return body_name
-
-
 def _build_station_host_payload(
     entry: Mapping[str, Any],
     state: Mapping[str, Any],
@@ -747,23 +725,28 @@ def _build_station_host_payload(
     if not market_id_text.isdigit() or not system_address_text.isdigit() or not system_name or not timestamp:
         return None
 
-    body_name = ""
-    body_id: Optional[int] = None
-    state_body_type = str(state.get("BodyType") or "").strip().casefold()
-    state_body_name = str(state.get("Body") or "").strip()
-    state_body_id = _optional_int(state.get("BodyID"))
-    if (
-        state_body_name
-        and state_body_name.casefold() != station_name.casefold()
-        and state_body_type not in {"station", "fleetcarrier", "fleet carrier"}
-    ):
-        body_name = state_body_name
-        body_id = state_body_id
-    else:
-        body_name = _recent_dashboard_host(station_name)
+    # Do not infer the host from proximity, current SOI, or the last body flown near.
+    # Only accept Elite's selected Destination.Body when the selected destination
+    # name is the same station that generated the docking event.
+    with _dashboard_context_lock:
+        destination_name = str(_dashboard_context.get("destinationName") or "").strip()
+        destination_body_id = _dashboard_context.get("destinationBodyId")
+        destination_system = _dashboard_context.get("destinationSystem")
 
-    if not body_name and body_id is None:
+    if not destination_name or destination_name.casefold() != station_name.casefold():
         return None
+    body_id = _optional_int(destination_body_id)
+    if body_id is None:
+        return None
+
+    try:
+        if destination_system is not None and system_address is not None:
+            if int(destination_system) != int(system_address):
+                return None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+    body_name = ""
 
     return {
         "version": 1,

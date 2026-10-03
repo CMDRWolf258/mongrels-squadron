@@ -22,7 +22,7 @@ Market visits do not currently complete ordinary BGS Scout Jobs or issue a payou
 
 For **surface facilities**, simply approach the settlement normally. When Elite writes an `ApproachSettlement` journal event, Scout sends the facility's public Market ID, system address, host body ID/name, latitude, longitude, and event time. The Orrery can then match that observation to an existing imported facility and replace a schematic marker with exact surface placement automatically. You do not need to land, type coordinates, or submit a separate form. This passive facility observation does not complete a Scout Job or issue a payout.
 
-For **orbital stations whose host body is still unknown**, keep the station targeted as you approach it. Scout watches EDMC's live body context and, when a `DockingRequested` or `Docked` event confirms the station Market ID, sends a host-only observation when a recent celestial body association is available. The Orrery then attaches the station schematically to that body while leaving exact orbital position unknown. Scout never invents a host from arrival distance alone.
+For **orbital stations whose host body is still unknown**, keep the station targeted as you approach it. Scout reads Elite's live `Status.json` selected destination. When a `DockingRequested` or `Docked` event confirms the same station, Scout may send the selected `Destination.Body` as a host-only observation. The Orrery then attaches the station schematically to that body while leaving exact orbital position unknown. Scout does **not** use current/nearest body, sphere-of-influence, arrival distance, or the last body flown near, so close-orbiting moons cannot change the association merely because the ship passes nearer to one of them.
 
 ## What is transmitted
 
@@ -41,7 +41,7 @@ For market scouting, a station `Market` snapshot:
 
 For Orrery facility placement:
 - an `ApproachSettlement` observation sends system name/address, facility name/Market ID, host body ID/name, latitude/longitude, and event time;
-- a `StationHost` observation for an orbital station sends system name/address, station name/Market ID, and the recent host body ID/name when EDMC can establish it;
+- a `StationHost` observation for an orbital station sends system name/address, station name/Market ID, and Elite's selected `Destination.Body` only when the selected destination name matches the docking station;
 - host-only observations never claim an exact orbital position.
 
 Facility observations store only the public location facts needed by the Orrery. The public Orrery feed does not expose the Scout token, Discord account, Commander identity, or route history.
