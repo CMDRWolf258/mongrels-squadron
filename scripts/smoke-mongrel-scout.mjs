@@ -89,7 +89,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.8\.0"/,
+  /PLUGIN_VERSION = "1\.8\.1"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
