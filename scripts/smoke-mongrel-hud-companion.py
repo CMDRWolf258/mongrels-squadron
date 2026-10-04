@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.2"
+assert hud.APP_VERSION=="0.7.3"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -76,6 +76,8 @@ with tempfile.TemporaryDirectory() as td:
     assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
     assert "Periclase" in state["miningCommodities"]
+    assert "Platinum" in state["miningCommodities"]
+    assert state["miningCommoditiesCurrentBody"]==["Periclase"]
     app.process_scout_event({"type":"bounty.awarded","totalReward":842615})
     app.process_scout_event({"type":"bounty.awarded","totalReward":100000})
     app.process_scout_event({"type":"bounty.redeemed","amount":2000000})
@@ -105,7 +107,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.2"
+    assert hud.APP_VERSION=="0.7.3"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -146,9 +148,11 @@ assert "_render_surface_canvas" in source and "_draw_nav_compass" in source and 
 assert "task_box = canvas.bbox(task_id)" in source
 assert '"depositsOk": deposit_ok' in source and '"centersOk": center_ok' in source
 assert 'str(row.get("systemName") or TEN16_SYSTEM)' in source
+assert "SURFACE_MINING_COMMODITIES" in source and '"Platinum"' in source and '"Monazite"' in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
 assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
 assert 'class="mining-select"' in html and "min-height:58px" in html
+assert "Known on this body" in html and "All surface mining commodities" in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
