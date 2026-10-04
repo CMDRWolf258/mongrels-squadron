@@ -71,7 +71,7 @@ assert plugin.HUD_EVENT_LIMIT == 256
 assert plugin.HUD_SITE_FEED_REFRESH_SECONDS == 30.0
 assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-report"
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
-assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-api.michael-schroll.workers.dev/api/mining"
+assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
 assert plugin.HUD_BRIDGE_VERSION == 5
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"

@@ -80,7 +80,7 @@ for(const pattern of [
   /HUD_MINING_REPORT_ENDPOINT/,
   /HUD_MINING_CENTER_ENDPOINT/,
   /HUD_MINING_DATA_ENDPOINT/,
-  /ten16-api\.michael-schroll\.workers\.dev\/api\/mining/,
+  /HUD_MINING_DATA_ENDPOINT = "https:\/\/ten16-archive\.pages\.dev\/api\/mining"/,
   /HUD_MINING_CENTERS_ENDPOINT/,
   /FSD_OPTIMAL_MASS/,
   /GUARDIAN_FSD_BOOST/,
