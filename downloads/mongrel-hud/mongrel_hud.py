@@ -37,7 +37,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.1"
+APP_VERSION = "0.7.2"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -930,12 +930,18 @@ class MongrelHudApp:
             "Cache-Control": "no-cache",
             "User-Agent": f"MongrelHUD/{APP_VERSION}",
         }
+        deposit_error = ""
+        center_error = ""
+        deposit_ok = False
+        center_ok = False
+
         try:
-            with urllib.request.urlopen(urllib.request.Request(MINING_DATA_URL, headers=headers, method="GET"), timeout=6.0) as response:
+            with urllib.request.urlopen(
+                urllib.request.Request(MINING_DATA_URL, headers=headers, method="GET"),
+                timeout=6.0,
+            ) as response:
                 payload = json.load(response)
-            with urllib.request.urlopen(urllib.request.Request(MINING_CENTERS_URL, headers=headers, method="GET"), timeout=6.0) as response:
-                center_payload = json.load(response)
-            if not isinstance(payload, list) or not isinstance(center_payload, list):
+            if not isinstance(payload, list):
                 raise ValueError("invalid_mining_payload")
 
             rows: list[dict[str, Any]] = []
@@ -961,6 +967,20 @@ class MongrelHudApp:
                     "preferred": bool(raw.get("preferred")),
                     "notes": str(raw.get("notes") or "").strip(),
                 })
+            with self.mining_lock:
+                self.mining_sites = rows
+            deposit_ok = True
+        except Exception as exc:
+            deposit_error = str(exc)[:120]
+
+        try:
+            with urllib.request.urlopen(
+                urllib.request.Request(MINING_CENTERS_URL, headers=headers, method="GET"),
+                timeout=6.0,
+            ) as response:
+                center_payload = json.load(response)
+            if not isinstance(center_payload, list):
+                raise ValueError("invalid_mining_centers_payload")
 
             centers: list[dict[str, Any]] = []
             for raw in center_payload:
@@ -982,24 +1002,26 @@ class MongrelHudApp:
                     "longitude": lon,
                     "updatedAt": raw.get("updatedAt"),
                 })
-
             with self.mining_lock:
-                self.mining_sites = rows
                 self.mining_centers = centers
-                self.mining_status = {
-                    "ok": True,
-                    "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                    "error": "",
-                }
-            return True
+            center_ok = True
         except Exception as exc:
-            with self.mining_lock:
-                self.mining_status = {
-                    "ok": False,
-                    "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                    "error": str(exc)[:160],
-                }
-            return False
+            center_error = str(exc)[:120]
+
+        errors = []
+        if deposit_error:
+            errors.append("deposits:" + deposit_error)
+        if center_error:
+            errors.append("centers:" + center_error)
+        with self.mining_lock:
+            self.mining_status = {
+                "ok": deposit_ok and center_ok,
+                "depositsOk": deposit_ok,
+                "centersOk": center_ok,
+                "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "error": " · ".join(errors)[:220],
+            }
+        return deposit_ok or center_ok
 
     def _mining_sync_loop(self) -> None:
         while True:
@@ -1221,16 +1243,35 @@ class MongrelHudApp:
             raise ValueError("mining_center_save_failed") from exc
         if not isinstance(result, dict) or result.get("ok") is not True:
             raise ValueError(str(result.get("error") if isinstance(result, dict) else "mining_center_save_failed"))
-        with self.store.lock:
-            self.store.data["activeMiningLocationSignal"] = signal
-            self.store.save()
-        self._refresh_mining_data_once()
-        return result.get("center") or {
+        saved_center = result.get("center") if isinstance(result.get("center"), dict) else {
+            "id": 0,
             "signal": signal,
             "latitude": float(lat),
             "longitude": float(lon),
             "body": body,
+            "bodyType": body_type_for_short_name(body),
+            "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
+        saved_center = dict(saved_center)
+        saved_center["body"] = str(saved_center.get("body") or body).strip().lower()
+        saved_center["signal"] = int(saved_center.get("signal") or signal)
+        saved_center["latitude"] = float(saved_center.get("latitude", lat))
+        saved_center["longitude"] = float(saved_center.get("longitude", lon))
+        with self.mining_lock:
+            self.mining_centers = [
+                row for row in self.mining_centers
+                if not (
+                    str(row.get("body") or "").casefold() == saved_center["body"].casefold()
+                    and int(row.get("signal") or 0) == signal
+                )
+            ]
+            self.mining_centers.append(saved_center)
+        with self.store.lock:
+            self.store.data["activeMiningLocationSignal"] = signal
+            self.store.save()
+        # Refresh in the background path, but the just-saved center is already
+        # available to the compass immediately.
+        return saved_center
 
     def report_deposit(self, commodity: str, rigs: int, notes: str, signal: int = 0) -> dict[str, Any]:
         commodity = commodity.strip()
@@ -2051,10 +2092,26 @@ class MongrelHudApp:
                 priority = str(row.get("priority") or "").upper()
                 priority_color = HUD_RED if priority in {"CRITICAL", "URGENT"} else HUD_AMBER if priority in {"HIGH", "PRIORITY"} else HUD_CYAN
                 task = str(row.get("task") or "Operational task")
-                self._draw_text(canvas, 18 * scale, y, self.clip_line(task, 68), scale, 10, HUD_WHITE, True, "nw", width - 105 * scale)
+                task_id = self._draw_text(
+                    canvas,
+                    18 * scale,
+                    y,
+                    self.clip_line(task, 68),
+                    scale,
+                    10,
+                    HUD_WHITE,
+                    True,
+                    "nw",
+                    width - 125 * scale,
+                )
+                task_top = y
                 if priority:
-                    self._draw_text(canvas, width - 8 * scale, y, priority, scale, 9, priority_color, True, "ne")
-                y += 19 * scale
+                    self._draw_text(canvas, width - 8 * scale, task_top, priority, scale, 9, priority_color, True, "ne")
+                task_box = canvas.bbox(task_id)
+                if task_box:
+                    y = max(task_top + 19 * scale, float(task_box[3]) + 5 * scale)
+                else:
+                    y = task_top + 19 * scale
 
                 progress = row.get("progress") if isinstance(row.get("progress"), dict) else {}
                 target = progress.get("target"); current = progress.get("current")
