@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.13.0"
+APP_VERSION = "0.14.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -233,6 +233,26 @@ VOICE_PROVIDER_LABELS = {
 }
 VOICE_PROVIDER_IDS = frozenset(VOICE_PROVIDER_LABELS)
 
+VOICE_ROLE_ANNOUNCEMENT = "announcement"
+VOICE_ROLE_ATC = "atc"
+VOICE_ROLE_IDS = frozenset((VOICE_ROLE_ANNOUNCEMENT, VOICE_ROLE_ATC))
+VOICE_ROLE_LABELS = {
+    VOICE_ROLE_ANNOUNCEMENT: "Pneuma announcements",
+    VOICE_ROLE_ATC: "Pneuma ATC",
+}
+
+ACOUSTIC_REMOTE = "remote_radio"
+ACOUSTIC_LOCAL = "local_comms"
+ACOUSTIC_PA = "carrier_pa"
+ACOUSTIC_HANGAR = "hangar_pa"
+ACOUSTIC_PROFILE_IDS = frozenset((ACOUSTIC_REMOTE, ACOUSTIC_LOCAL, ACOUSTIC_PA, ACOUSTIC_HANGAR))
+ACOUSTIC_PROFILE_LABELS = {
+    ACOUSTIC_REMOTE: "Remote radio",
+    ACOUSTIC_LOCAL: "Local carrier comms",
+    ACOUSTIC_PA: "Carrier interior PA",
+    ACOUSTIC_HANGAR: "Carrier hangar PA",
+}
+
 KOKORO_PACK_ID = "kokoro-multi-lang-v1_0"
 KOKORO_PACK_DOWNLOAD_BYTES = 374_712_769
 KOKORO_ENGINE_VERSION = "1.13.8"
@@ -276,28 +296,45 @@ KOKORO_VOICE_SIDS = {key: sid for key, sid, _name, _gender, _culture in KOKORO_E
 
 
 CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
-    "docking.requested": {"label": "Docking request", "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0, "phrase": "Docking request transmitted to {carrier}."},
-    "docking.granted": {"label": "Docking granted", "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0, "phrase": "Docking clearance confirmed. Proceed to {pad}."},
-    "docking.docked": {"label": "Docked / welcome", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 20.0, "phrase": "Welcome aboard {carrier}, Commander."},
-    "docking.undocked": {"label": "Undocked / departure", "enabled": True, "minDelay": 4.0, "maxDelay": 6.0, "cooldown": 20.0, "phrase": "Departure complete. Clear of {carrier}. Safe flying, Commander."},
-    "carrier.jump_request": {"label": "Jump scheduled", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 30.0, "phrase": "{carrier} jump plotted for {destination}. Departure sequence scheduled."},
-    "carrier.countdown_10": {"label": "10-minute departure", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 600.0, "phrase": "{carrier} departure in {minutes} minutes. All Commanders should conclude surface and flight operations."},
-    "carrier.countdown_5": {"label": "5-minute departure", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 300.0, "phrase": "{carrier} departure in {minutes} minutes. All personnel and vessels prepare for jump."},
-    "carrier.jump_cancelled": {"label": "Jump cancelled", "enabled": True, "minDelay": 2.0, "maxDelay": 3.0, "cooldown": 30.0, "phrase": "Carrier jump cancelled. Flight operations returning to normal."},
-    "carrier.jump": {"label": "Jump complete", "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0, "phrase": "{carrier} has arrived in {destination}. Jump complete."},
-    "carrier.cooldown_ready": {"label": "Ready for next jump", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "offsetSeconds": 180.0, "phrase": "{carrier} jump cooldown complete. Carrier is ready to plot the next jump."},
+    "docking.requested": {"label": "Docking request", "role": VOICE_ROLE_ATC, "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0, "phrase": "Docking request transmitted to {carrier}."},
+    "docking.granted": {"label": "Docking granted", "role": VOICE_ROLE_ATC, "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0, "phrase": "Docking clearance confirmed. Proceed to {pad}."},
+    "docking.docked": {"label": "Docked / welcome", "role": VOICE_ROLE_ATC, "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 20.0, "phrase": "Welcome aboard {carrier}, Commander."},
+    "docking.undocked": {"label": "Undocked / departure", "role": VOICE_ROLE_ATC, "enabled": True, "minDelay": 4.0, "maxDelay": 6.0, "cooldown": 20.0, "phrase": "Departure complete. Clear of {carrier}. Safe flying, Commander."},
+    "carrier.jump_request": {"label": "Jump scheduled", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 30.0, "phrase": "{carrier} jump plotted for {destination}. Departure sequence scheduled."},
+    "carrier.countdown_10": {"label": "10-minute departure", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 600.0, "phrase": "{carrier} departure in {minutes} minutes. All Commanders should conclude surface and flight operations."},
+    "carrier.countdown_5": {"label": "5-minute departure", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 300.0, "phrase": "{carrier} departure in {minutes} minutes. All personnel and vessels prepare for jump."},
+    "carrier.jump_cancelled": {"label": "Jump cancelled", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 2.0, "maxDelay": 3.0, "cooldown": 30.0, "phrase": "Carrier jump cancelled. Flight operations returning to normal."},
+    "carrier.jump": {"label": "Jump complete", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0, "phrase": "{carrier} has arrived in {destination}. Jump complete."},
+    "carrier.cooldown_ready": {"label": "Ready for next jump", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "offsetSeconds": 180.0, "phrase": "{carrier} jump cooldown complete. Carrier is ready to plot the next jump."},
 }
 
 
+def _normalized_voice_identity(value: Any, fallback: dict[str, Any] | None = None) -> dict[str, str]:
+    raw = value if isinstance(value, dict) else {}
+    base = fallback if isinstance(fallback, dict) else {}
+    provider = str(raw.get("voiceProvider", base.get("voiceProvider", VOICE_PROVIDER_SYSTEM)) or VOICE_PROVIDER_SYSTEM).strip().lower()
+    if provider not in VOICE_PROVIDER_IDS:
+        provider = VOICE_PROVIDER_SYSTEM
+    name = " ".join(str(raw.get("voiceName", base.get("voiceName", "")) or "").split())[:160]
+    voice_id = " ".join(str(raw.get("voiceId", base.get("voiceId", "")) or "").split())[:512]
+    if provider == VOICE_PROVIDER_SYSTEM and not voice_id and name:
+        voice_id = name
+    return {"voiceProvider": provider, "voiceId": voice_id, "voiceName": name}
+
+
 def default_voice_settings() -> dict[str, Any]:
+    identity = {"voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
     return {
         "enabled": True,
         "carrierPa": True,
         "volume": 75,
         "rate": 0,
-        "voiceProvider": VOICE_PROVIDER_SYSTEM,
-        "voiceId": "",
-        "voiceName": "",
+        # Legacy mirror: announcement identity stays available at the old keys.
+        **identity,
+        "roles": {
+            VOICE_ROLE_ANNOUNCEMENT: dict(identity),
+            VOICE_ROLE_ATC: dict(identity),
+        },
         "cues": {key: dict(value) for key, value in CARRIER_VOICE_CUES.items()},
     }
 
@@ -313,22 +350,25 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
         rate = int(raw.get("rate", defaults["rate"]))
     except (TypeError, ValueError):
         rate = int(defaults["rate"])
-    voice_name = " ".join(str(raw.get("voiceName") or "").split())[:160]
-    voice_provider = str(raw.get("voiceProvider") or VOICE_PROVIDER_SYSTEM).strip().lower()
-    if voice_provider not in VOICE_PROVIDER_IDS:
-        voice_provider = VOICE_PROVIDER_SYSTEM
-    voice_id = " ".join(str(raw.get("voiceId") or "").split())[:512]
-    # 0.11.x stored only voiceName; migrate legacy selections without changing them.
-    if voice_provider == VOICE_PROVIDER_SYSTEM and not voice_id and voice_name:
-        voice_id = voice_name
+
+    # Migrate every pre-0.14 single-voice configuration into both roles.
+    legacy_identity = _normalized_voice_identity(raw, defaults)
+    raw_roles = raw.get("roles") if isinstance(raw.get("roles"), dict) else {}
+    announcement = _normalized_voice_identity(raw_roles.get(VOICE_ROLE_ANNOUNCEMENT), legacy_identity)
+    atc = _normalized_voice_identity(raw_roles.get(VOICE_ROLE_ATC), legacy_identity)
+
     out = {
         "enabled": bool(raw.get("enabled", defaults["enabled"])),
         "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
         "volume": max(0, min(100, volume)),
         "rate": max(-3, min(3, rate)),
-        "voiceProvider": voice_provider,
-        "voiceId": voice_id,
-        "voiceName": voice_name,
+        "voiceProvider": announcement["voiceProvider"],
+        "voiceId": announcement["voiceId"],
+        "voiceName": announcement["voiceName"],
+        "roles": {
+            VOICE_ROLE_ANNOUNCEMENT: announcement,
+            VOICE_ROLE_ATC: atc,
+        },
         "cues": {},
     }
     raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
@@ -354,6 +394,7 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
             phrase = str(base.get("phrase") or "")
         cue_row = {
             "label": base["label"],
+            "role": str(base.get("role") or VOICE_ROLE_ANNOUNCEMENT),
             "enabled": bool(row.get("enabled", base["enabled"])),
             "minDelay": round(minimum, 1),
             "maxDelay": round(maximum, 1),
