@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.3"
+PLUGIN_VERSION = "1.8.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -110,6 +110,8 @@ KEY_ENABLED = "MongrelScoutEnabled"
 KEY_TOKEN = "MongrelScoutToken"
 KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
+KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
+KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -176,6 +178,7 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_ENABLED, 1)
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
     _restore_owner_carrier()
+    _restore_last_system_context()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -379,6 +382,7 @@ def journal_entry(
             pass
 
     event = str(entry.get("event") or "")
+    _update_hud_system_context(system, entry, state)
     if event in {"FSDJump", "Location", "CarrierJump"}:
         _remember_location(entry, system)
     if event in {"ApproachBody", "LeaveBody", "SupercruiseEntry", "SupercruiseExit"}:
@@ -465,6 +469,67 @@ def journal_entry(
     return None
 
 
+
+
+def _update_hud_system_context(
+    fallback_system: str,
+    entry: Mapping[str, Any],
+    state: Mapping[str, Any],
+) -> None:
+    """Keep the local HUD's current system seeded even when the journal event itself is not a HUD trigger."""
+    global _last_system_name, _last_system_address
+
+    name = str(
+        entry.get("StarSystem")
+        or state.get("SystemName")
+        or fallback_system
+        or _last_system_name
+        or ""
+    ).strip()
+    address = _decimal_text(
+        entry.get(
+            "SystemAddress",
+            state.get("SystemAddress", _last_system_address),
+        )
+    )
+    if not name:
+        return
+
+    _last_system_name = name
+    if address:
+        _last_system_address = address
+
+    try:
+        config.set(KEY_LAST_SYSTEM, name)
+        if address:
+            config.set(KEY_LAST_SYSTEM_ADDRESS, address)
+    except Exception:
+        pass
+
+    with _hud_condition:
+        previous = _hud_state.get("system")
+        previous_address = previous.get("address") if isinstance(previous, Mapping) else None
+        _hud_state["system"] = {
+            "name": name,
+            "address": address or previous_address,
+        }
+        _hud_condition.notify_all()
+
+
+def _restore_last_system_context() -> None:
+    """Restore local-only current-system context across Scout/EDMC restarts."""
+    global _last_system_name, _last_system_address
+    try:
+        name = str(config.get_str(KEY_LAST_SYSTEM) or "").strip()
+        address = _decimal_text(config.get_str(KEY_LAST_SYSTEM_ADDRESS) or "")
+    except Exception:
+        return
+    if not name:
+        return
+    _last_system_name = name
+    _last_system_address = address
+    with _hud_condition:
+        _hud_state["system"] = {"name": name, "address": address}
 
 
 def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
