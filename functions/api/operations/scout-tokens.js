@@ -73,6 +73,7 @@ export async function onRequestPost({ request, env }) {
     lastSeenAt:null,
     lastSystem:'',
     lastEventAt:null,
+    lastCoords:null,
   };
   await env.DAILY_ORDERS.put(TOKENS_KEY, JSON.stringify(state));
 
@@ -181,6 +182,7 @@ async function readState(env) {
         lastSeenAt:value.lastSeenAt || null,
         lastSystem:cleanText(value.lastSystem, '', 140),
         lastEventAt:value.lastEventAt || null,
+        lastCoords:normalizeCoordinates(value.lastCoords),
       };
     }
     return {version:2,tokens};
@@ -223,6 +225,15 @@ async function resolveOwner(env,value) {
 function normalizeScope(value, fallback = 'restricted') {
   const scope = String(value || '').trim().toLowerCase();
   return scope === 'trusted' || scope === 'restricted' ? scope : fallback;
+}
+
+function normalizeCoordinates(value) {
+  const source=Array.isArray(value)
+    ? {x:value[0],y:value[1],z:value[2]}
+    : (value&&typeof value==='object'?value:null);
+  if(!source)return null;
+  const x=Number(source.x),y=Number(source.y),z=Number(source.z);
+  return Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z)?{x,y,z}:null;
 }
 
 function normalizeAllowedSystems(value) {
