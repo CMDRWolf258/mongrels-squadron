@@ -2328,6 +2328,7 @@ class MongrelHudApp:
             "missionSystem": self.mission_system_filter(),
             "voice": self.voice_settings_snapshot(),
             "voiceStatus": self.voice_status_snapshot(),
+            "voiceCatalog": self.voice_catalog_snapshot(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
             "renderErrors": [
@@ -4021,6 +4022,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voice": app.set_voice_settings(body)}
                 elif path == "/api/voice-test":
                     result = {"ok": True, "voiceStatus": app.queue_voice_test()}
+                elif path == "/api/voice-test-cue":
+                    result = {"ok": True, "voiceStatus": app.queue_voice_cue_test(str(body.get("cue") or ""))}
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/alert-ack":
