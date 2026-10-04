@@ -116,9 +116,19 @@ function render(){
   el("recentTargetIntel").innerHTML=recent.length?recent.map(function(row){var g=row.groups||{},count=function(k){return (g[k]||[]).reduce(function(n,x){return n+(Number(x.count)||1)},0)};return '<div class="recent-target"><strong>'+escapeHtml(row.pilotName||row.ship||"Target")+(row.ship&&row.pilotName?' · '+escapeHtml(row.ship):'')+'</strong><small>OFF '+count("offense")+' · DEF '+count("defense")+' · SPECIAL '+count("special")+' · '+escapeHtml(age(row.capturedAt))+' ago</small></div>'}).join(""):'<span class="muted">No captured targets this session.</span>';
   var feed=state.siteFeed||scout.siteFeed||{},feedStatus=state.siteFeedStatus||scout.siteFeedStatus||{};
   el("siteFeedStatus").textContent=feedStatus.ok===true?("Site feed updated "+(feed.generatedAt?age(feed.generatedAt)+" ago":"")):("Site feed "+String(feedStatus.error||"waiting").replaceAll("_"," "));
-  var alerts=Array.isArray(feed.alerts)?feed.alerts:[],unacked=alerts.filter(function(a){return !a.acknowledged});
-  el("ackAllAlerts").disabled=unacked.length===0;
-  el("leadershipAlerts").innerHTML=alerts.length?alerts.map(function(a){var acknowledged=Boolean(a.acknowledged),tone=a.indicator==="red"?"alert-red":a.indicator==="amber"?"alert-amber":"alert-cyan";return '<div class="alert-item '+tone+' '+(acknowledged?"is-acknowledged":"")+'"><div class="alert-head"><div><strong>'+escapeHtml(a.title||"Alert")+'</strong><div class="muted">'+escapeHtml(a.detail||"")+'</div></div>'+(acknowledged?'<span class="ack-state">ACKNOWLEDGED</span>':'<button class="alert-ack" type="button" data-alert-ack="'+escapeAttr(a.id||"")+'">ACK</button>')+'</div></div>'}).join(""):'<span class="muted">No active leadership alerts.</span>';
+  var mission=feed.mission&&typeof feed.mission==="object"?feed.mission:{},missionOrders=Array.isArray(mission.orders)?mission.orders:[],missionSystems=Array.isArray(mission.systems)?mission.systems:Array.from(new Set(missionOrders.map(function(o){return o.system}).filter(Boolean)));
+  var missionSelect=el("missionSystemFilter"),wantedMission=state.missionSystem||"all";
+  var missionOptions=['<option value="all">Top 5 across all Daily Order systems</option>'].concat(missionSystems.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}));
+  var missionHtml=missionOptions.join("");if(missionSelect.innerHTML!==missionHtml)missionSelect.innerHTML=missionHtml;
+  missionSelect.value=missionSystems.includes(wantedMission)?wantedMission:"all";
+
+  var alerts=Array.isArray(feed.alerts)?feed.alerts:[];
+  var factionAlerts=alerts.filter(function(a){return String(a.type||"").toLowerCase()==="faction"}),orderAlerts=alerts.filter(function(a){return String(a.type||"").toLowerCase()==="orders"});
+  var renderAlertList=function(rows,empty){return rows.length?rows.map(function(a){var acknowledged=Boolean(a.acknowledged),tone=a.indicator==="red"?"alert-red":a.indicator==="amber"?"alert-amber":"alert-cyan";return '<div class="alert-item '+tone+' '+(acknowledged?"is-acknowledged":"")+'"><div class="alert-head"><div><strong>'+escapeHtml(a.title||"Alert")+'</strong><div class="muted">'+escapeHtml(a.detail||"")+'</div></div>'+(acknowledged?'<span class="ack-state">ACKNOWLEDGED</span>':'<button class="alert-ack" type="button" data-alert-ack="'+escapeAttr(a.id||"")+'">ACK</button>')+'</div></div>'}).join(""):'<span class="muted">'+empty+'</span>'};
+  el("ackFactionAlerts").disabled=factionAlerts.every(function(a){return Boolean(a.acknowledged)});
+  el("ackOrderAlerts").disabled=orderAlerts.every(function(a){return Boolean(a.acknowledged)});
+  el("factionAlerts").innerHTML=renderAlertList(factionAlerts,"No active faction alerts.");
+  el("orderAlerts").innerHTML=renderAlertList(orderAlerts,"No recent Daily Order changes.");
   document.querySelectorAll("[data-alert-ack]").forEach(function(button){button.onclick=async function(){try{await api("/api/alert-ack",{alertId:button.getAttribute("data-alert-ack")});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}}});
   var notesBox=el("hudNotes");if(document.activeElement!==notesBox&&!notesDirty&&notesBox.value!==(state.notes||""))notesBox.value=state.notes||"";
   el("ownShipName").textContent=own.name||own.type||"YOUR SHIP";
@@ -158,7 +168,10 @@ document.querySelectorAll("[data-panel-profile]").forEach(function(select){selec
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{await api("/api/target-scan",{});await load()}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};
-el("ackAllAlerts").onclick=async function(){var feed=(state&&state.siteFeed)||(state&&state.scout&&state.scout.siteFeed)||{},ids=(feed.alerts||[]).filter(function(a){return !a.acknowledged}).map(function(a){return a.id}).filter(Boolean);if(!ids.length)return;try{await api("/api/alert-ack",{alertIds:ids});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}};
+el("missionSystemFilter").onchange=async function(){try{await api("/api/mission-filter",{system:el("missionSystemFilter").value||"all"});await load()}catch(e){el("siteFeedStatus").textContent="Mission filter failed · "+e.message}};
+async function ackAlertKind(kind){var feed=(state&&state.siteFeed)||(state&&state.scout&&state.scout.siteFeed)||{},ids=(feed.alerts||[]).filter(function(a){return String(a.type||"").toLowerCase()===kind&&!a.acknowledged}).map(function(a){return a.id}).filter(Boolean);if(!ids.length)return;try{await api("/api/alert-ack",{alertIds:ids});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}}
+el("ackFactionAlerts").onclick=function(){return ackAlertKind("faction")};
+el("ackOrderAlerts").onclick=function(){return ackAlertKind("orders")};
 el("setCenter").onclick=async function(){try{var r=await api("/api/site-center",{siteNumber:Number(el("siteNumber").value),commodity:el("siteCommodity").value});el("siteNotice").textContent="Saved site #"+r.site.siteNumber+" center.";await load()}catch(e){el("siteNotice").textContent=e.message}};
 el("reportDeposit").onclick=async function(){try{var r=await api("/api/deposit",{commodity:el("depositCommodity").value,rigs:Number(el("rigs").value||0),notes:el("notes").value});el("depositNotice").textContent="Deposit saved at "+r.deposit.latitude.toFixed(6)+", "+r.deposit.longitude.toFixed(6);el("notes").value="";await load()}catch(e){el("depositNotice").textContent=e.message}};
 load();setInterval(load,500);
