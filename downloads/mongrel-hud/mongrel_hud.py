@@ -49,7 +49,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.10.1"
+APP_VERSION = "0.11.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -220,13 +220,16 @@ PANEL_TITLES = {
 
 
 CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
-    "docking.requested": {"label": "Docking request", "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0},
-    "docking.granted": {"label": "Docking granted", "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0},
-    "docking.docked": {"label": "Docked / welcome", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 20.0},
-    "docking.undocked": {"label": "Undocked / departure", "enabled": True, "minDelay": 4.0, "maxDelay": 6.0, "cooldown": 20.0},
-    "carrier.jump_request": {"label": "Jump scheduled", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 30.0},
-    "carrier.jump_cancelled": {"label": "Jump cancelled", "enabled": True, "minDelay": 2.0, "maxDelay": 3.0, "cooldown": 30.0},
-    "carrier.jump": {"label": "Jump complete", "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0},
+    "docking.requested": {"label": "Docking request", "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0, "phrase": "Docking request transmitted to {carrier}."},
+    "docking.granted": {"label": "Docking granted", "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0, "phrase": "Docking clearance confirmed. Proceed to {pad}."},
+    "docking.docked": {"label": "Docked / welcome", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 20.0, "phrase": "Welcome aboard {carrier}, Commander."},
+    "docking.undocked": {"label": "Undocked / departure", "enabled": True, "minDelay": 4.0, "maxDelay": 6.0, "cooldown": 20.0, "phrase": "Departure complete. Clear of {carrier}. Safe flying, Commander."},
+    "carrier.jump_request": {"label": "Jump scheduled", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 30.0, "phrase": "{carrier} jump plotted for {destination}. Departure sequence scheduled."},
+    "carrier.countdown_10": {"label": "10-minute departure", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 600.0, "phrase": "{carrier} departure in {minutes} minutes. All Commanders should conclude surface and flight operations."},
+    "carrier.countdown_5": {"label": "5-minute departure", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "leadSeconds": 300.0, "phrase": "{carrier} departure in {minutes} minutes. All personnel and vessels prepare for jump."},
+    "carrier.jump_cancelled": {"label": "Jump cancelled", "enabled": True, "minDelay": 2.0, "maxDelay": 3.0, "cooldown": 30.0, "phrase": "Carrier jump cancelled. Flight operations returning to normal."},
+    "carrier.jump": {"label": "Jump complete", "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0, "phrase": "{carrier} has arrived in {destination}. Jump complete."},
+    "carrier.cooldown_ready": {"label": "Ready for next jump", "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "offsetSeconds": 180.0, "phrase": "{carrier} jump cooldown complete. Carrier is ready to plot the next jump."},
 }
 
 
@@ -236,6 +239,7 @@ def default_voice_settings() -> dict[str, Any]:
         "carrierPa": True,
         "volume": 75,
         "rate": 0,
+        "voiceName": "",
         "cues": {key: dict(value) for key, value in CARRIER_VOICE_CUES.items()},
     }
 
@@ -256,6 +260,7 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
         "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
         "volume": max(0, min(100, volume)),
         "rate": max(-3, min(3, rate)),
+        "voiceName": " ".join(str(raw.get("voiceName") or "").split())[:160],
         "cues": {},
     }
     raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
@@ -275,13 +280,28 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
             cooldown = float(base["cooldown"])
         minimum = max(0.0, min(60.0, minimum))
         maximum = max(minimum, min(60.0, maximum))
-        out["cues"][cue] = {
+        phrase = str(row.get("phrase") if "phrase" in row else base.get("phrase") or "")
+        phrase = " ".join(phrase.replace("\r", " ").replace("\n", " ").split())[:600]
+        if not phrase:
+            phrase = str(base.get("phrase") or "")
+        cue_row = {
             "label": base["label"],
             "enabled": bool(row.get("enabled", base["enabled"])),
             "minDelay": round(minimum, 1),
             "maxDelay": round(maximum, 1),
             "cooldown": round(max(0.0, min(300.0, cooldown)), 1),
+            "phrase": phrase,
+            "defaultPhrase": str(base.get("phrase") or ""),
         }
+        if "leadSeconds" in base:
+            cue_row["leadSeconds"] = float(base["leadSeconds"])
+        if "offsetSeconds" in base:
+            try:
+                offset = float(row.get("offsetSeconds", base["offsetSeconds"]))
+            except (TypeError, ValueError):
+                offset = float(base["offsetSeconds"])
+            cue_row["offsetSeconds"] = round(max(0.0, min(900.0, offset)), 1)
+        out["cues"][cue] = cue_row
     return out
 
 
@@ -832,7 +852,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings()}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": []}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
         self.data["voice"] = normalized_voice_settings(self.data.get("voice"))
@@ -892,6 +912,8 @@ class MongrelHudApp:
         self.voice_pending: list[dict[str, Any]] = []
         self.voice_last_scheduled: dict[str, float] = {}
         self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
+        self.voice_catalog: list[dict[str, str]] = []
+        self.voice_catalog_error = ""
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -919,6 +941,8 @@ class MongrelHudApp:
         self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
+        self._restore_scheduled_voice()
+        threading.Thread(target=self._voice_catalog_worker, name="MongrelHudVoiceCatalog", daemon=True).start()
         threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
