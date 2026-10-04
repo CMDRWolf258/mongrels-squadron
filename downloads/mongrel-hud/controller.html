@@ -151,10 +151,13 @@ function render(){
   var sys=scout.system||{};el("surfaceBody").textContent=status.bodyName||"—";el("surfaceSystem").textContent=sys.name||"—";
   el("coords").textContent=typeof status.latitude==="number"&&typeof status.longitude==="number"?status.latitude.toFixed(6)+", "+status.longitude.toFixed(6):"—";
   var miningStatus=state.miningStatus||{},miningStatusText=miningStatus.ok===true?"10-16 mining database synced":(miningStatus.depositsOk===true&&miningStatus.centersOk!==true?"Deposits synced · center feed retrying":(miningStatus.centersOk===true&&miningStatus.depositsOk!==true?"Centers synced · deposit feed retrying":("Mining database "+String(miningStatus.error||"waiting").replaceAll("_"," "))));el("miningDbStatus").textContent=miningStatusText;
-  var commoditySelect=el("depositCommodity"),commodityOther=el("depositCommodityOther"),commodityChoices=Array.isArray(state.miningCommodities)?state.miningCommodities:[];
-  var currentCommodity=commoditySelect.value,commodityHtml='<option value="">Select commodity…</option>'+commodityChoices.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}).join("")+'<option value="__other">Other / not listed…</option>';
+  var commoditySelect=el("depositCommodity"),commodityOther=el("depositCommodityOther"),commodityChoices=Array.isArray(state.miningCommodities)?state.miningCommodities:[],bodyCommodityChoices=Array.isArray(state.miningCommoditiesCurrentBody)?state.miningCommoditiesCurrentBody:[];
+  var currentCommodity=commoditySelect.value,bodySet=new Set(bodyCommodityChoices),allOther=commodityChoices.filter(function(name){return !bodySet.has(name)});
+  var commodityHtml='<option value="">Select commodity…</option>';
+  if(bodyCommodityChoices.length)commodityHtml+='<optgroup label="Known on this body">'+bodyCommodityChoices.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}).join("")+'</optgroup>';
+  commodityHtml+='<optgroup label="All surface mining commodities">'+allOther.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}).join("")+'</optgroup><option value="__other">Other / not listed…</option>';
   if(commoditySelect.innerHTML!==commodityHtml)commoditySelect.innerHTML=commodityHtml;
-  if(currentCommodity&&commodityChoices.includes(currentCommodity))commoditySelect.value=currentCommodity;
+  if(currentCommodity==="__other"){commoditySelect.value="__other"}else if(currentCommodity&&commodityChoices.includes(currentCommodity)){commoditySelect.value=currentCommodity}
   commodityOther.classList.toggle("hidden",commoditySelect.value!=="__other");
   var activeSignal=Number(state.activeLocationSignal)||0,activeCenter=state.activeCenter||{},active=state.activeSite||{},centerNav=state.locationNav,depNav=state.depositNav;
   el("activeLocation").textContent=activeSignal?"Signal #"+activeSignal:"—";
