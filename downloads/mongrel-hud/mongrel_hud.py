@@ -1425,6 +1425,303 @@ class MongrelHudApp:
             self.voice_condition.notify_all()
         return self.voice_status_snapshot()
 
+    def _voice_pack_root(self) -> Path:
+        return self.store.path.parent / "voices"
+
+    def _kokoro_install_root(self) -> Path:
+        return self._voice_pack_root() / "kokoro"
+
+    @staticmethod
+    def _find_kokoro_paths(root: Path) -> dict[str, Path] | None:
+        if not root.exists():
+            return None
+        exe = next(root.rglob("sherpa-onnx-offline-tts.exe"), None)
+        model_root = None
+        for model in root.rglob("model.onnx"):
+            parent = model.parent
+            if (parent / "voices.bin").is_file() and (parent / "tokens.txt").is_file() and (parent / "espeak-ng-data").is_dir():
+                model_root = parent
+                break
+        if exe is None or model_root is None:
+            return None
+        lexicon = model_root / "lexicon-us-en.txt"
+        if not lexicon.is_file():
+            return None
+        return {
+            "exe": exe,
+            "model": model_root / "model.onnx",
+            "voices": model_root / "voices.bin",
+            "tokens": model_root / "tokens.txt",
+            "dataDir": model_root / "espeak-ng-data",
+            "lexicon": lexicon,
+        }
+
+    def _kokoro_paths(self) -> dict[str, Path] | None:
+        return self._find_kokoro_paths(self._kokoro_install_root())
+
+    def _refresh_voice_pack_status(self) -> None:
+        installed = self._kokoro_paths() is not None
+        with self.voice_pack_lock:
+            if self.voice_pack_status.get("active"):
+                return
+            self.voice_pack_status.update({
+                "installed": installed,
+                "active": False,
+                "action": "",
+                "phase": "ready" if installed else "not_installed",
+                "progress": 100 if installed else 0,
+                "message": "Kokoro local neural voices ready." if installed else "Kokoro voice pack is optional and not installed.",
+                "error": "",
+                "downloadBytes": KOKORO_PACK_DOWNLOAD_BYTES,
+            })
+
+    def voice_pack_status_snapshot(self) -> dict[str, Any]:
+        with self.voice_pack_lock:
+            return json.loads(json.dumps(self.voice_pack_status))
+
+    def _set_voice_pack_status(self, **changes: Any) -> None:
+        with self.voice_pack_lock:
+            self.voice_pack_status.update(changes)
+
+    @staticmethod
+    def _safe_extract_tar(archive: Path, destination: Path) -> None:
+        destination.mkdir(parents=True, exist_ok=True)
+        root = destination.resolve()
+        with tarfile.open(archive, "r:bz2") as bundle:
+            for member in bundle.getmembers():
+                target = (destination / member.name).resolve()
+                if target != root and root not in target.parents:
+                    raise RuntimeError("voice_pack_archive_path_invalid")
+            bundle.extractall(destination, filter="data")
+
+    def _download_voice_asset(self, url: str, destination: Path, expected_bytes: int, completed_before: int, total_bytes: int) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.unlink(missing_ok=True)
+        script = (
+            "$ErrorActionPreference='Stop';"
+            "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;"
+            "Add-Type -AssemblyName System.Net.Http;"
+            "$client=New-Object System.Net.Http.HttpClient;"
+            "$client.Timeout=[TimeSpan]::FromMinutes(30);"
+            "$response=$client.GetAsync(" + _powershell_quote(url) + ",[System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult();"
+            "$response.EnsureSuccessStatusCode();"
+            "$stream=$response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();"
+            "$file=[IO.File]::Open(" + _powershell_quote(str(destination)) + ",[IO.FileMode]::Create,[IO.FileAccess]::Write,[IO.FileShare]::Read);"
+            "$buffer=New-Object byte[] 1048576;"
+            "$total=[Int64]0;"
+            "try{while(($read=$stream.Read($buffer,0,$buffer.Length)) -gt 0){$file.Write($buffer,0,$read);$total+=$read;Write-Output ('BYTES:'+$total)}}"
+            "finally{$file.Dispose();$stream.Dispose();$response.Dispose();$client.Dispose()}"
+        )
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        process = subprocess.Popen(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            creationflags=flags,
+        )
+        assert process.stdout is not None
+        for line in process.stdout:
+            if not line.startswith("BYTES:"):
+                continue
+            try:
+                downloaded = max(0, min(expected_bytes, int(line.split(":", 1)[1].strip())))
+            except (TypeError, ValueError):
+                continue
+            total_downloaded = completed_before + downloaded
+            progress = 5 + int(70 * min(1.0, total_downloaded / max(1, total_bytes)))
+            self._set_voice_pack_status(progress=progress)
+        stderr = process.stderr.read().strip() if process.stderr is not None else ""
+        code = process.wait(timeout=30)
+        if code != 0:
+            raise RuntimeError("voice_pack_download_failed")
+        if not destination.is_file() or destination.stat().st_size != expected_bytes:
+            raise RuntimeError("voice_pack_download_size_mismatch")
+
+    def start_voice_pack_install(self, *, repair: bool = False) -> dict[str, Any]:
+        if os.name != "nt":
+            raise ValueError("windows_voice_pack_required")
+        with self.voice_pack_lock:
+            if self.voice_pack_status.get("active"):
+                raise ValueError("voice_pack_busy")
+            installed = self._kokoro_paths() is not None
+            if installed and not repair:
+                return self.voice_pack_status_snapshot()
+            self.voice_pack_status.update({
+                "installed": installed,
+                "active": True,
+                "action": "repair" if repair else "install",
+                "phase": "starting",
+                "progress": 1,
+                "message": "Preparing Kokoro local neural voice pack…",
+                "error": "",
+                "downloadBytes": KOKORO_PACK_DOWNLOAD_BYTES,
+            })
+        threading.Thread(
+            target=self._install_kokoro_worker,
+            args=(repair,),
+            name="MongrelHudKokoroInstall",
+            daemon=True,
+        ).start()
+        return self.voice_pack_status_snapshot()
+
+    def _install_kokoro_worker(self, repair: bool) -> None:
+        voices_root = self._voice_pack_root()
+        stage = voices_root / ".kokoro-install"
+        final = self._kokoro_install_root()
+        backup = voices_root / ".kokoro-old"
+        try:
+            voices_root.mkdir(parents=True, exist_ok=True)
+            shutil.rmtree(stage, ignore_errors=True)
+            shutil.rmtree(backup, ignore_errors=True)
+            archives = stage / "archives"
+            runtime_dir = stage / "runtime"
+            model_dir = stage / "model"
+            archives.mkdir(parents=True, exist_ok=True)
+            runtime_archive = archives / "sherpa-onnx-runtime.tar.bz2"
+            model_archive = archives / "kokoro-model.tar.bz2"
+
+            self._set_voice_pack_status(phase="downloading_runtime", progress=5, message="Downloading local TTS engine…")
+            self._download_voice_asset(
+                KOKORO_ENGINE_URL,
+                runtime_archive,
+                KOKORO_ENGINE_BYTES,
+                0,
+                KOKORO_ENGINE_BYTES + KOKORO_MODEL_BYTES,
+            )
+            if _file_sha256(runtime_archive).casefold() != KOKORO_ENGINE_SHA256:
+                raise RuntimeError("voice_pack_runtime_hash_mismatch")
+
+            self._set_voice_pack_status(phase="downloading_model", progress=9, message="Downloading Kokoro neural voice model…")
+            self._download_voice_asset(
+                KOKORO_MODEL_URL,
+                model_archive,
+                KOKORO_MODEL_BYTES,
+                KOKORO_ENGINE_BYTES,
+                KOKORO_ENGINE_BYTES + KOKORO_MODEL_BYTES,
+            )
+            if _file_sha256(model_archive).casefold() != KOKORO_MODEL_SHA256:
+                raise RuntimeError("voice_pack_model_hash_mismatch")
+
+            self._set_voice_pack_status(phase="extracting_runtime", progress=78, message="Extracting local TTS engine…")
+            self._safe_extract_tar(runtime_archive, runtime_dir)
+            self._set_voice_pack_status(phase="extracting_model", progress=86, message="Extracting Kokoro neural voices…")
+            self._safe_extract_tar(model_archive, model_dir)
+            runtime_archive.unlink(missing_ok=True)
+            model_archive.unlink(missing_ok=True)
+            shutil.rmtree(archives, ignore_errors=True)
+
+            self._set_voice_pack_status(phase="validating", progress=94, message="Validating local neural voice pack…")
+            paths = self._find_kokoro_paths(stage)
+            if paths is None:
+                raise RuntimeError("voice_pack_files_missing")
+            manifest = {
+                "pack": "Kokoro",
+                "packId": KOKORO_PACK_ID,
+                "engineVersion": KOKORO_ENGINE_VERSION,
+                "installedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "engineSha256": KOKORO_ENGINE_SHA256,
+                "modelSha256": KOKORO_MODEL_SHA256,
+            }
+            (stage / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+            self._set_voice_pack_status(phase="installing", progress=97, message="Installing Kokoro local neural voices…")
+            if final.exists():
+                final.replace(backup)
+            try:
+                stage.replace(final)
+            except Exception:
+                if backup.exists() and not final.exists():
+                    backup.replace(final)
+                raise
+            shutil.rmtree(backup, ignore_errors=True)
+
+            if self._kokoro_paths() is None:
+                raise RuntimeError("voice_pack_install_validation_failed")
+            self._voice_catalog_worker()
+            self._set_voice_pack_status(
+                installed=True,
+                active=False,
+                action="",
+                phase="ready",
+                progress=100,
+                message="Kokoro local neural voices ready.",
+                error="",
+            )
+        except Exception as exc:
+            shutil.rmtree(stage, ignore_errors=True)
+            if backup.exists() and not final.exists():
+                try:
+                    backup.replace(final)
+                except Exception:
+                    pass
+            self._voice_catalog_worker()
+            self._set_voice_pack_status(
+                installed=self._kokoro_paths() is not None,
+                active=False,
+                action="",
+                phase="error",
+                progress=0,
+                message="Kokoro voice pack install failed.",
+                error=str(exc).strip() or type(exc).__name__,
+            )
+
+    def remove_voice_pack(self) -> dict[str, Any]:
+        with self.voice_pack_lock:
+            if self.voice_pack_status.get("active"):
+                raise ValueError("voice_pack_busy")
+            self.voice_pack_status.update({
+                "active": True,
+                "action": "remove",
+                "phase": "removing",
+                "message": "Removing Kokoro local neural voice pack…",
+                "error": "",
+            })
+        try:
+            shutil.rmtree(self._kokoro_install_root(), ignore_errors=False)
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            self._set_voice_pack_status(active=False, action="", phase="error", error=str(exc).strip() or type(exc).__name__, message="Could not remove Kokoro voice pack.")
+            return self.voice_pack_status_snapshot()
+
+        with self.store.lock:
+            voice = normalized_voice_settings(self.store.data.get("voice"))
+            if voice.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                voice["voiceProvider"] = VOICE_PROVIDER_SYSTEM
+                voice["voiceId"] = ""
+                voice["voiceName"] = ""
+                self.store.data["voice"] = normalized_voice_settings(voice)
+                self.store.save()
+        self._voice_catalog_worker()
+        self._set_voice_pack_status(
+            installed=False,
+            active=False,
+            action="",
+            phase="not_installed",
+            progress=0,
+            message="Kokoro voice pack is optional and not installed.",
+            error="",
+        )
+        return self.voice_pack_status_snapshot()
+
+    def _kokoro_voice_catalog(self) -> list[dict[str, str]]:
+        if self._kokoro_paths() is None:
+            return []
+        return [
+            {
+                "provider": VOICE_PROVIDER_KOKORO,
+                "providerLabel": VOICE_PROVIDER_LABELS[VOICE_PROVIDER_KOKORO],
+                "id": key,
+                "name": name,
+                "culture": culture,
+                "gender": gender,
+                "age": "",
+                "description": f"Kokoro local neural voice · {key}",
+            }
+            for key, _sid, name, gender, culture in KOKORO_ENGLISH_VOICES
+        ]
+
     @staticmethod
     def _system_speech_voice_catalog() -> list[dict[str, str]]:
         if os.name != "nt":
