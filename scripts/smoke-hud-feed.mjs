@@ -69,12 +69,12 @@ const alerts=orderAlerts([{
       {status:'removed',before:{id:'o3',system:'Miwae',faction:'Regiment of Imperial Mongrels',task:'Run missions',priority:'normal'},after:null},
     ],
   },
-}],Date.parse('2026-10-03T21:00:00Z'));
+}],{now:Date.parse('2026-10-03T21:00:00Z')});
 assert.equal(alerts.length,3);
 assert.equal(alerts[0].title,'[ADDED] Claim bounties');
 assert.match(alerts[1].detail,/Was: Trade 10M/);
 assert.equal(alerts[2].title,'[REMOVED] Run missions');
-const newestOnly=orderAlerts([
+const pendingSinceBgsAck=orderAlerts([
   {
     state:'applied',legacyBaseline:false,publicationId:'newest',appliedAt:'2026-10-03T20:30:00Z',
     changes:{material:true,rows:[{status:'added',after:{id:'n1',system:'Diaba',task:'Newest task'}}]},
@@ -83,12 +83,24 @@ const newestOnly=orderAlerts([
     state:'applied',legacyBaseline:false,publicationId:'older',appliedAt:'2026-10-03T20:00:00Z',
     changes:{material:true,rows:[{status:'added',after:{id:'o1',system:'Miwae',task:'Older task'}}]},
   },
-],Date.parse('2026-10-03T21:00:00Z'));
-assert.equal(newestOnly.length,1);
-assert.equal(newestOnly[0].title,'[ADDED] Newest task');
+],{now:Date.parse('2026-10-03T21:00:00Z'),reviewedThrough:'2026-10-03T20:15:00Z'});
+assert.equal(pendingSinceBgsAck.length,1);
+assert.equal(pendingSinceBgsAck[0].title,'[ADDED] Newest task');
+
+const retainedUntilBgsAck=orderAlerts([
+  {
+    state:'applied',legacyBaseline:false,publicationId:'newest',appliedAt:'2026-10-03T20:30:00Z',
+    changes:{material:true,rows:[{status:'added',after:{id:'n1',system:'Diaba',task:'Newest task'}}]},
+  },
+  {
+    state:'applied',legacyBaseline:false,publicationId:'older',appliedAt:'2026-10-03T20:00:00Z',
+    changes:{material:true,rows:[{status:'added',after:{id:'o1',system:'Miwae',task:'Older task'}}]},
+  },
+],{now:Date.parse('2026-10-03T21:00:00Z')});
+assert.equal(retainedUntilBgsAck.length,2,'HUD order references stay until the BGS Control master amber is acknowledged');
 
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
-for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp','Daily Order changes are transient notifications',"alert.type==='orders'&&alert.acknowledged"]){
+for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp','Local/iPad ACK only marks a row acknowledged','readOrderReviewState']){
   assert.ok(source.includes(token),token);
 }
 console.log('✓ HUD site feed aggregates mission/trade/scout leadership data with persistent acknowledgements');
