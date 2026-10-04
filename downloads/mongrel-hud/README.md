@@ -5,7 +5,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 ## Requirements
 
 - Windows PC running Elite Dangerous.
-- EDMC with **Mongrel Scout v1.10.0 or newer** installed and enabled for the full carrier-PA event set.
+- EDMC with **Mongrel Scout v1.11.0 or newer** installed and enabled for the full carrier-PA event set.
 - No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
@@ -30,11 +30,17 @@ The desktop window shows the current HUD version and checks the rolling GitHub r
 
 ## Carrier PA / local voice
 
+Mongrel HUD 0.14.0 separates Pneuma speech into two persistent roles: **Announcements** and **ATC**. Each role can independently select any installed System.Speech, WinRT, or Kokoro voice. Existing 0.13.x single-voice settings migrate into both roles, so upgrading does not discard the selected voice; the ATC role can then be changed independently from the iPad.
+
+The acoustic environment is selected independently of the speaker. **Remote radio** is the default even when the Commander is merely in Pneuma's system. It changes to **Local carrier comms** only when Scout can prove the Commander is in Pneuma's normal-space instance from the carrier Market ID (targeted supercruise drop or owner-carrier docking context). Walking inside the carrier uses **Carrier interior PA**, while the hangar uses the larger **Carrier hangar PA** profile. The iPad controller also provides a manual acoustic preview selector so either role can be auditioned in every room without moving the ship.
+
+All three speech providers now synthesize to a temporary local PCM16 WAV before playback. Remote radio uses a communications-band filter plus gentle saturation/compression; local comms stays essentially clean; the two PA profiles add short early reflections, with the hangar using longer/larger reflections. Final volume, synchronous playback and cleanup remain local to the PC.
+
 Mongrel HUD 0.13.0 adds an **optional Local Neural · Kokoro** voice provider without increasing the core HUD download by hundreds of megabytes. The ordinary HUD still works with Windows Modern (WinRT) and Windows Legacy (System.Speech) voices even when the neural pack is not installed.
 
 From the paired iPad controller, **Install Voice Pack** tells the Windows HUD to perform the installation on the PC. The PC downloads the pinned sherpa-onnx Windows x64 TTS runtime and the pinned Kokoro multilingual model into a staging area under `%LOCALAPPDATA%\MongrelHUD\voices`, verifies both SHA-256 digests, extracts and validates the required runtime/model files, and only then atomically exposes the finished pack. The controller polls live status/progress. Interrupted or failed staging data is never treated as an installed provider. **Repair** repeats the verified install; **Remove** deletes only the optional pack and falls back to the Windows system voice if Kokoro was selected.
 
-After installation, 28 English Kokoro voices (US and UK, male and female) appear in the normal PA selector under **Local Neural · Kokoro**. Speech synthesis then runs locally/offline through `sherpa-onnx-offline-tts.exe`; generated temporary WAV files are volume-scaled locally, played synchronously, and deleted. Existing carrier phrases, placeholders, delays, countdowns, cooldown-ready timer and serial queue remain provider-neutral.
+After installation, 28 English Kokoro voices (US and UK, male and female) appear in both carrier voice selectors under **Local Neural · Kokoro**. Speech synthesis then runs locally/offline through `sherpa-onnx-offline-tts.exe`; generated temporary WAV files are volume-scaled locally, played synchronously, and deleted. Existing carrier phrases, placeholders, delays, countdowns, cooldown-ready timer and serial queue remain provider-neutral.
 
 Pinned optional-pack assets for 0.13.0:
 - sherpa-onnx runtime: v1.13.8, Windows x64 shared MT TTS build, 24,805,859 bytes, SHA-256 `6dffdc715a4465b989446a6105265d2cb345e7101591a17d35534b6758f6e8df`
