@@ -20,6 +20,14 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 
 The HUD is rendered as independent top-most transparent panels rather than one large overlay window. In normal **LOCKED** mode the panels are click-through. From the iPad controller, choose **UNLOCK LAYOUT** to expose draggable panel headers on the PC, move them wherever you want, adjust each panel to 75–150% size, then lock the layout again. Panel positions, visibility and scale persist in the local state file. **Reset Layout** restores the default positions. The small PC control window remains available for show/hide, lock/unlock and pairing.
 
+## iPad pairing, local shortcut, and updates
+
+Mongrel HUD 0.9.0 advertises a stable local controller name at **http://mongrel-hud.local:43858**. The Member Portal includes an **Open HUD Controller** shortcut to that address. The PC and iPad must be on the same local network; the desktop window also shows the raw LAN-IP address as a fallback.
+
+Pairing is now persistent. Enter the six-digit PIN once on a device and the HUD stores only a hash of that device's random trust token in the local HUD state file. The browser receives a one-year HttpOnly cookie, so ordinary HUD restarts and version upgrades do not require another PIN. **Pair New Device** changes only the displayed PIN and does not revoke existing devices. **Forget Paired Devices** explicitly clears all trusted controller tokens.
+
+The desktop window shows the current HUD version and checks the rolling GitHub release in the background. When a newer build is available, **Update to x.y.z** downloads the rolling ZIP with Windows PowerShell, verifies GitHub's SHA-256 asset digest, stages the new EXE under the existing local MongrelHUD data directory, exits, replaces the running EXE, and relaunches it. Layout, notes, mining cache, trusted-device hashes, and other local state stay in the separate local state.json file and are not replaced. The updater changes only the packaged HUD executable; Mongrel Scout remains an EDMC plugin and is updated separately.
+
 ## Profiles
 
 ### Combat
