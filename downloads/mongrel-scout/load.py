@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.1"
+PLUGIN_VERSION = "1.8.2"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -30,6 +30,7 @@ HUD_BRIDGE_PORT = 43857
 HUD_BRIDGE_VERSION = 5
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
+HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
 FSD_RATING_CONSTANT = {
@@ -230,7 +231,8 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "cargo, credits, ship build, materials, missions, and general travel history are not transmitted. "
         "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
         "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
-        "The token itself is never exposed through the local HUD bridge; personal HUD notes stay local on the PC."
+        "Surface Mining can also use the token to submit explicit deposit reports to the curated 10-16 mining archive; "
+        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
         row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
@@ -575,7 +577,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path != "/v1/site-feed/ack":
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -590,6 +592,16 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
         if not isinstance(body, Mapping):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
             return
+
+        if parsed.path == "/v1/mining/report":
+            result = _submit_hud_mining_report(body)
+            status = 200 if result.get("ok") else (400 if result.get("error") in {
+                "unsupported_system", "commodity_required", "body_required", "invalid_body_type",
+                "invalid_signal", "invalid_latitude", "invalid_longitude", "invalid_rig_count",
+            } else 502)
+            self._write_json(result, status=status)
+            return
+
         action = str(body.get("action") or "ack").strip().lower()
         requested = body.get("alertIds") if action == "ack-all" else [body.get("alertId")]
         ids = []
@@ -747,6 +759,29 @@ def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
         acknowledged = [str(value) for value in result.get("acknowledged", ids) if str(value)]
         _mark_site_alerts_acknowledged(acknowledged, str(result.get("acknowledgedAt") or ""))
         return {"ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
+    except Exception:
+        return {"ok": False, "error": "network"}
+
+
+def _submit_hud_mining_report(payload: Mapping[str, Any]) -> dict[str, Any]:
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return {"ok": False, "error": "scout_token_missing"}
+    try:
+        response = _session.post(
+            HUD_MINING_REPORT_ENDPOINT,
+            json=dict(payload),
+            headers={**_site_feed_headers(token), "Content-Type": "application/json"},
+        )
+        try:
+            result = response.json()
+        except Exception:
+            result = {}
+        if not isinstance(result, Mapping):
+            result = {}
+        if not (200 <= response.status_code < 300) or result.get("ok") is not True:
+            return {"ok": False, "error": str(result.get("error") or result.get("message") or f"http_{response.status_code}")}
+        return dict(result)
     except Exception:
         return {"ok": False, "error": "network"}
 
