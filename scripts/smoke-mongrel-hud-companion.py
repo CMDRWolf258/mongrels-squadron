@@ -12,27 +12,27 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.9.0"
+assert hud.APP_VERSION=="0.10.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
 assert hud.CONTROLLER_STABLE_URL=="http://mongrel-hud.local:43858"
 assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
-assert hud.version_tuple("0.9.0")==(0,9,0)
+assert hud.version_tuple("0.10.0")==(0,10,0)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.9.1",
+    "name":"Mongrel HUD Windows v0.10.1",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.9.1" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.10.1" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.9.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
     raise AssertionError("Untrusted update download URL was accepted")
 except ValueError as exc:
     assert str(exc)=="release_download_url_rejected"
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.9.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
     raise AssertionError("Release without SHA-256 digest was accepted")
 except ValueError as exc:
     assert str(exc)=="release_digest_missing"
@@ -65,6 +65,7 @@ assert groups["defense"][-1]=={"name":"Shield Cell Bank","count":1}
 with tempfile.TemporaryDirectory() as td:
     # Keep the smoke deterministic/offline; production starts the 60-second mining sync thread.
     hud.MongrelHudApp._mining_sync_loop=lambda self: None
+    hud.MongrelHudApp._voice_loop=lambda self: None
     store=hud.LocalStore(Path(td)/"state.json")
     app=hud.MongrelHudApp(store,"<html></html>")
     # Pairing tokens are high-entropy client secrets; only their hashes persist.
@@ -84,6 +85,35 @@ with tempfile.TemporaryDirectory() as td:
     reloaded_after_revoke=hud.LocalStore(Path(td)/"state.json")
     revoked_app=hud.MongrelHudApp(reloaded_after_revoke,"<html></html>")
     assert revoked_app.authorized_controller_token(trusted) is False
+
+    # Carrier PA settings are local, persistent and owner-carrier scoped.
+    voice=app.voice_settings_snapshot()
+    assert voice["enabled"] is True and voice["carrierPa"] is True and voice["volume"]==75
+    assert voice["cues"]["docking.requested"]["enabled"] is False
+    assert voice["cues"]["docking.granted"]["enabled"] is True
+    voice=app.set_voice_settings({"volume":65,"cues":{"docking.granted":{"minDelay":5,"maxDelay":5,"cooldown":20},"docking.docked":{"minDelay":3,"maxDelay":3,"cooldown":20}}})
+    assert voice["volume"]==65 and voice["cues"]["docking.granted"]["minDelay"]==5.0
+    app.handle_voice_event({"type":"docking.granted","relationship":"unknown","marketId":"999","landingPad":12})
+    assert app.voice_status_snapshot()["queued"]==0
+    app.handle_voice_event({"type":"docking.granted","relationship":"owner","marketId":"123","landingPad":12})
+    with app.voice_condition:
+        assert len(app.voice_pending)==1
+        assert app.voice_pending[0]["cue"]=="docking.granted"
+        assert "pad 12" in app.voice_pending[0]["text"]
+    # Docked supersedes a still-delayed clearance line so stale PA never plays.
+    app.handle_voice_event({"type":"docking.docked","relationship":"owner","marketId":"123","stationName":"Pneuma"})
+    with app.voice_condition:
+        assert len(app.voice_pending)==1 and app.voice_pending[0]["cue"]=="docking.docked"
+        assert "Welcome aboard Pneuma" in app.voice_pending[0]["text"]
+    app.handle_voice_event({"type":"carrier.jump_request","relationship":"owner","carrierId":"123","destinationSystem":"Sol"})
+    with app.voice_condition:
+        assert any(row["cue"]=="carrier.jump_request" and "Sol" in row["text"] for row in app.voice_pending)
+    app.handle_voice_event({"type":"carrier.jump_cancelled","relationship":"owner","carrierId":"123"})
+    with app.voice_condition:
+        assert not any(row["cue"]=="carrier.jump_request" for row in app.voice_pending)
+        assert any(row["cue"]=="carrier.jump_cancelled" for row in app.voice_pending)
+    persisted_voice_store=hud.LocalStore(Path(td)/"state.json")
+    assert persisted_voice_store.data["voice"]["volume"]==65
     app.snapshot=hud.ScoutSnapshot({
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"560820275507"},
         "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"fuelReserve":0.8,"cargo":12,"pips":[2.0,1.0,3.0]},
@@ -150,7 +180,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.9.0"
+    assert hud.APP_VERSION=="0.10.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -206,7 +236,7 @@ with tempfile.TemporaryDirectory() as td:
     assert fake_root.after_calls==2 and fake_window.withdrawn>=1
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","PNEUMA · CARRIER PA","TEST VOICE","data-voice-cue=\"docking.granted\"","data-voice-cue=\"carrier.jump\"","/api/voice","/api/voice-test","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -225,6 +255,9 @@ assert "register_controller_device" in source and "authorized_controller_token" 
 assert "PAIRING_COOKIE_MAX_AGE" in source and "Max-Age={PAIRING_COOKIE_MAX_AGE}" in source
 assert "Check for Update" in source and "_powershell_release_json" in source and "_file_sha256" in source
 assert "update_digest_mismatch" in source and "MongrelHUD.new.exe" in source
+assert "CARRIER_VOICE_CUES" in source and "handle_voice_event" in source and "_voice_loop" in source
+assert "System.Speech.Synthesis.SpeechSynthesizer" in source and "windows_speech_failed" in source
+assert '"carrier.jump_request"' in source and '"carrier.jump_cancelled"' in source
 
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
 assert "tk.Canvas" in source and "_render_mission_canvas" in source and "_render_trade_canvas" in source and "_render_alerts_canvas" in source and "_render_loadout_canvas" in source
