@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.8.4 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.8.5 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -97,4 +97,9 @@ Scout 1.8.0 calculates a local **current normal jump range** for Mongrel HUD fro
 
 ### HUD current-system context
 
-Scout 1.8.4 keeps the current EDMC system context in the local HUD bridge on every journal callback and restores the last known local system across Scout/EDMC restarts. This avoids the HUD showing an unknown system when Scout is restarted while already landed or driving on a surface.
+Scout 1.8.5 keeps the current EDMC system context in the local HUD bridge on every journal callback and restores the last known local system across Scout/EDMC restarts. This avoids the HUD showing an unknown system when Scout is restarted while already landed or driving on a surface.
+
+
+### Mining feed proxy
+
+Scout 1.8.5 proxies `GET /v1/mining/data` and `GET /v1/mining/centers` through EDMC's HTTPS session. Mongrel HUD reads those localhost routes instead of opening HTTPS directly from the packaged Windows executable, avoiding local certificate-store failures while keeping the curated archive authoritative.
