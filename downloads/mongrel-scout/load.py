@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.2"
+PLUGIN_VERSION = "1.8.3"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -31,6 +31,7 @@ HUD_BRIDGE_VERSION = 5
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
+HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
 FSD_RATING_CONSTANT = {
@@ -577,7 +578,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -593,12 +594,22 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
             return
 
-        if parsed.path == "/v1/mining/report":
-            result = _submit_hud_mining_report(body)
-            status = 200 if result.get("ok") else (400 if result.get("error") in {
+        if parsed.path in {"/v1/mining/report", "/v1/mining/center"}:
+            endpoint = HUD_MINING_REPORT_ENDPOINT if parsed.path.endswith("/report") else HUD_MINING_CENTER_ENDPOINT
+            result = _submit_hud_mining_request(endpoint, body)
+            error = str(result.get("error") or "")
+            if result.get("ok"):
+                status = 200
+            elif error == "site_admin_required":
+                status = 403
+            elif error in {
                 "unsupported_system", "commodity_required", "body_required", "invalid_body_type",
                 "invalid_signal", "invalid_latitude", "invalid_longitude", "invalid_rig_count",
-            } else 502)
+                "invalid_planet_radius",
+            }:
+                status = 400
+            else:
+                status = 502
             self._write_json(result, status=status)
             return
 
@@ -763,13 +774,13 @@ def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
         return {"ok": False, "error": "network"}
 
 
-def _submit_hud_mining_report(payload: Mapping[str, Any]) -> dict[str, Any]:
+def _submit_hud_mining_request(endpoint: str, payload: Mapping[str, Any]) -> dict[str, Any]:
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
         return {"ok": False, "error": "scout_token_missing"}
     try:
         response = _session.post(
-            HUD_MINING_REPORT_ENDPOINT,
+            endpoint,
             json=dict(payload),
             headers={**_site_feed_headers(token), "Content-Type": "application/json"},
         )
