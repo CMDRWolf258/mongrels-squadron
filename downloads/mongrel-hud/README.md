@@ -79,6 +79,8 @@ The four most recent successful target captures are held in memory for the curre
 
 ## HUD visual hierarchy and alert behavior
 
+Mongrel HUD 0.6.1 raises the overlay's readable baseline after the first 0.6.0 Canvas build proved too small and thin on high-resolution ultrawide displays. Canvas panels now render at a larger baseline, compact text has a 10-point floor, small tactical/detail text uses bold Consolas, and muted text has higher contrast. Individual 75–150% panel controls still work relative to that improved baseline.
+
 The 0.6.0 overlay renderer now uses lightweight Canvas drawing instead of presenting each panel as one equal-weight text block. The existing Consolas-style technical look is retained, while titles, primary values, labels, warnings, status colors and graphical progress bars can be styled independently.
 
 Mission Control renders tracked Daily Order progress bars from the same combined progress concept used on the website. Leadership Alerts use one primary status lamp: faction conditions take **red** priority, Daily Order changes use **amber**, and other leadership notifications use cyan/priority coloring. New/unacknowledged conditions flash; acknowledging an alert stops the flashing but does **not** remove the active alert. It remains visible in both the overlay and iPad controller until its underlying feed condition ages out or resolves. A later materially different alert has a new identity and flashes again.
