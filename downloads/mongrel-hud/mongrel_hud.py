@@ -49,7 +49,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.10.0"
+APP_VERSION = "0.10.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -3552,6 +3552,10 @@ try {
   if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
   Copy-Item -LiteralPath $Target -Destination $backup -Force
   Copy-Item -LiteralPath $Staged -Destination $Target -Force
+  # PyInstaller onefile restarts must be forced into a fresh top-level runtime.
+  # Otherwise the relaunched EXE inherits the old _PYI_* environment, reuses the
+  # old _MEI temp directory, and loses base_library.zip when the old HUD exits.
+  $env:PYINSTALLER_RESET_ENVIRONMENT='1'
   Start-Process -FilePath $Target
   Start-Sleep -Seconds 2
   if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
@@ -3559,7 +3563,10 @@ try {
   if (Test-Path -LiteralPath $backup) {
     try { Copy-Item -LiteralPath $backup -Destination $Target -Force } catch {}
   }
-  try { Start-Process -FilePath $Target } catch {}
+  try {
+    $env:PYINSTALLER_RESET_ENVIRONMENT='1'
+    Start-Process -FilePath $Target
+  } catch {}
 }
 """,
                 encoding="utf-8",
