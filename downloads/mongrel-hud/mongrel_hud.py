@@ -49,7 +49,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.9.0"
+APP_VERSION = "0.10.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -217,6 +217,72 @@ PANEL_TITLES = {
     "orderalerts": "DAILY ORDER CHANGES",
     "notes": "NOTES",
 }
+
+
+CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
+    "docking.requested": {"label": "Docking request", "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0},
+    "docking.granted": {"label": "Docking granted", "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0},
+    "docking.docked": {"label": "Docked / welcome", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 20.0},
+    "docking.undocked": {"label": "Undocked / departure", "enabled": True, "minDelay": 4.0, "maxDelay": 6.0, "cooldown": 20.0},
+    "carrier.jump_request": {"label": "Jump scheduled", "enabled": True, "minDelay": 3.0, "maxDelay": 5.0, "cooldown": 30.0},
+    "carrier.jump_cancelled": {"label": "Jump cancelled", "enabled": True, "minDelay": 2.0, "maxDelay": 3.0, "cooldown": 30.0},
+    "carrier.jump": {"label": "Jump complete", "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0},
+}
+
+
+def default_voice_settings() -> dict[str, Any]:
+    return {
+        "enabled": True,
+        "carrierPa": True,
+        "volume": 75,
+        "rate": 0,
+        "cues": {key: dict(value) for key, value in CARRIER_VOICE_CUES.items()},
+    }
+
+
+def normalized_voice_settings(value: Any) -> dict[str, Any]:
+    defaults = default_voice_settings()
+    raw = value if isinstance(value, dict) else {}
+    try:
+        volume = int(raw.get("volume", defaults["volume"]))
+    except (TypeError, ValueError):
+        volume = int(defaults["volume"])
+    try:
+        rate = int(raw.get("rate", defaults["rate"]))
+    except (TypeError, ValueError):
+        rate = int(defaults["rate"])
+    out = {
+        "enabled": bool(raw.get("enabled", defaults["enabled"])),
+        "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
+        "volume": max(0, min(100, volume)),
+        "rate": max(-3, min(3, rate)),
+        "cues": {},
+    }
+    raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
+    for cue, base in CARRIER_VOICE_CUES.items():
+        row = raw_cues.get(cue) if isinstance(raw_cues.get(cue), dict) else {}
+        try:
+            minimum = float(row.get("minDelay", base["minDelay"]))
+        except (TypeError, ValueError):
+            minimum = float(base["minDelay"])
+        try:
+            maximum = float(row.get("maxDelay", base["maxDelay"]))
+        except (TypeError, ValueError):
+            maximum = float(base["maxDelay"])
+        try:
+            cooldown = float(row.get("cooldown", base["cooldown"]))
+        except (TypeError, ValueError):
+            cooldown = float(base["cooldown"])
+        minimum = max(0.0, min(60.0, minimum))
+        maximum = max(minimum, min(60.0, maximum))
+        out["cues"][cue] = {
+            "label": base["label"],
+            "enabled": bool(row.get("enabled", base["enabled"])),
+            "minDelay": round(minimum, 1),
+            "maxDelay": round(maximum, 1),
+            "cooldown": round(max(0.0, min(300.0, cooldown)), 1),
+        }
+    return out
 
 
 def public_endpoint(value: Any) -> str:
@@ -766,9 +832,10 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings()}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
+        self.data["voice"] = normalized_voice_settings(self.data.get("voice"))
         auth = self.data.get("controllerAuth")
         hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
         hashes = hashes if isinstance(hashes, list) else []
@@ -821,6 +888,10 @@ class MongrelHudApp:
         self.update_lock = threading.RLock()
         self.update_status: dict[str, Any] = {"checking": False, "installing": False, "available": False, "version": None, "url": None, "digest": None, "error": ""}
         self.exit_for_update = threading.Event()
+        self.voice_condition = threading.Condition()
+        self.voice_pending: list[dict[str, Any]] = []
+        self.voice_last_scheduled: dict[str, float] = {}
+        self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -848,6 +919,7 @@ class MongrelHudApp:
         self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
+        threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
         with self.lock:
@@ -915,7 +987,230 @@ class MongrelHudApp:
                 ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
                 ledger["unclaimed"] = 0
                 self.store.save()
+        self.handle_voice_event(event)
 
+
+    def voice_settings_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            return json.loads(json.dumps(normalized_voice_settings(self.store.data.get("voice"))))
+
+    def voice_status_snapshot(self) -> dict[str, Any]:
+        with self.voice_condition:
+            status = dict(self.voice_runtime)
+            status["queued"] = len(self.voice_pending)
+        return status
+
+    def set_voice_settings(self, value: Any) -> dict[str, Any]:
+        if not isinstance(value, dict):
+            raise ValueError("voice_settings_required")
+        with self.store.lock:
+            current = normalized_voice_settings(self.store.data.get("voice"))
+            for key in ("enabled", "carrierPa", "volume", "rate"):
+                if key in value:
+                    current[key] = value[key]
+            cue_updates = value.get("cues")
+            if isinstance(cue_updates, dict):
+                merged_cues = current.get("cues") if isinstance(current.get("cues"), dict) else {}
+                for cue, update in cue_updates.items():
+                    if cue not in CARRIER_VOICE_CUES or not isinstance(update, dict):
+                        continue
+                    row = dict(merged_cues.get(cue) or CARRIER_VOICE_CUES[cue])
+                    for key in ("enabled", "minDelay", "maxDelay", "cooldown"):
+                        if key in update:
+                            row[key] = update[key]
+                    merged_cues[cue] = row
+                current["cues"] = merged_cues
+            normalized = normalized_voice_settings(current)
+            self.store.data["voice"] = normalized
+            self.store.save()
+        if not normalized["enabled"] or not normalized["carrierPa"]:
+            with self.voice_condition:
+                self.voice_pending.clear()
+                self.voice_condition.notify_all()
+        return self.voice_settings_snapshot()
+
+    def _owner_carrier_for_voice(self) -> dict[str, Any]:
+        state = self.scout_state()
+        owner = state.get("ownerCarrier")
+        return dict(owner) if isinstance(owner, dict) else {}
+
+    def _is_owner_carrier_event(self, event: dict[str, Any]) -> bool:
+        if str(event.get("relationship") or "").casefold() == "owner":
+            return True
+        owner = self._owner_carrier_for_voice()
+        owner_id = str(owner.get("carrierId") or "")
+        event_id = str(event.get("carrierId") or event.get("marketId") or "")
+        return bool(owner_id and event_id and secrets.compare_digest(owner_id, event_id))
+
+    def _carrier_voice_name(self, event: dict[str, Any]) -> str:
+        carrier = event.get("carrier")
+        if isinstance(carrier, dict):
+            name = " ".join(str(carrier.get("name") or "").split())
+            if name:
+                return name
+        owner = self._owner_carrier_for_voice()
+        name = " ".join(str(owner.get("name") or "").split())
+        if name:
+            return name
+        station = " ".join(str(event.get("stationName") or "").split())
+        return station or "the carrier"
+
+    def _voice_text_for_event(self, cue: str, event: dict[str, Any]) -> str:
+        carrier = self._carrier_voice_name(event)
+        if cue == "docking.requested":
+            return f"Docking request transmitted to {carrier}."
+        if cue == "docking.granted":
+            pad = event.get("landingPad")
+            return f"Docking clearance confirmed. Proceed to pad {int(pad)}." if isinstance(pad, int) else "Docking clearance confirmed. Proceed to your assigned pad."
+        if cue == "docking.docked":
+            return f"Welcome aboard {carrier}, Commander."
+        if cue == "docking.undocked":
+            return f"Departure complete. Clear of {carrier}. Safe flying, Commander."
+        if cue == "carrier.jump_request":
+            destination = " ".join(str(event.get("destinationSystem") or "").split())
+            return f"Carrier jump plotted for {destination}. Departure sequence scheduled." if destination else "Carrier jump plotted. Departure sequence scheduled."
+        if cue == "carrier.jump_cancelled":
+            return "Carrier jump cancelled. Flight operations returning to normal."
+        if cue == "carrier.jump":
+            destination = " ".join(str(event.get("system") or "").split())
+            return f"{carrier} has arrived in {destination}. Jump complete." if destination else f"{carrier} jump complete."
+        return ""
+
+    def _cancel_voice_cues(self, *cues: str) -> None:
+        wanted = set(cues)
+        if not wanted:
+            return
+        with self.voice_condition:
+            self.voice_pending = [row for row in self.voice_pending if str(row.get("cue") or "") not in wanted]
+            self.voice_condition.notify_all()
+
+    def handle_voice_event(self, event: dict[str, Any]) -> None:
+        cue = str(event.get("type") or "")
+        if cue not in CARRIER_VOICE_CUES:
+            if cue in {"docking.denied", "docking.cancelled", "docking.timeout"}:
+                self._cancel_voice_cues("docking.requested", "docking.granted")
+            return
+
+        if cue == "docking.granted":
+            self._cancel_voice_cues("docking.requested")
+        elif cue == "docking.docked":
+            self._cancel_voice_cues("docking.requested", "docking.granted")
+        elif cue == "docking.undocked":
+            self._cancel_voice_cues("docking.docked")
+        elif cue == "carrier.jump_cancelled":
+            self._cancel_voice_cues("carrier.jump_request")
+        elif cue == "carrier.jump":
+            self._cancel_voice_cues("carrier.jump_request")
+
+        settings = self.voice_settings_snapshot()
+        if not settings.get("enabled") or not settings.get("carrierPa"):
+            return
+        row = (settings.get("cues") or {}).get(cue) or {}
+        if not row.get("enabled"):
+            return
+        if not self._is_owner_carrier_event(event):
+            return
+
+        text = self._voice_text_for_event(cue, event)
+        if not text:
+            return
+        now = time.monotonic()
+        cooldown = max(0.0, float(row.get("cooldown") or 0.0))
+        with self.voice_condition:
+            previous = float(self.voice_last_scheduled.get(cue) or 0.0)
+            if previous and now - previous < cooldown:
+                return
+            minimum = max(0.0, float(row.get("minDelay") or 0.0))
+            maximum = max(minimum, float(row.get("maxDelay") or minimum))
+            fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
+            delay = minimum + (maximum - minimum) * fraction
+            self.voice_last_scheduled[cue] = now
+            self.voice_pending.append({
+                "cue": cue,
+                "text": text,
+                "due": now + delay,
+                "volume": int(settings.get("volume") or 75),
+                "rate": int(settings.get("rate") or 0),
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+
+    def queue_voice_test(self) -> dict[str, Any]:
+        settings = self.voice_settings_snapshot()
+        carrier = self._owner_carrier_for_voice()
+        name = " ".join(str(carrier.get("name") or "").split()) or "Pneuma"
+        with self.voice_condition:
+            self.voice_pending.append({
+                "cue": "test",
+                "text": f"{name} public address test. Audio link online.",
+                "due": time.monotonic(),
+                "volume": int(settings.get("volume") or 75),
+                "rate": int(settings.get("rate") or 0),
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+        return self.voice_status_snapshot()
+
+    @staticmethod
+    def _speak_windows(text: str, volume: int, rate: int) -> None:
+        if os.name != "nt":
+            raise RuntimeError("windows_speech_required")
+        safe_text = " ".join(str(text or "").split())[:600]
+        if not safe_text:
+            return
+        script = (
+            "$ErrorActionPreference='Stop';"
+            "Add-Type -AssemblyName System.Speech;"
+            "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
+            f"$s.Volume={max(0, min(100, int(volume)))};"
+            f"$s.Rate={max(-3, min(3, int(rate)))};"
+            "$s.Speak(" + _powershell_quote(safe_text) + ");"
+            "$s.Dispose();"
+        )
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=90,
+            creationflags=flags,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("windows_speech_failed")
+
+    def _voice_loop(self) -> None:
+        while True:
+            item = None
+            with self.voice_condition:
+                while not self.voice_pending:
+                    self.voice_condition.wait(timeout=5.0)
+                if not self.voice_pending:
+                    continue
+                now = time.monotonic()
+                due = float(self.voice_pending[0].get("due") or now)
+                if due > now:
+                    self.voice_condition.wait(timeout=min(5.0, due - now))
+                    continue
+                item = self.voice_pending.pop(0)
+                self.voice_runtime["speaking"] = True
+                self.voice_runtime["lastError"] = ""
+            try:
+                self._speak_windows(str(item.get("text") or ""), int(item.get("volume") or 75), int(item.get("rate") or 0))
+                with self.voice_condition:
+                    self.voice_runtime.update({
+                        "lastCue": str(item.get("cue") or ""),
+                        "lastText": str(item.get("text") or ""),
+                        "lastSpokenAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                        "lastError": "",
+                    })
+            except Exception as exc:
+                with self.voice_condition:
+                    self.voice_runtime["lastError"] = str(exc).strip() or type(exc).__name__
+            finally:
+                with self.voice_condition:
+                    self.voice_runtime["speaking"] = False
+                    self.voice_condition.notify_all()
 
     @staticmethod
     def target_identity(target: dict[str, Any] | None) -> str:
@@ -1754,6 +2049,8 @@ class MongrelHudApp:
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
             "missionSystem": self.mission_system_filter(),
+            "voice": self.voice_settings_snapshot(),
+            "voiceStatus": self.voice_status_snapshot(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
             "renderErrors": [
@@ -3431,6 +3728,10 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "layout": app.reset_layout()}
                 elif path == "/api/notes":
                     result = {"ok": True, "notes": app.set_notes(str(body.get("notes") or ""))}
+                elif path == "/api/voice":
+                    result = {"ok": True, "voice": app.set_voice_settings(body)}
+                elif path == "/api/voice-test":
+                    result = {"ok": True, "voiceStatus": app.queue_voice_test()}
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/alert-ack":

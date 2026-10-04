@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.9.0"
+assert plugin.PLUGIN_VERSION == "1.10.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -73,7 +73,7 @@ assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
 assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
-assert plugin.HUD_BRIDGE_VERSION == 6
+assert plugin.HUD_BRIDGE_VERSION == 7
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"
 assert plugin.KEY_LAST_SYSTEM_ADDRESS == "MongrelScoutLastSystemAddress"
 assert plugin.KEY_CARGO_MISSIONS == "MongrelScoutCargoMissionCache"
@@ -88,6 +88,8 @@ expected_types = {
     "Undocked": "docking.undocked",
     "Location": "location.current",
     "CarrierJump": "carrier.jump",
+    "CarrierJumpRequest": "carrier.jump_request",
+    "CarrierJumpCancelled": "carrier.jump_cancelled",
     "CarrierStats": "carrier.stats",
     "FSDJump": "travel.fsd_jump",
     "SupercruiseEntry": "travel.supercruise_entry",
@@ -423,4 +425,4 @@ assert {row["missionId"] for row in plugin._cargo_mission_rows("Wolf258")} == {7
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
-print("✓ Mongrel Scout v1.9.0 local HUD bridge covers docking/travel, combat, cargo mission math, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout v1.10.0 local HUD bridge covers docking/travel, carrier PA triggers, combat, cargo mission math, surface HUD state, and authenticated mining-report proxying")

@@ -67,6 +67,14 @@ Mongrel HUD 0.9.0 controller QoL architecture:
 - The HUD updater updates only Mongrel HUD. Mongrel Scout remains a separate EDMC plugin/update path.
 
 
+Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
+- Voice remains **local-only**: Elite journal → Scout loopback bridge → HUD queue → Windows System Speech. No voice text, Commander identity, carrier identity, or speech requests are sent to a cloud TTS service.
+- Carrier PA v1 is owner-carrier scoped. Scout persists owner identity from `CarrierStats`; `CarrierJumpRequest` also establishes the owner Carrier ID and adds local `carrier.jump_request` / `carrier.jump_cancelled` events.
+- Keep Elite's built-in voices enabled. Each Mongrel PA cue has configurable Min/Max delay and cooldown in the iPad controller so built-in ATC/carrier speech can finish first.
+- Voice cues queue serially. Newer lifecycle events cancel stale queued lines (grant cancels request; docked cancels request/grant; undocked cancels delayed welcome; jump-cancel/jump-complete cancel pending jump-scheduled speech). Duplicate triggers are suppressed by cue cooldown.
+- v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
+- Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.10.0 remains a separate EDMC plugin update.
+
 The October 4 integration investigation identified production feed failures with Cloudflare `1102` (resource limits) and mining failures with D1's exhausted daily read allowance. Repeated date formatter construction and repeated schema/backfill work were measurable contributors. Reuse only bounded pure calendar conversions and schema initialization, not authoritative site/mining data. Diagnostics retain the public endpoint, bridge/upstream HTTP status, safe error code, response format, and request correlation ID without tokens, raw response bodies, or private request values.
 
 CI and isolated tests do not establish Windows release readiness. Before publishing, verify authenticated production site data through the running HUD, repeated profile/overlay/lock controls, central center save and fresh-client retrieval, and access to existing deposits. The canonical Pages deposit read must be checked against the existing central records once D1 requests work again. Identify any remaining physical Elite/EDMC test explicitly; do not label a build ready while live quota/API failures remain.

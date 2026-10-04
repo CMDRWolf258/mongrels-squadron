@@ -21,13 +21,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.9.0"
+PLUGIN_VERSION = "1.10.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 6
+HUD_BRIDGE_VERSION = 7
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
@@ -94,6 +94,8 @@ HUD_EVENT_TYPES = {
     "Undocked": "docking.undocked",
     "Location": "location.current",
     "CarrierJump": "carrier.jump",
+    "CarrierJumpRequest": "carrier.jump_request",
+    "CarrierJumpCancelled": "carrier.jump_cancelled",
     "CarrierStats": "carrier.stats",
     "FSDJump": "travel.fsd_jump",
     "SupercruiseEntry": "travel.supercruise_entry",
@@ -1072,6 +1074,23 @@ def _normalize_hud_event(
         carrier = _carrier_identity(entry)
         if carrier:
             _save_owner_carrier(carrier)
+    elif journal_event == "CarrierJumpRequest":
+        carrier_id = _decimal_text(entry.get("CarrierID"))
+        carrier = None
+        if carrier_id:
+            with _hud_condition:
+                previous = _hud_state.get("ownerCarrier")
+                previous = dict(previous) if isinstance(previous, Mapping) else {}
+            if str(previous.get("carrierId") or "") != carrier_id:
+                previous = {}
+            carrier = {
+                "carrierId": carrier_id,
+                "callsign": str(previous.get("callsign") or "").strip(),
+                "name": str(previous.get("name") or "").strip(),
+                "dockingAccess": str(previous.get("dockingAccess") or "").strip(),
+                "updatedAt": str(entry.get("timestamp") or "").strip(),
+            }
+            _save_owner_carrier(carrier)
     else:
         carrier = None
 
@@ -1112,6 +1131,26 @@ def _normalize_hud_event(
         reason = str(entry.get("Reason") or "").strip()
         if reason:
             payload["reason"] = reason
+
+    if journal_event in {"CarrierJumpRequest", "CarrierJumpCancelled"}:
+        carrier_id = _decimal_text(entry.get("CarrierID"))
+        if carrier_id:
+            payload["carrierId"] = carrier_id
+            if _relationship_for_market(carrier_id) == "owner" or journal_event == "CarrierJumpRequest":
+                payload["relationship"] = "owner"
+        if journal_event == "CarrierJumpRequest":
+            destination_system = str(entry.get("SystemName") or "").strip()
+            departure_time = str(entry.get("DepartureTime") or "").strip()
+            body_name = str(entry.get("Body") or "").strip()
+            body_id = _optional_int(entry.get("BodyID"))
+            if destination_system:
+                payload["destinationSystem"] = destination_system
+            if departure_time:
+                payload["departureTime"] = departure_time
+            if body_name:
+                payload["bodyName"] = body_name
+            if body_id is not None:
+                payload["bodyId"] = body_id
 
     if journal_event == "Location":
         payload["docked"] = bool(entry.get("Docked"))
@@ -1323,7 +1362,7 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
             "timestamp": event.get("timestamp"),
         }
 
-    if event_type == "carrier.stats" and isinstance(event.get("carrier"), Mapping):
+    if event_type in {"carrier.stats", "carrier.jump_request"} and isinstance(event.get("carrier"), Mapping):
         _hud_state["ownerCarrier"] = dict(event["carrier"])
         current_station = _hud_state.get("station")
         if isinstance(current_station, dict) and current_station.get("marketId") == event["carrier"].get("carrierId"):
