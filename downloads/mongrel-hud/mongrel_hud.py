@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.3"
+APP_VERSION = "0.6.4"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -322,30 +322,55 @@ def match_module_name(value: Any) -> str | None:
     return best_name if best_score >= 0.72 else None
 
 
+def _merge_module_frame(merged: list[str], current: list[str]) -> list[str]:
+    if not merged:
+        return list(current)
+    if not current:
+        return list(merged)
+
+    # A frame already fully represented adds nothing. Likewise, a wider frame
+    # can safely replace a narrower one without multiplying modules.
+    for start in range(0, max(1, len(merged) - len(current) + 1)):
+        if merged[start:start + len(current)] == current:
+            return list(merged)
+    for start in range(0, max(1, len(current) - len(merged) + 1)):
+        if current[start:start + len(merged)] == merged:
+            return list(current)
+
+    max_overlap = min(len(merged), len(current))
+    for size in range(max_overlap, 0, -1):
+        if merged[-size:] == current[:size]:
+            return merged + current[size:]
+        if current[-size:] == merged[:size]:
+            return current[:-size] + merged
+
+    # OCR can miss one line between captures, so allow a strong edge-adjacent
+    # sequence match in either direction. This supports scrolling up OR down.
+    forward = difflib.SequenceMatcher(None, merged[-14:], current, autojunk=False).find_longest_match(
+        0, min(14, len(merged)), 0, len(current)
+    )
+    if forward.size >= 2 and forward.b <= 2 and forward.a + forward.size >= max(1, min(14, len(merged)) - 2):
+        return merged + current[forward.b + forward.size:]
+
+    reverse = difflib.SequenceMatcher(None, current[-14:], merged, autojunk=False).find_longest_match(
+        0, min(14, len(current)), 0, len(merged)
+    )
+    if reverse.size >= 2 and reverse.b <= 2 and reverse.a + reverse.size >= max(1, min(14, len(current)) - 2):
+        prefix_end = max(0, len(current) - 14 + reverse.a)
+        return current[:prefix_end] + merged
+
+    # No trustworthy overlap means the user's scroll outran the capture or OCR
+    # changed too much. Skipping one uncertain frame is safer than inventing
+    # duplicate hardpoints/modules.
+    return list(merged)
+
+
 def stitch_module_frames(frames: list[list[str]]) -> list[str]:
     merged: list[str] = []
     for frame in frames:
         current = [name for name in frame if name]
-        if not current:
-            continue
-        if not merged:
-            merged = list(current)
-            continue
-        overlap = 0
-        for size in range(min(len(merged), len(current)), 0, -1):
-            if merged[-size:] == current[:size]:
-                overlap = size
-                break
-        if overlap:
-            merged.extend(current[overlap:])
-            continue
-        tail = merged[-12:]
-        match = difflib.SequenceMatcher(None, tail, current, autojunk=False).find_longest_match(0, len(tail), 0, len(current))
-        if match.size >= 2 and match.b <= 2 and match.a + match.size >= max(1, len(tail) - 2):
-            merged.extend(current[match.b + match.size:])
-        else:
-            # No trustworthy overlap: retain the frame rather than silently dropping possible modules.
-            merged.extend(current)
+        if current:
+            merged = _merge_module_frame(merged, current)
     return merged
 
 
