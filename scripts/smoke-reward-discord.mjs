@@ -370,7 +370,7 @@ assert.match(issueApi,/result\.created\?await syncRewardsDiscord/);
 const frontier=readFileSync('functions/api/frontier/sync.js','utf8');
 assert.match(frontier,/rewardDiscord/);
 const scout=readFileSync('functions/api/operations/scout-ingest.js','utf8');
-assert.match(scout,/rewardDiscord/);
+for(const pattern of [/processAcceptedBgsSnapshot/,/reconcileAutomaticRewardEntries/,/syncRewardDiscordBoard/,/context\.waitUntil/])assert.match(scout,pattern);
 const client=readFileSync('js/wolf-bgs-discord.js','utf8');
 for(const pattern of [/data-discord-sync-rewards/,/discord-rewards/,/Syncing Squad Payouts/])assert.match(client,pattern);
 const page=readFileSync('wolf-bgs/index.html','utf8');
