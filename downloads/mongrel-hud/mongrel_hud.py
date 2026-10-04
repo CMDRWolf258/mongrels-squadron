@@ -1020,7 +1020,7 @@ class MongrelHudApp:
         self.voice_condition = threading.Condition()
         self.voice_pending: list[dict[str, Any]] = []
         self.voice_last_scheduled: dict[str, float] = {}
-        self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
+        self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastRole": "", "lastAcousticProfile": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
         self.voice_catalog_errors: dict[str, str] = {}
@@ -1834,10 +1834,15 @@ class MongrelHudApp:
 
         with self.store.lock:
             voice = normalized_voice_settings(self.store.data.get("voice"))
-            if voice.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
-                voice["voiceProvider"] = VOICE_PROVIDER_SYSTEM
-                voice["voiceId"] = ""
-                voice["voiceName"] = ""
+            changed = False
+            roles = voice.get("roles") if isinstance(voice.get("roles"), dict) else {}
+            for role in VOICE_ROLE_IDS:
+                identity = roles.get(role) if isinstance(roles.get(role), dict) else {}
+                if identity.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                    roles[role] = {"voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
+                    changed = True
+            if changed:
+                voice["roles"] = roles
                 self.store.data["voice"] = normalized_voice_settings(voice)
                 self.store.save()
         self._voice_catalog_worker()
@@ -2275,17 +2280,27 @@ class MongrelHudApp:
                     self.voice_runtime["speaking"] = False
                     self.voice_condition.notify_all()
                 continue
+
+            role = str(item.get("role") or self._voice_role_for_cue(cue))
+            if role not in VOICE_ROLE_IDS:
+                role = VOICE_ROLE_ANNOUNCEMENT
+            identity = self._voice_identity_for_role(settings, role)
+            forced_profile = str(item.get("acousticProfile") or "")
+            acoustic_profile = forced_profile if forced_profile in ACOUSTIC_PROFILE_IDS else self._voice_acoustic_profile()
             try:
                 self._speak_voice_provider(
-                    str(settings.get("voiceProvider") or VOICE_PROVIDER_SYSTEM),
+                    str(identity.get("voiceProvider") or VOICE_PROVIDER_SYSTEM),
                     text,
                     int(settings.get("volume") if settings.get("volume") is not None else 75),
                     int(settings.get("rate") or 0),
-                    str(settings.get("voiceId") or settings.get("voiceName") or ""),
+                    str(identity.get("voiceId") or identity.get("voiceName") or ""),
+                    acoustic_profile,
                 )
                 with self.voice_condition:
                     self.voice_runtime.update({
                         "lastCue": cue,
+                        "lastRole": role,
+                        "lastAcousticProfile": acoustic_profile,
                         "lastText": text,
                         "lastSpokenAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                         "lastError": "",
@@ -4873,7 +4888,10 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/voice":
                     result = {"ok": True, "voice": app.set_voice_settings(body)}
                 elif path == "/api/voice-test":
-                    result = {"ok": True, "voiceStatus": app.queue_voice_test()}
+                    result = {"ok": True, "voiceStatus": app.queue_voice_test(
+                        str(body.get("role") or VOICE_ROLE_ANNOUNCEMENT),
+                        str(body.get("acousticProfile") or ""),
+                    )}
                 elif path == "/api/voice-test-cue":
                     result = {"ok": True, "voiceStatus": app.queue_voice_cue_test(str(body.get("cue") or ""))}
                 elif path == "/api/voice-pack-install":
