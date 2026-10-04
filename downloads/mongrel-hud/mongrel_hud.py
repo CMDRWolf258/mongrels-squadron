@@ -1858,9 +1858,10 @@ class MongrelHudApp:
         width = round(470 * scale)
         y = self._draw_title(canvas, "MINING INTEL", scale, width)
 
-        sites = self.sites_for_current_body()
+        signal = self.active_location_signal()
+        sites = self.deposits_for_active_location() if signal is not None else []
         if not sites:
-            message = "NO APPROVED COORDINATES ON THIS BODY" if self._in_ten16(state) else "AVAILABLE IN 10-16"
+            message = (f"NO DEPOSITS SAVED FOR SIGNAL #{signal}" if signal is not None else "SELECT A MINING LOCATION") if self._in_ten16(state) else "AVAILABLE IN 10-16"
             self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
 
@@ -1881,7 +1882,7 @@ class MongrelHudApp:
             -int(item[1].get("rigs") or 0),
         ))
 
-        self._draw_text(canvas, 8 * scale, y, f"{len(sites)} KNOWN SPOT{'S' if len(sites) != 1 else ''}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, 8 * scale, y, f"SIGNAL #{signal} · {len(sites)} DEPOSIT{'S' if len(sites) != 1 else ''}", scale, 9, HUD_WHITE, True)
         self._draw_text(canvas, width - 8 * scale, y, "NEAREST 5", scale, 8, HUD_MUTED, True, "ne")
         y += 22 * scale
 
