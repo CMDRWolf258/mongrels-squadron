@@ -553,6 +553,7 @@ def _start_mdns_service() -> tuple[Any, Any] | None:
     address = local_ipv4()
     if address == "127.0.0.1":
         return None
+    zeroconf = None
     try:
         info = ServiceInfo(
             "_http._tcp.local.",
