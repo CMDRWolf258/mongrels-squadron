@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.6.5"
+assert hud.APP_VERSION=="0.6.6"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -86,7 +86,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.6.5"
+    assert hud.APP_VERSION=="0.6.6"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -116,6 +116,9 @@ assert 'status_x = 398 * scale' in source and 'width = round(490 * scale)' in so
 assert '"TOP 5 · ALL SYSTEMS"' in source and 'groups: list[tuple[str, list[dict[str, Any]]]]' in source
 assert 'self._draw_text(canvas, arrow_x, y, "→"' in source
 assert "_render_orderalerts_canvas" in source and 'kind="faction"' in source and 'kind="orders"' in source
+assert 'lamp_color = color if (unacked and flash_on) else HUD_DIM' in source
+assert 'profit_text = f"{self.compact_credits(profit)} CR"' in source
+assert 'leg_profit = leg.get("tripProfit") or 0' in source
 assert "visible_alerts = alerts[:10]" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source and "/api/mission-filter" in source
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
