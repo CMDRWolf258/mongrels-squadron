@@ -112,9 +112,10 @@ export async function buildHudFeed(request,env,auth){
 
 export function summarizeMission(mission,currentOrders,progressState={}){
   const closed=new Set(['complete','completed','closed','cancelled','canceled','inactive']);
-  const orders=(Array.isArray(currentOrders?.orders)?currentOrders.orders:[])
-    .filter(order=>!closed.has(norm(order?.status)))
-    .slice(0,8)
+  const activeOrders=(Array.isArray(currentOrders?.orders)?currentOrders.orders:[])
+    .filter(order=>!closed.has(norm(order?.status)));
+  const orders=activeOrders
+    .slice(0,24)
     .map(order=>{
       const reporting=order?.reporting&&typeof order.reporting==='object'
         ?{type:clean(order.reporting.type),target:numberOrNull(order.reporting.target),blitz:Boolean(order.reporting.blitz)}
@@ -148,9 +149,9 @@ export function summarizeMission(mission,currentOrders,progressState={}){
   return{
     title:clean(currentOrders?.title)||'Mission Control',
     updatedAt:currentOrders?.updatedAt||mission?.meta?.generatedAt||null,
-    orderCount:orders.length,
+    orderCount:activeOrders.length,
     attentionCount:Number(mission?.meta?.attentionCount||attention.length||0),
-    systems:unique(orders.map(order=>order.system)),
+    systems:unique(activeOrders.map(order=>order?.system)),
     orders,
     attention,
   };
