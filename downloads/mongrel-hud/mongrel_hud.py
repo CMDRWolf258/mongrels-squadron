@@ -38,7 +38,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.8"
+APP_VERSION = "0.7.9"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1799,8 +1799,13 @@ class MongrelHudApp:
         lines = ["SURFACE MINING", str(system.get("name") or "—"), str(status.get("bodyName") or "—")]
         nav = self.surface_nav()
         if nav:
-            site = nav["site"]
-            label = f"SIGNAL #{site.get('signal')}"
+            # Navigation targets were generalized from the legacy "site" field
+            # to "target" when location centers were added. Accept both shapes
+            # so the shared text renderer cannot blank unrelated panels such as
+            # Bounties and Notes while a surface target is active.
+            site = nav.get("target") if isinstance(nav.get("target"), dict) else nav.get("site")
+            site = site if isinstance(site, dict) else {}
+            label = f"SIGNAL #{site.get('signal')}" if site.get("signal") else "ACTIVE SURFACE TARGET"
             if site.get("commodity"):
                 label += f" · {site['commodity']}"
             lines += ["", label, f"{format_distance(nav['distance'])}   {nav['bearing']:.0f}°   {relative_text(nav.get('relative'))}"]
