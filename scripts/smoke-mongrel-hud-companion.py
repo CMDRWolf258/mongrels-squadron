@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.5"
+assert hud.APP_VERSION=="0.7.6"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.5"
+    assert hud.APP_VERSION=="0.7.6"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -161,5 +161,8 @@ assert '<select id="rigs" class="mining-select">' in html and "7+ rigs" in html
 assert 'el("rigs").value="1"' in html
 assert 'SAVED ✓' in html and 'POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓' in html
 assert 'el("depositCommodity").value=""' in html and 'el("notes").value=""' in html
+assert 'type="button" id="overlayMaster"' in html and 'type="button" id="layoutLock"' in html
+assert 'function holdRefresh' in html and 'interactionUntil' in html and 'applyLayoutResult' in html
+assert 'Display control failed' in html and 'Layout lock failed' in html and 'Panel toggle failed' in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
