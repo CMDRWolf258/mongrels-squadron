@@ -254,8 +254,11 @@ export function summarizeScoutBoard(board){
 }
 
 function normalizeHudCoords(value){
-  if(!Array.isArray(value)||value.length<3)return null;
-  const coords=value.slice(0,3).map(Number);
+  const source=Array.isArray(value)
+    ? value.slice(0,3)
+    : (value&&typeof value==='object'?[value.x,value.y,value.z]:null);
+  if(!source||source.length<3)return null;
+  const coords=source.map(Number);
   return coords.every(Number.isFinite)?coords:null;
 }
 
@@ -282,24 +285,54 @@ export function payoutAlerts(view){
 }
 
 export function orderAlerts(records,now=Date.now()){
-  return (Array.isArray(records)?records:[])
-    .filter(record=>record?.state==='applied'&&record?.legacyBaseline!==true&&record?.changes?.material)
-    .filter(record=>{
-      const at=Date.parse(record?.appliedAt||record?.preparedAt||'');
-      return Number.isFinite(at)&&now-at<=RECENT_ORDER_MS;
-    })
-    .slice(0,12)
-    .map(record=>{
+  const out=[];
+  for(const record of (Array.isArray(records)?records:[])){
+    if(record?.state!=='applied'||record?.legacyBaseline===true||!record?.changes?.material)continue;
+    const createdAt=record?.appliedAt||record?.preparedAt||'';
+    const at=Date.parse(createdAt);
+    if(!Number.isFinite(at)||now-at>RECENT_ORDER_MS)continue;
+    const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
+      .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
+    if(!rows.length){
       const counts=record?.changes?.counts||{};
-      return{
+      out.push({
         id:alertId('orders',record?.publicationId),
         type:'orders',
         severity:'high',
         title:'DAILY ORDERS CHANGED',
         detail:['+'+Number(counts.added||0)+' added',Number(counts.revised||0)+' revised','-'+Number(counts.removed||0)+' removed'].join(' · '),
-        createdAt:record?.appliedAt||record?.preparedAt||new Date().toISOString(),
-      };
+        createdAt:createdAt||new Date().toISOString(),
+      });
+      continue;
+    }
+    rows.forEach((row,index)=>{
+      const status=norm(row?.status);
+      const current=status==='removed'?(row?.before||{}):(row?.after||{});
+      const previous=row?.before||{};
+      const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
+      const system=clean(current?.system)||clean(previous?.system);
+      const faction=clean(current?.faction)||clean(previous?.faction);
+      const detailParts=[system,faction];
+      if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
+        detailParts.push('Was: '+clean(previous.task));
+      }else if(status==='revised'){
+        const beforeTarget=previous?.reporting?.target;
+        const afterTarget=current?.reporting?.target;
+        if(beforeTarget!==afterTarget&&afterTarget!==undefined&&afterTarget!==null)detailParts.push('Target: '+afterTarget);
+        else if(clean(previous?.priority)!==clean(current?.priority)&&clean(current?.priority))detailParts.push('Priority: '+clean(current.priority));
+      }
+      out.push({
+        id:alertId('orders',record?.publicationId,current?.id||current?.logicalKey||previous?.id||previous?.logicalKey||index,status),
+        type:'orders',
+        severity:'high',
+        title:'['+status.toUpperCase()+'] '+task,
+        detail:detailParts.filter(Boolean).join(' · '),
+        createdAt:createdAt||new Date().toISOString(),
+      });
     });
+    if(out.length>=24)break;
+  }
+  return out.slice(0,24);
 }
 
 export function tradeAlerts(routes){
