@@ -53,7 +53,7 @@ assert.equal(alerts.length,1);
 assert.match(alerts[0].detail,/2 revised/);
 
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
-for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator']){
+for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp']){
   assert.ok(source.includes(token),token);
 }
 console.log('✓ HUD site feed aggregates mission/trade/scout leadership data with persistent acknowledgements');
