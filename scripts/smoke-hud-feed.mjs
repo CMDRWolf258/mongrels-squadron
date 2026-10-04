@@ -10,6 +10,7 @@ const mission=summarizeMission(
   {summaries:{o1:{squad:{score:6}}},verifiedSummaries:{o1:{contribution:4}}},
 );
 assert.equal(mission.orders.length,1);
+assert.deepEqual(mission.systems,['Diaba']);
 assert.equal(mission.orders[0].progress.current,10);
 assert.equal(mission.orders[0].progress.percent,50);
 assert.equal(mission.orders[0].progress.unit,'CZ pts');
@@ -45,8 +46,14 @@ assert.equal(trade.routes[0].loopProfit,16500000);
 assert.equal(trade.routes[0].legs[0].sourceStation,'Niijima Station');
 assert.equal(trade.routes[0].legs[0].destinationStation,'Test Exchange');
 
-const scout=summarizeScoutBoard({summary:{available:1,claimed:0,fresh:2,priority:1},jobs:[{system:'Miwae',status:'available',reward:{totalMillions:10,bonusMillions:5,bonusReason:'Priority'}}]});
+const scout=summarizeScoutBoard({
+  summary:{available:1,claimed:0,fresh:2,priority:1,coordinates:1},
+  viewer:{lastScoutLocation:{system:'Diaba',coords:[10,20,30],observedAt:'2026-10-03T20:00:00Z',coordinateSource:'Live Scout'}},
+  jobs:[{system:'Miwae',status:'available',coords:[11,20,30],coordinateSource:'EDSM',reward:{totalMillions:10,bonusMillions:5,bonusReason:'Priority'}}],
+});
 assert.equal(scout.jobs[0].system,'Miwae');
+assert.deepEqual(scout.jobs[0].coords,[11,20,30]);
+assert.equal(scout.origin.system,'Diaba');
 
 const alerts=orderAlerts([{state:'applied',legacyBaseline:false,publicationId:'pub-1',appliedAt:'2026-10-03T20:00:00Z',changes:{material:true,counts:{added:1,revised:2,removed:0}}}],Date.parse('2026-10-03T21:00:00Z'));
 assert.equal(alerts.length,1);
