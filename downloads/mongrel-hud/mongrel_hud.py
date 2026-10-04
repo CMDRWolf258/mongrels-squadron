@@ -983,6 +983,18 @@ class MongrelHudApp:
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
         self.voice_catalog_errors: dict[str, str] = {}
+        self.voice_pack_lock = threading.RLock()
+        self.voice_pack_status: dict[str, Any] = {
+            "pack": "Kokoro",
+            "installed": False,
+            "active": False,
+            "action": "",
+            "phase": "checking",
+            "progress": 0,
+            "message": "Checking local neural voice pack…",
+            "error": "",
+            "downloadBytes": KOKORO_PACK_DOWNLOAD_BYTES,
+        }
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -1011,6 +1023,7 @@ class MongrelHudApp:
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
         self._restore_scheduled_voice()
+        self._refresh_voice_pack_status()
         threading.Thread(target=self._voice_catalog_worker, name="MongrelHudVoiceCatalog", daemon=True).start()
         threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True).start()
 
