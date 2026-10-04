@@ -88,6 +88,8 @@ expected_types = {
     "Undocked": "docking.undocked",
     "Location": "location.current",
     "CarrierJump": "carrier.jump",
+    "CarrierJumpRequest": "carrier.jump_request",
+    "CarrierJumpCancelled": "carrier.jump_cancelled",
     "CarrierStats": "carrier.stats",
     "FSDJump": "travel.fsd_jump",
     "SupercruiseEntry": "travel.supercruise_entry",
