@@ -38,7 +38,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.8.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2611,7 +2611,7 @@ class MongrelHudApp:
     def _render_cargo_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
         cargo = state.get("cargo") if isinstance(state.get("cargo"), dict) else {}
-        width = round(500 * scale)
+        width = round(410 * scale)
         y = self._draw_title(canvas, "CARGO", scale, width)
 
         used = cargo.get("used")
@@ -2620,7 +2620,7 @@ class MongrelHudApp:
         if isinstance(used, int) and isinstance(capacity, int):
             summary = f"{used:,} / {capacity:,} t"
             if isinstance(free, int):
-                summary += f"   ·   {free:,} t FREE"
+                summary += f"  ·  {free:,} t FREE"
         elif isinstance(used, int):
             summary = f"{used:,} t"
         else:
@@ -2640,7 +2640,7 @@ class MongrelHudApp:
                 remaining = max(0, int(row.get("remaining") or 0))
                 needed = max(0, int(row.get("stillNeeded") or 0))
                 self._draw_text(canvas, 12 * scale, y, name, scale, 10, HUD_WHITE, True)
-                self._draw_text(canvas, 310 * scale, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
+                self._draw_text(canvas, 270 * scale, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
                 status = "READY" if needed == 0 else f"NEED {needed:,}"
                 self._draw_text(canvas, width - 8 * scale, y, status, scale, 9, HUD_GREEN if needed == 0 else HUD_AMBER, True, "ne")
                 y += 19 * scale
