@@ -96,7 +96,10 @@ export async function buildHudFeed(request,env,auth){
       indicator:alertIndicator(alert.type,alert.severity),
       acknowledged:Boolean(ackState.acks[alert.id]),
       acknowledgedAt:ackState.acks[alert.id]||null,
-    }));
+    }))
+    // Faction alerts describe live conditions and may remain visible after ACK.
+    // Daily Order changes are notifications: ACK means dismiss them.
+    .filter(alert=>!(alert.type==='orders'&&alert.acknowledged));
 
   return{
     ok:true,
@@ -286,54 +289,57 @@ export function payoutAlerts(view){
 }
 
 export function orderAlerts(records,now=Date.now()){
-  const out=[];
-  for(const record of (Array.isArray(records)?records:[])){
-    if(record?.state!=='applied'||record?.legacyBaseline===true||!record?.changes?.material)continue;
-    const createdAt=record?.appliedAt||record?.preparedAt||'';
-    const at=Date.parse(createdAt);
-    if(!Number.isFinite(at)||now-at>RECENT_ORDER_MS)continue;
-    const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
-      .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
-    if(!rows.length){
-      const counts=record?.changes?.counts||{};
-      out.push({
-        id:alertId('orders',record?.publicationId),
-        type:'orders',
-        severity:'high',
-        title:'DAILY ORDERS CHANGED',
-        detail:['+'+Number(counts.added||0)+' added',Number(counts.revised||0)+' revised','-'+Number(counts.removed||0)+' removed'].join(' · '),
-        createdAt:createdAt||new Date().toISOString(),
-      });
-      continue;
-    }
-    rows.forEach((row,index)=>{
-      const status=norm(row?.status);
-      const current=status==='removed'?(row?.before||{}):(row?.after||{});
-      const previous=row?.before||{};
-      const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
-      const system=clean(current?.system)||clean(previous?.system);
-      const faction=clean(current?.faction)||clean(previous?.faction);
-      const detailParts=[system,faction];
-      if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
-        detailParts.push('Was: '+clean(previous.task));
-      }else if(status==='revised'){
-        const beforeTarget=previous?.reporting?.target;
-        const afterTarget=current?.reporting?.target;
-        if(beforeTarget!==afterTarget&&afterTarget!==undefined&&afterTarget!==null)detailParts.push('Target: '+afterTarget);
-        else if(clean(previous?.priority)!==clean(current?.priority)&&clean(current?.priority))detailParts.push('Priority: '+clean(current.priority));
-      }
-      out.push({
-        id:alertId('orders',record?.publicationId,current?.id||current?.logicalKey||previous?.id||previous?.logicalKey||index,status),
-        type:'orders',
-        severity:'high',
-        title:'['+status.toUpperCase()+'] '+task,
-        detail:detailParts.filter(Boolean).join(' · '),
-        createdAt:createdAt||new Date().toISOString(),
-      });
-    });
-    if(out.length>=24)break;
+  // Daily Order changes are transient notifications, not a seven-day activity
+  // log. Show only the newest material publication so repeated BGS Control
+  // edits cannot stack old revisions/removals indefinitely in the HUD.
+  const record=(Array.isArray(records)?records:[]).find(row=>{
+    if(row?.state!=='applied'||row?.legacyBaseline===true||!row?.changes?.material)return false;
+    const at=Date.parse(row?.appliedAt||row?.preparedAt||'');
+    return Number.isFinite(at)&&now-at<=RECENT_ORDER_MS;
+  });
+  if(!record)return[];
+
+  const createdAt=record?.appliedAt||record?.preparedAt||new Date().toISOString();
+  const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
+    .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
+
+  if(!rows.length){
+    const counts=record?.changes?.counts||{};
+    return [{
+      id:alertId('orders',record?.publicationId),
+      type:'orders',
+      severity:'high',
+      title:'DAILY ORDERS CHANGED',
+      detail:['+'+Number(counts.added||0)+' added',Number(counts.revised||0)+' revised','-'+Number(counts.removed||0)+' removed'].join(' · '),
+      createdAt,
+    }];
   }
-  return out.slice(0,24);
+
+  return rows.slice(0,12).map((row,index)=>{
+    const status=norm(row?.status);
+    const current=status==='removed'?(row?.before||{}):(row?.after||{});
+    const previous=row?.before||{};
+    const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
+    const system=clean(current?.system)||clean(previous?.system);
+    const faction=clean(current?.faction)||clean(previous?.faction);
+    const detailParts=[system,faction];
+    if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
+      detailParts.push('Was: '+clean(previous.task));
+    }else if(status==='revised'){
+      const beforeTarget=previous?.reporting?.target;
+      const afterTarget=current?.reporting?.target;
+      if(beforeTarget!==afterTarget&&afterTarget!==undefined&&afterTarget!==null)detailParts.push('Target: '+afterTarget);
+      else if(clean(previous?.priority)!==clean(current?.priority)&&clean(current?.priority))detailParts.push('Priority: '+clean(current.priority));
+    }
+    return{
+      id:alertId('orders',record?.publicationId,current?.id||current?.logicalKey||previous?.id||previous?.logicalKey||index,status),
+      type:'orders',
+      severity:'high',
+      title:'['+status.toUpperCase()+'] '+task,
+      detail:detailParts.filter(Boolean).join(' · '),
+      createdAt,
+    };
+  });
 }
 
 export function tradeAlerts(routes){
