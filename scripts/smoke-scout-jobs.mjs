@@ -143,7 +143,8 @@ console.log('✓ Scout Board reports freshness, coordinate coverage, and the vie
 
 const scoutJobsSource=readFileSync('lib/scout-jobs.js','utf8');
 for(const pattern of [/ruleIndex=new Map/,/snapshotIndex=new Map/,/boardStateChanged/,/boardSettingsChanged/])assert.match(scoutJobsSource,pattern);
-assert.doesNotMatch(scoutJobsSource,/const resolved=resolveExpiredClaimsInState\(state,settings,now\);/,'Scout Board GET should not sweep the entire historical cycle ledger');
+const boardSource=scoutJobsSource.slice(scoutJobsSource.indexOf('export async function buildScoutJobBoard'),scoutJobsSource.indexOf('export async function claimScoutJob'));
+assert.doesNotMatch(boardSource,/resolveExpiredClaimsInState\(/,'Scout Board GET should not sweep the entire historical cycle ledger');
 
 const ingest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
 for(const pattern of [/recordScoutObservation/,/hasActiveScoutClaim/,/ownerId:auth\.ownerId/,/scoutJob/])assert.match(ingest,pattern);
