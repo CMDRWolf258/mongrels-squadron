@@ -1365,7 +1365,6 @@ class MongrelHudApp:
             self.store.data["activeMiningLocationSignal"] = chosen_signal
             self.store.save()
         self._refresh_mining_data_once()
-        current_body_commodities, mining_commodities = self.mining_commodity_choices()
         return {
             "ok": True,
             "status": result.get("status"),
@@ -1413,6 +1412,7 @@ class MongrelHudApp:
             connected = self.snapshot.connected
         with self.store.lock:
             profile = self.store.data.get("profile", "combat")
+        current_body_commodities, mining_commodities = self.mining_commodity_choices()
         return {
             "ok": True,
             "version": APP_VERSION,
