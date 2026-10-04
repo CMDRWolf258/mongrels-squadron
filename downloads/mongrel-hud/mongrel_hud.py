@@ -37,12 +37,14 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.0"
+APP_VERSION = "0.7.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
+SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "https://ten16-archive.pages.dev/api/mining"
+MINING_CENTERS_URL = "https://ten16-archive.pages.dev/api/mining-centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
@@ -429,7 +431,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
 
@@ -484,6 +486,7 @@ class MongrelHudApp:
         self._last_target_identity = ""
         self.mining_lock = threading.RLock()
         self.mining_sites: list[dict[str, Any]] = []
+        self.mining_centers: list[dict[str, Any]] = []
         self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
