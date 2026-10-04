@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.7"
+assert hud.APP_VERSION=="0.7.8"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -75,6 +75,8 @@ with tempfile.TemporaryDirectory() as td:
     assert state["connected"] is True and state["activeSite"]["id"]==42
     assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
+    # Saved centers must survive a HUD restart even if the remote center feed is temporarily unavailable.
+    app.set_site_center = app.set_site_center
     assert "Periclase" in state["miningCommodities"]
     assert "Platinum" in state["miningCommodities"]
     assert state["miningCommoditiesCurrentBody"]==["Periclase"]
@@ -107,7 +109,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.7"
+    assert hud.APP_VERSION=="0.7.8"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -126,6 +128,41 @@ with tempfile.TemporaryDirectory() as td:
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
     assert app.set_profile("combat")=="combat"
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
+
+    cached_center={"id":901,"systemName":"NGC 2546 Sector UZ-G d10-16","systemAddress":"560820275507","body":"7b","bodyType":"moon","signal":10,"latitude":-22.77,"longitude":-98.81,"updatedAt":"2026-10-04T08:00:00Z"}
+    with app.mining_lock:
+        app.mining_centers=[cached_center]
+        cached=[dict(row) for row in app.mining_centers]
+    with app.store.lock:
+        app.store.data["miningCenters"]=cached
+        app.store.save()
+    restarted_store=hud.LocalStore(Path(td)/"state.json")
+    restarted_app=hud.MongrelHudApp(restarted_store,"<html></html>")
+    assert restarted_app.mining_centers and restarted_app.mining_centers[0]["signal"]==10
+
+    class FakeRoot:
+        def __init__(self): self.after_calls=0
+        def after(self,ms,fn): self.after_calls+=1
+    class FakeWindow:
+        def __init__(self): self.withdrawn=0; self.shown=0; self.geometries=[]
+        def withdraw(self): self.withdrawn+=1
+        def deiconify(self): self.shown+=1
+        def geometry(self,value): self.geometries.append(value)
+    fake_root=FakeRoot()
+    fake_window=FakeWindow()
+    app.root=fake_root
+    app.panel_windows={"own":{"window":fake_window,"body":object(),"appliedLocked":None,"appliedRevision":-1}}
+    app._render_panel_canvas=lambda *args,**kwargs: (_ for _ in ()).throw(RuntimeError("synthetic renderer failure"))
+    applied=[]
+    app._apply_panel_edit_mode=lambda panel_id,locked: applied.append((panel_id,locked))
+    app.refresh_ui()
+    assert fake_root.after_calls==1
+    assert fake_window.shown==1
+    assert app.panel_windows["own"]["renderError"]=="synthetic renderer failure"
+    assert applied==[("own",app.layout_snapshot()["locked"])]
+    app.set_master_overlay(False)
+    app.refresh_ui()
+    assert fake_root.after_calls==2 and fake_window.withdrawn>=1
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
 for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
@@ -179,3 +216,7 @@ print("✓ Mongrel HUD companion profiles, surface navigation, local report flow
 assert 'mutationEpoch' in html and 'mutationPending' in html and 'async function mutate' in html
 assert 'Profile switch failed' in html and 'profile active' in html
 assert 'result = {"ok": True, "profile": profile, "layout": app.layout_snapshot()}' in source
+
+assert '"miningCenters": []' in source
+assert 'info["renderError"] = str(exc)[:160]' in source
+assert 'finally:' in source and 'self.root.after(200, self.refresh_ui)' in source
