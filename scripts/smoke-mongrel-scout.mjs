@@ -93,6 +93,8 @@ for(const pattern of [
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
+  /BGS upload/,
+  /detail_text/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
 assert.match(plugin,/Commander name[\s\S]{0,180}cargo, credits/i);
