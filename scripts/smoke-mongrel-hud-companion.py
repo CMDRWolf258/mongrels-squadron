@@ -12,9 +12,21 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.8.1"
+assert hud.APP_VERSION=="0.9.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
+assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
+assert hud.CONTROLLER_STABLE_URL=="http://mongrel-hud.local:43858"
+assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
+assert hud.version_tuple("0.9.0")==(0,9,0)
+assert hud.version_tuple("v1.2.3")==(1,2,3)
+release=hud.update_from_release_payload({
+    "name":"Mongrel HUD Windows v0.9.1",
+    "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
+})
+assert release["version"]=="0.9.1" and release["digest"]=="sha256:"+"a"*64
+assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
+
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -45,6 +57,22 @@ with tempfile.TemporaryDirectory() as td:
     hud.MongrelHudApp._mining_sync_loop=lambda self: None
     store=hud.LocalStore(Path(td)/"state.json")
     app=hud.MongrelHudApp(store,"<html></html>")
+    # Pairing tokens are high-entropy client secrets; only their hashes persist.
+    trusted=app.register_controller_device()
+    assert app.authorized_controller_token(trusted) is True
+    with store.lock:
+        saved_hashes=list(store.data["controllerAuth"]["tokenHashes"])
+    assert trusted not in str(saved_hashes)
+    old_pin=app.pin
+    app.regenerate_pin()
+    assert app.pin!=old_pin and app.authorized_controller_token(trusted) is True
+    restarted_auth_store=hud.LocalStore(Path(td)/"state.json")
+    restarted_auth_app=hud.MongrelHudApp(restarted_auth_store,"<html></html>")
+    assert restarted_auth_app.authorized_controller_token(trusted) is True
+    restarted_auth_app.forget_paired_devices()
+    assert restarted_auth_app.authorized_controller_token(trusted) is False
+    # Restore one trusted token for the remainder of the fixture.
+    trusted=app.register_controller_device()
     app.snapshot=hud.ScoutSnapshot({
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"560820275507"},
         "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"fuelReserve":0.8,"cargo":12,"pips":[2.0,1.0,3.0]},
@@ -176,6 +204,14 @@ api=(ROOT/"functions"/"api"/"downloads"/"mongrel-hud.js").read_text(encoding="ut
 for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]:
     assert token in api
 assert "resource_path" in source and "_MEIPASS" in source
+assert "Mongrel HUD Windows v" not in source  # release title is build metadata, not hard-coded runtime state
+assert "CONTROLLER_HOSTNAME = \"mongrel-hud.local\"" in source
+assert "_start_mdns_service" in source and "ServiceInfo" in source
+assert "register_controller_device" in source and "authorized_controller_token" in source and "Forget Paired Devices" in source
+assert "PAIRING_COOKIE_MAX_AGE" in source and "Max-Age={PAIRING_COOKIE_MAX_AGE}" in source
+assert "Check for Update" in source and "_powershell_release_json" in source and "_file_sha256" in source
+assert "update_digest_mismatch" in source and "MongrelHUD.new.exe" in source
+
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
 assert "tk.Canvas" in source and "_render_mission_canvas" in source and "_render_trade_canvas" in source and "_render_alerts_canvas" in source and "_render_loadout_canvas" in source
 assert '("CURRENT JUMP", current_text)' in source
