@@ -2627,6 +2627,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "scan": app.start_target_scan()}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
+                elif path == "/api/location-select":
+                    result = {"ok": True, "location": app.select_location(int(body.get("signal") or 0))}
                 elif path == "/api/site-select":
                     result = {"ok": True, "site": app.select_site(str(body.get("siteId") or ""))}
                 elif path == "/api/deposit":
