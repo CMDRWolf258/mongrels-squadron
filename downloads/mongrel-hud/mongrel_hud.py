@@ -1771,67 +1771,86 @@ class MongrelHudApp:
         state = self.scout_state()
         status = state.get("status") or {}
         system = state.get("system") or {}
-        width = round(520 * scale)
-        y = self._draw_title(canvas, "SURFACE MINING", scale, width)
+        width = round(720 * scale)
+        y = self._draw_title(canvas, "SURFACE NAVIGATION", scale, width)
 
         body = short_body_name(state) or str(status.get("bodyName") or "—")
         self._draw_text(canvas, 8 * scale, y, body.upper(), scale, 13, HUD_WHITE, True)
         self._draw_text(canvas, width - 8 * scale, y, self.clip_line(system.get("name") or "—", 42), scale, 8, HUD_MUTED, True, "ne")
         y += 24 * scale
 
-        nav = self.surface_nav()
-        sites = self.sites_for_current_body()
-        if not nav:
-            if not self._in_ten16(state):
-                message = "CURATED MINING NAV AVAILABLE IN 10-16"
-            elif len(sites) > 1:
-                message = f"SELECT A MINING SPOT · {len(sites)} KNOWN ON THIS BODY"
-            elif not sites:
-                message = "NO SAVED COORDINATES ON THIS BODY"
-            else:
-                message = "WAITING FOR SURFACE POSITION"
-            self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_AMBER if sites else HUD_MUTED, True)
-            y += 22 * scale
-            lat, lon = status.get("latitude"), status.get("longitude")
-            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-                self._draw_text(canvas, 8 * scale, y, f"POSITION  {float(lat):.6f}, {float(lon):.6f}", scale, 9, HUD_MUTED, True)
-                y += 18 * scale
-            return width, round(y + 8 * scale)
+        if not self._in_ten16(state):
+            self._draw_text(canvas, 8 * scale, y, "CURATED MINING NAV AVAILABLE IN 10-16", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
 
-        site = nav["site"]
-        rigs = site.get("rigs")
-        label = f"SIGNAL #{int(site.get('signal') or 0)} · {str(site.get('commodity') or 'MINING SPOT').upper()}"
-        if isinstance(rigs, int):
-            label += f" · {rigs} RIG{'S' if rigs != 1 else ''}"
-        self._draw_text(canvas, 8 * scale, y, label, scale, 10, HUD_CYAN, True)
-        y += 22 * scale
+        signal = self.active_location_signal()
+        if signal is None:
+            locations = self.mining_locations_for_current_body()
+            message = f"SELECT A MINING LOCATION · {len(locations)} KNOWN" if locations else "SELECT OR CREATE A MINING LOCATION"
+            self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_AMBER, True)
+            return width, round(y + 30 * scale)
 
-        compass_cx = width - 70 * scale
-        compass_cy = y + 51 * scale
-        compass_radius = 48 * scale
-        self._draw_nav_compass(canvas, compass_cx, compass_cy, compass_radius, nav, scale)
+        location_nav = self.location_nav()
+        deposit_nav = self.deposit_nav()
+        center = self.active_center()
+        deposit = self.active_site()
+        column_width = width / 2
+        block_top = y
+
+        def draw_target_block(x0: float, title: str, nav: dict[str, Any] | None, target: dict[str, Any] | None, empty: str) -> float:
+            local_y = block_top
+            self._draw_text(canvas, x0 + 8 * scale, local_y, title, scale, 9, HUD_CYAN, True)
+            local_y += 20 * scale
+            if not nav or not target:
+                self._draw_text(canvas, x0 + 8 * scale, local_y, empty, scale, 10, HUD_AMBER, True)
+                return local_y + 28 * scale
+
+            compass_cx = x0 + column_width - 64 * scale
+            compass_cy = local_y + 46 * scale
+            self._draw_nav_compass(canvas, compass_cx, compass_cy, 42 * scale, nav, scale)
+
+            self._draw_text(canvas, x0 + 8 * scale, local_y, "RANGE", scale, 8, HUD_MUTED, True)
+            self._draw_text(canvas, x0 + 75 * scale, local_y, format_distance(nav.get("distance")), scale, 10, HUD_WHITE, True)
+            local_y += 19 * scale
+            self._draw_text(canvas, x0 + 8 * scale, local_y, "BEARING", scale, 8, HUD_MUTED, True)
+            self._draw_text(canvas, x0 + 75 * scale, local_y, f"{float(nav.get('bearing') or 0):.0f}°", scale, 10, HUD_CYAN, True)
+            local_y += 19 * scale
+            self._draw_text(canvas, x0 + 8 * scale, local_y, "TURN", scale, 8, HUD_MUTED, True)
+            self._draw_text(canvas, x0 + 75 * scale, local_y, relative_text(nav.get("relative")) or "—", scale, 10, HUD_CYAN, True)
+            local_y += 23 * scale
+            self._draw_text(
+                canvas,
+                x0 + 8 * scale,
+                local_y,
+                f"{float(target['latitude']):.6f}, {float(target['longitude']):.6f}",
+                scale,
+                8,
+                HUD_MUTED,
+                True,
+            )
+            return max(local_y + 16 * scale, compass_cy + 50 * scale)
+
+        center_title = f"LOCATION CENTER · SIGNAL #{signal}"
+        left_bottom = draw_target_block(0, center_title, location_nav, center, "CENTER NOT SET")
+
+        deposit_title = "SELECTED DEPOSIT"
+        if deposit:
+            deposit_title += f" · {str(deposit.get('commodity') or 'MINERAL').upper()}"
+            if isinstance(deposit.get("rigs"), int):
+                deposit_title += f" · {int(deposit['rigs'])}R"
+        right_bottom = draw_target_block(column_width, deposit_title, deposit_nav, deposit, "NO DEPOSIT SELECTED")
+
+        y = max(left_bottom, right_bottom) + 8 * scale
+        canvas.create_line(column_width, block_top, column_width, y - 4 * scale, fill=HUD_DIM, width=max(1, round(scale)))
 
         heading = status.get("heading")
-        self._draw_text(canvas, 8 * scale, y, "RANGE", scale, 8, HUD_MUTED, True)
-        self._draw_text(canvas, 92 * scale, y, format_distance(nav.get("distance")), scale, 11, HUD_WHITE, True)
-        y += 20 * scale
-        self._draw_text(canvas, 8 * scale, y, "TARGET", scale, 8, HUD_MUTED, True)
-        self._draw_text(canvas, 92 * scale, y, f"{float(nav.get('bearing') or 0):.0f}°", scale, 11, HUD_CYAN, True)
-        if isinstance(heading, (int, float)):
-            self._draw_text(canvas, 180 * scale, y, "HDG", scale, 8, HUD_MUTED, True)
-            self._draw_text(canvas, 225 * scale, y, f"{float(heading):.0f}°", scale, 10, HUD_WHITE, True)
-        y += 20 * scale
-        self._draw_text(canvas, 8 * scale, y, "TURN", scale, 8, HUD_MUTED, True)
-        self._draw_text(canvas, 92 * scale, y, relative_text(nav.get("relative")) or "—", scale, 11, HUD_CYAN, True)
-        y += 22 * scale
-
-        self._draw_text(canvas, 8 * scale, y, f"TARGET COORD  {float(site['latitude']):.6f}, {float(site['longitude']):.6f}", scale, 8, HUD_MUTED, True)
-        y += 16 * scale
         lat, lon = status.get("latitude"), status.get("longitude")
+        if isinstance(heading, (int, float)):
+            self._draw_text(canvas, 8 * scale, y, f"CURRENT HEADING  {float(heading):.0f}°", scale, 8, HUD_MUTED, True)
         if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
-            self._draw_text(canvas, 8 * scale, y, f"CURRENT       {float(lat):.6f}, {float(lon):.6f}", scale, 8, HUD_MUTED, True)
-            y += 16 * scale
-        return width, round(max(y + 5 * scale, compass_cy + compass_radius + 18 * scale))
+            self._draw_text(canvas, width - 8 * scale, y, f"CURRENT  {float(lat):.6f}, {float(lon):.6f}", scale, 8, HUD_MUTED, True, "ne")
+        y += 17 * scale
+        return width, round(y + 6 * scale)
 
     def _render_miningintel_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
