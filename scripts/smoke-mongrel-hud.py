@@ -64,14 +64,14 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.8.5"
+assert plugin.PLUGIN_VERSION == "1.8.6"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
 assert plugin.HUD_SITE_FEED_REFRESH_SECONDS == 30.0
 assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-report"
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
-assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
+assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-api.michael-schroll.workers.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
 assert plugin.HUD_BRIDGE_VERSION == 5
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"
@@ -347,4 +347,4 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.8.5 local HUD bridge covers docking/travel, combat, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout v1.8.6 local HUD bridge covers docking/travel, combat, surface HUD state, and authenticated mining-report proxying")
