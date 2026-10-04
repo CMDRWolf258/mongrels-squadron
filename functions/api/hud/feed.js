@@ -87,7 +87,7 @@ export async function buildHudFeed(request,env,auth){
   const alerts=[
     ...factionAlerts(bgsView),
     ...(access==='site_admin'?payoutAlerts(rewardView):[]),
-    ...(access==='site_admin'?orderAlerts(history,{reviewedThrough:orderReviewState.updatedAt}):[]),
+    ...(access==='site_admin'?orderAlerts(history,{reviews:orderReviewState.reviews}):[]),
     ...tradeAlerts(routes),
   ]
     .sort((a,b)=>(severityRank[norm(a?.severity)]??9)-(severityRank[norm(b?.severity)]??9)
@@ -287,17 +287,13 @@ export function payoutAlerts(view){
   }));
 }
 
-export function orderAlerts(records,{now=Date.now(),reviewedThrough=null}={}){
-  const reviewMs=Date.parse(reviewedThrough||'');
+export function orderAlerts(records,{now=Date.now(),reviews={}}={}){
   const out=[];
   for(const record of (Array.isArray(records)?records:[])){
     if(record?.state!=='applied'||record?.legacyBaseline===true||!record?.changes?.material)continue;
     const createdAt=record?.appliedAt||record?.preparedAt||'';
     const at=Date.parse(createdAt);
     if(!Number.isFinite(at)||now-at>RECENT_ORDER_MS)continue;
-    // The amber master warning in BGS Control is authoritative for clearing
-    // these HUD reference rows. Local/iPad ACK only marks a row acknowledged.
-    if(Number.isFinite(reviewMs)&&at<=reviewMs)continue;
 
     const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
       .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
@@ -322,6 +318,14 @@ export function orderAlerts(records,{now=Date.now(),reviewedThrough=null}={}){
       const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
       const system=clean(current?.system)||clean(previous?.system);
       const faction=clean(current?.faction)||clean(previous?.faction);
+
+      // BGS Control's amber acknowledgement is authoritative. It can happen
+      // before Publish, so timestamp-only clearing is insufficient:
+      // 1) clear everything older than that system's BGS acknowledgement, and
+      // 2) also clear the publication whose before→after signature was the
+      //    exact plan acknowledged immediately before it was published.
+      if(orderChangeReviewed(record,system,reviews,at))return;
+
       const detailParts=[system,faction];
       if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
         detailParts.push('Was: '+clean(previous.task));
@@ -343,6 +347,75 @@ export function orderAlerts(records,{now=Date.now(),reviewedThrough=null}={}){
     if(out.length>=24)break;
   }
   return out.slice(0,24);
+}
+
+function orderChangeReviewed(record,system,reviews,publicationMs){
+  if(!system||!reviews||typeof reviews!=='object')return false;
+  const review=Object.entries(reviews).find(([name])=>norm(name)===norm(system))?.[1];
+  if(!review||typeof review!=='object')return false;
+
+  const reviewedAt=Date.parse(review.reviewedAt||'');
+  if(Number.isFinite(reviewedAt)&&Number.isFinite(publicationMs)&&publicationMs<=reviewedAt)return true;
+
+  const signature=clean(review.signature);
+  return Boolean(signature&&signature===publicationReviewSignature(record,system));
+}
+
+function publicationReviewSignature(record,system){
+  const before=(Array.isArray(record?.before?.orders)?record.before.orders:[])
+    .filter(order=>norm(order?.system)===norm(system))
+    .map(reviewMaterialFingerprint)
+    .sort();
+  const after=(Array.isArray(record?.after?.orders)?record.after.orders:[])
+    .filter(order=>norm(order?.system)===norm(system))
+    .map(reviewMaterialFingerprint)
+    .sort();
+  return reviewHashText(JSON.stringify({
+    cycleId:clean(record?.cycleId),
+    system:reviewClean(system),
+    before,
+    after,
+  }));
+}
+
+function reviewMaterialFingerprint(order){
+  const reporting=order?.reporting&&typeof order.reporting==='object'
+    ?{
+      type:reviewClean(order.reporting.type),
+      target:reviewNumber(order.reporting.target),
+      blitz:Boolean(order.reporting.blitz),
+    }
+    :null;
+  return JSON.stringify({
+    system:reviewClean(order?.system),
+    faction:reviewClean(order?.faction),
+    kind:reviewClean(order?.kind),
+    source:reviewClean(order?.source),
+    priority:reviewClean(order?.priority),
+    task:reviewClean(order?.task),
+    detail:reviewClean(order?.detail),
+    status:reviewClean(order?.status),
+    reporting,
+  });
+}
+
+function reviewClean(value){
+  return String(value??'').trim().replace(/\s+/g,' ');
+}
+
+function reviewNumber(value){
+  return value===''||value===null||value===undefined
+    ?null
+    :(Number.isFinite(Number(value))?Number(value):null);
+}
+
+function reviewHashText(value){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i+=1){
+    hash^=value.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(36);
 }
 
 export function tradeAlerts(routes){
