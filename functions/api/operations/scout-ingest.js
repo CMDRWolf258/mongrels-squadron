@@ -20,7 +20,16 @@ const MAX_FACTIONS = 20;
 const MAX_CONFLICTS = 12;
 
 export async function onRequestPost({ request, env }) {
-  if (!storageReady(env)) return reply({ok:false,error:'bgs_storage_not_configured'}, 503);
+  if (!storageReady(env)) {
+    const error = env?.DAILY_ORDERS ? 'daily_orders_binding_invalid' : 'daily_orders_binding_missing';
+    console.error('Mongrel Scout ingest cannot access DAILY_ORDERS', {
+      error,
+      hasDailyOrders:Boolean(env?.DAILY_ORDERS),
+      hasGet:typeof env?.DAILY_ORDERS?.get === 'function',
+      hasPut:typeof env?.DAILY_ORDERS?.put === 'function',
+    });
+    return reply({ok:false,error}, 503);
+  }
 
   const auth = await authenticate(request, env);
   if (!auth) return reply({ok:false,error:'invalid_scout_token'}, 401);
