@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.1"
+APP_VERSION = "0.6.2"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1353,7 +1353,7 @@ class MongrelHudApp:
         current = own.get("currentJumpRange")
         current_text = f"{current:.2f} LY" if isinstance(current, (int, float)) else "—"
         self._draw_text(canvas, 8 * scale, y, "CURRENT JUMP", scale, 9, HUD_MUTED, True)
-        self._draw_text(canvas, width - 8 * scale, y - 3 * scale, current_text, scale, 17, HUD_CYAN, True, "ne"); y += 25 * scale
+        self._draw_text(canvas, width - 8 * scale, y, current_text, scale, 12, HUD_CYAN, True, "ne"); y += 20 * scale
         unladen = own.get("maxJumpRange")
         fuel_main, fuel_reserve = status.get("fuelMain"), status.get("fuelReserve")
         total_fuel = float(fuel_main) + (float(fuel_reserve) if isinstance(fuel_reserve, (int, float)) else 0.0) if isinstance(fuel_main, (int, float)) else None
@@ -1509,6 +1509,64 @@ class MongrelHudApp:
             y += 4 * scale
         return width, round(y + 4 * scale)
 
+    def _render_trade_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        trade = feed.get("trade") if isinstance(feed.get("trade"), dict) else {}
+        width = round(680 * scale)
+        y = self._draw_title(canvas, "TRADER'S OUTPOST", scale, width)
+        if not trade:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+
+        routes = [row for row in (trade.get("routes") if isinstance(trade.get("routes"), list) else []) if isinstance(row, dict)]
+        self._draw_text(canvas, 8 * scale, y, f"ACTIVE {int(trade.get('activeCount') or 0)}", scale, 10, HUD_WHITE, True); y += 22 * scale
+        if not routes:
+            self._draw_text(canvas, 8 * scale, y, "NO ACTIVE ROUTES", scale, 10, HUD_MUTED, True)
+            return width, round(y + 28 * scale)
+
+        for route in routes[:4]:
+            profit = route.get("loopProfit") or route.get("profitPerTon") or 0
+            state_text = str(route.get("state") or "").upper()
+            title = str(route.get("title") or "Trade Route")
+            summary = title
+            if profit:
+                summary += f" · {self.compact_credits(profit)} CR"
+            if state_text and state_text != "HEALTHY":
+                summary += f" · {state_text}"
+            color = HUD_AMBER if state_text in {"DEGRADED", "UNAVAILABLE"} else HUD_WHITE
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(summary, 78), scale, 10, color, True); y += 19 * scale
+
+            legs = [leg for leg in (route.get("legs") if isinstance(route.get("legs"), list) else []) if isinstance(leg, dict)]
+            if legs:
+                for leg_index, leg in enumerate(legs[:3], start=1):
+                    commodity = str(leg.get("commodity") or route.get("commodity") or "").strip()
+                    source_station = str(leg.get("sourceStation") or "").strip()
+                    source_system = str(leg.get("sourceSystem") or "").strip()
+                    destination_station = str(leg.get("destinationStation") or "").strip()
+                    destination_system = str(leg.get("destinationSystem") or "").strip()
+                    source = " · ".join(part for part in (source_station, source_system) if part) or "Source unknown"
+                    destination = " · ".join(part for part in (destination_station, destination_system) if part) or "Destination unknown"
+                    prefix = f"LEG {leg_index}"
+                    if commodity:
+                        prefix += f" · {commodity}"
+                    self._draw_text(canvas, 18 * scale, y, self.clip_line(prefix, 74), scale, 9, HUD_CYAN, True); y += 16 * scale
+                    self._draw_text(canvas, 30 * scale, y, self.clip_line(f"{source}  →  {destination}", 84), scale, 9, HUD_MUTED, True); y += 17 * scale
+            else:
+                origin_station = str(route.get("originStation") or "").strip()
+                origin_system = str(route.get("originSystem") or "").strip()
+                destination_station = str(route.get("destinationStation") or "").strip()
+                destination_system = str(route.get("destinationSystem") or "").strip()
+                origin = " · ".join(part for part in (origin_station, origin_system) if part)
+                destination = " · ".join(part for part in (destination_station, destination_system) if part)
+                if origin:
+                    self._draw_text(canvas, 18 * scale, y, self.clip_line(f"BUY   {origin}", 82), scale, 9, HUD_CYAN, True); y += 16 * scale
+                if destination:
+                    self._draw_text(canvas, 18 * scale, y, self.clip_line(f"SELL  {destination}", 82), scale, 9, HUD_CYAN, True); y += 16 * scale
+            y += 7 * scale
+
+        return width, round(y + 3 * scale)
+
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
@@ -1541,6 +1599,8 @@ class MongrelHudApp:
             width, height = self._render_loadout_canvas(canvas, scale)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
+        elif panel_id == "trade":
+            width, height = self._render_trade_canvas(canvas, scale)
         elif panel_id == "alerts":
             width, height = self._render_alerts_canvas(canvas, scale, flash_on)
         else:
