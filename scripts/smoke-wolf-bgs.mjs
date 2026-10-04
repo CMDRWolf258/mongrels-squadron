@@ -188,6 +188,25 @@ assert.equal(explicitWarRows.length,2,'An explicit Frontier Conflicts pair must 
 assert.ok(explicitWarRows.some(row=>row.name==='The Consortium'));
 assert.ok(explicitWarRows.some(row=>row.name==='Faction Two'));
 
+const resolvedClinchedWarRows=validatedConflictRows({
+  factions:[
+    {name:'The Consortium',state:'None',activeStates:[],pendingStates:[]},
+    {name:'Perez Ring Brewery',state:'None',activeStates:[],pendingStates:[]},
+  ],
+  conflicts:[{
+    type:'War',
+    status:'Active',
+    faction1:{name:'The Consortium',wonDays:3},
+    faction2:{name:'Perez Ring Brewery',wonDays:0},
+  }],
+  phase:'active',
+});
+assert.equal(
+  resolvedClinchedWarRows.length,
+  0,
+  'A clinched 3-x score must not keep a conflict active after both faction boards have left the conflict state',
+);
+
 const mismatchedStates=[
   {name:'Faction One',state:'War',activeStates:['War']},
   {name:'Faction Two',state:'Election',activeStates:['Election']},
