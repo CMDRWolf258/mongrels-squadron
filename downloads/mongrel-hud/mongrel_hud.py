@@ -243,11 +243,19 @@ def default_voice_settings() -> dict[str, Any]:
 def normalized_voice_settings(value: Any) -> dict[str, Any]:
     defaults = default_voice_settings()
     raw = value if isinstance(value, dict) else {}
+    try:
+        volume = int(raw.get("volume", defaults["volume"]))
+    except (TypeError, ValueError):
+        volume = int(defaults["volume"])
+    try:
+        rate = int(raw.get("rate", defaults["rate"]))
+    except (TypeError, ValueError):
+        rate = int(defaults["rate"])
     out = {
         "enabled": bool(raw.get("enabled", defaults["enabled"])),
         "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
-        "volume": max(0, min(100, int(raw.get("volume", defaults["volume"]) or defaults["volume"]))),
-        "rate": max(-3, min(3, int(raw.get("rate", defaults["rate"]) or 0))),
+        "volume": max(0, min(100, volume)),
+        "rate": max(-3, min(3, rate)),
         "cues": {},
     }
     raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
