@@ -76,6 +76,13 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.11.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.14.1 acoustic audibility correction:
+- Live test of 0.14.0 found the four acoustic preview choices could sound effectively identical. The selector/API/profile-routing path was correct; the first PA mix was too conservative and, critically, reflections ended with the dry WAV so there was no audible room tail after the final word.
+- 0.14.1 extends PA/hangar output by the longest reflection delay so the room tail remains audible. Interior PA now uses stronger 50/105/175/260 ms early reflections with mild speaker roll-off; hangar PA uses larger 70/155/285/430/620 ms reflections and a slightly darker speaker response.
+- Remote radio is strengthened to roughly 380–3000 Hz with more obvious compression/saturation plus a tiny 18 ms slap, while Local carrier comms remains the clean reference.
+- iPad test feedback now names the exact manually selected acoustic profile when a test is queued. Runtime status still reports the last role/profile actually used.
+- Physical subjective retest required after updating to 0.14.1; use Local carrier comms as the clean A/B reference, then compare Remote radio, Carrier interior PA, and Carrier hangar PA.
+
 Mongrel HUD 0.14.0 / Scout 1.11.0 carrier voice roles and acoustic context:
 - Voice identity and acoustic environment are independent. Carrier speech has two persistent roles: `announcement` and `atc`. Docking request/granted/docked/undocked cues use ATC; jump scheduling/countdowns/cancel/arrival/cooldown use Announcements.
 - Existing pre-0.14 single-voice settings migrate into both roles on first normalization. The legacy top-level voice identity mirrors Announcements for compatibility; new controller changes persist under `voice.roles.announcement` and `voice.roles.atc`.
