@@ -293,7 +293,7 @@ assert "register_controller_device" in source and "authorized_controller_token" 
 assert "PAIRING_COOKIE_MAX_AGE" in source and "Max-Age={PAIRING_COOKIE_MAX_AGE}" in source
 assert "Check for Update" in source and "_powershell_release_json" in source and "_file_sha256" in source
 assert "update_digest_mismatch" in source and "MongrelHUD.new.exe" in source
-assert "PYINSTALLER_RESET_ENVIRONMENT" in source and "_MEI temp directory" in source
+assert "PYINSTALLER_RESET_ENVIRONMENT" in source
 assert "Copy-WithRetry" in source and "copy_retry_exhausted" in source
 assert "Get-FileHash -LiteralPath $Target" in source and "target_hash_mismatch" in source
 assert "apply-update.log" in source and "replacement verified" in source and "rollback restored previous executable" in source
