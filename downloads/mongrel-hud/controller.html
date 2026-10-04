@@ -34,7 +34,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="layout-hint" id="voiceCatalogStatus">Loading Windows voice providers…</div>
       <div class="layout-hint">Modern (WinRT) voices appear separately from legacy System.Speech voices. Optional neural voices run locally on the PC after installation.</div>
       <div class="voice-pack">
-        <div class="voice-pack-head"><div><strong>LOCAL NEURAL · KOKORO</strong><div class="voice-pack-meta" id="voicePackStatus">Checking optional voice pack…</div></div><span class="voice-pack-meta" id="voicePackSize">~370 MB download</span></div>
+        <div class="voice-pack-head"><div><strong>LOCAL NEURAL · KOKORO</strong><div class="voice-pack-meta" id="voicePackStatus">Checking optional voice pack…</div></div><span class="voice-pack-meta" id="voicePackSize">~375 MB download</span></div>
         <div class="voice-pack-track"><span id="voicePackProgress"></span></div>
         <div class="voice-pack-actions"><button type="button" id="voicePackInstall">INSTALL VOICE PACK</button><button type="button" id="voicePackRepair">REPAIR</button><button type="button" id="voicePackRemove">REMOVE</button></div>
         <div class="layout-hint">The iPad only sends the command. Your PC downloads, verifies and installs the pack under its local MongrelHUD data folder. After installation, speech works offline.</div>
@@ -282,7 +282,7 @@ function render(){
   var voicePack=state.voicePack||{},packActive=Boolean(voicePack.active),packInstalled=Boolean(voicePack.installed),packProgress=Math.max(0,Math.min(100,Number(voicePack.progress)||0));
   setText(el("voicePackStatus"),voicePack.error?("Error · "+String(voicePack.error).replaceAll("_"," ")):(voicePack.message||(packInstalled?"Kokoro local neural voices ready.":"Kokoro voice pack is optional and not installed.")));
   el("voicePackProgress").style.width=packProgress+"%";
-  var downloadMb=Math.round((Number(voicePack.downloadBytes)||370401634)/1000000),installedBytes=Number(voicePack.installedBytes)||0,packSizeText="~"+downloadMb+" MB download";
+  var downloadMb=Math.round((Number(voicePack.downloadBytes)||374712769)/1000000),installedBytes=Number(voicePack.installedBytes)||0,packSizeText="~"+downloadMb+" MB download";
   if(packInstalled&&installedBytes>0)packSizeText=Math.round(installedBytes/1000000)+" MB installed";
   else if(!packInstalled)packSizeText+=" · ~700 MB installed";
   setText(el("voicePackSize"),packSizeText);
