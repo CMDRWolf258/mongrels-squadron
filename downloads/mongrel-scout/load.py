@@ -21,13 +21,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.10.0"
+PLUGIN_VERSION = "1.11.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 7
+HUD_BRIDGE_VERSION = 8
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
@@ -100,6 +100,7 @@ HUD_EVENT_TYPES = {
     "FSDJump": "travel.fsd_jump",
     "SupercruiseEntry": "travel.supercruise_entry",
     "SupercruiseExit": "travel.supercruise_exit",
+    "SupercruiseDestinationDrop": "travel.destination_drop",
     "ApproachSettlement": "facility.approach",
     "ShipTargeted": "combat.target",
     "HullDamage": "ship.hull",
@@ -162,6 +163,7 @@ _hud_state: dict[str, Any] = {
     "station": None,
     "docking": None,
     "supercruise": None,
+    "instanceDestination": None,
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
@@ -328,10 +330,17 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         fuel_main = _optional_float(fuel.get("FuelMain"))
         fuel_reserve = _optional_float(fuel.get("FuelReservoir"))
 
+    flags2 = _optional_int(entry.get("Flags2")) or 0
     status = {
         "timestamp": str(entry.get("timestamp") or "").strip(),
         "flags": flags,
-        "flags2": _optional_int(entry.get("Flags2")) or 0,
+        "flags2": flags2,
+        "onFoot": bool(flags2 & (1 << 0)),
+        "onFootInStation": bool(flags2 & (1 << 3)),
+        "onFootOnPlanet": bool(flags2 & (1 << 4)),
+        "onFootInHangar": bool(flags2 & (1 << 13)),
+        "onFootSocialSpace": bool(flags2 & (1 << 14)),
+        "onFootExterior": bool(flags2 & (1 << 15)),
         "bodyName": str(entry.get("BodyName") or "").strip(),
         "latitude": _optional_float(entry.get("Latitude")),
         "longitude": _optional_float(entry.get("Longitude")),
@@ -1198,6 +1207,11 @@ def _normalize_hud_event(
             return None
         payload["amount"] = _optional_int(entry.get("Amount"))
 
+    if journal_event == "SupercruiseDestinationDrop":
+        destination_type = str(entry.get("Type") or "").strip()
+        if destination_type:
+            payload["destinationType"] = destination_type
+
     if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
         body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()
         body_id = _optional_int(entry.get("BodyID"))
@@ -1320,9 +1334,27 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
             "reason": event.get("reason"),
             "timestamp": event.get("timestamp"),
         }
+        if event_type in {"docking.requested", "docking.granted"} and station and str(station.get("relationship") or "").casefold() == "owner":
+            _hud_state["instanceDestination"] = {
+                "marketId": station.get("marketId"),
+                "name": station.get("name"),
+                "type": station.get("type"),
+                "relationship": "owner",
+                "source": event_type,
+                "timestamp": event.get("timestamp"),
+            }
 
     if event_type == "docking.docked":
         _hud_state["station"] = station
+        if station and str(station.get("relationship") or "").casefold() == "owner":
+            _hud_state["instanceDestination"] = {
+                "marketId": station.get("marketId"),
+                "name": station.get("name"),
+                "type": station.get("type"),
+                "relationship": "owner",
+                "source": event_type,
+                "timestamp": event.get("timestamp"),
+            }
         _hud_state["docking"] = {
             "status": "docked",
             "station": station,
@@ -1348,8 +1380,19 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
 
     if event_type in {"travel.fsd_jump", "travel.supercruise_entry"}:
         _hud_state["supercruise"] = True
+        _hud_state["instanceDestination"] = None
     elif event_type == "travel.supercruise_exit":
         _hud_state["supercruise"] = False
+    elif event_type == "travel.destination_drop":
+        _hud_state["supercruise"] = False
+        _hud_state["instanceDestination"] = {
+            "marketId": event.get("marketId"),
+            "name": event.get("stationName"),
+            "type": event.get("destinationType") or event.get("stationType"),
+            "relationship": event.get("relationship") or "unknown",
+            "source": event_type,
+            "timestamp": event.get("timestamp"),
+        }
 
     if event_type == "facility.approach":
         _hud_state["lastFacility"] = {
