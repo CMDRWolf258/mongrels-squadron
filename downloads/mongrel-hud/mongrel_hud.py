@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.14.1"
+APP_VERSION = "0.14.2"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2034,14 +2034,15 @@ class MongrelHudApp:
         processed = list(source)
 
         if profile == ACOUSTIC_REMOTE:
-            # Deliberately obvious communications channel: speech-band EQ,
-            # compression/saturation and a tiny slap reflection.
+            # Carrier command-link sound: obvious voice-band filtering,
+            # compression/saturation, light carrier hiss and short link tones.
             dt = 1.0 / sample_rate
-            hp_rc = 1.0 / (2.0 * math.pi * 380.0)
+            hp_rc = 1.0 / (2.0 * math.pi * 460.0)
             hp_alpha = hp_rc / (hp_rc + dt)
-            lp_rc = 1.0 / (2.0 * math.pi * 3000.0)
+            lp_rc = 1.0 / (2.0 * math.pi * 2650.0)
             lp_alpha = dt / (lp_rc + dt)
-            slap_frames = max(1, int(sample_rate * 0.018))
+            slap_frames = max(1, int(sample_rate * 0.014))
+            filtered = [0.0] * len(source)
             for channel in range(channels):
                 prev_x = 0.0
                 prev_hp = 0.0
@@ -2052,29 +2053,70 @@ class MongrelHudApp:
                     prev_x = x
                     prev_hp = high
                     low += lp_alpha * (high - low)
-                    compressed = math.tanh(low / 7000.0) * 11800.0
+                    compressed = math.tanh(low / 4800.0) * 15000.0
                     frame = idx // channels
                     old_frame = frame - slap_frames
                     if old_frame >= 0:
-                        compressed += source[(old_frame * channels) + channel] * 0.06
-                    processed[idx] = compressed
+                        compressed += source[(old_frame * channels) + channel] * 0.045
+                    # A tiny deterministic "carrier" texture reads as radio
+                    # without turning the line into noisy walkie-talkie audio.
+                    carrier = (
+                        math.sin(2.0 * math.pi * 1780.0 * (frame / sample_rate)) * 85.0
+                        + math.sin(2.0 * math.pi * 2320.0 * (frame / sample_rate)) * 45.0
+                    )
+                    filtered[idx] = compressed + carrier
+
+            # Preserve perceived loudness after cutting the bass/treble.
+            source_rms = math.sqrt(sum(sample * sample for sample in source) / max(1, len(source)))
+            filtered_rms = math.sqrt(sum(sample * sample for sample in filtered) / max(1, len(filtered)))
+            gain = min(2.0, max(0.75, (source_rms * 1.12) / filtered_rms)) if filtered_rms > 1.0 else 1.0
+            filtered = [sample * gain for sample in filtered]
+
+            def tone_frames(frequency: float, seconds: float, amplitude: float) -> list[float]:
+                count = max(1, int(sample_rate * seconds))
+                fade = max(1, int(sample_rate * 0.008))
+                out: list[float] = []
+                for frame in range(count):
+                    envelope = 1.0
+                    if frame < fade:
+                        envelope = frame / fade
+                    elif frame >= count - fade:
+                        envelope = max(0.0, (count - frame - 1) / fade)
+                    sample = math.sin(2.0 * math.pi * frequency * (frame / sample_rate)) * amplitude * envelope
+                    out.extend([sample] * channels)
+                return out
+
+            silence = lambda seconds: [0.0] * (max(1, int(sample_rate * seconds)) * channels)
+            pre = (
+                tone_frames(1040.0, 0.055, 6200.0)
+                + silence(0.018)
+                + tone_frames(1480.0, 0.040, 5200.0)
+                + silence(0.050)
+            )
+            post = (
+                silence(0.045)
+                + tone_frames(1480.0, 0.038, 5000.0)
+                + silence(0.014)
+                + tone_frames(920.0, 0.052, 6000.0)
+                + silence(0.025)
+            )
+            processed = pre + filtered + post
 
         elif profile in {ACOUSTIC_PA, ACOUSTIC_HANGAR}:
-            # A PA needs an audible tail, not only reflections while speech is
-            # still playing. Extend the WAV so the room remains audible after
-            # the final word.
+            # Mounted PA reflections are intentionally more obvious than 0.14.1:
+            # the interior has a firm short-room echo, while the hangar carries
+            # a longer metallic tail.
             taps = (
-                ((0.050, 0.27), (0.105, 0.18), (0.175, 0.10), (0.260, 0.055))
+                ((0.055, 0.36), (0.115, 0.27), (0.205, 0.19), (0.335, 0.12), (0.500, 0.065))
                 if profile == ACOUSTIC_PA
-                else ((0.070, 0.30), (0.155, 0.22), (0.285, 0.15), (0.430, 0.10), (0.620, 0.055))
+                else ((0.080, 0.42), (0.180, 0.33), (0.330, 0.25), (0.520, 0.18), (0.760, 0.115), (1.050, 0.065))
             )
             delayed = [(max(1, int(sample_rate * seconds)), gain) for seconds, gain in taps]
             tail_frames = max(delay for delay, _gain in delayed)
             frame_count = len(source) // channels
             processed = list(source) + ([0.0] * (tail_frames * channels))
 
-            # Mild speaker roll-off before the room reflections.
-            lp_cutoff = 7200.0 if profile == ACOUSTIC_PA else 6100.0
+            lp_cutoff = 6600.0 if profile == ACOUSTIC_PA else 5400.0
             dt = 1.0 / sample_rate
             lp_rc = 1.0 / (2.0 * math.pi * lp_cutoff)
             lp_alpha = dt / (lp_rc + dt)
@@ -2086,10 +2128,11 @@ class MongrelHudApp:
                     dry_filtered[idx] = low
 
             total_frames = frame_count + tail_frames
+            dry_gain = 0.94 if profile == ACOUSTIC_PA else 0.90
             for frame in range(total_frames):
                 for channel in range(channels):
                     idx = (frame * channels) + channel
-                    dry = dry_filtered[idx] if idx < len(dry_filtered) else 0.0
+                    dry = (dry_filtered[idx] * dry_gain) if idx < len(dry_filtered) else 0.0
                     wet = 0.0
                     for delay_frames, gain in delayed:
                         old_frame = frame - delay_frames
