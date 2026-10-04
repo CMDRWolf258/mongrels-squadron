@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.4"
+PLUGIN_VERSION = "1.8.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -32,6 +32,8 @@ HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
+HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
+HUD_MINING_CENTERS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-centers"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
 FSD_RATING_CONSTANT = {
@@ -639,6 +641,12 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json(payload)
             return
 
+        if parsed.path in {"/v1/mining/data", "/v1/mining/centers"}:
+            endpoint = HUD_MINING_DATA_ENDPOINT if parsed.path.endswith("/data") else HUD_MINING_CENTERS_ENDPOINT
+            result = _fetch_hud_mining_resource(endpoint)
+            self._write_json(result, status=200 if result.get("ok") else 502)
+            return
+
         self._write_json({"ok": False, "error": "not_found"}, status=404)
 
     def do_POST(self) -> None:
@@ -837,6 +845,30 @@ def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
         return {"ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
     except Exception:
         return {"ok": False, "error": "network"}
+
+
+def _fetch_hud_mining_resource(endpoint: str) -> dict[str, Any]:
+    """Fetch public mining navigation data through EDMC's trusted HTTPS session."""
+    try:
+        response = _session.get(
+            endpoint,
+            headers={
+                "Accept": "application/json",
+                "Cache-Control": "no-cache",
+                "User-Agent": f"{_session.headers.get('User-Agent', 'EDMarketConnector')} MongrelScout/{PLUGIN_VERSION}",
+            },
+        )
+        try:
+            payload = response.json()
+        except Exception:
+            payload = None
+        if not (200 <= response.status_code < 300):
+            return {"ok": False, "error": f"http_{response.status_code}"}
+        if not isinstance(payload, list):
+            return {"ok": False, "error": "invalid_mining_payload"}
+        return {"ok": True, "data": payload}
+    except Exception as exc:
+        return {"ok": False, "error": f"network:{str(exc)[:120]}"}
 
 
 def _submit_hud_mining_request(endpoint: str, payload: Mapping[str, Any]) -> dict[str, Any]:
