@@ -38,7 +38,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.9"
+APP_VERSION = "0.8.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -181,13 +181,14 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
 VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
+    "cargo": "CARGO",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
     "mission": "MISSION CONTROL",
@@ -354,6 +355,7 @@ def default_layout() -> dict[str, Any]:
             "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
@@ -2606,6 +2608,78 @@ class MongrelHudApp:
 
         return width, round(y + 5 * scale)
 
+    def _render_cargo_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        cargo = state.get("cargo") if isinstance(state.get("cargo"), dict) else {}
+        width = round(500 * scale)
+        y = self._draw_title(canvas, "CARGO", scale, width)
+
+        used = cargo.get("used")
+        capacity = cargo.get("capacity")
+        free = cargo.get("free")
+        if isinstance(used, int) and isinstance(capacity, int):
+            summary = f"{used:,} / {capacity:,} t"
+            if isinstance(free, int):
+                summary += f"   ·   {free:,} t FREE"
+        elif isinstance(used, int):
+            summary = f"{used:,} t"
+        else:
+            summary = "WAITING FOR CARGO DATA"
+        self._draw_text(canvas, 8 * scale, y, summary, scale, 12, HUD_WHITE, True)
+        y += 26 * scale
+
+        mission_needs = cargo.get("missionNeeds") if isinstance(cargo.get("missionNeeds"), list) else []
+        if mission_needs:
+            self._draw_text(canvas, 8 * scale, y, "MISSION NEEDS", scale, 9, HUD_CYAN, True)
+            y += 19 * scale
+            for row in mission_needs:
+                if not isinstance(row, dict):
+                    continue
+                name = self.clip_line(row.get("name") or row.get("key") or "Commodity", 28)
+                in_hold = max(0, int(row.get("inHold") or 0))
+                remaining = max(0, int(row.get("remaining") or 0))
+                needed = max(0, int(row.get("stillNeeded") or 0))
+                self._draw_text(canvas, 12 * scale, y, name, scale, 10, HUD_WHITE, True)
+                self._draw_text(canvas, 310 * scale, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
+                status = "READY" if needed == 0 else f"NEED {needed:,}"
+                self._draw_text(canvas, width - 8 * scale, y, status, scale, 9, HUD_GREEN if needed == 0 else HUD_AMBER, True, "ne")
+                y += 19 * scale
+            y += 5 * scale
+
+        limpets = max(0, int(cargo.get("limpets") or 0))
+        if limpets:
+            self._draw_text(canvas, 8 * scale, y, "LIMPETS", scale, 9, HUD_CYAN, True)
+            self._draw_text(canvas, width - 8 * scale, y, f"{limpets:,} t", scale, 10, HUD_WHITE, True, "ne")
+            y += 24 * scale
+
+        stolen = cargo.get("stolenItems") if isinstance(cargo.get("stolenItems"), list) else []
+        if stolen:
+            self._draw_text(canvas, 8 * scale, y, "STOLEN CARGO", scale, 9, HUD_RED, True)
+            y += 19 * scale
+            for row in stolen:
+                if not isinstance(row, dict):
+                    continue
+                self._draw_text(canvas, 12 * scale, y, self.clip_line(row.get("name") or row.get("key") or "Cargo", 34), scale, 10, HUD_WHITE, True)
+                self._draw_text(canvas, width - 8 * scale, y, f"{max(0, int(row.get('count') or 0)):,} t", scale, 10, HUD_RED, True, "ne")
+                y += 19 * scale
+            y += 5 * scale
+
+        items = cargo.get("items") if isinstance(cargo.get("items"), list) else []
+        if items:
+            self._draw_text(canvas, 8 * scale, y, "CARGO HOLD", scale, 9, HUD_CYAN, True)
+            y += 19 * scale
+            for row in items:
+                if not isinstance(row, dict):
+                    continue
+                self._draw_text(canvas, 12 * scale, y, self.clip_line(row.get("name") or row.get("key") or "Cargo", 36), scale, 10, HUD_WHITE, True)
+                self._draw_text(canvas, width - 8 * scale, y, f"{max(0, int(row.get('count') or 0)):,} t", scale, 10, HUD_WHITE, True, "ne")
+                y += 19 * scale
+        elif not mission_needs and not stolen and not limpets and isinstance(used, int) and used == 0:
+            self._draw_text(canvas, 8 * scale, y, "HOLD EMPTY", scale, 10, HUD_MUTED, True)
+            y += 21 * scale
+
+        return width, round(y + 7 * scale)
+
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
@@ -2636,6 +2710,8 @@ class MongrelHudApp:
             width, height = self._render_target_canvas(canvas, scale, flash_on)
         elif panel_id == "subsystems":
             width, height = self._render_loadout_canvas(canvas, scale)
+        elif panel_id == "cargo":
+            width, height = self._render_cargo_canvas(canvas, scale)
         elif panel_id == "surface":
             width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "miningintel":
