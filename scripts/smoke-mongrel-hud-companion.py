@@ -12,9 +12,11 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.6.0"
+assert hud.APP_VERSION=="0.6.1"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
+assert hud.HUD_RENDER_SCALE>=1.15
+assert hud.HUD_MUTED=="#a9c8d3"
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
 assert 111000<nav["distance"]<111400
 assert 89<nav["bearing"]<91
