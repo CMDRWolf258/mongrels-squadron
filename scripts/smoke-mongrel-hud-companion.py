@@ -139,7 +139,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.8.1"
+    assert hud.APP_VERSION=="0.9.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -200,6 +200,9 @@ for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SHIP CARGO","M
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
 assert 'CONTROLLER_HOST = "0.0.0.0"' in source
+workflow=(ROOT/".github"/"workflows"/"build-mongrel-hud-windows.yml").read_text(encoding="utf-8")
+assert "zeroconf" in workflow and "--collect-all zeroconf" in workflow
+assert workflow.index("gh release upload") < workflow.index("gh release edit"), "Release version must be advertised only after the new asset upload completes"
 api=(ROOT/"functions"/"api"/"downloads"/"mongrel-hud.js").read_text(encoding="utf-8")
 for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]:
     assert token in api
