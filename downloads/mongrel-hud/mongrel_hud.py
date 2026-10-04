@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.4"
+APP_VERSION = "0.6.5"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1520,31 +1520,46 @@ class MongrelHudApp:
         orders = all_orders if selected == "all" else [row for row in all_orders if str(row.get("system") or "").strip() == selected]
 
         self._draw_text(canvas, 8 * scale, y, f"{int(mission.get('orderCount') or 0)} ORDERS", scale, 10, HUD_WHITE, True)
-        filter_label = "ALL ORDER SYSTEMS" if selected == "all" else selected
-        self._draw_text(canvas, width - 8 * scale, y, self.clip_line(filter_label, 34), scale, 9, HUD_CYAN, True, "ne"); y += 22 * scale
+        filter_label = "TOP 5 · ALL SYSTEMS" if selected == "all" else selected
+        self._draw_text(canvas, width - 8 * scale, y, self.clip_line(filter_label, 34), scale, 9, HUD_CYAN, True, "ne"); y += 23 * scale
 
-        if not orders:
+        visible = orders[:5]
+        if not visible:
             self._draw_text(canvas, 8 * scale, y, "NO ORDERS FOR SELECTED SYSTEM", scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
 
-        for row in orders[:5]:
-            priority = str(row.get("priority") or "").upper()
-            priority_color = HUD_RED if priority in {"CRITICAL", "URGENT"} else HUD_AMBER if priority in {"HIGH", "PRIORITY"} else HUD_CYAN
-            self._draw_text(canvas, 8 * scale, y, str(row.get("system") or "SQUAD-WIDE"), scale, 11, HUD_WHITE, True)
-            if priority:
-                self._draw_text(canvas, width - 8 * scale, y, priority, scale, 9, priority_color, True, "ne")
-            y += 18 * scale
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(row.get("task") or "Operational task", 66), scale, 9, HUD_MUTED, False); y += 17 * scale
-            progress = row.get("progress") if isinstance(row.get("progress"), dict) else {}
-            target = progress.get("target"); current = progress.get("current")
-            if isinstance(target, (int, float)) and target > 0 and isinstance(current, (int, float)):
-                pct = float(progress.get("percent") or 0)
-                color = HUD_GREEN if progress.get("met") else HUD_CYAN
-                self._draw_progress(canvas, 8 * scale, y, width - 165 * scale, pct, scale, color)
-                value = f"{current:g}/{target:g} {progress.get('unit') or ''}  {pct:.0f}%"
-                self._draw_text(canvas, width - 8 * scale, y - 5 * scale, value, scale, 9, color, True, "ne")
-                y += 18 * scale
-            y += 7 * scale
+        groups: list[tuple[str, list[dict[str, Any]]]] = []
+        by_system: dict[str, list[dict[str, Any]]] = {}
+        for row in visible:
+            system_name = str(row.get("system") or "SQUAD-WIDE").strip() or "SQUAD-WIDE"
+            if system_name not in by_system:
+                by_system[system_name] = []
+                groups.append((system_name, by_system[system_name]))
+            by_system[system_name].append(row)
+
+        for group_index, (system_name, rows) in enumerate(groups):
+            if group_index:
+                y += 4 * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(system_name, 56), scale, 9, HUD_CYAN, True); y += 19 * scale
+            for row in rows:
+                priority = str(row.get("priority") or "").upper()
+                priority_color = HUD_RED if priority in {"CRITICAL", "URGENT"} else HUD_AMBER if priority in {"HIGH", "PRIORITY"} else HUD_CYAN
+                task = str(row.get("task") or "Operational task")
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(task, 68), scale, 10, HUD_WHITE, True, "nw", width - 105 * scale)
+                if priority:
+                    self._draw_text(canvas, width - 8 * scale, y, priority, scale, 9, priority_color, True, "ne")
+                y += 19 * scale
+
+                progress = row.get("progress") if isinstance(row.get("progress"), dict) else {}
+                target = progress.get("target"); current = progress.get("current")
+                if isinstance(target, (int, float)) and target > 0 and isinstance(current, (int, float)):
+                    pct = float(progress.get("percent") or 0)
+                    color = HUD_GREEN if progress.get("met") else HUD_CYAN
+                    self._draw_progress(canvas, 18 * scale, y, width - 175 * scale, pct, scale, color)
+                    value = f"{current:g}/{target:g} {progress.get('unit') or ''}  {pct:.0f}%"
+                    self._draw_text(canvas, width - 8 * scale, y - 5 * scale, value, scale, 9, color, True, "ne")
+                    y += 18 * scale
+                y += 6 * scale
         return width, round(y + 3 * scale)
 
     def _render_alert_group_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool, *, kind: str, title: str, color: str) -> tuple[int, int]:
@@ -1590,7 +1605,7 @@ class MongrelHudApp:
         state = self.scout_state()
         feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
         trade = feed.get("trade") if isinstance(feed.get("trade"), dict) else {}
-        width = round(680 * scale)
+        width = round(610 * scale)
         y = self._draw_title(canvas, "TRADER'S OUTPOST", scale, width)
         if not trade:
             self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
@@ -1612,35 +1627,43 @@ class MongrelHudApp:
             if state_text and state_text != "HEALTHY":
                 summary += f" · {state_text}"
             color = HUD_AMBER if state_text in {"DEGRADED", "UNAVAILABLE"} else HUD_WHITE
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(summary, 78), scale, 10, color, True); y += 19 * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(summary, 72), scale, 10, color, True); y += 21 * scale
 
             legs = [leg for leg in (route.get("legs") if isinstance(route.get("legs"), list) else []) if isinstance(leg, dict)]
-            if legs:
-                for leg_index, leg in enumerate(legs[:3], start=1):
-                    commodity = str(leg.get("commodity") or route.get("commodity") or "").strip()
-                    source_station = str(leg.get("sourceStation") or "").strip()
-                    source_system = str(leg.get("sourceSystem") or "").strip()
-                    destination_station = str(leg.get("destinationStation") or "").strip()
-                    destination_system = str(leg.get("destinationSystem") or "").strip()
-                    source = " · ".join(part for part in (source_station, source_system) if part) or "Source unknown"
-                    destination = " · ".join(part for part in (destination_station, destination_system) if part) or "Destination unknown"
-                    prefix = f"LEG {leg_index}"
-                    if commodity:
-                        prefix += f" · {commodity}"
-                    self._draw_text(canvas, 18 * scale, y, self.clip_line(prefix, 74), scale, 9, HUD_CYAN, True); y += 16 * scale
-                    self._draw_text(canvas, 30 * scale, y, self.clip_line(f"{source}  →  {destination}", 84), scale, 9, HUD_MUTED, True); y += 17 * scale
-            else:
-                origin_station = str(route.get("originStation") or "").strip()
-                origin_system = str(route.get("originSystem") or "").strip()
-                destination_station = str(route.get("destinationStation") or "").strip()
-                destination_system = str(route.get("destinationSystem") or "").strip()
-                origin = " · ".join(part for part in (origin_station, origin_system) if part)
-                destination = " · ".join(part for part in (destination_station, destination_system) if part)
-                if origin:
-                    self._draw_text(canvas, 18 * scale, y, self.clip_line(f"BUY   {origin}", 82), scale, 9, HUD_CYAN, True); y += 16 * scale
-                if destination:
-                    self._draw_text(canvas, 18 * scale, y, self.clip_line(f"SELL  {destination}", 82), scale, 9, HUD_CYAN, True); y += 16 * scale
-            y += 7 * scale
+            if not legs:
+                legs = [{
+                    "commodity": route.get("commodity"),
+                    "sourceSystem": route.get("originSystem"),
+                    "sourceStation": route.get("originStation"),
+                    "destinationSystem": route.get("destinationSystem"),
+                    "destinationStation": route.get("destinationStation"),
+                }]
+
+            left_x = 28 * scale
+            arrow_x = width / 2
+            right_x = arrow_x + 28 * scale
+            column_width = max(120 * scale, (width / 2) - 52 * scale)
+            for leg_index, leg in enumerate(legs[:3], start=1):
+                commodity = str(leg.get("commodity") or route.get("commodity") or "").strip()
+                source_system = str(leg.get("sourceSystem") or "Source unknown").strip()
+                source_station = str(leg.get("sourceStation") or "Station unknown").strip()
+                destination_system = str(leg.get("destinationSystem") or "Destination unknown").strip()
+                destination_station = str(leg.get("destinationStation") or "Station unknown").strip()
+
+                prefix = f"LEG {leg_index}"
+                if commodity:
+                    prefix += f" · {commodity}"
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(prefix, 60), scale, 9, HUD_CYAN, True); y += 18 * scale
+
+                self._draw_text(canvas, left_x, y, self.clip_line(source_system, 34), scale, 9, HUD_WHITE, True, "nw", column_width)
+                self._draw_text(canvas, arrow_x, y, "→", scale, 11, HUD_CYAN, True, "n")
+                self._draw_text(canvas, right_x, y, self.clip_line(destination_system, 34), scale, 9, HUD_WHITE, True, "nw", column_width)
+                y += 17 * scale
+
+                self._draw_text(canvas, left_x, y, self.clip_line(source_station, 32), scale, 8, HUD_MUTED, False, "nw", column_width)
+                self._draw_text(canvas, right_x, y, self.clip_line(destination_station, 32), scale, 8, HUD_MUTED, False, "nw", column_width)
+                y += 19 * scale
+            y += 6 * scale
 
         return width, round(y + 3 * scale)
 
@@ -1661,7 +1684,7 @@ class MongrelHudApp:
         state = self.scout_state()
         feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
         scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
-        width = round(520 * scale)
+        width = round(490 * scale)
         y = self._draw_title(canvas, "SCOUT BOARD", scale, width)
         if not scout:
             self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
@@ -1669,13 +1692,15 @@ class MongrelHudApp:
 
         summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
         self._draw_text(canvas, 8 * scale, y, f"AVAILABLE {int(summary.get('available') or 0)}", scale, 9, HUD_WHITE, True)
-        self._draw_text(canvas, 145 * scale, y, f"CLAIMED {int(summary.get('claimed') or 0)}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, 135 * scale, y, f"CLAIMED {int(summary.get('claimed') or 0)}", scale, 9, HUD_WHITE, True)
         self._draw_text(canvas, width - 8 * scale, y, f"PRIORITY {int(summary.get('priority') or 0)}", scale, 9, HUD_AMBER, True, "ne")
         y += 23 * scale
 
+        status_x = 398 * scale
+        reward_x = width - 8 * scale
         self._draw_text(canvas, 8 * scale, y, "SYSTEM", scale, 8, HUD_MUTED, True)
-        self._draw_text(canvas, 320 * scale, y, "STATUS", scale, 8, HUD_MUTED, True, "ne")
-        self._draw_text(canvas, width - 8 * scale, y, "REWARD", scale, 8, HUD_MUTED, True, "ne")
+        self._draw_text(canvas, status_x, y, "STATUS", scale, 8, HUD_MUTED, True, "ne")
+        self._draw_text(canvas, reward_x, y, "REWARD", scale, 8, HUD_MUTED, True, "ne")
         y += 17 * scale
 
         jobs = [row for row in (scout.get("jobs") if isinstance(scout.get("jobs"), list) else []) if isinstance(row, dict)]
@@ -1689,9 +1714,9 @@ class MongrelHudApp:
             reward = float(row.get("rewardMillions") or 0)
             reward_text = f"{reward:g}M CR" if reward > 0 else "—"
             status_color = HUD_AMBER if ("PRIORITY" in status or row.get("claimMine")) else HUD_CYAN
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(system, 35), scale, 10, HUD_WHITE, True)
-            self._draw_text(canvas, 320 * scale, y, self.clip_line(status or "OPEN", 18), scale, 9, status_color, True, "ne")
-            self._draw_text(canvas, width - 8 * scale, y, reward_text, scale, 10, HUD_GREEN if reward > 0 else HUD_MUTED, True, "ne")
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(system, 32), scale, 10, HUD_WHITE, True, "nw", 285 * scale)
+            self._draw_text(canvas, status_x, y, self.clip_line(status or "OPEN", 16), scale, 9, status_color, True, "ne")
+            self._draw_text(canvas, reward_x, y, reward_text, scale, 10, HUD_GREEN if reward > 0 else HUD_MUTED, True, "ne")
             y += 18 * scale
 
             claim = ""
@@ -1702,7 +1727,7 @@ class MongrelHudApp:
             bonus = str(row.get("bonusReason") or "").strip()
             detail = " · ".join(part for part in (claim, bonus) if part)
             if detail:
-                self._draw_text(canvas, 18 * scale, y, self.clip_line(detail, 56), scale, 8, HUD_AMBER if row.get("claimMine") else HUD_MUTED, bool(row.get("claimMine")))
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(detail, 45), scale, 8, HUD_AMBER if row.get("claimMine") else HUD_MUTED, bool(row.get("claimMine")), "nw", 310 * scale)
                 y += 15 * scale
             y += 4 * scale
 
