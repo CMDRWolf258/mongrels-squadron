@@ -2384,7 +2384,12 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/site-select":
                     result = {"ok": True, "site": app.select_site(str(body.get("siteId") or ""))}
                 elif path == "/api/deposit":
-                    result = {"ok": True, "deposit": app.report_deposit(str(body.get("commodity") or ""), int(body.get("rigs") or 0), str(body.get("notes") or ""))}
+                    result = {"ok": True, "deposit": app.report_deposit(
+                        str(body.get("commodity") or ""),
+                        int(body.get("rigs") or 0),
+                        str(body.get("notes") or ""),
+                        int(body.get("signal") or 0),
+                    )}
                 else:
                     self.send_json({"ok": False, "error": "not_found"}, 404)
                     return
