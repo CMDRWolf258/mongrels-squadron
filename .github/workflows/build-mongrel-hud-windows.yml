@@ -53,8 +53,9 @@ jobs:
           $notes = "Rolling Windows build for Mongrel HUD. Current version: $version."
           gh release view mongrel-hud-latest *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create mongrel-hud-latest --title $title --notes $notes
-          } else {
-            gh release edit mongrel-hud-latest --title $title --notes $notes
+            gh release create mongrel-hud-latest --title "Mongrel HUD Windows" --notes "Rolling Windows build for Mongrel HUD."
           }
+          # Publish the verified asset first. Only advertise the new version after
+          # the clobber has completed so clients never see new metadata with an old ZIP.
           gh release upload mongrel-hud-latest MongrelHUD-Windows.zip --clobber
+          gh release edit mongrel-hud-latest --title $title --notes $notes
