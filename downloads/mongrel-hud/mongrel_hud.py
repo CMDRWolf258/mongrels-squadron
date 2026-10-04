@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.14.2"
+APP_VERSION = "0.14.3"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2037,9 +2037,9 @@ class MongrelHudApp:
             # Carrier command-link sound: obvious voice-band filtering,
             # compression/saturation, light carrier hiss and short link tones.
             dt = 1.0 / sample_rate
-            hp_rc = 1.0 / (2.0 * math.pi * 460.0)
+            hp_rc = 1.0 / (2.0 * math.pi * 520.0)
             hp_alpha = hp_rc / (hp_rc + dt)
-            lp_rc = 1.0 / (2.0 * math.pi * 2650.0)
+            lp_rc = 1.0 / (2.0 * math.pi * 2350.0)
             lp_alpha = dt / (lp_rc + dt)
             slap_frames = max(1, int(sample_rate * 0.014))
             filtered = [0.0] * len(source)
@@ -2053,18 +2053,27 @@ class MongrelHudApp:
                     prev_x = x
                     prev_hp = high
                     low += lp_alpha * (high - low)
-                    compressed = math.tanh(low / 4800.0) * 15000.0
+                    compressed = math.tanh(low / 4400.0) * 15300.0
                     frame = idx // channels
                     old_frame = frame - slap_frames
                     if old_frame >= 0:
-                        compressed += source[(old_frame * channels) + channel] * 0.045
-                    # A tiny deterministic "carrier" texture reads as radio
-                    # without turning the line into noisy walkie-talkie audio.
+                        compressed += source[(old_frame * channels) + channel] * 0.040
+
+                    # Slightly degrade intelligibility without making the link
+                    # sound broken: mild amplitude quantization plus low static.
+                    compressed = round(compressed / 170.0) * 170.0
+                    noise_state = ((frame * 1103515245 + 12345) & 0x7fffffff)
+                    static = ((noise_state / 1073741823.5) - 1.0) * 165.0
+                    speech_gate = min(1.0, abs(x) / 2600.0)
+                    static *= 0.35 + (0.65 * speech_gate)
+
+                    # Subtle carrier tones stay underneath the voice while the
+                    # gated static gives the transmission a live radio texture.
                     carrier = (
-                        math.sin(2.0 * math.pi * 1780.0 * (frame / sample_rate)) * 85.0
-                        + math.sin(2.0 * math.pi * 2320.0 * (frame / sample_rate)) * 45.0
+                        math.sin(2.0 * math.pi * 1780.0 * (frame / sample_rate)) * 70.0
+                        + math.sin(2.0 * math.pi * 2320.0 * (frame / sample_rate)) * 35.0
                     )
-                    filtered[idx] = compressed + carrier
+                    filtered[idx] = compressed + carrier + static
 
             # Preserve perceived loudness after cutting the bass/treble.
             source_rms = math.sqrt(sum(sample * sample for sample in source) / max(1, len(source)))
