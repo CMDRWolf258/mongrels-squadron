@@ -37,6 +37,10 @@ The Combat HUD is split into independent **Own Ship**, **Target**, **Subsystems*
 
 No game inputs are generated. The companion is read-only with respect to Elite controls.
 
+## Cargo overlay
+
+Mongrel HUD 0.8.0 adds an optional **Cargo** overlay. It is assigned to **Both** profiles but remains **OFF by default** so an update never rearranges an existing cockpit layout. When enabled it shows used/capacity/free tonnage, separates limpets and stolen cargo, lists the remaining normal cargo hold, and aggregates locally tracked commodity-mission requirements by commodity. For example, three Osmium missions requiring 30 + 46 + 40 tonnes are presented as one 116 t requirement, with the live hold amount and the remaining amount still needed. Mission details are supplied locally by Mongrel Scout and are not uploaded to the website.
+
 ### Surface Mining
 
 Mongrel HUD 0.7.1 uses the curated 10-16 mining database as the source of truth.
