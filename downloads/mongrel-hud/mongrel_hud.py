@@ -3,18 +3,21 @@ from __future__ import annotations
 import ctypes
 from ctypes import wintypes
 import difflib
+import hashlib
 import json
 import math
 import os
 import re
 import secrets
 import socket
+import subprocess
 import sys
 import threading
 import time
 import tkinter as tk
 import urllib.error
 import urllib.request
+import zipfile
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -38,7 +41,15 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.8.1"
+try:
+    from zeroconf import ServiceInfo, Zeroconf
+    MDNS_AVAILABLE = True
+except Exception:
+    ServiceInfo = None
+    Zeroconf = None
+    MDNS_AVAILABLE = False
+
+APP_VERSION = "0.9.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -77,6 +88,13 @@ SURFACE_MINING_COMMODITIES = (
 )
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
+CONTROLLER_HOSTNAME = "mongrel-hud.local"
+CONTROLLER_STABLE_URL = f"http://{CONTROLLER_HOSTNAME}:{CONTROLLER_PORT}"
+PAIRING_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+MAX_TRUSTED_CONTROLLER_TOKENS = 8
+UPDATE_RELEASE_API = "https://api.github.com/repos/CMDRWolf258/mongrels-squadron/releases/tags/mongrel-hud-latest"
+UPDATE_ASSET_NAME = "MongrelHUD-Windows.zip"
+UPDATE_DOWNLOAD_PREFIX = "https://github.com/CMDRWolf258/mongrels-squadron/releases/download/"
 POLL_SECONDS = 0.20
 
 TARGET_SCAN_DURATION = 2.1
@@ -428,6 +446,148 @@ def local_ipv4() -> str:
         sock.close()
 
 
+def version_tuple(value: Any) -> tuple[int, ...]:
+    text = str(value or "").strip().lstrip("vV")
+    match = re.fullmatch(r"(\d+)(?:\.(\d+))?(?:\.(\d+))?", text)
+    if not match:
+        return ()
+    return tuple(int(part or 0) for part in match.groups())
+
+
+def update_from_release_payload(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ValueError("invalid_release_payload")
+    title = str(payload.get("name") or payload.get("tag_name") or "")
+    match = re.search(r"\bv?(\d+\.\d+\.\d+)\b", title, flags=re.IGNORECASE)
+    version = match.group(1) if match else ""
+    assets = payload.get("assets")
+    assets = assets if isinstance(assets, list) else []
+    asset = next((row for row in assets if isinstance(row, dict) and str(row.get("name") or "") == UPDATE_ASSET_NAME), None)
+    if not version or asset is None:
+        raise ValueError("release_metadata_incomplete")
+    url = str(asset.get("browser_download_url") or "")
+    digest = str(asset.get("digest") or "")
+    if not url.startswith(UPDATE_DOWNLOAD_PREFIX):
+        raise ValueError("release_download_url_rejected")
+    if not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", digest):
+        raise ValueError("release_digest_missing")
+    return {
+        "version": version,
+        "url": url,
+        "digest": digest.lower(),
+        "size": int(asset.get("size") or 0),
+    }
+
+
+def _powershell_quote(value: Any) -> str:
+    return "'" + str(value or "").replace("'", "''") + "'"
+
+
+def _powershell_release_json() -> dict[str, Any]:
+    if os.name != "nt":
+        raise RuntimeError("windows_required")
+    script = (
+        "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';"
+        "$headers=@{'User-Agent'='MongrelHUD-" + APP_VERSION + "'};"
+        "$r=Invoke-RestMethod -UseBasicParsing -Headers $headers -Uri "
+        + _powershell_quote(UPDATE_RELEASE_API)
+        + ";$r|ConvertTo-Json -Depth 8 -Compress"
+    )
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        creationflags=flags,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError("update_check_failed")
+    try:
+        value = json.loads(result.stdout)
+    except Exception as exc:
+        raise RuntimeError("update_check_invalid_json") from exc
+    if not isinstance(value, dict):
+        raise RuntimeError("update_check_invalid_json")
+    return value
+
+
+def _powershell_download(url: str, destination: Path) -> None:
+    if os.name != "nt":
+        raise RuntimeError("windows_required")
+    if not str(url).startswith(UPDATE_DOWNLOAD_PREFIX):
+        raise RuntimeError("update_download_url_rejected")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    script = (
+        "$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';"
+        "Invoke-WebRequest -UseBasicParsing -Headers @{'User-Agent'='MongrelHUD-" + APP_VERSION + "'} -Uri "
+        + _powershell_quote(url)
+        + " -OutFile "
+        + _powershell_quote(str(destination))
+    )
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        creationflags=flags,
+        check=False,
+    )
+    if result.returncode != 0 or not destination.is_file():
+        raise RuntimeError("update_download_failed")
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _start_mdns_service() -> tuple[Any, Any] | None:
+    if not MDNS_AVAILABLE or Zeroconf is None or ServiceInfo is None:
+        return None
+    address = local_ipv4()
+    if address == "127.0.0.1":
+        return None
+    zeroconf = None
+    try:
+        info = ServiceInfo(
+            "_http._tcp.local.",
+            "Mongrel HUD._http._tcp.local.",
+            addresses=[socket.inet_aton(address)],
+            port=CONTROLLER_PORT,
+            properties={"path": "/", "version": APP_VERSION},
+            server=CONTROLLER_HOSTNAME + ".",
+        )
+        zeroconf = Zeroconf()
+        zeroconf.register_service(info)
+        return zeroconf, info
+    except Exception:
+        try:
+            zeroconf.close()
+        except Exception:
+            pass
+        return None
+
+
+def _stop_mdns_service(handle: tuple[Any, Any] | None) -> None:
+    if not handle:
+        return
+    zeroconf, info = handle
+    try:
+        zeroconf.unregister_service(info)
+    except Exception:
+        pass
+    try:
+        zeroconf.close()
+    except Exception:
+        pass
+
+
 def body_key(state: dict[str, Any]) -> str:
     status = state.get("status") or {}
     system = state.get("system") or {}
@@ -606,9 +766,18 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
+        auth = self.data.get("controllerAuth")
+        hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
+        hashes = hashes if isinstance(hashes, list) else []
+        self.data["controllerAuth"] = {
+            "tokenHashes": [
+                value.lower() for value in hashes
+                if isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{64}", value)
+            ][-MAX_TRUSTED_CONTROLLER_TOKENS:]
+        }
 
     def load(self) -> None:
         try:
@@ -639,7 +808,6 @@ class MongrelHudApp:
         self.lock = threading.RLock()
         self.snapshot = ScoutSnapshot({})
         self.pin = f"{secrets.randbelow(1000000):06d}"
-        self.session = secrets.token_urlsafe(32)
         self.overlay_visible = True
         self.root: tk.Tk | None = None
         self.panel_windows: dict[str, dict[str, Any]] = {}
@@ -647,6 +815,12 @@ class MongrelHudApp:
         self.status_label: tk.Label | None = None
         self.profile_label: tk.Label | None = None
         self.pin_label: tk.Label | None = None
+        self.paired_label: tk.Label | None = None
+        self.update_label: tk.Label | None = None
+        self.update_button: tk.Button | None = None
+        self.update_lock = threading.RLock()
+        self.update_status: dict[str, Any] = {"checking": False, "installing": False, "available": False, "version": None, "url": None, "digest": None, "error": ""}
+        self.exit_for_update = threading.Event()
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -2739,7 +2913,14 @@ class MongrelHudApp:
     def refresh_ui(self) -> None:
         if not self.root:
             return
+        if self.exit_for_update.is_set():
+            try:
+                self.root.destroy()
+            finally:
+                self.root = None
+            return
         try:
+            self._apply_update_status_ui()
             with self.lock:
                 connected = self.snapshot.connected
                 error = self.snapshot.error
@@ -2908,38 +3089,245 @@ class MongrelHudApp:
         header.bind("<ButtonRelease-1>", lambda event, pid=panel_id: self._end_panel_drag(pid, event))
         self._apply_panel_edit_mode(panel_id, bool(layout.get("locked")))
 
+    @staticmethod
+    def _token_hash(token: Any) -> str:
+        return hashlib.sha256(str(token or "").encode("utf-8")).hexdigest()
+
+    def trusted_controller_count(self) -> int:
+        with self.store.lock:
+            auth = self.store.data.get("controllerAuth")
+            hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
+            return len(hashes) if isinstance(hashes, list) else 0
+
+    def authorized_controller_token(self, token: Any) -> bool:
+        raw = str(token or "")
+        if not raw:
+            return False
+        candidate = self._token_hash(raw)
+        with self.store.lock:
+            auth = self.store.data.get("controllerAuth")
+            hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
+            values = list(hashes) if isinstance(hashes, list) else []
+        return any(secrets.compare_digest(candidate, value) for value in values)
+
+    def register_controller_device(self) -> str:
+        token = secrets.token_urlsafe(32)
+        digest = self._token_hash(token)
+        with self.store.lock:
+            auth = self.store.data.setdefault("controllerAuth", {"tokenHashes": []})
+            hashes = auth.get("tokenHashes") if isinstance(auth.get("tokenHashes"), list) else []
+            hashes = [value for value in hashes if isinstance(value, str) and value != digest]
+            hashes.append(digest)
+            auth["tokenHashes"] = hashes[-MAX_TRUSTED_CONTROLLER_TOKENS:]
+            self.store.save()
+        self._refresh_pairing_label()
+        return token
+
+    def forget_paired_devices(self) -> None:
+        with self.store.lock:
+            self.store.data["controllerAuth"] = {"tokenHashes": []}
+            self.store.save()
+        self.regenerate_pin()
+        self._refresh_pairing_label()
+
+    def _refresh_pairing_label(self) -> None:
+        if not self.paired_label:
+            return
+        count = self.trusted_controller_count()
+        label = "No trusted devices" if count == 0 else f"Trusted devices: {count}"
+        try:
+            self.paired_label.config(text=label)
+        except Exception:
+            pass
+
+    def _set_update_status(self, **changes: Any) -> None:
+        with self.update_lock:
+            self.update_status.update(changes)
+
+    def _apply_update_status_ui(self) -> None:
+        with self.update_lock:
+            snapshot = dict(self.update_status)
+        if self.update_label:
+            if snapshot.get("installing"):
+                text = "Downloading update…"
+            elif snapshot.get("checking"):
+                text = "Checking for updates…"
+            elif snapshot.get("error"):
+                error = str(snapshot.get("error") or "")
+                text = "Update check unavailable" if error == "update_check_failed" else f"Update error: {error.replace('_', ' ')}"
+            elif snapshot.get("available"):
+                text = f"Update available: v{snapshot.get('version')}"
+            else:
+                text = f"Version {APP_VERSION} · up to date"
+            self.update_label.config(text=text)
+        if self.update_button:
+            available = bool(snapshot.get("available"))
+            installing = bool(snapshot.get("installing"))
+            checking = bool(snapshot.get("checking"))
+            self.update_button.config(
+                text=f"Update to {snapshot.get('version')}" if available else "Check for Update",
+                state="disabled" if installing or checking else "normal",
+            )
+
+    def check_for_update(self, manual: bool = True) -> None:
+        with self.update_lock:
+            if self.update_status.get("checking") or self.update_status.get("installing"):
+                return
+        if os.name != "nt":
+            self._set_update_status(error="windows_required", checking=False, available=False)
+            return
+        self._set_update_status(checking=True, error="")
+        threading.Thread(target=self._check_for_update_worker, args=(manual,), name="MongrelHudUpdateCheck", daemon=True).start()
+
+    def _check_for_update_worker(self, manual: bool) -> None:
+        try:
+            release = update_from_release_payload(_powershell_release_json())
+            available = bool(version_tuple(release["version"]) > version_tuple(APP_VERSION))
+            self._set_update_status(
+                checking=False,
+                available=available,
+                version=release["version"],
+                url=release["url"],
+                digest=release["digest"],
+                size=release["size"],
+                error="",
+            )
+        except Exception as exc:
+            error = str(exc).strip() or type(exc).__name__
+            self._set_update_status(checking=False, available=False, error=error if manual else "update_check_failed")
+
+    def install_available_update(self) -> None:
+        with self.update_lock:
+            snapshot = dict(self.update_status)
+            if snapshot.get("checking") or snapshot.get("installing"):
+                return
+        if not snapshot.get("available"):
+            self.check_for_update(True)
+            return
+        if os.name != "nt" or not getattr(sys, "frozen", False):
+            self._set_update_status(error="packaged_build_required")
+            return
+        self._set_update_status(installing=True, error="")
+        threading.Thread(target=self._install_update_worker, args=(snapshot,), name="MongrelHudUpdateInstall", daemon=True).start()
+
+    def _install_update_worker(self, release: dict[str, Any]) -> None:
+        try:
+            target = Path(sys.executable).resolve()
+            probe = target.parent / ".mongrel_hud_update_probe"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+
+            update_dir = self.store.path.parent / "update"
+            update_dir.mkdir(parents=True, exist_ok=True)
+            archive = update_dir / UPDATE_ASSET_NAME
+            staged = update_dir / "MongrelHUD.new.exe"
+            _powershell_download(str(release.get("url") or ""), archive)
+
+            expected = str(release.get("digest") or "").removeprefix("sha256:")
+            if not expected or not secrets.compare_digest(_file_sha256(archive), expected):
+                raise RuntimeError("update_digest_mismatch")
+
+            with zipfile.ZipFile(archive) as bundle:
+                members = {Path(name).name: name for name in bundle.namelist()}
+                member = members.get("MongrelHUD.exe")
+                if not member:
+                    raise RuntimeError("update_exe_missing")
+                with bundle.open(member) as source, staged.open("wb") as destination:
+                    while True:
+                        chunk = source.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        destination.write(chunk)
+
+            if staged.stat().st_size < 1_000_000:
+                raise RuntimeError("update_exe_invalid")
+
+            script = update_dir / "apply-update.ps1"
+            script.write_text(
+                """param([int]$ProcessId,[string]$Target,[string]$Staged)
+$ErrorActionPreference='Stop'
+for ($i=0; $i -lt 450; $i++) {
+  if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { break }
+  Start-Sleep -Milliseconds 100
+}
+$backup=$Target + '.old'
+try {
+  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
+  Copy-Item -LiteralPath $Target -Destination $backup -Force
+  Copy-Item -LiteralPath $Staged -Destination $Target -Force
+  Start-Process -FilePath $Target
+  Start-Sleep -Seconds 2
+  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
+} catch {
+  if (Test-Path -LiteralPath $backup) {
+    try { Copy-Item -LiteralPath $backup -Destination $Target -Force } catch {}
+  }
+  try { Start-Process -FilePath $Target } catch {}
+}
+""",
+                encoding="utf-8",
+            )
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            subprocess.Popen(
+                [
+                    "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                    "-File", str(script), str(os.getpid()), str(target), str(staged),
+                ],
+                creationflags=flags,
+            )
+            self._set_update_status(installing=True, error="")
+            self.exit_for_update.set()
+        except Exception as exc:
+            self._set_update_status(installing=False, error=str(exc).strip() or type(exc).__name__)
+
     def regenerate_pin(self) -> None:
+        # A new PIN is only for adding another device. Existing trusted devices
+        # remain valid until "Forget Paired Devices" is used explicitly.
         self.pin = f"{secrets.randbelow(1000000):06d}"
-        self.session = secrets.token_urlsafe(32)
         if self.pin_label:
             self.pin_label.config(text=f"Pairing PIN: {self.pin}")
 
     def start_gui(self) -> None:
         root = tk.Tk()
         self.root = root
-        root.title("Mongrel HUD")
-        root.geometry("460x285")
+        root.title(f"Mongrel HUD {APP_VERSION}")
+        root.geometry("500x390")
         root.configure(bg="#091017")
         fg, muted, accent = "#d9edf5", "#8ca5b0", "#56d7ef"
-        tk.Label(root, text="MONGREL HUD", bg="#091017", fg=accent, font=("Segoe UI", 17, "bold")).pack(anchor="w", padx=18, pady=(16, 4))
+        tk.Label(root, text="MONGREL HUD", bg="#091017", fg=accent, font=("Segoe UI", 17, "bold")).pack(anchor="w", padx=18, pady=(16, 1))
+        tk.Label(root, text=f"Version {APP_VERSION}", bg="#091017", fg=muted, font=("Segoe UI", 9)).pack(anchor="w", padx=18)
         self.status_label = tk.Label(root, text="Scout: WAITING", bg="#091017", fg=fg, font=("Segoe UI", 10))
-        self.status_label.pack(anchor="w", padx=18)
+        self.status_label.pack(anchor="w", padx=18, pady=(7, 0))
         self.profile_label = tk.Label(root, text="Profile: COMBAT", bg="#091017", fg=fg, font=("Segoe UI", 10))
         self.profile_label.pack(anchor="w", padx=18, pady=(2, 0))
-        tk.Label(root, text=f"iPad: http://{local_ipv4()}:{CONTROLLER_PORT}", bg="#091017", fg=muted, font=("Segoe UI", 10)).pack(anchor="w", padx=18, pady=(10, 0))
+
+        tk.Label(root, text=f"iPad Controller: {CONTROLLER_STABLE_URL}", bg="#091017", fg=accent, font=("Segoe UI", 10, "bold")).pack(anchor="w", padx=18, pady=(12, 0))
+        tk.Label(root, text=f"LAN fallback: http://{local_ipv4()}:{CONTROLLER_PORT}", bg="#091017", fg=muted, font=("Segoe UI", 9)).pack(anchor="w", padx=18, pady=(1, 0))
         self.pin_label = tk.Label(root, text=f"Pairing PIN: {self.pin}", bg="#091017", fg=accent, font=("Segoe UI", 12, "bold"))
-        self.pin_label.pack(anchor="w", padx=18, pady=(2, 8))
+        self.pin_label.pack(anchor="w", padx=18, pady=(4, 0))
+        self.paired_label = tk.Label(root, text="", bg="#091017", fg=muted, font=("Segoe UI", 9))
+        self.paired_label.pack(anchor="w", padx=18, pady=(1, 7))
+        self._refresh_pairing_label()
+
         buttons = tk.Frame(root, bg="#091017")
         buttons.pack(anchor="w", padx=18)
         tk.Button(buttons, text="Show / Hide Overlay", command=self.toggle_overlay).pack(side="left", padx=(0, 8))
-        tk.Button(buttons, text="New Pairing PIN", command=self.regenerate_pin).pack(side="left")
+        tk.Button(buttons, text="Pair New Device", command=self.regenerate_pin).pack(side="left", padx=(0, 8))
+        tk.Button(buttons, text="Forget Paired Devices", command=self.forget_paired_devices).pack(side="left")
         tk.Button(root, text="Lock / Unlock Layout", command=self.toggle_layout_lock).pack(anchor="w", padx=18, pady=(10, 0))
+
+        update_box = tk.Frame(root, bg="#091017")
+        update_box.pack(fill="x", padx=18, pady=(16, 0))
+        self.update_label = tk.Label(update_box, text=f"Version {APP_VERSION}", bg="#091017", fg=muted, font=("Segoe UI", 9))
+        self.update_label.pack(side="left")
+        self.update_button = tk.Button(update_box, text="Check for Update", command=self.install_available_update)
+        self.update_button.pack(side="right")
 
         for panel_id in PANEL_IDS:
             self._create_panel_window(panel_id)
+        root.after(1200, lambda: self.check_for_update(False))
         root.after(200, self.refresh_ui)
         root.mainloop()
-
 
 def make_handler(app: MongrelHudApp):
     class Handler(BaseHTTPRequestHandler):
@@ -2964,7 +3352,7 @@ def make_handler(app: MongrelHudApp):
             except Exception:
                 return False
             morsel = jar.get("mongrel_hud")
-            return bool(morsel and secrets.compare_digest(morsel.value, app.session))
+            return bool(morsel and app.authorized_controller_token(morsel.value))
 
         def same_origin(self) -> bool:
             origin = self.headers.get("Origin")
@@ -3018,7 +3406,8 @@ def make_handler(app: MongrelHudApp):
                 if not secrets.compare_digest(str(body.get("pin") or ""), app.pin):
                     self.send_json({"ok": False, "error": "bad_pin"}, 403)
                     return
-                cookie = f"mongrel_hud={app.session}; Path=/; HttpOnly; SameSite=Strict"
+                token = app.register_controller_device()
+                cookie = f"mongrel_hud={token}; Path=/; Max-Age={PAIRING_COOKIE_MAX_AGE}; HttpOnly; SameSite=Strict"
                 self.send_json({"ok": True}, cookie=cookie)
                 return
             if not self.authorized():
@@ -3085,9 +3474,11 @@ def main() -> None:
     except OSError as exc:
         raise SystemExit(f"Could not open controller port {CONTROLLER_PORT}: {exc}")
     threading.Thread(target=server.serve_forever, name="MongrelHudController", daemon=True).start()
+    mdns_handle = _start_mdns_service()
     try:
         app.start_gui()
     finally:
+        _stop_mdns_service(mdns_handle)
         server.shutdown()
         server.server_close()
 

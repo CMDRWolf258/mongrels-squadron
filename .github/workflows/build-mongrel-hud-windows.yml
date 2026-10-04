@@ -30,12 +30,12 @@ jobs:
           python-version: '3.12'
 
       - name: Install build dependencies
-        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4"
+        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4" zeroconf
 
       - name: Build standalone executable
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --collect-all zeroconf --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md
@@ -46,8 +46,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $match = Select-String -Path "downloads/mongrel-hud/mongrel_hud.py" -Pattern 'APP_VERSION = "([^"]+)"'
+          if (-not $match -or -not $match.Matches.Count) { throw "Could not read APP_VERSION" }
+          $version = $match.Matches[0].Groups[1].Value
+          $title = "Mongrel HUD Windows v$version"
+          $notes = "Rolling Windows build for Mongrel HUD. Current version: $version."
           gh release view mongrel-hud-latest *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create mongrel-hud-latest --title "Mongrel HUD Windows" --notes "Rolling Windows build for the Mongrel HUD prototype."
+            gh release create mongrel-hud-latest --title "Mongrel HUD Windows" --notes "Rolling Windows build for Mongrel HUD."
           }
+          # Publish the verified asset first. Only advertise the new version after
+          # the clobber has completed so clients never see new metadata with an old ZIP.
           gh release upload mongrel-hud-latest MongrelHUD-Windows.zip --clobber
+          gh release edit mongrel-hud-latest --title $title --notes $notes
