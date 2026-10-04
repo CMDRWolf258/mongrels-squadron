@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.8.6"
+assert plugin.PLUGIN_VERSION == "1.9.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -73,9 +73,10 @@ assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
 assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
-assert plugin.HUD_BRIDGE_VERSION == 5
+assert plugin.HUD_BRIDGE_VERSION == 6
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"
 assert plugin.KEY_LAST_SYSTEM_ADDRESS == "MongrelScoutLastSystemAddress"
+assert plugin.KEY_CARGO_MISSIONS == "MongrelScoutCargoMissionCache"
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -347,4 +348,79 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-print("✓ Mongrel Scout v1.8.6 local HUD bridge covers docking/travel, combat, surface HUD state, and authenticated mining-report proxying")
+# Local cargo state uses EDMC CargoJSON and aggregates mission requirements by commodity.
+for mission_id, count in [(7001, 30), (7002, 46), (7003, 40)]:
+    plugin._update_cargo_missions_from_journal("Wolf258", {
+        "event": "MissionAccepted",
+        "timestamp": "2026-10-04T10:00:00Z",
+        "MissionID": mission_id,
+        "Name": "Mission_Mining_name",
+        "LocalisedName": f"Mine {count} units of Osmium",
+        "Commodity": "$Osmium_Name;",
+        "Commodity_Localised": "Osmium",
+        "Count": count,
+        "Wing": mission_id == 7003,
+    })
+plugin._update_cargo_missions_from_journal("Wolf258", {
+    "event": "MissionAccepted",
+    "timestamp": "2026-10-04T10:00:01Z",
+    "MissionID": 7100,
+    "Name": "Mission_Delivery_name",
+    "LocalisedName": "Deliver 100 units of Gold",
+    "Commodity": "$Gold_Name;",
+    "Commodity_Localised": "Gold",
+    "Count": 100,
+})
+cargo_state = {
+    "CargoCapacity": 512,
+    "CargoJSON": {
+        "Vessel": "Ship",
+        "Inventory": [
+            {"Name": "osmium", "Count": 71, "Stolen": 0},
+            {"Name": "gold", "Count": 100, "Stolen": 0, "MissionID": 7100},
+            {"Name": "drones", "Count": 29, "Stolen": 0},
+            {"Name": "lowtemperaturediamond", "Count": 6, "Stolen": 6},
+        ],
+    },
+}
+cargo = plugin._build_local_cargo_state("Wolf258", cargo_state, "2026-10-04T10:01:00Z")
+assert cargo is not None
+assert cargo["used"] == 206 and cargo["capacity"] == 512 and cargo["free"] == 306
+assert cargo["limpets"] == 29
+needs = {row["key"]: row for row in cargo["missionNeeds"]}
+assert needs["osmium"]["required"] == 116
+assert needs["osmium"]["inHold"] == 71
+assert needs["osmium"]["stillNeeded"] == 45
+assert needs["gold"]["inHold"] == 100 and needs["gold"]["ready"] is True
+assert cargo["stolenItems"] == [{"key": "lowtemperaturediamond", "name": "Low Temperature Diamonds", "count": 6}]
+assert {row["key"]: row["count"] for row in cargo["items"]} == {"gold": 100, "osmium": 71}
+assert config_module.config.get_str(plugin.KEY_CARGO_MISSIONS)
+
+# Partial wing delivery reduces the outstanding aggregate, while the hold calculator
+# still uses the live CargoJSON amount.
+plugin._update_cargo_missions_from_journal("Wolf258", {
+    "event": "CargoDepot",
+    "MissionID": 7003,
+    "ItemsDelivered": 10,
+    "TotalItemsToDeliver": 40,
+})
+cargo = plugin._build_local_cargo_state("Wolf258", cargo_state)
+needs = {row["key"]: row for row in cargo["missionNeeds"]}
+assert needs["osmium"]["remaining"] == 106
+assert needs["osmium"]["stillNeeded"] == 35
+
+# Mission lifecycle removes completed requirements, and cached mission details survive
+# a Scout restart even though Elite's startup Missions event does not repeat commodity/count.
+plugin._update_cargo_missions_from_journal("Wolf258", {"event": "MissionCompleted", "MissionID": 7001})
+assert 7001 not in {row["missionId"] for row in plugin._cargo_mission_rows("Wolf258")}
+saved_missions = config_module.config.get_str(plugin.KEY_CARGO_MISSIONS)
+with plugin._cargo_missions_lock:
+    plugin._cargo_missions.clear()
+plugin._restore_cargo_missions()
+assert config_module.config.get_str(plugin.KEY_CARGO_MISSIONS) == saved_missions
+assert {row["missionId"] for row in plugin._cargo_mission_rows("Wolf258")} == {7002, 7003, 7100}
+
+# SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
+assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
+
+print("✓ Mongrel Scout v1.9.0 local HUD bridge covers docking/travel, combat, cargo mission math, surface HUD state, and authenticated mining-report proxying")
