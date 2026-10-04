@@ -207,6 +207,48 @@ assert.equal(
   'A clinched 3-x score must not keep a conflict active after both faction boards have left the conflict state',
 );
 
+const resolvedFlatScoutScoreRows=validatedConflictRows({
+  factions:[
+    {name:'The Consortium',state:'None',activeStates:[],pendingStates:[],recoveringStates:['War']},
+    {name:'Perez Ring Brewery',state:'None',activeStates:[],pendingStates:['Expansion'],recoveringStates:['War']},
+  ],
+  conflicts:[{
+    type:'War',
+    status:'Active',
+    faction:'The Consortium',
+    opponentFaction:'Perez Ring Brewery',
+    factionWonDays:3,
+    opponentWonDays:0,
+  }],
+  phase:'active',
+});
+assert.equal(
+  resolvedFlatScoutScoreRows.length,
+  0,
+  'Recovering War plus a flat 3-0 Scout score must be treated as a finished conflict',
+);
+
+const recoveringOverridesStaleExplicitRows=validatedConflictRows({
+  factions:[
+    {name:'Faction One',state:'None',activeStates:[],recoveringStates:['War']},
+    {name:'Faction Two',state:'None',activeStates:[],recoveringStates:['War']},
+  ],
+  conflicts:[{
+    type:'War',
+    status:'Active',
+    faction:'Faction One',
+    opponentFaction:'Faction Two',
+    factionWonDays:2,
+    opponentWonDays:1,
+  }],
+  phase:'active',
+});
+assert.equal(
+  recoveringOverridesStaleExplicitRows.length,
+  0,
+  'Recovering conflict states must close a stale explicit Active row even before score cleanup',
+);
+
 const mismatchedStates=[
   {name:'Faction One',state:'War',activeStates:['War']},
   {name:'Faction Two',state:'Election',activeStates:['Election']},
@@ -221,7 +263,7 @@ const apiSource=readFileSync('functions/api/operations/wolf-bgs.js','utf8');
 assert.match(apiSource,/wolf_bgs_unavailable/,'Wolf BGS API must expose authenticated data-build failures distinctly');
 assert.match(apiSource,/authenticated:true/,'Wolf BGS API must preserve authenticated state when secure data building fails');
 
-for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/,/conflictPairTimelinesFor/,/set-conflict-day/,/clear-conflict-day/,/nextConfiguredTickAfter/,/configuredTicksElapsed/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
+for (const pattern of [/session\.access !== 'site_admin'/,/wolf-bgs-control-v1/,/manualSnapshots/,/systemSettings/,/systemDefaults/,/live-bgs-boards\.json/,/externalBoardComplete/,/defaultTick: '19:00'/,/freshnessMode: 'tick-cycle'/,/resolveSystemWorkCycle/,/freshnessCycle/,/maxDailySystems: 6/,/queueSelectorCount/,/queueSelected/,/alertEpisodes/,/ack-alerts/,/remove-alert/,/removedAt/,/unreviewedCount/,/retreatPending/,/refreshAlertEpisodes/,/normalizeConflictScore/,/conflictScore/,/mongrelConflict/,/conflictDayOverrides/,/conflictPairDayOverrides/,/normalizeConflictPairDayOverrides/,/conflictPairTimelinesFor/,/if\(!system\?\.activeConflict\)return out/,/set-conflict-day/,/clear-conflict-day/,/nextConfiguredTickAfter/,/configuredTicksElapsed/,/conflictTimelineFor/,/minimumDays:4/,/maximumDays:7/]) assert.match(apiSource,pattern);
 
 const wolfPage=readFileSync('wolf-bgs/index.html','utf8');
 assert.match(wolfPage,/Freshness policy/);
