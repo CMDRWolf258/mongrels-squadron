@@ -1156,6 +1156,9 @@ class MongrelHudApp:
         with self.lock:
             status["catalogError"] = self.voice_catalog_error
             status["catalogErrors"] = dict(self.voice_catalog_errors)
+        acoustic = self._voice_acoustic_profile()
+        status["acousticProfile"] = acoustic
+        status["acousticLabel"] = ACOUSTIC_PROFILE_LABELS.get(acoustic, acoustic)
         return status
 
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
@@ -1163,9 +1166,37 @@ class MongrelHudApp:
             raise ValueError("voice_settings_required")
         with self.store.lock:
             current = normalized_voice_settings(self.store.data.get("voice"))
-            for key in ("enabled", "carrierPa", "volume", "rate", "voiceProvider", "voiceId", "voiceName"):
+            for key in ("enabled", "carrierPa", "volume", "rate"):
                 if key in value:
                     current[key] = value[key]
+
+            # Backward-compatible top-level voice updates change the announcement role.
+            legacy_keys = ("voiceProvider", "voiceId", "voiceName")
+            if any(key in value for key in legacy_keys):
+                roles = current.get("roles") if isinstance(current.get("roles"), dict) else {}
+                announcement = dict(roles.get(VOICE_ROLE_ANNOUNCEMENT) or {})
+                for key in legacy_keys:
+                    if key in value:
+                        announcement[key] = value[key]
+                roles[VOICE_ROLE_ANNOUNCEMENT] = announcement
+                current["roles"] = roles
+                for key in legacy_keys:
+                    if key in value:
+                        current[key] = value[key]
+
+            role_updates = value.get("roles")
+            if isinstance(role_updates, dict):
+                roles = current.get("roles") if isinstance(current.get("roles"), dict) else {}
+                for role, update in role_updates.items():
+                    if role not in VOICE_ROLE_IDS or not isinstance(update, dict):
+                        continue
+                    identity = dict(roles.get(role) or {})
+                    for key in legacy_keys:
+                        if key in update:
+                            identity[key] = update[key]
+                    roles[role] = identity
+                current["roles"] = roles
+
             cue_updates = value.get("cues")
             if isinstance(cue_updates, dict):
                 merged_cues = current.get("cues") if isinstance(current.get("cues"), dict) else {}
@@ -1199,6 +1230,55 @@ class MongrelHudApp:
         owner_id = str(owner.get("carrierId") or "")
         event_id = str(event.get("carrierId") or event.get("marketId") or "")
         return bool(owner_id and event_id and secrets.compare_digest(owner_id, event_id))
+
+    @staticmethod
+    def _voice_role_for_cue(cue: str) -> str:
+        role = str(CARRIER_VOICE_CUES.get(cue, {}).get("role") or VOICE_ROLE_ANNOUNCEMENT)
+        return role if role in VOICE_ROLE_IDS else VOICE_ROLE_ANNOUNCEMENT
+
+    @staticmethod
+    def _voice_identity_for_role(settings: dict[str, Any], role: str) -> dict[str, str]:
+        roles = settings.get("roles") if isinstance(settings.get("roles"), dict) else {}
+        identity = roles.get(role) if isinstance(roles.get(role), dict) else {}
+        if not identity:
+            identity = {
+                "voiceProvider": settings.get("voiceProvider"),
+                "voiceId": settings.get("voiceId"),
+                "voiceName": settings.get("voiceName"),
+            }
+        return _normalized_voice_identity(identity)
+
+    @staticmethod
+    def _carrier_ref_matches(value: Any, owner_id: str) -> bool:
+        if not isinstance(value, dict):
+            return False
+        if str(value.get("relationship") or "").casefold() == "owner":
+            return True
+        candidate = str(value.get("marketId") or value.get("carrierId") or "")
+        return bool(owner_id and candidate and secrets.compare_digest(owner_id, candidate))
+
+    def _voice_acoustic_profile(self) -> str:
+        state = self.scout_state()
+        owner = state.get("ownerCarrier") if isinstance(state.get("ownerCarrier"), dict) else {}
+        owner_id = str(owner.get("carrierId") or "")
+        instance = state.get("instanceDestination")
+        station = state.get("station")
+        docking = state.get("docking") if isinstance(state.get("docking"), dict) else {}
+        docking_station = docking.get("station")
+        in_owner_instance = (
+            self._carrier_ref_matches(instance, owner_id)
+            or self._carrier_ref_matches(station, owner_id)
+            or self._carrier_ref_matches(docking_station, owner_id)
+        )
+        if not in_owner_instance:
+            return ACOUSTIC_REMOTE
+
+        status = state.get("status") if isinstance(state.get("status"), dict) else {}
+        if bool(status.get("onFootInHangar")):
+            return ACOUSTIC_HANGAR
+        if bool(status.get("onFootInStation")) or bool(status.get("onFootSocialSpace")):
+            return ACOUSTIC_PA
+        return ACOUSTIC_LOCAL
 
     def _carrier_voice_name(self, event: dict[str, Any]) -> str:
         stored_name = " ".join(str(event.get("carrierName") or "").split())
@@ -1426,14 +1506,21 @@ class MongrelHudApp:
 
         self._queue_configured_voice(cue, event)
 
-    def queue_voice_test(self) -> dict[str, Any]:
-        settings = self.voice_settings_snapshot()
+    def queue_voice_test(self, role: str = VOICE_ROLE_ANNOUNCEMENT, acoustic_profile: str = "") -> dict[str, Any]:
+        if role not in VOICE_ROLE_IDS:
+            raise ValueError("voice_role_invalid")
+        profile = str(acoustic_profile or "").strip()
+        if profile and profile not in ACOUSTIC_PROFILE_IDS:
+            raise ValueError("voice_acoustic_profile_invalid")
         carrier = self._owner_carrier_for_voice()
         name = " ".join(str(carrier.get("name") or "").split()) or "Pneuma"
+        label = "traffic control" if role == VOICE_ROLE_ATC else "public address"
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": "test",
-                "text": f"{name} public address test. Audio link online.",
+                "role": role,
+                "acousticProfile": profile,
+                "text": f"{name} {label} test. Audio link online.",
                 "due": time.monotonic(),
                 "force": True,
             })
@@ -1459,6 +1546,7 @@ class MongrelHudApp:
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": cue,
+                "role": self._voice_role_for_cue(cue),
                 "event": event,
                 "due": time.monotonic(),
                 "force": True,
