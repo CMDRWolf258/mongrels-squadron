@@ -6,6 +6,7 @@ import difflib
 import json
 import math
 import os
+import re
 import secrets
 import socket
 import sys
