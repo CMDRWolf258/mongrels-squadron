@@ -3441,6 +3441,10 @@ class MongrelHudApp:
         with self.update_lock:
             self.update_status.update(changes)
 
+    @staticmethod
+    def _update_snapshot_is_newer(snapshot: dict[str, Any]) -> bool:
+        return bool(version_tuple(snapshot.get("version")) > version_tuple(APP_VERSION))
+
     def _apply_update_status_ui(self) -> None:
         with self.update_lock:
             snapshot = dict(self.update_status)
@@ -3452,13 +3456,13 @@ class MongrelHudApp:
             elif snapshot.get("error"):
                 error = str(snapshot.get("error") or "")
                 text = "Update check unavailable" if error == "update_check_failed" else f"Update error: {error.replace('_', ' ')}"
-            elif snapshot.get("available"):
+            elif snapshot.get("available") and self._update_snapshot_is_newer(snapshot):
                 text = f"Update available: v{snapshot.get('version')}"
             else:
                 text = f"Version {APP_VERSION} · up to date"
             self.update_label.config(text=text)
         if self.update_button:
-            available = bool(snapshot.get("available"))
+            available = bool(snapshot.get("available")) and self._update_snapshot_is_newer(snapshot)
             installing = bool(snapshot.get("installing"))
             checking = bool(snapshot.get("checking"))
             self.update_button.config(
@@ -3498,7 +3502,8 @@ class MongrelHudApp:
             snapshot = dict(self.update_status)
             if snapshot.get("checking") or snapshot.get("installing"):
                 return
-        if not snapshot.get("available"):
+        if not snapshot.get("available") or not self._update_snapshot_is_newer(snapshot):
+            self._set_update_status(available=False)
             self.check_for_update(True)
             return
         if os.name != "nt" or not getattr(sys, "frozen", False):
