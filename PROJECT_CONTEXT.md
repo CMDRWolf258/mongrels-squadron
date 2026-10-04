@@ -48,6 +48,8 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - Avoid base64 image workflows unless truly necessary; prefer normal repo assets.
 - Preserve one authoritative state model per domain instead of creating parallel copies of the same data.
 - Wolf often reviews a batch of recent features later rather than stopping development after every addition.
+- **Bug-fix contract:** when Wolf reports something behaving incorrectly, treat the current intended behavior/configuration as the specification. Fix the mechanism without redesigning the feature, changing defaults, removing configurability, or assuming operator error. If a design change may help, explain it separately and get Wolf's approval before implementing it.
+- **Mongrel HUD profile behavior:** per-panel profile assignment is intentionally user-configurable with **Combat / Surface / Both**. Profile-switch bugs must be fixed without changing or hard-coding those assignments unless Wolf explicitly requests a redesign.
 
 ---
 
