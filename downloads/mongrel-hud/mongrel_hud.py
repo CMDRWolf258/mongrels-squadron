@@ -935,6 +935,7 @@ class MongrelHudApp:
         self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
+        self.voice_catalog_errors: dict[str, str] = {}
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -1052,6 +1053,7 @@ class MongrelHudApp:
             status["scheduled"] = len(schedule) if isinstance(schedule, list) else 0
         with self.lock:
             status["catalogError"] = self.voice_catalog_error
+            status["catalogErrors"] = dict(self.voice_catalog_errors)
         return status
 
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
@@ -1364,7 +1366,7 @@ class MongrelHudApp:
         return self.voice_status_snapshot()
 
     @staticmethod
-    def _windows_voice_catalog() -> list[dict[str, str]]:
+    def _system_speech_voice_catalog() -> list[dict[str, str]]:
         if os.name != "nt":
             return []
         script = (
@@ -1372,7 +1374,7 @@ class MongrelHudApp:
             "$OutputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
             "Add-Type -AssemblyName System.Speech;"
             "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
-            "$rows=@($s.GetInstalledVoices()|ForEach-Object{$v=$_.VoiceInfo;[PSCustomObject]@{name=$v.Name;culture=$v.Culture.Name;gender=$v.Gender.ToString();age=$v.Age.ToString()}});"
+            "$rows=@($s.GetInstalledVoices()|ForEach-Object{$v=$_.VoiceInfo;[PSCustomObject]@{id=$v.Name;name=$v.Name;culture=$v.Culture.Name;gender=$v.Gender.ToString();age=$v.Age.ToString()}});"
             "$s.Dispose();$rows|ConvertTo-Json -Compress"
         )
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -1385,49 +1387,118 @@ class MongrelHudApp:
             check=False,
         )
         if result.returncode != 0:
-            raise RuntimeError("voice_catalog_failed")
+            raise RuntimeError("system_speech_catalog_failed")
         raw = result.stdout.strip()
         if not raw:
             return []
         try:
             payload = json.loads(raw)
         except Exception as exc:
-            raise RuntimeError("voice_catalog_invalid_json") from exc
+            raise RuntimeError("system_speech_catalog_invalid_json") from exc
         rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
-        out = []
+        out: list[dict[str, str]] = []
         seen = set()
         for row in rows:
             if not isinstance(row, dict):
                 continue
             name = " ".join(str(row.get("name") or "").split())[:160]
-            if not name or name.casefold() in seen:
+            voice_id = " ".join(str(row.get("id") or name).split())[:512]
+            key = (VOICE_PROVIDER_SYSTEM, voice_id.casefold())
+            if not name or not voice_id or key in seen:
                 continue
-            seen.add(name.casefold())
+            seen.add(key)
             out.append({
+                "provider": VOICE_PROVIDER_SYSTEM,
+                "providerLabel": VOICE_PROVIDER_LABELS[VOICE_PROVIDER_SYSTEM],
+                "id": voice_id,
                 "name": name,
                 "culture": " ".join(str(row.get("culture") or "").split())[:32],
                 "gender": " ".join(str(row.get("gender") or "").split())[:32],
                 "age": " ".join(str(row.get("age") or "").split())[:32],
+                "description": "",
+            })
+        return sorted(out, key=lambda row: row["name"].casefold())
+
+    @staticmethod
+    def _winrt_voice_catalog() -> list[dict[str, str]]:
+        if os.name != "nt":
+            return []
+        script = (
+            "$ErrorActionPreference='Stop';"
+            "$OutputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+            "[Windows.Media.SpeechSynthesis.SpeechSynthesizer,Windows.Media.SpeechSynthesis,ContentType=WindowsRuntime]>$null;"
+            "$rows=@([Windows.Media.SpeechSynthesis.SpeechSynthesizer]::AllVoices|ForEach-Object{"
+            "[PSCustomObject]@{id=$_.Id;name=$_.DisplayName;culture=$_.Language;gender=$_.Gender.ToString();description=$_.Description}"
+            "});$rows|ConvertTo-Json -Compress"
+        )
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            creationflags=flags,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("winrt_voice_catalog_failed")
+        raw = result.stdout.strip()
+        if not raw:
+            return []
+        try:
+            payload = json.loads(raw)
+        except Exception as exc:
+            raise RuntimeError("winrt_voice_catalog_invalid_json") from exc
+        rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
+        out: list[dict[str, str]] = []
+        seen = set()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            voice_id = " ".join(str(row.get("id") or "").split())[:512]
+            name = " ".join(str(row.get("name") or "").split())[:160]
+            key = (VOICE_PROVIDER_WINRT, voice_id.casefold())
+            if not voice_id or not name or key in seen:
+                continue
+            seen.add(key)
+            out.append({
+                "provider": VOICE_PROVIDER_WINRT,
+                "providerLabel": VOICE_PROVIDER_LABELS[VOICE_PROVIDER_WINRT],
+                "id": voice_id,
+                "name": name,
+                "culture": " ".join(str(row.get("culture") or "").split())[:32],
+                "gender": " ".join(str(row.get("gender") or "").split())[:32],
+                "age": "",
+                "description": " ".join(str(row.get("description") or "").split())[:240],
             })
         return sorted(out, key=lambda row: row["name"].casefold())
 
     def _voice_catalog_worker(self) -> None:
-        try:
-            catalog = self._windows_voice_catalog()
-            with self.lock:
-                self.voice_catalog = catalog
-                self.voice_catalog_error = ""
-        except Exception as exc:
-            with self.lock:
-                self.voice_catalog = []
-                self.voice_catalog_error = str(exc).strip() or type(exc).__name__
+        catalog: list[dict[str, str]] = []
+        errors: dict[str, str] = {}
+        for provider, loader in (
+            (VOICE_PROVIDER_WINRT, self._winrt_voice_catalog),
+            (VOICE_PROVIDER_SYSTEM, self._system_speech_voice_catalog),
+        ):
+            try:
+                catalog.extend(loader())
+            except Exception as exc:
+                errors[provider] = str(exc).strip() or type(exc).__name__
+        catalog.sort(key=lambda row: (
+            0 if row.get("provider") == VOICE_PROVIDER_WINRT else 1,
+            str(row.get("name") or "").casefold(),
+        ))
+        with self.lock:
+            self.voice_catalog = catalog
+            self.voice_catalog_errors = errors
+            self.voice_catalog_error = " · ".join(f"{provider}:{error}" for provider, error in sorted(errors.items()))
 
     @staticmethod
-    def _speak_windows(text: str, volume: int, rate: int, voice_name: str = "") -> None:
+    def _speak_system_speech(text: str, volume: int, rate: int, voice_id: str = "") -> None:
         if os.name != "nt":
             raise RuntimeError("windows_speech_required")
         safe_text = " ".join(str(text or "").split())[:600]
-        selected = " ".join(str(voice_name or "").split())[:160]
+        selected = " ".join(str(voice_id or "").split())[:512]
         if not safe_text:
             return
         select = "$s.SelectVoice(" + _powershell_quote(selected) + ");" if selected else ""
@@ -1451,7 +1522,73 @@ class MongrelHudApp:
             check=False,
         )
         if result.returncode != 0:
-            raise RuntimeError("windows_speech_failed")
+            raise RuntimeError("system_speech_failed")
+
+    @staticmethod
+    def _speak_winrt(text: str, volume: int, rate: int, voice_id: str) -> None:
+        if os.name != "nt":
+            raise RuntimeError("windows_speech_required")
+        safe_text = " ".join(str(text or "").split())[:600]
+        selected = " ".join(str(voice_id or "").split())[:512]
+        if not safe_text:
+            return
+        if not selected:
+            raise RuntimeError("winrt_voice_required")
+        volume_value = max(0.0, min(1.0, int(volume) / 100.0))
+        rate_value = max(0.5, min(6.0, 1.18 ** max(-3, min(3, int(rate)))))
+        script = (
+            "$ErrorActionPreference='Stop';"
+            "Add-Type -AssemblyName System.Runtime.WindowsRuntime;"
+            "[Windows.Media.SpeechSynthesis.SpeechSynthesizer,Windows.Media.SpeechSynthesis,ContentType=WindowsRuntime]>$null;"
+            "[Windows.Media.SpeechSynthesis.SpeechSynthesisStream,Windows.Media.SpeechSynthesis,ContentType=WindowsRuntime]>$null;"
+            "function Await-WinRt($Operation,[Type]$ResultType){"
+            "$method=[System.WindowsRuntimeSystemExtensions].GetMethods()|Where-Object{$_.Name -eq 'AsTask' -and $_.IsGenericMethod -and $_.GetParameters().Count -eq 1}|Select-Object -First 1;"
+            "if(-not $method){throw 'winrt_astask_unavailable'};"
+            "$task=$method.MakeGenericMethod($ResultType).Invoke($null,@($Operation));"
+            "$task.GetAwaiter().GetResult()"
+            "};"
+            "$s=New-Object Windows.Media.SpeechSynthesis.SpeechSynthesizer;"
+            "$voice=[Windows.Media.SpeechSynthesis.SpeechSynthesizer]::AllVoices|Where-Object{$_.Id -eq " + _powershell_quote(selected) + "}|Select-Object -First 1;"
+            "if(-not $voice){throw 'winrt_voice_not_found'};"
+            "$s.Voice=$voice;"
+            + f"$s.Options.AudioVolume={volume_value:.4f};"
+            + f"$s.Options.SpeakingRate={rate_value:.4f};"
+            + "$stream=Await-WinRt ($s.SynthesizeTextToStreamAsync(" + _powershell_quote(safe_text) + ")) ([Windows.Media.SpeechSynthesis.SpeechSynthesisStream]);"
+            "$path=[IO.Path]::Combine([IO.Path]::GetTempPath(),('MongrelHUD-voice-'+[Guid]::NewGuid().ToString('N')+'.wav'));"
+            "try{"
+            "$net=[System.IO.WindowsRuntimeStreamExtensions]::AsStreamForRead($stream);"
+            "$file=[IO.File]::Create($path);"
+            "try{$net.CopyTo($file)}finally{$file.Dispose();$net.Dispose()};"
+            "$player=New-Object System.Media.SoundPlayer $path;"
+            "try{$player.PlaySync()}finally{$player.Dispose()}"
+            "}finally{"
+            "try{$stream.Dispose()}catch{};"
+            "try{$s.Dispose()}catch{};"
+            "Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue"
+            "}"
+        )
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=90,
+            creationflags=flags,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("winrt_speech_failed")
+
+    @classmethod
+    def _speak_voice_provider(cls, provider: str, text: str, volume: int, rate: int, voice_id: str = "") -> None:
+        provider = str(provider or VOICE_PROVIDER_SYSTEM).strip().lower()
+        if provider == VOICE_PROVIDER_WINRT:
+            cls._speak_winrt(text, volume, rate, voice_id)
+            return
+        if provider == VOICE_PROVIDER_SYSTEM:
+            cls._speak_system_speech(text, volume, rate, voice_id)
+            return
+        raise RuntimeError("voice_provider_unsupported")
 
     def _voice_loop(self) -> None:
         while True:
@@ -1489,11 +1626,12 @@ class MongrelHudApp:
                     self.voice_condition.notify_all()
                 continue
             try:
-                self._speak_windows(
+                self._speak_voice_provider(
+                    str(settings.get("voiceProvider") or VOICE_PROVIDER_SYSTEM),
                     text,
                     int(settings.get("volume") if settings.get("volume") is not None else 75),
                     int(settings.get("rate") or 0),
-                    str(settings.get("voiceName") or ""),
+                    str(settings.get("voiceId") or settings.get("voiceName") or ""),
                 )
                 with self.voice_condition:
                     self.voice_runtime.update({
