@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.8.5 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.9.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -70,7 +70,7 @@ The in-memory event queue retains the newest 256 normalized events. No raw journ
 
 `CarrierStats` is used locally to learn the current Commander's own Fleet Carrier identity (Carrier ID, callsign, name and docking access). That owner-carrier identity is persisted in EDMC's local configuration so later docking events can be labeled `relationship: owner` even after EDMC restarts. It is **not uploaded** by this v1.4.3 bridge. Other carriers remain `relationship: unknown` until a future squad carrier registry provides a trusted mapping.
 
-The local bridge may include the current Commander name because owner/squadmate greetings need to know who is flying, but that identity stays on the PC. For the HUD companion it also keeps a minimal local `Status.json` snapshot (surface body/coordinates/heading, shield-up state and selected destination), own-ship hull updates, and sanitized `ShipTargeted` combat fields such as target hull/shields, bounty and the currently viewed subsystem. These HUD fields are not added to Scout cloud uploads. The existing cloud payload privacy boundary is unchanged.
+The local bridge may include the current Commander name because owner/squadmate greetings need to know who is flying, but that identity stays on the PC. For the HUD companion it also keeps a minimal local `Status.json` snapshot (surface body/coordinates/heading, shield-up state and selected destination), own-ship hull updates, sanitized `ShipTargeted` combat fields, and a local ship-cargo summary sourced from EDMC's `CargoJSON` / `Cargo` state. Commodity mission requirements observed in `MissionAccepted` are cached locally and removed/updated by mission lifecycle and `CargoDepot` progress events so the HUD can aggregate how much of each commodity is still required. Cargo and mission details are never added to Scout cloud uploads. The existing cloud payload privacy boundary is unchanged.
 
 ## Scout workflow
 
