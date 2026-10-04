@@ -207,6 +207,18 @@ async function summarizeVerifiedCurrent(env,current){
   }
 }
 
+export async function buildOrderProgressForHud(env,current,viewerId='') {
+  if(!current)return{summaries:{},verifiedSummaries:{}};
+  const [records,verifiedSummaries]=await Promise.all([
+    listCurrentRecords(env,current),
+    summarizeVerifiedCurrent(env,current),
+  ]);
+  return{
+    summaries:summarizeCurrent(current,records,viewerId),
+    verifiedSummaries,
+  };
+}
+
 async function mutationReply(env, current, session, record, action) {
   const listed = await listCurrentRecords(env, current);
   const reportId = String(record?.reportId || '');

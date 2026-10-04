@@ -3,6 +3,7 @@ import { buildMissionControlData } from '../../../lib/bgs-operations.js';
 import { loadBgsDiscordView } from '../../../lib/bgs-discord.js';
 import { listOrderPublications } from '../../../lib/order-history.js';
 import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
+import { buildOrderProgressForHud } from '../operations/order-reports.js';
 import { loadRewardDiscordView } from '../../../lib/reward-discord.js';
 import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
@@ -11,7 +12,7 @@ import { isTradeRouteActive, readTradeRoutes } from '../../../lib/trade-intellig
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
 const MAX_ALERTS=40;
-const RECENT_ORDER_MS=72*60*60*1000;
+const RECENT_ORDER_MS=7*24*60*60*1000;
 
 export async function onRequestGet({request,env}){
   if(!storageReady(env))return reply({ok:false,error:'hud_storage_not_configured'},503);
@@ -66,6 +67,10 @@ export async function buildHudFeed(request,env,auth){
     access==='site_admin'?listOrderPublications(env,{limit:20}):Promise.resolve([]),
     readAcks(env,auth.ownerId),
   ]);
+  const orderProgress=access==='site_admin'
+    ?await buildOrderProgressForHud(env,currentOrders,auth.ownerId)
+    :{summaries:{},verifiedSummaries:{}};
+
   const scoutBoard=await buildScoutJobBoard(env,{
     systems,
     viewer:{
@@ -83,6 +88,7 @@ export async function buildHudFeed(request,env,auth){
     ...tradeAlerts(routes),
   ].slice(0,MAX_ALERTS).map(alert=>({
     ...alert,
+    indicator:alertIndicator(alert.type,alert.severity),
     acknowledged:Boolean(ackState.acks[alert.id]),
     acknowledgedAt:ackState.acks[alert.id]||null,
   }));
@@ -91,7 +97,7 @@ export async function buildHudFeed(request,env,auth){
     ok:true,
     generatedAt:new Date().toISOString(),
     viewer:{userId:auth.ownerId,commander:auth.ownerCommander||auth.label||'',access},
-    mission:summarizeMission(mission,currentOrders),
+    mission:summarizeMission(mission,currentOrders,orderProgress),
     trade:summarizeTrades(routes),
     scout:summarizeScoutBoard(scoutBoard),
     alerts,
@@ -99,21 +105,28 @@ export async function buildHudFeed(request,env,auth){
   };
 }
 
-export function summarizeMission(mission,currentOrders){
+export function summarizeMission(mission,currentOrders,progressState={}){
   const closed=new Set(['complete','completed','closed','cancelled','canceled','inactive']);
   const orders=(Array.isArray(currentOrders?.orders)?currentOrders.orders:[])
     .filter(order=>!closed.has(norm(order?.status)))
     .slice(0,8)
-    .map(order=>({
-      id:clean(order?.id),
-      system:clean(order?.system),
-      faction:clean(order?.faction),
-      priority:clean(order?.priority),
-      task:clean(order?.task),
-      detail:clean(order?.detail),
-      status:clean(order?.status),
-      revision:Math.max(1,Math.floor(Number(order?.revision)||1)),
-    }));
+    .map(order=>{
+      const reporting=order?.reporting&&typeof order.reporting==='object'
+        ?{type:clean(order.reporting.type),target:numberOrNull(order.reporting.target),blitz:Boolean(order.reporting.blitz)}
+        :null;
+      return{
+        id:clean(order?.id),
+        system:clean(order?.system),
+        faction:clean(order?.faction),
+        priority:clean(order?.priority),
+        task:clean(order?.task),
+        detail:clean(order?.detail),
+        status:clean(order?.status),
+        revision:Math.max(1,Math.floor(Number(order?.revision)||1)),
+        reporting,
+        progress:orderProgress(order,progressState),
+      };
+    });
   const attention=(Array.isArray(mission?.systems)?mission.systems:[])
     .filter(system=>system?.attention)
     .sort((a,b)=>Number(Boolean(b?.priority))-Number(Boolean(a?.priority))
@@ -134,6 +147,26 @@ export function summarizeMission(mission,currentOrders){
     attentionCount:Number(mission?.meta?.attentionCount||attention.length||0),
     orders,
     attention,
+  };
+}
+
+export function orderProgress(order,progressState={}){
+  const id=clean(order?.id);
+  const reporting=order?.reporting&&typeof order.reporting==='object'?order.reporting:{};
+  const type=clean(reporting.type);
+  const target=numberOrNull(reporting.target);
+  const manual=Number(progressState?.summaries?.[id]?.squad?.score)||0;
+  const verified=Number(progressState?.verifiedSummaries?.[id]?.contribution)||0;
+  const current=Math.max(0,Math.round((manual+verified)*10)/10);
+  const unit=type==='inf'?'INF':type==='cz'?'CZ pts':['bounties','trade','exploration'].includes(type)?'M Cr':'';
+  return{
+    current,
+    target,
+    percent:target!==null&&target>0?Math.max(0,Math.min(100,Math.round((current/target)*1000)/10)):null,
+    unit,
+    manual:Math.max(0,Math.round(manual*10)/10),
+    verified:Math.max(0,Math.round(verified*10)/10),
+    met:target!==null&&current>=target,
   };
 }
 
@@ -247,6 +280,15 @@ export function tradeAlerts(routes){
     }));
 }
 
+export function alertIndicator(type,severity=''){
+  const kind=norm(type);
+  if(kind==='faction')return'red';
+  if(kind==='orders')return'amber';
+  if(kind==='payout')return'cyan';
+  if(kind==='trade')return norm(severity)==='critical'?'red':'amber';
+  return'cyan';
+}
+
 export function alertId(prefix,...parts){
   return [clean(prefix),...parts.map(part=>norm(part).replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,140))]
     .filter(Boolean).join(':').slice(0,500);
@@ -288,6 +330,7 @@ function ackKey(ownerId){return ACK_PREFIX+encodeURIComponent(clean(ownerId));}
 function storageReady(env){return Boolean(env?.DAILY_ORDERS&&typeof env.DAILY_ORDERS.get==='function'&&typeof env.DAILY_ORDERS.put==='function');}
 function reply(body,status=200){return json(body,{status,headers:{'Cache-Control':'private, no-store, no-cache, must-revalidate',Pragma:'no-cache','X-Content-Type-Options':'nosniff'}});}
 function formatCredits(value){return Math.max(0,Math.round(Number(value)||0)).toLocaleString('en-US')+' Cr';}
+function numberOrNull(value){if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?n:null;}
 function unique(values){return[...new Set((Array.isArray(values)?values:[]).map(clean).filter(Boolean))];}
 function clean(value){return typeof value==='string'?value.trim():String(value??'').trim();}
 function norm(value){return clean(value).toLowerCase().replace(/\s+/g,' ');}
