@@ -1834,6 +1834,7 @@ class MongrelHudApp:
         catalog: list[dict[str, str]] = []
         errors: dict[str, str] = {}
         for provider, loader in (
+            (VOICE_PROVIDER_KOKORO, self._kokoro_voice_catalog),
             (VOICE_PROVIDER_WINRT, self._winrt_voice_catalog),
             (VOICE_PROVIDER_SYSTEM, self._system_speech_voice_catalog),
         ):
@@ -1841,8 +1842,13 @@ class MongrelHudApp:
                 catalog.extend(loader())
             except Exception as exc:
                 errors[provider] = str(exc).strip() or type(exc).__name__
+        provider_order = {
+            VOICE_PROVIDER_KOKORO: 0,
+            VOICE_PROVIDER_WINRT: 1,
+            VOICE_PROVIDER_SYSTEM: 2,
+        }
         catalog.sort(key=lambda row: (
-            0 if row.get("provider") == VOICE_PROVIDER_WINRT else 1,
+            provider_order.get(str(row.get("provider") or ""), 99),
             str(row.get("name") or "").casefold(),
         ))
         with self.lock:
@@ -1936,14 +1942,92 @@ class MongrelHudApp:
         if result.returncode != 0:
             raise RuntimeError("winrt_speech_failed")
 
-    @classmethod
-    def _speak_voice_provider(cls, provider: str, text: str, volume: int, rate: int, voice_id: str = "") -> None:
+    @staticmethod
+    def _scale_pcm16_wav_volume(path: Path, volume: int) -> None:
+        level = max(0.0, min(1.0, int(volume) / 100.0))
+        if level >= 0.999:
+            return
+        with wave.open(str(path), "rb") as reader:
+            params = reader.getparams()
+            if params.sampwidth != 2:
+                raise RuntimeError("kokoro_wav_format_unsupported")
+            frames = reader.readframes(params.nframes)
+        samples = array("h")
+        samples.frombytes(frames)
+        if sys.byteorder != "little":
+            samples.byteswap()
+        if level <= 0.0:
+            samples = array("h", [0] * len(samples))
+        else:
+            for idx, sample in enumerate(samples):
+                samples[idx] = max(-32768, min(32767, int(sample * level)))
+        if sys.byteorder != "little":
+            samples.byteswap()
+        temp = path.with_suffix(".volume.wav")
+        with wave.open(str(temp), "wb") as writer:
+            writer.setparams(params)
+            writer.writeframes(samples.tobytes())
+        temp.replace(path)
+
+    def _speak_kokoro(self, text: str, volume: int, rate: int, voice_id: str) -> None:
+        if os.name != "nt":
+            raise RuntimeError("windows_speech_required")
+        paths = self._kokoro_paths()
+        if paths is None:
+            raise RuntimeError("kokoro_voice_pack_not_installed")
+        key = " ".join(str(voice_id or "").split())[:80]
+        sid = KOKORO_VOICE_SIDS.get(key)
+        if sid is None:
+            raise RuntimeError("kokoro_voice_not_found")
+        safe_text = " ".join(str(text or "").split())[:600]
+        if not safe_text:
+            return
+        speed = max(0.65, min(1.55, 1.15 ** max(-3, min(3, int(rate)))))
+        temp_dir = self.store.path.parent / "voice-temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        output = temp_dir / f"kokoro-{secrets.token_hex(8)}.wav"
+        args = [
+            str(paths["exe"]),
+            f"--kokoro-model={paths['model']}",
+            f"--kokoro-voices={paths['voices']}",
+            f"--kokoro-tokens={paths['tokens']}",
+            f"--kokoro-data-dir={paths['dataDir']}",
+            f"--kokoro-lexicon={paths['lexicon']}",
+            "--num-threads=4",
+            f"--sid={sid}",
+            f"--speed={speed:.4f}",
+            f"--output-filename={output}",
+            safe_text,
+        ]
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        try:
+            result = subprocess.run(
+                args,
+                cwd=str(paths["exe"].parent),
+                capture_output=True,
+                text=True,
+                timeout=120,
+                creationflags=flags,
+                check=False,
+            )
+            if result.returncode != 0 or not output.is_file() or output.stat().st_size < 44:
+                raise RuntimeError("kokoro_speech_failed")
+            self._scale_pcm16_wav_volume(output, volume)
+            import winsound
+            winsound.PlaySound(str(output), winsound.SND_FILENAME)
+        finally:
+            output.unlink(missing_ok=True)
+
+    def _speak_voice_provider(self, provider: str, text: str, volume: int, rate: int, voice_id: str = "") -> None:
         provider = str(provider or VOICE_PROVIDER_SYSTEM).strip().lower()
+        if provider == VOICE_PROVIDER_KOKORO:
+            self._speak_kokoro(text, volume, rate, voice_id)
+            return
         if provider == VOICE_PROVIDER_WINRT:
-            cls._speak_winrt(text, volume, rate, voice_id)
+            self._speak_winrt(text, volume, rate, voice_id)
             return
         if provider == VOICE_PROVIDER_SYSTEM:
-            cls._speak_system_speech(text, volume, rate, voice_id)
+            self._speak_system_speech(text, volume, rate, voice_id)
             return
         raise RuntimeError("voice_provider_unsupported")
 
