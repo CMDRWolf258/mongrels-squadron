@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+from ctypes import wintypes
 import difflib
 import json
 import math
@@ -47,6 +48,14 @@ TARGET_SCAN_DURATION = 2.1
 TARGET_SCAN_FRAMES = 7
 TARGET_SCAN_RECENT_LIMIT = 4
 TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
+HUD_CYAN = "#73dcff"
+HUD_WHITE = "#eefaff"
+HUD_MUTED = "#7193a2"
+HUD_DIM = "#28434e"
+HUD_RED = "#ff4d55"
+HUD_AMBER = "#ffb229"
+HUD_GREEN = "#67e39a"
+HUD_BLUE = "#55aef7"
 
 TACTICAL_MODULES = {
     "Pulse Laser": "offense",
@@ -76,6 +85,9 @@ TACTICAL_MODULES = {
     "Imperial Hammer": "offense",
     "Pacifier Frag-Cannon": "offense",
     "Retributor": "offense",
+    "Shield Generator": "defense",
+    "Prismatic Shield Generator": "defense",
+    "Bi-Weave Shield Generator": "defense",
     "Shield Cell Bank": "defense",
     "Shield Booster": "defense",
     "Chaff Launcher": "defense",
@@ -406,6 +418,7 @@ class MongrelHudApp:
         self.target_scan_status = {"active": False, "phase": "idle", "progress": 0, "message": "Ready", "error": ""}
         self.recent_targets: list[dict[str, Any]] = []
         self.restored_target_until = 0.0
+        self.wanted_flash_until = 0.0
         self._last_target_identity = ""
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
 
@@ -516,7 +529,7 @@ class MongrelHudApp:
         hwnd = ctypes.windll.user32.GetForegroundWindow()
         if not hwnd:
             raise RuntimeError("foreground_window_unavailable")
-        rect = ctypes.wintypes.RECT()
+        rect = wintypes.RECT()
         if not ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect)):
             raise RuntimeError("foreground_window_rect_failed")
         if rect.right <= rect.left or rect.bottom <= rect.top:
@@ -616,6 +629,9 @@ class MongrelHudApp:
             if engine is None:
                 raise RuntimeError(self.ocr_status.get("error") or "ocr_unavailable")
             frames: list[Any] = []
+            # Give the Tk loop one repaint so local overlay windows are hidden
+            # before the first foreground capture.
+            time.sleep(0.22)
             started = time.monotonic()
             for index in range(TARGET_SCAN_FRAMES):
                 frames.append(self._foreground_capture())
@@ -933,36 +949,61 @@ class MongrelHudApp:
 
     @staticmethod
     def module_category(name: str) -> str:
-        text = name.casefold()
-        hardpoint_words = ("cannon", "laser", "rail", "plasma", "missile", "torpedo", "fragment", "multi-cannon", "multicannon", "accelerator", "launcher", "mining laser", "abrasion blaster", "seismic charge", "displacement missile")
-        critical_words = ("power plant", "thruster", "drive", "frame shift", "shield generator", "power distributor", "life support", "sensor")
-        if any(word in text for word in hardpoint_words) and not any(word in text for word in ("heat sink", "chaff", "shield cell")):
-            return "hardpoints"
-        if any(word in text for word in critical_words):
-            return "critical"
-        return "secondary"
+        exact = TACTICAL_MODULES.get(str(name or ""))
+        if exact:
+            return exact
+        matched = match_module_name(name)
+        return TACTICAL_MODULES.get(matched or "", "core")
 
     def module_groups(self, target: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-        groups = {"hardpoints": [], "critical": [], "secondary": []}
+        groups = {"offense": [], "defense": [], "special": []}
         modules = target.get("modules") or {}
-        if isinstance(modules, dict):
-            for module in modules.values():
-                if isinstance(module, dict):
-                    groups[self.module_category(str(module.get("name") or ""))].append(module)
+        if not isinstance(modules, dict):
+            return groups
+        counts: dict[str, Counter] = {key: Counter() for key in groups}
+        order: dict[str, list[str]] = {key: [] for key in groups}
+        for module in modules.values():
+            if not isinstance(module, dict):
+                continue
+            raw_name = str(module.get("name") or "")
+            matched = match_module_name(raw_name) or raw_name
+            category = self.module_category(matched)
+            if category not in groups:
+                continue
+            canonical = "Heatsink Launcher" if matched == "Heat Sink Launcher" else matched
+            if counts[category][canonical] == 0:
+                order[category].append(canonical)
+            counts[category][canonical] += 1
+        for category in groups:
+            groups[category] = [{"name": name, "count": counts[category][name]} for name in order[category]]
         return groups
 
+    def tactical_groups_for_target(self, target: dict[str, Any] | None = None) -> dict[str, list[dict[str, Any]]]:
+        current = target if isinstance(target, dict) else (self.scout_state().get("target") or {})
+        intel = self.target_intel(current)
+        if isinstance(intel, dict) and isinstance(intel.get("groups"), dict):
+            return {
+                "offense": list(intel["groups"].get("offense") or []),
+                "defense": list(intel["groups"].get("defense") or []),
+                "special": list(intel["groups"].get("special") or []),
+            }
+        return self.module_groups(current if isinstance(current, dict) else {})
+
     @staticmethod
-    def module_cell(module: dict[str, Any] | None, width: int = 34) -> str:
-        if not module:
-            return " " * width
-        name = str(module.get("name") or "Module")
-        if len(name) > 20:
-            name = name[:19] + "…"
-        health = module.get("health")
-        hp = f"{health:.0f}%" if isinstance(health, (int, float)) else "—"
-        age = iso_age(module.get("observedAt"))
-        text = f"{name:<20} {hp:>4} {age:>5}"
-        return text[:width].ljust(width)
+    def tactical_lines(groups: dict[str, list[dict[str, Any]]]) -> list[str]:
+        lines: list[str] = []
+        for key, title in (("offense", "OFFENSE"), ("defense", "DEFENSE"), ("special", "SPECIAL")):
+            rows = groups.get(key) or []
+            if not rows:
+                continue
+            if lines:
+                lines.append("")
+            lines.append(title)
+            for row in rows:
+                name = str(row.get("name") or "Module")
+                count = max(1, int(row.get("count") or 1))
+                lines.append(name + (f" ×{count}" if count > 1 else ""))
+        return lines
 
     def combat_panel_texts(self) -> dict[str, str]:
         state = self.scout_state()
@@ -1030,27 +1071,18 @@ class MongrelHudApp:
                 target_lines.append(legal_line)
             subsystem = target.get("subsystem") or {}
             if subsystem.get("name"):
-                hp = subsystem.get("health")
-                hp_text = f"{hp:.0f}%" if isinstance(hp, (int, float)) else "—"
-                target_lines += ["", f"CURRENT  {str(subsystem['name']):<24} {hp_text:>4}", f"LAST SEEN {iso_age(subsystem.get('observedAt'))} AGO"]
+                target_lines += ["", f"SELECTED  {str(subsystem['name'])}"]
             target_text = "\n".join(target_lines)
         else:
             target_text = "TARGET\nNO TARGET"
 
-        groups = self.module_groups(target)
-        subsystem_lines = []
-        if any(groups.values()):
-            width, gap = 31, "   "
-            subsystem_lines.append(f"{'HARDPOINTS':<{width}}{gap}{'CRITICAL SYSTEMS':<{width}}{gap}{'SECONDARY':<{width}}")
-            rows = max(len(groups["hardpoints"]), len(groups["critical"]), len(groups["secondary"]))
-            for index in range(rows):
-                cells = []
-                for key in ("hardpoints", "critical", "secondary"):
-                    module = groups[key][index] if index < len(groups[key]) else None
-                    cells.append(self.module_cell(module, width))
-                subsystem_lines.append(gap.join(cells))
+        groups = self.tactical_groups_for_target(target)
+        subsystem_lines = ["TARGET LOADOUT"]
+        tactical = self.tactical_lines(groups)
+        if tactical:
+            subsystem_lines.extend(tactical)
         else:
-            subsystem_lines = ["SUBSYSTEMS", "No modules observed yet."]
+            subsystem_lines.append("No tactical loadout captured.")
 
         return {
             "own": "\n".join(own_lines),
@@ -1108,20 +1140,11 @@ class MongrelHudApp:
         lines += ["", "TARGET   " + "   ".join(target_bits)]
         subsystem = target.get("subsystem") or {}
         if subsystem.get("name"):
-            hp = subsystem.get("health")
-            hp_text = f"{hp:.0f}%" if isinstance(hp, (int, float)) else "—"
-            lines.append(f"CURRENT  {str(subsystem['name']):<28} {hp_text:>4}   · {iso_age(subsystem.get('observedAt'))} ago")
-        groups = self.module_groups(target)
-        if any(groups.values()):
-            width, gap = 34, "   "
-            lines += ["", f"{'HARDPOINTS':<{width}}{gap}{'CRITICAL SYSTEMS':<{width}}{gap}{'SECONDARY':<{width}}"]
-            rows = max(len(groups["hardpoints"]), len(groups["critical"]), len(groups["secondary"]))
-            for index in range(rows):
-                cells = []
-                for key in ("hardpoints", "critical", "secondary"):
-                    module = groups[key][index] if index < len(groups[key]) else None
-                    cells.append(self.module_cell(module, width))
-                lines.append(gap.join(cells))
+            lines.append(f"SELECTED  {str(subsystem['name'])}")
+        groups = self.tactical_groups_for_target(target)
+        tactical = self.tactical_lines(groups)
+        if tactical:
+            lines += ["", "TARGET LOADOUT", *tactical]
         return lines
 
     def surface_lines(self) -> list[str]:
@@ -1188,6 +1211,11 @@ class MongrelHudApp:
             prefix = str(row.get("priority") or "").upper()
             label = f"{row.get('system') or 'Squad-wide'} · {row.get('task') or 'Operational task'}"
             mission_lines.append(self.clip_line((prefix + "  " if prefix else "") + label, 78))
+            progress = row.get("progress") if isinstance(row.get("progress"), dict) else {}
+            target_value = progress.get("target")
+            current_value = progress.get("current")
+            if isinstance(target_value, (int, float)) and isinstance(current_value, (int, float)):
+                mission_lines.append(f"  {current_value:g} / {target_value:g} {progress.get('unit') or ''} · {float(progress.get('percent') or 0):.0f}%")
         attention = mission.get("attention") if isinstance(mission.get("attention"), list) else []
         if attention:
             mission_lines.extend(["", "WATCH"])
@@ -1234,12 +1262,13 @@ class MongrelHudApp:
                 line += f" · {row.get('claimCommander')}"
             scout_lines.append(self.clip_line(line, 78))
 
-        alert_rows = feed.get("alerts") if isinstance(feed.get("alerts"), list) else []
-        unacked = [row for row in alert_rows if isinstance(row, dict) and not bool(row.get("acknowledged"))]
-        if unacked:
-            alert_lines = [f"⚠ LEADERSHIP ALERTS · {len(unacked)} UNACKNOWLEDGED"]
-            for row in unacked[:6]:
-                alert_lines.append(self.clip_line(f"{str(row.get('type') or '').upper()} · {row.get('title') or 'Alert'}", 78))
+        alert_rows = [row for row in (feed.get("alerts") if isinstance(feed.get("alerts"), list) else []) if isinstance(row, dict)]
+        unacked = [row for row in alert_rows if not bool(row.get("acknowledged"))]
+        if alert_rows:
+            alert_lines = [f"LEADERSHIP ALERTS · {len(unacked)} UNACKNOWLEDGED · {len(alert_rows)} ACTIVE"]
+            for row in alert_rows[:6]:
+                state_label = "ACK" if row.get("acknowledged") else "NEW"
+                alert_lines.append(self.clip_line(f"{state_label} · {str(row.get('type') or '').upper()} · {row.get('title') or 'Alert'}", 78))
                 if row.get("detail"):
                     alert_lines.append("  " + self.clip_line(row.get("detail"), 74))
         else:
@@ -1260,6 +1289,255 @@ class MongrelHudApp:
         panels["notes"] = "NOTES\n" + (notes if notes else "No notes.")
         return panels
 
+    @staticmethod
+    def _panel_font(scale: float, size: int, bold: bool = False) -> tuple[Any, ...]:
+        return ("Consolas", max(8, round(size * scale)), "bold" if bold else "normal")
+
+    @staticmethod
+    def _alert_color(row: dict[str, Any]) -> str:
+        indicator = str(row.get("indicator") or "").lower()
+        if indicator == "red":
+            return HUD_RED
+        if indicator == "amber":
+            return HUD_AMBER
+        if indicator == "cyan":
+            return HUD_CYAN
+        return HUD_WHITE
+
+    def _target_transients(self, target: dict[str, Any]) -> None:
+        key = self.target_identity(target)
+        if key == self._last_target_identity:
+            return
+        self._last_target_identity = key
+        if target and str(target.get("legalStatus") or "").casefold() == "wanted":
+            self.wanted_flash_until = time.monotonic() + 3.0
+        if key and self.target_intel(target):
+            self.restored_target_until = time.monotonic() + 1.8
+
+    def _draw_title(self, canvas: tk.Canvas, title: str, scale: float, width: int, color: str = HUD_CYAN) -> float:
+        y = 8 * scale
+        canvas.create_text(8 * scale, y, text=title, anchor="nw", fill=color, font=self._panel_font(scale, 15, True))
+        line_y = y + 23 * scale
+        canvas.create_line(8 * scale, line_y, width - 8 * scale, line_y, fill=HUD_DIM, width=max(1, round(scale)))
+        return line_y + 8 * scale
+
+    def _draw_text(self, canvas: tk.Canvas, x: float, y: float, text: Any, scale: float, size: int = 11, color: str = HUD_WHITE, bold: bool = False, anchor: str = "nw", width: float | None = None) -> int:
+        kwargs: dict[str, Any] = {"text": str(text), "anchor": anchor, "fill": color, "font": self._panel_font(scale, size, bold)}
+        if width is not None:
+            kwargs["width"] = width
+        return canvas.create_text(x, y, **kwargs)
+
+    def _draw_progress(self, canvas: tk.Canvas, x: float, y: float, width: float, percent: float, scale: float, color: str = HUD_CYAN) -> None:
+        height = max(5, round(7 * scale))
+        pct = max(0.0, min(100.0, float(percent)))
+        canvas.create_rectangle(x, y, x + width, y + height, outline=HUD_DIM, width=max(1, round(scale)))
+        if pct > 0:
+            canvas.create_rectangle(x + 1, y + 1, x + 1 + max(0, width - 2) * pct / 100.0, y + height - 1, outline="", fill=color)
+
+    def _render_own_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        own, status = state.get("ship") or {}, state.get("status") or {}
+        width = round(410 * scale)
+        y = self._draw_title(canvas, "OWN SHIP", scale, width)
+        ship_name = str(own.get("name") or own.get("type") or "YOUR SHIP").upper()
+        self._draw_text(canvas, 8 * scale, y, ship_name, scale, 17, HUD_WHITE, True); y += 27 * scale
+        current = own.get("currentJumpRange")
+        current_text = f"{current:.2f} LY" if isinstance(current, (int, float)) else "—"
+        self._draw_text(canvas, 8 * scale, y, "CURRENT JUMP", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, width - 8 * scale, y - 3 * scale, current_text, scale, 17, HUD_CYAN, True, "ne"); y += 25 * scale
+        unladen = own.get("maxJumpRange")
+        fuel_main, fuel_reserve = status.get("fuelMain"), status.get("fuelReserve")
+        total_fuel = float(fuel_main) + (float(fuel_reserve) if isinstance(fuel_reserve, (int, float)) else 0.0) if isinstance(fuel_main, (int, float)) else None
+        rows = [
+            ("UNLADEN", f"{unladen:.2f} LY" if isinstance(unladen, (int, float)) else "—"),
+            ("FUEL", f"{total_fuel:.1f} t" if isinstance(total_fuel, (int, float)) else "—"),
+            ("CARGO", f"{int(status.get('cargo'))} t" if isinstance(status.get("cargo"), (int, float)) else "—"),
+            ("MASS", f"{own.get('currentMass'):.1f} t" if isinstance(own.get("currentMass"), (int, float)) else "—"),
+        ]
+        for label, value in rows:
+            self._draw_text(canvas, 8 * scale, y, label, scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 138 * scale, y, value, scale, 11, HUD_WHITE, True); y += 18 * scale
+        shields = own.get("shieldsUp")
+        shield_text = "UP" if shields is True else "DOWN" if shields is False else "—"
+        shield_color = HUD_CYAN if shields is True else HUD_RED if shields is False else HUD_MUTED
+        self._draw_text(canvas, 8 * scale, y, "SHIELDS", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 138 * scale, y, shield_text, scale, 11, shield_color, True)
+        hull = own.get("hullHealth")
+        if isinstance(hull, (int, float)):
+            self._draw_text(canvas, 220 * scale, y, "HULL", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 280 * scale, y, f"{hull:.0f}%", scale, 11, HUD_WHITE, True)
+        y += 20 * scale
+        pips = status.get("pips")
+        if isinstance(pips, list) and len(pips) >= 3:
+            self._draw_text(canvas, 8 * scale, y, f"SYS {pips[0]:.1f}   ENG {pips[1]:.1f}   WEP {pips[2]:.1f}", scale, 11, HUD_WHITE, True); y += 20 * scale
+        warnings = [label for key, label in (("massLocked", "MASS LOCK"), ("silentRunning", "SILENT"), ("lowFuel", "LOW FUEL"), ("overheating", "OVERHEAT")) if status.get(key)]
+        if warnings:
+            self._draw_text(canvas, 8 * scale, y, " · ".join(warnings), scale, 10, HUD_AMBER, True); y += 20 * scale
+        return width, round(y + 8 * scale)
+
+    def _render_target_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        state = self.scout_state(); target = state.get("target") or {}
+        self._target_transients(target if isinstance(target, dict) else {})
+        width = round(420 * scale); y = self._draw_title(canvas, "TARGET", scale, width)
+        if not target:
+            self._draw_text(canvas, 8 * scale, y, "NO TARGET", scale, 14, HUD_MUTED, True)
+            return width, round(y + 32 * scale)
+        name = str(target.get("pilotName") or target.get("ship") or "TARGET")
+        ship = str(target.get("ship") or "")
+        self._draw_text(canvas, 8 * scale, y, name, scale, 16, HUD_WHITE, True); y += 24 * scale
+        if ship and ship.casefold() not in name.casefold():
+            self._draw_text(canvas, 8 * scale, y, ship.upper(), scale, 10, HUD_MUTED, True); y += 18 * scale
+        legal = str(target.get("legalStatus") or "").upper()
+        bounty = target.get("bounty")
+        if legal:
+            wanted_flashing = legal == "WANTED" and time.monotonic() < self.wanted_flash_until
+            legal_color = HUD_RED if legal == "WANTED" and (not wanted_flashing or flash_on) else HUD_DIM if legal == "WANTED" else HUD_WHITE
+            self._draw_text(canvas, 8 * scale, y, legal, scale, 15 if legal == "WANTED" else 11, legal_color, True)
+            if isinstance(bounty, int) and bounty > 0:
+                self._draw_text(canvas, width - 8 * scale, y + 2 * scale, f"{bounty:,} CR", scale, 11, HUD_WHITE, True, "ne")
+            y += 24 * scale
+        subsystem = target.get("subsystem") or {}
+        if subsystem.get("name"):
+            self._draw_text(canvas, 8 * scale, y, "SELECTED", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 100 * scale, y, subsystem.get("name"), scale, 11, HUD_CYAN, True); y += 20 * scale
+        if self.target_intel(target):
+            label = "LOADOUT RESTORED" if time.monotonic() < self.restored_target_until else "LOADOUT CACHED"
+            self._draw_text(canvas, 8 * scale, y, label, scale, 9, HUD_GREEN, True); y += 18 * scale
+        return width, round(y + 8 * scale)
+
+    def _render_loadout_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state(); target = state.get("target") or {}
+        width = round(440 * scale); y = self._draw_title(canvas, "TARGET LOADOUT", scale, width)
+        scan = self.scan_status_snapshot()
+        groups = self.tactical_groups_for_target(target if isinstance(target, dict) else {})
+        if not any(groups.values()):
+            self._draw_text(canvas, 8 * scale, y, "NO CAPTURE FOR CURRENT TARGET", scale, 11, HUD_MUTED, True); y += 21 * scale
+            self._draw_text(canvas, 8 * scale, y, "Open Target → Sub-Targets, then tap SCAN LOADOUT.", scale, 9, HUD_MUTED, False, "nw", width - 16 * scale)
+            return width, round(y + 42 * scale)
+        colors = {"offense": HUD_RED, "defense": HUD_CYAN, "special": HUD_AMBER}
+        titles = {"offense": "OFFENSE", "defense": "DEFENSE", "special": "SPECIAL"}
+        for category in ("offense", "defense", "special"):
+            rows = groups.get(category) or []
+            if not rows:
+                continue
+            self._draw_text(canvas, 8 * scale, y, titles[category], scale, 10, colors[category], True); y += 19 * scale
+            for row in rows:
+                count = max(1, int(row.get("count") or 1))
+                label = str(row.get("name") or "Module") + (f" ×{count}" if count > 1 else "")
+                self._draw_text(canvas, 20 * scale, y, label, scale, 11, HUD_WHITE, True); y += 18 * scale
+            y += 5 * scale
+        return width, round(y + 5 * scale)
+
+    def _render_mission_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state(); feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        mission = feed.get("mission") if isinstance(feed.get("mission"), dict) else {}
+        width = round(520 * scale); y = self._draw_title(canvas, "MISSION CONTROL", scale, width)
+        if not mission:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+        self._draw_text(canvas, 8 * scale, y, f"{int(mission.get('orderCount') or 0)} ORDERS", scale, 10, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y, f"{int(mission.get('attentionCount') or 0)} ATTENTION", scale, 9, HUD_AMBER if mission.get("attentionCount") else HUD_MUTED, True, "ne"); y += 22 * scale
+        orders = mission.get("orders") if isinstance(mission.get("orders"), list) else []
+        for row in orders[:5]:
+            if not isinstance(row, dict):
+                continue
+            priority = str(row.get("priority") or "").upper()
+            priority_color = HUD_RED if priority in {"CRITICAL", "URGENT"} else HUD_AMBER if priority in {"HIGH", "PRIORITY"} else HUD_CYAN
+            self._draw_text(canvas, 8 * scale, y, str(row.get("system") or "SQUAD-WIDE"), scale, 11, HUD_WHITE, True)
+            if priority:
+                self._draw_text(canvas, width - 8 * scale, y, priority, scale, 9, priority_color, True, "ne")
+            y += 18 * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(row.get("task") or "Operational task", 66), scale, 9, HUD_MUTED, False); y += 17 * scale
+            progress = row.get("progress") if isinstance(row.get("progress"), dict) else {}
+            target = progress.get("target"); current = progress.get("current")
+            if isinstance(target, (int, float)) and target > 0 and isinstance(current, (int, float)):
+                pct = float(progress.get("percent") or 0)
+                color = HUD_GREEN if progress.get("met") else HUD_CYAN
+                self._draw_progress(canvas, 8 * scale, y, width - 165 * scale, pct, scale, color)
+                value = f"{current:g}/{target:g} {progress.get('unit') or ''}  {pct:.0f}%"
+                self._draw_text(canvas, width - 8 * scale, y - 5 * scale, value, scale, 9, color, True, "ne")
+                y += 18 * scale
+            y += 7 * scale
+        return width, round(y + 3 * scale)
+
+    def _active_alert_state(self, alerts: list[dict[str, Any]]) -> tuple[str, bool]:
+        unacked = [row for row in alerts if not bool(row.get("acknowledged"))]
+        source = unacked if unacked else alerts
+        flashing = bool(unacked)
+        if any(str(row.get("type") or "").casefold() == "faction" for row in source):
+            return HUD_RED, flashing
+        if any(str(row.get("type") or "").casefold() == "orders" for row in source):
+            return HUD_AMBER, flashing
+        if any(str(row.get("indicator") or "").casefold() == "red" for row in source):
+            return HUD_RED, flashing
+        if any(str(row.get("indicator") or "").casefold() == "amber" for row in source):
+            return HUD_AMBER, flashing
+        return (HUD_CYAN if source else HUD_GREEN), flashing
+
+    def _render_alerts_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        state = self.scout_state(); feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        alerts = [row for row in (feed.get("alerts") if isinstance(feed.get("alerts"), list) else []) if isinstance(row, dict)]
+        width = round(540 * scale); y = self._draw_title(canvas, "LEADERSHIP ALERTS", scale, width)
+        color, flashing = self._active_alert_state(alerts)
+        lamp_color = color if (not flashing or flash_on) else HUD_DIM
+        radius = 7 * scale
+        canvas.create_oval(8 * scale, y, 8 * scale + radius * 2, y + radius * 2, fill=lamp_color, outline=lamp_color)
+        unacked = sum(1 for row in alerts if not row.get("acknowledged"))
+        status = "CLEAR" if not alerts else f"{unacked} NEW · {len(alerts)} ACTIVE"
+        self._draw_text(canvas, 32 * scale, y - 2 * scale, status, scale, 11, color if alerts else HUD_GREEN, True); y += 24 * scale
+        for row in alerts[:6]:
+            row_color = self._alert_color(row)
+            acknowledged = bool(row.get("acknowledged"))
+            dot_color = row_color if not acknowledged else HUD_DIM
+            canvas.create_oval(9 * scale, y + 4 * scale, 15 * scale, y + 10 * scale, fill=dot_color, outline=dot_color)
+            title_color = HUD_WHITE if not acknowledged else HUD_MUTED
+            self._draw_text(canvas, 23 * scale, y, self.clip_line(row.get("title") or "Alert", 58), scale, 10, title_color, not acknowledged)
+            if acknowledged:
+                self._draw_text(canvas, width - 8 * scale, y, "ACK", scale, 8, row_color, True, "ne")
+            y += 17 * scale
+            if row.get("detail"):
+                self._draw_text(canvas, 23 * scale, y, self.clip_line(row.get("detail"), 68), scale, 8, HUD_MUTED, False); y += 15 * scale
+            y += 4 * scale
+        return width, round(y + 4 * scale)
+
+    def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
+        text = self.panel_texts().get(panel_id, "")
+        lines = text.splitlines()
+        title = lines[0] if lines else PANEL_TITLES.get(panel_id, panel_id.upper())
+        widths = {"bounties": 350, "trade": 500, "scoutboard": 500, "notes": 500, "surface": 480}
+        width = round(widths.get(panel_id, 440) * scale)
+        y = self._draw_title(canvas, title, scale, width)
+        for line in lines[1:]:
+            if not line:
+                y += 7 * scale
+                continue
+            color = HUD_WHITE
+            bold = False
+            upper = line.upper()
+            if "UNCLAIMED" in upper or "NO ACTIVE SITE" in upper:
+                color, bold = HUD_CYAN, True
+            if any(word in upper for word in ("DEGRADED", "UNAVAILABLE", "PRIORITY", "YOUR CLAIM")):
+                color, bold = HUD_AMBER, True
+            self._draw_text(canvas, 8 * scale, y, line, scale, 10, color, bold, "nw", width - 16 * scale)
+            y += 17 * scale
+        return width, round(y + 7 * scale)
+
+    def _render_panel_canvas(self, panel_id: str, canvas: tk.Canvas, scale: float, flash_on: bool) -> None:
+        canvas.delete("all")
+        if panel_id == "own":
+            width, height = self._render_own_canvas(canvas, scale)
+        elif panel_id == "target":
+            width, height = self._render_target_canvas(canvas, scale, flash_on)
+        elif panel_id == "subsystems":
+            width, height = self._render_loadout_canvas(canvas, scale)
+        elif panel_id == "mission":
+            width, height = self._render_mission_canvas(canvas, scale)
+        elif panel_id == "alerts":
+            width, height = self._render_alerts_canvas(canvas, scale, flash_on)
+        else:
+            width, height = self._render_generic_canvas(canvas, panel_id, scale)
+        canvas.configure(width=max(40, width), height=max(24, height))
+
     def _layout_revision(self) -> int:
         with self.lock:
             return self.layout_revision
@@ -1278,28 +1556,22 @@ class MongrelHudApp:
             self.profile_label.config(text=f"Profile: {profile.upper()}")
 
         layout = self.layout_snapshot()
-        texts = self.panel_texts()
         locked = bool(layout.get("locked"))
         master_visible = bool(layout.get("masterVisible"))
         revision = self._layout_revision()
+        scan_active = bool(self.scan_status_snapshot().get("active"))
+        flash_on = int(time.monotonic() * 4) % 2 == 0
         for panel_id, info in self.panel_windows.items():
             panel_cfg = layout["panels"][panel_id]
             active_for_profile = profile in (panel_cfg.get("profiles") or [])
-            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True))
+            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not scan_active
             window = info["window"]
             if not should_show:
                 window.withdraw()
                 continue
             window.deiconify()
             scale = float(panel_cfg.get("scale") or 1.0)
-            base_size = 11 if panel_id in {"mission", "trade", "scoutboard", "alerts", "notes"} else (12 if panel_id in {"bounties", "subsystems"} else 13)
-            foreground = "#aeeeff"
-            if panel_id == "alerts":
-                state = self.scout_state()
-                feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
-                if int(feed.get("unacknowledgedCount") or 0) > 0:
-                    foreground = "#ff5c5c" if int(time.time() * 2) % 2 == 0 else "#ffd166"
-            info["body"].config(text=texts.get(panel_id, ""), fg=foreground, font=("Consolas", max(9, round(base_size * scale)), "bold"))
+            self._render_panel_canvas(panel_id, info["body"], scale, flash_on)
             if info.get("appliedLocked") != locked:
                 self._apply_panel_edit_mode(panel_id, locked)
                 info["appliedLocked"] = locked
@@ -1348,11 +1620,9 @@ class MongrelHudApp:
         if locked:
             header.pack_forget()
             frame.config(bg="black", highlightthickness=0)
-            body.config(padx=0, pady=0)
         else:
             header.pack(fill="x", before=body)
             frame.config(bg="#16303b", highlightbackground="#56d7ef", highlightthickness=1)
-            body.config(padx=8, pady=7)
         self._set_clickthrough(window, locked)
 
     def _begin_panel_drag(self, panel_id: str, event: Any) -> None:
@@ -1404,7 +1674,7 @@ class MongrelHudApp:
         frame = tk.Frame(window, bg="black", highlightthickness=0)
         frame.pack(fill="both", expand=True)
         header = tk.Label(frame, text=f"  {PANEL_TITLES[panel_id]}  · DRAG TO MOVE", anchor="w", bg="#16303b", fg="#56d7ef", font=("Segoe UI", 9, "bold"), padx=5, pady=4)
-        body = tk.Label(frame, text="", justify="left", anchor="nw", bg="black", fg="#aeeeff", font=("Consolas", 13, "bold"), padx=0, pady=0)
+        body = tk.Canvas(frame, width=320, height=100, bg="black", highlightthickness=0, bd=0)
         body.pack(fill="both", expand=True)
         self.panel_windows[panel_id] = {"window": window, "frame": frame, "header": header, "body": body, "dragOffset": None, "appliedLocked": None, "appliedRevision": -1}
         header.bind("<ButtonPress-1>", lambda event, pid=panel_id: self._begin_panel_drag(pid, event))

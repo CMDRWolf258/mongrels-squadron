@@ -75,3 +75,12 @@ Mongrel HUD 0.6.0 adds an on-demand, local target-module capture workflow. Open 
 The scanner stitches overlapping frames in list order so modules visible in consecutive captures are not double-counted while genuine duplicate modules are preserved and condensed (for example, **Mine Launcher ×3**). Universal/core modules are used internally to align the scrolling list but are filtered out of the tactical display. The retained categories are **Offense**, **Defense**, and **Special**.
 
 The four most recent successful target captures are held in memory for the current HUD session. Returning to a matching pilot/ship restores that loadout automatically. This cache intentionally does not persist across HUD restarts.
+
+
+## HUD visual hierarchy and alert behavior
+
+The 0.6.0 overlay renderer now uses lightweight Canvas drawing instead of presenting each panel as one equal-weight text block. The existing Consolas-style technical look is retained, while titles, primary values, labels, warnings, status colors and graphical progress bars can be styled independently.
+
+Mission Control renders tracked Daily Order progress bars from the same combined progress concept used on the website. Leadership Alerts use one primary status lamp: faction conditions take **red** priority, Daily Order changes use **amber**, and other leadership notifications use cyan/priority coloring. New/unacknowledged conditions flash; acknowledging an alert stops the flashing but does **not** remove the active alert. It remains visible in both the overlay and iPad controller until its underlying feed condition ages out or resolves. A later materially different alert has a new identity and flashes again.
+
+Target subsystem health is no longer presented as live tactical information. The selected subsystem name may still be shown, but the Target Loadout panel focuses on captured **Offense / Defense / Special** capability instead. **WANTED** briefly flashes red on a newly acquired wanted target, then remains steady red.

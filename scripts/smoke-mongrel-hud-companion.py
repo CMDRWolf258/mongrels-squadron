@@ -39,7 +39,7 @@ with tempfile.TemporaryDirectory() as td:
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"668059324240760"},
         "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"fuelReserve":0.8,"cargo":12,"pips":[2.0,1.0,3.0]},
         "ship":{"name":"Honey Badger","maxJumpRange":31.127644,"currentJumpRange":31.597581,"currentMass":1040.3,"hullHealth":87.3,"shieldsUp":True},
-        "siteFeed":{"ok":True,"generatedAt":"2026-10-03T21:00:00Z","mission":{"orderCount":1,"attentionCount":1,"orders":[{"system":"Diaba","priority":"HIGH","task":"Win CZs"}],"attention":[{"system":"Diaba","influence":51.2,"alerts":["Conflict active"]}]},"trade":{"activeCount":1,"routes":[{"title":"Platinum Loop","loopProfit":16500000,"state":"healthy"}]},"scout":{"summary":{"available":1,"claimed":0,"priority":1},"jobs":[{"system":"Miwae","status":"available","rewardMillions":10}]},"alerts":[{"id":"a1","type":"payout","severity":"high","title":"PAYOUT REQUEST · Test","detail":"100,000,000 Cr","acknowledged":False}],"unacknowledgedCount":1},"siteFeedStatus":{"ok":True,"updatedAt":"2026-10-03T21:00:00Z","error":""},
+        "siteFeed":{"ok":True,"generatedAt":"2026-10-03T21:00:00Z","mission":{"orderCount":1,"attentionCount":1,"orders":[{"system":"Diaba","priority":"HIGH","task":"Win CZs","progress":{"current":10,"target":20,"percent":50,"unit":"CZ pts","met":False}}],"attention":[{"system":"Diaba","influence":51.2,"alerts":["Conflict active"]}]},"trade":{"activeCount":1,"routes":[{"title":"Platinum Loop","loopProfit":16500000,"state":"healthy"}]},"scout":{"summary":{"available":1,"claimed":0,"priority":1},"jobs":[{"system":"Miwae","status":"available","rewardMillions":10}]},"alerts":[{"id":"a1","type":"payout","severity":"high","title":"PAYOUT REQUEST · Test","detail":"100,000,000 Cr","acknowledged":False}],"unacknowledgedCount":1},"siteFeedStatus":{"ok":True,"updatedAt":"2026-10-03T21:00:00Z","error":""},
         "target":{"pilotName":"Test Target","ship":"Fer-de-Lance","shieldHealth":73.5,"hullHealth":88.0,"legalStatus":"Wanted","bounty":3842610,"subsystem":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"modules":{"power plant":{"name":"Power Plant","health":62.0,"observedAt":"2026-10-03T06:00:00Z"},"beam laser":{"name":"Beam Laser","health":81.0,"observedAt":"2026-10-03T06:00:01Z"},"cargo hatch":{"name":"Cargo Hatch","health":99.0,"observedAt":"2026-10-03T06:00:02Z"}}},
     },True,"")
     site=app.set_site_center(10,"Periclase")
@@ -57,9 +57,11 @@ with tempfile.TemporaryDirectory() as td:
     assert app.bounty_ledger()["unclaimed"]==500000
     combat="\n".join(app.combat_lines())
     assert "HONEY BADGER" in combat and "CURRENT 31.60 LY" in combat and "UNLADEN 31.13 LY" in combat and "MASS 1040.3 t" in combat and "SYS 2.0" in combat
-    assert "HARDPOINTS" in combat and "CRITICAL SYSTEMS" in combat and "SECONDARY" in combat
-    assert hud.MongrelHudApp.module_category("Power Plant")=="critical"
-    assert hud.MongrelHudApp.module_category("Beam Laser")=="hardpoints"
+    assert "TARGET LOADOUT" in combat
+    assert "CRITICAL SYSTEMS" not in combat
+    assert hud.MongrelHudApp.module_category("Power Plant")=="core"
+    assert hud.MongrelHudApp.module_category("Beam Laser")=="offense"
+    assert hud.MongrelHudApp.module_category("Shield Cell Bank")=="defense"
     layout=app.layout_snapshot()
     assert layout["locked"] is True and set(layout["panels"])==set(hud.PANEL_IDS)
     app.set_layout_locked(False)
@@ -75,6 +77,7 @@ with tempfile.TemporaryDirectory() as td:
     assert "Platinum Loop" in site_panels["trade"]
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
+    assert "10 / 20 CZ pts" in site_panels["mission"]
     app.save_panel_position("target",-120,333)
     assert app.layout_snapshot()["panels"]["target"]["x"]==-120
     app.reset_layout()
@@ -93,6 +96,7 @@ for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]
     assert token in api
 assert "resource_path" in source and "_MEIPASS" in source
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
+assert "tk.Canvas" in source and "_render_mission_canvas" in source and "_render_alerts_canvas" in source and "_render_loadout_canvas" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
