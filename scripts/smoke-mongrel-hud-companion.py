@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.4"
+assert hud.APP_VERSION=="0.7.5"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.4"
+    assert hud.APP_VERSION=="0.7.5"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -157,5 +157,9 @@ assert "mining_center_save_failed" in source and "signal_required" in source and
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
 assert 'class="mining-select"' in html and "min-height:58px" in html
 assert "Known on this body" in html and "All surface mining commodities" in html
+assert '<select id="rigs" class="mining-select">' in html and "7+ rigs" in html
+assert 'el("rigs").value="1"' in html
+assert 'SAVED ✓' in html and 'POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓' in html
+assert 'el("depositCommodity").value=""' in html and 'el("notes").value=""' in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
