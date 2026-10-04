@@ -76,6 +76,13 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.11.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.14.2 carrier-acoustic tuning:
+- Wolf's 0.14.1 live test confirmed the profiles were now distinguishable but still conservative. Interior/hangar should sound more reverberant; Remote Radio sounded mainly quieter rather than convincingly transmitted; short link tones before/after were requested.
+- 0.14.2 strengthens Interior PA to 55/115/205/335/500 ms reflections and Hangar PA to 80/180/330/520/760/1050 ms with higher wet gains and darker speaker roll-off; Local carrier comms remains the clean reference.
+- Remote Radio is tightened to roughly 460–2650 Hz with stronger tanh compression/saturation, slight deterministic carrier texture, a 14 ms slap, and RMS loudness compensation so bandwidth reduction does not simply make it quieter.
+- Remote Radio now adds a short two-tone pre-link chirp and reversed-style two-tone post-link chirp with small gaps. These tones are generated locally in the PCM post-process, so all voice providers get the same effect.
+- Rolling Windows release published successfully as `0.14.2`. Subjective live tuning remains the deciding test; if needed, adjust wet gains/tone amplitudes rather than changing the role/context architecture.
+
 Mongrel HUD 0.14.1 acoustic audibility correction:
 - Live test of 0.14.0 found the four acoustic preview choices could sound effectively identical. The selector/API/profile-routing path was correct; the first PA mix was too conservative and, critically, reflections ended with the dry WAV so there was no audible room tail after the final word.
 - 0.14.1 extends PA/hangar output by the longest reflection delay so the room tail remains audible. Interior PA now uses stronger 50/105/175/260 ms early reflections with mild speaker roll-off; hangar PA uses larger 70/155/285/430/620 ms reflections and a slightly darker speaker response.
