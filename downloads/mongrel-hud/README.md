@@ -37,7 +37,7 @@ From the paired iPad controller, **Install Voice Pack** tells the Windows HUD to
 After installation, 28 English Kokoro voices (US and UK, male and female) appear in the normal PA selector under **Local Neural · Kokoro**. Speech synthesis then runs locally/offline through `sherpa-onnx-offline-tts.exe`; generated temporary WAV files are volume-scaled locally, played synchronously, and deleted. Existing carrier phrases, placeholders, delays, countdowns, cooldown-ready timer and serial queue remain provider-neutral.
 
 Pinned optional-pack assets for 0.13.0:
-- sherpa-onnx runtime: v1.13.8, Windows x64 shared MD TTS build, 20,494,724 bytes, SHA-256 `3e971a04b2e0ba4dfa53d381a006367ce8c9f5f09b4ae00043e9845c2baded22`
+- sherpa-onnx runtime: v1.13.8, Windows x64 shared MT TTS build, 24,805,859 bytes, SHA-256 `6dffdc715a4465b989446a6105265d2cb345e7101591a17d35534b6758f6e8df`
 - Kokoro model: `kokoro-multi-lang-v1_0`, 349,906,910 bytes, SHA-256 `c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298`
 
 The provider boundary remains the extension point for future optional local voice packs; do not bundle large voice models into the core HUD EXE.
