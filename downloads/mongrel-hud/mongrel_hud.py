@@ -399,7 +399,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": ""}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
 
@@ -824,6 +824,18 @@ class MongrelHudApp:
             self.store.save()
         return text
 
+    def mission_system_filter(self) -> str:
+        with self.store.lock:
+            value = str(self.store.data.get("missionSystem") or "all").strip()
+        return value or "all"
+
+    def set_mission_system_filter(self, value: str) -> str:
+        selected = " ".join(str(value or "all").split())[:140] or "all"
+        with self.store.lock:
+            self.store.data["missionSystem"] = selected
+            self.store.save()
+        return selected
+
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
         for value in alert_ids[:40]:
@@ -974,6 +986,7 @@ class MongrelHudApp:
             "bounty": self.bounty_ledger(),
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
+            "missionSystem": self.mission_system_filter(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
             "targetScan": self.scan_status_snapshot(),
@@ -1981,6 +1994,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "layout": app.reset_layout()}
                 elif path == "/api/notes":
                     result = {"ok": True, "notes": app.set_notes(str(body.get("notes") or ""))}
+                elif path == "/api/mission-filter":
+                    result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]
