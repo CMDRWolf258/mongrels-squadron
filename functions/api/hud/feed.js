@@ -1,6 +1,5 @@
 import { json } from '../../../lib/auth.js';
 import { buildMissionControlData } from '../../../lib/bgs-operations.js';
-import { loadBgsDiscordView } from '../../../lib/bgs-discord.js';
 import { listOrderPublications } from '../../../lib/order-history.js';
 import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildOrderProgressForHud } from '../operations/order-reports.js';
@@ -12,6 +11,7 @@ import { isTradeRouteActive, readTradeRoutes } from '../../../lib/trade-intellig
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
 const ORDER_REVIEW_KEY='wolf-bgs-order-change-reviews-v1';
+const BGS_CONTROL_KEY='wolf-bgs-control-v1';
 const MAX_ALERTS=40;
 const RECENT_ORDER_MS=7*24*60*60*1000;
 
@@ -58,12 +58,12 @@ export async function buildHudFeed(request,env,auth){
     displayName:auth.ownerCommander||auth.label||'Mongrel Scout',
     access,
   };
-  const [mission,currentOrders,routes,systems,bgsView,rewardView,history,ackState,orderReviewState]=await Promise.all([
+  const [mission,currentOrders,routes,systems,bgsAlertState,rewardView,history,ackState,orderReviewState]=await Promise.all([
     buildMissionControlData(request,env,session),
     readCurrentOrderCycle(env),
     readTradeRoutes(env),
     loadActiveMongrelSystems(request),
-    loadBgsDiscordView(request,env),
+    readBgsFactionAlertState(env),
     access==='site_admin'?loadRewardDiscordView(env):Promise.resolve(null),
     access==='site_admin'?listOrderPublications(env,{limit:20}):Promise.resolve([]),
     readAcks(env,auth.ownerId),
@@ -85,7 +85,7 @@ export async function buildHudFeed(request,env,auth){
 
   const severityRank={critical:0,high:1,medium:2,low:3};
   const alerts=[
-    ...factionAlerts(bgsView),
+    ...factionAlerts(bgsAlertState),
     ...(access==='site_admin'?payoutAlerts(rewardView):[]),
     ...(access==='site_admin'?orderAlerts(history,{reviews:orderReviewState.reviews}):[]),
     ...tradeAlerts(routes),
@@ -96,8 +96,10 @@ export async function buildHudFeed(request,env,auth){
     .map(alert=>({
       ...alert,
       indicator:alertIndicator(alert.type,alert.severity),
-      acknowledged:Boolean(ackState.acks[alert.id]),
-      acknowledgedAt:ackState.acks[alert.id]||null,
+      // BGS Control review is authoritative for the master faction-warning lamp.
+      // Local/iPad ACK remains a secondary acknowledgement and never removes a row.
+      acknowledged:Boolean(alert.acknowledged||ackState.acks[alert.id]),
+      acknowledgedAt:alert.acknowledgedAt||ackState.acks[alert.id]||null,
     }));
 
   return{
@@ -265,15 +267,30 @@ function normalizeHudCoords(value){
   return coords.every(Number.isFinite)?coords:null;
 }
 
-export function factionAlerts(view){
-  return (Array.isArray(view?.actions)?view.actions:[]).slice(0,16).map(action=>({
-    id:alertId('faction',action?.family,action?.system,action?.detail),
-    type:'faction',
-    severity:clean(action?.family)==='retreat'?'critical':'high',
-    title:(clean(action?.family)==='retreat'?'RETREAT · ':'CONFLICT · ')+(clean(action?.system)||'Unknown system'),
-    detail:[clean(action?.detail),clean(action?.opponent)?'Opponent: '+clean(action.opponent):'',action?.dataFresh===false?'STALE DATA':''].filter(Boolean).join(' · '),
-    createdAt:action?.sourceAt||view?.generatedAt||new Date().toISOString(),
-  }));
+export function factionAlerts(state){
+  return (Array.isArray(state?.alerts)?state.alerts:[]).slice(0,16).map(episode=>{
+    const family=clean(episode?.family);
+    const familyLabel={
+      retreat:'RETREAT PENDING',
+      conflict:'CONFLICT CHANGE',
+      bust:'BUST',
+      'civil-unrest':'CIVIL UNREST',
+    }[family]||'FACTION ALERT';
+    const detail=family==='retreat'
+      ?'RETREAT PENDING'
+      :[(clean(episode?.detail)||familyLabel).toUpperCase(),episode?.phase==='pending'?'PENDING':'ACTIVE'].join(' ');
+    return{
+      id:alertId('faction',family,episode?.system,episode?.firstSeenAt||episode?.detail),
+      type:'faction',
+      severity:family==='retreat'?'critical':'high',
+      title:familyLabel+' · '+(clean(episode?.system)||'Unknown system'),
+      detail,
+      createdAt:episode?.firstSeenAt||new Date().toISOString(),
+      acknowledged:Boolean(episode?.reviewedAt),
+      acknowledgedAt:episode?.reviewedAt||null,
+      source:'bgs-control',
+    };
+  });
 }
 
 export function payoutAlerts(view){
@@ -465,6 +482,38 @@ async function authenticateScout(request,env){
     }
   }
   return null;
+}
+
+async function readBgsFactionAlertState(env){
+  try{
+    const stored=await env.DAILY_ORDERS.get(BGS_CONTROL_KEY,{type:'json'});
+    const episodes=stored?.alertEpisodes&&typeof stored.alertEpisodes==='object'
+      ?Object.values(stored.alertEpisodes)
+      :[];
+    const priority={retreat:0,conflict:1,'civil-unrest':2,bust:3};
+    const alerts=episodes
+      .filter(episode=>episode&&typeof episode==='object'&&!episode.removedAt)
+      .sort((a,b)=>Number(Boolean(a?.reviewedAt))-Number(Boolean(b?.reviewedAt))
+        ||(priority[clean(a?.family)]??9)-(priority[clean(b?.family)]??9)
+        ||String(a?.system||'').localeCompare(String(b?.system||'')))
+      .map(episode=>({
+        system:clean(episode?.system),
+        family:clean(episode?.family),
+        detail:clean(episode?.detail),
+        phase:clean(episode?.phase)||'active',
+        firstSeenAt:episode?.firstSeenAt||null,
+        reviewedAt:episode?.reviewedAt||null,
+      }))
+      .filter(episode=>episode.system&&episode.family);
+    return{
+      alerts,
+      listedCount:alerts.length,
+      unreviewedCount:alerts.filter(episode=>!episode.reviewedAt).length,
+    };
+  }catch(error){
+    console.error('Could not read BGS Control faction alerts for HUD',error);
+    return{alerts:[],listedCount:0,unreviewedCount:0};
+  }
 }
 
 async function readOrderReviewState(env){
