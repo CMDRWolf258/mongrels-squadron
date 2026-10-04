@@ -37,7 +37,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.6"
+APP_VERSION = "0.7.7"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -943,12 +943,13 @@ class MongrelHudApp:
             raise ValueError(str(result.get("error") if isinstance(result, dict) else "alert_ack_failed"))
         return result
 
-    def set_profile(self, profile: str) -> None:
+    def set_profile(self, profile: str) -> str:
         if profile not in {"combat", "surface"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
             self.store.save()
+        return profile
 
     def _load_mining_bridge_payload(self, url: str, invalid_error: str) -> list[dict[str, Any]]:
         request = urllib.request.Request(
@@ -2731,8 +2732,8 @@ def make_handler(app: MongrelHudApp):
                 return
             try:
                 if path == "/api/profile":
-                    app.set_profile(str(body.get("profile") or ""))
-                    result = {"ok": True}
+                    profile = app.set_profile(str(body.get("profile") or ""))
+                    result = {"ok": True, "profile": profile, "layout": app.layout_snapshot()}
                 elif path == "/api/layout":
                     if "locked" in body:
                         result = {"ok": True, "layout": app.set_layout_locked(bool(body.get("locked")))}
