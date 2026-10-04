@@ -39,53 +39,13 @@ No game inputs are generated. The companion is read-only with respect to Elite c
 
 ### Surface Mining
 
-Mongrel HUD 0.7.0 uses the curated 10-16 mining database as the source of truth instead of maintaining a second private coordinate list on the PC.
+Mongrel HUD 0.7.1 uses the curated 10-16 mining database as the source of truth.
 
-- Approved coordinates for the current 10-16 body are loaded from the archive and exposed on the iPad as selectable navigation targets.
-- When a body has one approved coordinate it can be selected automatically; when several are available, choose the exact signal/deposit from **Known Spots on This Body**.
-- **Surface Navigation** keeps the digital range, absolute target bearing, current heading and left/right turn readout, and adds a relative compass. The top of the instrument is the ship/SRV's current heading; the cyan pointer rotates toward the selected mining coordinate.
-- **Mining Intel** is a sister overlay showing the nearest known mining coordinates on the current body, including signal, commodity, rig count and range. The selected target is marked.
-- **REPORT DEPOSIT** captures current Elite system/body/latitude/longitude automatically. Commodity, Signal #, rig count and optional notes are sent through Mongrel Scout to the same curated mining database used by the personal 10-16 site. Site-admin reports can update/fill the curated database directly; other authorized Mongrel reports enter the normal review queue.
-- A small local report log remains only as a troubleshooting/offline record; it is not the authoritative mining database.
+- Mining **location centers** and individual **deposits** are separate records. The iPad can **Set / Update Center** for a Signal # from the current Elite surface position.
+- Surface Navigation shows two simultaneous instruments: one compass/readout for the selected Mining Location center and one for the selected deposit.
+- Mining Intel is scoped to the selected Signal # and lists its nearest deposits.
+- Report Deposit uses a canonical commodity dropdown populated from the mining database, with **Other / not listed** for genuinely new commodities.
+- Deposit reports capture current body, Signal #, latitude/longitude and planet radius automatically.
+- A same-Signal, same-commodity report within 1 km of an existing deposit is held as a **possible duplicate** instead of silently creating another coordinate. Mining Admin shows both entries side-by-side and lets the reviewer keep either the existing or new entry.
+- The local report log remains only as a troubleshooting/offline record; the curated archive is authoritative.
 
-## Security boundary
-
-Mongrel Scout itself remains loopback-only on **127.0.0.1:43857**. It is not exposed to the iPad or LAN.
-
-Only this companion listens on LAN port **43858**. The controller API requires the pairing PIN, uses an HttpOnly same-site session cookie, rejects cross-origin POSTs, and deliberately emits no permissive CORS header.
-
-This prototype uses ordinary HTTP because it is intended for a trusted private LAN. Do not port-forward 43858 or expose it directly to the internet.
-
-
-## Global information panels
-
-Mongrel HUD 0.6.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
-
-Scout 1.7.0 fetches the authenticated site summaries with its existing bound Scout token. The HUD companion never receives the raw token. Current faction operational alerts, active payout requests, recent material Daily Order changes, and degraded/unavailable managed trade routes become leadership alerts. Unacknowledged alerts flash on the PC overlay and can be acknowledged individually or all at once from the iPad; acknowledgements are stored by the website for the token owner.
-
-HUD Notes are intentionally local-first. Up to 4,000 characters can be entered on the iPad controller and displayed in the Notes overlay. Notes are stored in the local Mongrel HUD state file and are not uploaded to the website in this version.
-
-
-## Current jump calculator
-
-Mongrel HUD 0.6.0 displays Scout 1.8.0's live normal jump calculation as **CURRENT JUMP** and keeps Frontier's Loadout value beside it as **UNLADEN**. The current value responds to live cargo and fuel mass and uses the fitted FSD's class/rating, SCO/standard characteristics, engineering optimal-mass modifier, maximum fuel per jump and Guardian FSD Booster. The iPad diagnostic card also shows current cargo and calculated ship mass so flight testing can compare the result against Elite directly. Synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now.
-
-
-## Target loadout scanner
-
-Mongrel HUD 0.6.0 adds an on-demand, local target-module capture workflow. Open Elite's **Target → Sub-Targets** list and tap **SCAN LOADOUT** on the iPad. The HUD samples the foreground Elite window for about two seconds while you scroll, then performs OCR locally on Serenity. No screenshot or OCR text is uploaded.
-
-The scanner stitches overlapping frames in list order so modules visible in consecutive captures are not double-counted while genuine duplicate modules are preserved and condensed (for example, **Mine Launcher ×3**). Universal/core modules are used internally to align the scrolling list but are filtered out of the tactical display. The retained categories are **Offense**, **Defense**, and **Special**.
-
-The four most recent successful target captures are held in memory for the current HUD session. Returning to a matching pilot/ship restores that loadout automatically. This cache intentionally does not persist across HUD restarts.
-
-
-## HUD visual hierarchy and alert behavior
-
-Mongrel HUD 0.6.1 raises the overlay's readable baseline after the first 0.6.0 Canvas build proved too small and thin on high-resolution ultrawide displays. Canvas panels now render at a larger baseline, compact text has a 10-point floor, small tactical/detail text uses bold Consolas, and muted text has higher contrast. Individual 75–150% panel controls still work relative to that improved baseline.
-
-The 0.6.0 overlay renderer now uses lightweight Canvas drawing instead of presenting each panel as one equal-weight text block. The existing Consolas-style technical look is retained, while titles, primary values, labels, warnings, status colors and graphical progress bars can be styled independently.
-
-Mission Control renders tracked Daily Order progress bars from the same combined progress concept used on the website. Leadership Alerts use one primary status lamp: faction conditions take **red** priority, Daily Order changes use **amber**, and other leadership notifications use cyan/priority coloring. New/unacknowledged conditions flash; acknowledging an alert stops the flashing but does **not** remove the active alert. It remains visible in both the overlay and iPad controller until its underlying feed condition ages out or resolves. A later materially different alert has a new identity and flashes again.
-
-Target subsystem health is no longer presented as live tactical information. The selected subsystem name may still be shown, but the Target Loadout panel focuses on captured **Offense / Defense / Special** capability instead. **WANTED** briefly flashes red on a newly acquired wanted target, then remains steady red.
