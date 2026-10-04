@@ -75,6 +75,7 @@ with tempfile.TemporaryDirectory() as td:
     assert state["connected"] is True and state["activeSite"]["id"]==42
     assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
+    assert "Periclase" in state["miningCommodities"]
     app.process_scout_event({"type":"bounty.awarded","totalReward":842615})
     app.process_scout_event({"type":"bounty.awarded","totalReward":100000})
     app.process_scout_event({"type":"bounty.redeemed","amount":2000000})
@@ -116,7 +117,7 @@ with tempfile.TemporaryDirectory() as td:
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
