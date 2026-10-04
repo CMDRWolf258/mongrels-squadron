@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.8.0"
+assert hud.APP_VERSION=="0.8.1"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -111,7 +111,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.8.0"
+    assert hud.APP_VERSION=="0.8.1"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -202,6 +202,7 @@ assert 'str(row.get("systemName") or TEN16_SYSTEM)' in source
 assert "SURFACE_MINING_COMMODITIES" in source and '"Platinum"' in source and '"Monazite"' in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
 assert "_render_cargo_canvas" in source and '"cargo": "CARGO"' in source
+assert "width = round(410 * scale)" in source
 assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
 assert 'class="mining-select"' in html and "min-height:58px" in html
