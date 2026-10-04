@@ -1371,7 +1371,7 @@ class MongrelHudApp:
         nav = self.surface_nav()
         if nav:
             site = nav["site"]
-            label = f"SITE #{site.get('siteNumber')}"
+            label = f"SIGNAL #{site.get('signal')}"
             if site.get("commodity"):
                 label += f" · {site['commodity']}"
             lines += ["", label, f"{format_distance(nav['distance'])}   {nav['bearing']:.0f}°   {relative_text(nav.get('relative'))}"]
@@ -1563,6 +1563,110 @@ class MongrelHudApp:
         canvas.create_rectangle(x, y, x + width, y + height, outline=HUD_DIM, width=max(1, round(scale)))
         if pct > 0:
             canvas.create_rectangle(x + 1, y + 1, x + 1 + max(0, width - 2) * pct / 100.0, y + height - 1, outline="", fill=color)
+
+    def _draw_nav_compass(self, canvas: tk.Canvas, cx: float, cy: float, radius: float, nav: dict[str, Any], scale: float) -> None:
+        canvas.create_oval(cx - radius, cy - radius, cx + radius, cy + radius, outline=HUD_DIM, width=max(1, round(1.5 * scale)))
+        inner = radius * 0.72
+        canvas.create_oval(cx - inner, cy - inner, cx + inner, cy + inner, outline=HUD_DIM, width=max(1, round(scale)))
+        for degrees in range(0, 360, 45):
+            angle = math.radians(degrees)
+            outer_x = cx + math.sin(angle) * radius
+            outer_y = cy - math.cos(angle) * radius
+            inner_x = cx + math.sin(angle) * (radius - 7 * scale)
+            inner_y = cy - math.cos(angle) * (radius - 7 * scale)
+            canvas.create_line(inner_x, inner_y, outer_x, outer_y, fill=HUD_MUTED, width=max(1, round(scale)))
+        self._draw_text(canvas, cx, cy - radius - 3 * scale, "AHEAD", scale, 7, HUD_MUTED, True, "s")
+
+        relative = nav.get("relative")
+        if isinstance(relative, (int, float)):
+            angle = math.radians(float(relative))
+            mode = "REL"
+        else:
+            angle = math.radians(float(nav.get("bearing") or 0.0))
+            mode = "N-UP"
+        tip_x = cx + math.sin(angle) * (radius - 10 * scale)
+        tip_y = cy - math.cos(angle) * (radius - 10 * scale)
+        tail_x = cx - math.sin(angle) * (radius * 0.23)
+        tail_y = cy + math.cos(angle) * (radius * 0.23)
+        wing = 7 * scale
+        perp_x = math.cos(angle) * wing
+        perp_y = math.sin(angle) * wing
+        canvas.create_polygon(
+            tip_x, tip_y,
+            tail_x + perp_x, tail_y + perp_y,
+            tail_x - perp_x, tail_y - perp_y,
+            fill=HUD_CYAN,
+            outline=HUD_SHADOW,
+            width=max(1, round(scale)),
+        )
+        canvas.create_oval(cx - 3 * scale, cy - 3 * scale, cx + 3 * scale, cy + 3 * scale, fill=HUD_WHITE, outline=HUD_SHADOW)
+        self._draw_text(canvas, cx, cy + radius + 5 * scale, mode, scale, 7, HUD_MUTED, True, "n")
+
+    def _render_surface_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        status = state.get("status") or {}
+        system = state.get("system") or {}
+        width = round(520 * scale)
+        y = self._draw_title(canvas, "SURFACE MINING", scale, width)
+
+        body = short_body_name(state) or str(status.get("bodyName") or "—")
+        self._draw_text(canvas, 8 * scale, y, body.upper(), scale, 13, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y, self.clip_line(system.get("name") or "—", 42), scale, 8, HUD_MUTED, True, "ne")
+        y += 24 * scale
+
+        nav = self.surface_nav()
+        sites = self.sites_for_current_body()
+        if not nav:
+            if not self._in_ten16(state):
+                message = "CURATED MINING NAV AVAILABLE IN 10-16"
+            elif len(sites) > 1:
+                message = f"SELECT A MINING SPOT · {len(sites)} KNOWN ON THIS BODY"
+            elif not sites:
+                message = "NO SAVED COORDINATES ON THIS BODY"
+            else:
+                message = "WAITING FOR SURFACE POSITION"
+            self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_AMBER if sites else HUD_MUTED, True)
+            y += 22 * scale
+            lat, lon = status.get("latitude"), status.get("longitude")
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                self._draw_text(canvas, 8 * scale, y, f"POSITION  {float(lat):.6f}, {float(lon):.6f}", scale, 9, HUD_MUTED, True)
+                y += 18 * scale
+            return width, round(y + 8 * scale)
+
+        site = nav["site"]
+        rigs = site.get("rigs")
+        label = f"SIGNAL #{int(site.get('signal') or 0)} · {str(site.get('commodity') or 'MINING SPOT').upper()}"
+        if isinstance(rigs, int):
+            label += f" · {rigs} RIG{'S' if rigs != 1 else ''}"
+        self._draw_text(canvas, 8 * scale, y, label, scale, 10, HUD_CYAN, True)
+        y += 22 * scale
+
+        compass_cx = width - 70 * scale
+        compass_cy = y + 51 * scale
+        compass_radius = 48 * scale
+        self._draw_nav_compass(canvas, compass_cx, compass_cy, compass_radius, nav, scale)
+
+        heading = status.get("heading")
+        self._draw_text(canvas, 8 * scale, y, "RANGE", scale, 8, HUD_MUTED, True)
+        self._draw_text(canvas, 92 * scale, y, format_distance(nav.get("distance")), scale, 11, HUD_WHITE, True)
+        y += 20 * scale
+        self._draw_text(canvas, 8 * scale, y, "TARGET", scale, 8, HUD_MUTED, True)
+        self._draw_text(canvas, 92 * scale, y, f"{float(nav.get('bearing') or 0):.0f}°", scale, 11, HUD_CYAN, True)
+        if isinstance(heading, (int, float)):
+            self._draw_text(canvas, 180 * scale, y, "HDG", scale, 8, HUD_MUTED, True)
+            self._draw_text(canvas, 225 * scale, y, f"{float(heading):.0f}°", scale, 10, HUD_WHITE, True)
+        y += 20 * scale
+        self._draw_text(canvas, 8 * scale, y, "TURN", scale, 8, HUD_MUTED, True)
+        self._draw_text(canvas, 92 * scale, y, relative_text(nav.get("relative")) or "—", scale, 11, HUD_CYAN, True)
+        y += 22 * scale
+
+        self._draw_text(canvas, 8 * scale, y, f"TARGET COORD  {float(site['latitude']):.6f}, {float(site['longitude']):.6f}", scale, 8, HUD_MUTED, True)
+        y += 16 * scale
+        lat, lon = status.get("latitude"), status.get("longitude")
+        if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+            self._draw_text(canvas, 8 * scale, y, f"CURRENT       {float(lat):.6f}, {float(lon):.6f}", scale, 8, HUD_MUTED, True)
+            y += 16 * scale
+        return width, round(max(y + 5 * scale, compass_cy + compass_radius + 18 * scale))
 
     def _render_own_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
@@ -1970,6 +2074,8 @@ class MongrelHudApp:
             width, height = self._render_target_canvas(canvas, scale, flash_on)
         elif panel_id == "subsystems":
             width, height = self._render_loadout_canvas(canvas, scale)
+        elif panel_id == "surface":
+            width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
