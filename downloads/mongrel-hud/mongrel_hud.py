@@ -1563,12 +1563,13 @@ class MongrelHudApp:
         locked = bool(layout.get("locked"))
         master_visible = bool(layout.get("masterVisible"))
         revision = self._layout_revision()
-        scan_active = bool(self.scan_status_snapshot().get("active"))
+        scan_state = self.scan_status_snapshot()
+        hide_for_capture = scan_state.get("phase") == "capturing"
         flash_on = int(time.monotonic() * 4) % 2 == 0
         for panel_id, info in self.panel_windows.items():
             panel_cfg = layout["panels"][panel_id]
             active_for_profile = profile in (panel_cfg.get("profiles") or [])
-            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not scan_active
+            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
             window = info["window"]
             if not should_show:
                 window.withdraw()
