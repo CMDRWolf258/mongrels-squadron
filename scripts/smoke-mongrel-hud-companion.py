@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.6"
+assert hud.APP_VERSION=="0.7.7"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.6"
+    assert hud.APP_VERSION=="0.7.7"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -115,8 +115,17 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["target"]["x"]==-120
     app.reset_layout()
     assert app.layout_snapshot()["panels"]["target"]["x"]==40
-    app.set_profile("surface")
+    # Profile switching must never rewrite user panel assignments.
+    before_profiles={panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}
+    app.set_panel_settings("surface",profiles=["combat","surface"])
+    app.set_panel_settings("own",profiles=["surface"])
+    custom_profiles={panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}
+    assert custom_profiles!=before_profiles
+    assert app.set_profile("surface")=="surface"
     assert store.data["profile"]=="surface"
+    assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
+    assert app.set_profile("combat")=="combat"
+    assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
 for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
@@ -166,3 +175,7 @@ assert 'function holdRefresh' in html and 'interactionUntil' in html and 'applyL
 assert 'Display control failed' in html and 'Layout lock failed' in html and 'Panel toggle failed' in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
+
+assert 'mutationEpoch' in html and 'async function mutate' in html
+assert 'Profile switch failed' in html and 'profile active' in html
+assert 'result = {"ok": True, "profile": profile, "layout": app.layout_snapshot()}' in source
