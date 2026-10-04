@@ -49,7 +49,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.11.1"
+APP_VERSION = "0.12.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -219,6 +219,15 @@ PANEL_TITLES = {
 }
 
 
+VOICE_PROVIDER_SYSTEM = "system"
+VOICE_PROVIDER_WINRT = "winrt"
+VOICE_PROVIDER_LABELS = {
+    VOICE_PROVIDER_SYSTEM: "Windows Legacy (System.Speech)",
+    VOICE_PROVIDER_WINRT: "Windows Modern (WinRT)",
+}
+VOICE_PROVIDER_IDS = frozenset(VOICE_PROVIDER_LABELS)
+
+
 CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
     "docking.requested": {"label": "Docking request", "enabled": False, "minDelay": 7.0, "maxDelay": 10.0, "cooldown": 20.0, "phrase": "Docking request transmitted to {carrier}."},
     "docking.granted": {"label": "Docking granted", "enabled": True, "minDelay": 5.0, "maxDelay": 7.0, "cooldown": 20.0, "phrase": "Docking clearance confirmed. Proceed to {pad}."},
@@ -239,6 +248,8 @@ def default_voice_settings() -> dict[str, Any]:
         "carrierPa": True,
         "volume": 75,
         "rate": 0,
+        "voiceProvider": VOICE_PROVIDER_SYSTEM,
+        "voiceId": "",
         "voiceName": "",
         "cues": {key: dict(value) for key, value in CARRIER_VOICE_CUES.items()},
     }
@@ -255,12 +266,22 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
         rate = int(raw.get("rate", defaults["rate"]))
     except (TypeError, ValueError):
         rate = int(defaults["rate"])
+    voice_name = " ".join(str(raw.get("voiceName") or "").split())[:160]
+    voice_provider = str(raw.get("voiceProvider") or VOICE_PROVIDER_SYSTEM).strip().lower()
+    if voice_provider not in VOICE_PROVIDER_IDS:
+        voice_provider = VOICE_PROVIDER_SYSTEM
+    voice_id = " ".join(str(raw.get("voiceId") or "").split())[:512]
+    # 0.11.x stored only voiceName; migrate legacy selections without changing them.
+    if voice_provider == VOICE_PROVIDER_SYSTEM and not voice_id and voice_name:
+        voice_id = voice_name
     out = {
         "enabled": bool(raw.get("enabled", defaults["enabled"])),
         "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
         "volume": max(0, min(100, volume)),
         "rate": max(-3, min(3, rate)),
-        "voiceName": " ".join(str(raw.get("voiceName") or "").split())[:160],
+        "voiceProvider": voice_provider,
+        "voiceId": voice_id,
+        "voiceName": voice_name,
         "cues": {},
     }
     raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
@@ -1038,7 +1059,7 @@ class MongrelHudApp:
             raise ValueError("voice_settings_required")
         with self.store.lock:
             current = normalized_voice_settings(self.store.data.get("voice"))
-            for key in ("enabled", "carrierPa", "volume", "rate", "voiceName"):
+            for key in ("enabled", "carrierPa", "volume", "rate", "voiceProvider", "voiceId", "voiceName"):
                 if key in value:
                     current[key] = value[key]
             cue_updates = value.get("cues")
