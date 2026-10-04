@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.0"
+PLUGIN_VERSION = "1.8.1"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1698,9 +1698,21 @@ def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
             elif response.status_code == 422 and detail == "mongrels_not_present":
                 _set_status("Skipped — Mongrels absent")
             else:
-                _set_status(f"Upload failed ({response.status_code})")
-        except Exception:
-            _set_status("Upload failed — network")
+                kind = str(payload.get("kind") or "bgs").strip().lower()
+                label = {
+                    "market": "Market upload",
+                    "facility": "Facility upload",
+                    "facility_visit": "Station context",
+                    "facility_host": "Station host",
+                    "bgs": "BGS upload",
+                }.get(kind, "BGS upload")
+                detail_text = str(detail or "").strip()
+                suffix = f": {detail_text}" if detail_text else ""
+                _set_status(f"{label} failed ({response.status_code}){suffix}")
+        except Exception as exc:
+            message = str(exc or "").strip()
+            suffix = f": {message[:80]}" if message else ""
+            _set_status(f"Upload failed — network{suffix}")
 
 
 def _initial_status() -> str:
