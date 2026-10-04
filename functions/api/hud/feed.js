@@ -150,6 +150,7 @@ export function summarizeMission(mission,currentOrders,progressState={}){
     updatedAt:currentOrders?.updatedAt||mission?.meta?.generatedAt||null,
     orderCount:orders.length,
     attentionCount:Number(mission?.meta?.attentionCount||attention.length||0),
+    systems:unique(orders.map(order=>order.system)),
     orders,
     attention,
   };
@@ -217,7 +218,7 @@ export function summarizeTrades(routes){
 export function summarizeScoutBoard(board){
   const jobs=(Array.isArray(board?.jobs)?board.jobs:[])
     .filter(job=>!['fresh','fresh_unattributed','disabled'].includes(clean(job?.status)))
-    .slice(0,8)
+    .slice(0,250)
     .map(job=>({
       system:clean(job?.system),
       status:clean(job?.status),
@@ -228,16 +229,34 @@ export function summarizeScoutBoard(board){
       claimMine:Boolean(job?.claim?.mine),
       claimExpiresAt:job?.claim?.expiresAt||null,
       latestScoutAt:job?.latestScoutAt||null,
+      coords:normalizeHudCoords(job?.coords),
+      coordinateSource:clean(job?.coordinateSource),
     }));
+  const origin=board?.viewer?.lastScoutLocation&&typeof board.viewer.lastScoutLocation==='object'
+    ?{
+      system:clean(board.viewer.lastScoutLocation.system),
+      coords:normalizeHudCoords(board.viewer.lastScoutLocation.coords),
+      observedAt:board.viewer.lastScoutLocation.observedAt||null,
+      coordinateSource:clean(board.viewer.lastScoutLocation.coordinateSource),
+    }
+    :null;
   return{
     summary:{
       available:Number(board?.summary?.available||0),
       claimed:Number(board?.summary?.claimed||0),
       fresh:Number(board?.summary?.fresh||0),
       priority:Number(board?.summary?.priority||0),
+      coordinates:Number(board?.summary?.coordinates||0),
     },
+    origin:origin?.coords?origin:null,
     jobs,
   };
+}
+
+function normalizeHudCoords(value){
+  if(!Array.isArray(value)||value.length<3)return null;
+  const coords=value.slice(0,3).map(Number);
+  return coords.every(Number.isFinite)?coords:null;
 }
 
 export function factionAlerts(view){
