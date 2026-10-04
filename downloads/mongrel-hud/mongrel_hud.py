@@ -146,7 +146,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "mission", "trade", "scoutboard", "alerts", "notes")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
 VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -157,7 +157,9 @@ PANEL_TITLES = {
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
-    "alerts": "LEADERSHIP ALERTS",
+    "scoutnearby": "NEAREST SCOUT JOBS",
+    "alerts": "FACTION ALERTS",
+    "orderalerts": "DAILY ORDER CHANGES",
     "notes": "NOTES",
 }
 
@@ -175,7 +177,9 @@ def default_layout() -> dict[str, Any]:
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "scoutnearby": {"x": 1260, "y": 790, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
+            "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
             "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "surface"]},
         },
     }
