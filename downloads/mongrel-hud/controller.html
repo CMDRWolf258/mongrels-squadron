@@ -29,9 +29,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <h2>PNEUMA · CARRIER PA</h2>
       <p class="muted">Local Windows announcements for your own Fleet Carrier. Elite's built-in voices can stay enabled; each event keeps its own delay and anti-spam timing.</p>
       <div class="layout-actions"><button type="button" id="voiceMaster">VOICE ON</button><button type="button" id="carrierPaToggle">CARRIER PA ON</button><button type="button" id="voiceTest">TEST SELECTED VOICE</button></div>
-      <label for="voiceSelect">Windows voice</label>
-      <select id="voiceSelect" class="voice-select"><option value="">System default</option></select>
-      <div class="layout-hint" id="voiceCatalogStatus">Loading installed Windows voices…</div>
+      <label for="voiceSelect">PA voice</label>
+      <select id="voiceSelect" class="voice-select"><option value="system|">System default · Windows Legacy</option></select>
+      <div class="layout-hint" id="voiceCatalogStatus">Loading Windows voice providers…</div>
+      <div class="layout-hint">Modern (WinRT) voices appear separately from legacy System.Speech voices. This provider layout is also the attachment point for future local neural voice packs.</div>
       <div class="voice-volume"><label for="voiceVolume">PA volume</label><strong id="voiceVolumeValue">75%</strong><input id="voiceVolume" type="range" min="0" max="100" step="5" value="75"></div>
       <div class="voice-rate"><label for="voiceRate">Speech rate</label><strong id="voiceRateValue">0</strong><input id="voiceRate" type="range" min="-3" max="3" step="1" value="0"></div>
       <p class="layout-hint">Departure countdowns are generated locally from Elite's scheduled carrier departure time. The ready-for-next-jump timer starts when the carrier jump completes.</p>
@@ -247,13 +248,30 @@ function render(){
   var rate=Number.isFinite(Number(voice.rate))?Math.max(-3,Math.min(3,Number(voice.rate))):0;
   if(document.activeElement!==el("voiceRate"))el("voiceRate").value=String(rate);
   setText(el("voiceRateValue"),String(Math.round(rate)));
-  var voiceSelect=el("voiceSelect"),selectedVoice=String(voice.voiceName||"");
+  var voiceSelect=el("voiceSelect"),selectedProvider=String(voice.voiceProvider||"system"),selectedId=String(voice.voiceId||(selectedProvider==="system"?(voice.voiceName||""):""));
+  var voiceValue=function(provider,id){return encodeURIComponent(String(provider||"system"))+"|"+encodeURIComponent(String(id||""))};
+  var selectedVoiceValue=voiceValue(selectedProvider,selectedId);
   if(document.activeElement!==voiceSelect){
-    var voiceOptions=['<option value="">System default</option>'].concat(voiceCatalog.map(function(v){var meta=[v.culture,v.gender].filter(Boolean).join(" · ");return '<option value="'+escapeAttr(v.name||"")+'">'+escapeHtml(v.name||"Windows voice")+(meta?" · "+escapeHtml(meta):"")+'</option>'}));
-    if(selectedVoice&&!voiceCatalog.some(function(v){return v&&v.name===selectedVoice}))voiceOptions.push('<option value="'+escapeAttr(selectedVoice)+'">'+escapeHtml(selectedVoice)+' · unavailable</option>');
-    var voiceHtml=voiceOptions.join("");if(voiceSelect.innerHTML!==voiceHtml)voiceSelect.innerHTML=voiceHtml;voiceSelect.value=selectedVoice;
+    var providerOrder=["winrt","system"],voiceOptions=['<option value="'+voiceValue("system","")+'">System default · Windows Legacy</option>'];
+    providerOrder.forEach(function(provider){
+      var rows=voiceCatalog.filter(function(v){return v&&String(v.provider||"system")===provider});
+      if(!rows.length)return;
+      var label=rows[0].providerLabel||(provider==="winrt"?"Windows Modern (WinRT)":"Windows Legacy (System.Speech)");
+      voiceOptions.push('<optgroup label="'+escapeAttr(label)+'">');
+      rows.forEach(function(v){var meta=[v.culture,v.gender].filter(Boolean).join(" · ");voiceOptions.push('<option value="'+voiceValue(v.provider,v.id)+'">'+escapeHtml(v.name||"Windows voice")+(meta?" · "+escapeHtml(meta):"")+'</option>')});
+      voiceOptions.push('</optgroup>');
+    });
+    var selectedFound=(selectedProvider==="system"&&!selectedId)||voiceCatalog.some(function(v){return v&&String(v.provider||"system")===selectedProvider&&String(v.id||"")===selectedId});
+    if(selectedId&&!selectedFound)voiceOptions.push('<option value="'+selectedVoiceValue+'">'+escapeHtml(voice.voiceName||selectedId)+' · unavailable</option>');
+    var voiceHtml=voiceOptions.join("");if(voiceSelect.innerHTML!==voiceHtml)voiceSelect.innerHTML=voiceHtml;voiceSelect.value=selectedVoiceValue;
   }
-  setText(el("voiceCatalogStatus"),voiceCatalog.length?(voiceCatalog.length+" Windows voice"+(voiceCatalog.length===1?"":"s")+" available to Mongrel HUD"):(voiceStatus.catalogError?("Voice list unavailable · "+String(voiceStatus.catalogError).replaceAll("_"," ")):"No Windows System.Speech voices reported yet"));
+  var modernCount=voiceCatalog.filter(function(v){return v&&v.provider==="winrt"}).length,legacyCount=voiceCatalog.filter(function(v){return v&&v.provider==="system"}).length,catalogParts=[];
+  if(modernCount)catalogParts.push("Modern "+modernCount);
+  if(legacyCount)catalogParts.push("Legacy "+legacyCount);
+  var catalogErrors=voiceStatus.catalogErrors||{};
+  if(catalogErrors.winrt)catalogParts.push("Modern unavailable");
+  if(catalogErrors.system)catalogParts.push("Legacy unavailable");
+  setText(el("voiceCatalogStatus"),catalogParts.length?(catalogParts.join(" · ")+" · "+voiceCatalog.length+" total voice"+(voiceCatalog.length===1?"":"s")):(voiceStatus.catalogError?("Voice providers unavailable · "+String(voiceStatus.catalogError).replaceAll("_"," ")):"No Windows voices reported yet"));
   document.querySelectorAll("[data-voice-cue]").forEach(function(row){
     var cue=row.getAttribute("data-voice-cue"),cfg=voiceCues[cue]||{},enabled=row.querySelector("[data-voice-enabled]"),phrase=row.querySelector("[data-voice-phrase]"),minimum=row.querySelector("[data-voice-min]"),maximum=row.querySelector("[data-voice-max]"),cooldown=row.querySelector("[data-voice-cooldown]"),offset=row.querySelector("[data-voice-offset]");
     if(enabled&&document.activeElement!==enabled)enabled.checked=Boolean(cfg.enabled);
@@ -368,7 +386,7 @@ el("voiceMaster").onclick=async function(){try{var r=await mutate("/api/voice",f
 el("carrierPaToggle").onclick=async function(){try{var r=await mutate("/api/voice",function(){return {carrierPa:!(state&&state.voice&&state.voice.carrierPa!==false)}});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Carrier PA setting saved"}catch(e){el("voiceNotice").textContent="Carrier PA setting failed · "+e.message}};
 el("voiceVolume").onchange=async function(){try{var r=await mutate("/api/voice",{volume:Number(el("voiceVolume").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="PA volume saved"}catch(e){el("voiceNotice").textContent="Volume save failed · "+e.message}};
 el("voiceRate").onchange=async function(){try{var r=await mutate("/api/voice",{rate:Number(el("voiceRate").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Speech rate saved"}catch(e){el("voiceNotice").textContent="Speech rate save failed · "+e.message}};
-el("voiceSelect").onchange=async function(){try{var r=await mutate("/api/voice",{voiceName:el("voiceSelect").value||""});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Windows voice saved"}catch(e){el("voiceNotice").textContent="Voice selection failed · "+e.message}};
+el("voiceSelect").onchange=async function(){try{var raw=String(el("voiceSelect").value||"system|").split("|"),provider=decodeURIComponent(raw.shift()||"system"),voiceId=decodeURIComponent(raw.join("|")||""),entry=((state&&state.voiceCatalog)||[]).find(function(v){return v&&String(v.provider||"system")===provider&&String(v.id||"")===voiceId}),voiceName=entry?String(entry.name||""):"";var r=await mutate("/api/voice",{voiceProvider:provider,voiceId:voiceId,voiceName:voiceName});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="PA voice saved"}catch(e){el("voiceNotice").textContent="Voice selection failed · "+e.message}};
 el("voiceTest").onclick=async function(){try{await api("/api/voice-test",{});el("voiceNotice").textContent="Selected voice test queued"}catch(e){el("voiceNotice").textContent="Voice test failed · "+e.message}};
 document.querySelectorAll("[data-voice-cue]").forEach(function(row){
   var cue=row.getAttribute("data-voice-cue");
