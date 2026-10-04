@@ -820,6 +820,7 @@ class MongrelHudApp:
         self.update_button: tk.Button | None = None
         self.update_lock = threading.RLock()
         self.update_status: dict[str, Any] = {"checking": False, "installing": False, "available": False, "version": None, "url": None, "digest": None, "error": ""}
+        self.exit_for_update = threading.Event()
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
@@ -2912,7 +2913,14 @@ class MongrelHudApp:
     def refresh_ui(self) -> None:
         if not self.root:
             return
+        if self.exit_for_update.is_set():
+            try:
+                self.root.destroy()
+            finally:
+                self.root = None
+            return
         try:
+            self._apply_update_status_ui()
             with self.lock:
                 connected = self.snapshot.connected
                 error = self.snapshot.error
@@ -3135,37 +3143,31 @@ class MongrelHudApp:
     def _set_update_status(self, **changes: Any) -> None:
         with self.update_lock:
             self.update_status.update(changes)
-            snapshot = dict(self.update_status)
-        root = self.root
-        if not root:
-            return
 
-        def apply() -> None:
-            if self.update_label:
-                if snapshot.get("installing"):
-                    text = "Downloading update…"
-                elif snapshot.get("checking"):
-                    text = "Checking for updates…"
-                elif snapshot.get("error"):
-                    error = str(snapshot.get("error") or "")
-                    text = "Update check unavailable" if error == "update_check_failed" else f"Update error: {error.replace('_', ' ')}"
-                elif snapshot.get("available"):
-                    text = f"Update available: v{snapshot.get('version')}"
-                else:
-                    text = f"Version {APP_VERSION} · up to date"
-                self.update_label.config(text=text)
-            if self.update_button:
-                available = bool(snapshot.get("available"))
-                installing = bool(snapshot.get("installing"))
-                checking = bool(snapshot.get("checking"))
-                self.update_button.config(
-                    text=f"Update to {snapshot.get('version')}" if available else "Check for Update",
-                    state="disabled" if installing or checking else "normal",
-                )
-        try:
-            root.after(0, apply)
-        except Exception:
-            pass
+    def _apply_update_status_ui(self) -> None:
+        with self.update_lock:
+            snapshot = dict(self.update_status)
+        if self.update_label:
+            if snapshot.get("installing"):
+                text = "Downloading update…"
+            elif snapshot.get("checking"):
+                text = "Checking for updates…"
+            elif snapshot.get("error"):
+                error = str(snapshot.get("error") or "")
+                text = "Update check unavailable" if error == "update_check_failed" else f"Update error: {error.replace('_', ' ')}"
+            elif snapshot.get("available"):
+                text = f"Update available: v{snapshot.get('version')}"
+            else:
+                text = f"Version {APP_VERSION} · up to date"
+            self.update_label.config(text=text)
+        if self.update_button:
+            available = bool(snapshot.get("available"))
+            installing = bool(snapshot.get("installing"))
+            checking = bool(snapshot.get("checking"))
+            self.update_button.config(
+                text=f"Update to {snapshot.get('version')}" if available else "Check for Update",
+                state="disabled" if installing or checking else "normal",
+            )
 
     def check_for_update(self, manual: bool = True) -> None:
         with self.update_lock:
@@ -3274,8 +3276,7 @@ try {
                 creationflags=flags,
             )
             self._set_update_status(installing=True, error="")
-            if self.root:
-                self.root.after(250, self.root.destroy)
+            self.exit_for_update.set()
         except Exception as exc:
             self._set_update_status(installing=False, error=str(exc).strip() or type(exc).__name__)
 
