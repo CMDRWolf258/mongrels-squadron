@@ -18,16 +18,13 @@ export async function onRequestGet({request,env}){
   if(auth.response)return auth.response;
 
   const admin=new URL(request.url).searchParams.get('admin')==='1'&&auth.session.access==='site_admin';
-  const [systems,account]=await Promise.all([
-    loadActiveMongrelSystems(request),
-    safeGetAccount(env,auth.session.sub),
-  ]);
+  const systems=await loadActiveMongrelSystems(request);
   const board=await buildScoutJobBoard(env,{
     systems,
     viewer:{
       userId:auth.session.sub,
       displayName:auth.session.displayName||auth.session.username||'Mongrel Member',
-      commander:account?.commander||auth.session.displayName||auth.session.username||'Mongrel CMDR',
+      commander:auth.session.displayName||auth.session.username||'Mongrel CMDR',
     },
     now:new Date(),
     includeDisabled:admin,
