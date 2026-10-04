@@ -81,17 +81,22 @@ export async function buildHudFeed(request,env,auth){
     now:new Date(),
   });
 
+  const severityRank={critical:0,high:1,medium:2,low:3};
   const alerts=[
     ...factionAlerts(bgsView),
     ...(access==='site_admin'?payoutAlerts(rewardView):[]),
     ...(access==='site_admin'?orderAlerts(history):[]),
     ...tradeAlerts(routes),
-  ].slice(0,MAX_ALERTS).map(alert=>({
-    ...alert,
-    indicator:alertIndicator(alert.type,alert.severity),
-    acknowledged:Boolean(ackState.acks[alert.id]),
-    acknowledgedAt:ackState.acks[alert.id]||null,
-  }));
+  ]
+    .sort((a,b)=>(severityRank[norm(a?.severity)]??9)-(severityRank[norm(b?.severity)]??9)
+      ||alertTimestamp(b)-alertTimestamp(a))
+    .slice(0,MAX_ALERTS)
+    .map(alert=>({
+      ...alert,
+      indicator:alertIndicator(alert.type,alert.severity),
+      acknowledged:Boolean(ackState.acks[alert.id]),
+      acknowledgedAt:ackState.acks[alert.id]||null,
+    }));
 
   return{
     ok:true,
@@ -290,6 +295,11 @@ export function tradeAlerts(routes){
       detail:clean(route?.title)||clean(route?.commodity)||'Managed route',
       createdAt:route?.optimizer?.lastEvaluatedAt||route?.updatedAt||new Date().toISOString(),
     }));
+}
+
+function alertTimestamp(alert){
+  const ms=Date.parse(alert?.createdAt||'');
+  return Number.isFinite(ms)?ms:0;
 }
 
 export function alertIndicator(type,severity=''){
