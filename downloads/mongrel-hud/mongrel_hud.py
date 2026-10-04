@@ -1018,10 +1018,19 @@ class MongrelHudApp:
         with self.store.lock:
             return json.loads(json.dumps(normalized_voice_settings(self.store.data.get("voice"))))
 
+    def voice_catalog_snapshot(self) -> list[dict[str, str]]:
+        with self.lock:
+            return json.loads(json.dumps(self.voice_catalog))
+
     def voice_status_snapshot(self) -> dict[str, Any]:
         with self.voice_condition:
             status = dict(self.voice_runtime)
             status["queued"] = len(self.voice_pending)
+        with self.store.lock:
+            schedule = self.store.data.get("voiceSchedule")
+            status["scheduled"] = len(schedule) if isinstance(schedule, list) else 0
+        with self.lock:
+            status["catalogError"] = self.voice_catalog_error
         return status
 
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
@@ -1029,7 +1038,7 @@ class MongrelHudApp:
             raise ValueError("voice_settings_required")
         with self.store.lock:
             current = normalized_voice_settings(self.store.data.get("voice"))
-            for key in ("enabled", "carrierPa", "volume", "rate"):
+            for key in ("enabled", "carrierPa", "volume", "rate", "voiceName"):
                 if key in value:
                     current[key] = value[key]
             cue_updates = value.get("cues")
@@ -1039,7 +1048,7 @@ class MongrelHudApp:
                     if cue not in CARRIER_VOICE_CUES or not isinstance(update, dict):
                         continue
                     row = dict(merged_cues.get(cue) or CARRIER_VOICE_CUES[cue])
-                    for key in ("enabled", "minDelay", "maxDelay", "cooldown"):
+                    for key in ("enabled", "minDelay", "maxDelay", "cooldown", "phrase", "offsetSeconds"):
                         if key in update:
                             row[key] = update[key]
                     merged_cues[cue] = row
@@ -1049,7 +1058,7 @@ class MongrelHudApp:
             self.store.save()
         if not normalized["enabled"] or not normalized["carrierPa"]:
             with self.voice_condition:
-                self.voice_pending.clear()
+                self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
         return self.voice_settings_snapshot()
 
@@ -1067,6 +1076,9 @@ class MongrelHudApp:
         return bool(owner_id and event_id and secrets.compare_digest(owner_id, event_id))
 
     def _carrier_voice_name(self, event: dict[str, Any]) -> str:
+        stored_name = " ".join(str(event.get("carrierName") or "").split())
+        if stored_name:
+            return stored_name
         carrier = event.get("carrier")
         if isinstance(carrier, dict):
             name = " ".join(str(carrier.get("name") or "").split())
@@ -1080,39 +1092,196 @@ class MongrelHudApp:
         return station or "the carrier"
 
     def _voice_text_for_event(self, cue: str, event: dict[str, Any]) -> str:
-        carrier = self._carrier_voice_name(event)
-        if cue == "docking.requested":
-            return f"Docking request transmitted to {carrier}."
-        if cue == "docking.granted":
-            pad = event.get("landingPad")
-            return f"Docking clearance confirmed. Proceed to pad {int(pad)}." if isinstance(pad, int) else "Docking clearance confirmed. Proceed to your assigned pad."
-        if cue == "docking.docked":
-            return f"Welcome aboard {carrier}, Commander."
-        if cue == "docking.undocked":
-            return f"Departure complete. Clear of {carrier}. Safe flying, Commander."
-        if cue == "carrier.jump_request":
-            destination = " ".join(str(event.get("destinationSystem") or "").split())
-            return f"Carrier jump plotted for {destination}. Departure sequence scheduled." if destination else "Carrier jump plotted. Departure sequence scheduled."
-        if cue == "carrier.jump_cancelled":
-            return "Carrier jump cancelled. Flight operations returning to normal."
-        if cue == "carrier.jump":
-            destination = " ".join(str(event.get("system") or "").split())
-            return f"{carrier} has arrived in {destination}. Jump complete." if destination else f"{carrier} jump complete."
-        return ""
+        settings = self.voice_settings_snapshot()
+        row = (settings.get("cues") or {}).get(cue) or {}
+        phrase = str(row.get("phrase") or CARRIER_VOICE_CUES.get(cue, {}).get("phrase") or "")
+        if not phrase:
+            return ""
+        pad = event.get("landingPad")
+        pad_text = f"pad {int(pad)}" if isinstance(pad, int) else "your assigned pad"
+        destination = " ".join(str(event.get("destinationSystem") or event.get("system") or "").split()) or "your destination"
+        minutes = event.get("minutes")
+        if not isinstance(minutes, (int, float)):
+            lead = CARRIER_VOICE_CUES.get(cue, {}).get("leadSeconds")
+            minutes = int(round(float(lead) / 60.0)) if isinstance(lead, (int, float)) else ""
+        replacements = {
+            "{carrier}": self._carrier_voice_name(event),
+            "{destination}": destination,
+            "{pad}": pad_text,
+            "{minutes}": str(int(minutes)) if isinstance(minutes, (int, float)) else str(minutes or ""),
+        }
+        text = phrase
+        for token, replacement in replacements.items():
+            text = text.replace(token, replacement)
+        return " ".join(text.split())[:600]
+
+    @staticmethod
+    def _parse_voice_time(value: Any) -> datetime | None:
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
+    def _voice_schedule_context(event: dict[str, Any]) -> dict[str, Any]:
+        allowed = ("relationship", "carrierId", "marketId", "stationName", "destinationSystem", "system", "landingPad", "minutes", "carrierName")
+        out = {key: event.get(key) for key in allowed if event.get(key) is not None}
+        return out
+
+    def _persist_scheduled_voice(self, schedule_id: str, cue: str, fire_at: datetime, event: dict[str, Any]) -> None:
+        row = {
+            "id": schedule_id,
+            "cue": cue,
+            "fireAt": fire_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "event": self._voice_schedule_context(event),
+        }
+        with self.store.lock:
+            schedule = self.store.data.get("voiceSchedule")
+            schedule = list(schedule) if isinstance(schedule, list) else []
+            schedule = [item for item in schedule if isinstance(item, dict) and str(item.get("id") or "") != schedule_id and str(item.get("cue") or "") != cue]
+            schedule.append(row)
+            self.store.data["voiceSchedule"] = schedule[-16:]
+            self.store.save()
+
+    def _remove_persisted_voice(self, *, schedule_id: str = "", cues: set[str] | None = None) -> None:
+        with self.store.lock:
+            schedule = self.store.data.get("voiceSchedule")
+            schedule = list(schedule) if isinstance(schedule, list) else []
+            filtered = []
+            for row in schedule:
+                if not isinstance(row, dict):
+                    continue
+                if schedule_id and str(row.get("id") or "") == schedule_id:
+                    continue
+                if cues and str(row.get("cue") or "") in cues:
+                    continue
+                filtered.append(row)
+            if filtered != schedule:
+                self.store.data["voiceSchedule"] = filtered
+                self.store.save()
+
+    def _restore_scheduled_voice(self) -> None:
+        with self.store.lock:
+            schedule = self.store.data.get("voiceSchedule")
+            schedule = list(schedule) if isinstance(schedule, list) else []
+        now = datetime.now(timezone.utc)
+        keep: list[dict[str, Any]] = []
+        for row in schedule:
+            if not isinstance(row, dict):
+                continue
+            cue = str(row.get("cue") or "")
+            fire_at = self._parse_voice_time(row.get("fireAt"))
+            event = row.get("event") if isinstance(row.get("event"), dict) else {}
+            schedule_id = str(row.get("id") or "")
+            if cue not in CARRIER_VOICE_CUES or fire_at is None or fire_at <= now or not schedule_id:
+                continue
+            self._queue_scheduled_voice(cue, event, fire_at, persist=False, schedule_id=schedule_id)
+            keep.append(row)
+        if keep != schedule:
+            with self.store.lock:
+                self.store.data["voiceSchedule"] = keep
+                self.store.save()
+
+    def _queue_scheduled_voice(self, cue: str, event: dict[str, Any], fire_at: datetime, *, persist: bool = True, schedule_id: str = "") -> bool:
+        settings = self.voice_settings_snapshot()
+        row = (settings.get("cues") or {}).get(cue) or {}
+        if cue not in CARRIER_VOICE_CUES or not row.get("enabled"):
+            return False
+        now_utc = datetime.now(timezone.utc)
+        seconds = (fire_at.astimezone(timezone.utc) - now_utc).total_seconds()
+        if seconds <= 0.5:
+            return False
+        if not schedule_id:
+            schedule_id = f"{cue}:{int(fire_at.timestamp())}"
+        if persist:
+            self._persist_scheduled_voice(schedule_id, cue, fire_at, event)
+        with self.voice_condition:
+            self.voice_pending = [item for item in self.voice_pending if str(item.get("cue") or "") != cue]
+            self.voice_pending.append({
+                "cue": cue,
+                "event": self._voice_schedule_context(event),
+                "due": time.monotonic() + seconds,
+                "persistentId": schedule_id,
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+        return True
+
+    def _queue_configured_voice(self, cue: str, event: dict[str, Any]) -> bool:
+        settings = self.voice_settings_snapshot()
+        if not settings.get("enabled") or not settings.get("carrierPa"):
+            return False
+        row = (settings.get("cues") or {}).get(cue) or {}
+        if not row.get("enabled"):
+            return False
+        now = time.monotonic()
+        cooldown = max(0.0, float(row.get("cooldown") or 0.0))
+        with self.voice_condition:
+            previous = float(self.voice_last_scheduled.get(cue) or 0.0)
+            if previous and now - previous < cooldown:
+                return False
+            minimum = max(0.0, float(row.get("minDelay") or 0.0))
+            maximum = max(minimum, float(row.get("maxDelay") or minimum))
+            fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
+            self.voice_last_scheduled[cue] = now
+            self.voice_pending.append({
+                "cue": cue,
+                "event": self._voice_schedule_context(event),
+                "due": now + minimum + ((maximum - minimum) * fraction),
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+        return True
 
     def _cancel_voice_cues(self, *cues: str) -> None:
-        wanted = set(cues)
+        wanted = {str(cue) for cue in cues if cue}
         if not wanted:
             return
         with self.voice_condition:
             self.voice_pending = [row for row in self.voice_pending if str(row.get("cue") or "") not in wanted]
             self.voice_condition.notify_all()
+        self._remove_persisted_voice(cues=wanted)
+
+    def _schedule_departure_countdowns(self, event: dict[str, Any]) -> None:
+        departure = self._parse_voice_time(event.get("departureTime"))
+        if departure is None:
+            return
+        base_event = self._voice_schedule_context(event)
+        base_event["carrierName"] = self._carrier_voice_name(event)
+        for cue in ("carrier.countdown_10", "carrier.countdown_5"):
+            base = CARRIER_VOICE_CUES[cue]
+            lead = float(base.get("leadSeconds") or 0.0)
+            context = dict(base_event)
+            context["minutes"] = int(round(lead / 60.0))
+            fire_at = datetime.fromtimestamp(departure.timestamp() - lead, tz=timezone.utc)
+            self._queue_scheduled_voice(cue, context, fire_at)
+
+    def _schedule_cooldown_ready(self, event: dict[str, Any]) -> None:
+        settings = self.voice_settings_snapshot()
+        row = (settings.get("cues") or {}).get("carrier.cooldown_ready") or {}
+        if not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled"):
+            return
+        delay = max(0.0, min(900.0, float(row.get("offsetSeconds") or 0.0)))
+        context = self._voice_schedule_context(event)
+        context["carrierName"] = self._carrier_voice_name(event)
+        fire_at = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + delay, tz=timezone.utc)
+        self._queue_scheduled_voice("carrier.cooldown_ready", context, fire_at)
 
     def handle_voice_event(self, event: dict[str, Any]) -> None:
         cue = str(event.get("type") or "")
         if cue not in CARRIER_VOICE_CUES:
             if cue in {"docking.denied", "docking.cancelled", "docking.timeout"}:
                 self._cancel_voice_cues("docking.requested", "docking.granted")
+            return
+        if cue in {"carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready"}:
+            return
+        if not self._is_owner_carrier_event(event):
             return
 
         if cue == "docking.granted":
@@ -1121,43 +1290,16 @@ class MongrelHudApp:
             self._cancel_voice_cues("docking.requested", "docking.granted")
         elif cue == "docking.undocked":
             self._cancel_voice_cues("docking.docked")
+        elif cue == "carrier.jump_request":
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready")
+            self._schedule_departure_countdowns(event)
         elif cue == "carrier.jump_cancelled":
-            self._cancel_voice_cues("carrier.jump_request")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
         elif cue == "carrier.jump":
-            self._cancel_voice_cues("carrier.jump_request")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
+            self._schedule_cooldown_ready(event)
 
-        settings = self.voice_settings_snapshot()
-        if not settings.get("enabled") or not settings.get("carrierPa"):
-            return
-        row = (settings.get("cues") or {}).get(cue) or {}
-        if not row.get("enabled"):
-            return
-        if not self._is_owner_carrier_event(event):
-            return
-
-        text = self._voice_text_for_event(cue, event)
-        if not text:
-            return
-        now = time.monotonic()
-        cooldown = max(0.0, float(row.get("cooldown") or 0.0))
-        with self.voice_condition:
-            previous = float(self.voice_last_scheduled.get(cue) or 0.0)
-            if previous and now - previous < cooldown:
-                return
-            minimum = max(0.0, float(row.get("minDelay") or 0.0))
-            maximum = max(minimum, float(row.get("maxDelay") or minimum))
-            fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
-            delay = minimum + (maximum - minimum) * fraction
-            self.voice_last_scheduled[cue] = now
-            self.voice_pending.append({
-                "cue": cue,
-                "text": text,
-                "due": now + delay,
-                "volume": int(settings.get("volume") or 75),
-                "rate": int(settings.get("rate") or 0),
-            })
-            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
-            self.voice_condition.notify_all()
+        self._queue_configured_voice(cue, event)
 
     def queue_voice_test(self) -> dict[str, Any]:
         settings = self.voice_settings_snapshot()
@@ -1168,28 +1310,115 @@ class MongrelHudApp:
                 "cue": "test",
                 "text": f"{name} public address test. Audio link online.",
                 "due": time.monotonic(),
-                "volume": int(settings.get("volume") or 75),
-                "rate": int(settings.get("rate") or 0),
+                "force": True,
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+        return self.voice_status_snapshot()
+
+    def queue_voice_cue_test(self, cue: str) -> dict[str, Any]:
+        if cue not in CARRIER_VOICE_CUES:
+            raise ValueError("voice_cue_invalid")
+        carrier = self._owner_carrier_for_voice()
+        name = " ".join(str(carrier.get("name") or "").split()) or "Pneuma"
+        event = {
+            "relationship": "owner",
+            "carrierName": name,
+            "destinationSystem": "destination system",
+            "system": "destination system",
+            "landingPad": 12,
+        }
+        lead = CARRIER_VOICE_CUES[cue].get("leadSeconds")
+        if isinstance(lead, (int, float)):
+            event["minutes"] = int(round(float(lead) / 60.0))
+        with self.voice_condition:
+            self.voice_pending.append({
+                "cue": cue,
+                "event": event,
+                "due": time.monotonic(),
+                "force": True,
             })
             self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
             self.voice_condition.notify_all()
         return self.voice_status_snapshot()
 
     @staticmethod
-    def _speak_windows(text: str, volume: int, rate: int) -> None:
+    def _windows_voice_catalog() -> list[dict[str, str]]:
+        if os.name != "nt":
+            return []
+        script = (
+            "$ErrorActionPreference='Stop';"
+            "$OutputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+            "Add-Type -AssemblyName System.Speech;"
+            "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
+            "$rows=@($s.GetInstalledVoices()|ForEach-Object{$v=$_.VoiceInfo;[PSCustomObject]@{name=$v.Name;culture=$v.Culture.Name;gender=$v.Gender.ToString();age=$v.Age.ToString()}});"
+            "$s.Dispose();$rows|ConvertTo-Json -Compress"
+        )
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            creationflags=flags,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError("voice_catalog_failed")
+        raw = result.stdout.strip()
+        if not raw:
+            return []
+        try:
+            payload = json.loads(raw)
+        except Exception as exc:
+            raise RuntimeError("voice_catalog_invalid_json") from exc
+        rows = payload if isinstance(payload, list) else [payload] if isinstance(payload, dict) else []
+        out = []
+        seen = set()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            name = " ".join(str(row.get("name") or "").split())[:160]
+            if not name or name.casefold() in seen:
+                continue
+            seen.add(name.casefold())
+            out.append({
+                "name": name,
+                "culture": " ".join(str(row.get("culture") or "").split())[:32],
+                "gender": " ".join(str(row.get("gender") or "").split())[:32],
+                "age": " ".join(str(row.get("age") or "").split())[:32],
+            })
+        return sorted(out, key=lambda row: row["name"].casefold())
+
+    def _voice_catalog_worker(self) -> None:
+        try:
+            catalog = self._windows_voice_catalog()
+            with self.lock:
+                self.voice_catalog = catalog
+                self.voice_catalog_error = ""
+        except Exception as exc:
+            with self.lock:
+                self.voice_catalog = []
+                self.voice_catalog_error = str(exc).strip() or type(exc).__name__
+
+    @staticmethod
+    def _speak_windows(text: str, volume: int, rate: int, voice_name: str = "") -> None:
         if os.name != "nt":
             raise RuntimeError("windows_speech_required")
         safe_text = " ".join(str(text or "").split())[:600]
+        selected = " ".join(str(voice_name or "").split())[:160]
         if not safe_text:
             return
+        select = "$s.SelectVoice(" + _powershell_quote(selected) + ");" if selected else ""
         script = (
             "$ErrorActionPreference='Stop';"
             "Add-Type -AssemblyName System.Speech;"
             "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
-            f"$s.Volume={max(0, min(100, int(volume)))};"
-            f"$s.Rate={max(-3, min(3, int(rate)))};"
-            "$s.Speak(" + _powershell_quote(safe_text) + ");"
-            "$s.Dispose();"
+            + select
+            + f"$s.Volume={max(0, min(100, int(volume)))};"
+            + f"$s.Rate={max(-3, min(3, int(rate)))};"
+            + "$s.Speak(" + _powershell_quote(safe_text) + ");"
+            + "$s.Dispose();"
         )
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         result = subprocess.run(
@@ -1219,12 +1448,36 @@ class MongrelHudApp:
                 item = self.voice_pending.pop(0)
                 self.voice_runtime["speaking"] = True
                 self.voice_runtime["lastError"] = ""
+            schedule_id = str(item.get("persistentId") or "")
+            if schedule_id:
+                self._remove_persisted_voice(schedule_id=schedule_id)
+            settings = self.voice_settings_snapshot()
+            cue = str(item.get("cue") or "")
+            force = bool(item.get("force"))
+            row = (settings.get("cues") or {}).get(cue) or {}
+            if not force and (not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled", True)):
+                with self.voice_condition:
+                    self.voice_runtime["speaking"] = False
+                    self.voice_condition.notify_all()
+                continue
+            event = item.get("event") if isinstance(item.get("event"), dict) else {}
+            text = str(item.get("text") or "") if cue == "test" else self._voice_text_for_event(cue, event)
+            if not text:
+                with self.voice_condition:
+                    self.voice_runtime["speaking"] = False
+                    self.voice_condition.notify_all()
+                continue
             try:
-                self._speak_windows(str(item.get("text") or ""), int(item.get("volume") or 75), int(item.get("rate") or 0))
+                self._speak_windows(
+                    text,
+                    int(settings.get("volume") if settings.get("volume") is not None else 75),
+                    int(settings.get("rate") or 0),
+                    str(settings.get("voiceName") or ""),
+                )
                 with self.voice_condition:
                     self.voice_runtime.update({
-                        "lastCue": str(item.get("cue") or ""),
-                        "lastText": str(item.get("text") or ""),
+                        "lastCue": cue,
+                        "lastText": text,
                         "lastSpokenAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                         "lastError": "",
                     })
