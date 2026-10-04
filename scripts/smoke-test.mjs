@@ -59,6 +59,10 @@ for (const unsafe of ['https://evil.example/', '//evil.example/', '/\\\\evil.exa
 }
 console.log('✓ OAuth return paths are constrained to normalized same-origin paths');
 
+const memberPortal = readFileSync('member/index.html', 'utf8');
+assert.match(memberPortal, /href="http:\/\/mongrel-hud\.local:43858\/"[^>]*>Open HUD Controller<\/a>/, 'Member Portal must expose the stable local HUD controller shortcut');
+console.log('✓ Member Portal exposes the one-tap local HUD controller shortcut');
+
 const securityHeaders = readFileSync('_headers', 'utf8');
 for (const pattern of [
   /^\/\*$/m,
