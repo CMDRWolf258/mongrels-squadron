@@ -59,6 +59,14 @@ Surface Mining deposits and body + Signal # centers share the curated 10-16 Page
 
 Controller profile/layout/panel mutations must remain ordered. Evaluate toggle intent against the latest completed mutation; a delayed profile response must not restore an earlier visibility/lock state. Keep every existing panel assignment and default configurable.
 
+Mongrel HUD 0.9.0 controller QoL architecture:
+- The desktop companion advertises the stable LAN name `mongrel-hud.local:43858` with mDNS/zeroconf and still shows the raw LAN IP as a fallback. The authenticated Member Portal links directly to that local controller address; the website does not proxy or embed the controller.
+- iPad/controller trust is persistent across HUD restarts and upgrades. Successful PIN pairing issues a high-entropy one-year HttpOnly SameSite=Strict cookie; only SHA-256 hashes of trusted tokens are stored in local HUD state. **Pair New Device** must not revoke existing devices. Revocation is explicit through **Forget Paired Devices**.
+- The Windows HUD self-updater checks the rolling GitHub release metadata using Windows PowerShell, requires GitHub's SHA-256 asset digest, downloads and stages the ZIP under the local HUD data directory, then uses a temporary PowerShell updater to replace the stopped EXE and relaunch it. Existing `state.json` is never replaced.
+- Release publishing must upload/clobber the new Windows ZIP before changing the rolling release title to the new semantic version; this prevents clients from seeing new-version metadata while the previous asset is still live.
+- The HUD updater updates only Mongrel HUD. Mongrel Scout remains a separate EDMC plugin/update path.
+
+
 The October 4 integration investigation identified production feed failures with Cloudflare `1102` (resource limits) and mining failures with D1's exhausted daily read allowance. Repeated date formatter construction and repeated schema/backfill work were measurable contributors. Reuse only bounded pure calendar conversions and schema initialization, not authoritative site/mining data. Diagnostics retain the public endpoint, bridge/upstream HTTP status, safe error code, response format, and request correlation ID without tokens, raw response bodies, or private request values.
 
 CI and isolated tests do not establish Windows release readiness. Before publishing, verify authenticated production site data through the running HUD, repeated profile/overlay/lock controls, central center save and fresh-client retrieval, and access to existing deposits. The canonical Pages deposit read must be checked against the existing central records once D1 requests work again. Identify any remaining physical Elite/EDMC test explicitly; do not label a build ready while live quota/API failures remain.
