@@ -21,18 +21,18 @@ assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
 assert hud.version_tuple("0.10.1")==(0,10,1)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.10.1",
+    "name":"Mongrel HUD Windows v0.10.2",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.10.1" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.10.2" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.2","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
     raise AssertionError("Untrusted update download URL was accepted")
 except ValueError as exc:
     assert str(exc)=="release_download_url_rejected"
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.10.2","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
     raise AssertionError("Release without SHA-256 digest was accepted")
 except ValueError as exc:
     assert str(exc)=="release_digest_missing"
