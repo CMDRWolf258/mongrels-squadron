@@ -20,6 +20,9 @@ assert hud.CONTROLLER_STABLE_URL=="http://mongrel-hud.local:43858"
 assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
 assert hud.version_tuple("0.10.1")==(0,10,1)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.10.0"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.10.1"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.10.2"}) is True
 release=hud.update_from_release_payload({
     "name":"Mongrel HUD Windows v0.10.2",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
@@ -256,6 +259,7 @@ assert "PAIRING_COOKIE_MAX_AGE" in source and "Max-Age={PAIRING_COOKIE_MAX_AGE}"
 assert "Check for Update" in source and "_powershell_release_json" in source and "_file_sha256" in source
 assert "update_digest_mismatch" in source and "MongrelHUD.new.exe" in source
 assert "PYINSTALLER_RESET_ENVIRONMENT" in source and "_MEI temp directory" in source
+assert "_update_snapshot_is_newer" in source
 assert "CARRIER_VOICE_CUES" in source and "handle_voice_event" in source and "_voice_loop" in source
 assert "System.Speech.Synthesis.SpeechSynthesizer" in source and "windows_speech_failed" in source
 assert '"carrier.jump_request"' in source and '"carrier.jump_cancelled"' in source
