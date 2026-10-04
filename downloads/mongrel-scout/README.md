@@ -51,22 +51,25 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.10.0 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.11.0 normalizes the Elite journal and Status.json signals used by the local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
-- `location.current`, `travel.fsd_jump`, `travel.supercruise_entry`, `travel.supercruise_exit`;
+- `location.current`, `travel.fsd_jump`, `travel.supercruise_entry`, `travel.supercruise_exit`, `travel.destination_drop`;
+- `player.disembark`, `player.embark`;
 - `carrier.jump`, `carrier.jump_request`, `carrier.jump_cancelled`, `carrier.stats`;
 - `facility.approach`;
 - `combat.target`, `ship.hull`, `ship.loadout`.
 
 The bridge exposes read-only JSON endpoints for a local companion:
 - `GET /v1/health` — bridge/plugin version and latest sequence;
-- `GET /v1/state` — current local Commander/system/station/docking/supercruise/owner-carrier state;
+- `GET /v1/state` — current local Commander/system/station/docking/supercruise/owner-carrier state, the most recent normal-space destination instance, and a minimal decoded on-foot/interior status snapshot;
 - `POST /v1/mining/report` — explicit Surface Mining deposit report proxy; Scout adds its bound machine token and forwards the report to the curated 10-16 archive without exposing that token to the HUD companion; `POST /v1/mining/center` does the same for explicit mining location-center updates;
 - `GET /v1/events?after=<seq>&wait=<seconds>` — ordered event delivery with optional long polling, capped at 25 seconds.
 
 The in-memory event queue retains the newest 256 normalized events. No raw journal dump is exposed.
+
+Scout 1.11.0 adds carrier acoustic-context signals for HUD 0.14.0. `SupercruiseDestinationDrop` records the targeted destination Market ID, and that normal-space instance marker is cleared on a new supercruise entry or FSD jump. Owner-carrier docking, `Disembark`, and `Embark` provide additional Market-ID anchors. The local Status snapshot also decodes Elite's `Flags2` states for on-foot-in-station, hangar, social-space, exterior and planet context. These signals remain local and are not uploaded to the squad website.
 
 `CarrierStats` is used locally to learn the current Commander's own Fleet Carrier identity (Carrier ID, callsign, name and docking access). `CarrierJumpRequest` also establishes/persists the owner Carrier ID because only the owner schedules that carrier jump; if richer `CarrierStats` identity is already known, its name/callsign are retained. That owner-carrier identity is persisted in EDMC's local configuration so later docking and carrier-jump events can be labeled `relationship: owner` even after EDMC restarts. It is **not uploaded** by this v1.4.3 bridge. Other carriers remain `relationship: unknown` until a future squad carrier registry provides a trusted mapping.
 
