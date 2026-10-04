@@ -26,6 +26,16 @@ release=hud.update_from_release_payload({
 })
 assert release["version"]=="0.9.1" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
+try:
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.9.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
+    raise AssertionError("Untrusted update download URL was accepted")
+except ValueError as exc:
+    assert str(exc)=="release_download_url_rejected"
+try:
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.9.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
+    raise AssertionError("Release without SHA-256 digest was accepted")
+except ValueError as exc:
+    assert str(exc)=="release_digest_missing"
 
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
@@ -69,10 +79,11 @@ with tempfile.TemporaryDirectory() as td:
     restarted_auth_store=hud.LocalStore(Path(td)/"state.json")
     restarted_auth_app=hud.MongrelHudApp(restarted_auth_store,"<html></html>")
     assert restarted_auth_app.authorized_controller_token(trusted) is True
-    restarted_auth_app.forget_paired_devices()
-    assert restarted_auth_app.authorized_controller_token(trusted) is False
-    # Restore one trusted token for the remainder of the fixture.
-    trusted=app.register_controller_device()
+    app.forget_paired_devices()
+    assert app.authorized_controller_token(trusted) is False
+    reloaded_after_revoke=hud.LocalStore(Path(td)/"state.json")
+    revoked_app=hud.MongrelHudApp(reloaded_after_revoke,"<html></html>")
+    assert revoked_app.authorized_controller_token(trusted) is False
     app.snapshot=hud.ScoutSnapshot({
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"560820275507"},
         "status":{"bodyName":"NGC 2546 Sector UZ-G d10-16 7 b","latitude":-22.7738,"longitude":-98.8161,"heading":42.0,"planetRadius":1234567.0,"shieldsUp":True,"fuelMain":27.5,"fuelReserve":0.8,"cargo":12,"pips":[2.0,1.0,3.0]},
