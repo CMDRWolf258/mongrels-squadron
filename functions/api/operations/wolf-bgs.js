@@ -872,7 +872,9 @@ function conflictTimelineFor(system, control, nowIso) {
   const tick = system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick;
   const active = Boolean(system.activeConflict ?? system.mongrelConflict);
   const pending = Boolean(system.pendingConflict) || (system.pendingStates || []).some(state => CONFLICT_STATES.has(norm(state)));
-  const phase = override && (active || pending || episode) ? 'active' : (active ? 'active' : pending ? 'pending' : 'none');
+  // A manual day override anchors the day of a real conflict; it must never
+  // resurrect a conflict after the live faction board says it has ended.
+  const phase = active ? 'active' : pending ? 'pending' : 'none';
 
   let day = null;
   let rawDay = null;
@@ -918,7 +920,10 @@ function conflictPairTimelinesFor(system, control, nowIso) {
   const tick = system.settings?.customTick || control.defaults?.defaultTick || DEFAULTS.defaultTick;
   const overrides = control.conflictPairDayOverrides?.[system.name] || {};
   const out = {};
+  if(!system?.activeConflict)return out;
+  const activeNames=new Set((system?.activeConflictRows||[]).map(row=>norm(row?.name)).filter(Boolean));
   for (const [key, override] of Object.entries(overrides)) {
+    if(!activeNames.has(norm(override?.factionA))||!activeNames.has(norm(override?.factionB)))continue;
     const rawDay = override.day + configuredTicksElapsed(override.setAt, nowIso, tick);
     out[key] = {
       pairKey:key,
