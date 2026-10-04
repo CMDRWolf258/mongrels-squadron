@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.14.0"
+APP_VERSION = "0.14.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2029,17 +2029,19 @@ class MongrelHudApp:
         if sys.byteorder != "little":
             samples.byteswap()
         source = [float(sample) for sample in samples]
-        processed = list(source)
         channels = max(1, int(params.nchannels))
         sample_rate = max(8000, int(params.framerate))
+        processed = list(source)
 
         if profile == ACOUSTIC_REMOTE:
-            # Communications-grade bandwidth with gentle saturation/compression.
+            # Deliberately obvious communications channel: speech-band EQ,
+            # compression/saturation and a tiny slap reflection.
             dt = 1.0 / sample_rate
-            hp_rc = 1.0 / (2.0 * math.pi * 280.0)
+            hp_rc = 1.0 / (2.0 * math.pi * 380.0)
             hp_alpha = hp_rc / (hp_rc + dt)
-            lp_rc = 1.0 / (2.0 * math.pi * 3600.0)
+            lp_rc = 1.0 / (2.0 * math.pi * 3000.0)
             lp_alpha = dt / (lp_rc + dt)
+            slap_frames = max(1, int(sample_rate * 0.018))
             for channel in range(channels):
                 prev_x = 0.0
                 prev_hp = 0.0
@@ -2050,28 +2052,52 @@ class MongrelHudApp:
                     prev_x = x
                     prev_hp = high
                     low += lp_alpha * (high - low)
-                    processed[idx] = math.tanh(low / 12000.0) * 14500.0
+                    compressed = math.tanh(low / 7000.0) * 11800.0
+                    frame = idx // channels
+                    old_frame = frame - slap_frames
+                    if old_frame >= 0:
+                        compressed += source[(old_frame * channels) + channel] * 0.06
+                    processed[idx] = compressed
 
         elif profile in {ACOUSTIC_PA, ACOUSTIC_HANGAR}:
-            # Early reflections make the same speaker sound like a mounted PA.
+            # A PA needs an audible tail, not only reflections while speech is
+            # still playing. Extend the WAV so the room remains audible after
+            # the final word.
             taps = (
-                ((0.045, 0.16), (0.090, 0.09), (0.145, 0.05))
+                ((0.050, 0.27), (0.105, 0.18), (0.175, 0.10), (0.260, 0.055))
                 if profile == ACOUSTIC_PA
-                else ((0.060, 0.18), (0.135, 0.12), (0.225, 0.075), (0.340, 0.045))
+                else ((0.070, 0.30), (0.155, 0.22), (0.285, 0.15), (0.430, 0.10), (0.620, 0.055))
             )
             delayed = [(max(1, int(sample_rate * seconds)), gain) for seconds, gain in taps]
-            for idx, dry in enumerate(source):
-                frame = idx // channels
-                channel = idx % channels
-                wet = 0.0
-                for delay_frames, gain in delayed:
-                    old_frame = frame - delay_frames
-                    if old_frame >= 0:
-                        wet += source[(old_frame * channels) + channel] * gain
-                processed[idx] = dry + wet
+            tail_frames = max(delay for delay, _gain in delayed)
+            frame_count = len(source) // channels
+            processed = list(source) + ([0.0] * (tail_frames * channels))
 
-        # Local comms deliberately stays essentially clean. All profiles share
-        # final gain control and clipping here so providers behave consistently.
+            # Mild speaker roll-off before the room reflections.
+            lp_cutoff = 7200.0 if profile == ACOUSTIC_PA else 6100.0
+            dt = 1.0 / sample_rate
+            lp_rc = 1.0 / (2.0 * math.pi * lp_cutoff)
+            lp_alpha = dt / (lp_rc + dt)
+            dry_filtered = [0.0] * len(source)
+            for channel in range(channels):
+                low = 0.0
+                for idx in range(channel, len(source), channels):
+                    low += lp_alpha * (source[idx] - low)
+                    dry_filtered[idx] = low
+
+            total_frames = frame_count + tail_frames
+            for frame in range(total_frames):
+                for channel in range(channels):
+                    idx = (frame * channels) + channel
+                    dry = dry_filtered[idx] if idx < len(dry_filtered) else 0.0
+                    wet = 0.0
+                    for delay_frames, gain in delayed:
+                        old_frame = frame - delay_frames
+                        if 0 <= old_frame < frame_count:
+                            wet += dry_filtered[(old_frame * channels) + channel] * gain
+                    processed[idx] = dry + wet
+
+        # Local comms deliberately stays clean. All profiles share final gain.
         output_samples = array("h")
         for sample in processed:
             value = sample * level
