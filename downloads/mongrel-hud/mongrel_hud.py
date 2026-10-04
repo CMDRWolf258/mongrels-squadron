@@ -1495,12 +1495,23 @@ class MongrelHudApp:
         if not mission:
             self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
+
+        all_orders = [row for row in (mission.get("orders") if isinstance(mission.get("orders"), list) else []) if isinstance(row, dict)]
+        systems = [str(value or "").strip() for value in (mission.get("systems") if isinstance(mission.get("systems"), list) else []) if str(value or "").strip()]
+        selected = self.mission_system_filter()
+        if selected != "all" and selected not in systems:
+            selected = "all"
+        orders = all_orders if selected == "all" else [row for row in all_orders if str(row.get("system") or "").strip() == selected]
+
         self._draw_text(canvas, 8 * scale, y, f"{int(mission.get('orderCount') or 0)} ORDERS", scale, 10, HUD_WHITE, True)
-        self._draw_text(canvas, width - 8 * scale, y, f"{int(mission.get('attentionCount') or 0)} ATTENTION", scale, 9, HUD_AMBER if mission.get("attentionCount") else HUD_MUTED, True, "ne"); y += 22 * scale
-        orders = mission.get("orders") if isinstance(mission.get("orders"), list) else []
+        filter_label = "ALL ORDER SYSTEMS" if selected == "all" else selected
+        self._draw_text(canvas, width - 8 * scale, y, self.clip_line(filter_label, 34), scale, 9, HUD_CYAN, True, "ne"); y += 22 * scale
+
+        if not orders:
+            self._draw_text(canvas, 8 * scale, y, "NO ORDERS FOR SELECTED SYSTEM", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+
         for row in orders[:5]:
-            if not isinstance(row, dict):
-                continue
             priority = str(row.get("priority") or "").upper()
             priority_color = HUD_RED if priority in {"CRITICAL", "URGENT"} else HUD_AMBER if priority in {"HIGH", "PRIORITY"} else HUD_CYAN
             self._draw_text(canvas, 8 * scale, y, str(row.get("system") or "SQUAD-WIDE"), scale, 11, HUD_WHITE, True)
@@ -1520,49 +1531,44 @@ class MongrelHudApp:
             y += 7 * scale
         return width, round(y + 3 * scale)
 
-    def _active_alert_state(self, alerts: list[dict[str, Any]]) -> tuple[str, bool]:
-        unacked = [row for row in alerts if not bool(row.get("acknowledged"))]
-        source = unacked if unacked else alerts
-        flashing = bool(unacked)
-        if any(str(row.get("type") or "").casefold() == "faction" for row in source):
-            return HUD_RED, flashing
-        if any(str(row.get("type") or "").casefold() == "orders" for row in source):
-            return HUD_AMBER, flashing
-        if any(str(row.get("indicator") or "").casefold() == "red" for row in source):
-            return HUD_RED, flashing
-        if any(str(row.get("indicator") or "").casefold() == "amber" for row in source):
-            return HUD_AMBER, flashing
-        return (HUD_CYAN if source else HUD_GREEN), flashing
-
-    def _render_alerts_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+    def _render_alert_group_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool, *, kind: str, title: str, color: str) -> tuple[int, int]:
         state = self.scout_state(); feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
-        alerts = [row for row in (feed.get("alerts") if isinstance(feed.get("alerts"), list) else []) if isinstance(row, dict)]
-        width = round(540 * scale); y = self._draw_title(canvas, "LEADERSHIP ALERTS", scale, width)
-        color, flashing = self._active_alert_state(alerts)
-        lamp_color = color if (not flashing or flash_on) else HUD_DIM
+        alerts = [
+            row for row in (feed.get("alerts") if isinstance(feed.get("alerts"), list) else [])
+            if isinstance(row, dict) and str(row.get("type") or "").casefold() == kind
+        ]
+        width = round(540 * scale); y = self._draw_title(canvas, title, scale, width)
+        unacked = [row for row in alerts if not bool(row.get("acknowledged"))]
+        lamp_color = color if (not unacked or flash_on) else HUD_DIM
         radius = 7 * scale
         canvas.create_oval(8 * scale, y, 8 * scale + radius * 2, y + radius * 2, fill=lamp_color, outline=lamp_color)
-        unacked = sum(1 for row in alerts if not row.get("acknowledged"))
-        status = "CLEAR" if not alerts else f"{unacked} NEW · {len(alerts)} ACTIVE"
+        status = "CLEAR" if not alerts else f"{len(unacked)} NEW · {len(alerts)} ACTIVE"
         self._draw_text(canvas, 32 * scale, y - 2 * scale, status, scale, 11, color if alerts else HUD_GREEN, True); y += 24 * scale
+
         visible_alerts = alerts[:10]
         for row in visible_alerts:
-            row_color = self._alert_color(row)
             acknowledged = bool(row.get("acknowledged"))
-            dot_color = row_color if not acknowledged else HUD_DIM
+            dot_color = color if not acknowledged else HUD_DIM
             canvas.create_oval(9 * scale, y + 4 * scale, 15 * scale, y + 10 * scale, fill=dot_color, outline=dot_color)
             title_color = HUD_WHITE if not acknowledged else HUD_MUTED
             self._draw_text(canvas, 23 * scale, y, self.clip_line(row.get("title") or "Alert", 58), scale, 10, title_color, not acknowledged)
             if acknowledged:
-                self._draw_text(canvas, width - 8 * scale, y, "ACK", scale, 8, row_color, True, "ne")
+                self._draw_text(canvas, width - 8 * scale, y, "ACK", scale, 8, color, True, "ne")
             y += 17 * scale
             if row.get("detail"):
                 self._draw_text(canvas, 23 * scale, y, self.clip_line(row.get("detail"), 68), scale, 8, HUD_MUTED, False); y += 15 * scale
             y += 4 * scale
+
         hidden = max(0, len(alerts) - len(visible_alerts))
         if hidden:
-            self._draw_text(canvas, 23 * scale, y, f"+{hidden} MORE ALERTS", scale, 8, HUD_MUTED, True); y += 16 * scale
+            self._draw_text(canvas, 23 * scale, y, f"+{hidden} MORE", scale, 8, HUD_MUTED, True); y += 16 * scale
         return width, round(y + 4 * scale)
+
+    def _render_alerts_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        return self._render_alert_group_canvas(canvas, scale, flash_on, kind="faction", title="FACTION ALERTS", color=HUD_RED)
+
+    def _render_orderalerts_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        return self._render_alert_group_canvas(canvas, scale, flash_on, kind="orders", title="DAILY ORDER CHANGES", color=HUD_AMBER)
 
     def _render_trade_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
