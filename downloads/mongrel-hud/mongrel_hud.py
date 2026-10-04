@@ -9,15 +9,19 @@ import math
 import os
 import re
 import secrets
+import shutil
 import socket
 import subprocess
+import tarfile
 import sys
 import threading
 import time
 import tkinter as tk
 import urllib.error
 import urllib.request
+import wave
 import zipfile
+from array import array
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -49,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.12.0"
+APP_VERSION = "0.13.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -221,11 +225,54 @@ PANEL_TITLES = {
 
 VOICE_PROVIDER_SYSTEM = "system"
 VOICE_PROVIDER_WINRT = "winrt"
+VOICE_PROVIDER_KOKORO = "kokoro"
 VOICE_PROVIDER_LABELS = {
     VOICE_PROVIDER_SYSTEM: "Windows Legacy (System.Speech)",
     VOICE_PROVIDER_WINRT: "Windows Modern (WinRT)",
+    VOICE_PROVIDER_KOKORO: "Local Neural · Kokoro",
 }
 VOICE_PROVIDER_IDS = frozenset(VOICE_PROVIDER_LABELS)
+
+KOKORO_PACK_ID = "kokoro-multi-lang-v1_0"
+KOKORO_PACK_DOWNLOAD_BYTES = 370_401_634
+KOKORO_ENGINE_VERSION = "1.13.8"
+KOKORO_ENGINE_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-win-x64-shared-MD-Release.tar.bz2"
+KOKORO_ENGINE_SHA256 = "3e971a04b2e0ba4dfa53d381a006367ce8c9f5f09b4ae00043e9845c2baded22"
+KOKORO_ENGINE_BYTES = 20_494_724
+KOKORO_MODEL_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2"
+KOKORO_MODEL_SHA256 = "c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298"
+KOKORO_MODEL_BYTES = 349_906_910
+KOKORO_ENGLISH_VOICES = (
+    ("af_alloy", 0, "Alloy", "Female", "en-US"),
+    ("af_aoede", 1, "Aoede", "Female", "en-US"),
+    ("af_bella", 2, "Bella", "Female", "en-US"),
+    ("af_heart", 3, "Heart", "Female", "en-US"),
+    ("af_jessica", 4, "Jessica", "Female", "en-US"),
+    ("af_kore", 5, "Kore", "Female", "en-US"),
+    ("af_nicole", 6, "Nicole", "Female", "en-US"),
+    ("af_nova", 7, "Nova", "Female", "en-US"),
+    ("af_river", 8, "River", "Female", "en-US"),
+    ("af_sarah", 9, "Sarah", "Female", "en-US"),
+    ("af_sky", 10, "Sky", "Female", "en-US"),
+    ("am_adam", 11, "Adam", "Male", "en-US"),
+    ("am_echo", 12, "Echo", "Male", "en-US"),
+    ("am_eric", 13, "Eric", "Male", "en-US"),
+    ("am_fenrir", 14, "Fenrir", "Male", "en-US"),
+    ("am_liam", 15, "Liam", "Male", "en-US"),
+    ("am_michael", 16, "Michael", "Male", "en-US"),
+    ("am_onyx", 17, "Onyx", "Male", "en-US"),
+    ("am_puck", 18, "Puck", "Male", "en-US"),
+    ("am_santa", 19, "Santa", "Male", "en-US"),
+    ("bf_alice", 20, "Alice", "Female", "en-GB"),
+    ("bf_emma", 21, "Emma", "Female", "en-GB"),
+    ("bf_isabella", 22, "Isabella", "Female", "en-GB"),
+    ("bf_lily", 23, "Lily", "Female", "en-GB"),
+    ("bm_daniel", 24, "Daniel", "Male", "en-GB"),
+    ("bm_fable", 25, "Fable", "Male", "en-GB"),
+    ("bm_george", 26, "George", "Male", "en-GB"),
+    ("bm_lewis", 27, "Lewis", "Male", "en-GB"),
+)
+KOKORO_VOICE_SIDS = {key: sid for key, sid, _name, _gender, _culture in KOKORO_ENGLISH_VOICES}
 
 
 CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
