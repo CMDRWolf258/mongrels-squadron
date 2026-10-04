@@ -535,6 +535,16 @@ class MongrelHudApp:
             return "|".join((ship, faction))
         return ""
 
+    @staticmethod
+    def _same_target_capture(row: dict[str, Any], target_key: str, target: dict[str, Any]) -> bool:
+        if str(row.get("key") or "") == target_key:
+            return True
+        old_pilot = " ".join(str(row.get("pilotName") or "").split()).casefold()
+        new_pilot = " ".join(str(target.get("pilotName") or "").split()).casefold()
+        old_ship = " ".join(str(row.get("ship") or "").split()).casefold()
+        new_ship = " ".join(str(target.get("ship") or "").split()).casefold()
+        return bool(old_pilot and new_pilot and old_pilot == new_pilot and old_ship == new_ship)
+
     def _warm_ocr(self) -> None:
         if not OCR_AVAILABLE or RapidOCR is None:
             return
@@ -702,7 +712,13 @@ class MongrelHudApp:
                 "framesRead": len(recognized_frames),
             }
             with self.lock:
-                self.recent_targets = [item for item in self.recent_targets if item.get("key") != target_key]
+                # A new scan is a replacement for this target, never an additive
+                # pass. Soft pilot+ship matching also covers a journal identity
+                # becoming more complete between scans.
+                self.recent_targets = [
+                    item for item in self.recent_targets
+                    if not self._same_target_capture(item, target_key, target)
+                ]
                 self.recent_targets.insert(0, row)
                 self.recent_targets = self.recent_targets[:TARGET_SCAN_RECENT_LIMIT]
                 self.target_scan_status = {
