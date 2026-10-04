@@ -30,11 +30,14 @@ The desktop window shows the current HUD version and checks the rolling GitHub r
 
 ## Carrier PA / local voice
 
-Mongrel HUD 0.10.0 adds the first local voice layer as an owner-carrier PA. Speech is generated locally through Windows' installed System Speech voice; no journal text or voice request is sent to a cloud speech service.
+Mongrel HUD 0.11.0 expands the local owner-carrier PA into its own **Carrier PA** controller tab. Speech still runs locally through Windows System Speech; no journal text, carrier identity, phrase text, or speech request is sent to a cloud TTS service.
 
-The iPad controller provides **VOICE ON/OFF**, **CARRIER PA ON/OFF**, PA volume, a **TEST VOICE** button, and per-trigger Min Delay / Max Delay / Cooldown controls. Delays are deliberately event-specific so Elite's own ATC/carrier announcements can remain enabled and speak first. The HUD queues only one Mongrel voice at a time, suppresses duplicate triggers during each cue's cooldown, and cancels stale queued docking/jump lines when a newer journal event makes them obsolete.
+The Carrier PA tab provides **VOICE ON/OFF**, **CARRIER PA ON/OFF**, installed Windows voice selection, test playback, volume, speech rate, and an editable phrase for every cue. Phrase templates support the placeholders `{carrier}`, `{destination}`, `{pad}`, and `{minutes}`; every cue can be tested individually and reset to its built-in phrase. The voice dropdown lists voices actually exposed to Mongrel HUD by Windows System Speech. If a Windows Natural voice is installed but is not exposed through that API, it will not be listed.
 
-Carrier PA v1 listens only to events Scout can identify as the current Commander's own Fleet Carrier. `CarrierStats` remains the richest source of carrier name/callsign, while `CarrierJumpRequest` also establishes the owner Carrier ID when a jump is scheduled. Supported v1 PA cues are docking request (off by default), docking granted, docked/welcome, undocked/departure, carrier jump scheduled, jump cancelled, and jump complete. Combat voice callouts are intentionally outside this first pass.
+Each ordinary event retains independent **Min Delay / Max Delay / Cooldown** settings so Elite's built-in ATC/carrier voices can speak first. Newer docking/jump events cancel stale queued announcements. Carrier PA v1.1 adds two local scheduled countdown cues based on Elite's `CarrierJumpRequest.DepartureTime`: **10 minutes** and **5 minutes** before departure. Canceling or rescheduling a carrier jump removes the old countdowns.
+
+After an owner-carrier `CarrierJump`, HUD also schedules **Ready for next jump**. Its default delay is 180 seconds, but the delay is adjustable from 0–900 seconds because the practical Fleet Carrier cooldown is not treated as a perfect fixed three-minute clock. Scheduled countdown/cooldown entries are stored in the existing local `state.json` so a HUD restart before the due time can restore them.
+
 
 ## Profiles
 
