@@ -151,15 +151,15 @@ with tempfile.TemporaryDirectory() as td:
     fake_root=FakeRoot()
     fake_window=FakeWindow()
     app.root=fake_root
-    app.panel_windows={"own":{"window":fake_window,"body":object(),"appliedLocked":None,"appliedRevision":-1}}
+    app.panel_windows={"mission":{"window":fake_window,"body":object(),"appliedLocked":None,"appliedRevision":-1}}
     app._render_panel_canvas=lambda *args,**kwargs: (_ for _ in ()).throw(RuntimeError("synthetic renderer failure"))
     applied=[]
     app._apply_panel_edit_mode=lambda panel_id,locked: applied.append((panel_id,locked))
     app.refresh_ui()
     assert fake_root.after_calls==1
     assert fake_window.shown==1
-    assert app.panel_windows["own"]["renderError"]=="synthetic renderer failure"
-    assert applied==[("own",app.layout_snapshot()["locked"])]
+    assert app.panel_windows["mission"]["renderError"]=="synthetic renderer failure"
+    assert applied==[("mission",app.layout_snapshot()["locked"])]
     app.set_master_overlay(False)
     app.refresh_ui()
     assert fake_root.after_calls==2 and fake_window.withdrawn>=1
