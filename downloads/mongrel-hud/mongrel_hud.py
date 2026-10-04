@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.6.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -48,10 +48,11 @@ TARGET_SCAN_DURATION = 2.1
 TARGET_SCAN_FRAMES = 7
 TARGET_SCAN_RECENT_LIMIT = 4
 TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
-HUD_CYAN = "#73dcff"
-HUD_WHITE = "#eefaff"
-HUD_MUTED = "#7193a2"
-HUD_DIM = "#28434e"
+HUD_CYAN = "#8ce7ff"
+HUD_WHITE = "#f7fdff"
+HUD_MUTED = "#a9c8d3"
+HUD_DIM = "#355664"
+HUD_RENDER_SCALE = 1.18
 HUD_RED = "#ff4d55"
 HUD_AMBER = "#ffb229"
 HUD_GREEN = "#67e39a"
@@ -1294,7 +1295,11 @@ class MongrelHudApp:
 
     @staticmethod
     def _panel_font(scale: float, size: int, bold: bool = False) -> tuple[Any, ...]:
-        return ("Consolas", max(8, round(size * scale)), "bold" if bold else "normal")
+        # Canvas text became too thin/small on wide high-resolution displays in 0.6.0.
+        # Keep the technical Consolas look, but give small tactical text a readable floor
+        # and use bold weight for the compact labels/details that must remain glanceable.
+        weight = "bold" if bold or size <= 11 else "normal"
+        return ("Consolas", max(10, round(size * scale)), weight)
 
     @staticmethod
     def _alert_color(row: dict[str, Any]) -> str:
@@ -1575,7 +1580,7 @@ class MongrelHudApp:
                 window.withdraw()
                 continue
             window.deiconify()
-            scale = float(panel_cfg.get("scale") or 1.0)
+            scale = float(panel_cfg.get("scale") or 1.0) * HUD_RENDER_SCALE
             self._render_panel_canvas(panel_id, info["body"], scale, flash_on)
             if info.get("appliedLocked") != locked:
                 self._apply_panel_edit_mode(panel_id, locked)
