@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { alertId, alertIndicator, orderAlerts, summarizeMission, summarizeScoutBoard, summarizeTrades } from '../functions/api/hud/feed.js';
+import { alertId, alertIndicator, factionAlerts, orderAlerts, summarizeMission, summarizeScoutBoard, summarizeTrades } from '../functions/api/hud/feed.js';
 
 assert.equal(alertId('faction','retreat','Diaba','Retreat active'),'faction:retreat:diaba:retreat-active');
 
@@ -17,6 +17,17 @@ assert.equal(mission.orders[0].progress.unit,'CZ pts');
 assert.equal(mission.attention[0].system,'Diaba');
 assert.equal(alertIndicator('faction','high'),'red');
 assert.equal(alertIndicator('orders','high'),'amber');
+
+const mirroredFactionAlerts=factionAlerts({alerts:[
+  {system:'Col 285 Sector CF-W b16-2',family:'conflict',detail:'War',phase:'active',firstSeenAt:'2026-09-29T20:47:00Z',reviewedAt:null},
+  {system:'Chingpho',family:'civil-unrest',detail:'Civil Unrest',phase:'active',firstSeenAt:'2026-09-18T20:28:00Z',reviewedAt:'2026-10-04T04:00:00Z'},
+]});
+assert.equal(mirroredFactionAlerts.length,2);
+assert.equal(mirroredFactionAlerts[0].title,'CONFLICT CHANGE · Col 285 Sector CF-W b16-2');
+assert.equal(mirroredFactionAlerts[0].acknowledged,false);
+assert.equal(mirroredFactionAlerts[1].title,'CIVIL UNREST · Chingpho');
+assert.equal(mirroredFactionAlerts[1].acknowledged,true);
+assert.equal(mirroredFactionAlerts[1].acknowledgedAt,'2026-10-04T04:00:00Z');
 
 const trade=summarizeTrades([{
   id:'route-12345678',
@@ -123,7 +134,7 @@ const reviewedBeforePublish=orderAlerts([{
 assert.equal(reviewedBeforePublish.length,0,'BGS Control ACK before publish clears the matching publication from HUD');
 
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
-for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp',"BGS Control's amber acknowledgement is authoritative",'readOrderReviewState','publicationReviewSignature','orderChangeReviewed']){
+for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','wolf-bgs-control-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp',"BGS Control's amber acknowledgement is authoritative",'readOrderReviewState','readBgsFactionAlertState','publicationReviewSignature','orderChangeReviewed']){
   assert.ok(source.includes(token),token);
 }
 console.log('✓ HUD site feed aggregates mission/trade/scout leadership data with persistent acknowledgements');
