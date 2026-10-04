@@ -101,6 +101,8 @@ HUD_EVENT_TYPES = {
     "SupercruiseEntry": "travel.supercruise_entry",
     "SupercruiseExit": "travel.supercruise_exit",
     "SupercruiseDestinationDrop": "travel.destination_drop",
+    "Disembark": "player.disembark",
+    "Embark": "player.embark",
     "ApproachSettlement": "facility.approach",
     "ShipTargeted": "combat.target",
     "HullDamage": "ship.hull",
@@ -1163,6 +1165,11 @@ def _normalize_hud_event(
 
     if journal_event == "Location":
         payload["docked"] = bool(entry.get("Docked"))
+        payload["onFoot"] = bool(entry.get("OnFoot"))
+
+    if journal_event in {"Disembark", "Embark"}:
+        payload["onStation"] = bool(entry.get("OnStation"))
+        payload["onPlanet"] = bool(entry.get("OnPlanet"))
 
     if journal_event == "ShipTargeted":
         locked = bool(entry.get("TargetLocked"))
@@ -1372,8 +1379,29 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
     if event_type == "location.current":
         if bool(event.get("docked")) and station:
             _hud_state["station"] = station
-        elif not bool(event.get("docked")):
+            if str(station.get("relationship") or "").casefold() == "owner":
+                _hud_state["instanceDestination"] = {
+                    "marketId": station.get("marketId"),
+                    "name": station.get("name"),
+                    "type": station.get("type"),
+                    "relationship": "owner",
+                    "source": event_type,
+                    "timestamp": event.get("timestamp"),
+                }
+        elif not bool(event.get("docked")) and not bool(event.get("onFoot")):
             _hud_state["station"] = None
+
+    if event_type in {"player.disembark", "player.embark"} and bool(event.get("onStation")) and station:
+        _hud_state["station"] = station
+        if str(station.get("relationship") or "").casefold() == "owner":
+            _hud_state["instanceDestination"] = {
+                "marketId": station.get("marketId"),
+                "name": station.get("name"),
+                "type": station.get("type"),
+                "relationship": "owner",
+                "source": event_type,
+                "timestamp": event.get("timestamp"),
+            }
 
     if event_type == "carrier.jump" and station:
         _hud_state["station"] = station
