@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import difflib
 import json
 import math
 import os
@@ -11,6 +12,7 @@ import threading
 import time
 import tkinter as tk
 import urllib.request
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import cookies
@@ -19,19 +21,123 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-APP_VERSION = "0.5.0"
+
+try:
+    import numpy as np
+    from PIL import ImageEnhance, ImageGrab, ImageOps
+    from rapidocr_onnxruntime import RapidOCR
+    OCR_AVAILABLE = True
+except Exception:
+    np = None
+    ImageEnhance = None
+    ImageGrab = None
+    ImageOps = None
+    RapidOCR = None
+    OCR_AVAILABLE = False
+
+APP_VERSION = "0.6.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
+
+TARGET_SCAN_DURATION = 2.1
+TARGET_SCAN_FRAMES = 7
+TARGET_SCAN_RECENT_LIMIT = 4
+TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
+
+TACTICAL_MODULES = {
+    "Pulse Laser": "offense",
+    "Burst Laser": "offense",
+    "Beam Laser": "offense",
+    "Multi-Cannon": "offense",
+    "Cannon": "offense",
+    "Fragment Cannon": "offense",
+    "Rail Gun": "offense",
+    "Plasma Accelerator": "offense",
+    "Missile Rack": "offense",
+    "Seeker Missile Rack": "offense",
+    "Pack-Hound Missile Rack": "offense",
+    "Mine Launcher": "offense",
+    "Torpedo Pylon": "offense",
+    "Shock Cannon": "offense",
+    "Enzyme Missile Rack": "offense",
+    "Advanced Multi-Cannon": "offense",
+    "Advanced Missile Rack": "offense",
+    "AX Multi-Cannon": "offense",
+    "AX Missile Rack": "offense",
+    "Guardian Gauss Cannon": "offense",
+    "Guardian Plasma Charger": "offense",
+    "Guardian Shard Cannon": "offense",
+    "Cytoscrambler": "offense",
+    "Enforcer Cannon": "offense",
+    "Imperial Hammer": "offense",
+    "Pacifier Frag-Cannon": "offense",
+    "Retributor": "offense",
+    "Shield Cell Bank": "defense",
+    "Shield Booster": "defense",
+    "Chaff Launcher": "defense",
+    "Point Defence": "defense",
+    "Heatsink Launcher": "defense",
+    "Heat Sink Launcher": "defense",
+    "Electronic Countermeasure": "defense",
+    "ECM": "defense",
+    "Hull Reinforcement Package": "defense",
+    "Module Reinforcement Package": "defense",
+    "Guardian Shield Reinforcement Package": "defense",
+    "Fighter Hangar": "special",
+    "FSD Interdictor": "special",
+    "Hatch Breaker Limpet Controller": "special",
+    "Manifest Scanner": "special",
+    "Kill Warrant Scanner": "special",
+    "Frame Shift Wake Scanner": "special",
+    "Wake Scanner": "special",
+    "Pulse Wave Analyser": "special",
+    "Mining Laser": "special",
+    "Abrasion Blaster": "special",
+    "Seismic Charge Launcher": "special",
+    "Sub-Surface Displacement Missile": "special",
+    "Collector Limpet Controller": "special",
+    "Prospector Limpet Controller": "special",
+    "Repair Limpet Controller": "special",
+    "Fuel Transfer Limpet Controller": "special",
+    "Research Limpet Controller": "special",
+    "Recon Limpet Controller": "special",
+}
+
+CORE_MODULES = (
+    "Cargo Hatch",
+    "Drive",
+    "Thrusters",
+    "Power Plant",
+    "Frame Shift Drive",
+    "Life Support",
+    "Power Distributor",
+    "Sensors",
+    "Shield Generator",
+    "Fuel Tank",
+    "Cargo Rack",
+    "Docking Computer",
+    "Advanced Docking Computer",
+    "Supercruise Assist",
+    "Auto Field-Maintenance Unit",
+    "Fuel Scoop",
+    "Planetary Vehicle Hangar",
+    "Detailed Surface Scanner",
+    "Discovery Scanner",
+    "Refinery",
+)
+MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
+MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
+
 PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "mission", "trade", "scoutboard", "alerts", "notes")
 VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
-    "subsystems": "SUBSYSTEMS",
+    "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
     "surface": "SURFACE MINING",
     "mission": "MISSION CONTROL",
@@ -173,6 +279,79 @@ def iso_age(value: str | None) -> str:
     return f"{seconds // 60}m"
 
 
+
+def normalized_module_text(value: Any) -> str:
+    text = str(value or "").upper()
+    for source, target in (("0", "O"), ("|", "I")):
+        text = text.replace(source, target)
+    text = text.replace("-", " ")
+    return " ".join("".join(ch if ch.isalnum() or ch == " " else " " for ch in text).split())
+
+
+def match_module_name(value: Any) -> str | None:
+    text = normalized_module_text(value)
+    if not text or text in {"NAME", "HEALTH", "POWER", "SUB TARGETS", "SUBTARGETS", "TARGET"}:
+        return None
+    exact = MODULE_LOOKUP.get(text)
+    if exact:
+        return exact
+    contained = [canonical for key, canonical in MODULE_LOOKUP.items() if len(key) >= 5 and key in text]
+    if contained:
+        return max(contained, key=len)
+    best_name = None
+    best_score = 0.0
+    for key, canonical in MODULE_LOOKUP.items():
+        score = difflib.SequenceMatcher(None, text, key, autojunk=False).ratio()
+        if score > best_score:
+            best_score = score
+            best_name = canonical
+    return best_name if best_score >= 0.72 else None
+
+
+def stitch_module_frames(frames: list[list[str]]) -> list[str]:
+    merged: list[str] = []
+    for frame in frames:
+        current = [name for name in frame if name]
+        if not current:
+            continue
+        if not merged:
+            merged = list(current)
+            continue
+        overlap = 0
+        for size in range(min(len(merged), len(current)), 0, -1):
+            if merged[-size:] == current[:size]:
+                overlap = size
+                break
+        if overlap:
+            merged.extend(current[overlap:])
+            continue
+        tail = merged[-12:]
+        match = difflib.SequenceMatcher(None, tail, current, autojunk=False).find_longest_match(0, len(tail), 0, len(current))
+        if match.size >= 2 and match.b <= 2 and match.a + match.size >= max(1, len(tail) - 2):
+            merged.extend(current[match.b + match.size:])
+        else:
+            # No trustworthy overlap: retain the frame rather than silently dropping possible modules.
+            merged.extend(current)
+    return merged
+
+
+def tactical_module_groups(modules: list[str]) -> dict[str, list[dict[str, Any]]]:
+    groups = {"offense": [], "defense": [], "special": []}
+    counters = {key: Counter() for key in groups}
+    order = {key: [] for key in groups}
+    for module in modules:
+        category = TACTICAL_MODULES.get(module)
+        if not category:
+            continue
+        canonical = "Heatsink Launcher" if module == "Heat Sink Launcher" else module
+        if counters[category][canonical] == 0:
+            order[category].append(canonical)
+        counters[category][canonical] += 1
+    for category in groups:
+        groups[category] = [{"name": name, "count": counters[category][name]} for name in order[category]]
+    return groups
+
+
 class LocalStore:
     def __init__(self, path: Path):
         self.path = path
@@ -221,6 +400,14 @@ class MongrelHudApp:
         self.run_bounty = 0
         self.run_kills = 0
         self.last_bounty = 0
+        self.ocr_lock = threading.RLock()
+        self.ocr_engine: Any = None
+        self.ocr_status = {"available": OCR_AVAILABLE, "ready": False, "error": "" if OCR_AVAILABLE else "ocr_unavailable"}
+        self.target_scan_status = {"active": False, "phase": "idle", "progress": 0, "message": "Ready", "error": ""}
+        self.recent_targets: list[dict[str, Any]] = []
+        self.restored_target_until = 0.0
+        self._last_target_identity = ""
+        threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
         with self.lock:
@@ -288,6 +475,207 @@ class MongrelHudApp:
                 ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
                 ledger["unclaimed"] = 0
                 self.store.save()
+
+
+    @staticmethod
+    def target_identity(target: dict[str, Any] | None) -> str:
+        if not isinstance(target, dict):
+            return ""
+        pilot = " ".join(str(target.get("pilotName") or "").split()).casefold()
+        ship = " ".join(str(target.get("ship") or "").split()).casefold()
+        faction = " ".join(str(target.get("faction") or "").split()).casefold()
+        if not pilot and not ship:
+            return ""
+        return "|".join((pilot, ship, faction))
+
+    def _warm_ocr(self) -> None:
+        if not OCR_AVAILABLE or RapidOCR is None:
+            return
+        try:
+            engine = RapidOCR()
+            with self.ocr_lock:
+                self.ocr_engine = engine
+                self.ocr_status = {"available": True, "ready": True, "error": ""}
+        except Exception as exc:
+            with self.ocr_lock:
+                self.ocr_status = {"available": True, "ready": False, "error": f"ocr_init_failed:{type(exc).__name__}"}
+
+    def _ocr_engine_ready(self) -> Any:
+        with self.ocr_lock:
+            engine = self.ocr_engine
+        if engine is not None:
+            return engine
+        self._warm_ocr()
+        with self.ocr_lock:
+            return self.ocr_engine
+
+    @staticmethod
+    def _foreground_capture() -> Any:
+        if os.name != "nt" or ImageGrab is None:
+            raise RuntimeError("screen_capture_unavailable")
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        if not hwnd:
+            raise RuntimeError("foreground_window_unavailable")
+        rect = ctypes.wintypes.RECT()
+        if not ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+            raise RuntimeError("foreground_window_rect_failed")
+        if rect.right <= rect.left or rect.bottom <= rect.top:
+            raise RuntimeError("foreground_window_rect_invalid")
+        image = ImageGrab.grab(bbox=(rect.left, rect.top, rect.right, rect.bottom), all_screens=True)
+        width, height = image.size
+        left = max(0, min(width - 1, round(width * TARGET_CAPTURE_REGION[0])))
+        top = max(0, min(height - 1, round(height * TARGET_CAPTURE_REGION[1])))
+        right = max(left + 1, min(width, round(width * TARGET_CAPTURE_REGION[2])))
+        bottom = max(top + 1, min(height, round(height * TARGET_CAPTURE_REGION[3])))
+        crop = image.crop((left, top, right, bottom))
+        if crop.width > 1600:
+            ratio = 1600.0 / crop.width
+            crop = crop.resize((1600, max(1, round(crop.height * ratio))))
+        if ImageOps is not None and ImageEnhance is not None:
+            crop = ImageOps.autocontrast(ImageOps.grayscale(crop))
+            crop = ImageEnhance.Contrast(crop).enhance(1.6).convert("RGB")
+        return crop
+
+    def _ocr_modules_from_image(self, image: Any, engine: Any) -> list[str]:
+        if np is None:
+            return []
+        result, _elapsed = engine(np.array(image))
+        rows = result or []
+        detected: list[tuple[float, float, str]] = []
+        for row in rows:
+            try:
+                box, text, score = row
+                if float(score) < 0.32:
+                    continue
+                name = match_module_name(text)
+                if not name:
+                    continue
+                ys = [float(point[1]) for point in box]
+                xs = [float(point[0]) for point in box]
+                detected.append((sum(ys) / len(ys), sum(xs) / len(xs), name))
+            except Exception:
+                continue
+        detected.sort(key=lambda item: (item[0], item[1]))
+        out: list[str] = []
+        last_y = None
+        last_name = None
+        for y, _x, name in detected:
+            if name == last_name and last_y is not None and abs(y - last_y) < 8:
+                continue
+            out.append(name)
+            last_y, last_name = y, name
+        return out
+
+    def target_intel(self, target: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        current = target if isinstance(target, dict) else (self.scout_state().get("target") or {})
+        key = self.target_identity(current)
+        if not key:
+            return None
+        with self.lock:
+            for row in self.recent_targets:
+                if row.get("key") == key:
+                    return json.loads(json.dumps(row))
+        return None
+
+    def recent_target_snapshot(self) -> list[dict[str, Any]]:
+        with self.lock:
+            return json.loads(json.dumps(self.recent_targets))
+
+    def scan_status_snapshot(self) -> dict[str, Any]:
+        with self.lock, self.ocr_lock:
+            status = dict(self.target_scan_status)
+            status["ocr"] = dict(self.ocr_status)
+            return status
+
+    def start_target_scan(self) -> dict[str, Any]:
+        state = self.scout_state()
+        target = state.get("target") if isinstance(state.get("target"), dict) else {}
+        key = self.target_identity(target)
+        if not key:
+            raise ValueError("target_required")
+        with self.lock:
+            if self.target_scan_status.get("active"):
+                raise ValueError("target_scan_active")
+            self.target_scan_status = {
+                "active": True,
+                "phase": "capturing",
+                "progress": 0,
+                "message": "SCANNING — SCROLL NOW",
+                "error": "",
+                "targetKey": key,
+                "pilotName": str(target.get("pilotName") or ""),
+                "ship": str(target.get("ship") or ""),
+                "startedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            }
+        threading.Thread(target=self._run_target_scan, args=(key, dict(target)), name="MongrelHudTargetScan", daemon=True).start()
+        return self.scan_status_snapshot()
+
+    def _run_target_scan(self, target_key: str, target: dict[str, Any]) -> None:
+        try:
+            engine = self._ocr_engine_ready()
+            if engine is None:
+                raise RuntimeError(self.ocr_status.get("error") or "ocr_unavailable")
+            frames: list[Any] = []
+            started = time.monotonic()
+            for index in range(TARGET_SCAN_FRAMES):
+                frames.append(self._foreground_capture())
+                with self.lock:
+                    self.target_scan_status["progress"] = round(((index + 1) / TARGET_SCAN_FRAMES) * 70)
+                next_at = started + ((index + 1) * TARGET_SCAN_DURATION / TARGET_SCAN_FRAMES)
+                remaining = next_at - time.monotonic()
+                if remaining > 0:
+                    time.sleep(remaining)
+            with self.lock:
+                self.target_scan_status.update({"phase": "reading", "progress": 72, "message": "READING LOADOUT"})
+            recognized_frames: list[list[str]] = []
+            for index, frame in enumerate(frames):
+                modules = self._ocr_modules_from_image(frame, engine)
+                if modules:
+                    recognized_frames.append(modules)
+                with self.lock:
+                    self.target_scan_status["progress"] = 72 + round(((index + 1) / max(1, len(frames))) * 25)
+            stitched = stitch_module_frames(recognized_frames)
+            groups = tactical_module_groups(stitched)
+            tactical_count = sum(item["count"] for values in groups.values() for item in values)
+            if not stitched:
+                raise RuntimeError("no_module_text_found")
+            row = {
+                "key": target_key,
+                "pilotName": str(target.get("pilotName") or ""),
+                "ship": str(target.get("ship") or ""),
+                "faction": str(target.get("faction") or ""),
+                "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "allModules": stitched,
+                "groups": groups,
+                "moduleCount": len(stitched),
+                "tacticalCount": tactical_count,
+                "framesRead": len(recognized_frames),
+            }
+            with self.lock:
+                self.recent_targets = [item for item in self.recent_targets if item.get("key") != target_key]
+                self.recent_targets.insert(0, row)
+                self.recent_targets = self.recent_targets[:TARGET_SCAN_RECENT_LIMIT]
+                self.target_scan_status = {
+                    "active": False,
+                    "phase": "complete",
+                    "progress": 100,
+                    "message": f"{tactical_count} TACTICAL MODULES" if tactical_count else "LOADOUT CAPTURED · NO TACTICAL MODULES",
+                    "error": "",
+                    "targetKey": target_key,
+                    "completedAt": row["capturedAt"],
+                    "moduleCount": len(stitched),
+                    "tacticalCount": tactical_count,
+                }
+        except Exception as exc:
+            with self.lock:
+                self.target_scan_status = {
+                    "active": False,
+                    "phase": "error",
+                    "progress": 0,
+                    "message": "LOADOUT SCAN FAILED",
+                    "error": str(exc)[:120],
+                    "targetKey": target_key,
+                }
 
     def bounty_ledger(self) -> dict[str, int]:
         with self.store.lock:
@@ -538,6 +926,9 @@ class MongrelHudApp:
             "notes": self.notes_text(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
+            "targetScan": self.scan_status_snapshot(),
+            "targetIntel": self.target_intel(state.get("target") if isinstance(state.get("target"), dict) else None),
+            "recentTargets": self.recent_target_snapshot(),
         }
 
     @staticmethod
@@ -1159,6 +1550,8 @@ def make_handler(app: MongrelHudApp):
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]
                     result = app.acknowledge_alerts(ids)
+                elif path == "/api/target-scan":
+                    result = {"ok": True, "scan": app.start_target_scan()}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/site-select":

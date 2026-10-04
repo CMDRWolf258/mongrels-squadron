@@ -56,7 +56,7 @@ This prototype uses ordinary HTTP because it is intended for a trusted private L
 
 ## Global information panels
 
-Mongrel HUD 0.5.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
+Mongrel HUD 0.6.0 adds **Mission Control**, **Trader's Outpost**, **Scout Board**, **Leadership Alerts**, and **Notes** as independent panels. Every panel has a profile assignment in the iPad controller, so it can be shown in Combat, Surface Mining, or both profiles. Mission Control and Leadership Alerts default to visible in both; Trader's Outpost, Scout Board and Notes are available but default off until positioned.
 
 Scout 1.7.0 fetches the authenticated site summaries with its existing bound Scout token. The HUD companion never receives the raw token. Current faction operational alerts, active payout requests, recent material Daily Order changes, and degraded/unavailable managed trade routes become leadership alerts. Unacknowledged alerts flash on the PC overlay and can be acknowledged individually or all at once from the iPad; acknowledgements are stored by the website for the token owner.
 
@@ -65,4 +65,13 @@ HUD Notes are intentionally local-first. Up to 4,000 characters can be entered o
 
 ## Current jump calculator
 
-Mongrel HUD 0.5.0 displays Scout 1.8.0's live normal jump calculation as **CURRENT JUMP** and keeps Frontier's Loadout value beside it as **UNLADEN**. The current value responds to live cargo and fuel mass and uses the fitted FSD's class/rating, SCO/standard characteristics, engineering optimal-mass modifier, maximum fuel per jump and Guardian FSD Booster. The iPad diagnostic card also shows current cargo and calculated ship mass so flight testing can compare the result against Elite directly. Synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now.
+Mongrel HUD 0.6.0 displays Scout 1.8.0's live normal jump calculation as **CURRENT JUMP** and keeps Frontier's Loadout value beside it as **UNLADEN**. The current value responds to live cargo and fuel mass and uses the fitted FSD's class/rating, SCO/standard characteristics, engineering optimal-mass modifier, maximum fuel per jump and Guardian FSD Booster. The iPad diagnostic card also shows current cargo and calculated ship mass so flight testing can compare the result against Elite directly. Synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now.
+
+
+## Target loadout scanner
+
+Mongrel HUD 0.6.0 adds an on-demand, local target-module capture workflow. Open Elite's **Target → Sub-Targets** list and tap **SCAN LOADOUT** on the iPad. The HUD samples the foreground Elite window for about two seconds while you scroll, then performs OCR locally on Serenity. No screenshot or OCR text is uploaded.
+
+The scanner stitches overlapping frames in list order so modules visible in consecutive captures are not double-counted while genuine duplicate modules are preserved and condensed (for example, **Mine Launcher ×3**). Universal/core modules are used internally to align the scrolling list but are filtered out of the tactical display. The retained categories are **Offense**, **Defense**, and **Special**.
+
+The four most recent successful target captures are held in memory for the current HUD session. Returning to a matching pilot/ship restores that loadout automatically. This cache intentionally does not persist across HUD restarts.

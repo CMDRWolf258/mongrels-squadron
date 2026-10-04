@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,13 +29,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install PyInstaller
-        run: python -m pip install --disable-pip-version-check pyinstaller
+      - name: Install build dependencies
+        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4"
 
       - name: Build standalone executable
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md

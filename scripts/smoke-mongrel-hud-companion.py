@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.5.0"
+assert hud.APP_VERSION=="0.6.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -20,6 +20,17 @@ assert 111000<nav["distance"]<111400
 assert 89<nav["bearing"]<91
 assert hud.format_distance(5910)=="5.91 km"
 assert "RIGHT" in hud.relative_text(20)
+
+assert hud.match_module_name("FR4ME SHIFT DRlVE")=="Frame Shift Drive"
+assert hud.match_module_name("HEATSINK LAUNCHER")=="Heatsink Launcher"
+stitched=hud.stitch_module_frames([
+    ["Cargo Hatch","Drive","Mine Launcher","Mine Launcher","Mine Launcher","Heatsink Launcher","Chaff Launcher"],
+    ["Mine Launcher","Heatsink Launcher","Chaff Launcher","Power Plant","Frame Shift Drive","Shield Cell Bank"],
+])
+assert stitched.count("Mine Launcher")==3
+groups=hud.tactical_module_groups(stitched)
+assert groups["offense"][0]=={"name":"Mine Launcher","count":3}
+assert groups["defense"][-1]=={"name":"Shield Cell Bank","count":1}
 
 with tempfile.TemporaryDirectory() as td:
     store=hud.LocalStore(Path(td)/"state.json")
@@ -72,7 +83,7 @@ with tempfile.TemporaryDirectory() as td:
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","LEADERSHIP ALERTS","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","LEADERSHIP ALERTS","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","SET SITE CENTER","REPORT DEPOSIT","/api/site-center","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -83,4 +94,5 @@ for token in ["mongrel-hud-latest","MongrelHUD-Windows.zip","Response.redirect"]
 assert "resource_path" in source and "_MEIPASS" in source
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source
+assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
