@@ -48,16 +48,32 @@ assert.equal(trade.routes[0].legs[0].destinationStation,'Test Exchange');
 
 const scout=summarizeScoutBoard({
   summary:{available:1,claimed:0,fresh:2,priority:1,coordinates:1},
-  viewer:{lastScoutLocation:{system:'Diaba',coords:[10,20,30],observedAt:'2026-10-03T20:00:00Z',coordinateSource:'Live Scout'}},
-  jobs:[{system:'Miwae',status:'available',coords:[11,20,30],coordinateSource:'EDSM',reward:{totalMillions:10,bonusMillions:5,bonusReason:'Priority'}}],
+  viewer:{lastScoutLocation:{system:'Diaba',coords:{x:10,y:20,z:30},observedAt:'2026-10-03T20:00:00Z',coordinateSource:'Live Scout'}},
+  jobs:[{system:'Miwae',status:'available',coords:{x:11,y:20,z:30},coordinateSource:'EDSM',reward:{totalMillions:10,bonusMillions:5,bonusReason:'Priority'}}],
 });
 assert.equal(scout.jobs[0].system,'Miwae');
 assert.deepEqual(scout.jobs[0].coords,[11,20,30]);
 assert.equal(scout.origin.system,'Diaba');
 
-const alerts=orderAlerts([{state:'applied',legacyBaseline:false,publicationId:'pub-1',appliedAt:'2026-10-03T20:00:00Z',changes:{material:true,counts:{added:1,revised:2,removed:0}}}],Date.parse('2026-10-03T21:00:00Z'));
-assert.equal(alerts.length,1);
-assert.match(alerts[0].detail,/2 revised/);
+const alerts=orderAlerts([{
+  state:'applied',
+  legacyBaseline:false,
+  publicationId:'pub-1',
+  appliedAt:'2026-10-03T20:00:00Z',
+  changes:{
+    material:true,
+    counts:{added:1,revised:1,removed:1},
+    rows:[
+      {status:'added',before:null,after:{id:'o2',system:'Diaba',faction:'Regiment of Imperial Mongrels',task:'Claim bounties',priority:'high',reporting:{type:'bounties',target:20}}},
+      {status:'revised',before:{id:'o1',system:'Diaba',faction:'Regiment of Imperial Mongrels',task:'Trade 10M',priority:'high',reporting:{type:'trade',target:10}},after:{id:'o1',system:'Diaba',faction:'Regiment of Imperial Mongrels',task:'Trade 20M',priority:'high',reporting:{type:'trade',target:20}}},
+      {status:'removed',before:{id:'o3',system:'Miwae',faction:'Regiment of Imperial Mongrels',task:'Run missions',priority:'normal'},after:null},
+    ],
+  },
+}],Date.parse('2026-10-03T21:00:00Z'));
+assert.equal(alerts.length,3);
+assert.equal(alerts[0].title,'[ADDED] Claim bounties');
+assert.match(alerts[1].detail,/Was: Trade 10M/);
+assert.equal(alerts[2].title,'[REMOVED] Run missions');
 
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
 for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp']){
