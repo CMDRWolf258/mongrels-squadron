@@ -83,7 +83,7 @@ const pendingSinceBgsAck=orderAlerts([
     state:'applied',legacyBaseline:false,publicationId:'older',appliedAt:'2026-10-03T20:00:00Z',
     changes:{material:true,rows:[{status:'added',after:{id:'o1',system:'Miwae',task:'Older task'}}]},
   },
-],{now:Date.parse('2026-10-03T21:00:00Z'),reviewedThrough:'2026-10-03T20:15:00Z'});
+],{now:Date.parse('2026-10-03T21:00:00Z'),reviews:{Miwae:{reviewedAt:'2026-10-03T20:15:00Z',signature:'older-review'}}});
 assert.equal(pendingSinceBgsAck.length,1);
 assert.equal(pendingSinceBgsAck[0].title,'[ADDED] Newest task');
 
@@ -99,8 +99,31 @@ const retainedUntilBgsAck=orderAlerts([
 ],{now:Date.parse('2026-10-03T21:00:00Z')});
 assert.equal(retainedUntilBgsAck.length,2,'HUD order references stay until the BGS Control master amber is acknowledged');
 
+const rc=value=>String(value??'').trim().replace(/\s+/g,' ');
+const rn=value=>value===''||value===null||value===undefined?null:(Number.isFinite(Number(value))?Number(value):null);
+const rf=order=>JSON.stringify({
+  system:rc(order?.system),faction:rc(order?.faction),kind:rc(order?.kind),source:rc(order?.source),
+  priority:rc(order?.priority),task:rc(order?.task),detail:rc(order?.detail),status:rc(order?.status),
+  reporting:order?.reporting&&typeof order.reporting==='object'?{type:rc(order.reporting.type),target:rn(order.reporting.target),blitz:Boolean(order.reporting.blitz)}:null,
+});
+const rh=value=>{let hash=2166136261;for(let i=0;i<value.length;i+=1){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}return(hash>>>0).toString(36);};
+const beforeReviewed=[{id:'old',system:'Diaba',faction:'The Consortium',kind:'mission-inf',source:'automation',priority:'high',task:'Complete about 15 INF for The Consortium',detail:'',status:'active',reporting:{type:'inf',target:15,blitz:false}}];
+const afterReviewed=[{id:'new',system:'Diaba',faction:'The Consortium',kind:'mission-inf',source:'automation',priority:'high',task:'Complete about 25 INF for The Consortium',detail:'',status:'active',reporting:{type:'inf',target:25,blitz:false}}];
+const reviewedSignature=rh(JSON.stringify({
+  cycleId:'cycle-1',
+  system:'Diaba',
+  before:beforeReviewed.map(rf).sort(),
+  after:afterReviewed.map(rf).sort(),
+}));
+const reviewedBeforePublish=orderAlerts([{
+  state:'applied',legacyBaseline:false,publicationId:'reviewed-publish',cycleId:'cycle-1',appliedAt:'2026-10-03T20:30:00Z',
+  before:{orders:beforeReviewed},after:{orders:afterReviewed},
+  changes:{material:true,rows:[{status:'revised',before:beforeReviewed[0],after:afterReviewed[0]}]},
+}],{now:Date.parse('2026-10-03T21:00:00Z'),reviews:{Diaba:{reviewedAt:'2026-10-03T20:25:00Z',signature:reviewedSignature}}});
+assert.equal(reviewedBeforePublish.length,0,'BGS Control ACK before publish clears the matching publication from HUD');
+
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
-for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp','Local/iPad ACK only marks a row acknowledged','readOrderReviewState']){
+for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp','Local/iPad ACK only marks a row acknowledged','readOrderReviewState','publicationReviewSignature','orderChangeReviewed']){
   assert.ok(source.includes(token),token);
 }
 console.log('✓ HUD site feed aggregates mission/trade/scout leadership data with persistent acknowledgements');
