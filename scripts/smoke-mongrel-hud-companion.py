@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.1"
+assert hud.APP_VERSION=="0.7.2"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -54,12 +54,12 @@ with tempfile.TemporaryDirectory() as td:
     },True,"")
     with app.mining_lock:
         app.mining_sites=[
-            {"id":42,"commodity":"Periclase","body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"rigs":2,"preferred":True,"notes":"Primary test site"},
-            {"id":43,"commodity":"Periclase","body":"7b","bodyType":"moon","signal":8,"latitude":-22.9000,"longitude":-98.9000,"rigs":1,"preferred":False,"notes":""},
+            {"id":42,"systemName":"NGC 2546 Sector UZ-G d10-16","commodity":"Periclase","body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"rigs":2,"preferred":True,"notes":"Primary test site"},
+            {"id":43,"systemName":"NGC 2546 Sector UZ-G d10-16","commodity":"Periclase","body":"7b","bodyType":"moon","signal":8,"latitude":-22.9000,"longitude":-98.9000,"rigs":1,"preferred":False,"notes":""},
         ]
         app.mining_centers=[
-            {"id":501,"body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"updatedAt":"2026-10-04T05:00:00Z"},
-            {"id":502,"body":"7b","bodyType":"moon","signal":8,"latitude":-22.8800,"longitude":-98.8800,"updatedAt":"2026-10-04T05:00:00Z"},
+            {"id":501,"systemName":"NGC 2546 Sector UZ-G d10-16","body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"updatedAt":"2026-10-04T05:00:00Z"},
+            {"id":502,"systemName":"NGC 2546 Sector UZ-G d10-16","body":"7b","bodyType":"moon","signal":8,"latitude":-22.8800,"longitude":-98.8800,"updatedAt":"2026-10-04T05:00:00Z"},
         ]
         app.mining_status={"ok":True,"updatedAt":"2026-10-04T05:00:00Z","error":""}
     assert hud.short_body_name(app.scout_state())=="7b"
@@ -105,7 +105,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.1"
+    assert hud.APP_VERSION=="0.7.2"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -143,8 +143,12 @@ assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set
 assert "SCOUT_MINING_REPORT_URL" in source and "SCOUT_MINING_CENTER_URL" in source and "MINING_DATA_URL" in source and "MINING_CENTERS_URL" in source
 assert "activeMiningSiteId" in source and "activeMiningLocationSignal" in source
 assert "_render_surface_canvas" in source and "_draw_nav_compass" in source and "relative = nav.get(\"relative\")" in source
+assert "task_box = canvas.bbox(task_id)" in source
+assert '"depositsOk": deposit_ok' in source and '"centersOk": center_ok' in source
+assert 'str(row.get("systemName") or TEN16_SYSTEM)' in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
 assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
+assert 'class="mining-select"' in html and "min-height:58px" in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
