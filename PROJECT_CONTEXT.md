@@ -76,6 +76,14 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.10.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.12.0 voice-provider architecture:
+- Carrier PA voice output is provider-based. Supported providers in this release are `system` (legacy `System.Speech`) and `winrt` (`Windows.Media.SpeechSynthesis`). Keep carrier event, phrase, queue, countdown, cooldown and anti-spam behavior provider-neutral.
+- Voice state persists `voiceProvider`, `voiceId`, and display-only `voiceName`. Existing 0.11.x `voiceName`-only selections migrate automatically to the legacy provider with `voiceId = voiceName`.
+- WinRT discovery enumerates `SpeechSynthesizer.AllVoices` and targets the returned unique voice ID. Provider discovery failures are isolated so one provider failing does not hide voices from the other provider.
+- WinRT playback stays local, applying the existing PA volume/rate controls through `SpeechSynthesizer.Options.AudioVolume` and `SpeakingRate`, synthesizing to a local temporary stream/file, playing it synchronously, then deleting the temporary file.
+- The provider interface is the future extension point for optional local neural voice packs. Do not bundle large neural models into the core HUD EXE or couple a future local-neural provider to carrier trigger logic.
+- Microsoft controls which installed signed voices WinRT exposes. If Andrew/Ava still do not appear after 0.12.0, treat that as a Windows provider-visibility result to diagnose, not as proof the voices are absent from the machine.
+
 Mongrel HUD 0.11.0 carrier-PA configuration:
 - Carrier PA is a separate iPad controller tab from HUD/overlay controls. Do not mix carrier voice settings back into the overlay-layout section.
 - Windows System Speech voices are enumerated locally and selectable by name; the current backend only offers voices Windows exposes through `System.Speech.Synthesis.SpeechSynthesizer.GetInstalledVoices()`. Voice selection, volume, and speech rate persist in HUD `state.json`.

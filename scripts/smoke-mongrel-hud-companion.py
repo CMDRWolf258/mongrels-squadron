@@ -12,30 +12,30 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.11.1"
+assert hud.APP_VERSION=="0.12.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
 assert hud.CONTROLLER_STABLE_URL=="http://mongrel-hud.local:43858"
 assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
-assert hud.version_tuple("0.11.1")==(0,11,1)
+assert hud.version_tuple("0.12.0")==(0,12,0)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.11.0"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.11.1"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.11.2"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.12.0"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.12.1"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.11.2",
+    "name":"Mongrel HUD Windows v0.12.1",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.11.2" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.12.1" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.11.2","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.12.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
     raise AssertionError("Untrusted update download URL was accepted")
 except ValueError as exc:
     assert str(exc)=="release_download_url_rejected"
 try:
-    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.11.2","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
+    hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.12.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":""}]})
     raise AssertionError("Release without SHA-256 digest was accepted")
 except ValueError as exc:
     assert str(exc)=="release_digest_missing"
@@ -93,18 +93,21 @@ with tempfile.TemporaryDirectory() as td:
     # Carrier PA settings are local, persistent and owner-carrier scoped.
     voice=app.voice_settings_snapshot()
     assert voice["enabled"] is True and voice["carrierPa"] is True and voice["volume"]==75
-    assert voice["voiceName"]==""
+    assert voice["voiceProvider"]=="system" and voice["voiceId"]=="" and voice["voiceName"]==""
+    migrated=hud.normalized_voice_settings({"voiceName":"Microsoft David Desktop"})
+    assert migrated["voiceProvider"]=="system" and migrated["voiceId"]=="Microsoft David Desktop"
     assert voice["cues"]["docking.requested"]["enabled"] is False
     assert voice["cues"]["docking.granted"]["enabled"] is True
     assert voice["cues"]["carrier.countdown_10"]["leadSeconds"]==600.0
     assert voice["cues"]["carrier.countdown_5"]["leadSeconds"]==300.0
     assert voice["cues"]["carrier.cooldown_ready"]["offsetSeconds"]==180.0
-    voice=app.set_voice_settings({"volume":65,"voiceName":"Test Voice","cues":{
+    voice=app.set_voice_settings({"volume":65,"voiceProvider":"winrt","voiceId":"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_OneCore\\Voices\\Tokens\\MSTTS_V110_enUS_AvaM","voiceName":"Microsoft Ava","cues":{
         "docking.granted":{"minDelay":5,"maxDelay":5,"cooldown":20,"phrase":"Clearance confirmed for {carrier}. Proceed to {pad}."},
         "docking.docked":{"minDelay":3,"maxDelay":3,"cooldown":20},
         "carrier.cooldown_ready":{"offsetSeconds":165,"phrase":"{carrier} is ready for the next jump."},
     }})
-    assert voice["volume"]==65 and voice["voiceName"]=="Test Voice"
+    assert voice["volume"]==65 and voice["voiceProvider"]=="winrt" and voice["voiceName"]=="Microsoft Ava"
+    assert voice["voiceId"].endswith("MSTTS_V110_enUS_AvaM")
     assert voice["cues"]["docking.granted"]["minDelay"]==5.0
     assert voice["cues"]["carrier.cooldown_ready"]["offsetSeconds"]==165.0
     assert "pad 12" in app._voice_text_for_event("docking.granted",{"relationship":"owner","carrierName":"Pneuma","landingPad":12})
@@ -150,7 +153,8 @@ with tempfile.TemporaryDirectory() as td:
     assert app._voice_text_for_event("carrier.cooldown_ready",{"carrierName":"Pneuma"})=="Pneuma is ready for the next jump."
     persisted_voice_store=hud.LocalStore(Path(td)/"state.json")
     assert persisted_voice_store.data["voice"]["volume"]==65
-    assert persisted_voice_store.data["voice"]["voiceName"]=="Test Voice"
+    assert persisted_voice_store.data["voice"]["voiceProvider"]=="winrt"
+    assert persisted_voice_store.data["voice"]["voiceName"]=="Microsoft Ava"
     assert any(row.get("cue")=="carrier.cooldown_ready" for row in persisted_voice_store.data["voiceSchedule"])
     app.snapshot=hud.ScoutSnapshot({
         "system":{"name":"NGC 2546 Sector UZ-G d10-16","address":"560820275507"},
@@ -218,7 +222,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.11.1"
+    assert hud.APP_VERSION=="0.12.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -274,7 +278,7 @@ with tempfile.TemporaryDirectory() as td:
     assert fake_root.after_calls==2 and fake_window.withdrawn>=1
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","HUD CONTROL","CARRIER PA","PNEUMA · CARRIER PA","TEST SELECTED VOICE","voiceSelect","data-voice-phrase","data-voice-cue=\"carrier.countdown_10\"","data-voice-cue=\"carrier.countdown_5\"","data-voice-cue=\"carrier.cooldown_ready\"","data-voice-offset","/api/voice","/api/voice-test","/api/voice-test-cue","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","HUD CONTROL","CARRIER PA","PNEUMA · CARRIER PA","TEST SELECTED VOICE","voiceSelect","Windows Modern (WinRT)","voiceProvider","providerLabel","data-voice-phrase","data-voice-cue=\"carrier.countdown_10\"","data-voice-cue=\"carrier.countdown_5\"","data-voice-cue=\"carrier.cooldown_ready\"","data-voice-offset","/api/voice","/api/voice-test","/api/voice-test-cue","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -299,11 +303,16 @@ assert "Get-FileHash -LiteralPath $Target" in source and "target_hash_mismatch" 
 assert "apply-update.log" in source and "replacement verified" in source and "rollback restored previous executable" in source
 assert "_update_snapshot_is_newer" in source
 assert "CARRIER_VOICE_CUES" in source and "handle_voice_event" in source and "_voice_loop" in source
-assert "_windows_voice_catalog" in source and "SelectVoice" in source and '"voiceName"' in source
+assert "_system_speech_voice_catalog" in source and "_winrt_voice_catalog" in source
+assert "VOICE_PROVIDER_SYSTEM" in source and "VOICE_PROVIDER_WINRT" in source and "_speak_voice_provider" in source
+assert "SelectVoice" in source and '"voiceProvider"' in source and '"voiceId"' in source and '"voiceName"' in source
+assert "SpeechSynthesizer]::AllVoices" in source and "SynthesizeTextToStreamAsync" in source
+assert "AudioVolume" in source and "SpeakingRate" in source and "WindowsRuntimeStreamExtensions" in source
 assert "_schedule_departure_countdowns" in source and "_schedule_cooldown_ready" in source and '"voiceSchedule"' in source
 assert '"carrier.countdown_10"' in source and '"carrier.countdown_5"' in source and '"carrier.cooldown_ready"' in source
 assert '"{carrier}"' in source and '"{destination}"' in source and '"{pad}"' in source and '"{minutes}"' in source
-assert "System.Speech.Synthesis.SpeechSynthesizer" in source and "windows_speech_failed" in source
+assert "System.Speech.Synthesis.SpeechSynthesizer" in source and "system_speech_failed" in source
+assert "winrt_speech_failed" in source and "winrt_voice_not_found" in source
 assert '"carrier.jump_request"' in source and '"carrier.jump_cancelled"' in source
 
 assert "panel_windows" in source and "_create_panel_window" in source and "_set_clickthrough" in source
