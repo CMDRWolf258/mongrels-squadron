@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.5"
+APP_VERSION = "0.6.6"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1570,7 +1570,9 @@ class MongrelHudApp:
         ]
         width = round(540 * scale); y = self._draw_title(canvas, title, scale, width)
         unacked = [row for row in alerts if not bool(row.get("acknowledged"))]
-        lamp_color = color if (not unacked or flash_on) else HUD_DIM
+        # The lamp means "needs attention", not merely "alerts exist".
+        # No unacknowledged rows = extinguished lamp.
+        lamp_color = color if (unacked and flash_on) else HUD_DIM
         radius = 7 * scale
         canvas.create_oval(8 * scale, y, 8 * scale + radius * 2, y + radius * 2, fill=lamp_color, outline=lamp_color)
         status = "CLEAR" if not alerts else f"{len(unacked)} NEW · {len(alerts)} ACTIVE"
@@ -1621,13 +1623,13 @@ class MongrelHudApp:
             profit = route.get("loopProfit") or route.get("profitPerTon") or 0
             state_text = str(route.get("state") or "").upper()
             title = str(route.get("title") or "Trade Route")
-            summary = title
-            if profit:
-                summary += f" · {self.compact_credits(profit)} CR"
-            if state_text and state_text != "HEALTHY":
-                summary += f" · {state_text}"
-            color = HUD_AMBER if state_text in {"DEGRADED", "UNAVAILABLE"} else HUD_WHITE
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(summary, 72), scale, 10, color, True); y += 21 * scale
+            title_color = HUD_AMBER if state_text in {"DEGRADED", "UNAVAILABLE"} else HUD_WHITE
+            profit_text = f"{self.compact_credits(profit)} CR" if profit else ""
+            right_reserve = (92 if profit_text else 8) * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(title, 58), scale, 10, title_color, True, "nw", max(120 * scale, width - right_reserve - 12 * scale))
+            if profit_text:
+                self._draw_text(canvas, width - 8 * scale, y, profit_text, scale, 10, HUD_CYAN, True, "ne")
+            y += 21 * scale
 
             legs = [leg for leg in (route.get("legs") if isinstance(route.get("legs"), list) else []) if isinstance(leg, dict)]
             if not legs:
@@ -1653,7 +1655,11 @@ class MongrelHudApp:
                 prefix = f"LEG {leg_index}"
                 if commodity:
                     prefix += f" · {commodity}"
-                self._draw_text(canvas, 18 * scale, y, self.clip_line(prefix, 60), scale, 9, HUD_CYAN, True); y += 18 * scale
+                leg_profit = leg.get("tripProfit") or 0
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(prefix, 52), scale, 9, HUD_CYAN, True)
+                if isinstance(leg_profit, (int, float)) and leg_profit > 0:
+                    self._draw_text(canvas, width - 8 * scale, y, f"{self.compact_credits(leg_profit)} CR", scale, 9, HUD_CYAN, True, "ne")
+                y += 18 * scale
 
                 self._draw_text(canvas, left_x, y, self.clip_line(source_system, 34), scale, 9, HUD_WHITE, True, "nw", column_width)
                 self._draw_text(canvas, arrow_x, y, "→", scale, 11, HUD_CYAN, True, "n")
