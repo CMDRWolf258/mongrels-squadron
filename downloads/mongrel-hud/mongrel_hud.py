@@ -36,10 +36,15 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.6"
+APP_VERSION = "0.7.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
+SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
+MINING_DATA_URL = "https://ten16-archive.pages.dev/api/mining"
+TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
+TEN16_ID64 = "560820275507"
+MINING_REFRESH_SECONDS = 60.0
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
@@ -251,6 +256,28 @@ def body_key(state: dict[str, Any]) -> str:
     return f"{address}|{body.casefold()}" if address and body else ""
 
 
+def short_body_name(state: dict[str, Any]) -> str:
+    status = state.get("status") or {}
+    system = state.get("system") or {}
+    body = " ".join(str(status.get("bodyName") or "").split())
+    system_name = " ".join(str(system.get("name") or "").split())
+    if system_name and body.casefold().startswith((system_name + " ").casefold()):
+        body = body[len(system_name):].strip()
+    match = re.search(r"(\d+)\s*([A-Za-z]+)?$", body)
+    if match:
+        return f"{match.group(1)}{(match.group(2) or '').lower()}"
+    return body
+
+
+def body_type_for_short_name(body: str) -> str:
+    value = str(body or "").strip()
+    if re.fullmatch(r"\d+", value):
+        return "planet"
+    if re.fullmatch(r"\d+[A-Za-z]+", value):
+        return "moon"
+    return ""
+
+
 def great_circle_nav(lat1: float, lon1: float, lat2: float, lon2: float, radius_m: float, heading: float | None = None) -> dict[str, float]:
     p1, p2 = math.radians(lat1), math.radians(lat2)
     dlat = p2 - p1
@@ -452,7 +479,11 @@ class MongrelHudApp:
         self.wanted_flash_until = 0.0
         self._wanted_flash_key = ""
         self._last_target_identity = ""
+        self.mining_lock = threading.RLock()
+        self.mining_sites: list[dict[str, Any]] = []
+        self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
+        threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
         with self.lock:
@@ -887,102 +918,223 @@ class MongrelHudApp:
             self.store.data["profile"] = profile
             self.store.save()
 
+    def _refresh_mining_data_once(self) -> bool:
+        request = urllib.request.Request(
+            MINING_DATA_URL,
+            headers={
+                "Accept": "application/json",
+                "Cache-Control": "no-cache",
+                "User-Agent": f"MongrelHUD/{APP_VERSION}",
+            },
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=6.0) as response:
+                payload = json.load(response)
+            if not isinstance(payload, list):
+                raise ValueError("invalid_mining_payload")
+            rows: list[dict[str, Any]] = []
+            for raw in payload:
+                if not isinstance(raw, dict):
+                    continue
+                try:
+                    site_id = int(raw.get("id"))
+                    signal = int(raw.get("signal"))
+                except (TypeError, ValueError):
+                    continue
+                lat = raw.get("latitude")
+                lon = raw.get("longitude")
+                rows.append({
+                    "id": site_id,
+                    "commodity": str(raw.get("commodity") or "").strip(),
+                    "body": str(raw.get("body") or "").strip().lower(),
+                    "bodyType": str(raw.get("bodyType") or "").strip().lower(),
+                    "signal": signal,
+                    "latitude": float(lat) if isinstance(lat, (int, float)) else None,
+                    "longitude": float(lon) if isinstance(lon, (int, float)) else None,
+                    "rigs": int(raw.get("rigs")) if isinstance(raw.get("rigs"), (int, float)) else None,
+                    "preferred": bool(raw.get("preferred")),
+                    "notes": str(raw.get("notes") or "").strip(),
+                })
+            with self.mining_lock:
+                self.mining_sites = rows
+                self.mining_status = {
+                    "ok": True,
+                    "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "error": "",
+                }
+            return True
+        except Exception as exc:
+            with self.mining_lock:
+                self.mining_status = {
+                    "ok": False,
+                    "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "error": str(exc)[:160],
+                }
+            return False
+
+    def _mining_sync_loop(self) -> None:
+        while True:
+            self._refresh_mining_data_once()
+            time.sleep(MINING_REFRESH_SECONDS)
+
+    def mining_status_snapshot(self) -> dict[str, Any]:
+        with self.mining_lock:
+            return dict(self.mining_status)
+
+    def _in_ten16(self, state: dict[str, Any] | None = None) -> bool:
+        current = state if isinstance(state, dict) else self.scout_state()
+        system = current.get("system") or {}
+        return (
+            str(system.get("name") or "").strip().casefold() == TEN16_SYSTEM.casefold()
+            or str(system.get("address") or "").strip() == TEN16_ID64
+        )
+
     def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
-        if not 1 <= int(site_number) <= 999:
-            raise ValueError("invalid_site_number")
-        state = self.scout_state()
-        status = state.get("status") or {}
-        system = state.get("system") or {}
-        key = body_key(state)
-        lat, lon = status.get("latitude"), status.get("longitude")
-        body = str(status.get("bodyName") or "").strip()
-        if not key or lat is None or lon is None or not body:
-            raise ValueError("surface_position_unavailable")
-        site_id = f"{key}|{int(site_number)}"
-        site = {
-            "id": site_id,
-            "siteNumber": int(site_number),
-            "system": str(system.get("name") or ""),
-            "systemAddress": str(system.get("address") or ""),
-            "body": body,
-            "bodyKey": key,
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "planetRadius": status.get("planetRadius"),
-            "commodity": commodity.strip(),
-            "savedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        }
-        with self.store.lock:
-            self.store.data.setdefault("sites", {})[site_id] = site
-            self.store.data["activeSite"] = site_id
-            self.store.save()
-        return site
+        raise ValueError("site_center_replaced_by_curated_mining_database")
 
     def select_site(self, site_id: str) -> dict[str, Any]:
+        try:
+            wanted = int(site_id)
+        except (TypeError, ValueError):
+            raise ValueError("site_not_found")
+        sites = self.sites_for_current_body()
+        site = next((row for row in sites if int(row.get("id") or 0) == wanted), None)
+        if not isinstance(site, dict):
+            raise ValueError("site_not_found")
         with self.store.lock:
-            site = self.store.data.get("sites", {}).get(site_id)
-            if not isinstance(site, dict):
-                raise ValueError("site_not_found")
-            self.store.data["activeSite"] = site_id
+            self.store.data["activeMiningSiteId"] = wanted
             self.store.save()
-            return dict(site)
+        return dict(site)
 
     def sites_for_current_body(self) -> list[dict[str, Any]]:
-        key = body_key(self.scout_state())
-        with self.store.lock:
-            sites = [dict(x) for x in self.store.data.get("sites", {}).values() if isinstance(x, dict) and x.get("bodyKey") == key]
-        return sorted(sites, key=lambda x: int(x.get("siteNumber") or 0))
+        state = self.scout_state()
+        if not self._in_ten16(state):
+            return []
+        body = short_body_name(state).casefold()
+        if not body:
+            return []
+        with self.mining_lock:
+            rows = [
+                dict(row)
+                for row in self.mining_sites
+                if str(row.get("body") or "").casefold() == body
+                and isinstance(row.get("latitude"), (int, float))
+                and isinstance(row.get("longitude"), (int, float))
+            ]
+        return sorted(
+            rows,
+            key=lambda row: (
+                not bool(row.get("preferred")),
+                int(row.get("signal") or 0),
+                -(int(row.get("rigs")) if isinstance(row.get("rigs"), int) else -1),
+                str(row.get("commodity") or "").casefold(),
+                int(row.get("id") or 0),
+            ),
+        )
 
     def active_site(self) -> dict[str, Any] | None:
+        sites = self.sites_for_current_body()
+        if not sites:
+            return None
         with self.store.lock:
-            value = self.store.data.get("sites", {}).get(self.store.data.get("activeSite"))
-            return dict(value) if isinstance(value, dict) else None
+            active_id = self.store.data.get("activeMiningSiteId")
+        try:
+            wanted = int(active_id)
+        except (TypeError, ValueError):
+            wanted = 0
+        site = next((row for row in sites if int(row.get("id") or 0) == wanted), None)
+        if site:
+            return dict(site)
+        if len(sites) == 1:
+            site = dict(sites[0])
+            with self.store.lock:
+                self.store.data["activeMiningSiteId"] = int(site["id"])
+                self.store.save()
+            return site
+        return None
 
     def surface_nav(self) -> dict[str, Any] | None:
         state = self.scout_state()
         status = state.get("status") or {}
         site = self.active_site()
-        if not site or site.get("bodyKey") != body_key(state):
+        if not site:
             return None
         lat, lon = status.get("latitude"), status.get("longitude")
-        radius = status.get("planetRadius") or site.get("planetRadius")
+        radius = status.get("planetRadius")
         if lat is None or lon is None or radius is None:
             return None
-        nav = great_circle_nav(float(lat), float(lon), float(site["latitude"]), float(site["longitude"]), float(radius), status.get("heading"))
+        nav = great_circle_nav(
+            float(lat),
+            float(lon),
+            float(site["latitude"]),
+            float(site["longitude"]),
+            float(radius),
+            status.get("heading"),
+        )
         return {**nav, "site": site}
 
-    def report_deposit(self, commodity: str, rigs: int, notes: str) -> dict[str, Any]:
+    def report_deposit(self, commodity: str, rigs: int, notes: str, signal: int = 0) -> dict[str, Any]:
         commodity = commodity.strip()
         if not commodity:
             raise ValueError("commodity_required")
-        if not 0 <= int(rigs) <= 1000:
+        if not 0 <= int(rigs) <= 100:
             raise ValueError("invalid_rig_count")
         state = self.scout_state()
+        if not self._in_ten16(state):
+            raise ValueError("unsupported_system")
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
-        if lat is None or lon is None or not status.get("bodyName"):
+        body = short_body_name(state)
+        if lat is None or lon is None or not body:
             raise ValueError("surface_position_unavailable")
         active = self.active_site()
-        row = {
-            "id": secrets.token_hex(8),
+        chosen_signal = int(signal or (active.get("signal") if active else 0) or 0)
+        if chosen_signal < 1:
+            raise ValueError("signal_required")
+        body_type = str(active.get("bodyType") if active else "") or body_type_for_short_name(body)
+        payload = {
             "system": str(system.get("name") or ""),
             "systemAddress": str(system.get("address") or ""),
-            "body": str(status.get("bodyName") or ""),
+            "body": body,
+            "bodyType": body_type,
+            "signal": chosen_signal,
             "latitude": float(lat),
             "longitude": float(lon),
-            "siteNumber": active.get("siteNumber") if active else None,
-            "siteId": active.get("id") if active else None,
             "commodity": commodity,
             "rigs": int(rigs),
             "notes": notes.strip(),
-            "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
+        request = urllib.request.Request(
+            SCOUT_MINING_REPORT_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10.0) as response:
+                result = json.load(response)
+        except Exception as exc:
+            raise ValueError("mining_report_failed") from exc
+        if not isinstance(result, dict) or result.get("ok") is not True:
+            raise ValueError(str(result.get("error") if isinstance(result, dict) else "mining_report_failed"))
         with self.store.lock:
-            self.store.data.setdefault("deposits", []).append(row)
-            self.store.data["deposits"] = self.store.data["deposits"][-500:]
+            log = self.store.data.setdefault("deposits", [])
+            log.append({**payload, "remoteStatus": result.get("status"), "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
+            self.store.data["deposits"] = log[-100:]
             self.store.save()
-        return row
+        self._refresh_mining_data_once()
+        return {
+            "ok": True,
+            "status": result.get("status"),
+            "site": result.get("site"),
+            "reportId": result.get("reportId"),
+            "message": result.get("message") or "Mining deposit saved.",
+            "latitude": float(lat),
+            "longitude": float(lon),
+            "signal": chosen_signal,
+        }
 
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
@@ -999,6 +1151,7 @@ class MongrelHudApp:
             "sites": self.sites_for_current_body(),
             "activeSite": self.active_site(),
             "surfaceNav": self.surface_nav(),
+            "miningStatus": self.mining_status_snapshot(),
             "bounty": self.bounty_ledger(),
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
