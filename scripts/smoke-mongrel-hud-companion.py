@@ -41,6 +41,8 @@ assert groups["offense"][0]=={"name":"Mine Launcher","count":3}
 assert groups["defense"][-1]=={"name":"Shield Cell Bank","count":1}
 
 with tempfile.TemporaryDirectory() as td:
+    # Keep the smoke deterministic/offline; production starts the 60-second mining sync thread.
+    hud.MongrelHudApp._mining_sync_loop=lambda self: None
     store=hud.LocalStore(Path(td)/"state.json")
     app=hud.MongrelHudApp(store,"<html></html>")
     app.snapshot=hud.ScoutSnapshot({
