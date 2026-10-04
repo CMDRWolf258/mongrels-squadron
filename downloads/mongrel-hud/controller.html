@@ -282,7 +282,10 @@ function render(){
   var voicePack=state.voicePack||{},packActive=Boolean(voicePack.active),packInstalled=Boolean(voicePack.installed),packProgress=Math.max(0,Math.min(100,Number(voicePack.progress)||0));
   setText(el("voicePackStatus"),voicePack.error?("Error · "+String(voicePack.error).replaceAll("_"," ")):(voicePack.message||(packInstalled?"Kokoro local neural voices ready.":"Kokoro voice pack is optional and not installed.")));
   el("voicePackProgress").style.width=packProgress+"%";
-  var downloadMb=Math.round((Number(voicePack.downloadBytes)||370401634)/1000000);setText(el("voicePackSize"),"~"+downloadMb+" MB download");
+  var downloadMb=Math.round((Number(voicePack.downloadBytes)||370401634)/1000000),installedBytes=Number(voicePack.installedBytes)||0,packSizeText="~"+downloadMb+" MB download";
+  if(packInstalled&&installedBytes>0)packSizeText=Math.round(installedBytes/1000000)+" MB installed";
+  else if(!packInstalled)packSizeText+=" · ~700 MB installed";
+  setText(el("voicePackSize"),packSizeText);
   el("voicePackInstall").classList.toggle("hidden",packInstalled);
   el("voicePackRepair").classList.toggle("hidden",!packInstalled);
   el("voicePackRemove").classList.toggle("hidden",!packInstalled);
