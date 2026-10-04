@@ -925,20 +925,19 @@ class MongrelHudApp:
             self.store.save()
 
     def _refresh_mining_data_once(self) -> bool:
-        request = urllib.request.Request(
-            MINING_DATA_URL,
-            headers={
-                "Accept": "application/json",
-                "Cache-Control": "no-cache",
-                "User-Agent": f"MongrelHUD/{APP_VERSION}",
-            },
-            method="GET",
-        )
+        headers = {
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+            "User-Agent": f"MongrelHUD/{APP_VERSION}",
+        }
         try:
-            with urllib.request.urlopen(request, timeout=6.0) as response:
+            with urllib.request.urlopen(urllib.request.Request(MINING_DATA_URL, headers=headers, method="GET"), timeout=6.0) as response:
                 payload = json.load(response)
-            if not isinstance(payload, list):
+            with urllib.request.urlopen(urllib.request.Request(MINING_CENTERS_URL, headers=headers, method="GET"), timeout=6.0) as response:
+                center_payload = json.load(response)
+            if not isinstance(payload, list) or not isinstance(center_payload, list):
                 raise ValueError("invalid_mining_payload")
+
             rows: list[dict[str, Any]] = []
             for raw in payload:
                 if not isinstance(raw, dict):
@@ -962,8 +961,31 @@ class MongrelHudApp:
                     "preferred": bool(raw.get("preferred")),
                     "notes": str(raw.get("notes") or "").strip(),
                 })
+
+            centers: list[dict[str, Any]] = []
+            for raw in center_payload:
+                if not isinstance(raw, dict):
+                    continue
+                try:
+                    center_id = int(raw.get("id"))
+                    signal = int(raw.get("signal"))
+                    lat = float(raw.get("latitude"))
+                    lon = float(raw.get("longitude"))
+                except (TypeError, ValueError):
+                    continue
+                centers.append({
+                    "id": center_id,
+                    "body": str(raw.get("body") or "").strip().lower(),
+                    "bodyType": str(raw.get("bodyType") or "").strip().lower(),
+                    "signal": signal,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "updatedAt": raw.get("updatedAt"),
+                })
+
             with self.mining_lock:
                 self.mining_sites = rows
+                self.mining_centers = centers
                 self.mining_status = {
                     "ok": True,
                     "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -996,23 +1018,6 @@ class MongrelHudApp:
             or str(system.get("address") or "").strip() == TEN16_ID64
         )
 
-    def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
-        raise ValueError("site_center_replaced_by_curated_mining_database")
-
-    def select_site(self, site_id: str) -> dict[str, Any]:
-        try:
-            wanted = int(site_id)
-        except (TypeError, ValueError):
-            raise ValueError("site_not_found")
-        sites = self.sites_for_current_body()
-        site = next((row for row in sites if int(row.get("id") or 0) == wanted), None)
-        if not isinstance(site, dict):
-            raise ValueError("site_not_found")
-        with self.store.lock:
-            self.store.data["activeMiningSiteId"] = wanted
-            self.store.save()
-        return dict(site)
-
     def sites_for_current_body(self) -> list[dict[str, Any]]:
         state = self.scout_state()
         if not self._in_ten16(state):
@@ -1031,54 +1036,201 @@ class MongrelHudApp:
         return sorted(
             rows,
             key=lambda row: (
-                not bool(row.get("preferred")),
                 int(row.get("signal") or 0),
+                not bool(row.get("preferred")),
                 -(int(row.get("rigs")) if isinstance(row.get("rigs"), int) else -1),
                 str(row.get("commodity") or "").casefold(),
                 int(row.get("id") or 0),
             ),
         )
 
+    def centers_for_current_body(self) -> list[dict[str, Any]]:
+        state = self.scout_state()
+        if not self._in_ten16(state):
+            return []
+        body = short_body_name(state).casefold()
+        if not body:
+            return []
+        with self.mining_lock:
+            rows = [dict(row) for row in self.mining_centers if str(row.get("body") or "").casefold() == body]
+        return sorted(rows, key=lambda row: int(row.get("signal") or 0))
+
+    def mining_locations_for_current_body(self) -> list[dict[str, Any]]:
+        deposits = self.sites_for_current_body()
+        centers = {int(row.get("signal") or 0): row for row in self.centers_for_current_body()}
+        signals = sorted({int(row.get("signal") or 0) for row in deposits if int(row.get("signal") or 0) > 0} | set(centers))
+        out = []
+        for signal in signals:
+            signal_deposits = [row for row in deposits if int(row.get("signal") or 0) == signal]
+            commodities = sorted({str(row.get("commodity") or "").strip() for row in signal_deposits if str(row.get("commodity") or "").strip()})
+            out.append({
+                "signal": signal,
+                "center": dict(centers[signal]) if signal in centers else None,
+                "depositCount": len(signal_deposits),
+                "commodities": commodities,
+            })
+        return out
+
+    def active_location_signal(self) -> int | None:
+        locations = self.mining_locations_for_current_body()
+        if not locations:
+            return None
+        valid = {int(row["signal"]) for row in locations}
+        with self.store.lock:
+            raw = self.store.data.get("activeMiningLocationSignal")
+        try:
+            selected = int(raw)
+        except (TypeError, ValueError):
+            selected = 0
+        if selected in valid:
+            return selected
+        if len(valid) == 1:
+            selected = next(iter(valid))
+            with self.store.lock:
+                self.store.data["activeMiningLocationSignal"] = selected
+                self.store.save()
+            return selected
+        return None
+
+    def select_location(self, signal: int) -> dict[str, Any]:
+        wanted = int(signal)
+        locations = self.mining_locations_for_current_body()
+        location = next((row for row in locations if int(row.get("signal") or 0) == wanted), None)
+        if not location:
+            # Allow setting a brand-new center before a deposit has ever been recorded.
+            if wanted < 1:
+                raise ValueError("mining_location_not_found")
+            location = {"signal": wanted, "center": None, "depositCount": 0, "commodities": []}
+        with self.store.lock:
+            self.store.data["activeMiningLocationSignal"] = wanted
+            active_id = self.store.data.get("activeMiningSiteId")
+            if active_id:
+                current = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == int(active_id)), None)
+                if not current or int(current.get("signal") or 0) != wanted:
+                    self.store.data["activeMiningSiteId"] = None
+            self.store.save()
+        return dict(location)
+
+    def active_center(self) -> dict[str, Any] | None:
+        signal = self.active_location_signal()
+        if signal is None:
+            return None
+        center = next((row for row in self.centers_for_current_body() if int(row.get("signal") or 0) == signal), None)
+        return dict(center) if center else None
+
+    def deposits_for_active_location(self) -> list[dict[str, Any]]:
+        signal = self.active_location_signal()
+        if signal is None:
+            return []
+        return [row for row in self.sites_for_current_body() if int(row.get("signal") or 0) == signal]
+
+    def select_site(self, site_id: str) -> dict[str, Any]:
+        try:
+            wanted = int(site_id)
+        except (TypeError, ValueError):
+            raise ValueError("site_not_found")
+        site = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == wanted), None)
+        if not site:
+            raise ValueError("site_not_found")
+        with self.store.lock:
+            self.store.data["activeMiningLocationSignal"] = int(site.get("signal") or 0)
+            self.store.data["activeMiningSiteId"] = wanted
+            self.store.save()
+        return dict(site)
+
     def active_site(self) -> dict[str, Any] | None:
-        sites = self.sites_for_current_body()
-        if not sites:
+        deposits = self.deposits_for_active_location()
+        if not deposits:
             return None
         with self.store.lock:
-            active_id = self.store.data.get("activeMiningSiteId")
+            raw = self.store.data.get("activeMiningSiteId")
         try:
-            wanted = int(active_id)
+            wanted = int(raw)
         except (TypeError, ValueError):
             wanted = 0
-        site = next((row for row in sites if int(row.get("id") or 0) == wanted), None)
+        site = next((row for row in deposits if int(row.get("id") or 0) == wanted), None)
         if site:
             return dict(site)
-        if len(sites) == 1:
-            site = dict(sites[0])
+        if len(deposits) == 1:
+            site = dict(deposits[0])
             with self.store.lock:
                 self.store.data["activeMiningSiteId"] = int(site["id"])
                 self.store.save()
             return site
         return None
 
-    def surface_nav(self) -> dict[str, Any] | None:
+    def _nav_to_point(self, latitude: float, longitude: float, target: dict[str, Any], target_type: str) -> dict[str, Any] | None:
         state = self.scout_state()
         status = state.get("status") or {}
-        site = self.active_site()
-        if not site:
-            return None
-        lat, lon = status.get("latitude"), status.get("longitude")
-        radius = status.get("planetRadius")
+        lat, lon, radius = status.get("latitude"), status.get("longitude"), status.get("planetRadius")
         if lat is None or lon is None or radius is None:
             return None
         nav = great_circle_nav(
-            float(lat),
-            float(lon),
-            float(site["latitude"]),
-            float(site["longitude"]),
-            float(radius),
-            status.get("heading"),
+            float(lat), float(lon), float(latitude), float(longitude), float(radius), status.get("heading")
         )
-        return {**nav, "site": site}
+        return {**nav, "target": target, "targetType": target_type}
+
+    def location_nav(self) -> dict[str, Any] | None:
+        center = self.active_center()
+        if not center:
+            return None
+        return self._nav_to_point(center["latitude"], center["longitude"], center, "center")
+
+    def deposit_nav(self) -> dict[str, Any] | None:
+        site = self.active_site()
+        if not site:
+            return None
+        return self._nav_to_point(site["latitude"], site["longitude"], site, "deposit")
+
+    def surface_nav(self) -> dict[str, Any] | None:
+        # Backward-compatible alias for integrations that still expect one target.
+        return self.deposit_nav() or self.location_nav()
+
+    def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
+        signal = int(site_number)
+        if signal < 1:
+            raise ValueError("invalid_signal")
+        state = self.scout_state()
+        if not self._in_ten16(state):
+            raise ValueError("unsupported_system")
+        status = state.get("status") or {}
+        system = state.get("system") or {}
+        lat, lon = status.get("latitude"), status.get("longitude")
+        body = short_body_name(state)
+        if lat is None or lon is None or not body:
+            raise ValueError("surface_position_unavailable")
+        payload = {
+            "system": str(system.get("name") or ""),
+            "systemAddress": str(system.get("address") or ""),
+            "body": body,
+            "bodyType": body_type_for_short_name(body),
+            "signal": signal,
+            "latitude": float(lat),
+            "longitude": float(lon),
+        }
+        request = urllib.request.Request(
+            SCOUT_MINING_CENTER_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10.0) as response:
+                result = json.load(response)
+        except Exception as exc:
+            raise ValueError("mining_center_save_failed") from exc
+        if not isinstance(result, dict) or result.get("ok") is not True:
+            raise ValueError(str(result.get("error") if isinstance(result, dict) else "mining_center_save_failed"))
+        with self.store.lock:
+            self.store.data["activeMiningLocationSignal"] = signal
+            self.store.save()
+        self._refresh_mining_data_once()
+        return result.get("center") or {
+            "signal": signal,
+            "latitude": float(lat),
+            "longitude": float(lon),
+            "body": body,
+        }
 
     def report_deposit(self, commodity: str, rigs: int, notes: str, signal: int = 0) -> dict[str, Any]:
         commodity = commodity.strip()
@@ -1092,22 +1244,22 @@ class MongrelHudApp:
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
+        radius = status.get("planetRadius")
         body = short_body_name(state)
         if lat is None or lon is None or not body:
             raise ValueError("surface_position_unavailable")
-        active = self.active_site()
-        chosen_signal = int(signal or (active.get("signal") if active else 0) or 0)
+        chosen_signal = int(signal or self.active_location_signal() or 0)
         if chosen_signal < 1:
             raise ValueError("signal_required")
-        body_type = str(active.get("bodyType") if active else "") or body_type_for_short_name(body)
         payload = {
             "system": str(system.get("name") or ""),
             "systemAddress": str(system.get("address") or ""),
             "body": body,
-            "bodyType": body_type,
+            "bodyType": body_type_for_short_name(body),
             "signal": chosen_signal,
             "latitude": float(lat),
             "longitude": float(lon),
+            "planetRadius": float(radius) if isinstance(radius, (int, float)) else None,
             "commodity": commodity,
             "rigs": int(rigs),
             "notes": notes.strip(),
@@ -1129,12 +1281,14 @@ class MongrelHudApp:
             log = self.store.data.setdefault("deposits", [])
             log.append({**payload, "remoteStatus": result.get("status"), "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
             self.store.data["deposits"] = log[-100:]
+            self.store.data["activeMiningLocationSignal"] = chosen_signal
             self.store.save()
         self._refresh_mining_data_once()
         return {
             "ok": True,
             "status": result.get("status"),
             "site": result.get("site"),
+            "duplicate": result.get("duplicate"),
             "reportId": result.get("reportId"),
             "message": result.get("message") or "Mining deposit saved.",
             "latitude": float(lat),
