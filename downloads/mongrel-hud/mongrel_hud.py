@@ -1317,6 +1317,11 @@ class MongrelHudApp:
             "depositNav": self.deposit_nav(),
             "surfaceNav": self.surface_nav(),
             "miningStatus": self.mining_status_snapshot(),
+            "miningCommodities": sorted({
+                str(row.get("commodity") or "").strip()
+                for row in self.mining_sites
+                if str(row.get("commodity") or "").strip()
+            }, key=str.casefold),
             "bounty": self.bounty_ledger(),
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
