@@ -37,7 +37,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.7"
+APP_VERSION = "0.7.8"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -457,7 +457,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all"}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
 
@@ -512,7 +512,12 @@ class MongrelHudApp:
         self._last_target_identity = ""
         self.mining_lock = threading.RLock()
         self.mining_sites: list[dict[str, Any]] = []
-        self.mining_centers: list[dict[str, Any]] = []
+        with self.store.lock:
+            cached_centers = self.store.data.get("miningCenters")
+            cached_centers = cached_centers if isinstance(cached_centers, list) else []
+        self.mining_centers: list[dict[str, Any]] = [
+            dict(row) for row in cached_centers if isinstance(row, dict)
+        ]
         self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
@@ -1036,6 +1041,10 @@ class MongrelHudApp:
                 })
             with self.mining_lock:
                 self.mining_centers = centers
+                cached_centers = [dict(row) for row in centers]
+            with self.store.lock:
+                self.store.data["miningCenters"] = cached_centers
+                self.store.save()
             center_ok = True
         except Exception as exc:
             center_error = str(exc)[:120]
@@ -1308,8 +1317,10 @@ class MongrelHudApp:
                 )
             ]
             self.mining_centers.append(saved_center)
+            cached_centers = [dict(row) for row in self.mining_centers]
         with self.store.lock:
             self.store.data["activeMiningLocationSignal"] = signal
+            self.store.data["miningCenters"] = cached_centers
             self.store.save()
         # Refresh in the background path, but the just-saved center is already
         # available to the compass immediately.
@@ -2476,41 +2487,70 @@ class MongrelHudApp:
     def refresh_ui(self) -> None:
         if not self.root:
             return
-        with self.lock:
-            connected = self.snapshot.connected
-            error = self.snapshot.error
-        if self.status_label:
-            self.status_label.config(text="Scout: CONNECTED" if connected else f"Scout: WAITING ({error[:45]})")
-        with self.store.lock:
-            profile = str(self.store.data.get("profile", "combat"))
-        if self.profile_label:
-            self.profile_label.config(text=f"Profile: {profile.upper()}")
+        try:
+            with self.lock:
+                connected = self.snapshot.connected
+                error = self.snapshot.error
+            if self.status_label:
+                self.status_label.config(text="Scout: CONNECTED" if connected else f"Scout: WAITING ({error[:45]})")
+            with self.store.lock:
+                profile = str(self.store.data.get("profile", "combat"))
+            if self.profile_label:
+                self.profile_label.config(text=f"Profile: {profile.upper()}")
 
-        layout = self.layout_snapshot()
-        locked = bool(layout.get("locked"))
-        master_visible = bool(layout.get("masterVisible"))
-        revision = self._layout_revision()
-        scan_state = self.scan_status_snapshot()
-        hide_for_capture = scan_state.get("phase") == "capturing"
-        flash_on = int(time.monotonic() * 4) % 2 == 0
-        for panel_id, info in self.panel_windows.items():
-            panel_cfg = layout["panels"][panel_id]
-            active_for_profile = profile in (panel_cfg.get("profiles") or [])
-            should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
-            window = info["window"]
-            if not should_show:
-                window.withdraw()
-                continue
-            window.deiconify()
-            scale = float(panel_cfg.get("scale") or 1.0) * HUD_RENDER_SCALE
-            self._render_panel_canvas(panel_id, info["body"], scale, flash_on)
-            if info.get("appliedLocked") != locked:
-                self._apply_panel_edit_mode(panel_id, locked)
-                info["appliedLocked"] = locked
-            if info.get("appliedRevision") != revision:
-                window.geometry(f"+{int(panel_cfg['x'])}+{int(panel_cfg['y'])}")
-                info["appliedRevision"] = revision
-        self.root.after(200, self.refresh_ui)
+            layout = self.layout_snapshot()
+            locked = bool(layout.get("locked"))
+            master_visible = bool(layout.get("masterVisible"))
+            revision = self._layout_revision()
+            scan_state = self.scan_status_snapshot()
+            hide_for_capture = scan_state.get("phase") == "capturing"
+            flash_on = int(time.monotonic() * 4) % 2 == 0
+            for panel_id, info in self.panel_windows.items():
+                panel_cfg = layout["panels"][panel_id]
+                active_for_profile = profile in (panel_cfg.get("profiles") or [])
+                should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
+                window = info["window"]
+                if not should_show:
+                    try:
+                        window.withdraw()
+                    except Exception:
+                        pass
+                    continue
+
+                try:
+                    window.deiconify()
+                except Exception:
+                    continue
+
+                scale = float(panel_cfg.get("scale") or 1.0) * HUD_RENDER_SCALE
+                try:
+                    self._render_panel_canvas(panel_id, info["body"], scale, flash_on)
+                    info["renderError"] = ""
+                except Exception as exc:
+                    # A malformed/live-data edge case in one renderer must never
+                    # kill the global 200 ms HUD refresh loop or freeze controls.
+                    info["renderError"] = str(exc)[:160]
+
+                if info.get("appliedLocked") != locked:
+                    try:
+                        self._apply_panel_edit_mode(panel_id, locked)
+                        info["appliedLocked"] = locked
+                    except Exception:
+                        pass
+                if info.get("appliedRevision") != revision:
+                    try:
+                        window.geometry(f"+{int(panel_cfg['x'])}+{int(panel_cfg['y'])}")
+                        info["appliedRevision"] = revision
+                    except Exception:
+                        pass
+        finally:
+            # Always keep the desktop HUD responsive even if an unexpected
+            # renderer/data error escapes the per-panel guards above.
+            if self.root:
+                try:
+                    self.root.after(200, self.refresh_ui)
+                except Exception:
+                    pass
 
     def toggle_overlay(self) -> None:
         layout = self.layout_snapshot()
