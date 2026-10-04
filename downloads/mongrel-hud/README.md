@@ -30,19 +30,17 @@ The desktop window shows the current HUD version and checks the rolling GitHub r
 
 ## Carrier PA / local voice
 
-Mongrel HUD 0.12.0 keeps the owner-carrier PA in its own **Carrier PA** controller tab and introduces a provider-based voice layer. Speech remains local to Windows; no journal text, carrier identity, phrase text, or speech request is sent to a cloud TTS service.
+Mongrel HUD 0.13.0 adds an **optional Local Neural · Kokoro** voice provider without increasing the core HUD download by hundreds of megabytes. The ordinary HUD still works with Windows Modern (WinRT) and Windows Legacy (System.Speech) voices even when the neural pack is not installed.
 
-The voice selector now merges two Windows providers:
-- **Windows Modern (WinRT)** uses `Windows.Media.SpeechSynthesis.SpeechSynthesizer.AllVoices` and selects voices by their WinRT voice ID. This is the path that can expose newer Microsoft voices such as Natural voices when Windows makes them available to third-party speech synthesis.
-- **Windows Legacy (System.Speech)** keeps the existing `System.Speech.Synthesis.SpeechSynthesizer` path for classic voices such as David and Zira. Existing 0.11.x voice selections migrate to this provider automatically.
+From the paired iPad controller, **Install Voice Pack** tells the Windows HUD to perform the installation on the PC. The PC downloads the pinned sherpa-onnx Windows x64 TTS runtime and the pinned Kokoro multilingual model into a staging area under `%LOCALAPPDATA%\MongrelHUD\voices`, verifies both SHA-256 digests, extracts and validates the required runtime/model files, and only then atomically exposes the finished pack. The controller polls live status/progress. Interrupted or failed staging data is never treated as an installed provider. **Repair** repeats the verified install; **Remove** deletes only the optional pack and falls back to the Windows system voice if Kokoro was selected.
 
-The provider boundary is intentionally separate from the carrier event/phrase logic. A later **Local Neural** provider can therefore install optional voice/model packs without changing docking, countdown, jump, phrase-template, queue, or anti-spam behavior. No neural model is bundled in 0.12.0.
+After installation, 28 English Kokoro voices (US and UK, male and female) appear in the normal PA selector under **Local Neural · Kokoro**. Speech synthesis then runs locally/offline through `sherpa-onnx-offline-tts.exe`; generated temporary WAV files are volume-scaled locally, played synchronously, and deleted. Existing carrier phrases, placeholders, delays, countdowns, cooldown-ready timer and serial queue remain provider-neutral.
 
-The Carrier PA tab provides **VOICE ON/OFF**, **CARRIER PA ON/OFF**, provider-grouped installed voice selection, test playback, volume, speech rate, and an editable phrase for every cue. Phrase templates support the placeholders `{carrier}`, `{destination}`, `{pad}`, and `{minutes}`; every cue can be tested individually and reset to its built-in phrase. Provider discovery is independent: if WinRT enumeration fails, legacy voices can still remain available, and vice versa.
+Pinned optional-pack assets for 0.13.0:
+- sherpa-onnx runtime: v1.13.8, Windows x64 shared MD TTS build, 20,494,724 bytes, SHA-256 `3e971a04b2e0ba4dfa53d381a006367ce8c9f5f09b4ae00043e9845c2baded22`
+- Kokoro model: `kokoro-multi-lang-v1_0`, 349,906,910 bytes, SHA-256 `c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298`
 
-Each ordinary event retains independent **Min Delay / Max Delay / Cooldown** settings so Elite's built-in ATC/carrier voices can speak first. Newer docking/jump events cancel stale queued announcements. Carrier PA scheduled cues use Elite's `CarrierJumpRequest.DepartureTime` for **10-minute** and **5-minute** departure calls. Canceling or rescheduling a carrier jump removes the old countdowns.
-
-After an owner-carrier `CarrierJump`, HUD also schedules **Ready for next jump**. Its default delay is 180 seconds, but the delay is adjustable from 0–900 seconds because the practical Fleet Carrier cooldown is not treated as a perfect fixed three-minute clock. Scheduled countdown/cooldown entries are stored in the existing local `state.json` so a HUD restart before the due time can restore them.
+The provider boundary remains the extension point for future optional local voice packs; do not bundle large voice models into the core HUD EXE.
 
 
 ## Profiles
