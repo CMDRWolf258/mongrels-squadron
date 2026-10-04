@@ -12,6 +12,7 @@ const required=[
   'downloads/mongrel-scout/README.md',
   'functions/api/operations/scout-tokens.js',
   'functions/api/operations/scout-ingest.js',
+  'functions/api/hud/auth.js',
   'functions/api/orrery/facility-observations.js',
   'lib/orrery-facility-observations.js',
   'lib/scout-facility-observations.js',
@@ -71,12 +72,15 @@ for(const pattern of [
   /\/v1\/state/,
   /\/v1\/events/,
   /\/v1\/site-feed\/ack/,
+  /\/v1\/mining\/report/,
   /HUD_SITE_FEED_REFRESH_SECONDS = 30\.0/,
+  /HUD_MINING_REPORT_ENDPOINT/,
   /FSD_OPTIMAL_MASS/,
   /GUARDIAN_FSD_BOOST/,
   /def _extract_jump_model/,
   /def _update_current_jump_range_locked/,
   /def _refresh_hud_site_feed_once/,
+  /def _submit_hud_mining_report/,
   /def plugin_stop/,
   /def _publish_hud_event/,
   /def _normalize_hud_event/,
@@ -89,7 +93,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.8\.1"/,
+  /PLUGIN_VERSION = "1\.8\.2"/,
   /StarPos/,
   /Not assigned:/,
   /Scout rate limit reached/,
@@ -102,6 +106,7 @@ assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
 assert.match(plugin,/facility market ID, host body ID\/name, latitude and longitude/i,'Scout privacy copy should disclose facility placement fields');
 assert.match(plugin,/local-only bridge state/i,'Scout privacy copy should distinguish local HUD identity from cloud uploads');
+assert.match(plugin,/curated 10-16 mining archive/i,'Scout privacy copy should disclose explicit HUD mining submissions');
 assert.match(plugin,/Intentionally no Access-Control-Allow-Origin header/,'Local bridge must not opt arbitrary web pages into CORS');
 assert.doesNotMatch(plugin,/send_header\("Access-Control-Allow-Origin"/,'Local HUD bridge must not emit a permissive CORS header');
 assert.match(plugin,/_publish_hud_event\(cmdr, system, station, entry\)[\s\S]*token = \(config\.get_str\(KEY_TOKEN\)/,'Local HUD events must publish before cloud token checks');
@@ -125,6 +130,10 @@ for(const pattern of [
   /DEFAULT_RATE_LIMIT_PER_HOUR = 120/,
 ])assert.match(tokenApi,pattern);
 assert.doesNotMatch(tokenApi,/state\.tokens\[id\]\s*=\s*\{[^}]*token,/s,'Raw Scout token must not be persisted');
+
+const hudAuth=readFileSync('functions/api/hud/auth.js','utf8');
+for(const pattern of [/wolf-bgs-scout-tokens-v1/,/Authorization/,/Bearer/,/sha256Hex/,/constantTimeEqual/,/site_admin/])assert.match(hudAuth,pattern);
+assert.doesNotMatch(hudAuth,/token\s*:/i,'HUD auth response must not expose the raw Scout token');
 
 const ingest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
 for(const pattern of [
