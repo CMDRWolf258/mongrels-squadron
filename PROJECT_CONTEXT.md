@@ -75,6 +75,14 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.10.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.11.0 carrier-PA configuration:
+- Carrier PA is a separate iPad controller tab from HUD/overlay controls. Do not mix carrier voice settings back into the overlay-layout section.
+- Windows System Speech voices are enumerated locally and selectable by name; the current backend only offers voices Windows exposes through `System.Speech.Synthesis.SpeechSynthesizer.GetInstalledVoices()`. Voice selection, volume, and speech rate persist in HUD `state.json`.
+- Every PA cue has a locally editable phrase plus per-cue test/reset controls. Supported placeholders are `{carrier}`, `{destination}`, `{pad}`, and `{minutes}`; phrase expansion happens locally at playback.
+- `CarrierJumpRequest.DepartureTime` drives local 10-minute and 5-minute departure announcements. A jump cancellation or replacement request cancels stale countdowns before new timers are scheduled.
+- Owner-carrier `CarrierJump` starts a configurable ready-for-next-jump timer. Default offset is 180 seconds and the controller permits 0–900 seconds; do not hard-code the practical cooldown as exactly three minutes.
+- Future countdown/cooldown entries are persisted as local `voiceSchedule` rows with absolute UTC fire times and sanitized carrier/destination context so a HUD restart can restore still-future announcements. Lifecycle cancellation removes both in-memory and persisted stale cues.
+
 The October 4 integration investigation identified production feed failures with Cloudflare `1102` (resource limits) and mining failures with D1's exhausted daily read allowance. Repeated date formatter construction and repeated schema/backfill work were measurable contributors. Reuse only bounded pure calendar conversions and schema initialization, not authoritative site/mining data. Diagnostics retain the public endpoint, bridge/upstream HTTP status, safe error code, response format, and request correlation ID without tokens, raw response bodies, or private request values.
 
 CI and isolated tests do not establish Windows release readiness. Before publishing, verify authenticated production site data through the running HUD, repeated profile/overlay/lock controls, central center save and fresh-client retrieval, and access to existing deposits. The canonical Pages deposit read must be checked against the existing central records once D1 requests work again. Identify any remaining physical Elite/EDMC test explicitly; do not label a build ready while live quota/API failures remain.
