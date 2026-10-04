@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.8.3 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.8.4 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -93,3 +93,8 @@ When a Scout token is bound to a website account, Scout 1.8.0 also refreshes a c
 ## Live current jump range
 
 Scout 1.8.0 calculates a local **current normal jump range** for Mongrel HUD from Elite's own loadout and Status data. The calculation uses the installed standard/SCO FSD class and rating, engineered FSD optimal mass when reported, maximum fuel per jump, Guardian FSD Booster range, unladen ship mass, current cargo, and current main + reserve fuel. It uses the same published FSD equation used by established Elite tools rather than a per-ship fitted percentage. Temporary synthesis and neutron/white-dwarf boosts are intentionally excluded from this normal-range value for now. The ship/loadout inputs remain local to the HUD bridge and are not added to Scout's cloud BGS payload.
+
+
+### HUD current-system context
+
+Scout 1.8.4 keeps the current EDMC system context in the local HUD bridge on every journal callback and restores the last known local system across Scout/EDMC restarts. This avoids the HUD showing an unknown system when Scout is restarted while already landed or driving on a surface.
