@@ -234,11 +234,11 @@ VOICE_PROVIDER_LABELS = {
 VOICE_PROVIDER_IDS = frozenset(VOICE_PROVIDER_LABELS)
 
 KOKORO_PACK_ID = "kokoro-multi-lang-v1_0"
-KOKORO_PACK_DOWNLOAD_BYTES = 370_401_634
+KOKORO_PACK_DOWNLOAD_BYTES = 374_712_769
 KOKORO_ENGINE_VERSION = "1.13.8"
-KOKORO_ENGINE_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-win-x64-shared-MD-Release.tar.bz2"
-KOKORO_ENGINE_SHA256 = "3e971a04b2e0ba4dfa53d381a006367ce8c9f5f09b4ae00043e9845c2baded22"
-KOKORO_ENGINE_BYTES = 20_494_724
+KOKORO_ENGINE_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-win-x64-shared-MT-Release.tar.bz2"
+KOKORO_ENGINE_SHA256 = "6dffdc715a4465b989446a6105265d2cb345e7101591a17d35534b6758f6e8df"
+KOKORO_ENGINE_BYTES = 24_805_859
 KOKORO_MODEL_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2"
 KOKORO_MODEL_SHA256 = "c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298"
 KOKORO_MODEL_BYTES = 349_906_910
