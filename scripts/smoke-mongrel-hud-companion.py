@@ -176,6 +176,6 @@ assert 'Display control failed' in html and 'Layout lock failed' in html and 'Pa
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
 
-assert 'mutationEpoch' in html and 'async function mutate' in html
+assert 'mutationEpoch' in html and 'mutationPending' in html and 'async function mutate' in html
 assert 'Profile switch failed' in html and 'profile active' in html
 assert 'result = {"ok": True, "profile": profile, "layout": app.layout_snapshot()}' in source
