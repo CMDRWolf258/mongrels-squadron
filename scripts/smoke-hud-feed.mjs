@@ -17,8 +17,33 @@ assert.equal(mission.attention[0].system,'Diaba');
 assert.equal(alertIndicator('faction','high'),'red');
 assert.equal(alertIndicator('orders','high'),'amber');
 
-const trade=summarizeTrades([{id:'route-12345678',title:'Platinum Loop',status:'active',official:true,intelligence:{priority:'critical'},optimizer:{managed:true,state:'healthy',currentProfit:16500000},updatedAt:'2026-10-03T20:00:00Z'}]);
+const trade=summarizeTrades([{
+  id:'route-12345678',
+  title:'Platinum Loop',
+  status:'active',
+  official:true,
+  originSystem:'Diaba',
+  originStation:'Niijima Station',
+  destinationSystem:'Miwae',
+  destinationStation:'Test Exchange',
+  legs:[{
+    commodity:'Platinum',
+    sourceSystem:'Diaba',
+    sourceStation:'Niijima Station',
+    destinationSystem:'Miwae',
+    destinationStation:'Test Exchange',
+    buyPrice:50000,
+    sellPrice:70000,
+    profitPerTon:20000,
+    tripProfit:15000000,
+  }],
+  intelligence:{priority:'critical'},
+  optimizer:{managed:true,state:'healthy',currentProfit:16500000},
+  updatedAt:'2026-10-03T20:00:00Z',
+}]);
 assert.equal(trade.routes[0].loopProfit,16500000);
+assert.equal(trade.routes[0].legs[0].sourceStation,'Niijima Station');
+assert.equal(trade.routes[0].legs[0].destinationStation,'Test Exchange');
 
 const scout=summarizeScoutBoard({summary:{available:1,claimed:0,fresh:2,priority:1},jobs:[{system:'Miwae',status:'available',reward:{totalMillions:10,bonusMillions:5,bonusReason:'Priority'}}]});
 assert.equal(scout.jobs[0].system,'Miwae');
