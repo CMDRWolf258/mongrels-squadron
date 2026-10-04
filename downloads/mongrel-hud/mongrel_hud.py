@@ -49,7 +49,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.11.0"
+APP_VERSION = "0.11.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -3821,35 +3821,77 @@ class MongrelHudApp:
 
             if staged.stat().st_size < 1_000_000:
                 raise RuntimeError("update_exe_invalid")
+            staged_digest = _file_sha256(staged)
 
             script = update_dir / "apply-update.ps1"
+            log_path = update_dir / "apply-update.log"
             script.write_text(
-                """param([int]$ProcessId,[string]$Target,[string]$Staged)
+                """param([int]$ProcessId,[string]$Target,[string]$Staged,[string]$ExpectedHash,[string]$LogPath)
 $ErrorActionPreference='Stop'
-for ($i=0; $i -lt 450; $i++) {
-  if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { break }
-  Start-Sleep -Milliseconds 100
+function Write-UpdateLog([string]$Message) {
+  try { Add-Content -LiteralPath $LogPath -Value ((Get-Date).ToString('o') + ' ' + $Message) -Encoding UTF8 } catch {}
 }
-$backup=$Target + '.old'
+function Copy-WithRetry([string]$Source,[string]$Destination,[int]$Attempts=300) {
+  $last=''
+  for ($i=0; $i -lt $Attempts; $i++) {
+    try {
+      Copy-Item -LiteralPath $Source -Destination $Destination -Force -ErrorAction Stop
+      return
+    } catch {
+      $last=$_.Exception.Message
+      Start-Sleep -Milliseconds 200
+    }
+  }
+  throw ('copy_retry_exhausted: ' + $last)
+}
 try {
-  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
-  Copy-Item -LiteralPath $Target -Destination $backup -Force
-  Copy-Item -LiteralPath $Staged -Destination $Target -Force
+  if (Test-Path -LiteralPath $LogPath) { Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue }
+  Write-UpdateLog ('start pid=' + $ProcessId + ' target=' + $Target)
+  for ($i=0; $i -lt 450; $i++) {
+    if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { break }
+    Start-Sleep -Milliseconds 100
+  }
+  Write-UpdateLog 'hud child process exited; waiting for executable lock to clear'
+
+  $actualStaged=(Get-FileHash -LiteralPath $Staged -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualStaged -ne $ExpectedHash.ToLowerInvariant()) { throw 'staged_hash_mismatch' }
+
+  $backup=$Target + '.old'
+  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue }
+  Copy-WithRetry $Target $backup 300
+  Write-UpdateLog 'backup created'
+
+  Copy-WithRetry $Staged $Target 300
+  $actualTarget=(Get-FileHash -LiteralPath $Target -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualTarget -ne $actualStaged) { throw 'target_hash_mismatch' }
+  Write-UpdateLog 'replacement verified'
+
   # PyInstaller onefile restarts must be forced into a fresh top-level runtime.
-  # Otherwise the relaunched EXE inherits the old _PYI_* environment, reuses the
-  # old _MEI temp directory, and loses base_library.zip when the old HUD exits.
   $env:PYINSTALLER_RESET_ENVIRONMENT='1'
-  Start-Process -FilePath $Target
-  Start-Sleep -Seconds 2
-  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
+  $newProcess=Start-Process -FilePath $Target -PassThru
+  Start-Sleep -Seconds 3
+  if ($newProcess.HasExited) { throw ('updated_process_exited_' + $newProcess.ExitCode) }
+  Write-UpdateLog ('updated HUD launched pid=' + $newProcess.Id)
+  try { Remove-Item -LiteralPath $backup -Force -ErrorAction Stop } catch { Write-UpdateLog ('backup cleanup deferred: ' + $_.Exception.Message) }
+  Write-UpdateLog 'success'
 } catch {
+  Write-UpdateLog ('failure: ' + $_.Exception.Message)
+  $backup=$Target + '.old'
   if (Test-Path -LiteralPath $backup) {
-    try { Copy-Item -LiteralPath $backup -Destination $Target -Force } catch {}
+    try {
+      Copy-WithRetry $backup $Target 100
+      Write-UpdateLog 'rollback restored previous executable'
+    } catch {
+      Write-UpdateLog ('rollback failed: ' + $_.Exception.Message)
+    }
   }
   try {
     $env:PYINSTALLER_RESET_ENVIRONMENT='1'
     Start-Process -FilePath $Target
-  } catch {}
+    Write-UpdateLog 'fallback launch attempted'
+  } catch {
+    Write-UpdateLog ('fallback launch failed: ' + $_.Exception.Message)
+  }
 }
 """,
                 encoding="utf-8",
@@ -3858,7 +3900,7 @@ try {
             subprocess.Popen(
                 [
                     "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-                    "-File", str(script), str(os.getpid()), str(target), str(staged),
+                    "-File", str(script), str(os.getpid()), str(target), str(staged), staged_digest, str(log_path),
                 ],
                 creationflags=flags,
             )
