@@ -39,11 +39,14 @@ No game inputs are generated. The companion is read-only with respect to Elite c
 
 ### Surface Mining
 
-- **SET SITE CENTER** captures current system, body and latitude/longitude, then stores the chosen site number.
-- Saved sites are filtered to the body you are currently on.
-- Selecting a site shows continuous great-circle distance, absolute bearing and left/right direction using Elite's live surface position and planet radius.
-- **REPORT DEPOSIT** captures system/body/coordinates and the active site automatically. You only fill in commodity, rig count and optional notes.
-- Sites and deposit reports are stored locally on the PC for this prototype. They are not yet uploaded to the Mongrels site.
+Mongrel HUD 0.7.0 uses the curated 10-16 mining database as the source of truth instead of maintaining a second private coordinate list on the PC.
+
+- Approved coordinates for the current 10-16 body are loaded from the archive and exposed on the iPad as selectable navigation targets.
+- When a body has one approved coordinate it can be selected automatically; when several are available, choose the exact signal/deposit from **Known Spots on This Body**.
+- **Surface Navigation** keeps the digital range, absolute target bearing, current heading and left/right turn readout, and adds a relative compass. The top of the instrument is the ship/SRV's current heading; the cyan pointer rotates toward the selected mining coordinate.
+- **Mining Intel** is a sister overlay showing the nearest known mining coordinates on the current body, including signal, commodity, rig count and range. The selected target is marked.
+- **REPORT DEPOSIT** captures current Elite system/body/latitude/longitude automatically. Commodity, Signal #, rig count and optional notes are sent through Mongrel Scout to the same curated mining database used by the personal 10-16 site. Site-admin reports can update/fill the curated database directly; other authorized Mongrel reports enter the normal review queue.
+- A small local report log remains only as a troubleshooting/offline record; it is not the authoritative mining database.
 
 ## Security boundary
 
