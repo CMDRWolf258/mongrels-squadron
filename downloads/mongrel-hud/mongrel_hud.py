@@ -994,6 +994,7 @@ class MongrelHudApp:
             "message": "Checking local neural voice pack…",
             "error": "",
             "downloadBytes": KOKORO_PACK_DOWNLOAD_BYTES,
+            "installedBytes": 0,
         }
         self.run_bounty = 0
         self.run_kills = 0
@@ -1432,6 +1433,19 @@ class MongrelHudApp:
         return self._voice_pack_root() / "kokoro"
 
     @staticmethod
+    def _directory_size(root: Path) -> int:
+        total = 0
+        if not root.exists():
+            return 0
+        for path in root.rglob("*"):
+            try:
+                if path.is_file():
+                    total += path.stat().st_size
+            except OSError:
+                continue
+        return total
+
+    @staticmethod
     def _find_kokoro_paths(root: Path) -> dict[str, Path] | None:
         if not root.exists():
             return None
@@ -1473,6 +1487,7 @@ class MongrelHudApp:
                 "message": "Kokoro local neural voices ready." if installed else "Kokoro voice pack is optional and not installed.",
                 "error": "",
                 "downloadBytes": KOKORO_PACK_DOWNLOAD_BYTES,
+                "installedBytes": self._directory_size(self._kokoro_install_root()) if installed else 0,
             })
 
     def voice_pack_status_snapshot(self) -> dict[str, Any]:
@@ -1630,14 +1645,16 @@ class MongrelHudApp:
                 final.replace(backup)
             try:
                 stage.replace(final)
+                if self._kokoro_paths() is None:
+                    raise RuntimeError("voice_pack_install_validation_failed")
             except Exception:
-                if backup.exists() and not final.exists():
+                if final.exists():
+                    shutil.rmtree(final, ignore_errors=True)
+                if backup.exists():
                     backup.replace(final)
                 raise
             shutil.rmtree(backup, ignore_errors=True)
 
-            if self._kokoro_paths() is None:
-                raise RuntimeError("voice_pack_install_validation_failed")
             self._voice_catalog_worker()
             self._set_voice_pack_status(
                 installed=True,
@@ -1647,6 +1664,7 @@ class MongrelHudApp:
                 progress=100,
                 message="Kokoro local neural voices ready.",
                 error="",
+                installedBytes=self._directory_size(final),
             )
         except Exception as exc:
             shutil.rmtree(stage, ignore_errors=True)
@@ -1702,6 +1720,7 @@ class MongrelHudApp:
             progress=0,
             message="Kokoro voice pack is optional and not installed.",
             error="",
+            installedBytes=0,
         )
         return self.voice_pack_status_snapshot()
 
