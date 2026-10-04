@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.0"
+assert hud.APP_VERSION=="0.7.1"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -57,15 +57,23 @@ with tempfile.TemporaryDirectory() as td:
             {"id":42,"commodity":"Periclase","body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"rigs":2,"preferred":True,"notes":"Primary test site"},
             {"id":43,"commodity":"Periclase","body":"7b","bodyType":"moon","signal":8,"latitude":-22.9000,"longitude":-98.9000,"rigs":1,"preferred":False,"notes":""},
         ]
+        app.mining_centers=[
+            {"id":501,"body":"7b","bodyType":"moon","signal":10,"latitude":-22.7738,"longitude":-98.8161,"updatedAt":"2026-10-04T05:00:00Z"},
+            {"id":502,"body":"7b","bodyType":"moon","signal":8,"latitude":-22.8800,"longitude":-98.8800,"updatedAt":"2026-10-04T05:00:00Z"},
+        ]
         app.mining_status={"ok":True,"updatedAt":"2026-10-04T05:00:00Z","error":""}
     assert hud.short_body_name(app.scout_state())=="7b"
     assert len(app.sites_for_current_body())==2
     site=app.select_site("42")
     assert site["signal"]==10 and site["commodity"]=="Periclase"
-    nav_surface=app.surface_nav()
-    assert nav_surface and nav_surface["distance"]<0.01 and abs(nav_surface["bearing"])<0.01
+    assert app.active_location_signal()==10
+    nav_center=app.location_nav()
+    nav_deposit=app.deposit_nav()
+    assert nav_center and nav_center["targetType"]=="center" and nav_center["distance"]<0.01
+    assert nav_deposit and nav_deposit["targetType"]=="deposit" and nav_deposit["distance"]<0.01
     state=app.controller_state()
     assert state["connected"] is True and state["activeSite"]["id"]==42
+    assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
     app.process_scout_event({"type":"bounty.awarded","totalReward":842615})
     app.process_scout_event({"type":"bounty.awarded","totalReward":100000})
@@ -96,7 +104,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.0"
+    assert hud.APP_VERSION=="0.7.1"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -108,7 +116,7 @@ with tempfile.TemporaryDirectory() as td:
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","KNOWN SPOTS ON THIS BODY","REPORT DEPOSIT","depositSignal","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -131,9 +139,11 @@ assert 'profit_text = f"{self.compact_credits(profit)} CR"' in source
 assert 'leg_profit = leg.get("tripProfit") or 0' in source
 assert "visible_alerts = alerts[:10]" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source and "/api/mission-filter" in source
-assert "SCOUT_MINING_REPORT_URL" in source and "MINING_DATA_URL" in source and "activeMiningSiteId" in source
+assert "SCOUT_MINING_REPORT_URL" in source and "SCOUT_MINING_CENTER_URL" in source and "MINING_DATA_URL" in source and "MINING_CENTERS_URL" in source
+assert "activeMiningSiteId" in source and "activeMiningLocationSignal" in source
 assert "_render_surface_canvas" in source and "_draw_nav_compass" in source and "relative = nav.get(\"relative\")" in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
-assert "site_center_replaced_by_curated_mining_database" in source and "signal_required" in source
+assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
+assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
