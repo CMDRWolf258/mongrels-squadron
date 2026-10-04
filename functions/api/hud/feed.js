@@ -11,6 +11,7 @@ import { isTradeRouteActive, readTradeRoutes } from '../../../lib/trade-intellig
 
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
+const ORDER_REVIEW_KEY='wolf-bgs-order-change-reviews-v1';
 const MAX_ALERTS=40;
 const RECENT_ORDER_MS=7*24*60*60*1000;
 
@@ -57,7 +58,7 @@ export async function buildHudFeed(request,env,auth){
     displayName:auth.ownerCommander||auth.label||'Mongrel Scout',
     access,
   };
-  const [mission,currentOrders,routes,systems,bgsView,rewardView,history,ackState]=await Promise.all([
+  const [mission,currentOrders,routes,systems,bgsView,rewardView,history,ackState,orderReviewState]=await Promise.all([
     buildMissionControlData(request,env,session),
     readCurrentOrderCycle(env),
     readTradeRoutes(env),
@@ -66,6 +67,7 @@ export async function buildHudFeed(request,env,auth){
     access==='site_admin'?loadRewardDiscordView(env):Promise.resolve(null),
     access==='site_admin'?listOrderPublications(env,{limit:20}):Promise.resolve([]),
     readAcks(env,auth.ownerId),
+    access==='site_admin'?readOrderReviewState(env):Promise.resolve({updatedAt:null,reviews:{}}),
   ]);
   const orderProgress=access==='site_admin'
     ?await buildOrderProgressForHud(env,currentOrders,auth.ownerId)
@@ -85,7 +87,7 @@ export async function buildHudFeed(request,env,auth){
   const alerts=[
     ...factionAlerts(bgsView),
     ...(access==='site_admin'?payoutAlerts(rewardView):[]),
-    ...(access==='site_admin'?orderAlerts(history):[]),
+    ...(access==='site_admin'?orderAlerts(history,{reviewedThrough:orderReviewState.updatedAt}):[]),
     ...tradeAlerts(routes),
   ]
     .sort((a,b)=>(severityRank[norm(a?.severity)]??9)-(severityRank[norm(b?.severity)]??9)
@@ -96,10 +98,7 @@ export async function buildHudFeed(request,env,auth){
       indicator:alertIndicator(alert.type,alert.severity),
       acknowledged:Boolean(ackState.acks[alert.id]),
       acknowledgedAt:ackState.acks[alert.id]||null,
-    }))
-    // Faction alerts describe live conditions and may remain visible after ACK.
-    // Daily Order changes are notifications: ACK means dismiss them.
-    .filter(alert=>!(alert.type==='orders'&&alert.acknowledged));
+    }));
 
   return{
     ok:true,
@@ -288,58 +287,62 @@ export function payoutAlerts(view){
   }));
 }
 
-export function orderAlerts(records,now=Date.now()){
-  // Daily Order changes are transient notifications, not a seven-day activity
-  // log. Show only the newest material publication so repeated BGS Control
-  // edits cannot stack old revisions/removals indefinitely in the HUD.
-  const record=(Array.isArray(records)?records:[]).find(row=>{
-    if(row?.state!=='applied'||row?.legacyBaseline===true||!row?.changes?.material)return false;
-    const at=Date.parse(row?.appliedAt||row?.preparedAt||'');
-    return Number.isFinite(at)&&now-at<=RECENT_ORDER_MS;
-  });
-  if(!record)return[];
+export function orderAlerts(records,{now=Date.now(),reviewedThrough=null}={}){
+  const reviewMs=Date.parse(reviewedThrough||'');
+  const out=[];
+  for(const record of (Array.isArray(records)?records:[])){
+    if(record?.state!=='applied'||record?.legacyBaseline===true||!record?.changes?.material)continue;
+    const createdAt=record?.appliedAt||record?.preparedAt||'';
+    const at=Date.parse(createdAt);
+    if(!Number.isFinite(at)||now-at>RECENT_ORDER_MS)continue;
+    // The amber master warning in BGS Control is authoritative for clearing
+    // these HUD reference rows. Local/iPad ACK only marks a row acknowledged.
+    if(Number.isFinite(reviewMs)&&at<=reviewMs)continue;
 
-  const createdAt=record?.appliedAt||record?.preparedAt||new Date().toISOString();
-  const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
-    .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
+    const rows=(Array.isArray(record?.changes?.rows)?record.changes.rows:[])
+      .filter(row=>['added','revised','removed'].includes(norm(row?.status)));
 
-  if(!rows.length){
-    const counts=record?.changes?.counts||{};
-    return [{
-      id:alertId('orders',record?.publicationId),
-      type:'orders',
-      severity:'high',
-      title:'DAILY ORDERS CHANGED',
-      detail:['+'+Number(counts.added||0)+' added',Number(counts.revised||0)+' revised','-'+Number(counts.removed||0)+' removed'].join(' · '),
-      createdAt,
-    }];
-  }
-
-  return rows.slice(0,12).map((row,index)=>{
-    const status=norm(row?.status);
-    const current=status==='removed'?(row?.before||{}):(row?.after||{});
-    const previous=row?.before||{};
-    const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
-    const system=clean(current?.system)||clean(previous?.system);
-    const faction=clean(current?.faction)||clean(previous?.faction);
-    const detailParts=[system,faction];
-    if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
-      detailParts.push('Was: '+clean(previous.task));
-    }else if(status==='revised'){
-      const beforeTarget=previous?.reporting?.target;
-      const afterTarget=current?.reporting?.target;
-      if(beforeTarget!==afterTarget&&afterTarget!==undefined&&afterTarget!==null)detailParts.push('Target: '+afterTarget);
-      else if(clean(previous?.priority)!==clean(current?.priority)&&clean(current?.priority))detailParts.push('Priority: '+clean(current.priority));
+    if(!rows.length){
+      const counts=record?.changes?.counts||{};
+      out.push({
+        id:alertId('orders',record?.publicationId),
+        type:'orders',
+        severity:'high',
+        title:'DAILY ORDERS CHANGED',
+        detail:['+'+Number(counts.added||0)+' added',Number(counts.revised||0)+' revised','-'+Number(counts.removed||0)+' removed'].join(' · '),
+        createdAt,
+      });
+      continue;
     }
-    return{
-      id:alertId('orders',record?.publicationId,current?.id||current?.logicalKey||previous?.id||previous?.logicalKey||index,status),
-      type:'orders',
-      severity:'high',
-      title:'['+status.toUpperCase()+'] '+task,
-      detail:detailParts.filter(Boolean).join(' · '),
-      createdAt,
-    };
-  });
+
+    rows.forEach((row,index)=>{
+      const status=norm(row?.status);
+      const current=status==='removed'?(row?.before||{}):(row?.after||{});
+      const previous=row?.before||{};
+      const task=clean(current?.task)||clean(previous?.task)||'Daily Order';
+      const system=clean(current?.system)||clean(previous?.system);
+      const faction=clean(current?.faction)||clean(previous?.faction);
+      const detailParts=[system,faction];
+      if(status==='revised'&&clean(previous?.task)&&clean(previous.task)!==task){
+        detailParts.push('Was: '+clean(previous.task));
+      }else if(status==='revised'){
+        const beforeTarget=previous?.reporting?.target;
+        const afterTarget=current?.reporting?.target;
+        if(beforeTarget!==afterTarget&&afterTarget!==undefined&&afterTarget!==null)detailParts.push('Target: '+afterTarget);
+        else if(clean(previous?.priority)!==clean(current?.priority)&&clean(current?.priority))detailParts.push('Priority: '+clean(current.priority));
+      }
+      out.push({
+        id:alertId('orders',record?.publicationId,current?.id||current?.logicalKey||previous?.id||previous?.logicalKey||index,status),
+        type:'orders',
+        severity:'high',
+        title:'['+status.toUpperCase()+'] '+task,
+        detail:detailParts.filter(Boolean).join(' · '),
+        createdAt,
+      });
+    });
+    if(out.length>=24)break;
+  }
+  return out.slice(0,24);
 }
 
 export function tradeAlerts(routes){
@@ -389,6 +392,21 @@ async function authenticateScout(request,env){
     }
   }
   return null;
+}
+
+async function readOrderReviewState(env){
+  try{
+    const stored=await env.DAILY_ORDERS.get(ORDER_REVIEW_KEY,{type:'json'});
+    return stored&&typeof stored==='object'
+      ?{
+        version:1,
+        updatedAt:stored.updatedAt||null,
+        reviews:stored.reviews&&typeof stored.reviews==='object'?stored.reviews:{},
+      }
+      :{version:1,updatedAt:null,reviews:{}};
+  }catch{
+    return{version:1,updatedAt:null,reviews:{}};
+  }
 }
 
 async function readAcks(env,ownerId){
