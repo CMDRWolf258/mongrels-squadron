@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["subsystems"]["visible"] is False
     assert app.layout_snapshot()["panels"]["subsystems"]["scale"]==1.25
     assert app.layout_snapshot()["panels"]["subsystems"]["profiles"]==["combat","surface"]
-    assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"]
+    assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"] and "miningintel" in app.layout_snapshot()["panels"]
     app.set_mission_system_filter("Diaba")
     assert app.mission_system_filter()=="Diaba"
     app.set_notes("Check tick after dinner")
@@ -108,7 +108,7 @@ with tempfile.TemporaryDirectory() as td:
     assert store.data["profile"]=="surface"
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","KNOWN SPOTS ON THIS BODY","REPORT DEPOSIT","depositSignal","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","KNOWN SPOTS ON THIS BODY","REPORT DEPOSIT","depositSignal","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -133,6 +133,7 @@ assert "visible_alerts = alerts[:10]" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source and "/api/mission-filter" in source
 assert "SCOUT_MINING_REPORT_URL" in source and "MINING_DATA_URL" in source and "activeMiningSiteId" in source
 assert "_render_surface_canvas" in source and "_draw_nav_compass" in source and "relative = nav.get(\"relative\")" in source
+assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
 assert "site_center_replaced_by_curated_mining_database" in source and "signal_required" in source
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
