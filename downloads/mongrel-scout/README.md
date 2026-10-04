@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo, credi
 
 ## Local HUD / voice bridge
 
-Mongrel Scout v1.8.2 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
+Mongrel Scout v1.8.3 also normalizes a small set of Elite journal events for a future local Mongrel HUD/voice companion. This bridge is **local-only**: it listens on `127.0.0.1:43857`, does not add those docking/travel events to the website upload, and intentionally sends no CORS header for arbitrary web pages.
 
 The local event vocabulary is:
 - `docking.requested`, `docking.granted`, `docking.denied`, `docking.cancelled`, `docking.timeout`, `docking.docked`, `docking.undocked`;
@@ -63,7 +63,7 @@ The local event vocabulary is:
 The bridge exposes read-only JSON endpoints for a local companion:
 - `GET /v1/health` — bridge/plugin version and latest sequence;
 - `GET /v1/state` — current local Commander/system/station/docking/supercruise/owner-carrier state;
-- `POST /v1/mining/report` — explicit Surface Mining deposit report proxy; Scout adds its bound machine token and forwards the report to the curated 10-16 archive without exposing that token to the HUD companion;
+- `POST /v1/mining/report` — explicit Surface Mining deposit report proxy; Scout adds its bound machine token and forwards the report to the curated 10-16 archive without exposing that token to the HUD companion; `POST /v1/mining/center` does the same for explicit mining location-center updates;
 - `GET /v1/events?after=<seq>&wait=<seconds>` — ordered event delivery with optional long polling, capped at 25 seconds.
 
 The in-memory event queue retains the newest 256 normalized events. No raw journal dump is exposed.
