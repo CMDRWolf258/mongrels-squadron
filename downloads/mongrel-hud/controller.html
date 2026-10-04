@@ -85,7 +85,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <script>
 (function(){
 "use strict";
-var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0;
+var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0;
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -185,8 +185,8 @@ function render(){
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function escapeAttr(v){return escapeHtml(v)}
-async function load(force){if(!force&&Date.now()<interactionUntil)return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.message==="pair_required")el("pair").classList.remove("hidden")}}
-async function mutate(path,body){holdRefresh(900);mutationEpoch++;return api(path,body)}
+async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.message==="pair_required")el("pair").classList.remove("hidden")}}
+async function mutate(path,body){holdRefresh(900);mutationEpoch++;mutationPending++;try{return await api(path,body)}finally{mutationPending=Math.max(0,mutationPending-1);interactionUntil=Math.max(interactionUntil,Date.now()+250)}}
 el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
 document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
 document.addEventListener("touchstart",function(){holdRefresh(1200)},{passive:true});
