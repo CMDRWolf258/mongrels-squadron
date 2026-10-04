@@ -37,7 +37,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.2"
+APP_VERSION = "0.7.3"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -48,6 +48,32 @@ MINING_CENTERS_URL = "https://ten16-archive.pages.dev/api/mining-centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
+SURFACE_MINING_COMMODITIES = (
+    "Alexandrite",
+    "Deuterium",
+    "Diamonds",
+    "Gold",
+    "Grandidierite",
+    "Helium",
+    "Iridium",
+    "Jadeite",
+    "LTD",
+    "Monazite",
+    "Olivine",
+    "Osmium",
+    "Palladium",
+    "Periclase Dunite",
+    "Platinum",
+    "Quartz Pyroxenite",
+    "Rhodplumsite",
+    "Ruby",
+    "Sapphire",
+    "Serendibite",
+    "Tantalum",
+    "Thorium",
+    "Thortveitite",
+    "Uraninite",
+)
 CONTROLLER_HOST = "0.0.0.0"
 CONTROLLER_PORT = 43858
 POLL_SECONDS = 0.20
@@ -1339,6 +1365,7 @@ class MongrelHudApp:
             self.store.data["activeMiningLocationSignal"] = chosen_signal
             self.store.save()
         self._refresh_mining_data_once()
+        current_body_commodities, mining_commodities = self.mining_commodity_choices()
         return {
             "ok": True,
             "status": result.get("status"),
@@ -1350,6 +1377,35 @@ class MongrelHudApp:
             "longitude": float(lon),
             "signal": chosen_signal,
         }
+
+    def mining_commodity_choices(self) -> tuple[list[str], list[str]]:
+        state = self.scout_state()
+        system = state.get("system") or {}
+        system_name = str(system.get("name") or "").strip().casefold()
+        body = short_body_name(state).casefold()
+
+        with self.mining_lock:
+            known_all = {
+                str(row.get("commodity") or "").strip()
+                for row in self.mining_sites
+                if str(row.get("commodity") or "").strip()
+            }
+            body_known = {
+                str(row.get("commodity") or "").strip()
+                for row in self.mining_sites
+                if str(row.get("commodity") or "").strip()
+                and system_name
+                and body
+                and str(row.get("systemName") or TEN16_SYSTEM).strip().casefold() == system_name
+                and str(row.get("body") or "").strip().casefold() == body
+            }
+
+        all_choices = sorted(
+            set(SURFACE_MINING_COMMODITIES) | known_all,
+            key=str.casefold,
+        )
+        current_body = sorted(body_known, key=str.casefold)
+        return current_body, all_choices
 
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
@@ -1372,11 +1428,8 @@ class MongrelHudApp:
             "depositNav": self.deposit_nav(),
             "surfaceNav": self.surface_nav(),
             "miningStatus": self.mining_status_snapshot(),
-            "miningCommodities": sorted({
-                str(row.get("commodity") or "").strip()
-                for row in self.mining_sites
-                if str(row.get("commodity") or "").strip()
-            }, key=str.casefold),
+            "miningCommoditiesCurrentBody": current_body_commodities,
+            "miningCommodities": mining_commodities,
             "bounty": self.bounty_ledger(),
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
