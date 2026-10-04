@@ -141,6 +141,10 @@ assert.equal(board.viewer.lastScoutLocation.system,'Test System');
 assert.deepEqual(board.viewer.lastScoutLocation.coords,{x:10,y:20,z:30});
 console.log('✓ Scout Board reports freshness, coordinate coverage, and the viewer last Scout location');
 
+const scoutJobsSource=readFileSync('lib/scout-jobs.js','utf8');
+for(const pattern of [/ruleIndex=new Map/,/snapshotIndex=new Map/,/boardStateChanged/,/boardSettingsChanged/])assert.match(scoutJobsSource,pattern);
+assert.doesNotMatch(scoutJobsSource,/const resolved=resolveExpiredClaimsInState\(state,settings,now\);/,'Scout Board GET should not sweep the entire historical cycle ledger');
+
 const ingest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
 for(const pattern of [/recordScoutObservation/,/hasActiveScoutClaim/,/ownerId:auth\.ownerId/,/scoutJob/])assert.match(ingest,pattern);
 const tokenApi=readFileSync('functions/api/operations/scout-tokens.js','utf8');
@@ -188,7 +192,8 @@ assert.doesNotMatch(scoutUi,/setInterval\(/,'Scout Board polling must not use ov
 const updater=readFileSync('scripts/update_bgs.py','utf8');
 for(const pattern of [/EDSM_SYSTEMS_URL/,/showCoordinates/,/systemName\[\]/,/normalize_coords/,/coordinateSystems/,/coordsSource/])assert.match(updater,pattern);
 const jobsApi=readFileSync('functions/api/operations/scout-jobs.js','utf8');
-for(const pattern of [/loadActiveMongrelSystems/,/syncScoutDiscordAfterAction/,/safeGetAccount/,/falling back to session identity/])assert.match(jobsApi,pattern);
+for(const pattern of [/loadActiveMongrelSystems/,/syncScoutDiscordAfterAction/,/const systems=await loadActiveMongrelSystems\(request\)/])assert.match(jobsApi,pattern);
+assert.doesNotMatch(jobsApi,/const \[systems,account\]=await Promise\.all/,'read-only Scout Board refresh should not fetch Frontier account data');
 const scoutSystems=readFileSync('lib/scout-systems.js','utf8');
 for(const pattern of [/live-bgs\.json/,/coords:normalizeCoordinates\(row\.coords\)/,/coordsSource/])assert.match(scoutSystems,pattern);
 const memberUi=readFileSync('js/member-dashboard.js','utf8');
