@@ -2004,39 +2004,124 @@ class MongrelHudApp:
             self.voice_catalog_errors = errors
             self.voice_catalog_error = " · ".join(f"{provider}:{error}" for provider, error in sorted(errors.items()))
 
+    def _voice_temp_file(self, prefix: str) -> Path:
+        temp_dir = self.store.path.parent / "voice-temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        return temp_dir / f"{prefix}-{secrets.token_hex(8)}.wav"
+
     @staticmethod
-    def _speak_system_speech(text: str, volume: int, rate: int, voice_id: str = "") -> None:
+    def _process_pcm16_wav(path: Path, volume: int, acoustic_profile: str) -> None:
+        profile = acoustic_profile if acoustic_profile in ACOUSTIC_PROFILE_IDS else ACOUSTIC_LOCAL
+        level = max(0.0, min(1.0, int(volume) / 100.0))
+        with wave.open(str(path), "rb") as reader:
+            params = reader.getparams()
+            if params.sampwidth != 2:
+                raise RuntimeError("voice_wav_format_unsupported")
+            frames = reader.readframes(params.nframes)
+
+        samples = array("h")
+        samples.frombytes(frames)
+        if sys.byteorder != "little":
+            samples.byteswap()
+        source = [float(sample) for sample in samples]
+        processed = list(source)
+        channels = max(1, int(params.nchannels))
+        sample_rate = max(8000, int(params.framerate))
+
+        if profile == ACOUSTIC_REMOTE:
+            # Communications-grade bandwidth with gentle saturation/compression.
+            dt = 1.0 / sample_rate
+            hp_rc = 1.0 / (2.0 * math.pi * 280.0)
+            hp_alpha = hp_rc / (hp_rc + dt)
+            lp_rc = 1.0 / (2.0 * math.pi * 3600.0)
+            lp_alpha = dt / (lp_rc + dt)
+            for channel in range(channels):
+                prev_x = 0.0
+                prev_hp = 0.0
+                low = 0.0
+                for idx in range(channel, len(source), channels):
+                    x = source[idx]
+                    high = hp_alpha * (prev_hp + x - prev_x)
+                    prev_x = x
+                    prev_hp = high
+                    low += lp_alpha * (high - low)
+                    processed[idx] = math.tanh(low / 12000.0) * 14500.0
+
+        elif profile in {ACOUSTIC_PA, ACOUSTIC_HANGAR}:
+            # Early reflections make the same speaker sound like a mounted PA.
+            taps = (
+                ((0.045, 0.16), (0.090, 0.09), (0.145, 0.05))
+                if profile == ACOUSTIC_PA
+                else ((0.060, 0.18), (0.135, 0.12), (0.225, 0.075), (0.340, 0.045))
+            )
+            delayed = [(max(1, int(sample_rate * seconds)), gain) for seconds, gain in taps]
+            for idx, dry in enumerate(source):
+                frame = idx // channels
+                channel = idx % channels
+                wet = 0.0
+                for delay_frames, gain in delayed:
+                    old_frame = frame - delay_frames
+                    if old_frame >= 0:
+                        wet += source[(old_frame * channels) + channel] * gain
+                processed[idx] = dry + wet
+
+        # Local comms deliberately stays essentially clean. All profiles share
+        # final gain control and clipping here so providers behave consistently.
+        output_samples = array("h")
+        for sample in processed:
+            value = sample * level
+            output_samples.append(max(-32768, min(32767, int(round(value)))))
+        if sys.byteorder != "little":
+            output_samples.byteswap()
+
+        temp = path.with_suffix(".processed.wav")
+        with wave.open(str(temp), "wb") as writer:
+            writer.setparams(params)
+            writer.writeframes(output_samples.tobytes())
+        temp.replace(path)
+
+    def _play_voice_wav(self, path: Path, volume: int, acoustic_profile: str) -> None:
+        self._process_pcm16_wav(path, volume, acoustic_profile)
+        import winsound
+        winsound.PlaySound(str(path), winsound.SND_FILENAME)
+
+    def _speak_system_speech(self, text: str, volume: int, rate: int, voice_id: str = "", acoustic_profile: str = ACOUSTIC_LOCAL) -> None:
         if os.name != "nt":
             raise RuntimeError("windows_speech_required")
         safe_text = " ".join(str(text or "").split())[:600]
         selected = " ".join(str(voice_id or "").split())[:512]
         if not safe_text:
             return
+        output = self._voice_temp_file("system")
         select = "$s.SelectVoice(" + _powershell_quote(selected) + ");" if selected else ""
         script = (
             "$ErrorActionPreference='Stop';"
             "Add-Type -AssemblyName System.Speech;"
             "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
             + select
-            + f"$s.Volume={max(0, min(100, int(volume)))};"
+            + "$s.Volume=100;"
             + f"$s.Rate={max(-3, min(3, int(rate)))};"
-            + "$s.Speak(" + _powershell_quote(safe_text) + ");"
-            + "$s.Dispose();"
+            + "$s.SetOutputToWaveFile(" + _powershell_quote(str(output)) + ");"
+            + "try{$s.Speak(" + _powershell_quote(safe_text) + ")}finally{"
+            + "try{$s.SetOutputToDefaultAudioDevice()}catch{};$s.Dispose()}"
         )
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        result = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
-            capture_output=True,
-            text=True,
-            timeout=90,
-            creationflags=flags,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError("system_speech_failed")
+        try:
+            result = subprocess.run(
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+                capture_output=True,
+                text=True,
+                timeout=90,
+                creationflags=flags,
+                check=False,
+            )
+            if result.returncode != 0 or not output.is_file() or output.stat().st_size < 44:
+                raise RuntimeError("system_speech_failed")
+            self._play_voice_wav(output, volume, acoustic_profile)
+        finally:
+            output.unlink(missing_ok=True)
 
-    @staticmethod
-    def _speak_winrt(text: str, volume: int, rate: int, voice_id: str) -> None:
+    def _speak_winrt(self, text: str, volume: int, rate: int, voice_id: str, acoustic_profile: str = ACOUSTIC_LOCAL) -> None:
         if os.name != "nt":
             raise RuntimeError("windows_speech_required")
         safe_text = " ".join(str(text or "").split())[:600]
@@ -2045,8 +2130,8 @@ class MongrelHudApp:
             return
         if not selected:
             raise RuntimeError("winrt_voice_required")
-        volume_value = max(0.0, min(1.0, int(volume) / 100.0))
         rate_value = max(0.5, min(6.0, 1.18 ** max(-3, min(3, int(rate)))))
+        output = self._voice_temp_file("winrt")
         script = (
             "$ErrorActionPreference='Stop';"
             "Add-Type -AssemblyName System.Runtime.WindowsRuntime;"
@@ -2062,62 +2147,33 @@ class MongrelHudApp:
             "$voice=[Windows.Media.SpeechSynthesis.SpeechSynthesizer]::AllVoices|Where-Object{$_.Id -eq " + _powershell_quote(selected) + "}|Select-Object -First 1;"
             "if(-not $voice){throw 'winrt_voice_not_found'};"
             "$s.Voice=$voice;"
-            + f"$s.Options.AudioVolume={volume_value:.4f};"
+            "$s.Options.AudioVolume=1.0;"
             + f"$s.Options.SpeakingRate={rate_value:.4f};"
             + "$stream=Await-WinRt ($s.SynthesizeTextToStreamAsync(" + _powershell_quote(safe_text) + ")) ([Windows.Media.SpeechSynthesis.SpeechSynthesisStream]);"
-            "$path=[IO.Path]::Combine([IO.Path]::GetTempPath(),('MongrelHUD-voice-'+[Guid]::NewGuid().ToString('N')+'.wav'));"
-            "try{"
-            "$net=[System.IO.WindowsRuntimeStreamExtensions]::AsStreamForRead($stream);"
-            "$file=[IO.File]::Create($path);"
-            "try{$net.CopyTo($file)}finally{$file.Dispose();$net.Dispose()};"
-            "$player=New-Object System.Media.SoundPlayer $path;"
-            "try{$player.PlaySync()}finally{$player.Dispose()}"
-            "}finally{"
-            "try{$stream.Dispose()}catch{};"
-            "try{$s.Dispose()}catch{};"
-            "Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue"
-            "}"
+            + "$path=" + _powershell_quote(str(output)) + ";"
+            + "try{"
+            + "$net=[System.IO.WindowsRuntimeStreamExtensions]::AsStreamForRead($stream);"
+            + "$file=[IO.File]::Create($path);"
+            + "try{$net.CopyTo($file)}finally{$file.Dispose();$net.Dispose()}"
+            + "}finally{try{$stream.Dispose()}catch{};try{$s.Dispose()}catch{}}"
         )
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        result = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
-            capture_output=True,
-            text=True,
-            timeout=90,
-            creationflags=flags,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError("winrt_speech_failed")
+        try:
+            result = subprocess.run(
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script],
+                capture_output=True,
+                text=True,
+                timeout=90,
+                creationflags=flags,
+                check=False,
+            )
+            if result.returncode != 0 or not output.is_file() or output.stat().st_size < 44:
+                raise RuntimeError("winrt_speech_failed")
+            self._play_voice_wav(output, volume, acoustic_profile)
+        finally:
+            output.unlink(missing_ok=True)
 
-    @staticmethod
-    def _scale_pcm16_wav_volume(path: Path, volume: int) -> None:
-        level = max(0.0, min(1.0, int(volume) / 100.0))
-        if level >= 0.999:
-            return
-        with wave.open(str(path), "rb") as reader:
-            params = reader.getparams()
-            if params.sampwidth != 2:
-                raise RuntimeError("kokoro_wav_format_unsupported")
-            frames = reader.readframes(params.nframes)
-        samples = array("h")
-        samples.frombytes(frames)
-        if sys.byteorder != "little":
-            samples.byteswap()
-        if level <= 0.0:
-            samples = array("h", [0] * len(samples))
-        else:
-            for idx, sample in enumerate(samples):
-                samples[idx] = max(-32768, min(32767, int(sample * level)))
-        if sys.byteorder != "little":
-            samples.byteswap()
-        temp = path.with_suffix(".volume.wav")
-        with wave.open(str(temp), "wb") as writer:
-            writer.setparams(params)
-            writer.writeframes(samples.tobytes())
-        temp.replace(path)
-
-    def _speak_kokoro(self, text: str, volume: int, rate: int, voice_id: str) -> None:
+    def _speak_kokoro(self, text: str, volume: int, rate: int, voice_id: str, acoustic_profile: str = ACOUSTIC_LOCAL) -> None:
         if os.name != "nt":
             raise RuntimeError("windows_speech_required")
         paths = self._kokoro_paths()
@@ -2131,9 +2187,7 @@ class MongrelHudApp:
         if not safe_text:
             return
         speed = max(0.65, min(1.55, 1.15 ** max(-3, min(3, int(rate)))))
-        temp_dir = self.store.path.parent / "voice-temp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        output = temp_dir / f"kokoro-{secrets.token_hex(8)}.wav"
+        output = self._voice_temp_file("kokoro")
         args = [
             str(paths["exe"]),
             f"--kokoro-model={paths['model']}",
@@ -2160,22 +2214,29 @@ class MongrelHudApp:
             )
             if result.returncode != 0 or not output.is_file() or output.stat().st_size < 44:
                 raise RuntimeError("kokoro_speech_failed")
-            self._scale_pcm16_wav_volume(output, volume)
-            import winsound
-            winsound.PlaySound(str(output), winsound.SND_FILENAME)
+            self._play_voice_wav(output, volume, acoustic_profile)
         finally:
             output.unlink(missing_ok=True)
 
-    def _speak_voice_provider(self, provider: str, text: str, volume: int, rate: int, voice_id: str = "") -> None:
+    def _speak_voice_provider(
+        self,
+        provider: str,
+        text: str,
+        volume: int,
+        rate: int,
+        voice_id: str = "",
+        acoustic_profile: str = ACOUSTIC_LOCAL,
+    ) -> None:
         provider = str(provider or VOICE_PROVIDER_SYSTEM).strip().lower()
+        profile = acoustic_profile if acoustic_profile in ACOUSTIC_PROFILE_IDS else ACOUSTIC_LOCAL
         if provider == VOICE_PROVIDER_KOKORO:
-            self._speak_kokoro(text, volume, rate, voice_id)
+            self._speak_kokoro(text, volume, rate, voice_id, profile)
             return
         if provider == VOICE_PROVIDER_WINRT:
-            self._speak_winrt(text, volume, rate, voice_id)
+            self._speak_winrt(text, volume, rate, voice_id, profile)
             return
         if provider == VOICE_PROVIDER_SYSTEM:
-            self._speak_system_speech(text, volume, rate, voice_id)
+            self._speak_system_speech(text, volume, rate, voice_id, profile)
             return
         raise RuntimeError("voice_provider_unsupported")
 
