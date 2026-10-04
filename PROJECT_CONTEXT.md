@@ -76,6 +76,15 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.10.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.13.0 optional local-neural voice pack:
+- Core HUD remains lightweight. Kokoro is an optional per-PC install under `%LOCALAPPDATA%\MongrelHUD\voices\kokoro`; never bundle its model/runtime into the rolling HUD ZIP.
+- Paired iPad controls may initiate **Install / Repair / Remove**. The iPad does not receive the model; the Windows HUD downloads and installs it locally on the PC.
+- Installer assets are pinned and SHA-256 verified before extraction: sherpa-onnx v1.13.8 Windows x64 shared-MT TTS runtime (`6dffdc715a4465b989446a6105265d2cb345e7101591a17d35534b6758f6e8df`) and `kokoro-multi-lang-v1_0` (`c5f7e2d2caf082bc1d20fb70334a61d99d20b484500aad32e7cf84c128ea3298`).
+- Install is staged, validated, then atomically promoted. Failed/interrupted staging must never appear in the voice catalog. Repair performs a fresh verified install. Remove deletes only the optional pack; if Kokoro is selected, voice state falls back to the legacy Windows system default.
+- Kokoro provider exposes the 28 English speaker IDs 0–27 with stable voice keys (US female/male and UK female/male). Selection persists as `voiceProvider=kokoro`, `voiceId=<stable key>`, and display-only `voiceName`.
+- Playback uses the installed `sherpa-onnx-offline-tts.exe` with the Kokoro model/voices/tokens/espeak data/US-English lexicon, maps the existing PA rate setting to Kokoro speed, locally scales PCM16 WAV output for PA volume, plays synchronously, then deletes the temporary WAV.
+- Existing carrier triggers, editable phrases, placeholders, queue ordering, countdowns and cooldown timing remain provider-neutral.
+
 Mongrel HUD 0.12.0 voice-provider architecture:
 - Carrier PA voice output is provider-based. Supported providers in this release are `system` (legacy `System.Speech`) and `winrt` (`Windows.Media.SpeechSynthesis`). Keep carrier event, phrase, queue, countdown, cooldown and anti-spam behavior provider-neutral.
 - Voice state persists `voiceProvider`, `voiceId`, and display-only `voiceName`. Existing 0.11.x `voiceName`-only selections migrate automatically to the legacy provider with `voiceId = voiceName`.
