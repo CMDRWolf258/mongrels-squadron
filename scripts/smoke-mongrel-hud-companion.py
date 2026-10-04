@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.9"
+assert hud.APP_VERSION=="0.8.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -101,7 +101,9 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["subsystems"]["visible"] is False
     assert app.layout_snapshot()["panels"]["subsystems"]["scale"]==1.25
     assert app.layout_snapshot()["panels"]["subsystems"]["profiles"]==["combat","surface"]
-    assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"] and "miningintel" in app.layout_snapshot()["panels"]
+    assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"] and "miningintel" in app.layout_snapshot()["panels"] and "cargo" in app.layout_snapshot()["panels"]
+    assert app.layout_snapshot()["panels"]["cargo"]["visible"] is False
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
     app.set_mission_system_filter("Diaba")
     assert app.mission_system_filter()=="Diaba"
     app.set_notes("Check tick after dinner")
@@ -109,7 +111,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.9"
+    assert hud.APP_VERSION=="0.8.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -165,7 +167,7 @@ with tempfile.TemporaryDirectory() as td:
     assert fake_root.after_calls==2 and fake_window.withdrawn>=1
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -199,6 +201,7 @@ assert '"depositsOk": deposit_ok' in source and '"centersOk": center_ok' in sour
 assert 'str(row.get("systemName") or TEN16_SYSTEM)' in source
 assert "SURFACE_MINING_COMMODITIES" in source and '"Platinum"' in source and '"Monazite"' in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
+assert "_render_cargo_canvas" in source and '"cargo": "CARGO"' in source
 assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
 assert 'class="mining-select"' in html and "min-height:58px" in html
