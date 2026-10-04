@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.3"
+assert hud.APP_VERSION=="0.7.4"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.3"
+    assert hud.APP_VERSION=="0.7.4"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -143,6 +143,9 @@ assert 'leg_profit = leg.get("tripProfit") or 0' in source
 assert "visible_alerts = alerts[:10]" in source
 assert "SCOUT_ALERT_ACK_URL" in source and "site_panel_texts" in source and "set_notes" in source and "/api/mission-filter" in source
 assert "SCOUT_MINING_REPORT_URL" in source and "SCOUT_MINING_CENTER_URL" in source and "MINING_DATA_URL" in source and "MINING_CENTERS_URL" in source
+assert 'MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"' in source
+assert 'MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"' in source
+assert "_load_mining_bridge_payload" in source
 assert "activeMiningSiteId" in source and "activeMiningLocationSignal" in source
 assert "_render_surface_canvas" in source and "_draw_nav_compass" in source and "relative = nav.get(\"relative\")" in source
 assert "task_box = canvas.bbox(task_id)" in source
