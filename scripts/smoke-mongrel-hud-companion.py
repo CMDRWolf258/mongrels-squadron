@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.7.8"
+assert hud.APP_VERSION=="0.7.9"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.HUD_RENDER_SCALE>=1.15
@@ -109,7 +109,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.7.8"
+    assert hud.APP_VERSION=="0.7.9"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -218,5 +218,6 @@ assert 'Profile switch failed' in html and 'profile active' in html
 assert 'result = {"ok": True, "profile": profile, "layout": app.layout_snapshot()}' in source
 
 assert '"miningCenters": []' in source
+assert 'nav.get("target") if isinstance(nav.get("target"), dict) else nav.get("site")' in source
 assert 'info["renderError"] = str(exc)[:160]' in source
 assert 'finally:' in source and 'self.root.after(200, self.refresh_ui)' in source
