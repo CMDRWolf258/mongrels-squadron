@@ -36,7 +36,7 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.6.2"
+APP_VERSION = "0.6.3"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -52,6 +52,7 @@ HUD_CYAN = "#8ce7ff"
 HUD_WHITE = "#f7fdff"
 HUD_MUTED = "#a9c8d3"
 HUD_DIM = "#355664"
+HUD_SHADOW = "#071319"
 HUD_RENDER_SCALE = 1.18
 HUD_RED = "#ff4d55"
 HUD_AMBER = "#ffb229"
@@ -1325,7 +1326,7 @@ class MongrelHudApp:
 
     def _draw_title(self, canvas: tk.Canvas, title: str, scale: float, width: int, color: str = HUD_CYAN) -> float:
         y = 8 * scale
-        canvas.create_text(8 * scale, y, text=title, anchor="nw", fill=color, font=self._panel_font(scale, 15, True))
+        self._draw_text(canvas, 8 * scale, y, title, scale, 15, color, True)
         line_y = y + 23 * scale
         canvas.create_line(8 * scale, line_y, width - 8 * scale, line_y, fill=HUD_DIM, width=max(1, round(scale)))
         return line_y + 8 * scale
@@ -1334,6 +1335,15 @@ class MongrelHudApp:
         kwargs: dict[str, Any] = {"text": str(text), "anchor": anchor, "fill": color, "font": self._panel_font(scale, size, bold)}
         if width is not None:
             kwargs["width"] = width
+        # Windows transparent-color mode makes the cockpit/background visible
+        # directly behind the HUD. A thin near-black halo keeps small cyan/white
+        # text readable over bright stars, planet limbs and orange cockpit art
+        # without adding opaque panel boxes.
+        halo = max(1, round(scale * 0.85))
+        shadow_kwargs = dict(kwargs)
+        shadow_kwargs["fill"] = HUD_SHADOW
+        for dx, dy in ((-halo, 0), (halo, 0), (0, -halo), (0, halo)):
+            canvas.create_text(x + dx, y + dy, **shadow_kwargs)
         return canvas.create_text(x, y, **kwargs)
 
     def _draw_progress(self, canvas: tk.Canvas, x: float, y: float, width: float, percent: float, scale: float, color: str = HUD_CYAN) -> None:
@@ -1352,12 +1362,11 @@ class MongrelHudApp:
         self._draw_text(canvas, 8 * scale, y, ship_name, scale, 17, HUD_WHITE, True); y += 27 * scale
         current = own.get("currentJumpRange")
         current_text = f"{current:.2f} LY" if isinstance(current, (int, float)) else "—"
-        self._draw_text(canvas, 8 * scale, y, "CURRENT JUMP", scale, 9, HUD_MUTED, True)
-        self._draw_text(canvas, width - 8 * scale, y, current_text, scale, 12, HUD_CYAN, True, "ne"); y += 20 * scale
         unladen = own.get("maxJumpRange")
         fuel_main, fuel_reserve = status.get("fuelMain"), status.get("fuelReserve")
         total_fuel = float(fuel_main) + (float(fuel_reserve) if isinstance(fuel_reserve, (int, float)) else 0.0) if isinstance(fuel_main, (int, float)) else None
         rows = [
+            ("CURRENT JUMP", current_text),
             ("UNLADEN", f"{unladen:.2f} LY" if isinstance(unladen, (int, float)) else "—"),
             ("FUEL", f"{total_fuel:.1f} t" if isinstance(total_fuel, (int, float)) else "—"),
             ("CARGO", f"{int(status.get('cargo'))} t" if isinstance(status.get("cargo"), (int, float)) else "—"),
@@ -1494,7 +1503,8 @@ class MongrelHudApp:
         unacked = sum(1 for row in alerts if not row.get("acknowledged"))
         status = "CLEAR" if not alerts else f"{unacked} NEW · {len(alerts)} ACTIVE"
         self._draw_text(canvas, 32 * scale, y - 2 * scale, status, scale, 11, color if alerts else HUD_GREEN, True); y += 24 * scale
-        for row in alerts[:6]:
+        visible_alerts = alerts[:10]
+        for row in visible_alerts:
             row_color = self._alert_color(row)
             acknowledged = bool(row.get("acknowledged"))
             dot_color = row_color if not acknowledged else HUD_DIM
@@ -1507,6 +1517,9 @@ class MongrelHudApp:
             if row.get("detail"):
                 self._draw_text(canvas, 23 * scale, y, self.clip_line(row.get("detail"), 68), scale, 8, HUD_MUTED, False); y += 15 * scale
             y += 4 * scale
+        hidden = max(0, len(alerts) - len(visible_alerts))
+        if hidden:
+            self._draw_text(canvas, 23 * scale, y, f"+{hidden} MORE ALERTS", scale, 8, HUD_MUTED, True); y += 16 * scale
         return width, round(y + 4 * scale)
 
     def _render_trade_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
@@ -1567,6 +1580,57 @@ class MongrelHudApp:
 
         return width, round(y + 3 * scale)
 
+    def _render_scoutboard_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
+        width = round(600 * scale)
+        y = self._draw_title(canvas, "SCOUT BOARD", scale, width)
+        if not scout:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+
+        summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
+        self._draw_text(canvas, 8 * scale, y, f"AVAILABLE {int(summary.get('available') or 0)}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, 178 * scale, y, f"CLAIMED {int(summary.get('claimed') or 0)}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y, f"PRIORITY {int(summary.get('priority') or 0)}", scale, 9, HUD_AMBER, True, "ne")
+        y += 23 * scale
+
+        self._draw_text(canvas, 8 * scale, y, "SYSTEM", scale, 8, HUD_MUTED, True)
+        self._draw_text(canvas, 370 * scale, y, "STATUS", scale, 8, HUD_MUTED, True, "ne")
+        self._draw_text(canvas, width - 8 * scale, y, "REWARD", scale, 8, HUD_MUTED, True, "ne")
+        y += 17 * scale
+
+        jobs = [row for row in (scout.get("jobs") if isinstance(scout.get("jobs"), list) else []) if isinstance(row, dict)]
+        if not jobs:
+            self._draw_text(canvas, 8 * scale, y, "NO OPEN SCOUT JOBS", scale, 10, HUD_MUTED, True)
+            return width, round(y + 28 * scale)
+
+        for row in jobs[:8]:
+            system = str(row.get("system") or "System")
+            status = str(row.get("status") or "").replace("_", " ").upper()
+            reward = float(row.get("rewardMillions") or 0)
+            reward_text = f"{reward:g}M CR" if reward > 0 else "—"
+            status_color = HUD_AMBER if ("PRIORITY" in status or row.get("claimMine")) else HUD_CYAN
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(system, 42), scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, 370 * scale, y, self.clip_line(status or "OPEN", 22), scale, 9, status_color, True, "ne")
+            self._draw_text(canvas, width - 8 * scale, y, reward_text, scale, 10, HUD_GREEN if reward > 0 else HUD_MUTED, True, "ne")
+            y += 18 * scale
+
+            claim = ""
+            if row.get("claimMine"):
+                claim = "YOUR CLAIM"
+            elif row.get("claimCommander"):
+                claim = f"Claimed by {row.get('claimCommander')}"
+            bonus = str(row.get("bonusReason") or "").strip()
+            detail = " · ".join(part for part in (claim, bonus) if part)
+            if detail:
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(detail, 66), scale, 8, HUD_AMBER if row.get("claimMine") else HUD_MUTED, bool(row.get("claimMine")))
+                y += 15 * scale
+            y += 4 * scale
+
+        return width, round(y + 4 * scale)
+
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
@@ -1601,6 +1665,8 @@ class MongrelHudApp:
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
             width, height = self._render_trade_canvas(canvas, scale)
+        elif panel_id == "scoutboard":
+            width, height = self._render_scoutboard_canvas(canvas, scale)
         elif panel_id == "alerts":
             width, height = self._render_alerts_canvas(canvas, scale, flash_on)
         else:
