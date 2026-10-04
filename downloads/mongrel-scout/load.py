@@ -21,13 +21,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.8.6"
+PLUGIN_VERSION = "1.9.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 5
+HUD_BRIDGE_VERSION = 6
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
@@ -114,6 +114,7 @@ KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
 KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
+KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -125,6 +126,8 @@ _pending_status = ""
 _last_system_name = ""
 _last_system_address: Any = None
 _last_star_pos: Any = None
+_cargo_missions_lock = threading.RLock()
+_cargo_missions: dict[str, dict[str, dict[str, Any]]] = {}
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "timestamp": "",
@@ -161,6 +164,7 @@ _hud_state: dict[str, Any] = {
     "lastFacility": None,
     "status": None,
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
     "lastEvent": None,
     "updatedAt": None,
@@ -181,6 +185,7 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
     _restore_owner_carrier()
     _restore_last_system_context()
+    _restore_cargo_missions()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -390,8 +395,11 @@ def journal_entry(
     if event in {"ApproachBody", "LeaveBody", "SupercruiseEntry", "SupercruiseExit"}:
         _remember_journal_context(entry, system)
 
-    # HUD/voice triggers remain local. Seed current ship facts from EDMC state, then publish the event.
+    # HUD/voice triggers remain local. Seed current ship/cargo facts from EDMC state,
+    # update the local-only mission calculator, then publish the event.
     _update_hud_ship_from_edmc_state(state)
+    _update_cargo_missions_from_journal(cmdr, entry)
+    _update_hud_cargo_from_edmc_state(cmdr, state, entry.get("timestamp"))
     _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
@@ -1378,6 +1386,351 @@ def _relationship_for_market(market_id: str) -> str:
     if isinstance(owner, Mapping) and str(owner.get("carrierId") or "") == str(market_id):
         return "owner"
     return "unknown"
+
+
+def _cmdr_cache_key(cmdr: Any) -> str:
+    return " ".join(str(cmdr or "").split()).casefold() or "_default"
+
+
+def _commodity_key(value: Any) -> str:
+    text = str(value or "").strip()
+    if text.startswith("$") and text.endswith(";"):
+        text = text[1:-1]
+    text = re.sub(r"_name$", "", text, flags=re.IGNORECASE)
+    return re.sub(r"[^a-z0-9]+", "", text.casefold())
+
+
+def _commodity_display(value: Any, localized: Any = None) -> str:
+    local = " ".join(str(localized or "").split())
+    if local:
+        return local
+    text = str(value or "").strip()
+    if text.startswith("$") and text.endswith(";"):
+        text = text[1:-1]
+    text = re.sub(r"_name$", "", text, flags=re.IGNORECASE)
+    text = text.replace("_", " ").strip()
+    special = {
+        "drones": "Limpets",
+        "lowtemperaturediamond": "Low Temperature Diamonds",
+        "voidopals": "Void Opals",
+        "alexandrite": "Alexandrite",
+        "grandidierite": "Grandidierite",
+        "rhodplumsite": "Rhodplumsite",
+        "serendibite": "Serendibite",
+        "bertrandite": "Bertrandite",
+        "indite": "Indite",
+        "gallite": "Gallite",
+        "osmium": "Osmium",
+        "platinum": "Platinum",
+        "palladium": "Palladium",
+        "gold": "Gold",
+        "silver": "Silver",
+        "tritium": "Tritium",
+        "painite": "Painite",
+    }
+    compact = re.sub(r"[^a-z0-9]+", "", text.casefold())
+    if compact in special:
+        return special[compact]
+    return " ".join(word.capitalize() for word in text.split()) or "Unknown Cargo"
+
+
+def _normalized_cached_mission(value: Any) -> Optional[dict[str, Any]]:
+    if not isinstance(value, Mapping):
+        return None
+    mission_id = _optional_int(value.get("missionId"))
+    count = _optional_int(value.get("count"))
+    delivered = _optional_int(value.get("delivered")) or 0
+    commodity = _commodity_key(value.get("commodity"))
+    if mission_id is None or mission_id <= 0 or count is None or count <= 0 or not commodity:
+        return None
+    return {
+        "missionId": mission_id,
+        "name": str(value.get("name") or "").strip()[:180],
+        "localisedName": str(value.get("localisedName") or "").strip()[:240],
+        "commodity": commodity,
+        "commodityName": _commodity_display(value.get("commodityName") or value.get("commodity"), value.get("commodityName")),
+        "count": count,
+        "delivered": max(0, min(count, delivered)),
+        "wing": bool(value.get("wing")),
+        "destinationSystem": str(value.get("destinationSystem") or "").strip()[:160],
+        "destinationStation": str(value.get("destinationStation") or "").strip()[:160],
+        "acceptedAt": str(value.get("acceptedAt") or "").strip()[:80],
+    }
+
+
+def _restore_cargo_missions() -> None:
+    raw = config.get_str(KEY_CARGO_MISSIONS) or ""
+    if not raw:
+        return
+    try:
+        decoded = json.loads(raw)
+    except Exception:
+        return
+    if not isinstance(decoded, Mapping):
+        return
+    restored: dict[str, dict[str, dict[str, Any]]] = {}
+    for cmdr_key, rows in decoded.items():
+        if not isinstance(cmdr_key, str) or not isinstance(rows, list):
+            continue
+        bucket: dict[str, dict[str, Any]] = {}
+        for row in rows[:128]:
+            mission = _normalized_cached_mission(row)
+            if mission:
+                bucket[str(mission["missionId"])] = mission
+        if bucket:
+            restored[cmdr_key[:160]] = bucket
+    with _cargo_missions_lock:
+        _cargo_missions.clear()
+        _cargo_missions.update(restored)
+
+
+def _save_cargo_missions() -> None:
+    with _cargo_missions_lock:
+        payload = {
+            key: list(bucket.values())[:128]
+            for key, bucket in _cargo_missions.items()
+            if bucket
+        }
+    try:
+        config.set(KEY_CARGO_MISSIONS, json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
+    except Exception:
+        pass
+
+
+def _cargo_mission_rows(cmdr: Any) -> list[dict[str, Any]]:
+    key = _cmdr_cache_key(cmdr)
+    with _cargo_missions_lock:
+        bucket = _cargo_missions.get(key) or {}
+        return [dict(row) for row in bucket.values()]
+
+
+def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> None:
+    event = str(entry.get("event") or "")
+    key = _cmdr_cache_key(cmdr)
+    changed = False
+    with _cargo_missions_lock:
+        bucket = _cargo_missions.setdefault(key, {})
+
+        if event == "MissionAccepted":
+            mission_id = _optional_int(entry.get("MissionID"))
+            count = _optional_int(entry.get("Count"))
+            commodity = _commodity_key(entry.get("Commodity"))
+            if mission_id is not None and mission_id > 0 and count is not None and count > 0 and commodity:
+                bucket[str(mission_id)] = {
+                    "missionId": mission_id,
+                    "name": str(entry.get("Name") or "").strip()[:180],
+                    "localisedName": str(entry.get("LocalisedName") or "").strip()[:240],
+                    "commodity": commodity,
+                    "commodityName": _commodity_display(entry.get("Commodity"), entry.get("Commodity_Localised")),
+                    "count": count,
+                    "delivered": 0,
+                    "wing": bool(entry.get("Wing")),
+                    "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:160],
+                    "destinationStation": str(entry.get("DestinationStation") or "").strip()[:160],
+                    "acceptedAt": str(entry.get("timestamp") or "").strip()[:80],
+                }
+                changed = True
+
+        elif event == "CargoDepot":
+            mission_id = _optional_int(entry.get("MissionID"))
+            if mission_id is not None:
+                mission = bucket.get(str(mission_id))
+                if mission:
+                    total = _optional_int(entry.get("TotalItemsToDeliver"))
+                    delivered = _optional_int(entry.get("ItemsDelivered"))
+                    if total is not None and total > 0:
+                        mission["count"] = total
+                    if delivered is not None:
+                        mission["delivered"] = max(0, min(int(mission.get("count") or delivered), delivered))
+                    cargo_type = entry.get("CargoType")
+                    if cargo_type and not mission.get("commodity"):
+                        mission["commodity"] = _commodity_key(cargo_type)
+                        mission["commodityName"] = _commodity_display(cargo_type, entry.get("CargoType_Localised"))
+                    changed = True
+
+        elif event in {"MissionCompleted", "MissionFailed", "MissionAbandoned"}:
+            mission_id = _optional_int(entry.get("MissionID"))
+            if mission_id is not None and bucket.pop(str(mission_id), None) is not None:
+                changed = True
+
+        elif event == "Missions":
+            active = entry.get("Active")
+            if isinstance(active, list):
+                active_ids = {
+                    str(mid)
+                    for row in active
+                    if isinstance(row, Mapping)
+                    for mid in [_optional_int(row.get("MissionID"))]
+                    if mid is not None
+                }
+                for mission_id in list(bucket):
+                    if mission_id not in active_ids:
+                        bucket.pop(mission_id, None)
+                        changed = True
+
+        if not bucket:
+            _cargo_missions.pop(key, None)
+
+    if changed:
+        _save_cargo_missions()
+
+
+def _cargo_inventory_from_edmc_state(state: Mapping[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+    cargo_json = state.get("CargoJSON")
+    if isinstance(cargo_json, Mapping):
+        vessel = str(cargo_json.get("Vessel") or "Ship").strip() or "Ship"
+        raw_inventory = cargo_json.get("Inventory")
+        if isinstance(raw_inventory, list):
+            rows: list[dict[str, Any]] = []
+            for raw in raw_inventory:
+                if not isinstance(raw, Mapping):
+                    continue
+                count = _optional_int(raw.get("Count"))
+                key = _commodity_key(raw.get("Name"))
+                if count is None or count <= 0 or not key:
+                    continue
+                rows.append({
+                    "key": key,
+                    "name": _commodity_display(raw.get("Name"), raw.get("Name_Localised")),
+                    "count": count,
+                    "stolen": max(0, min(count, _optional_int(raw.get("Stolen")) or 0)),
+                    "missionId": _optional_int(raw.get("MissionID")),
+                })
+            return vessel, rows
+
+    raw_totals = state.get("Cargo")
+    rows = []
+    if isinstance(raw_totals, Mapping):
+        for raw_name, raw_count in raw_totals.items():
+            count = _optional_int(raw_count)
+            key = _commodity_key(raw_name)
+            if count is None or count <= 0 or not key:
+                continue
+            rows.append({
+                "key": key,
+                "name": _commodity_display(raw_name),
+                "count": count,
+                "stolen": 0,
+                "missionId": None,
+            })
+    return "Ship", rows
+
+
+def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None) -> Optional[dict[str, Any]]:
+    if not isinstance(state, Mapping):
+        return None
+    vessel, rows = _cargo_inventory_from_edmc_state(state)
+    # The feature is specifically ship cargo. Keep the most recent ship snapshot
+    # while the commander is driving an SRV instead of replacing it with SRV cargo.
+    if vessel.casefold() != "ship":
+        return None
+
+    aggregated: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = row["key"]
+        item = aggregated.setdefault(key, {"key": key, "name": row["name"], "count": 0, "stolen": 0, "missionCount": 0})
+        item["count"] += int(row["count"])
+        item["stolen"] += int(row["stolen"])
+        if row.get("missionId") is not None:
+            item["missionCount"] += int(row["count"])
+        if row.get("name") and (not item.get("name") or item["name"] == "Unknown Cargo"):
+            item["name"] = row["name"]
+
+    used = sum(int(item["count"]) for item in aggregated.values())
+    capacity = _optional_int(state.get("CargoCapacity"))
+    if capacity is None:
+        with _hud_condition:
+            ship = _hud_state.get("ship")
+            capacity = _optional_int(ship.get("cargoCapacity")) if isinstance(ship, Mapping) else None
+    free = max(0, capacity - used) if capacity is not None else None
+
+    limpets = 0
+    regular_items: list[dict[str, Any]] = []
+    stolen_items: list[dict[str, Any]] = []
+    available_for_missions: dict[str, int] = {}
+    for item in aggregated.values():
+        key = str(item["key"])
+        count = max(0, int(item["count"]))
+        stolen = max(0, min(count, int(item["stolen"])))
+        legal_count = max(0, count - stolen)
+        if key in {"drones", "limpet", "limpets"}:
+            limpets += count
+            continue
+        available_for_missions[key] = legal_count
+        if legal_count > 0:
+            regular_items.append({"key": key, "name": item["name"], "count": legal_count, "missionCount": int(item["missionCount"])})
+        if stolen > 0:
+            stolen_items.append({"key": key, "name": item["name"], "count": stolen})
+
+    regular_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
+    stolen_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
+
+    needs_by_commodity: dict[str, dict[str, Any]] = {}
+    for mission in _cargo_mission_rows(cmdr):
+        count = max(0, int(mission.get("count") or 0))
+        delivered = max(0, min(count, int(mission.get("delivered") or 0)))
+        remaining = max(0, count - delivered)
+        if remaining <= 0:
+            continue
+        key = str(mission.get("commodity") or "")
+        if not key:
+            continue
+        row = needs_by_commodity.setdefault(key, {
+            "key": key,
+            "name": str(mission.get("commodityName") or _commodity_display(key)),
+            "required": 0,
+            "delivered": 0,
+            "remaining": 0,
+            "missionCount": 0,
+            "missions": [],
+        })
+        row["required"] += count
+        row["delivered"] += delivered
+        row["remaining"] += remaining
+        row["missionCount"] += 1
+        row["missions"].append({
+            "missionId": int(mission["missionId"]),
+            "required": count,
+            "delivered": delivered,
+            "remaining": remaining,
+            "wing": bool(mission.get("wing")),
+            "destinationSystem": str(mission.get("destinationSystem") or ""),
+            "destinationStation": str(mission.get("destinationStation") or ""),
+            "name": str(mission.get("localisedName") or mission.get("name") or ""),
+        })
+
+    mission_needs: list[dict[str, Any]] = []
+    for key, row in needs_by_commodity.items():
+        remaining = max(0, int(row["remaining"]))
+        in_hold = min(remaining, max(0, int(available_for_missions.get(key) or 0)))
+        still_needed = max(0, remaining - in_hold)
+        row["inHold"] = in_hold
+        row["stillNeeded"] = still_needed
+        row["ready"] = still_needed == 0
+        mission_needs.append(row)
+    mission_needs.sort(key=lambda row: (int(row["stillNeeded"]) == 0, -int(row["stillNeeded"]), str(row["name"]).casefold()))
+
+    return {
+        "vessel": "Ship",
+        "used": used,
+        "capacity": capacity,
+        "free": free,
+        "limpets": limpets,
+        "items": regular_items,
+        "stolenItems": stolen_items,
+        "missionNeeds": mission_needs,
+        "trackedMissionCount": len(_cargo_mission_rows(cmdr)),
+        "updatedAt": str(timestamp or "").strip() or None,
+    }
+
+
+def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None) -> None:
+    cargo = _build_local_cargo_state(cmdr, state, timestamp)
+    if cargo is None:
+        return
+    with _hud_condition:
+        _hud_state["cargo"] = cargo
+        _hud_condition.notify_all()
 
 
 def _decimal_text(value: Any) -> Optional[str]:
