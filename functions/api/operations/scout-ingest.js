@@ -19,7 +19,8 @@ const ACCEPTED_EVENTS = new Set(['FSDJump','Location','CarrierJump']);
 const MAX_FACTIONS = 20;
 const MAX_CONFLICTS = 12;
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   if (!storageReady(env)) {
     const error = env?.DAILY_ORDERS ? 'daily_orders_binding_invalid' : 'daily_orders_binding_missing';
     console.error('Mongrel Scout ingest cannot access DAILY_ORDERS', {
@@ -93,93 +94,26 @@ export async function onRequestPost({ request, env }) {
       scoutLabel:auth.label,
     };
     updateConflictHistory(state, snapshot);
-    await env.DAILY_ORDERS.put(SNAPSHOTS_KEY, JSON.stringify(state));
-  }
-
-  await noteTokenUse(env, auth.id, snapshot);
-  let scoutJob=null;
-  if(stored){
-    try{
-      const result=await recordScoutObservation(env,{
+    try {
+      await env.DAILY_ORDERS.put(SNAPSHOTS_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error('Mongrel Scout snapshot write failed', error);
+      return reply({
+        ok:false,
+        error:'scout_snapshot_write_failed',
         system:snapshot.system,
-        systemAddress:snapshot.systemAddress,
-        coords:snapshot.starPos,
-        ownerId:auth.ownerId||'',
-        commander:auth.ownerCommander||auth.label||'Mongrel Scout',
-        tokenId:auth.id,
-        tokenLabel:auth.label,
-        observedAt:snapshot.updatedAt,
-        receivedAt:new Date().toISOString(),
-      });
-      scoutJob={
-        recorded:Boolean(result.recorded),
-        duplicate:Boolean(result.duplicate),
-        status:result.status||result.observation?.status||'',
-        rewardWinner:Boolean(result.winner&&result.winner.observationId===(result.observation?.id||'')),
-        cycleId:result.cycleId||'',
-      };
-    }catch(error){
-      console.error('Could not apply Scout Job observation',error);
-      scoutJob={recorded:false,status:'job_processing_failed'};
+      }, 503);
     }
   }
 
-  let automaticRewards=null;
-  if(stored&&scoutJob?.recorded){
-    try{
-      automaticRewards=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · Live Scout'});
-    }catch(error){
-      console.error('Could not automatically issue verified rewards after Scout observation',error);
-    }
-  }
-
-  let rewardDiscord=null;
-  if(Number(automaticRewards?.created)>0){
-    try{
-      const rewardView=await loadRewardDiscordView(env);
-      const adminUrl=new URL('/wolf-bgs/',request.url);
-      adminUrl.hash='reward-engine';
-      rewardDiscord=await syncRewardDiscordBoard(env,{
-        view:rewardView,
-        adminUrl:adminUrl.toString(),
-        rewardsUrl:new URL('/rewards/',request.url).toString(),
-        createMissing:false,
-      });
-    }catch(error){
-      console.error('Scout reward was issued but Rewards Discord refresh failed',error);
-    }
-  }
-
-  let bgsDiscord=null;
-  if(stored){
-    try{
-      const bgsView=await loadBgsDiscordView(request,env);
-      bgsDiscord=await syncBgsDiscordBoard(env,{
-        view:bgsView,
-        missionControlUrl:new URL('/operations/#all-systems',request.url).toString(),
-        createMissing:false,
-      });
-    }catch(error){
-      console.error('Live Scout snapshot saved but BGS Discord refresh failed',error);
-    }
-  }
-
-  let scoutDiscord=null;
-  if(stored&&scoutJob?.recorded){
-    try{
-      const systems=await loadActiveMongrelSystems(request);
-      const board=await buildScoutJobBoard(env,{systems,viewer:null,now:new Date()});
-      scoutDiscord=await syncScoutDiscordBoard(env,{
-        board,
-        scoutBoardUrl:new URL('/scout-jobs/',request.url).toString(),
-        setupUrl:new URL('/member/?section=live-scout-setup#live-scout-setup',request.url).toString(),
-        createMissing:false,
-        originSystem:'Diaba',
-        ordinaryLimit:15,
-      });
-    }catch(error){
-      console.error('Live Scout observation saved but Scout Discord refresh failed',error);
-    }
+  // System freshness is the critical path. Everything below is bookkeeping,
+  // rewards, or Discord presentation and must never make an in-game jump upload fail.
+  const postProcess = processAcceptedBgsSnapshot({request,env,auth,snapshot,stored});
+  if (typeof context.waitUntil === 'function') {
+    context.waitUntil(postProcess);
+  } else {
+    // Local/test runtimes without waitUntil still get deterministic behavior.
+    await postProcess;
   }
 
   return reply({
@@ -189,12 +123,100 @@ export async function onRequestPost({ request, env }) {
     system:snapshot.system,
     updatedAt:snapshot.updatedAt,
     scout:auth.label,
-    scoutJob,
-    automaticRewards,
-    rewardDiscord,
-    scoutDiscord,
-    bgsDiscord,
+    postProcessing:stored?'scheduled':'not_needed',
   }, 200);
+}
+
+
+async function processAcceptedBgsSnapshot({request,env,auth,snapshot,stored}) {
+  try {
+    await noteTokenUse(env, auth.id, snapshot);
+
+    let scoutJob=null;
+    if(stored){
+      try{
+        const result=await recordScoutObservation(env,{
+          system:snapshot.system,
+          systemAddress:snapshot.systemAddress,
+          coords:snapshot.starPos,
+          ownerId:auth.ownerId||'',
+          commander:auth.ownerCommander||auth.label||'Mongrel Scout',
+          tokenId:auth.id,
+          tokenLabel:auth.label,
+          observedAt:snapshot.updatedAt,
+          receivedAt:new Date().toISOString(),
+        });
+        scoutJob={
+          recorded:Boolean(result.recorded),
+          duplicate:Boolean(result.duplicate),
+          status:result.status||result.observation?.status||'',
+          rewardWinner:Boolean(result.winner&&result.winner.observationId===(result.observation?.id||'')),
+          cycleId:result.cycleId||'',
+        };
+      }catch(error){
+        console.error('Could not apply Scout Job observation',error);
+        scoutJob={recorded:false,status:'job_processing_failed'};
+      }
+    }
+
+    let automaticRewards=null;
+    if(stored&&scoutJob?.recorded){
+      try{
+        automaticRewards=await reconcileAutomaticRewardEntries(env,{actor:'Reward Engine · Live Scout'});
+      }catch(error){
+        console.error('Could not automatically issue verified rewards after Scout observation',error);
+      }
+    }
+
+    if(Number(automaticRewards?.created)>0){
+      try{
+        const rewardView=await loadRewardDiscordView(env);
+        const adminUrl=new URL('/wolf-bgs/',request.url);
+        adminUrl.hash='reward-engine';
+        await syncRewardDiscordBoard(env,{
+          view:rewardView,
+          adminUrl:adminUrl.toString(),
+          rewardsUrl:new URL('/rewards/',request.url).toString(),
+          createMissing:false,
+        });
+      }catch(error){
+        console.error('Scout reward was issued but Rewards Discord refresh failed',error);
+      }
+    }
+
+    if(stored){
+      try{
+        const bgsView=await loadBgsDiscordView(request,env);
+        await syncBgsDiscordBoard(env,{
+          view:bgsView,
+          missionControlUrl:new URL('/operations/#all-systems',request.url).toString(),
+          createMissing:false,
+        });
+      }catch(error){
+        console.error('Live Scout snapshot saved but BGS Discord refresh failed',error);
+      }
+    }
+
+    if(stored&&scoutJob?.recorded){
+      try{
+        const systems=await loadActiveMongrelSystems(request);
+        const board=await buildScoutJobBoard(env,{systems,viewer:null,now:new Date()});
+        await syncScoutDiscordBoard(env,{
+          board,
+          scoutBoardUrl:new URL('/scout-jobs/',request.url).toString(),
+          setupUrl:new URL('/member/?section=live-scout-setup#live-scout-setup',request.url).toString(),
+          createMissing:false,
+          originSystem:'Diaba',
+          ordinaryLimit:15,
+        });
+      }catch(error){
+        console.error('Live Scout observation saved but Scout Discord refresh failed',error);
+      }
+    }
+  } catch (error) {
+    // Background integrations are intentionally non-fatal to the accepted snapshot.
+    console.error('Mongrel Scout post-ingest processing failed',error);
+  }
 }
 
 
