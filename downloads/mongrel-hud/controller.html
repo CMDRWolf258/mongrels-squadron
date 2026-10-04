@@ -191,6 +191,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 (function(){
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
+var controllerTab="hud";
+function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -235,16 +237,34 @@ function render(){
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
   var layout=state.layout||{},panels=layout.panels||{};
   renderLayoutControls(layout);
-  var voice=state.voice||{},voiceStatus=state.voiceStatus||{},voiceCues=voice.cues||{};
+  var voice=state.voice||{},voiceStatus=state.voiceStatus||{},voiceCues=voice.cues||{},voiceCatalog=Array.isArray(state.voiceCatalog)?state.voiceCatalog:[];
   var voiceMaster=el("voiceMaster"),carrierPa=el("carrierPaToggle");
   setText(voiceMaster,voice.enabled===false?"VOICE OFF":"VOICE ON");voiceMaster.classList.toggle("active",voice.enabled!==false);
   setText(carrierPa,voice.carrierPa===false?"CARRIER PA OFF":"CARRIER PA ON");carrierPa.classList.toggle("active",voice.carrierPa!==false);
   var volume=Number.isFinite(Number(voice.volume))?Math.max(0,Math.min(100,Number(voice.volume))):75;
   if(document.activeElement!==el("voiceVolume"))el("voiceVolume").value=String(volume);
   setText(el("voiceVolumeValue"),Math.round(volume)+"%");
-  document.querySelectorAll("[data-voice-cue]").forEach(function(row){var cue=row.getAttribute("data-voice-cue"),cfg=voiceCues[cue]||{},enabled=row.querySelector("[data-voice-enabled]"),minimum=row.querySelector("[data-voice-min]"),maximum=row.querySelector("[data-voice-max]"),cooldown=row.querySelector("[data-voice-cooldown]");if(enabled&&document.activeElement!==enabled)enabled.checked=Boolean(cfg.enabled);if(minimum&&document.activeElement!==minimum)minimum.value=String(cfg.minDelay??0);if(maximum&&document.activeElement!==maximum)maximum.value=String(cfg.maxDelay??0);if(cooldown&&document.activeElement!==cooldown)cooldown.value=String(cfg.cooldown??0)});
+  var rate=Number.isFinite(Number(voice.rate))?Math.max(-3,Math.min(3,Number(voice.rate))):0;
+  if(document.activeElement!==el("voiceRate"))el("voiceRate").value=String(rate);
+  setText(el("voiceRateValue"),String(Math.round(rate)));
+  var voiceSelect=el("voiceSelect"),selectedVoice=String(voice.voiceName||"");
+  if(document.activeElement!==voiceSelect){
+    var voiceOptions=['<option value="">System default</option>'].concat(voiceCatalog.map(function(v){var meta=[v.culture,v.gender].filter(Boolean).join(" · ");return '<option value="'+escapeAttr(v.name||"")+'">'+escapeHtml(v.name||"Windows voice")+(meta?" · "+escapeHtml(meta):"")+'</option>'}));
+    if(selectedVoice&&!voiceCatalog.some(function(v){return v&&v.name===selectedVoice}))voiceOptions.push('<option value="'+escapeAttr(selectedVoice)+'">'+escapeHtml(selectedVoice)+' · unavailable</option>');
+    var voiceHtml=voiceOptions.join("");if(voiceSelect.innerHTML!==voiceHtml)voiceSelect.innerHTML=voiceHtml;voiceSelect.value=selectedVoice;
+  }
+  setText(el("voiceCatalogStatus"),voiceCatalog.length?(voiceCatalog.length+" Windows voice"+(voiceCatalog.length===1?"":"s")+" available to Mongrel HUD"):(voiceStatus.catalogError?("Voice list unavailable · "+String(voiceStatus.catalogError).replaceAll("_"," ")):"No Windows System.Speech voices reported yet"));
+  document.querySelectorAll("[data-voice-cue]").forEach(function(row){
+    var cue=row.getAttribute("data-voice-cue"),cfg=voiceCues[cue]||{},enabled=row.querySelector("[data-voice-enabled]"),phrase=row.querySelector("[data-voice-phrase]"),minimum=row.querySelector("[data-voice-min]"),maximum=row.querySelector("[data-voice-max]"),cooldown=row.querySelector("[data-voice-cooldown]"),offset=row.querySelector("[data-voice-offset]");
+    if(enabled&&document.activeElement!==enabled)enabled.checked=Boolean(cfg.enabled);
+    if(phrase&&document.activeElement!==phrase&&phrase.value!==String(cfg.phrase||""))phrase.value=String(cfg.phrase||"");
+    if(minimum&&document.activeElement!==minimum)minimum.value=String(cfg.minDelay??0);
+    if(maximum&&document.activeElement!==maximum)maximum.value=String(cfg.maxDelay??0);
+    if(cooldown&&document.activeElement!==cooldown)cooldown.value=String(cfg.cooldown??0);
+    if(offset&&document.activeElement!==offset)offset.value=String(cfg.offsetSeconds??180);
+  });
   var owner=((state.scout||{}).ownerCarrier||{}),carrierName=owner.name||owner.callsign||"Own carrier";
-  var runtime=voiceStatus.speaking?"Speaking now":Number(voiceStatus.queued)>0?(Number(voiceStatus.queued)+" queued"):"Ready";
+  var runtime=voiceStatus.speaking?"Speaking now":Number(voiceStatus.queued)>0?(Number(voiceStatus.queued)+" queued"):Number(voiceStatus.scheduled)>0?(Number(voiceStatus.scheduled)+" scheduled"):"Ready";
   if(voiceStatus.lastError)runtime="Voice error · "+String(voiceStatus.lastError).replaceAll("_"," ");
   setText(el("voiceRuntime"),carrierName+" · "+runtime+(voiceStatus.lastCue?" · last: "+String(voiceStatus.lastCue).replaceAll("."," "):""));
   var scout=state.scout||{},own=scout.ship||{},target=scout.target||{},status=scout.status||{};
@@ -342,11 +362,26 @@ async function mutate(path,body){
 }
 el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
 document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
+el("hudTabButton").onclick=function(){showControllerTab("hud")};
+el("carrierTabButton").onclick=function(){showControllerTab("carrier")};
 el("voiceMaster").onclick=async function(){try{var r=await mutate("/api/voice",function(){return {enabled:!(state&&state.voice&&state.voice.enabled!==false)}});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Voice setting saved"}catch(e){el("voiceNotice").textContent="Voice setting failed · "+e.message}};
 el("carrierPaToggle").onclick=async function(){try{var r=await mutate("/api/voice",function(){return {carrierPa:!(state&&state.voice&&state.voice.carrierPa!==false)}});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Carrier PA setting saved"}catch(e){el("voiceNotice").textContent="Carrier PA setting failed · "+e.message}};
 el("voiceVolume").onchange=async function(){try{var r=await mutate("/api/voice",{volume:Number(el("voiceVolume").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="PA volume saved"}catch(e){el("voiceNotice").textContent="Volume save failed · "+e.message}};
-el("voiceTest").onclick=async function(){try{await api("/api/voice-test",{});el("voiceNotice").textContent="Test voice queued"}catch(e){el("voiceNotice").textContent="Voice test failed · "+e.message}};
-document.querySelectorAll("[data-voice-cue]").forEach(function(row){var save=async function(){var cue=row.getAttribute("data-voice-cue"),enabled=row.querySelector("[data-voice-enabled]"),minimum=row.querySelector("[data-voice-min]"),maximum=row.querySelector("[data-voice-max]"),cooldown=row.querySelector("[data-voice-cooldown]"),change={enabled:Boolean(enabled&&enabled.checked),minDelay:Number(minimum&&minimum.value),maxDelay:Number(maximum&&maximum.value),cooldown:Number(cooldown&&cooldown.value)};try{var cues={};cues[cue]=change;var r=await mutate("/api/voice",{cues:cues});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Carrier PA timing saved"}catch(e){el("voiceNotice").textContent="Timing save failed · "+e.message}};row.querySelectorAll("input").forEach(function(input){input.onchange=save})});
+el("voiceRate").onchange=async function(){try{var r=await mutate("/api/voice",{rate:Number(el("voiceRate").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Speech rate saved"}catch(e){el("voiceNotice").textContent="Speech rate save failed · "+e.message}};
+el("voiceSelect").onchange=async function(){try{var r=await mutate("/api/voice",{voiceName:el("voiceSelect").value||""});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Windows voice saved"}catch(e){el("voiceNotice").textContent="Voice selection failed · "+e.message}};
+el("voiceTest").onclick=async function(){try{await api("/api/voice-test",{});el("voiceNotice").textContent="Selected voice test queued"}catch(e){el("voiceNotice").textContent="Voice test failed · "+e.message}};
+document.querySelectorAll("[data-voice-cue]").forEach(function(row){
+  var cue=row.getAttribute("data-voice-cue");
+  var save=async function(){
+    var enabled=row.querySelector("[data-voice-enabled]"),phrase=row.querySelector("[data-voice-phrase]"),minimum=row.querySelector("[data-voice-min]"),maximum=row.querySelector("[data-voice-max]"),cooldown=row.querySelector("[data-voice-cooldown]"),offset=row.querySelector("[data-voice-offset]");
+    var change={enabled:Boolean(enabled&&enabled.checked),phrase:String(phrase&&phrase.value||""),minDelay:Number(minimum&&minimum.value),maxDelay:Number(maximum&&maximum.value),cooldown:Number(cooldown&&cooldown.value)};
+    if(offset)change.offsetSeconds=Number(offset.value);
+    try{var cues={};cues[cue]=change;var r=await mutate("/api/voice",{cues:cues});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Carrier PA cue saved"}catch(e){el("voiceNotice").textContent="Carrier PA save failed · "+e.message}
+  };
+  [row.querySelector("[data-voice-enabled]"),row.querySelector("[data-voice-phrase]"),row.querySelector("[data-voice-min]"),row.querySelector("[data-voice-max]"),row.querySelector("[data-voice-cooldown]"),row.querySelector("[data-voice-offset]")].filter(Boolean).forEach(function(input){input.onchange=save});
+  var test=row.querySelector("[data-voice-test-cue]");if(test)test.onclick=async function(){try{await api("/api/voice-test-cue",{cue:cue});el("voiceNotice").textContent="Phrase test queued"}catch(e){el("voiceNotice").textContent="Phrase test failed · "+e.message}};
+  var reset=row.querySelector("[data-voice-reset]");if(reset)reset.onclick=async function(){var cfg=((state&&state.voice&&state.voice.cues)||{})[cue]||{};try{var cues={};cues[cue]={phrase:String(cfg.defaultPhrase||"")};var r=await mutate("/api/voice",{cues:cues});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Phrase reset to default"}catch(e){el("voiceNotice").textContent="Phrase reset failed · "+e.message}};
+});
 document.addEventListener("touchstart",function(){holdRefresh(1200)},{passive:true});
 document.addEventListener("pointerdown",function(){holdRefresh(900)},{passive:true});
 el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
@@ -365,7 +400,7 @@ el("ackOrderAlerts").onclick=function(){return ackAlertKind("orders")};
 el("setCenter").onclick=async function(){try{var signal=Number(el("centerSignal").value||0);if(!signal)throw new Error("signal_required");var r=await api("/api/site-center",{siteNumber:signal});el("siteNotice").textContent="Center saved for Signal #"+signal+" · "+Number(r.site.latitude).toFixed(6)+", "+Number(r.site.longitude).toFixed(6);el("depositSignal").value=signal;await api("/api/location-select",{signal:signal});await load()}catch(e){el("siteNotice").textContent=e.message}};
 el("depositCommodity").onchange=function(){var other=el("depositCommodityOther"),show=el("depositCommodity").value==="__other";other.classList.toggle("hidden",!show);if(show)other.focus()};
 el("reportDeposit").onclick=async function(){var notice=el("depositNotice");try{var selected=el("depositCommodity").value,commodity=selected==="__other"?el("depositCommodityOther").value.trim():selected;if(!commodity)throw new Error("commodity_required");var signal=Number(el("depositSignal").value||0),rigs=Number(el("rigs").value||1),rigLabel=rigs>=7?"7+":String(rigs);var r=await api("/api/deposit",{commodity:commodity,signal:signal,rigs:rigs,notes:el("notes").value});var status=String(r.deposit.status||"");notice.className="notice "+(status==="duplicate_review"?"review":"success");notice.textContent=status==="duplicate_review"?("POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="existing"?("ALREADY RECORDED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):("SAVED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal);el("depositCommodity").value="";el("depositCommodityOther").value="";el("depositCommodityOther").classList.add("hidden");el("rigs").value="1";el("notes").value="";await load()}catch(e){notice.className="notice";notice.textContent=e.message}};
-load();setInterval(load,1000);
+showControllerTab("hud");load();setInterval(load,1000);
 })();
 </script>
 </body>
