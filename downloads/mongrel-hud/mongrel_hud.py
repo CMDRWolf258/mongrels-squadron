@@ -151,14 +151,15 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
 VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
-    "surface": "SURFACE MINING",
+    "surface": "SURFACE NAVIGATION",
+    "miningintel": "MINING INTEL",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -179,6 +180,7 @@ def default_layout() -> dict[str, Any]:
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
+            "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -1668,6 +1670,65 @@ class MongrelHudApp:
             y += 16 * scale
         return width, round(max(y + 5 * scale, compass_cy + compass_radius + 18 * scale))
 
+    def _render_miningintel_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        status = state.get("status") or {}
+        width = round(470 * scale)
+        y = self._draw_title(canvas, "MINING INTEL", scale, width)
+
+        sites = self.sites_for_current_body()
+        if not sites:
+            message = "NO APPROVED COORDINATES ON THIS BODY" if self._in_ten16(state) else "AVAILABLE IN 10-16"
+            self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+
+        lat, lon, radius = status.get("latitude"), status.get("longitude"), status.get("planetRadius")
+        active = self.active_site()
+        active_id = int(active.get("id") or 0) if isinstance(active, dict) else 0
+        ranked: list[tuple[float | None, dict[str, Any]]] = []
+        for site in sites:
+            distance = None
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)) and isinstance(radius, (int, float)):
+                nav = great_circle_nav(float(lat), float(lon), float(site["latitude"]), float(site["longitude"]), float(radius))
+                distance = float(nav["distance"])
+            ranked.append((distance, site))
+        ranked.sort(key=lambda item: (
+            item[0] is None,
+            item[0] if item[0] is not None else float("inf"),
+            not bool(item[1].get("preferred")),
+            -int(item[1].get("rigs") or 0),
+        ))
+
+        self._draw_text(canvas, 8 * scale, y, f"{len(sites)} KNOWN SPOT{'S' if len(sites) != 1 else ''}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y, "NEAREST 5", scale, 8, HUD_MUTED, True, "ne")
+        y += 22 * scale
+
+        for distance, site in ranked[:5]:
+            selected = int(site.get("id") or 0) == active_id
+            marker = "TARGET" if selected else ("PRIMARY" if site.get("preferred") else "")
+            commodity = str(site.get("commodity") or "Mining spot")
+            signal = int(site.get("signal") or 0)
+            rigs = site.get("rigs")
+            left = f"#{signal} · {commodity}"
+            if isinstance(rigs, int):
+                left += f" · {rigs}R"
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(left, 46), scale, 10, HUD_CYAN if selected else HUD_WHITE, True)
+            if distance is not None:
+                self._draw_text(canvas, width - 8 * scale, y, format_distance(distance), scale, 9, HUD_CYAN if selected else HUD_MUTED, True, "ne")
+            y += 17 * scale
+            detail_parts = []
+            if marker:
+                detail_parts.append(marker)
+            notes = str(site.get("notes") or "").strip()
+            if notes:
+                detail_parts.append(self.clip_line(notes, 58))
+            if detail_parts:
+                self._draw_text(canvas, 18 * scale, y, " · ".join(detail_parts), scale, 8, HUD_AMBER if selected else HUD_MUTED, selected)
+                y += 15 * scale
+            y += 3 * scale
+
+        return width, round(y + 5 * scale)
+
     def _render_own_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
         own, status = state.get("ship") or {}, state.get("status") or {}
@@ -2076,6 +2137,8 @@ class MongrelHudApp:
             width, height = self._render_loadout_canvas(canvas, scale)
         elif panel_id == "surface":
             width, height = self._render_surface_canvas(canvas, scale)
+        elif panel_id == "miningintel":
+            width, height = self._render_miningintel_canvas(canvas, scale)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
