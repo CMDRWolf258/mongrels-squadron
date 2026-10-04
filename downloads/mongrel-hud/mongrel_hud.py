@@ -1628,11 +1628,24 @@ class MongrelHudApp:
 
         return width, round(y + 3 * scale)
 
+    @staticmethod
+    def _system_distance_ly(a: Any, b: Any) -> float | None:
+        if not isinstance(a, list) or not isinstance(b, list) or len(a) < 3 or len(b) < 3:
+            return None
+        try:
+            left = [float(value) for value in a[:3]]
+            right = [float(value) for value in b[:3]]
+        except (TypeError, ValueError):
+            return None
+        if not all(math.isfinite(value) for value in (*left, *right)):
+            return None
+        return math.sqrt(sum((left[index] - right[index]) ** 2 for index in range(3)))
+
     def _render_scoutboard_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
         feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
         scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
-        width = round(600 * scale)
+        width = round(520 * scale)
         y = self._draw_title(canvas, "SCOUT BOARD", scale, width)
         if not scout:
             self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
@@ -1640,12 +1653,12 @@ class MongrelHudApp:
 
         summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
         self._draw_text(canvas, 8 * scale, y, f"AVAILABLE {int(summary.get('available') or 0)}", scale, 9, HUD_WHITE, True)
-        self._draw_text(canvas, 178 * scale, y, f"CLAIMED {int(summary.get('claimed') or 0)}", scale, 9, HUD_WHITE, True)
+        self._draw_text(canvas, 145 * scale, y, f"CLAIMED {int(summary.get('claimed') or 0)}", scale, 9, HUD_WHITE, True)
         self._draw_text(canvas, width - 8 * scale, y, f"PRIORITY {int(summary.get('priority') or 0)}", scale, 9, HUD_AMBER, True, "ne")
         y += 23 * scale
 
         self._draw_text(canvas, 8 * scale, y, "SYSTEM", scale, 8, HUD_MUTED, True)
-        self._draw_text(canvas, 370 * scale, y, "STATUS", scale, 8, HUD_MUTED, True, "ne")
+        self._draw_text(canvas, 320 * scale, y, "STATUS", scale, 8, HUD_MUTED, True, "ne")
         self._draw_text(canvas, width - 8 * scale, y, "REWARD", scale, 8, HUD_MUTED, True, "ne")
         y += 17 * scale
 
@@ -1660,8 +1673,8 @@ class MongrelHudApp:
             reward = float(row.get("rewardMillions") or 0)
             reward_text = f"{reward:g}M CR" if reward > 0 else "—"
             status_color = HUD_AMBER if ("PRIORITY" in status or row.get("claimMine")) else HUD_CYAN
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(system, 42), scale, 10, HUD_WHITE, True)
-            self._draw_text(canvas, 370 * scale, y, self.clip_line(status or "OPEN", 22), scale, 9, status_color, True, "ne")
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(system, 35), scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, 320 * scale, y, self.clip_line(status or "OPEN", 18), scale, 9, status_color, True, "ne")
             self._draw_text(canvas, width - 8 * scale, y, reward_text, scale, 10, HUD_GREEN if reward > 0 else HUD_MUTED, True, "ne")
             y += 18 * scale
 
@@ -1673,11 +1686,59 @@ class MongrelHudApp:
             bonus = str(row.get("bonusReason") or "").strip()
             detail = " · ".join(part for part in (claim, bonus) if part)
             if detail:
-                self._draw_text(canvas, 18 * scale, y, self.clip_line(detail, 66), scale, 8, HUD_AMBER if row.get("claimMine") else HUD_MUTED, bool(row.get("claimMine")))
+                self._draw_text(canvas, 18 * scale, y, self.clip_line(detail, 56), scale, 8, HUD_AMBER if row.get("claimMine") else HUD_MUTED, bool(row.get("claimMine")))
                 y += 15 * scale
             y += 4 * scale
 
         return width, round(y + 4 * scale)
+
+    def _render_scoutnearby_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
+        width = round(520 * scale)
+        y = self._draw_title(canvas, "NEAREST SCOUT JOBS", scale, width)
+        if not scout:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+
+        origin = scout.get("origin") if isinstance(scout.get("origin"), dict) else {}
+        local_system = state.get("system") if isinstance(state.get("system"), dict) else {}
+        origin_coords = local_system.get("starPos") if isinstance(local_system.get("starPos"), list) else origin.get("coords")
+        origin_name = str(local_system.get("name") or origin.get("system") or "").strip()
+        if not isinstance(origin_coords, list):
+            self._draw_text(canvas, 8 * scale, y, "CURRENT SYSTEM COORDINATES UNAVAILABLE", scale, 9, HUD_AMBER, True)
+            return width, round(y + 30 * scale)
+
+        self._draw_text(canvas, 8 * scale, y, f"FROM {self.clip_line(origin_name or 'CURRENT SYSTEM', 44)}", scale, 9, HUD_MUTED, True); y += 20 * scale
+        self._draw_text(canvas, 8 * scale, y, "SYSTEM", scale, 8, HUD_MUTED, True)
+        self._draw_text(canvas, 390 * scale, y, "DISTANCE", scale, 8, HUD_MUTED, True, "ne")
+        self._draw_text(canvas, width - 8 * scale, y, "REWARD", scale, 8, HUD_MUTED, True, "ne"); y += 17 * scale
+
+        ranked: list[tuple[float, dict[str, Any]]] = []
+        for row in (scout.get("jobs") if isinstance(scout.get("jobs"), list) else []):
+            if not isinstance(row, dict):
+                continue
+            distance = self._system_distance_ly(origin_coords, row.get("coords"))
+            if distance is None:
+                continue
+            if origin_name and str(row.get("system") or "").strip().casefold() == origin_name.casefold():
+                continue
+            ranked.append((distance, row))
+        ranked.sort(key=lambda item: (item[0], -float(item[1].get("rewardMillions") or 0), str(item[1].get("system") or "")))
+
+        if not ranked:
+            self._draw_text(canvas, 8 * scale, y, "NO DISTANCE-RANKED SCOUT JOBS", scale, 10, HUD_MUTED, True)
+            return width, round(y + 28 * scale)
+
+        for distance, row in ranked[:8]:
+            reward = float(row.get("rewardMillions") or 0)
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(row.get("system") or "System", 36), scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, 390 * scale, y, f"{distance:.2f} LY", scale, 9, HUD_CYAN, True, "ne")
+            self._draw_text(canvas, width - 8 * scale, y, f"{reward:g}M CR" if reward > 0 else "—", scale, 9, HUD_GREEN if reward > 0 else HUD_MUTED, True, "ne")
+            y += 19 * scale
+
+        return width, round(y + 5 * scale)
 
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
@@ -1715,8 +1776,12 @@ class MongrelHudApp:
             width, height = self._render_trade_canvas(canvas, scale)
         elif panel_id == "scoutboard":
             width, height = self._render_scoutboard_canvas(canvas, scale)
+        elif panel_id == "scoutnearby":
+            width, height = self._render_scoutnearby_canvas(canvas, scale)
         elif panel_id == "alerts":
             width, height = self._render_alerts_canvas(canvas, scale, flash_on)
+        elif panel_id == "orderalerts":
+            width, height = self._render_orderalerts_canvas(canvas, scale, flash_on)
         else:
             width, height = self._render_generic_canvas(canvas, panel_id, scale)
         canvas.configure(width=max(40, width), height=max(24, height))
