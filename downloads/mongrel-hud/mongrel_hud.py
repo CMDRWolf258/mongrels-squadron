@@ -37,14 +37,14 @@ except Exception:
     RapidOCR = None
     OCR_AVAILABLE = False
 
-APP_VERSION = "0.7.3"
+APP_VERSION = "0.7.4"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
-MINING_DATA_URL = "https://ten16-archive.pages.dev/api/mining"
-MINING_CENTERS_URL = "https://ten16-archive.pages.dev/api/mining-centers"
+MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
+MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
@@ -950,26 +950,34 @@ class MongrelHudApp:
             self.store.data["profile"] = profile
             self.store.save()
 
+    def _load_mining_bridge_payload(self, url: str, invalid_error: str) -> list[dict[str, Any]]:
+        request = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Cache-Control": "no-cache",
+                "User-Agent": f"MongrelHUD/{APP_VERSION}",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(request, timeout=8.0) as response:
+            envelope = json.load(response)
+        if not isinstance(envelope, dict) or envelope.get("ok") is not True:
+            error = str(envelope.get("error") if isinstance(envelope, dict) else invalid_error)
+            raise ValueError(error or invalid_error)
+        payload = envelope.get("data")
+        if not isinstance(payload, list):
+            raise ValueError(invalid_error)
+        return payload
+
     def _refresh_mining_data_once(self) -> bool:
-        headers = {
-            "Accept": "application/json",
-            "Cache-Control": "no-cache",
-            "User-Agent": f"MongrelHUD/{APP_VERSION}",
-        }
         deposit_error = ""
         center_error = ""
         deposit_ok = False
         center_ok = False
 
         try:
-            with urllib.request.urlopen(
-                urllib.request.Request(MINING_DATA_URL, headers=headers, method="GET"),
-                timeout=6.0,
-            ) as response:
-                payload = json.load(response)
-            if not isinstance(payload, list):
-                raise ValueError("invalid_mining_payload")
-
+            payload = self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")
             rows: list[dict[str, Any]] = []
             for raw in payload:
                 if not isinstance(raw, dict):
@@ -1002,14 +1010,7 @@ class MongrelHudApp:
             deposit_error = str(exc)[:120]
 
         try:
-            with urllib.request.urlopen(
-                urllib.request.Request(MINING_CENTERS_URL, headers=headers, method="GET"),
-                timeout=6.0,
-            ) as response:
-                center_payload = json.load(response)
-            if not isinstance(center_payload, list):
-                raise ValueError("invalid_mining_centers_payload")
-
+            center_payload = self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")
             centers: list[dict[str, Any]] = []
             for raw in center_payload:
                 if not isinstance(raw, dict):
