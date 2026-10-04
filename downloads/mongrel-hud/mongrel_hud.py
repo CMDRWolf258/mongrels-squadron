@@ -3146,10 +3146,11 @@ class MongrelHudApp:
                     text = "Downloading update…"
                 elif snapshot.get("checking"):
                     text = "Checking for updates…"
+                elif snapshot.get("error"):
+                    error = str(snapshot.get("error") or "")
+                    text = "Update check unavailable" if error == "update_check_failed" else f"Update error: {error.replace('_', ' ')}"
                 elif snapshot.get("available"):
                     text = f"Update available: v{snapshot.get('version')}"
-                elif snapshot.get("error"):
-                    text = "Update check unavailable"
                 else:
                     text = f"Version {APP_VERSION} · up to date"
                 self.update_label.config(text=text)
@@ -3190,7 +3191,8 @@ class MongrelHudApp:
                 error="",
             )
         except Exception as exc:
-            self._set_update_status(checking=False, available=False, error=type(exc).__name__ if manual else "update_check_failed")
+            error = str(exc).strip() or type(exc).__name__
+            self._set_update_status(checking=False, available=False, error=error if manual else "update_check_failed")
 
     def install_available_update(self) -> None:
         with self.update_lock:
@@ -3242,7 +3244,10 @@ class MongrelHudApp:
             script.write_text(
                 """param([int]$ProcessId,[string]$Target,[string]$Staged)
 $ErrorActionPreference='Stop'
-try { Wait-Process -Id $ProcessId -Timeout 45 -ErrorAction SilentlyContinue } catch {}
+for ($i=0; $i -lt 450; $i++) {
+  if (-not (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { break }
+  Start-Sleep -Milliseconds 100
+}
 $backup=$Target + '.old'
 try {
   if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force }
@@ -3272,7 +3277,7 @@ try {
             if self.root:
                 self.root.after(250, self.root.destroy)
         except Exception as exc:
-            self._set_update_status(installing=False, error=type(exc).__name__)
+            self._set_update_status(installing=False, error=str(exc).strip() or type(exc).__name__)
 
     def regenerate_pin(self) -> None:
         # A new PIN is only for adding another device. Existing trusted devices
