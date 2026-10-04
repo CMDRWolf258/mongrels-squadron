@@ -1,6 +1,6 @@
 # Mongrels Squadron Website — Project Context
 
-_Last updated: 2026-10-02_
+_Last updated: 2026-10-04_
 
 ## Read this first
 
@@ -50,6 +50,18 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - Wolf often reviews a batch of recent features later rather than stopping development after every addition.
 - **Bug-fix contract:** when Wolf reports something behaving incorrectly, treat the current intended behavior/configuration as the specification. Fix the mechanism without redesigning the feature, changing defaults, removing configurability, or assuming operator error. If a design change may help, explain it separately and get Wolf's approval before implementing it.
 - **Mongrel HUD profile behavior:** per-panel profile assignment is intentionally user-configurable with **Combat / Surface / Both**. Profile-switch bugs must be fixed without changing or hard-coding those assignments unless Wolf explicitly requests a redesign.
+
+### Mongrel HUD / Scout integration
+
+The local data path is Scout's EDMC HTTPS session → loopback bridge `127.0.0.1:43857` → HUD data model → paired controller `43858` → independent desktop panels. Site data originates at the authenticated `/api/hud/feed`; Scout retains the last successful feed and reports the latest refresh status separately. A failed refresh must remain visible when old data is displayed.
+
+Surface Mining deposits and body + Signal # centers share the curated 10-16 Pages API and its existing authoritative D1 `DB` binding: `/api/mining`, `/api/mining-centers`, `/api/hud/mining-report`, and `/api/hud/mining-center`. The legacy `ten16-api.michael-schroll.workers.dev/api/mining` reader is not a second authority or a write destination. Do not recreate/reseed D1 from a stale local JSON file or an unverified Worker response. Local center storage is an explicitly identified outage cache; a successful center save requires the canonical central record, never synthesized local coordinates.
+
+Controller profile/layout/panel mutations must remain ordered. Evaluate toggle intent against the latest completed mutation; a delayed profile response must not restore an earlier visibility/lock state. Keep every existing panel assignment and default configurable.
+
+The October 4 integration investigation identified production feed failures with Cloudflare `1102` (resource limits) and mining failures with D1's exhausted daily read allowance. Repeated date formatter construction and repeated schema/backfill work were measurable contributors. Reuse only bounded pure calendar conversions and schema initialization, not authoritative site/mining data. Diagnostics retain the public endpoint, bridge/upstream HTTP status, safe error code, response format, and request correlation ID without tokens, raw response bodies, or private request values.
+
+CI and isolated tests do not establish Windows release readiness. Before publishing, verify authenticated production site data through the running HUD, repeated profile/overlay/lock controls, central center save and fresh-client retrieval, and access to existing deposits. The canonical Pages deposit read must be checked against the existing central records once D1 requests work again. Identify any remaining physical Elite/EDMC test explicitly; do not label a build ready while live quota/API failures remain.
 
 ---
 

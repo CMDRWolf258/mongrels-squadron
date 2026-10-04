@@ -85,7 +85,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <script>
 (function(){
 "use strict";
-var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0;
+var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -104,16 +104,27 @@ function showLayoutStatus(message,isError){var node=el("layoutStatus");node.clas
 function applyLayoutResult(result,message){if(result&&result.layout){state=state||{};state.layout=result.layout;renderLayoutControls(result.layout)}showLayoutStatus(message||"Display updated",false)}
 function pct(v){return typeof v==="number"?Math.round(v)+"%":"—"}
 function dist(m){if(typeof m!=="number")return "—";return m<1000?Math.round(m)+" m":m<100000?(m/1000).toFixed(2)+" km":(m/1000).toFixed(1)+" km"}
+function diagnosticText(value,httpStatus){
+  value=value||{};var info=value.diagnostics||value,parts=[];
+  if(Number.isInteger(info.bridgeStatus)&&info.bridgeStatus>=100&&info.bridgeStatus<=599)parts.push("Scout HTTP "+info.bridgeStatus);
+  else if(Number.isInteger(httpStatus)&&httpStatus>=100&&httpStatus<=599)parts.push("HTTP "+httpStatus);
+  if(Number.isInteger(info.upstreamStatus)&&info.upstreamStatus>=100&&info.upstreamStatus<=599)parts.push("upstream HTTP "+info.upstreamStatus);
+  var code=String(info.errorCode||value.error||"");
+  if(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/.test(code)&&!code.includes("mscout_"))parts.push(code==="1101"||code==="1102"?"Cloudflare "+code:code.replaceAll("_"," "));
+  if(info.responseFormat&&info.responseFormat!=="json"&&["invalid_json","html","text","unknown"].includes(info.responseFormat))parts.push(info.responseFormat.replaceAll("_"," ")+" response");
+  return parts.join(" · ")||"request failed";
+}
 async function api(path,body){
   var opt={headers:{"Content-Type":"application/json"}};
   if(body!==undefined){opt.method="POST";opt.body=JSON.stringify(body)}
-  var r=await fetch(path,opt);var data=await r.json().catch(function(){return {}});
-  if(!r.ok)throw new Error(data.error||"request_failed");return data
+  var r=await fetch(path,opt),nonJson=false;var data=await r.json().catch(function(){nonJson=true;return {}});
+  if(!r.ok){var error=new Error(diagnosticText(data,r.status)+(nonJson?" · non-JSON response":""));var code=String(data.error||(data.diagnostics&&data.diagnostics.errorCode)||"request_failed");error.code=/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/.test(code)&&!code.includes("mscout_")?code:"request_failed";error.status=r.status;error.diagnostics=data.diagnostics||null;throw error}return data
 }
 function age(v){if(!v)return "?";var s=Math.max(0,Math.floor((Date.now()-Date.parse(v))/1000));return s<60?s+"s":Math.floor(s/60)+"m"}
 function render(){
   if(!state)return;
-  el("connection").textContent=state.connected?"Scout connected":"Scout waiting";
+  var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
+  el("connection").textContent=(state.connected?"Scout connected":"Scout waiting")+(safePanelErrors.length?" · Panel errors: "+safePanelErrors.map(function(row){return row.panel+" ("+row.errorType+")"}).join(", "):"");
   var profile=state.profile||"combat";
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
@@ -127,7 +138,7 @@ function render(){
   el("targetScanProgress").style.width=Math.max(0,Math.min(100,Number(scan.progress)||0))+"%";
   el("recentTargetIntel").innerHTML=recent.length?recent.map(function(row){var g=row.groups||{},count=function(k){return (g[k]||[]).reduce(function(n,x){return n+(Number(x.count)||1)},0)};return '<div class="recent-target"><strong>'+escapeHtml(row.pilotName||row.ship||"Target")+(row.ship&&row.pilotName?' · '+escapeHtml(row.ship):'')+'</strong><small>OFF '+count("offense")+' · DEF '+count("defense")+' · SPECIAL '+count("special")+' · '+escapeHtml(age(row.capturedAt))+' ago</small></div>'}).join(""):'<span class="muted">No captured targets this session.</span>';
   var feed=state.siteFeed||scout.siteFeed||{},feedStatus=state.siteFeedStatus||scout.siteFeedStatus||{};
-  el("siteFeedStatus").textContent=feedStatus.ok===true?("Site feed updated "+(feed.generatedAt?age(feed.generatedAt)+" ago":"")):("Site feed "+String(feedStatus.error||"waiting").replaceAll("_"," "));
+  el("siteFeedStatus").textContent=feedStatus.ok===true?("Site feed updated "+(feed.generatedAt?age(feed.generatedAt)+" ago":"")):((feed.generatedAt?"Retained site feed · last good "+age(feed.generatedAt)+" ago · ":"Site feed · ")+diagnosticText(feedStatus));
   var mission=feed.mission&&typeof feed.mission==="object"?feed.mission:{},missionOrders=Array.isArray(mission.orders)?mission.orders:[],missionSystems=Array.isArray(mission.systems)?mission.systems:Array.from(new Set(missionOrders.map(function(o){return o.system}).filter(Boolean)));
   var missionSelect=el("missionSystemFilter"),wantedMission=state.missionSystem||"all";
   var missionOptions=['<option value="all">Top 5 across all Daily Order systems</option>'].concat(missionSystems.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}));
@@ -161,7 +172,14 @@ function render(){
   [["offense","OFFENSE"],["defense","DEFENSE"],["special","SPECIAL"]].forEach(function(pair){var rows=Array.isArray(intelGroups[pair[0]])?intelGroups[pair[0]]:[];if(!rows.length)return;moduleHtml+='<div class="module-group"><h3>'+pair[1]+'</h3>'+rows.map(function(m){var count=Number(m.count)||1;return '<div class="module-row"><span>'+escapeHtml(m.name||"Module")+(count>1?' ×'+count:'')+'</span></div>'}).join("")+'</div>'});el("modules").innerHTML=moduleHtml||'<span class="muted">No tactical loadout captured for this target.</span>';
   var sys=scout.system||{};el("surfaceBody").textContent=status.bodyName||"—";el("surfaceSystem").textContent=sys.name||"—";
   el("coords").textContent=typeof status.latitude==="number"&&typeof status.longitude==="number"?status.latitude.toFixed(6)+", "+status.longitude.toFixed(6):"—";
-  var miningStatus=state.miningStatus||{},miningStatusText=miningStatus.ok===true?"10-16 mining database synced":(miningStatus.depositsOk===true&&miningStatus.centersOk!==true?"Deposits synced · center feed retrying":(miningStatus.centersOk===true&&miningStatus.depositsOk!==true?"Centers synced · deposit feed retrying":("Mining database "+String(miningStatus.error||"waiting").replaceAll("_"," "))));el("miningDbStatus").textContent=miningStatusText;
+  var miningStatus=state.miningStatus||{},miningStatusText=miningStatus.ok===true?"10-16 mining database synced":(miningStatus.depositsOk===true&&miningStatus.centersOk!==true?"Deposits synced · center feed retrying":(miningStatus.centersOk===true&&miningStatus.depositsOk!==true?"Centers synced · deposit feed retrying":"Mining database waiting"));
+  if(miningStatus.depositsDiagnostics)miningStatusText+=" · deposits: "+diagnosticText(miningStatus.depositsDiagnostics);
+  if(miningStatus.centersDiagnostics)miningStatusText+=" · centers: "+diagnosticText(miningStatus.centersDiagnostics);
+  if(miningStatus.centersSource==="cache")miningStatusText+=" · centers from outage cache";
+  else if(miningStatus.centersSource==="central")miningStatusText+=" · centers from central database";
+  else if(miningStatus.centersSource==="unavailable")miningStatusText+=" · shared centers unavailable";
+  if(miningStatus.centersCacheUnverified===true)miningStatusText+=" · saved center has no central ID";
+  el("miningDbStatus").textContent=miningStatusText;
   var commoditySelect=el("depositCommodity"),commodityOther=el("depositCommodityOther"),commodityChoices=Array.isArray(state.miningCommodities)?state.miningCommodities:[],bodyCommodityChoices=Array.isArray(state.miningCommoditiesCurrentBody)?state.miningCommoditiesCurrentBody:[];
   var currentCommodity=commoditySelect.value,bodySet=new Set(bodyCommodityChoices),allOther=commodityChoices.filter(function(name){return !bodySet.has(name)});
   var commodityHtml='<option value="">Select commodity…</option>';
@@ -185,16 +203,27 @@ function render(){
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function escapeAttr(v){return escapeHtml(v)}
-async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.message==="pair_required")el("pair").classList.remove("hidden")}}
-async function mutate(path,body){holdRefresh(900);mutationEpoch++;mutationPending++;try{return await api(path,body)}finally{mutationPending=Math.max(0,mutationPending-1);interactionUntil=Math.max(interactionUntil,Date.now()+250)}}
+async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.code==="pair_required")el("pair").classList.remove("hidden")}}
+async function mutate(path,body){
+  holdRefresh(900);mutationEpoch++;mutationPending++;
+  // A profile response includes layout state. Apply each response before the
+  // next control reads it, so delayed responses cannot undo a newer toggle.
+  var task=mutationQueue.then(async function(){
+    var result=await api(path,typeof body==="function"?body():body);
+    state=state||{};if(result.layout)state.layout=result.layout;if(result.profile)state.profile=result.profile;
+    return result;
+  });
+  mutationQueue=task.catch(function(){});
+  try{return await task}finally{mutationPending=Math.max(0,mutationPending-1);interactionUntil=Math.max(interactionUntil,Date.now()+250)}
+}
 el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
 document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
 document.addEventListener("touchstart",function(){holdRefresh(1200)},{passive:true});
 document.addEventListener("pointerdown",function(){holdRefresh(900)},{passive:true});
-el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var layout=(state&&state.layout)||{},r=await mutate("/api/layout",{masterVisible:layout.masterVisible===false});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
-el("layoutLock").onclick=async function(){holdRefresh(1200);try{var layout=(state&&state.layout)||{},r=await mutate("/api/layout",{locked:layout.locked===false});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
+el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
+el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {locked:layout.locked===false}});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
 el("layoutReset").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout-reset",{});applyLayoutResult(r,"Layout positions reset")}catch(e){showLayoutStatus("Layout reset failed · "+e.message,true)}};
-document.querySelectorAll("[data-panel-visible]").forEach(function(button){button.onclick=async function(){holdRefresh(1200);try{var id=button.getAttribute("data-panel-visible"),cfg=((state&&state.layout&&state.layout.panels)||{})[id]||{},r=await mutate("/api/panel",{panel:id,visible:cfg.visible===false});applyLayoutResult(r,id+" "+(r.layout&&r.layout.panels&&r.layout.panels[id]&&r.layout.panels[id].visible!==false?"shown":"hidden"))}catch(e){showLayoutStatus("Panel toggle failed · "+e.message,true)}}});
+document.querySelectorAll("[data-panel-visible]").forEach(function(button){button.onclick=async function(){holdRefresh(1200);try{var id=button.getAttribute("data-panel-visible"),r=await mutate("/api/panel",function(){var cfg=((state&&state.layout&&state.layout.panels)||{})[id]||{};return {panel:id,visible:cfg.visible===false}});applyLayoutResult(r,id+" "+(r.layout&&r.layout.panels&&r.layout.panels[id]&&r.layout.panels[id].visible!==false?"shown":"hidden"))}catch(e){showLayoutStatus("Panel toggle failed · "+e.message,true)}}});
 document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-scale"),scale:Number(select.value)});applyLayoutResult(r,"Panel size updated")}catch(e){showLayoutStatus("Panel size failed · "+e.message,true)}}});
 document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,profiles=value==="both"?["combat","surface"]:[value],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});

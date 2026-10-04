@@ -32,7 +32,7 @@ HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
-HUD_MINING_DATA_ENDPOINT = "https://ten16-api.michael-schroll.workers.dev/api/mining"
+HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
 HUD_MINING_CENTERS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-centers"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
@@ -644,7 +644,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
         if parsed.path in {"/v1/mining/data", "/v1/mining/centers"}:
             endpoint = HUD_MINING_DATA_ENDPOINT if parsed.path.endswith("/data") else HUD_MINING_CENTERS_ENDPOINT
             result = _fetch_hud_mining_resource(endpoint)
-            self._write_json(result, status=200 if result.get("ok") else 502)
+            self._write_json(result, status=_hud_proxy_status(result))
             return
 
         self._write_json({"ok": False, "error": "not_found"}, status=404)
@@ -670,20 +670,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
         if parsed.path in {"/v1/mining/report", "/v1/mining/center"}:
             endpoint = HUD_MINING_REPORT_ENDPOINT if parsed.path.endswith("/report") else HUD_MINING_CENTER_ENDPOINT
             result = _submit_hud_mining_request(endpoint, body)
-            error = str(result.get("error") or "")
-            if result.get("ok"):
-                status = 200
-            elif error == "site_admin_required":
-                status = 403
-            elif error in {
-                "unsupported_system", "commodity_required", "body_required", "invalid_body_type",
-                "invalid_signal", "invalid_latitude", "invalid_longitude", "invalid_rig_count",
-                "invalid_planet_radius",
-            }:
-                status = 400
-            else:
-                status = 502
-            self._write_json(result, status=status)
+            self._write_json(result, status=_hud_proxy_status(result))
             return
 
         action = str(body.get("action") or "ack").strip().lower()
@@ -703,7 +690,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json({"ok": False, "error": "alert_not_current"}, status=409)
             return
         result = _ack_hud_site_alerts(ids, action)
-        self._write_json(result, status=200 if result.get("ok") else 502)
+        self._write_json(result, status=_hud_proxy_status(result))
 
     def log_message(self, format: str, *args: Any) -> None:
         # Keep EDMC's log clean during high-frequency overlay polling.
@@ -739,9 +726,107 @@ def _site_feed_headers(token: str) -> dict[str, str]:
     }
 
 
-def _set_site_feed_status(*, ok: bool, error: str = "") -> None:
+def _public_hud_endpoint(endpoint: str) -> str:
+    """Expose only a public origin/path, never URL credentials or query values."""
+    try:
+        parsed = urlparse(endpoint)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            return ""
+        host = parsed.hostname
+        if ":" in host:
+            host = f"[{host}]"
+        if parsed.port:
+            host += f":{parsed.port}"
+        path = re.sub(r"mscout_[A-Za-z0-9_-]+", "[redacted]", parsed.path or "/")
+        return f"{parsed.scheme}://{host}{path}"[:300]
+    except (TypeError, ValueError):
+        return ""
+
+
+def _hud_error_code(value: Any) -> str:
+    # Cloud responses may contain HTML, database details, or reflected input.
+    # Only the API's short machine error vocabulary crosses the local bridge.
+    if not isinstance(value, str) or "mscout_" in value:
+        return ""
+    return value if re.fullmatch(r"[a-z][a-z0-9_.:-]{0,119}", value) else ""
+
+
+def _hud_response_details(response: Any, endpoint: str) -> tuple[Any, dict[str, Any]]:
+    try:
+        payload = response.json()
+        response_format = "json"
+    except Exception:
+        payload = None
+        content_type = str(getattr(response, "headers", {}).get("Content-Type", "")).lower()
+        response_format = "invalid_json" if "json" in content_type else "html" if "html" in content_type else "text" if "text/" in content_type else "unknown"
+    headers = getattr(response, "headers", {})
+    ray = str(headers.get("CF-Ray", "") or headers.get("cf-ray", ""))
+    request_id = ray if re.fullmatch(r"[A-Fa-f0-9]{12,32}(?:-[A-Za-z0-9]{2,8})?", ray) else ""
+    status = int(response.status_code)
+    error_code = _hud_error_code(payload.get("error")) if isinstance(payload, Mapping) else ""
+    cloudflare_code = payload.get("error_code") if isinstance(payload, Mapping) else None
+    cloudflare_label = {1101: "Worker exception", 1102: "Worker resource limit"}.get(cloudflare_code) if isinstance(cloudflare_code, int) else None
+    if not error_code and cloudflare_label:
+        error_code = str(cloudflare_code)
+    detail = f"HTTP {status}" + (f" · Cloudflare {cloudflare_code} ({cloudflare_label})" if cloudflare_label else f" · {error_code}" if error_code else "")
+    details = {
+        "endpoint": _public_hud_endpoint(endpoint),
+        "upstreamStatus": status,
+        "requestId": request_id,
+        "responseFormat": response_format,
+        "errorCode": error_code,
+        "detail": detail,
+    }
+    return payload, details
+
+
+def _hud_http_failure(details: Mapping[str, Any], error: str = "") -> dict[str, Any]:
+    code = _hud_error_code(error) or _hud_error_code(details.get("errorCode")) or f"http_{details.get('upstreamStatus')}"
+    return {**details, "ok": False, "error": code}
+
+
+def _hud_transport_failure(endpoint: str, exc: Exception, *, mining_read: bool = False) -> dict[str, Any]:
+    category = type(exc).__name__
+    # Exception messages can include a URL, proxy credentials, or request data.
+    # The exception category is enough to distinguish timeout/TLS/connection errors.
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", category):
+        category = "NetworkError"
+    return {
+        "ok": False,
+        "error": f"network:{category}" if mining_read else "network",
+        "errorCode": "network",
+        "endpoint": _public_hud_endpoint(endpoint),
+        "upstreamStatus": None,
+        "requestId": "",
+        "responseFormat": "",
+        "detail": f"Connection failed ({category})",
+    }
+
+
+def _hud_proxy_status(result: Mapping[str, Any]) -> int:
+    if result.get("ok"):
+        return 200
+    status = result.get("upstreamStatus")
+    if isinstance(status, int) and 400 <= status <= 599:
+        return status
+    error = str(result.get("error") or "")
+    if error == "scout_token_missing":
+        return 401
+    if error in {"site_admin_required", "hud_owner_not_bound"}:
+        return 403
+    if error in {
+        "unsupported_system", "commodity_required", "body_required", "invalid_body_type",
+        "invalid_signal", "invalid_latitude", "invalid_longitude", "invalid_rig_count",
+        "invalid_planet_radius",
+    }:
+        return 400
+    return 502
+
+
+def _set_site_feed_status(*, ok: bool, error: str = "", details: Optional[Mapping[str, Any]] = None) -> None:
     with _hud_condition:
         _hud_state["siteFeedStatus"] = {
+            **(dict(details) if details else {}),
             "ok": bool(ok),
             "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "error": str(error or "")[:160],
@@ -750,34 +835,34 @@ def _set_site_feed_status(*, ok: bool, error: str = "") -> None:
 
 
 def _refresh_hud_site_feed_once() -> bool:
+    endpoint = _hud_site_feed_endpoint()
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
-        _set_site_feed_status(ok=False, error="scout_token_missing")
+        _set_site_feed_status(ok=False, error="scout_token_missing", details={"endpoint": _public_hud_endpoint(endpoint), "detail": "Scout token is unavailable"})
         return False
     try:
-        response = _session.get(_hud_site_feed_endpoint(), headers=_site_feed_headers(token))
+        response = _session.get(endpoint, headers=_site_feed_headers(token))
+        payload, details = _hud_response_details(response, endpoint)
         if not (200 <= response.status_code < 300):
-            try:
-                error = str(response.json().get("error") or f"http_{response.status_code}")
-            except Exception:
-                error = f"http_{response.status_code}"
-            _set_site_feed_status(ok=False, error=error)
+            failure = _hud_http_failure(details)
+            _set_site_feed_status(ok=False, error=failure["error"], details=details)
             return False
-        payload = response.json()
         if not isinstance(payload, Mapping) or payload.get("ok") is not True:
-            _set_site_feed_status(ok=False, error="invalid_hud_feed")
+            _set_site_feed_status(ok=False, error="invalid_hud_feed", details={**details, "detail": f"HTTP {response.status_code} · invalid HUD feed ({details['responseFormat']})"})
             return False
         with _hud_condition:
             _hud_state["siteFeed"] = dict(payload)
             _hud_state["siteFeedStatus"] = {
+                **details,
                 "ok": True,
                 "updatedAt": str(payload.get("generatedAt") or "").strip() or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "error": "",
             }
             _hud_condition.notify_all()
         return True
-    except Exception:
-        _set_site_feed_status(ok=False, error="network")
+    except Exception as exc:
+        failure = _hud_transport_failure(endpoint, exc)
+        _set_site_feed_status(ok=False, error=failure["error"], details=failure)
         return False
 
 
@@ -824,27 +909,25 @@ def _mark_site_alerts_acknowledged(ids: list[str], acknowledged_at: str = "") ->
 
 
 def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
+    endpoint = _hud_site_feed_endpoint()
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
-        return {"ok": False, "error": "scout_token_missing"}
+        return {"ok": False, "error": "scout_token_missing", "endpoint": _public_hud_endpoint(endpoint), "detail": "Scout token is unavailable"}
     payload: dict[str, Any] = {"action": "ack-all" if action == "ack-all" else "ack"}
     if action == "ack-all":
         payload["alertIds"] = ids
     else:
         payload["alertId"] = ids[0]
     try:
-        response = _session.post(_hud_site_feed_endpoint(), json=payload, headers=_site_feed_headers(token))
-        try:
-            result = response.json()
-        except Exception:
-            result = {}
+        response = _session.post(endpoint, json=payload, headers=_site_feed_headers(token))
+        result, details = _hud_response_details(response, endpoint)
         if not (200 <= response.status_code < 300) or not isinstance(result, Mapping) or result.get("ok") is not True:
-            return {"ok": False, "error": str(result.get("error") or f"http_{response.status_code}")}
+            return _hud_http_failure(details)
         acknowledged = [str(value) for value in result.get("acknowledged", ids) if str(value)]
         _mark_site_alerts_acknowledged(acknowledged, str(result.get("acknowledgedAt") or ""))
-        return {"ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
-    except Exception:
-        return {"ok": False, "error": "network"}
+        return {**details, "ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc)
 
 
 def _fetch_hud_mining_resource(endpoint: str) -> dict[str, Any]:
@@ -858,40 +941,33 @@ def _fetch_hud_mining_resource(endpoint: str) -> dict[str, Any]:
                 "User-Agent": f"{_session.headers.get('User-Agent', 'EDMarketConnector')} MongrelScout/{PLUGIN_VERSION}",
             },
         )
-        try:
-            payload = response.json()
-        except Exception:
-            payload = None
+        payload, details = _hud_response_details(response, endpoint)
         if not (200 <= response.status_code < 300):
-            return {"ok": False, "error": f"http_{response.status_code}"}
+            return _hud_http_failure(details, f"http_{response.status_code}")
         if not isinstance(payload, list):
-            return {"ok": False, "error": "invalid_mining_payload"}
-        return {"ok": True, "data": payload}
+            return {**details, "ok": False, "error": "invalid_mining_payload", "detail": f"HTTP {response.status_code} · invalid mining payload ({details['responseFormat']})"}
+        return {**details, "ok": True, "data": payload}
     except Exception as exc:
-        return {"ok": False, "error": f"network:{str(exc)[:120]}"}
+        return _hud_transport_failure(endpoint, exc, mining_read=True)
 
 
 def _submit_hud_mining_request(endpoint: str, payload: Mapping[str, Any]) -> dict[str, Any]:
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
-        return {"ok": False, "error": "scout_token_missing"}
+        return {"ok": False, "error": "scout_token_missing", "endpoint": _public_hud_endpoint(endpoint), "detail": "Scout token is unavailable"}
     try:
         response = _session.post(
             endpoint,
             json=dict(payload),
             headers={**_site_feed_headers(token), "Content-Type": "application/json"},
         )
-        try:
-            result = response.json()
-        except Exception:
-            result = {}
-        if not isinstance(result, Mapping):
-            result = {}
-        if not (200 <= response.status_code < 300) or result.get("ok") is not True:
-            return {"ok": False, "error": str(result.get("error") or result.get("message") or f"http_{response.status_code}")}
-        return dict(result)
-    except Exception:
-        return {"ok": False, "error": "network"}
+        result, details = _hud_response_details(response, endpoint)
+        if not (200 <= response.status_code < 300) or not isinstance(result, Mapping) or result.get("ok") is not True:
+            error = _hud_error_code(result.get("message")) if isinstance(result, Mapping) else ""
+            return _hud_http_failure(details, str(details.get("errorCode") or error))
+        return {**dict(result), **details}
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc)
 
 
 def _start_hud_bridge() -> None:

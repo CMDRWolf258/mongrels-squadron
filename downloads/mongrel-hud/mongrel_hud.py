@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+import urllib.error
 import urllib.request
 from collections import Counter
 from dataclasses import dataclass
@@ -197,6 +198,152 @@ PANEL_TITLES = {
     "orderalerts": "DAILY ORDER CHANGES",
     "notes": "NOTES",
 }
+
+
+def public_endpoint(value: Any) -> str:
+    try:
+        parsed = urlparse(str(value or ""))
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            return ""
+        host = parsed.hostname
+        if ":" in host:
+            host = f"[{host}]"
+        if parsed.port:
+            host += f":{parsed.port}"
+        path = re.sub(r"mscout_[A-Za-z0-9_-]+", "[redacted]", parsed.path or "/")
+        return f"{parsed.scheme}://{host}{path}"[:300]
+    except (TypeError, ValueError):
+        return ""
+
+
+def safe_error_code(value: Any) -> str:
+    return value if isinstance(value, str) and "mscout_" not in value and re.fullmatch(r"[a-z0-9][a-z0-9_.:-]{0,119}", value) else ""
+
+
+def scout_diagnostics(payload: Any, endpoint: str, bridge_status: int | None, fallback: str, response_format: str = "json") -> dict[str, Any]:
+    fields = payload if isinstance(payload, dict) else {}
+    upstream = fields.get("upstreamStatus")
+    upstream = upstream if type(upstream) is int and 100 <= upstream <= 599 else None
+    error_code = safe_error_code(fields.get("errorCode")) or safe_error_code(fields.get("error")) or fallback
+    request_id = fields.get("requestId")
+    request_id = request_id if isinstance(request_id, str) and "mscout_" not in request_id and re.fullmatch(r"[A-Za-z0-9_-]{1,100}", request_id) else ""
+    format_value = fields.get("responseFormat")
+    format_value = format_value if format_value in {"json", "invalid_json", "html", "text", "unknown", ""} else response_format
+    parts = []
+    if bridge_status is not None:
+        parts.append(f"Scout HTTP {bridge_status}")
+    if upstream is not None:
+        parts.append(f"upstream HTTP {upstream}")
+    if error_code:
+        parts.append(f"Cloudflare {error_code}" if error_code in {"1101", "1102"} else error_code)
+    # Never copy raw response bodies or exception messages into diagnostics.
+    return {
+        "bridgeEndpoint": public_endpoint(endpoint),
+        "bridgeStatus": bridge_status,
+        "endpoint": public_endpoint(fields.get("endpoint")) or public_endpoint(endpoint),
+        "upstreamStatus": upstream,
+        "errorCode": error_code,
+        "requestId": request_id,
+        "responseFormat": format_value,
+        "detail": " · ".join(parts) if parts else "Connection failed",
+    }
+
+
+class HudRequestError(Exception):
+    def __init__(self, diagnostics: dict[str, Any], status: int = 502):
+        self.diagnostics = diagnostics
+        self.status = status if 400 <= status <= 599 else 502
+        self.error_code = str(diagnostics.get("errorCode") or "scout_request_failed")
+        super().__init__(str(diagnostics.get("detail") or self.error_code))
+
+
+def request_scout_json(request: Any, error_code: str, timeout: float = 10.0) -> dict[str, Any]:
+    endpoint = request.full_url if isinstance(request, urllib.request.Request) else str(request)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            status = int(getattr(response, "status", 200) or 200)
+            try:
+                payload = json.load(response)
+            except (ValueError, UnicodeError) as exc:
+                diagnostics = scout_diagnostics(None, endpoint, status, "invalid_scout_json", "invalid_json")
+                raise HudRequestError(diagnostics) from exc
+    except urllib.error.HTTPError as exc:
+        try:
+            payload = json.loads(exc.read(16384).decode("utf-8"))
+            response_format = "json"
+        except (ValueError, UnicodeError, OSError):
+            payload = None
+            content_type = str(exc.headers.get("Content-Type", "") if exc.headers else "").lower()
+            response_format = "invalid_json" if "json" in content_type else "html" if "html" in content_type else "text" if "text/" in content_type else "unknown"
+        diagnostics = scout_diagnostics(payload, endpoint, exc.code, error_code, response_format)
+        raise HudRequestError(diagnostics, exc.code) from exc
+    except HudRequestError:
+        raise
+    except Exception as exc:
+        reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+        category = type(reason).__name__
+        category = category if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", category) else "NetworkError"
+        diagnostics = scout_diagnostics(None, endpoint, None, f"network:{category}", "")
+        diagnostics["detail"] = f"Connection failed ({category})"
+        raise HudRequestError(diagnostics) from exc
+    if not isinstance(payload, dict) or payload.get("ok") is not True:
+        diagnostics = scout_diagnostics(payload, endpoint, status, error_code)
+        upstream = diagnostics.get("upstreamStatus")
+        raise HudRequestError(diagnostics, upstream if isinstance(upstream, int) else 502)
+    return payload
+
+
+def _validated_mining_center(value: Any, *, body: str | None = None, signal: int | None = None, require_central_id: bool = True) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("invalid_mining_center_response")
+    center = dict(value)
+    raw_id, raw_signal = center.get("id"), center.get("signal")
+    valid_id = type(raw_id) is int or isinstance(raw_id, str) and raw_id.isdecimal()
+    if (require_central_id and not valid_id) or (not require_central_id and raw_id is not None and not valid_id) or not (type(raw_signal) is int or isinstance(raw_signal, str) and raw_signal.isdecimal()):
+        raise ValueError("invalid_mining_center_response")
+    if valid_id:
+        center["id"] = int(raw_id)
+    center["signal"] = int(raw_signal)
+    center_body = str(center.get("body") or "").strip().lower()
+    if (require_central_id and center["id"] <= 0) or (valid_id and center["id"] < 0) or center["signal"] <= 0 or not re.fullmatch(r"\d+[a-z]*", center_body):
+        raise ValueError("invalid_mining_center_response")
+    if (body is not None and center_body != body.strip().lower()) or (signal is not None and center["signal"] != signal):
+        raise ValueError("invalid_mining_center_response")
+    for field, bound in (("latitude", 90), ("longitude", 180)):
+        raw = center.get(field)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+            raise ValueError("invalid_mining_center_response")
+        try:
+            number = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid_mining_center_response") from exc
+        if not math.isfinite(number) or abs(number) > bound:
+            raise ValueError("invalid_mining_center_response")
+        center[field] = number
+    center["body"] = center_body
+    center["systemName"] = str(center.get("systemName") or TEN16_SYSTEM).strip()
+    center["systemAddress"] = str(center.get("systemAddress") or "").strip()
+    if center["systemAddress"]:
+        if center["systemAddress"] != TEN16_ID64:
+            raise ValueError("invalid_mining_center_response")
+        # The exact journal system address establishes the host system even
+        # when an earlier report retained an outdated display name.
+        center["systemName"] = TEN16_SYSTEM
+    elif center["systemName"].casefold() != TEN16_SYSTEM.casefold():
+        raise ValueError("invalid_mining_center_response")
+    return center
+
+
+def canonical_mining_center(value: Any, *, body: str | None = None, signal: int | None = None) -> dict[str, Any]:
+    return _validated_mining_center(value, body=body, signal=signal)
+
+
+def cached_mining_center(value: Any) -> dict[str, Any]:
+    # Older saved, measured coordinates may predate a confirmed central ID.
+    # Keep them only as an explicit outage fallback, never an API/save success.
+    center = _validated_mining_center(value, require_central_id=False)
+    center["cacheOnly"] = not (type(center.get("id")) is int and center["id"] > 0)
+    return center
 
 
 def default_layout() -> dict[str, Any]:
@@ -515,9 +662,13 @@ class MongrelHudApp:
         with self.store.lock:
             cached_centers = self.store.data.get("miningCenters")
             cached_centers = cached_centers if isinstance(cached_centers, list) else []
-        self.mining_centers: list[dict[str, Any]] = [
-            dict(row) for row in cached_centers if isinstance(row, dict)
-        ]
+        self.mining_centers: list[dict[str, Any]] = []
+        for row in cached_centers:
+            try:
+                self.mining_centers.append(cached_mining_center(row))
+            except ValueError:
+                continue
+        self.mining_centers_source = "cache" if self.mining_centers else "unavailable"
         self.mining_status = {"ok": False, "updatedAt": None, "error": "not_started"}
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
         threading.Thread(target=self._mining_sync_loop, name="MongrelHudMiningSync", daemon=True).start()
@@ -939,13 +1090,7 @@ class MongrelHudApp:
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=10.0) as response:
-                result = json.load(response)
-        except Exception as exc:
-            raise ValueError("alert_ack_failed") from exc
-        if not isinstance(result, dict) or result.get("ok") is not True:
-            raise ValueError(str(result.get("error") if isinstance(result, dict) else "alert_ack_failed"))
+        result = request_scout_json(request, "alert_ack_failed")
         return result
 
     def set_profile(self, profile: str) -> str:
@@ -966,14 +1111,10 @@ class MongrelHudApp:
             },
             method="GET",
         )
-        with urllib.request.urlopen(request, timeout=8.0) as response:
-            envelope = json.load(response)
-        if not isinstance(envelope, dict) or envelope.get("ok") is not True:
-            error = str(envelope.get("error") if isinstance(envelope, dict) else invalid_error)
-            raise ValueError(error or invalid_error)
+        envelope = request_scout_json(request, invalid_error, timeout=8.0)
         payload = envelope.get("data")
         if not isinstance(payload, list):
-            raise ValueError(invalid_error)
+            raise HudRequestError(scout_diagnostics(envelope, url, 200, invalid_error))
         return payload
 
     def _refresh_mining_data_once(self) -> bool:
@@ -981,6 +1122,8 @@ class MongrelHudApp:
         center_error = ""
         deposit_ok = False
         center_ok = False
+        deposit_diagnostics = None
+        center_diagnostics = None
 
         try:
             payload = self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")
@@ -1013,41 +1156,41 @@ class MongrelHudApp:
                 self.mining_sites = rows
             deposit_ok = True
         except Exception as exc:
-            deposit_error = str(exc)[:120]
+            deposit_diagnostics = exc.diagnostics if isinstance(exc, HudRequestError) else scout_diagnostics(None, MINING_DATA_URL, None, "invalid_mining_payload")
+            deposit_error = deposit_diagnostics["detail"][:160]
 
         try:
             center_payload = self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")
             centers: list[dict[str, Any]] = []
             for raw in center_payload:
-                if not isinstance(raw, dict):
-                    continue
                 try:
-                    center_id = int(raw.get("id"))
-                    signal = int(raw.get("signal"))
-                    lat = float(raw.get("latitude"))
-                    lon = float(raw.get("longitude"))
-                except (TypeError, ValueError):
-                    continue
+                    center = canonical_mining_center(raw)
+                except ValueError as exc:
+                    raise HudRequestError(scout_diagnostics(None, MINING_CENTERS_URL, 200, "invalid_mining_center_response")) from exc
                 centers.append({
-                    "id": center_id,
-                    "systemName": str(raw.get("systemName") or TEN16_SYSTEM).strip(),
-                    "systemAddress": str(raw.get("systemAddress") or "").strip(),
-                    "body": str(raw.get("body") or "").strip().lower(),
+                    "id": center["id"],
+                    "systemName": center["systemName"],
+                    "systemAddress": center["systemAddress"],
+                    "body": center["body"],
                     "bodyType": str(raw.get("bodyType") or "").strip().lower(),
-                    "signal": signal,
-                    "latitude": lat,
-                    "longitude": lon,
+                    "signal": center["signal"],
+                    "latitude": center["latitude"],
+                    "longitude": center["longitude"],
                     "updatedAt": raw.get("updatedAt"),
                 })
             with self.mining_lock:
                 self.mining_centers = centers
+                self.mining_centers_source = "central"
                 cached_centers = [dict(row) for row in centers]
             with self.store.lock:
                 self.store.data["miningCenters"] = cached_centers
                 self.store.save()
             center_ok = True
         except Exception as exc:
-            center_error = str(exc)[:120]
+            center_diagnostics = exc.diagnostics if isinstance(exc, HudRequestError) else scout_diagnostics(None, MINING_CENTERS_URL, None, "invalid_mining_centers_payload")
+            center_error = center_diagnostics["detail"][:160]
+            with self.mining_lock:
+                self.mining_centers_source = "cache" if self.mining_centers else "unavailable"
 
         errors = []
         if deposit_error:
@@ -1059,6 +1202,9 @@ class MongrelHudApp:
                 "ok": deposit_ok and center_ok,
                 "depositsOk": deposit_ok,
                 "centersOk": center_ok,
+                "centersSource": self.mining_centers_source,
+                "depositsDiagnostics": deposit_diagnostics,
+                "centersDiagnostics": center_diagnostics,
                 "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "error": " · ".join(errors)[:220],
             }
@@ -1071,7 +1217,11 @@ class MongrelHudApp:
 
     def mining_status_snapshot(self) -> dict[str, Any]:
         with self.mining_lock:
-            return dict(self.mining_status)
+            return {
+                **self.mining_status,
+                "centersSource": self.mining_centers_source,
+                "centersCacheUnverified": self.mining_centers_source == "cache" and any(row.get("cacheOnly") for row in self.mining_centers),
+            }
 
     def _in_ten16(self, state: dict[str, Any] | None = None) -> bool:
         current = state if isinstance(state, dict) else self.scout_state()
@@ -1287,27 +1437,14 @@ class MongrelHudApp:
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             method="POST",
         )
+        result = request_scout_json(request, "mining_center_save_failed")
         try:
-            with urllib.request.urlopen(request, timeout=10.0) as response:
-                result = json.load(response)
-        except Exception as exc:
-            raise ValueError("mining_center_save_failed") from exc
-        if not isinstance(result, dict) or result.get("ok") is not True:
-            raise ValueError(str(result.get("error") if isinstance(result, dict) else "mining_center_save_failed"))
-        saved_center = result.get("center") if isinstance(result.get("center"), dict) else {
-            "id": 0,
-            "signal": signal,
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "body": body,
-            "bodyType": body_type_for_short_name(body),
-            "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        }
-        saved_center = dict(saved_center)
-        saved_center["body"] = str(saved_center.get("body") or body).strip().lower()
-        saved_center["signal"] = int(saved_center.get("signal") or signal)
-        saved_center["latitude"] = float(saved_center.get("latitude", lat))
-        saved_center["longitude"] = float(saved_center.get("longitude", lon))
+            saved_center = canonical_mining_center(result.get("center"), body=body, signal=signal)
+        except ValueError as exc:
+            diagnostics = scout_diagnostics(result, SCOUT_MINING_CENTER_URL, 200, "invalid_mining_center_response")
+            diagnostics["errorCode"] = "invalid_mining_center_response"
+            diagnostics["detail"] += " · canonical center missing or invalid"
+            raise HudRequestError(diagnostics) from exc
         with self.mining_lock:
             self.mining_centers = [
                 row for row in self.mining_centers
@@ -1364,13 +1501,7 @@ class MongrelHudApp:
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=10.0) as response:
-                result = json.load(response)
-        except Exception as exc:
-            raise ValueError("mining_report_failed") from exc
-        if not isinstance(result, dict) or result.get("ok") is not True:
-            raise ValueError(str(result.get("error") if isinstance(result, dict) else "mining_report_failed"))
+        result = request_scout_json(request, "mining_report_failed")
         with self.store.lock:
             log = self.store.data.setdefault("deposits", [])
             log.append({**payload, "remoteStatus": result.get("status"), "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
@@ -1449,6 +1580,13 @@ class MongrelHudApp:
             "missionSystem": self.mission_system_filter(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
+            "renderErrors": [
+                {"panel": panel_id, "errorType": str(info.get("renderErrorType"))}
+                for panel_id, info in self.panel_windows.copy().items()
+                if panel_id in PANEL_IDS and isinstance(info.get("renderErrorType"), str)
+                and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", info["renderErrorType"])
+                and "mscout_" not in info["renderErrorType"]
+            ],
             "targetScan": self.scan_status_snapshot(),
             "targetIntel": self.target_intel(state.get("target") if isinstance(state.get("target"), dict) else None),
             "recentTargets": self.recent_target_snapshot(),
@@ -2131,13 +2269,46 @@ class MongrelHudApp:
             y += 5 * scale
         return width, round(y + 5 * scale)
 
+    def site_feed_status_lines(self, state: dict[str, Any], has_section: bool) -> list[str]:
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        status = state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else {}
+        with self.lock:
+            connected = self.snapshot.connected
+        if connected and status.get("ok") is True and has_section:
+            return []
+        failed = not connected or status.get("ok") is False
+        label = "STALE SITE FEED" if feed and failed else "SITE FEED UNAVAILABLE" if failed else "SITE FEED WAITING"
+        reason = []
+        if not connected:
+            reason.append("SCOUT BRIDGE OFFLINE")
+        upstream = status.get("upstreamStatus")
+        if type(upstream) is int and 100 <= upstream <= 599:
+            reason.append(f"UPSTREAM HTTP {upstream}")
+        code = safe_error_code(status.get("errorCode")) or safe_error_code(status.get("error"))
+        if code:
+            reason.append(f"CLOUDFLARE {code}" if code in {"1101", "1102"} else code.replace("_", " ").upper())
+        elif not has_section and feed:
+            reason.append("SECTION MISSING")
+        elif not reason:
+            reason.append("REFRESH PENDING")
+        lines = [label + " · " + " · ".join(reason)]
+        if feed and failed:
+            lines.append("LAST GOOD FEED " + iso_age(feed.get("generatedAt") or status.get("updatedAt")) + " AGO")
+        return lines
+
+    def _draw_site_feed_status(self, canvas: tk.Canvas, scale: float, width: int, y: float, state: dict[str, Any], has_section: bool) -> float:
+        for line in self.site_feed_status_lines(state, has_section):
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(line, 68), scale, 8, HUD_AMBER, True, "nw", width - 16 * scale)
+            y += 20 * scale
+        return y
+
     def _render_mission_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state(); feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
         mission = feed.get("mission") if isinstance(feed.get("mission"), dict) else {}
         width = round(520 * scale); y = self._draw_title(canvas, "MISSION CONTROL", scale, width)
+        y = self._draw_site_feed_status(canvas, scale, width, y, state, bool(mission))
         if not mission:
-            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
-            return width, round(y + 30 * scale)
+            return width, round(y + 8 * scale)
 
         all_orders = [row for row in (mission.get("orders") if isinstance(mission.get("orders"), list) else []) if isinstance(row, dict)]
         systems = [str(value or "").strip() for value in (mission.get("systems") if isinstance(mission.get("systems"), list) else []) if str(value or "").strip()]
@@ -2252,9 +2423,9 @@ class MongrelHudApp:
         trade = feed.get("trade") if isinstance(feed.get("trade"), dict) else {}
         width = round(610 * scale)
         y = self._draw_title(canvas, "TRADER'S OUTPOST", scale, width)
+        y = self._draw_site_feed_status(canvas, scale, width, y, state, bool(trade))
         if not trade:
-            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
-            return width, round(y + 30 * scale)
+            return width, round(y + 8 * scale)
 
         routes = [row for row in (trade.get("routes") if isinstance(trade.get("routes"), list) else []) if isinstance(row, dict)]
         self._draw_text(canvas, 8 * scale, y, f"ACTIVE {int(trade.get('activeCount') or 0)}", scale, 10, HUD_WHITE, True); y += 22 * scale
@@ -2335,9 +2506,9 @@ class MongrelHudApp:
         scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
         width = round(490 * scale)
         y = self._draw_title(canvas, "SCOUT BOARD", scale, width)
+        y = self._draw_site_feed_status(canvas, scale, width, y, state, bool(scout))
         if not scout:
-            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
-            return width, round(y + 30 * scale)
+            return width, round(y + 8 * scale)
 
         summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
         self._draw_text(canvas, 8 * scale, y, f"AVAILABLE {int(summary.get('available') or 0)}", scale, 9, HUD_WHITE, True)
@@ -2388,9 +2559,9 @@ class MongrelHudApp:
         scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
         width = round(520 * scale)
         y = self._draw_title(canvas, "NEAREST SCOUT JOBS", scale, width)
+        y = self._draw_site_feed_status(canvas, scale, width, y, state, bool(scout))
         if not scout:
-            self._draw_text(canvas, 8 * scale, y, "WAITING FOR SITE FEED", scale, 10, HUD_MUTED, True)
-            return width, round(y + 30 * scale)
+            return width, round(y + 8 * scale)
 
         origin = scout.get("origin") if isinstance(scout.get("origin"), dict) else {}
         local_system = state.get("system") if isinstance(state.get("system"), dict) else {}
@@ -2526,10 +2697,12 @@ class MongrelHudApp:
                 try:
                     self._render_panel_canvas(panel_id, info["body"], scale, flash_on)
                     info["renderError"] = ""
+                    info["renderErrorType"] = ""
                 except Exception as exc:
                     # A malformed/live-data edge case in one renderer must never
                     # kill the global 200 ms HUD refresh loop or freeze controls.
                     info["renderError"] = str(exc)[:160]
+                    info["renderErrorType"] = type(exc).__name__
 
                 if info.get("appliedLocked") != locked:
                     try:
@@ -2813,6 +2986,8 @@ def make_handler(app: MongrelHudApp):
                     self.send_json({"ok": False, "error": "not_found"}, 404)
                     return
                 self.send_json(result)
+            except HudRequestError as exc:
+                self.send_json({"ok": False, "error": exc.error_code, "detail": str(exc), "diagnostics": exc.diagnostics}, exc.status)
             except (ValueError, TypeError) as exc:
                 self.send_json({"ok": False, "error": str(exc)}, 400)
 
