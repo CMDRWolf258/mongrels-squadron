@@ -123,7 +123,7 @@ const reviewedBeforePublish=orderAlerts([{
 assert.equal(reviewedBeforePublish.length,0,'BGS Control ACK before publish clears the matching publication from HUD');
 
 const source=fs.readFileSync(new URL('../functions/api/hud/feed.js',import.meta.url),'utf8');
-for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp','Local/iPad ACK only marks a row acknowledged','readOrderReviewState','publicationReviewSignature','orderChangeReviewed']){
+for(const token of ['invalid_scout_token','hud_owner_not_bound','hud-alert-acks-v1:','wolf-bgs-order-change-reviews-v1','loadRewardDiscordView','buildScoutJobBoard','buildOrderProgressForHud','unacknowledgedCount','indicator','severityRank','alertTimestamp',"BGS Control's amber acknowledgement is authoritative",'readOrderReviewState','publicationReviewSignature','orderChangeReviewed']){
   assert.ok(source.includes(token),token);
 }
 console.log('✓ HUD site feed aggregates mission/trade/scout leadership data with persistent acknowledgements');
