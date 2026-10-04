@@ -957,6 +957,8 @@ class MongrelHudApp:
                 lon = raw.get("longitude")
                 rows.append({
                     "id": site_id,
+                    "systemName": str(raw.get("systemName") or TEN16_SYSTEM).strip(),
+                    "systemAddress": str(raw.get("systemAddress") or "").strip(),
                     "commodity": str(raw.get("commodity") or "").strip(),
                     "body": str(raw.get("body") or "").strip().lower(),
                     "bodyType": str(raw.get("bodyType") or "").strip().lower(),
@@ -995,6 +997,8 @@ class MongrelHudApp:
                     continue
                 centers.append({
                     "id": center_id,
+                    "systemName": str(raw.get("systemName") or TEN16_SYSTEM).strip(),
+                    "systemAddress": str(raw.get("systemAddress") or "").strip(),
                     "body": str(raw.get("body") or "").strip().lower(),
                     "bodyType": str(raw.get("bodyType") or "").strip().lower(),
                     "signal": signal,
@@ -1045,13 +1049,16 @@ class MongrelHudApp:
         if not self._in_ten16(state):
             return []
         body = short_body_name(state).casefold()
-        if not body:
+        system = state.get("system") or {}
+        system_name = str(system.get("name") or "").strip().casefold()
+        if not body or not system_name:
             return []
         with self.mining_lock:
             rows = [
                 dict(row)
                 for row in self.mining_sites
-                if str(row.get("body") or "").casefold() == body
+                if str(row.get("systemName") or TEN16_SYSTEM).strip().casefold() == system_name
+                and str(row.get("body") or "").casefold() == body
                 and isinstance(row.get("latitude"), (int, float))
                 and isinstance(row.get("longitude"), (int, float))
             ]
@@ -1071,10 +1078,17 @@ class MongrelHudApp:
         if not self._in_ten16(state):
             return []
         body = short_body_name(state).casefold()
-        if not body:
+        system = state.get("system") or {}
+        system_name = str(system.get("name") or "").strip().casefold()
+        if not body or not system_name:
             return []
         with self.mining_lock:
-            rows = [dict(row) for row in self.mining_centers if str(row.get("body") or "").casefold() == body]
+            rows = [
+                dict(row)
+                for row in self.mining_centers
+                if str(row.get("systemName") or TEN16_SYSTEM).strip().casefold() == system_name
+                and str(row.get("body") or "").casefold() == body
+            ]
         return sorted(rows, key=lambda row: int(row.get("signal") or 0))
 
     def mining_locations_for_current_body(self) -> list[dict[str, Any]]:
