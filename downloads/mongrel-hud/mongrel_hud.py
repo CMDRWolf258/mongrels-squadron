@@ -419,6 +419,7 @@ class MongrelHudApp:
         self.recent_targets: list[dict[str, Any]] = []
         self.restored_target_until = 0.0
         self.wanted_flash_until = 0.0
+        self._wanted_flash_key = ""
         self._last_target_identity = ""
         threading.Thread(target=self._warm_ocr, name="MongrelHudOcrWarmup", daemon=True).start()
 
@@ -497,9 +498,11 @@ class MongrelHudApp:
         pilot = " ".join(str(target.get("pilotName") or "").split()).casefold()
         ship = " ".join(str(target.get("ship") or "").split()).casefold()
         faction = " ".join(str(target.get("faction") or "").split()).casefold()
-        if not pilot and not ship:
-            return ""
-        return "|".join((pilot, ship, faction))
+        if pilot:
+            return "|".join((pilot, ship))
+        if ship:
+            return "|".join((ship, faction))
+        return ""
 
     def _warm_ocr(self) -> None:
         if not OCR_AVAILABLE or RapidOCR is None:
@@ -1306,13 +1309,14 @@ class MongrelHudApp:
 
     def _target_transients(self, target: dict[str, Any]) -> None:
         key = self.target_identity(target)
-        if key == self._last_target_identity:
-            return
-        self._last_target_identity = key
-        if target and str(target.get("legalStatus") or "").casefold() == "wanted":
+        if key != self._last_target_identity:
+            self._last_target_identity = key
+            self._wanted_flash_key = ""
+            if key and self.target_intel(target):
+                self.restored_target_until = time.monotonic() + 1.8
+        if key and str(target.get("legalStatus") or "").casefold() == "wanted" and self._wanted_flash_key != key:
+            self._wanted_flash_key = key
             self.wanted_flash_until = time.monotonic() + 3.0
-        if key and self.target_intel(target):
-            self.restored_target_until = time.monotonic() + 1.8
 
     def _draw_title(self, canvas: tk.Canvas, title: str, scale: float, width: int, color: str = HUD_CYAN) -> float:
         y = 8 * scale
