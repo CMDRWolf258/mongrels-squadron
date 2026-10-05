@@ -76,6 +76,20 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.11.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.16.0 shared dialogue manager / ambient carrier life:
+- Carrier dialogue is now website-backed rather than release-only. Site storage key `carrier-dialogue-v1` lives in the CARRIERS KV namespace and is delivered read-only to member HUDs through the authenticated Scout HUD feed.
+- Only the exact configured Site Admin account (`ADMIN_USER_ID`) may use the dialogue API. Other members can receive dialogue but cannot mutate the shared library.
+- Carriers page now exposes an admin-only Dialogue Manager with carrier/category/audience filters, add/edit/delete, enable/disable, and rarity controls. Rarity weights are Common 6, Uncommon 3, Rare 1.
+- Categories: docking request/granted/docked/undocked; jump scheduled/10m/5m/cancelled/complete/cooldown; Hangar Ambient; Concourse Ambient; Concourse Bulletin/News; Concourse Advertisement.
+- Audiences: Everyone, Owner, Mongrel squadmate, Visitor. Audience=Everyone combines with the current relationship-specific pool.
+- First manager load seeds existing starter personality lines into the shared library so Wolf can see/edit the actual baseline dialogue. Empty initialized profiles remain empty and are not silently re-seeded after deletions.
+- HUD shared dialogue takes priority over packaged personality pools when a relevant shared pool exists. If all relevant shared rows are disabled, that pool is silent. If no shared rows exist for the event/audience, the packaged starter pool remains fallback.
+- Ambient playback uses Elite/Scout on-foot context: OnFootInHangar => `ambient.hangar` + Hangar PA; station/social-space => combined `ambient.concourse` / `bulletin.concourse` / `advertisement.concourse` + Interior PA.
+- Each carrier has shared randomized ambient timing defaults (hangar 120–240s, concourse 90–210s), configurable in the Dialogue Manager. Minimum enforced 45s.
+- HUD 0.16.0 adds four local Concourse Voice Ensemble slots. Slot 1 defaults enabled; slots 2–4 default disabled. Every PC can choose installed System/WinRT/Kokoro voices independently. Concourse lines rotate among enabled local voices while shared writing remains identical.
+- Manual Bulletin/News and Advertisement lines are live categories now. Automatic website-derived bulletins are intentionally deferred; future engine should build temporary up-to-four-sentence bulletins from approved structured sources (Newsroom, Events, GalNet, BGS conflicts, etc.) and feed the existing concourse bulletin path with editorial/rate-limit rules.
+- Smoke coverage was refreshed from stale Scout 1.10/HUD 0.13 expectations to Scout 1.11.1 / HUD 0.16.0, and a dedicated carrier-dialogue smoke test was added.
+
 Mongrel HUD 0.15.0 / Scout 1.11.1 carrier identity and personality foundation:
 - Carrier voice logic is no longer Pneuma-hard-coded. The iPad Carrier PA heading is dynamic and identifies the relevant carrier as YOUR CARRIER, SQUADMATE CARRIER, SQUAD CARRIER, or VISITING CARRIER.
 - The existing authenticated website carrier registry is now the shared carrier identity source. HUD feed includes registered carrier callsign, learned numeric Elite Market/Carrier ID, name, owner/relationship, official status, and shared HUD personality.
