@@ -12,6 +12,7 @@ const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
 const ORDER_REVIEW_KEY='wolf-bgs-order-change-reviews-v1';
 const BGS_CONTROL_KEY='wolf-bgs-control-v1';
+const CARRIER_REGISTRY_KEY='registry-v1';
 const MAX_ALERTS=40;
 const RECENT_ORDER_MS=7*24*60*60*1000;
 
@@ -58,6 +59,7 @@ export async function buildHudFeed(request,env,auth){
     displayName:auth.ownerCommander||auth.label||'Mongrel Scout',
     access,
   };
+  const carrierProfiles=await hudCarrierProfiles(request,env,auth);
   const [mission,currentOrders,routes,systems,bgsAlertState,rewardView,history,ackState,orderReviewState]=await Promise.all([
     buildMissionControlData(request,env,session),
     readCurrentOrderCycle(env),
@@ -106,12 +108,65 @@ export async function buildHudFeed(request,env,auth){
     ok:true,
     generatedAt:new Date().toISOString(),
     viewer:{userId:auth.ownerId,commander:auth.ownerCommander||auth.label||'',access},
+    carriers:carrierProfiles,
     mission:summarizeMission(mission,currentOrders,orderProgress),
     trade:summarizeTrades(routes),
     scout:summarizeScoutBoard(scoutBoard),
     alerts,
     unacknowledgedCount:alerts.filter(alert=>!alert.acknowledged).length,
   };
+}
+
+
+async function hudCarrierProfiles(request,env,auth){
+  if(!env?.CARRIERS||typeof env.CARRIERS.get!=='function')return[];
+  let carriers=await env.CARRIERS.get(CARRIER_REGISTRY_KEY,{type:'json'});
+  carriers=Array.isArray(carriers)?carriers:[];
+  const url=new URL(request.url);
+  const carrierId=clean(url.searchParams.get('ownerCarrierId')).replace(/[^0-9]/g,'').slice(0,24);
+  const callsign=clean(url.searchParams.get('ownerCarrierCallsign')).toUpperCase().replace(/\s+/g,'').slice(0,20);
+  const currentName=clean(url.searchParams.get('ownerCarrierName')).slice(0,100);
+  const validCallsign=/^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(callsign);
+  const validCarrierId=/^[0-9]{4,24}$/.test(carrierId);
+  let changed=false;
+
+  if(validCallsign&&validCarrierId){
+    const index=carriers.findIndex(item=>String(item?.ownerId||'')===String(auth.ownerId||'')&&String(item?.callsign||'').toUpperCase()===callsign);
+    if(index>=0){
+      const item={...carriers[index]};
+      if(String(item.marketId||'')!==carrierId){
+        item.marketId=carrierId;
+        changed=true;
+      }
+      if(currentName&&currentName!=='Unnamed Carrier'&&String(item.name||'')!==currentName){
+        item.name=currentName;
+        changed=true;
+      }
+      if(changed){
+        item.updatedAt=new Date().toISOString();
+        item.updatedBy=auth.ownerCommander||auth.label||'Mongrel Scout';
+        carriers[index]=item;
+        if(typeof env.CARRIERS.put==='function'){
+          await env.CARRIERS.put(CARRIER_REGISTRY_KEY,JSON.stringify(carriers.slice(0,300)));
+        }
+      }
+    }
+  }
+
+  return carriers
+    .filter(item=>item&&typeof item==='object'&&clean(item.callsign))
+    .slice(0,300)
+    .map(item=>({
+      id:clean(item.id),
+      marketId:clean(item.marketId),
+      callsign:clean(item.callsign).toUpperCase(),
+      name:clean(item.name)||clean(item.callsign)||'Fleet Carrier',
+      commanderName:clean(item.commanderName)||clean(item.ownerName),
+      role:clean(item.role),
+      official:Boolean(item.official),
+      relationship:String(item.ownerId||'')===String(auth.ownerId||'')?'owner':'squadmate',
+      personality:Boolean(item.official)?'mongrels':'member',
+    }));
 }
 
 export function summarizeMission(mission,currentOrders,progressState={}){
