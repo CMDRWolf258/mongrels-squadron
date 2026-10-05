@@ -336,7 +336,7 @@ assert "_download_voice_asset" in source and "_safe_extract_tar" in source and "
 assert "KOKORO_ENGINE_SHA256" in source and "KOKORO_MODEL_SHA256" in source and "KOKORO_PACK_DOWNLOAD_BYTES" in source
 assert "_speak_kokoro" in source and "sherpa-onnx-offline-tts.exe" in source and "--kokoro-model=" in source and "--sid=" in source
 assert "_process_pcm16_wav" in source and "winsound.PlaySound" in source
-    assert "_ensure_voice_worker" in source and "workerAlive" in source and "lastRequestId" in source
+assert "_ensure_voice_worker" in source and "workerAlive" in source and "lastRequestId" in source
 assert "SelectVoice" in source and '"voiceProvider"' in source and '"voiceId"' in source and '"voiceName"' in source
 assert "SpeechSynthesizer]::AllVoices" in source and "SynthesizeTextToStreamAsync" in source
 assert "AudioVolume" in source and "SpeakingRate" in source and "WindowsRuntimeStreamExtensions" in source
