@@ -185,6 +185,11 @@ function normalizeCarrier(value,fixed,session,existing={}) {
     telemetrySystem: existing.telemetrySystem || '', telemetryUpdatedAt: existing.telemetryUpdatedAt || '',
     telemetryCheckedAt: existing.telemetryCheckedAt || '', telemetrySource: existing.telemetrySource || '',
     services:normalizeList(src.services,existing.services||[]), official:manager?Boolean(src.official):Boolean(existing.official),
+    voicePersonality:normalizeVoicePersonality(
+      src.voicePersonality,
+      existing.voicePersonality || ((manager?Boolean(src.official):Boolean(existing.official)) ? 'mongrels' : 'personal'),
+      manager
+    ),
     createdAt:fixed.createdAt, updatedAt:fixed.updatedAt, updatedBy:fixed.updatedBy,
   };
 }
@@ -205,7 +210,7 @@ function normalizeCoordination(value,fixed,session,existing={}) {
 function presentCarrier(item,session){
   const authenticated=Boolean(session&&ALLOWED_ACCESS.has(session.access));
   const canEdit=authenticated&&(MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub);
-  return {id:item.id,marketId:item.marketId||'',callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
+  return {id:item.id,marketId:item.marketId||'',callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,voicePersonality:item.voicePersonality||(item.official?'mongrels':'personal'),updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
 }
 function presentCoordination(item,session,carrier){return {...item,carrierName:carrier?.name||item.carrierCallsign,carrierCommander:carrier?.commanderName||'',currentSystem:carrier?.currentSystem||'',locationSource:carrier?.locationSource||'',locationUpdatedAt:carrier?.locationUpdatedAt||'',canEdit:MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub,isMine:item.ownerId===session.sub};}
 
@@ -293,6 +298,11 @@ function viewer(s){return {id:s.sub,displayName:s.displayName,access:s.access};}
 function normalizeCallsign(v){return clean(v,'',20).toUpperCase().replace(/\s+/g,'');}
 function validCallsign(v){return /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(v);}
 function normalizeCarrierStatus(v){const x=clean(v,'active',24).toLowerCase(); return ['active','relocating','supporting','maintenance','unavailable'].includes(x)?x:'active';}
+function normalizeVoicePersonality(v,fallback='personal',manager=false){
+  const x=clean(v,fallback,24).toLowerCase();
+  if(x==='mongrels'&&!manager)return ['personal','professional'].includes(fallback)?fallback:'personal';
+  return ['personal','professional','mongrels'].includes(x)?x:(['personal','professional','mongrels'].includes(fallback)?fallback:'personal');
+}
 function normalizeActivity(v){const x=clean(v,'relocation',30).toLowerCase(); return ['relocation','loading','unloading','project_support','expedition_support','refuel_tritium','other'].includes(x)?x:'relocation';}
 function normalizeCoordStatus(v){const x=clean(v,'planned',24).toLowerCase(); return ['planned','loading','ready','in_transit','on_station','complete'].includes(x)?x:'planned';}
 function normalizePriority(v){return clean(v,'normal',16).toLowerCase()==='urgent'?'urgent':'normal';}
