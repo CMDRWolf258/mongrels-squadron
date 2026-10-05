@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.0"
+assert hud.APP_VERSION=="0.16.1"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -248,7 +248,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.16.0"
+    assert hud.APP_VERSION=="0.16.1"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -336,6 +336,7 @@ assert "_download_voice_asset" in source and "_safe_extract_tar" in source and "
 assert "KOKORO_ENGINE_SHA256" in source and "KOKORO_MODEL_SHA256" in source and "KOKORO_PACK_DOWNLOAD_BYTES" in source
 assert "_speak_kokoro" in source and "sherpa-onnx-offline-tts.exe" in source and "--kokoro-model=" in source and "--sid=" in source
 assert "_process_pcm16_wav" in source and "winsound.PlaySound" in source
+    assert "_ensure_voice_worker" in source and "workerAlive" in source and "lastRequestId" in source
 assert "SelectVoice" in source and '"voiceProvider"' in source and '"voiceId"' in source and '"voiceName"' in source
 assert "SpeechSynthesizer]::AllVoices" in source and "SynthesizeTextToStreamAsync" in source
 assert "AudioVolume" in source and "SpeakingRate" in source and "WindowsRuntimeStreamExtensions" in source
