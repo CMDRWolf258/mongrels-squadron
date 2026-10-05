@@ -7,6 +7,7 @@ import { loadRewardDiscordView } from '../../../lib/reward-discord.js';
 import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { isTradeRouteActive, readTradeRoutes } from '../../../lib/trade-intelligence.js';
+import { readCarrierDialogue, publicDialogueProfile } from '../../../lib/carrier-dialogue.js';
 
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
@@ -59,7 +60,10 @@ export async function buildHudFeed(request,env,auth){
     displayName:auth.ownerCommander||auth.label||'Mongrel Scout',
     access,
   };
-  const carrierProfiles=await hudCarrierProfiles(request,env,auth);
+  const [carrierProfiles,dialogueLibrary]=await Promise.all([
+    hudCarrierProfiles(request,env,auth),
+    readCarrierDialogue(env),
+  ]);
   const [mission,currentOrders,routes,systems,bgsAlertState,rewardView,history,ackState,orderReviewState]=await Promise.all([
     buildMissionControlData(request,env,session),
     readCurrentOrderCycle(env),
@@ -109,6 +113,12 @@ export async function buildHudFeed(request,env,auth){
     generatedAt:new Date().toISOString(),
     viewer:{userId:auth.ownerId,commander:auth.ownerCommander||auth.label||'',access},
     carriers:carrierProfiles,
+    carrierDialogue:Object.fromEntries(
+      carrierProfiles
+        .filter(profile=>dialogueLibrary.profiles?.[profile.id])
+        .map(profile=>[profile.id,publicDialogueProfile(dialogueLibrary.profiles[profile.id])])
+    ),
+    carrierDialogueUpdatedAt:dialogueLibrary.updatedAt||null,
     mission:summarizeMission(mission,currentOrders,orderProgress),
     trade:summarizeTrades(routes),
     scout:summarizeScoutBoard(scoutBoard),
