@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.1"
+APP_VERSION = "0.16.2"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1431,6 +1431,18 @@ class MongrelHudApp:
                 self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
         return self.voice_settings_snapshot()
+
+    @staticmethod
+    def _voice_identity_for_role(settings: dict[str, Any], role: str) -> dict[str, str]:
+        roles = settings.get("roles") if isinstance(settings.get("roles"), dict) else {}
+        identity = roles.get(role) if isinstance(roles.get(role), dict) else {}
+        if not identity:
+            identity = {
+                "voiceProvider": settings.get("voiceProvider"),
+                "voiceId": settings.get("voiceId"),
+                "voiceName": settings.get("voiceName"),
+            }
+        return _normalized_voice_identity(identity)
 
     def _owner_carrier_for_voice(self) -> dict[str, Any]:
         state = self.scout_state()
@@ -5603,6 +5615,8 @@ def make_handler(app: MongrelHudApp):
                 self.send_json({"ok": False, "error": exc.error_code, "detail": str(exc), "diagnostics": exc.diagnostics}, exc.status)
             except (ValueError, TypeError) as exc:
                 self.send_json({"ok": False, "error": str(exc)}, 400)
+            except Exception as exc:
+                self.send_json({"ok": False, "error": "hud_internal_error", "detail": str(exc)[:500]}, 500)
 
     return Handler
 
