@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.15.0"
+APP_VERSION = "0.16.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -496,6 +496,12 @@ def default_voice_settings() -> dict[str, Any]:
             VOICE_ROLE_ANNOUNCEMENT: dict(identity),
             VOICE_ROLE_ATC: dict(identity),
         },
+        "concourseVoices": [
+            {**dict(identity), "enabled": True},
+            {**dict(identity), "enabled": False},
+            {**dict(identity), "enabled": False},
+            {**dict(identity), "enabled": False},
+        ],
         "cues": {key: dict(value) for key, value in CARRIER_VOICE_CUES.items()},
     }
 
@@ -517,6 +523,14 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
     raw_roles = raw.get("roles") if isinstance(raw.get("roles"), dict) else {}
     announcement = _normalized_voice_identity(raw_roles.get(VOICE_ROLE_ANNOUNCEMENT), legacy_identity)
     atc = _normalized_voice_identity(raw_roles.get(VOICE_ROLE_ATC), legacy_identity)
+    raw_concourse = raw.get("concourseVoices") if isinstance(raw.get("concourseVoices"), list) else []
+    concourse_voices = []
+    for index in range(4):
+        default_enabled = index == 0
+        raw_slot = raw_concourse[index] if index < len(raw_concourse) and isinstance(raw_concourse[index], dict) else {}
+        identity_slot = _normalized_voice_identity(raw_slot, announcement)
+        identity_slot["enabled"] = bool(raw_slot.get("enabled", default_enabled))
+        concourse_voices.append(identity_slot)
 
     out = {
         "enabled": bool(raw.get("enabled", defaults["enabled"])),
@@ -535,6 +549,7 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
             VOICE_ROLE_ANNOUNCEMENT: announcement,
             VOICE_ROLE_ATC: atc,
         },
+        "concourseVoices": concourse_voices,
         "cues": {},
     }
     raw_cues = raw.get("cues") if isinstance(raw.get("cues"), dict) else {}
@@ -1187,6 +1202,8 @@ class MongrelHudApp:
         self.voice_pending: list[dict[str, Any]] = []
         self.voice_last_scheduled: dict[str, float] = {}
         self.voice_dialogue_history: dict[str, list[str]] = {}
+        self.ambient_context_key = ""
+        self.ambient_next_due = 0.0
         self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastRole": "", "lastAcousticProfile": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
@@ -1235,6 +1252,7 @@ class MongrelHudApp:
         self._refresh_voice_pack_status()
         threading.Thread(target=self._voice_catalog_worker, name="MongrelHudVoiceCatalog", daemon=True).start()
         threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True).start()
+        threading.Thread(target=self._ambient_voice_loop, name="MongrelHudAmbientVoice", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
         with self.lock:
@@ -1350,6 +1368,19 @@ class MongrelHudApp:
                 for key in legacy_keys:
                     if key in value:
                         current[key] = value[key]
+
+            concourse_updates = value.get("concourseVoices")
+            if isinstance(concourse_updates, list):
+                current_slots = current.get("concourseVoices") if isinstance(current.get("concourseVoices"), list) else []
+                merged_slots = []
+                for index in range(4):
+                    slot = dict(current_slots[index]) if index < len(current_slots) and isinstance(current_slots[index], dict) else {}
+                    update = concourse_updates[index] if index < len(concourse_updates) and isinstance(concourse_updates[index], dict) else {}
+                    for key in ("voiceProvider", "voiceId", "voiceName", "enabled"):
+                        if key in update:
+                            slot[key] = update[key]
+                    merged_slots.append(slot)
+                current["concourseVoices"] = merged_slots
 
             role_updates = value.get("roles")
             if isinstance(role_updates, dict):
@@ -1544,6 +1575,169 @@ class MongrelHudApp:
             return stored_name
         return "the carrier"
 
+    def _shared_dialogue_profile(self, carrier_profile: dict[str, Any]) -> dict[str, Any] | None:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        libraries = feed.get("carrierDialogue") if isinstance(feed.get("carrierDialogue"), dict) else {}
+        profile_id = str(carrier_profile.get("id") or "")
+        shared = libraries.get(profile_id) if profile_id else None
+        return dict(shared) if isinstance(shared, dict) else None
+
+    def _shared_dialogue_choice(
+        self,
+        carrier_profile: dict[str, Any],
+        categories: str | tuple[str, ...],
+        relationship: str,
+    ) -> tuple[str, bool]:
+        shared = self._shared_dialogue_profile(carrier_profile)
+        if not shared:
+            return "", False
+        category_set = {categories} if isinstance(categories, str) else {str(item) for item in categories}
+        rows = shared.get("lines") if isinstance(shared.get("lines"), list) else []
+        relevant = [
+            row for row in rows
+            if isinstance(row, dict)
+            and str(row.get("category") or "") in category_set
+            and str(row.get("audience") or "") in {"all", relationship}
+        ]
+        if not relevant:
+            return "", False
+        enabled = [row for row in relevant if row.get("enabled") is not False and str(row.get("text") or "").strip()]
+        if not enabled:
+            return "", True
+
+        identity = str(carrier_profile.get("marketId") or carrier_profile.get("id") or carrier_profile.get("callsign") or "carrier")
+        history_key = f"{identity}|{relationship}|{'/'.join(sorted(category_set))}"
+        recent = self.voice_dialogue_history.get(history_key, [])
+        candidates = [row for row in enabled if str(row.get("id") or row.get("text") or "") not in recent[-2:]] or enabled
+
+        weighted: list[tuple[dict[str, Any], int]] = []
+        total = 0
+        for row in candidates:
+            try:
+                weight = int(row.get("weight") or 0)
+            except (TypeError, ValueError):
+                rarity = str(row.get("rarity") or "common").casefold()
+                weight = 6 if rarity == "common" else 3 if rarity == "uncommon" else 1
+            weight = max(1, min(20, weight))
+            total += weight
+            weighted.append((row, total))
+        pick = secrets.randbelow(total) if total > 1 else 0
+        selected = weighted[-1][0]
+        for row, ceiling in weighted:
+            if pick < ceiling:
+                selected = row
+                break
+        line_key = str(selected.get("id") or selected.get("text") or "")
+        self.voice_dialogue_history[history_key] = (recent + [line_key])[-4:]
+        return str(selected.get("text") or "").strip(), True
+
+    def _render_voice_tokens(self, phrase: str, event: dict[str, Any], carrier_profile: dict[str, Any] | None = None) -> str:
+        profile = carrier_profile or self._carrier_profile_for_event(event) or self.carrier_voice_context()
+        pad = event.get("landingPad")
+        pad_text = f"pad {int(pad)}" if isinstance(pad, int) else "your assigned pad"
+        destination_raw = event.get("destinationSystem") or event.get("system") or ""
+        destination = spoken_system_name(destination_raw) or "your destination"
+        system_state = self.scout_state().get("system")
+        current_system = spoken_system_name(system_state.get("name") if isinstance(system_state, dict) else "") or destination
+        minutes = event.get("minutes")
+        if not isinstance(minutes, (int, float)):
+            minutes = ""
+        commander = " ".join(str(self.scout_state().get("commander") or event.get("commander") or "").split()) or "Commander"
+        carrier_name = " ".join(str(profile.get("name") or profile.get("callsign") or "").split()) if isinstance(profile, dict) else ""
+        if not carrier_name:
+            carrier_name = self._carrier_voice_name(event)
+        replacements = {
+            "{carrier}": carrier_name or "the carrier",
+            "{destination}": destination,
+            "{system}": current_system,
+            "{pad}": pad_text,
+            "{minutes}": str(int(minutes)) if isinstance(minutes, (int, float)) else str(minutes or ""),
+            "{commander}": commander,
+        }
+        text = str(phrase or "")
+        for token, replacement in replacements.items():
+            text = text.replace(token, replacement)
+        return " ".join(text.split())[:700]
+
+    def _concourse_voice_identity(self, settings: dict[str, Any]) -> dict[str, str]:
+        slots = settings.get("concourseVoices") if isinstance(settings.get("concourseVoices"), list) else []
+        enabled = [slot for slot in slots if isinstance(slot, dict) and slot.get("enabled") is not False]
+        if not enabled:
+            return self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT)
+        slot = enabled[secrets.randbelow(len(enabled))]
+        return _normalized_voice_identity(slot, self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT))
+
+    def _ambient_voice_context(self) -> tuple[str, tuple[str, ...], str, dict[str, Any], dict[str, Any]] | None:
+        state = self.scout_state()
+        status = state.get("status") if isinstance(state.get("status"), dict) else {}
+        carrier = self.carrier_voice_context()
+        if not carrier.get("active"):
+            return None
+        shared = self._shared_dialogue_profile(carrier)
+        if not shared:
+            return None
+        settings = shared.get("settings") if isinstance(shared.get("settings"), dict) else {}
+        if settings.get("ambientEnabled") is False:
+            return None
+        if bool(status.get("onFootInHangar")):
+            return ("hangar", ("ambient.hangar",), ACOUSTIC_HANGAR, carrier, settings)
+        if bool(status.get("onFootInStation")) or bool(status.get("onFootSocialSpace")):
+            return ("concourse", ("ambient.concourse", "bulletin.concourse", "advertisement.concourse"), ACOUSTIC_PA, carrier, settings)
+        return None
+
+    def _ambient_voice_loop(self) -> None:
+        while True:
+            try:
+                context = self._ambient_voice_context()
+                settings = self.voice_settings_snapshot()
+                if context is None or not settings.get("enabled") or not settings.get("carrierPa"):
+                    self.ambient_context_key = ""
+                    self.ambient_next_due = 0.0
+                    time.sleep(2.0)
+                    continue
+                room, categories, acoustic, carrier, shared_settings = context
+                relationship = str(carrier.get("relationship") or "visitor")
+                context_key = f"{carrier.get('id') or carrier.get('marketId') or carrier.get('callsign')}|{room}|{relationship}"
+                now = time.monotonic()
+                if room == "hangar":
+                    minimum = max(45.0, float(shared_settings.get("hangarMinSeconds") or 120.0))
+                    maximum = max(minimum, float(shared_settings.get("hangarMaxSeconds") or 240.0))
+                else:
+                    minimum = max(45.0, float(shared_settings.get("concourseMinSeconds") or 90.0))
+                    maximum = max(minimum, float(shared_settings.get("concourseMaxSeconds") or 210.0))
+                if context_key != self.ambient_context_key or self.ambient_next_due <= 0:
+                    fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
+                    self.ambient_context_key = context_key
+                    self.ambient_next_due = now + minimum + ((maximum - minimum) * fraction)
+                elif now >= self.ambient_next_due:
+                    phrase, configured = self._shared_dialogue_choice(carrier, categories, relationship)
+                    fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
+                    self.ambient_next_due = now + minimum + ((maximum - minimum) * fraction)
+                    if configured and phrase:
+                        event = {
+                            "relationship": relationship,
+                            "marketId": carrier.get("marketId"),
+                            "stationName": carrier.get("callsign") or carrier.get("name"),
+                            "stationType": "Fleet Carrier",
+                        }
+                        text = self._render_voice_tokens(phrase, event, carrier)
+                        identity = self._concourse_voice_identity(settings) if room == "concourse" else self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT)
+                        with self.voice_condition:
+                            self.voice_pending.append({
+                                "cue": f"ambient.{room}",
+                                "role": VOICE_ROLE_ANNOUNCEMENT,
+                                "voiceIdentity": identity,
+                                "acousticProfile": acoustic,
+                                "text": text,
+                                "due": time.monotonic(),
+                            })
+                            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+                            self.voice_condition.notify_all()
+                time.sleep(2.0)
+            except Exception:
+                time.sleep(5.0)
+
     def _dialogue_phrase(self, cue: str, event: dict[str, Any], row: dict[str, Any]) -> str:
         configured = str(row.get("phrase") or "")
         default_phrase = str(row.get("defaultPhrase") or CARRIER_VOICE_CUES.get(cue, {}).get("phrase") or "")
@@ -1556,6 +1750,9 @@ class MongrelHudApp:
         }
         personality = str(profile.get("personality") or "generic")
         relationship = str(profile.get("relationship") or "visitor")
+        shared_phrase, shared_configured = self._shared_dialogue_choice(profile, cue, relationship)
+        if shared_configured:
+            return shared_phrase
         pools = CARRIER_DIALOGUE_POOLS.get(personality, {})
         choices = tuple((pools.get(relationship) or {}).get(cue) or ())
         if not choices:
@@ -1578,26 +1775,13 @@ class MongrelHudApp:
         phrase = self._dialogue_phrase(cue, event, row)
         if not phrase:
             return ""
-        pad = event.get("landingPad")
-        pad_text = f"pad {int(pad)}" if isinstance(pad, int) else "your assigned pad"
-        destination_raw = event.get("destinationSystem") or event.get("system") or ""
-        destination = spoken_system_name(destination_raw) or "your destination"
-        minutes = event.get("minutes")
+        context = dict(event)
+        minutes = context.get("minutes")
         if not isinstance(minutes, (int, float)):
             lead = CARRIER_VOICE_CUES.get(cue, {}).get("leadSeconds")
-            minutes = int(round(float(lead) / 60.0)) if isinstance(lead, (int, float)) else ""
-        commander = " ".join(str(self.scout_state().get("commander") or event.get("commander") or "").split()) or "Commander"
-        replacements = {
-            "{carrier}": self._carrier_voice_name(event),
-            "{destination}": destination,
-            "{pad}": pad_text,
-            "{minutes}": str(int(minutes)) if isinstance(minutes, (int, float)) else str(minutes or ""),
-            "{commander}": commander,
-        }
-        text = phrase
-        for token, replacement in replacements.items():
-            text = text.replace(token, replacement)
-        return " ".join(text.split())[:600]
+            if isinstance(lead, (int, float)):
+                context["minutes"] = int(round(float(lead) / 60.0))
+        return self._render_voice_tokens(phrase, context)
 
     @staticmethod
     def _parse_voice_time(value: Any) -> datetime | None:
@@ -1830,6 +2014,29 @@ class MongrelHudApp:
                 "cue": cue,
                 "role": self._voice_role_for_cue(cue),
                 "event": event,
+                "due": time.monotonic(),
+                "force": True,
+            })
+            self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
+            self.voice_condition.notify_all()
+        return self.voice_status_snapshot()
+
+    def queue_concourse_voice_test(self, slot_index: int) -> dict[str, Any]:
+        if slot_index < 0 or slot_index > 3:
+            raise ValueError("concourse_voice_slot_invalid")
+        settings = self.voice_settings_snapshot()
+        slots = settings.get("concourseVoices") if isinstance(settings.get("concourseVoices"), list) else []
+        slot = slots[slot_index] if slot_index < len(slots) and isinstance(slots[slot_index], dict) else {}
+        identity = _normalized_voice_identity(slot, self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT))
+        carrier = self.carrier_voice_context()
+        name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
+        with self.voice_condition:
+            self.voice_pending.append({
+                "cue": "test.concourse",
+                "role": VOICE_ROLE_ANNOUNCEMENT,
+                "voiceIdentity": identity,
+                "acousticProfile": ACOUSTIC_PA,
+                "text": f"{name} concourse announcement voice {slot_index + 1}. Audio channel online.",
                 "due": time.monotonic(),
                 "force": True,
             })
@@ -2123,8 +2330,14 @@ class MongrelHudApp:
                 if identity.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
                     roles[role] = {"voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
                     changed = True
+            slots = voice.get("concourseVoices") if isinstance(voice.get("concourseVoices"), list) else []
+            for index, slot in enumerate(slots):
+                if isinstance(slot, dict) and slot.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                    slots[index] = {**slot, "voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
+                    changed = True
             if changed:
                 voice["roles"] = roles
+                voice["concourseVoices"] = slots
                 self.store.data["voice"] = normalized_voice_settings(voice)
                 self.store.save()
         self._voice_catalog_worker()
@@ -2680,7 +2893,7 @@ class MongrelHudApp:
                     self.voice_condition.notify_all()
                 continue
             event = item.get("event") if isinstance(item.get("event"), dict) else {}
-            text = str(item.get("text") or "") if cue == "test" else self._voice_text_for_event(cue, event)
+            text = str(item.get("text") or "") if item.get("text") is not None else self._voice_text_for_event(cue, event)
             if not text:
                 with self.voice_condition:
                     self.voice_runtime["speaking"] = False
@@ -2690,7 +2903,8 @@ class MongrelHudApp:
             role = str(item.get("role") or self._voice_role_for_cue(cue))
             if role not in VOICE_ROLE_IDS:
                 role = VOICE_ROLE_ANNOUNCEMENT
-            identity = self._voice_identity_for_role(settings, role)
+            direct_identity = item.get("voiceIdentity") if isinstance(item.get("voiceIdentity"), dict) else None
+            identity = _normalized_voice_identity(direct_identity) if direct_identity else self._voice_identity_for_role(settings, role)
             forced_profile = str(item.get("acousticProfile") or "")
             acoustic_profile = forced_profile if forced_profile in ACOUSTIC_PROFILE_IDS else self._voice_acoustic_profile()
             try:
@@ -5302,6 +5516,8 @@ def make_handler(app: MongrelHudApp):
                     )}
                 elif path == "/api/voice-test-cue":
                     result = {"ok": True, "voiceStatus": app.queue_voice_cue_test(str(body.get("cue") or ""))}
+                elif path == "/api/voice-test-concourse":
+                    result = {"ok": True, "voiceStatus": app.queue_concourse_voice_test(int(body.get("slot") or 0))}
                 elif path == "/api/voice-pack-install":
                     result = {"ok": True, "voicePack": app.start_voice_pack_install(repair=False)}
                 elif path == "/api/voice-pack-repair":
