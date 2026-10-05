@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.14.4"
+APP_VERSION = "0.15.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -313,6 +313,130 @@ CARRIER_VOICE_CUES: dict[str, dict[str, Any]] = {
     "carrier.jump": {"label": "Jump complete", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 8.0, "maxDelay": 11.0, "cooldown": 30.0, "phrase": "{carrier} has arrived in {destination}. Jump complete."},
     "carrier.cooldown_ready": {"label": "Ready for next jump", "role": VOICE_ROLE_ANNOUNCEMENT, "enabled": True, "minDelay": 0.0, "maxDelay": 0.0, "cooldown": 30.0, "offsetSeconds": 180.0, "phrase": "{carrier} jump cooldown complete. Carrier is ready to plot the next jump."},
 }
+
+# Starter personality pools. These intentionally begin small; once carrier
+# identity/relationship selection is proven in live play, the library can grow
+# without changing the routing architecture.
+CARRIER_DIALOGUE_POOLS: dict[str, dict[str, dict[str, tuple[str, ...]]]] = {
+    "personal": {
+        "owner": {
+            "docking.granted": (
+                "Docking clearance confirmed. Proceed to {pad}.",
+                "Welcome back, Commander. {pad} is ready for you.",
+                "Clearance granted. Bring her in to {pad}, Commander.",
+            ),
+            "docking.docked": (
+                "Welcome home, Commander.",
+                "Welcome back aboard {carrier}, Commander.",
+                "{carrier} has you. Good to have you home, Commander {commander}.",
+            ),
+            "docking.undocked": (
+                "Departure complete. Clear of {carrier}. Safe flying, Commander.",
+                "You are clear of {carrier}. See you when you get back, Commander.",
+                "Departure corridor clear. Good hunting, Commander.",
+            ),
+            "carrier.jump_request": (
+                "{carrier} jump plotted for {destination}. Departure sequence scheduled.",
+                "Course locked for {destination}. Carrier departure sequence is now active.",
+                "{destination} is plotted. Preparing {carrier} for departure.",
+            ),
+            "carrier.jump": (
+                "{carrier} has arrived in {destination}. Jump complete.",
+                "Jump complete. Welcome to {destination}, Commander.",
+                "Transit complete. {carrier} is now on station in {destination}.",
+            ),
+            "carrier.cooldown_ready": (
+                "{carrier} jump cooldown complete. Carrier is ready to plot the next jump.",
+                "Frame shift systems have recycled. {carrier} is ready for another jump.",
+            ),
+        },
+        "squadmate": {
+            "docking.granted": (
+                "Docking clearance confirmed. Proceed to {pad}.",
+                "Clearance granted, Commander. {pad} is ready.",
+                "Mongrel traffic recognized. Proceed to {pad}.",
+            ),
+            "docking.docked": (
+                "Welcome aboard {carrier}, Commander.",
+                "Welcome aboard. Always good to have another Mongrel on deck.",
+                "{carrier} welcomes you aboard, Commander. Make yourself at home.",
+            ),
+            "docking.undocked": (
+                "Departure complete. Clear of {carrier}. Safe flying, Commander.",
+                "You are clear to depart. Fly dangerous, Mongrel.",
+                "Departure corridor clear. We'll keep a pad open for you.",
+            ),
+        },
+    },
+    "mongrels": {
+        "owner": {
+            "docking.granted": (
+                "Command clearance granted. Proceed to {pad}.",
+                "Carrier command recognized. {pad} is yours.",
+            ),
+            "docking.docked": (
+                "Carrier command aboard. Welcome back, Commander {commander}.",
+                "Welcome aboard. The pack is accounted for.",
+            ),
+            "docking.undocked": (
+                "Command vessel clear. Good hunting, Commander.",
+                "Departure complete. Bring something interesting back.",
+            ),
+        },
+        "squadmate": {
+            "docking.granted": (
+                "Mongrel transponder recognized. Proceed to {pad}.",
+                "Pack traffic has priority. Clearance granted for {pad}.",
+                "Docking clearance confirmed, Mongrel. Proceed to {pad}.",
+            ),
+            "docking.docked": (
+                "Welcome aboard {carrier}. Another Mongrel is always welcome.",
+                "Mongrel aboard. Welcome home to the pack, Commander.",
+                "Welcome aboard, Commander. Try not to chew on anything expensive.",
+            ),
+            "docking.undocked": (
+                "Clear of {carrier}. Go make the squad look good.",
+                "Departure complete. Fly dangerous, Mongrel.",
+                "You are clear. The pack will be here when you get back.",
+            ),
+        },
+    },
+    "generic": {
+        "visitor": {
+            "docking.granted": (
+                "Docking clearance confirmed. Proceed to {pad}.",
+                "Clearance granted. Continue to {pad}.",
+            ),
+            "docking.docked": (
+                "Docking complete. Welcome aboard.",
+                "Welcome aboard, Commander.",
+            ),
+            "docking.undocked": (
+                "Departure complete. Safe flying, Commander.",
+                "You are clear of the carrier. Safe travels.",
+            ),
+        },
+    },
+}
+
+SPOKEN_SYSTEM_ALIASES = {
+    TEN16_SYSTEM.casefold(): "10-16",
+}
+
+
+def spoken_system_name(value: Any) -> str:
+    name = " ".join(str(value or "").split())
+    if not name:
+        return ""
+    alias = SPOKEN_SYSTEM_ALIASES.get(name.casefold())
+    if alias:
+        return alias
+    if re.match(r"^HIP\s+\d+", name, flags=re.IGNORECASE):
+        return name
+    tail = name.rsplit(" ", 1)[-1]
+    if " " in name and re.fullmatch(r"[A-Za-z]+\d*-\d+", tail):
+        return tail
+    return name
 
 
 def _normalized_voice_identity(value: Any, fallback: dict[str, Any] | None = None) -> dict[str, str]:
@@ -1032,6 +1156,7 @@ class MongrelHudApp:
         self.voice_condition = threading.Condition()
         self.voice_pending: list[dict[str, Any]] = []
         self.voice_last_scheduled: dict[str, float] = {}
+        self.voice_dialogue_history: dict[str, list[str]] = {}
         self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastRole": "", "lastAcousticProfile": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
@@ -1235,54 +1360,137 @@ class MongrelHudApp:
         owner = state.get("ownerCarrier")
         return dict(owner) if isinstance(owner, dict) else {}
 
-    def _is_owner_carrier_event(self, event: dict[str, Any]) -> bool:
-        if str(event.get("relationship") or "").casefold() == "owner":
-            return True
-        owner = self._owner_carrier_for_voice()
-        owner_id = str(owner.get("carrierId") or "")
-        event_id = str(event.get("carrierId") or event.get("marketId") or "")
-        return bool(owner_id and event_id and secrets.compare_digest(owner_id, event_id))
+    def _carrier_profiles_for_voice(self) -> list[dict[str, Any]]:
+        state = self.scout_state()
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        rows = feed.get("carriers") if isinstance(feed.get("carriers"), list) else []
+        return [dict(row) for row in rows if isinstance(row, dict)]
 
     @staticmethod
-    def _voice_role_for_cue(cue: str) -> str:
-        role = str(CARRIER_VOICE_CUES.get(cue, {}).get("role") or VOICE_ROLE_ANNOUNCEMENT)
-        return role if role in VOICE_ROLE_IDS else VOICE_ROLE_ANNOUNCEMENT
+    def _carrier_callsign(value: Any) -> str:
+        text = " ".join(str(value or "").split()).upper()
+        match = re.search(r"\b([A-Z0-9]{3}-[A-Z0-9]{3})\b", text)
+        return match.group(1) if match else ""
 
     @staticmethod
-    def _voice_identity_for_role(settings: dict[str, Any], role: str) -> dict[str, str]:
-        roles = settings.get("roles") if isinstance(settings.get("roles"), dict) else {}
-        identity = roles.get(role) if isinstance(roles.get(role), dict) else {}
-        if not identity:
-            identity = {
-                "voiceProvider": settings.get("voiceProvider"),
-                "voiceId": settings.get("voiceId"),
-                "voiceName": settings.get("voiceName"),
-            }
-        return _normalized_voice_identity(identity)
-
-    @staticmethod
-    def _carrier_ref_matches(value: Any, owner_id: str) -> bool:
+    def _looks_like_fleet_carrier(value: Any) -> bool:
         if not isinstance(value, dict):
             return False
-        if str(value.get("relationship") or "").casefold() == "owner":
+        station_type = str(value.get("stationType") or value.get("type") or "").replace(" ", "").casefold()
+        if "fleetcarrier" in station_type:
             return True
-        candidate = str(value.get("marketId") or value.get("carrierId") or "")
-        return bool(owner_id and candidate and secrets.compare_digest(owner_id, candidate))
+        name = value.get("stationName") or value.get("name")
+        return bool(MongrelHudApp._carrier_callsign(name))
 
-    def _voice_acoustic_profile(self) -> str:
-        state = self.scout_state()
-        owner = state.get("ownerCarrier") if isinstance(state.get("ownerCarrier"), dict) else {}
+    def _carrier_profile_for_ref(self, value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, dict):
+            return None
+        owner = self._owner_carrier_for_voice()
         owner_id = str(owner.get("carrierId") or "")
+        candidate_id = str(value.get("marketId") or value.get("carrierId") or "")
+        relationship = str(value.get("relationship") or "").casefold()
+        candidate_name = str(value.get("stationName") or value.get("name") or "")
+        candidate_callsign = self._carrier_callsign(candidate_name)
+
+        profiles = self._carrier_profiles_for_voice()
+        matched = None
+        if candidate_id:
+            matched = next((row for row in profiles if str(row.get("marketId") or "") == candidate_id), None)
+        if matched is None and candidate_callsign:
+            matched = next((row for row in profiles if str(row.get("callsign") or "").upper() == candidate_callsign), None)
+
+        if matched is not None:
+            profile = dict(matched)
+            if relationship == "owner" or (owner_id and candidate_id and secrets.compare_digest(owner_id, candidate_id)):
+                profile["relationship"] = "owner"
+            profile["personality"] = "mongrels" if bool(profile.get("official")) else "personal"
+            profile["registered"] = True
+            return profile
+
+        if relationship == "owner" or (owner_id and candidate_id and secrets.compare_digest(owner_id, candidate_id)):
+            return {
+                "marketId": candidate_id or owner_id,
+                "callsign": self._carrier_callsign(owner.get("callsign") or candidate_name),
+                "name": str(owner.get("name") or candidate_name or owner.get("callsign") or "Own carrier"),
+                "commanderName": str(self.scout_state().get("commander") or ""),
+                "official": False,
+                "relationship": "owner",
+                "personality": "personal",
+                "registered": False,
+            }
+
+        if self._looks_like_fleet_carrier(value):
+            return {
+                "marketId": candidate_id,
+                "callsign": candidate_callsign,
+                "name": candidate_name or candidate_callsign or "Fleet Carrier",
+                "commanderName": "",
+                "official": False,
+                "relationship": "visitor",
+                "personality": "generic",
+                "registered": False,
+            }
+        return None
+
+    def _carrier_profile_for_event(self, event: dict[str, Any]) -> dict[str, Any] | None:
+        direct = {
+            "marketId": event.get("marketId") or event.get("carrierId"),
+            "carrierId": event.get("carrierId"),
+            "stationName": event.get("stationName") or event.get("carrierName"),
+            "stationType": event.get("stationType"),
+            "relationship": event.get("relationship"),
+        }
+        profile = self._carrier_profile_for_ref(direct)
+        if profile:
+            return profile
+        carrier = event.get("carrier")
+        return self._carrier_profile_for_ref(carrier) if isinstance(carrier, dict) else None
+
+    def carrier_voice_context(self) -> dict[str, Any]:
+        state = self.scout_state()
+        refs = []
         instance = state.get("instanceDestination")
         station = state.get("station")
         docking = state.get("docking") if isinstance(state.get("docking"), dict) else {}
-        docking_station = docking.get("station")
-        in_owner_instance = (
-            self._carrier_ref_matches(instance, owner_id)
-            or self._carrier_ref_matches(station, owner_id)
-            or self._carrier_ref_matches(docking_station, owner_id)
+        for value in (instance, station, docking.get("station")):
+            profile = self._carrier_profile_for_ref(value)
+            if profile:
+                profile["active"] = True
+                return profile
+
+        owner = state.get("ownerCarrier") if isinstance(state.get("ownerCarrier"), dict) else {}
+        if owner:
+            profile = self._carrier_profile_for_ref({
+                "marketId": owner.get("carrierId"),
+                "carrierId": owner.get("carrierId"),
+                "stationName": owner.get("callsign") or owner.get("name"),
+                "stationType": "Fleet Carrier",
+                "relationship": "owner",
+            })
+            if profile:
+                profile["active"] = False
+                return profile
+        return {
+            "name": "Fleet Carrier",
+            "callsign": "",
+            "marketId": "",
+            "relationship": "visitor",
+            "personality": "generic",
+            "official": False,
+            "registered": False,
+            "active": False,
+        }
+
+    def _voice_acoustic_profile(self) -> str:
+        state = self.scout_state()
+        instance = state.get("instanceDestination")
+        station = state.get("station")
+        docking = state.get("docking") if isinstance(state.get("docking"), dict) else {}
+        in_carrier_instance = any(
+            self._carrier_profile_for_ref(value) is not None
+            for value in (instance, station, docking.get("station"))
         )
-        if not in_owner_instance:
+        if not in_carrier_instance:
             return ACOUSTIC_REMOTE
 
         status = state.get("status") if isinstance(state.get("status"), dict) else {}
@@ -1293,39 +1501,65 @@ class MongrelHudApp:
         return ACOUSTIC_LOCAL
 
     def _carrier_voice_name(self, event: dict[str, Any]) -> str:
-        stored_name = " ".join(str(event.get("carrierName") or "").split())
-        if stored_name:
-            return stored_name
-        carrier = event.get("carrier")
-        if isinstance(carrier, dict):
-            name = " ".join(str(carrier.get("name") or "").split())
-            if name:
+        profile = self._carrier_profile_for_event(event)
+        if profile:
+            name = " ".join(str(profile.get("name") or "").split())
+            if name and not re.fullmatch(r"[A-Z0-9]{3}-[A-Z0-9]{3}", name.upper()):
                 return name
-        owner = self._owner_carrier_for_voice()
-        name = " ".join(str(owner.get("name") or "").split())
-        if name:
-            return name
-        station = " ".join(str(event.get("stationName") or "").split())
-        return station or "the carrier"
+        stored_name = " ".join(str(event.get("carrierName") or "").split())
+        if stored_name and not re.fullmatch(r"[A-Z0-9]{3}-[A-Z0-9]{3}", stored_name.upper()):
+            return stored_name
+        return "the carrier"
+
+    def _dialogue_phrase(self, cue: str, event: dict[str, Any], row: dict[str, Any]) -> str:
+        configured = str(row.get("phrase") or "")
+        default_phrase = str(row.get("defaultPhrase") or CARRIER_VOICE_CUES.get(cue, {}).get("phrase") or "")
+        # Any deliberate phrase edit remains a hard local override.
+        if configured and configured != default_phrase:
+            return configured
+
+        profile = self._carrier_profile_for_event(event) or {
+            "relationship": "visitor", "personality": "generic", "id": "unknown"
+        }
+        personality = str(profile.get("personality") or "generic")
+        relationship = str(profile.get("relationship") or "visitor")
+        pools = CARRIER_DIALOGUE_POOLS.get(personality, {})
+        choices = tuple((pools.get(relationship) or {}).get(cue) or ())
+        if not choices:
+            choices = tuple((CARRIER_DIALOGUE_POOLS.get("generic", {}).get("visitor", {}) or {}).get(cue) or ())
+        if not choices:
+            return configured or default_phrase
+
+        identity = str(profile.get("marketId") or profile.get("id") or profile.get("callsign") or profile.get("name") or "carrier")
+        history_key = f"{identity}|{relationship}|{cue}"
+        recent = self.voice_dialogue_history.get(history_key, [])
+        available = [phrase for phrase in choices if phrase not in recent[-2:]] or list(choices)
+        selected = secrets.choice(available)
+        history = (recent + [selected])[-4:]
+        self.voice_dialogue_history[history_key] = history
+        return selected
 
     def _voice_text_for_event(self, cue: str, event: dict[str, Any]) -> str:
         settings = self.voice_settings_snapshot()
         row = (settings.get("cues") or {}).get(cue) or {}
-        phrase = str(row.get("phrase") or CARRIER_VOICE_CUES.get(cue, {}).get("phrase") or "")
+        phrase = self._dialogue_phrase(cue, event, row)
         if not phrase:
             return ""
         pad = event.get("landingPad")
         pad_text = f"pad {int(pad)}" if isinstance(pad, int) else "your assigned pad"
-        destination = " ".join(str(event.get("destinationSystem") or event.get("system") or "").split()) or "your destination"
+        destination_raw = event.get("destinationSystem") or event.get("system") or ""
+        destination = spoken_system_name(destination_raw) or "your destination"
         minutes = event.get("minutes")
         if not isinstance(minutes, (int, float)):
             lead = CARRIER_VOICE_CUES.get(cue, {}).get("leadSeconds")
             minutes = int(round(float(lead) / 60.0)) if isinstance(lead, (int, float)) else ""
+        commander = " ".join(str(self.scout_state().get("commander") or event.get("commander") or "").split()) or "Commander"
         replacements = {
             "{carrier}": self._carrier_voice_name(event),
             "{destination}": destination,
             "{pad}": pad_text,
             "{minutes}": str(int(minutes)) if isinstance(minutes, (int, float)) else str(minutes or ""),
+            "{commander}": commander,
         }
         text = phrase
         for token, replacement in replacements.items():
@@ -1498,7 +1732,7 @@ class MongrelHudApp:
             return
         if cue in {"carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready"}:
             return
-        if not self._is_owner_carrier_event(event):
+        if self._carrier_profile_for_event(event) is None:
             return
 
         if cue == "docking.granted":
@@ -3290,6 +3524,8 @@ class MongrelHudApp:
             "voiceStatus": self.voice_status_snapshot(),
             "voiceCatalog": self.voice_catalog_snapshot(),
             "voicePack": self.voice_pack_status_snapshot(),
+            "carrierVoiceContext": self.carrier_voice_context(),
+            "carrierProfiles": self._carrier_profiles_for_voice(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
             "renderErrors": [
