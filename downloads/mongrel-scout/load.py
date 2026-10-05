@@ -9,7 +9,7 @@ import tkinter as tk
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping, MutableMapping, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import myNotebook as nb
 import timeout_session
@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.0"
+PLUGIN_VERSION = "1.11.1"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -736,7 +736,21 @@ def _hud_site_feed_endpoint() -> str:
     parsed = urlparse(configured)
     if not parsed.scheme or not parsed.netloc:
         parsed = urlparse(DEFAULT_ENDPOINT)
-    return f"{parsed.scheme}://{parsed.netloc}/api/hud/feed"
+    base = f"{parsed.scheme}://{parsed.netloc}/api/hud/feed"
+    with _hud_condition:
+        owner = _hud_state.get("ownerCarrier")
+        owner = dict(owner) if isinstance(owner, Mapping) else {}
+    params = {}
+    carrier_id = _decimal_text(owner.get("carrierId"))
+    callsign = str(owner.get("callsign") or "").strip()
+    name = str(owner.get("name") or "").strip()
+    if carrier_id:
+        params["ownerCarrierId"] = carrier_id
+    if callsign:
+        params["ownerCarrierCallsign"] = callsign
+    if name:
+        params["ownerCarrierName"] = name
+    return base + (("?" + urlencode(params)) if params else "")
 
 
 def _site_feed_headers(token: str) -> dict[str, str]:
