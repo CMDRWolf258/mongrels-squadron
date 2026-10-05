@@ -50,6 +50,14 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
         <option value="hangar_pa">Carrier hangar PA</option>
       </select>
       <div class="layout-hint" id="voiceAcousticStatus">Detecting current acoustic context…</div>
+      <label for="localCommsCharacter">Local comms character</label>
+      <select id="localCommsCharacter" class="voice-select">
+        <option value="clean">Clean · studio reference</option>
+        <option value="light">Light · subtle comms texture</option>
+        <option value="blend">Blend · recommended Elite-style mix</option>
+        <option value="gritty">Gritty · strongest local radio texture</option>
+      </select>
+      <div class="layout-hint">Changing this saves the live Local Carrier Comms sound and immediately plays a local announcement sample so you can A/B presets without updating the HUD.</div>
       <div class="layout-hint" id="voiceCatalogStatus">Loading Windows voice providers…</div>
       <div class="layout-hint">Modern (WinRT) voices appear separately from legacy System.Speech voices. Optional neural voices run locally on the PC after installation.</div>
       <div class="voice-pack">
@@ -267,6 +275,8 @@ function render(){
   var voiceMaster=el("voiceMaster"),carrierPa=el("carrierPaToggle");
   setText(voiceMaster,voice.enabled===false?"VOICE OFF":"VOICE ON");voiceMaster.classList.toggle("active",voice.enabled!==false);
   setText(carrierPa,voice.carrierPa===false?"CARRIER PA OFF":"CARRIER PA ON");carrierPa.classList.toggle("active",voice.carrierPa!==false);
+  var localCharacter=String(voice.localCommsCharacter||"blend");
+  if(document.activeElement!==el("localCommsCharacter"))el("localCommsCharacter").value=localCharacter;
   var volume=Number.isFinite(Number(voice.volume))?Math.max(0,Math.min(100,Number(voice.volume))):75;
   if(document.activeElement!==el("voiceVolume"))el("voiceVolume").value=String(volume);
   setText(el("voiceVolumeValue"),Math.round(volume)+"%");
@@ -432,6 +442,7 @@ el("voiceMaster").onclick=async function(){try{var r=await mutate("/api/voice",f
 el("carrierPaToggle").onclick=async function(){try{var r=await mutate("/api/voice",function(){return {carrierPa:!(state&&state.voice&&state.voice.carrierPa!==false)}});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Carrier PA setting saved"}catch(e){el("voiceNotice").textContent="Carrier PA setting failed · "+e.message}};
 el("voiceVolume").onchange=async function(){try{var r=await mutate("/api/voice",{volume:Number(el("voiceVolume").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="PA volume saved"}catch(e){el("voiceNotice").textContent="Volume save failed · "+e.message}};
 el("voiceRate").onchange=async function(){try{var r=await mutate("/api/voice",{rate:Number(el("voiceRate").value)});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Speech rate saved"}catch(e){el("voiceNotice").textContent="Speech rate save failed · "+e.message}};
+el("localCommsCharacter").onchange=async function(){try{var character=String(el("localCommsCharacter").value||"blend"),r=await mutate("/api/voice",{localCommsCharacter:character});state=state||{};state.voice=r.voice;render();await api("/api/voice-test",{role:"announcement",acousticProfile:"local_comms"});el("voiceNotice").textContent="Local comms · "+character+" · saved and sample queued"}catch(e){el("voiceNotice").textContent="Local comms preset failed · "+e.message}};
 var saveVoiceRole=async function(selectId,role,label){try{var raw=String(el(selectId).value||"system|").split("|"),provider=decodeURIComponent(raw.shift()||"system"),voiceId=decodeURIComponent(raw.join("|")||""),entry=((state&&state.voiceCatalog)||[]).find(function(v){return v&&String(v.provider||"system")===provider&&String(v.id||"")===voiceId}),voiceName=entry?String(entry.name||""):"",roles={};roles[role]={voiceProvider:provider,voiceId:voiceId,voiceName:voiceName};var r=await mutate("/api/voice",{roles:roles});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent=label+" voice saved"}catch(e){el("voiceNotice").textContent="Voice selection failed · "+e.message}};
 el("voiceSelectAnnouncement").onchange=function(){saveVoiceRole("voiceSelectAnnouncement","announcement","Announcement")};
 el("voiceSelectAtc").onchange=function(){saveVoiceRole("voiceSelectAtc","atc","ATC")};
