@@ -4,9 +4,10 @@ import {readFileSync} from 'node:fs';
 import {buildHudFeed} from '../functions/api/hud/feed.js';
 import * as cycles from '../lib/daily-order-cycle.js';
 
-// Pins the complete pre-fix 245-system/10-order/1-route response, without a
-// 60 KB generated fixture. Time and data are fixed, rather than CPU milliseconds.
-const LEGACY_FEED_SHA256='01cf0c162d939ed72255eb45052fab2fc252020687c2e6e1c25e772fcd654ad0';
+// Pins the complete 245-system/10-order/1-route response, including the
+// intentionally added carrier dialogue envelope. Time and data are fixed,
+// rather than CPU milliseconds.
+const EXPECTED_FEED_SHA256='a5610317ce36ba8fc89f97b2c17c66437442b69d021349c2afd79cbf571c35cd';
 const stamp='2026-10-04T18:00:00.000Z';
 const RealDate=Date;
 globalThis.Date=class extends RealDate{
@@ -42,7 +43,10 @@ const feed=await buildHudFeed(new Request('https://example.invalid/api/hud/feed'
 assert.equal(feed.mission.orderCount,10);
 assert.equal(feed.trade.activeCount,1);
 assert.equal(feed.scout.jobs.length,245);
-assert.equal(createHash('sha256').update(JSON.stringify(feed)).digest('hex'),LEGACY_FEED_SHA256,'Optimization must preserve the complete pre-fix feed');
+assert.deepEqual(feed.carriers,[]);
+assert.deepEqual(feed.carrierDialogue,{});
+assert.equal(feed.carrierDialogueUpdatedAt,null);
+assert.equal(createHash('sha256').update(JSON.stringify(feed)).digest('hex'),EXPECTED_FEED_SHA256,'Optimization must preserve the complete expected feed shape');
 assert.ok(formatterConstructions<=2,`245-system feed recreated ${formatterConstructions} expensive timezone formatters`);
 assert.ok(partsConversions<=40,`245-system feed repeated ${partsConversions} identical calendar conversions`);
 console.log(`Full 245-system feed retains all legacy data with ${formatterConstructions} formatter construction and ${partsConversions} calendar conversions`);
