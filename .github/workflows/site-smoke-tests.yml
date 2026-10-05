@@ -73,6 +73,7 @@ jobs:
           python3 scripts/smoke-mongrel-hud.py
           python3 scripts/smoke-mongrel-hud-companion.py
           node --experimental-default-type=module scripts/smoke-mongrel-hud-controller.mjs
+          node --experimental-default-type=module scripts/smoke-carrier-dialogue.mjs
           python3 scripts/test-scout-http-diagnostics.py
           python3 scripts/test-hud-http-diagnostics.py
           node --experimental-default-type=module scripts/test-hud-feed-resource-budget.mjs
