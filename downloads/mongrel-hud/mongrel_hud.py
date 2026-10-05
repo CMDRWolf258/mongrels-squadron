@@ -1758,8 +1758,8 @@ class MongrelHudApp:
         profile = str(acoustic_profile or "").strip()
         if profile and profile not in ACOUSTIC_PROFILE_IDS:
             raise ValueError("voice_acoustic_profile_invalid")
-        carrier = self._owner_carrier_for_voice()
-        name = " ".join(str(carrier.get("name") or "").split()) or "Pneuma"
+        carrier = self.carrier_voice_context()
+        name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         label = "traffic control" if role == VOICE_ROLE_ATC else "public address"
         with self.voice_condition:
             self.voice_pending.append({
@@ -1777,13 +1777,16 @@ class MongrelHudApp:
     def queue_voice_cue_test(self, cue: str) -> dict[str, Any]:
         if cue not in CARRIER_VOICE_CUES:
             raise ValueError("voice_cue_invalid")
-        carrier = self._owner_carrier_for_voice()
-        name = " ".join(str(carrier.get("name") or "").split()) or "Pneuma"
+        carrier = self.carrier_voice_context()
+        name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         event = {
-            "relationship": "owner",
+            "relationship": str(carrier.get("relationship") or "visitor"),
             "carrierName": name,
-            "destinationSystem": "destination system",
-            "system": "destination system",
+            "marketId": carrier.get("marketId"),
+            "stationName": carrier.get("callsign") or name,
+            "stationType": "Fleet Carrier",
+            "destinationSystem": TEN16_SYSTEM,
+            "system": TEN16_SYSTEM,
             "landingPad": 12,
         }
         lead = CARRIER_VOICE_CUES[cue].get("leadSeconds")
