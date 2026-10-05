@@ -26,8 +26,9 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 
   <section id="carrierTab" class="hidden">
     <div class="card" id="carrierVoiceCard">
-      <h2>PNEUMA · CARRIER PA</h2>
-      <p class="muted">Pneuma can use separate voices for carrier announcements and ATC. The HUD automatically changes the acoustic environment between remote radio, local carrier comms, interior PA and the hangar.</p>
+      <h2 id="carrierVoiceTitle">FLEET CARRIER · COMMS</h2>
+      <p class="muted" id="carrierVoiceDescription">Detecting carrier identity and relationship…</p>
+      <div class="layout-hint" id="carrierIdentityStatus"></div>
       <div class="layout-actions"><button type="button" id="voiceMaster">VOICE ON</button><button type="button" id="carrierPaToggle">CARRIER PA ON</button></div>
       <div class="voice-role-grid">
         <div class="voice-role-card">
@@ -69,6 +70,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="voice-volume"><label for="voiceVolume">PA volume</label><strong id="voiceVolumeValue">75%</strong><input id="voiceVolume" type="range" min="0" max="100" step="5" value="75"></div>
       <div class="voice-rate"><label for="voiceRate">Speech rate</label><strong id="voiceRateValue">0</strong><input id="voiceRate" type="range" min="-3" max="3" step="1" value="0"></div>
       <p class="layout-hint">Departure countdowns are generated locally from Elite's scheduled carrier departure time. The ready-for-next-jump timer starts when the carrier jump completes.</p>
+      <div class="layout-hint">Dialogue now uses carrier-specific relationship pools. Leave a cue phrase at its default to use the personality pool; editing the phrase makes it your local hard override for that cue.</div>
       <div class="voice-cues">
         <div class="voice-cue" data-voice-cue="docking.requested">
           <div class="voice-cue-head"><label><input type="checkbox" data-voice-enabled> Docking request</label><div class="voice-cue-actions"><button type="button" data-voice-test-cue>TEST</button><button type="button" data-voice-reset>RESET</button></div></div>
@@ -271,7 +273,12 @@ function render(){
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
   var layout=state.layout||{},panels=layout.panels||{};
   renderLayoutControls(layout);
-  var voice=state.voice||{},voiceStatus=state.voiceStatus||{},voiceCues=voice.cues||{},voiceCatalog=Array.isArray(state.voiceCatalog)?state.voiceCatalog:[];
+  var voice=state.voice||{},voiceStatus=state.voiceStatus||{},voiceCues=voice.cues||{},voiceCatalog=Array.isArray(state.voiceCatalog)?state.voiceCatalog:[],carrierContext=state.carrierVoiceContext||{};
+  var carrierName=String(carrierContext.name||carrierContext.callsign||"Fleet Carrier"),relationship=String(carrierContext.relationship||"visitor"),personality=String(carrierContext.personality||"generic"),official=Boolean(carrierContext.official),active=Boolean(carrierContext.active);
+  var relationLabel=relationship==="owner"?"YOUR CARRIER":relationship==="squadmate"?(official?"SQUAD CARRIER":"SQUADMATE CARRIER"):"VISITING CARRIER";
+  setText(el("carrierVoiceTitle"),carrierName.toUpperCase()+" · "+relationLabel);
+  setText(el("carrierVoiceDescription"),"Separate announcement and ATC voices with automatic remote radio, local comms, interior PA and hangar acoustics. Voice choices are local to this HUD; carrier personality and relationship choose the dialogue.");
+  setText(el("carrierIdentityStatus"),(carrierContext.callsign?carrierContext.callsign+" · ":"")+relationLabel+" · "+(personality==="mongrels"?"Mongrels personality":personality==="personal"?"Personal carrier personality":"Generic visitor profile")+(active?" · CURRENT CARRIER":""));
   var voiceMaster=el("voiceMaster"),carrierPa=el("carrierPaToggle");
   setText(voiceMaster,voice.enabled===false?"VOICE OFF":"VOICE ON");voiceMaster.classList.toggle("active",voice.enabled!==false);
   setText(carrierPa,voice.carrierPa===false?"CARRIER PA OFF":"CARRIER PA ON");carrierPa.classList.toggle("active",voice.carrierPa!==false);
