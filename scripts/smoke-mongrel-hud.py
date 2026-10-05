@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.10.0"
+assert plugin.PLUGIN_VERSION == "1.11.1"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -73,7 +73,7 @@ assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
 assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
-assert plugin.HUD_BRIDGE_VERSION == 7
+assert plugin.HUD_BRIDGE_VERSION == 8
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"
 assert plugin.KEY_LAST_SYSTEM_ADDRESS == "MongrelScoutLastSystemAddress"
 assert plugin.KEY_CARGO_MISSIONS == "MongrelScoutCargoMissionCache"
@@ -94,6 +94,9 @@ expected_types = {
     "FSDJump": "travel.fsd_jump",
     "SupercruiseEntry": "travel.supercruise_entry",
     "SupercruiseExit": "travel.supercruise_exit",
+    "SupercruiseDestinationDrop": "travel.destination_drop",
+    "Disembark": "player.disembark",
+    "Embark": "player.embark",
     "ApproachSettlement": "facility.approach",
     "ShipTargeted": "combat.target",
     "HullDamage": "ship.hull",
