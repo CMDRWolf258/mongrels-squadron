@@ -165,7 +165,7 @@ async function hudCarrierProfiles(request,env,auth){
       role:clean(item.role),
       official:Boolean(item.official),
       relationship:String(item.ownerId||'')===String(auth.ownerId||'')?'owner':'squadmate',
-      personality:Boolean(item.official)?'mongrels':'member',
+      personality:clean(item.voicePersonality)|| (Boolean(item.official)?'mongrels':'personal'),
     }));
 }
 
