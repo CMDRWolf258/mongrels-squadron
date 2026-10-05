@@ -1483,6 +1483,8 @@ class MongrelHudApp:
 
     def _voice_acoustic_profile(self) -> str:
         state = self.scout_state()
+        if bool(state.get("supercruise")):
+            return ACOUSTIC_REMOTE
         instance = state.get("instanceDestination")
         station = state.get("station")
         docking = state.get("docking") if isinstance(state.get("docking"), dict) else {}
