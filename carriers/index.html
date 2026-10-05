@@ -50,11 +50,12 @@
     <div class="carrier-dialogue-toolbar">
       <label><span>Carrier</span><select data-dialogue-carrier></select></label>
       <label><span>Category</span><select data-dialogue-category>
-        <option value="docking.requested">Docking · Request</option><option value="docking.granted">Docking · Granted</option><option value="docking.docked">Docking · Welcome</option><option value="docking.undocked">Docking · Departure</option>
+        <option value="docking.requested">Docking · Request</option><option value="docking.granted">Docking · Granted</option><option value="docking.docked" selected>Docking · Welcome</option><option value="docking.undocked">Docking · Departure</option>
         <option value="carrier.jump_request">Carrier · Jump Scheduled</option><option value="carrier.countdown_10">Carrier · 10 Minute Countdown</option><option value="carrier.countdown_5">Carrier · 5 Minute Countdown</option><option value="carrier.jump_cancelled">Carrier · Jump Cancelled</option><option value="carrier.jump">Carrier · Jump Complete</option><option value="carrier.cooldown_ready">Carrier · Cooldown Ready</option>
         <option value="ambient.hangar">Hangar · Ambient PA</option><option value="ambient.concourse">Concourse · Ambient PA</option><option value="bulletin.concourse">Concourse · Bulletin / News</option><option value="advertisement.concourse">Concourse · Advertisement</option>
       </select></label>
-      <label><span>Audience</span><select data-dialogue-audience><option value="all">Everyone</option><option value="owner">Carrier Owner</option><option value="squadmate">Mongrel Squadron Member</option><option value="visitor">Visitor / Outsider</option></select></label>
+      <label><span>Audience</span><select data-dialogue-audience><option value="all">Everyone</option><option value="owner" selected>Carrier Owner</option><option value="squadmate">Mongrel Squadron Member</option><option value="visitor">Visitor / Outsider</option></select></label>
+      <label><span>Library view</span><select data-dialogue-view><option value="pool">Current Pool</option><option value="all">All Lines</option></select></label>
     </div>
     <div class="carrier-dialogue-editor">
       <input type="hidden" data-dialogue-line-id>
@@ -99,6 +100,6 @@
   </div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-coord-delete hidden>Delete</button></div><span class="project-editor-status" data-coord-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-coord-cancel>Close</button><button class="btn btn-primary" type="submit">Save Post</button></div></div></form></section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=71"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=72"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
