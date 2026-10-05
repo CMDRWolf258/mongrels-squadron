@@ -157,7 +157,7 @@ with tempfile.TemporaryDirectory() as td:
     cooldown_at=app._parse_voice_time(cooldown_rows[0]["fireAt"])
     remaining=(cooldown_at-hud.datetime.now(hud.timezone.utc)).total_seconds()
     assert 160 < remaining <= 165.5
-    assert app._voice_text_for_event("carrier.cooldown_ready",{"carrierName":"Pneuma"})=="Pneuma is ready for the next jump."
+    assert app._voice_text_for_event("carrier.cooldown_ready",{"relationship":"owner","marketId":"123","stationName":"Pneuma","stationType":"Fleet Carrier","carrierName":"Pneuma"})=="Pneuma is ready for the next jump."
     # Optional Kokoro pack is discovered from the local MongrelHUD voices folder.
     pack_root=app._kokoro_install_root()
     (pack_root/"runtime"/"bundle"/"bin").mkdir(parents=True)
