@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.2"
+APP_VERSION = "0.16.3"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1431,6 +1431,11 @@ class MongrelHudApp:
                 self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
         return self.voice_settings_snapshot()
+
+    @staticmethod
+    def _voice_role_for_cue(cue: str) -> str:
+        role = str(CARRIER_VOICE_CUES.get(cue, {}).get("role") or VOICE_ROLE_ANNOUNCEMENT)
+        return role if role in VOICE_ROLE_IDS else VOICE_ROLE_ANNOUNCEMENT
 
     @staticmethod
     def _voice_identity_for_role(settings: dict[str, Any], role: str) -> dict[str, str]:
