@@ -16,7 +16,7 @@
   <section class="section carrier-feature-section"><div class="container"><article class="carrier-feature-card"><figure class="carrier-feature-media"><img src="../assets/images/gallery/pneuma-carrier.webp" alt="Fleet carrier Pneuma near a ringed world"></figure><div class="carrier-feature-copy"><p class="eyebrow">Carrier Network</p><h2>Mobile Logistics</h2><p>Fleet carriers support hauling, expeditions, colonization, combat operations, mining, refueling, and squad gatherings. Registering by carrier callsign gives the site a reliable identity to attach live data to later.</p><a class="text-link" href="#carrier-directory">Browse the Registry <span>→</span></a></div></article></div></section>
 
   <section class="section carrier-directory-section" id="carrier-directory"><div class="container">
-    <div class="carrier-section-head"><div><p class="eyebrow">Carrier Registry</p><h2>Fleet Carrier Directory</h2><p>The carrier name is for display; the callsign is the unique registry key used to avoid duplicates and prepare for future live-location matching.</p></div><button class="btn btn-primary" type="button" data-carrier-register hidden>Register My Carrier</button></div>
+    <div class="carrier-section-head"><div><p class="eyebrow">Carrier Registry</p><h2>Fleet Carrier Directory</h2><p>The carrier name is for display; the callsign is the unique registry key used to avoid duplicates and prepare for future live-location matching.</p></div><div class="carrier-head-actions"><button class="btn btn-secondary" type="button" data-dialogue-manage hidden>Dialogue Manager</button><button class="btn btn-primary" type="button" data-carrier-register hidden>Register My Carrier</button></div></div>
     <aside class="carrier-id-note"><strong>Why the callsign matters</strong><p>Carrier names can be duplicated or changed. Enter the six-character carrier callsign exactly as shown in Elite (for example <code>ABC-123</code>) so the registry can identify the right carrier accurately.</p></aside>
     <div class="carrier-toolbar"><label><span>Search</span><input type="search" placeholder="Carrier, callsign, owner, system, role…" data-carrier-search></label><label><span>Role</span><select data-carrier-role><option value="all">All roles</option></select></label><label><span>Status</span><select data-carrier-status><option value="all">All statuses</option><option value="active">Active</option><option value="relocating">Relocating</option><option value="supporting">Supporting</option><option value="maintenance">Maintenance</option><option value="unavailable">Unavailable</option></select></label></div>
     <div class="carrier-grid" data-carrier-grid></div><div class="carrier-empty" data-carrier-empty hidden><strong>No carrier listings yet.</strong><p>Signed-in Mongrels can register their own carrier above.</p></div>
@@ -46,6 +46,42 @@
     <label data-carrier-official-wrap hidden><span>Registry Type</span><select data-carrier-official><option value="false">Member Carrier</option><option value="true">Official Squadron Carrier</option></select></label>
   </div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-carrier-delete hidden>Delete</button></div><span class="project-editor-status" data-carrier-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-carrier-cancel>Close</button><button class="btn btn-primary" type="submit">Save Carrier</button></div></div></form></section>
 
+  <section class="project-editor-shell" data-dialogue-editor-shell hidden aria-label="Carrier dialogue manager"><div class="project-editor-backdrop" data-dialogue-cancel></div><div class="project-editor-panel carrier-dialogue-panel"><div class="project-editor-head"><div><p class="eyebrow">HUD Voice Network</p><h2>Carrier Dialogue Manager</h2><p>Shared carrier dialogue is delivered through the authenticated Mongrel Scout feed. Only Site Admin can change this library.</p></div><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div>
+    <div class="carrier-dialogue-toolbar">
+      <label><span>Carrier</span><select data-dialogue-carrier></select></label>
+      <label><span>Category</span><select data-dialogue-category>
+        <option value="docking.requested">Docking · Request</option><option value="docking.granted">Docking · Granted</option><option value="docking.docked">Docking · Welcome</option><option value="docking.undocked">Docking · Departure</option>
+        <option value="carrier.jump_request">Carrier · Jump Scheduled</option><option value="carrier.countdown_10">Carrier · 10 Minute Countdown</option><option value="carrier.countdown_5">Carrier · 5 Minute Countdown</option><option value="carrier.jump_cancelled">Carrier · Jump Cancelled</option><option value="carrier.jump">Carrier · Jump Complete</option><option value="carrier.cooldown_ready">Carrier · Cooldown Ready</option>
+        <option value="ambient.hangar">Hangar · Ambient PA</option><option value="ambient.concourse">Concourse · Ambient PA</option><option value="bulletin.concourse">Concourse · Bulletin / News</option><option value="advertisement.concourse">Concourse · Advertisement</option>
+      </select></label>
+      <label><span>Audience</span><select data-dialogue-audience><option value="all">Everyone</option><option value="owner">Carrier Owner</option><option value="squadmate">Mongrel Squadron Member</option><option value="visitor">Visitor / Outsider</option></select></label>
+    </div>
+    <div class="carrier-dialogue-editor">
+      <input type="hidden" data-dialogue-line-id>
+      <label class="project-editor-wide"><span>Dialogue line</span><textarea rows="3" maxlength="700" data-dialogue-text placeholder="Enter the complete spoken line. Placeholders supported by event categories include {carrier}, {commander}, {destination}, {pad}, and {minutes}."></textarea></label>
+      <div class="carrier-dialogue-line-controls">
+        <label><span>Frequency</span><select data-dialogue-rarity><option value="common">Common · 6×</option><option value="uncommon">Uncommon · 3×</option><option value="rare">Rare · 1×</option></select></label>
+        <label><span>Status</span><select data-dialogue-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+        <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-new>New Line</button><button class="btn btn-primary" type="button" data-dialogue-save>Save Line</button></div>
+      </div>
+      <div class="project-editor-status" data-dialogue-status aria-live="polite"></div>
+    </div>
+    <div class="carrier-dialogue-library-head"><div><h3>Current Pool</h3><p data-dialogue-pool-label>Choose a carrier/category/audience.</p></div><span data-dialogue-count>0 lines</span></div>
+    <div class="carrier-dialogue-list" data-dialogue-list></div>
+    <div class="carrier-dialogue-ambient-settings">
+      <div><h3>Ambient Timing</h3><p>Used only while a Commander is walking in that carrier's hangar or concourse. The HUD randomizes the delay inside each range.</p></div>
+      <div class="carrier-dialogue-timing-grid">
+        <label><span>Hangar minimum</span><input type="number" min="45" max="1800" step="15" data-dialogue-hangar-min><small>seconds</small></label>
+        <label><span>Hangar maximum</span><input type="number" min="45" max="2400" step="15" data-dialogue-hangar-max><small>seconds</small></label>
+        <label><span>Concourse minimum</span><input type="number" min="45" max="1800" step="15" data-dialogue-concourse-min><small>seconds</small></label>
+        <label><span>Concourse maximum</span><input type="number" min="45" max="2400" step="15" data-dialogue-concourse-max><small>seconds</small></label>
+        <label><span>Ambient announcements</span><select data-dialogue-ambient-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
+      </div>
+      <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-save-settings>Save Timing</button></div>
+    </div>
+    <div class="project-editor-actions is-standard"><div></div><span class="project-editor-status" data-dialogue-footer-status></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div></div>
+  </div></section>
+
   <section class="project-editor-shell" data-coord-editor-shell hidden aria-label="Carrier coordination editor"><div class="project-editor-backdrop" data-coord-cancel></div><form class="project-editor-panel" data-coord-form><div class="project-editor-head"><div><p class="eyebrow">Carrier Coordination</p><h2 data-coord-form-title>New Coordination Post</h2></div><button class="btn btn-secondary" type="button" data-coord-cancel>Close</button></div><input type="hidden" data-coord-id><div class="project-editor-grid">
     <label><span>Carrier</span><select required data-coord-carrier></select></label>
     <label><span>Activity</span><select data-coord-activity><option value="relocation">Relocation</option><option value="loading">Loading</option><option value="unloading">Unloading</option><option value="project_support">Project Support</option><option value="expedition_support">Expedition Support</option><option value="refuel_tritium">Refuel / Tritium</option><option value="other">Other</option></select></label>
@@ -63,6 +99,6 @@
   </div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-coord-delete hidden>Delete</button></div><span class="project-editor-status" data-coord-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-coord-cancel>Close</button><button class="btn btn-primary" type="submit">Save Post</button></div></div></form></section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=70"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=71"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
