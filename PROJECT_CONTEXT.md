@@ -76,6 +76,19 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.11.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.15.0 / Scout 1.11.1 carrier identity and personality foundation:
+- Carrier voice logic is no longer Pneuma-hard-coded. The iPad Carrier PA heading is dynamic and identifies the relevant carrier as YOUR CARRIER, SQUADMATE CARRIER, SQUAD CARRIER, or VISITING CARRIER.
+- The existing authenticated website carrier registry is now the shared carrier identity source. HUD feed includes registered carrier callsign, learned numeric Elite Market/Carrier ID, name, owner/relationship, official status, and shared HUD personality.
+- Scout 1.11.1 appends the player's locally known owner carrier ID/callsign/name to its authenticated HUD-feed request after CarrierStats has identified it. The server uses this only to bind that member's existing registry record to Elite's numeric ID; callsign remains the fallback.
+- Carrier registry records now persist marketId and voicePersonality. The carrier editor exposes HUD Personality: Personal Carrier, Professional Carrier, and leadership-only Imperial Mongrels. Official squad carriers can therefore use the Mongrels personality while every member still chooses their own TTS voice, rate, volume, and local-comms character locally.
+- HUD resolves carrier relationship at runtime as owner, squadmate, or generic visitor. Registered official carriers use the shared Mongrels personality; registered personal carriers use their selected personality; unknown Fleet Carriers use a restrained generic visitor profile.
+- Voice event gating now accepts recognized Fleet Carrier contexts beyond only the player's own carrier. A Mongrel visiting another registered Mongrel carrier is treated as squadmate, never owner. Unknown carriers receive generic visitor dialogue.
+- Acoustic room selection also works on other Fleet Carriers; supercruise explicitly forces Remote Radio so stale docking references cannot keep Local Comms active after departure.
+- Starter dialogue pools exist for Personal, Professional, Imperial Mongrels, and Generic profiles with relationship-specific docking granted/docked/undocked lines and owner jump lines where appropriate. A short per-carrier/cue anti-repeat memory prevents immediate repetition.
+- Existing per-cue phrase editing remains a local hard override. Leaving a cue at its default enables personality-pool selection.
+- Spoken carrier destinations now abbreviate procedural system names: HIP systems remain intact; long coded systems collapse to their final token (examples b34-2, d10-16). NGC 2546 Sector UZ-G d10-16 has the explicit spoken alias 10-16.
+- Next major phase: expand personality libraries into larger weighted pools (routine/uncommon/rare), add more event/context categories, and eventually centralize editable shared dialogue/theme content for official carriers.
+
 Mongrel HUD 0.14.4 local comms tuning workflow:
 - Wolf wants Local Carrier Comms to blend better with Elite's included comms: lower clarity and some radio/static character, but clearly less degraded than Remote Radio.
 - To avoid repeated rebuilds for subjective 5–10% audio tuning, 0.14.4 adds a persistent Local Comms character setting with four presets: Clean, Light, Blend, and Gritty.
