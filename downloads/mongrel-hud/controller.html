@@ -42,6 +42,13 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
           <button type="button" id="voiceTestAtc">TEST ATC</button>
         </div>
       </div>
+      <div class="layout-hint"><strong>CONCOURSE VOICE ENSEMBLE</strong> · Enable up to four local voices. Shared concourse ambience, bulletins and advertisements rotate among the enabled voices for variety.</div>
+      <div class="voice-role-grid" id="concourseVoiceGrid">
+        <div class="voice-role-card"><label><input type="checkbox" id="concourseVoiceEnabled1"> Concourse voice 1</label><select id="voiceSelectConcourse1" class="voice-select"><option value="system|">System default · Windows Legacy</option></select><button type="button" id="voiceTestConcourse1">TEST VOICE 1</button></div>
+        <div class="voice-role-card"><label><input type="checkbox" id="concourseVoiceEnabled2"> Concourse voice 2</label><select id="voiceSelectConcourse2" class="voice-select"><option value="system|">System default · Windows Legacy</option></select><button type="button" id="voiceTestConcourse2">TEST VOICE 2</button></div>
+        <div class="voice-role-card"><label><input type="checkbox" id="concourseVoiceEnabled3"> Concourse voice 3</label><select id="voiceSelectConcourse3" class="voice-select"><option value="system|">System default · Windows Legacy</option></select><button type="button" id="voiceTestConcourse3">TEST VOICE 3</button></div>
+        <div class="voice-role-card"><label><input type="checkbox" id="concourseVoiceEnabled4"> Concourse voice 4</label><select id="voiceSelectConcourse4" class="voice-select"><option value="system|">System default · Windows Legacy</option></select><button type="button" id="voiceTestConcourse4">TEST VOICE 4</button></div>
+      </div>
       <label for="voiceTestContext">Test acoustic environment</label>
       <select id="voiceTestContext" class="voice-select">
         <option value="">AUTO · CURRENT CONTEXT</option>
@@ -292,8 +299,8 @@ function render(){
   setText(el("voiceRateValue"),String(Math.round(rate)));
   var voiceValue=function(provider,id){return encodeURIComponent(String(provider||"system"))+"|"+encodeURIComponent(String(id||""))};
   var voiceRoles=voice.roles||{};
-  var fillVoiceSelect=function(selectId,role){
-    var select=el(selectId),fallback={voiceProvider:voice.voiceProvider||"system",voiceId:voice.voiceId||"",voiceName:voice.voiceName||""},identity=voiceRoles[role]||fallback;
+  var fillVoiceSelect=function(selectId,role,overrideIdentity){
+    var select=el(selectId),fallback={voiceProvider:voice.voiceProvider||"system",voiceId:voice.voiceId||"",voiceName:voice.voiceName||""},identity=overrideIdentity||voiceRoles[role]||fallback;
     var selectedProvider=String(identity.voiceProvider||"system"),selectedId=String(identity.voiceId||(selectedProvider==="system"?(identity.voiceName||""):"")),selectedVoiceValue=voiceValue(selectedProvider,selectedId);
     if(document.activeElement===select)return;
     var providerOrder=["kokoro","winrt","system"],voiceOptions=['<option value="'+voiceValue("system","")+'">System default · Windows Legacy</option>'];
@@ -311,6 +318,12 @@ function render(){
   };
   fillVoiceSelect("voiceSelectAnnouncement","announcement");
   fillVoiceSelect("voiceSelectAtc","atc");
+  var concourseVoices=Array.isArray(voice.concourseVoices)?voice.concourseVoices:[];
+  for(var cv=0;cv<4;cv++){
+    var slot=concourseVoices[cv]||{voiceProvider:voice.voiceProvider||"system",voiceId:voice.voiceId||"",voiceName:voice.voiceName||"",enabled:cv===0};
+    fillVoiceSelect("voiceSelectConcourse"+(cv+1),"announcement",slot);
+    var enabledBox=el("concourseVoiceEnabled"+(cv+1));if(document.activeElement!==enabledBox)enabledBox.checked=slot.enabled!==false;
+  }
   var neuralCount=voiceCatalog.filter(function(v){return v&&v.provider==="kokoro"}).length,modernCount=voiceCatalog.filter(function(v){return v&&v.provider==="winrt"}).length,legacyCount=voiceCatalog.filter(function(v){return v&&v.provider==="system"}).length,catalogParts=[];
   if(neuralCount)catalogParts.push("Neural "+neuralCount);
   if(modernCount)catalogParts.push("Modern "+modernCount);
@@ -453,6 +466,8 @@ el("localCommsCharacter").onchange=async function(){try{var character=String(el(
 var saveVoiceRole=async function(selectId,role,label){try{var raw=String(el(selectId).value||"system|").split("|"),provider=decodeURIComponent(raw.shift()||"system"),voiceId=decodeURIComponent(raw.join("|")||""),entry=((state&&state.voiceCatalog)||[]).find(function(v){return v&&String(v.provider||"system")===provider&&String(v.id||"")===voiceId}),voiceName=entry?String(entry.name||""):"",roles={};roles[role]={voiceProvider:provider,voiceId:voiceId,voiceName:voiceName};var r=await mutate("/api/voice",{roles:roles});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent=label+" voice saved"}catch(e){el("voiceNotice").textContent="Voice selection failed · "+e.message}};
 el("voiceSelectAnnouncement").onchange=function(){saveVoiceRole("voiceSelectAnnouncement","announcement","Announcement")};
 el("voiceSelectAtc").onchange=function(){saveVoiceRole("voiceSelectAtc","atc","ATC")};
+var saveConcourseVoice=async function(index){try{var selectId="voiceSelectConcourse"+(index+1),raw=String(el(selectId).value||"system|").split("|"),provider=decodeURIComponent(raw.shift()||"system"),voiceId=decodeURIComponent(raw.join("|")||""),entry=((state&&state.voiceCatalog)||[]).find(function(v){return v&&String(v.provider||"system")===provider&&String(v.id||"")===voiceId}),voiceName=entry?String(entry.name||""):"",slots=Array.isArray(state&&state.voice&&state.voice.concourseVoices)?state.voice.concourseVoices.map(function(slot){return Object.assign({},slot)}):[];while(slots.length<4)slots.push({voiceProvider:"system",voiceId:"",voiceName:"",enabled:slots.length===0});slots[index]={voiceProvider:provider,voiceId:voiceId,voiceName:voiceName,enabled:Boolean(el("concourseVoiceEnabled"+(index+1)).checked)};var r=await mutate("/api/voice",{concourseVoices:slots});state=state||{};state.voice=r.voice;render();el("voiceNotice").textContent="Concourse voice "+(index+1)+" saved"}catch(e){el("voiceNotice").textContent="Concourse voice save failed · "+e.message}};
+for(let ci=0;ci<4;ci++){el("voiceSelectConcourse"+(ci+1)).onchange=function(){saveConcourseVoice(ci)};el("concourseVoiceEnabled"+(ci+1)).onchange=function(){saveConcourseVoice(ci)};el("voiceTestConcourse"+(ci+1)).onclick=async function(){try{var r=await api("/api/voice-test-concourse",{slot:ci});state=state||{};if(r.voiceStatus)state.voiceStatus=r.voiceStatus;render();el("voiceNotice").textContent="Concourse voice "+(ci+1)+" test queued"}catch(e){el("voiceNotice").textContent="Concourse voice test failed · "+e.message}}}
 var testVoiceRole=async function(role,label){try{var profile=String(el("voiceTestContext").value||""),r=await api("/api/voice-test",{role:role,acousticProfile:profile});state=state||{};if(r.voiceStatus)state.voiceStatus=r.voiceStatus;render();var room=profile?profile.replaceAll("_"," "):String((r.voiceStatus&&r.voiceStatus.acousticLabel)||"current context");el("voiceNotice").textContent=label+" · "+room+" test queued"}catch(e){el("voiceNotice").textContent="Voice test failed · "+e.message}};
 el("voiceTestAnnouncement").onclick=function(){testVoiceRole("announcement","Announcement")};
 el("voiceTestAtc").onclick=function(){testVoiceRole("atc","ATC")};
