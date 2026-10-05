@@ -5,7 +5,7 @@ This is the first local HUD/controller prototype for the Mongrels. It is intenti
 ## Requirements
 
 - Windows PC running Elite Dangerous.
-- EDMC with **Mongrel Scout v1.11.0 or newer** installed and enabled for the full carrier-PA event set.
+- EDMC with **Mongrel Scout v1.11.1 or newer** installed and enabled for the full carrier-identity/event set.
 - No Python installation is required for the Windows build.
 - iPad and PC on the same private/home LAN for the controller.
 
@@ -29,6 +29,14 @@ Pairing is now persistent. Enter the six-digit PIN once on a device and the HUD 
 The desktop window shows the current HUD version and checks the rolling GitHub release in the background. When a newer build is available, **Update to x.y.z** downloads the rolling ZIP with Windows PowerShell, verifies GitHub's SHA-256 asset digest, stages the new EXE under the existing local MongrelHUD data directory, exits, replaces the running EXE, and relaunches it. Layout, notes, mining cache, trusted-device hashes, and other local state stay in the separate local state.json file and are not replaced. The updater changes only the packaged HUD executable; Mongrel Scout remains an EDMC plugin and is updated separately. Mongrel HUD 0.10.1 also forces the relaunched PyInstaller one-file EXE to start with a fresh runtime environment, preventing it from inheriting the old `_MEI` extraction directory during self-update. Mongrel HUD 0.11.1 hardens the replacement handoff for PyInstaller one-file builds: after the HUD child exits, the PowerShell helper retries backup/replacement while the wrapper process releases the EXE, verifies the installed EXE SHA-256 matches the staged build before launch, and writes `%LOCALAPPDATA%\\MongrelHUD\\update\\apply-update.log` for local diagnostics. A failed verified replacement rolls back to the previous EXE.
 
 ## Carrier PA / local voice
+
+Mongrel HUD 0.15.0 adds carrier identity, relationship and personality routing on top of the 0.14.x voice/acoustic engine. The paired controller no longer hard-codes Pneuma: it shows the relevant carrier and whether it is **Your Carrier**, a **Squadmate Carrier**, an **Official Squad Carrier**, or an unknown **Visiting Carrier**.
+
+Registered carriers are supplied through the authenticated HUD feed. Scout 1.11.1 can bind a member's existing registry entry to Elite's numeric Carrier/Market ID after `CarrierStats` reveals it; callsign matching remains the fallback. The HUD uses that identity to distinguish owner, squadmate and generic visitor contexts. Official carriers can carry the shared **Imperial Mongrels** personality, while ordinary registered carriers can use **Personal Carrier** or **Professional Carrier** personalities. Individual TTS provider/voice, local-comms texture, rate and volume remain local preferences on each member's PC.
+
+The carrier registry page now includes a shared **HUD Personality** field. Leadership can assign the Imperial Mongrels personality to official squad carriers. The first 0.15.0 dialogue library intentionally begins with small owner/squadmate/visitor docking and departure pools plus anti-repeat memory; it is the foundation for much larger announcement libraries without changing the identity-routing architecture. Editing a cue phrase in the local controller remains a hard local override; leaving it at the default lets the personality pool choose variants.
+
+Spoken procedural system names are shortened for carrier dialogue. HIP names remain intact; long generated names use their final coded token (for example `b34-2` or `d10-16`). The user's NGC 2546 Sector UZ-G d10-16 project has the explicit spoken alias **10-16**.
 
 Mongrel HUD 0.14.0 separates Pneuma speech into two persistent roles: **Announcements** and **ATC**. Each role can independently select any installed System.Speech, WinRT, or Kokoro voice. Existing 0.13.x single-voice settings migrate into both roles, so upgrading does not discard the selected voice; the ATC role can then be changed independently from the iPad.
 
