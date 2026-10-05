@@ -176,6 +176,7 @@ function normalizeCarrier(value,fixed,session,existing={}) {
   const locationChanged=currentSystem!==previousSystem;
   return {
     id:fixed.id, callsign:fixed.callsign, ownerId:fixed.ownerId, ownerName:fixed.ownerName,
+    marketId:clean(src.marketId,existing.marketId||'',24).replace(/[^0-9]/g,''),
     commanderName:clean(src.commanderName,existing.commanderName||session.displayName,80),
     name:clean(src.name,existing.name||'Unnamed Carrier',100), role:clean(src.role,existing.role||'General Logistics',80),
     status:normalizeCarrierStatus(src.status||existing.status), notes:clean(src.notes,existing.notes||'',1200),
@@ -204,7 +205,7 @@ function normalizeCoordination(value,fixed,session,existing={}) {
 function presentCarrier(item,session){
   const authenticated=Boolean(session&&ALLOWED_ACCESS.has(session.access));
   const canEdit=authenticated&&(MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub);
-  return {id:item.id,callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
+  return {id:item.id,marketId:item.marketId||'',callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
 }
 function presentCoordination(item,session,carrier){return {...item,carrierName:carrier?.name||item.carrierCallsign,carrierCommander:carrier?.commanderName||'',currentSystem:carrier?.currentSystem||'',locationSource:carrier?.locationSource||'',locationUpdatedAt:carrier?.locationUpdatedAt||'',canEdit:MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub,isMine:item.ownerId===session.sub};}
 
