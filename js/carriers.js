@@ -143,6 +143,10 @@
     const option=[...($('[data-dialogue-category]')?.options||[])].find(item=>item.value===value);
     return option?.textContent||label(value);
   }
+  function dialogueAudienceLabel(value){
+    const option=[...($('[data-dialogue-audience]')?.options||[])].find(item=>item.value===value);
+    return option?.textContent||label(value);
+  }
   function currentDialogueCarrierId(){return $('[data-dialogue-carrier]')?.value||'';}
   function currentDialogueProfile(){
     const id=currentDialogueCarrierId();
@@ -169,9 +173,13 @@
     const profile=currentDialogueProfile();
     const category=$('[data-dialogue-category]').value;
     const audience=$('[data-dialogue-audience]').value;
-    const rows=(profile.lines||[]).filter(row=>row.category===category&&row.audience===audience);
+    const view=$('[data-dialogue-view]')?.value||'pool';
+    const allRows=Array.isArray(profile.lines)?profile.lines:[];
+    const rows=(view==='all'?allRows:allRows.filter(row=>row.category===category&&row.audience===audience))
+      .slice()
+      .sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''))||String(a.audience||'').localeCompare(String(b.audience||''))||String(a.text||'').localeCompare(String(b.text||'')));
     $('[data-dialogue-count]').textContent=`${rows.length} line${rows.length===1?'':'s'}`;
-    $('[data-dialogue-pool-label]').textContent=`${dialogueCategoryLabel(category)} · ${$('[data-dialogue-audience]').selectedOptions[0]?.textContent||audience}`;
+    $('[data-dialogue-pool-label]').textContent=view==='all'?'All shared dialogue lines':`${dialogueCategoryLabel(category)} · ${dialogueAudienceLabel(audience)}`;
     target.replaceChildren();
     if(!rows.length){
       const empty=document.createElement('div'); empty.className='carrier-dialogue-empty'; empty.textContent='No shared lines in this pool yet.';
@@ -179,7 +187,8 @@
     }
     rows.forEach(row=>{
       const card=document.createElement('article'); card.className='carrier-dialogue-row'+(row.enabled===false?' is-disabled':'');
-      card.innerHTML=`<div class="carrier-dialogue-row-main"><div class="carrier-dialogue-badges"><span>${safe(label(row.rarity))}</span><span>${row.enabled===false?'Disabled':'Enabled'}</span></div><p>${safe(row.text)}</p></div><div class="carrier-dialogue-row-actions"><button class="btn btn-secondary" type="button" data-dialogue-edit-line>Edit</button><button class="btn btn-secondary" type="button" data-dialogue-delete-line>Delete</button></div>`;
+      const scopeBadges=view==='all'?'<span>'+safe(dialogueCategoryLabel(row.category))+'</span><span>'+safe(dialogueAudienceLabel(row.audience))+'</span>':'';
+      card.innerHTML=`<div class="carrier-dialogue-row-main"><div class="carrier-dialogue-badges">${scopeBadges}<span>${safe(label(row.rarity))}</span><span>${row.enabled===false?'Disabled':'Enabled'}</span></div><p>${safe(row.text)}</p></div><div class="carrier-dialogue-row-actions"><button class="btn btn-secondary" type="button" data-dialogue-edit-line>Edit</button><button class="btn btn-secondary" type="button" data-dialogue-delete-line>Delete</button></div>`;
       card.querySelector('[data-dialogue-edit-line]').addEventListener('click',()=>{
         dialogueEditingId=row.id;
         $('[data-dialogue-line-id]').value=row.id;
@@ -285,7 +294,7 @@
   $('[data-carrier-register]')?.addEventListener('click',()=>openCarrierEditor());$$('[data-carrier-cancel]').forEach(x=>x.addEventListener('click',closeCarrierEditor));$('[data-carrier-form]')?.addEventListener('submit',saveCarrier);$('[data-carrier-form]')?.addEventListener('input',()=>carrierDirty=true);$('[data-carrier-delete]')?.addEventListener('click',deleteCarrier);
   $('[data-coord-create]')?.addEventListener('click',()=>openCoordEditor());$$('[data-coord-cancel]').forEach(x=>x.addEventListener('click',closeCoordEditor));$('[data-coord-form]')?.addEventListener('submit',saveCoord);$('[data-coord-form]')?.addEventListener('input',()=>coordDirty=true);$('[data-coord-delete]')?.addEventListener('click',deleteCoord);
   $('[data-dialogue-manage]')?.addEventListener('click',openDialogueManager);$$('[data-dialogue-cancel]').forEach(x=>x.addEventListener('click',closeDialogueManager));$('[data-dialogue-new]')?.addEventListener('click',resetDialogueEditor);$('[data-dialogue-save]')?.addEventListener('click',saveDialogueLine);$('[data-dialogue-save-settings]')?.addEventListener('click',saveDialogueSettings);
-  $('[data-dialogue-carrier]')?.addEventListener('change',()=>{resetDialogueEditor();hydrateDialogueSettings();renderDialogueLines();});$('[data-dialogue-category]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});$('[data-dialogue-audience]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});
+  $('[data-dialogue-carrier]')?.addEventListener('change',()=>{resetDialogueEditor();hydrateDialogueSettings();renderDialogueLines();});$('[data-dialogue-category]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});$('[data-dialogue-audience]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});$('[data-dialogue-view]')?.addEventListener('change',renderDialogueLines);
   $$('[data-coord-filter]').forEach(btn=>btn.addEventListener('click',()=>{$$('[data-coord-filter]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');coordFilter=btn.dataset.coordFilter;renderCoordination();}));
   window.addEventListener('beforeunload',e=>{if(carrierDirty||coordDirty){e.preventDefault();e.returnValue='';}});
 
