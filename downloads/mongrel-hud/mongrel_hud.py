@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.0"
+APP_VERSION = "0.16.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1199,12 +1199,14 @@ class MongrelHudApp:
         self.update_status: dict[str, Any] = {"checking": False, "installing": False, "available": False, "version": None, "url": None, "digest": None, "error": ""}
         self.exit_for_update = threading.Event()
         self.voice_condition = threading.Condition()
+        self.voice_worker_thread: threading.Thread | None = None
+        self.voice_worker_starts = 0
         self.voice_pending: list[dict[str, Any]] = []
         self.voice_last_scheduled: dict[str, float] = {}
         self.voice_dialogue_history: dict[str, list[str]] = {}
         self.ambient_context_key = ""
         self.ambient_next_due = 0.0
-        self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastRole": "", "lastAcousticProfile": "", "lastText": "", "lastSpokenAt": "", "lastError": ""}
+        self.voice_runtime: dict[str, Any] = {"speaking": False, "lastCue": "", "lastRole": "", "lastAcousticProfile": "", "lastText": "", "lastSpokenAt": "", "lastError": "", "lastErrorAt": "", "lastRequestId": ""}
         self.voice_catalog: list[dict[str, str]] = []
         self.voice_catalog_error = ""
         self.voice_catalog_errors: dict[str, str] = {}
@@ -1251,7 +1253,7 @@ class MongrelHudApp:
         self._restore_scheduled_voice()
         self._refresh_voice_pack_status()
         threading.Thread(target=self._voice_catalog_worker, name="MongrelHudVoiceCatalog", daemon=True).start()
-        threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True).start()
+        self._ensure_voice_worker()
         threading.Thread(target=self._ambient_voice_loop, name="MongrelHudAmbientVoice", daemon=True).start()
 
     def scout_state(self) -> dict[str, Any]:
@@ -1331,10 +1333,24 @@ class MongrelHudApp:
         with self.lock:
             return json.loads(json.dumps(self.voice_catalog))
 
+    def _ensure_voice_worker(self) -> bool:
+        with self.voice_condition:
+            worker = self.voice_worker_thread
+            if worker is not None and worker.is_alive():
+                return False
+            worker = threading.Thread(target=self._voice_loop, name="MongrelHudVoice", daemon=True)
+            self.voice_worker_thread = worker
+            self.voice_worker_starts += 1
+            worker.start()
+            self.voice_condition.notify_all()
+            return True
+
     def voice_status_snapshot(self) -> dict[str, Any]:
         with self.voice_condition:
             status = dict(self.voice_runtime)
             status["queued"] = len(self.voice_pending)
+            status["workerAlive"] = bool(self.voice_worker_thread and self.voice_worker_thread.is_alive())
+            status["workerStarts"] = int(self.voice_worker_starts)
         with self.store.lock:
             schedule = self.store.data.get("voiceSchedule")
             status["scheduled"] = len(schedule) if isinstance(schedule, list) else 0
@@ -1978,6 +1994,8 @@ class MongrelHudApp:
         carrier = self.carrier_voice_context()
         name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         label = "traffic control" if role == VOICE_ROLE_ATC else "public address"
+        request_id = secrets.token_hex(8)
+        self._ensure_voice_worker()
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": "test",
@@ -1986,10 +2004,13 @@ class MongrelHudApp:
                 "text": f"{name} {label} test. Audio link online.",
                 "due": time.monotonic(),
                 "force": True,
+                "requestId": request_id,
             })
             self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
             self.voice_condition.notify_all()
-        return self.voice_status_snapshot()
+        status = self.voice_status_snapshot()
+        status["requestId"] = request_id
+        return status
 
     def queue_voice_cue_test(self, cue: str) -> dict[str, Any]:
         if cue not in CARRIER_VOICE_CUES:
@@ -2009,6 +2030,8 @@ class MongrelHudApp:
         lead = CARRIER_VOICE_CUES[cue].get("leadSeconds")
         if isinstance(lead, (int, float)):
             event["minutes"] = int(round(float(lead) / 60.0))
+        request_id = secrets.token_hex(8)
+        self._ensure_voice_worker()
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": cue,
@@ -2016,10 +2039,13 @@ class MongrelHudApp:
                 "event": event,
                 "due": time.monotonic(),
                 "force": True,
+                "requestId": request_id,
             })
             self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
             self.voice_condition.notify_all()
-        return self.voice_status_snapshot()
+        status = self.voice_status_snapshot()
+        status["requestId"] = request_id
+        return status
 
     def queue_concourse_voice_test(self, slot_index: int) -> dict[str, Any]:
         if slot_index < 0 or slot_index > 3:
@@ -2030,6 +2056,8 @@ class MongrelHudApp:
         identity = _normalized_voice_identity(slot, self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT))
         carrier = self.carrier_voice_context()
         name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
+        request_id = secrets.token_hex(8)
+        self._ensure_voice_worker()
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": "test.concourse",
@@ -2039,10 +2067,13 @@ class MongrelHudApp:
                 "text": f"{name} concourse announcement voice {slot_index + 1}. Audio channel online.",
                 "due": time.monotonic(),
                 "force": True,
+                "requestId": request_id,
             })
             self.voice_pending.sort(key=lambda item: float(item.get("due") or 0.0))
             self.voice_condition.notify_all()
-        return self.voice_status_snapshot()
+        status = self.voice_status_snapshot()
+        status["requestId"] = request_id
+        return status
 
     def _voice_pack_root(self) -> Path:
         return self.store.path.parent / "voices"
@@ -2866,48 +2897,58 @@ class MongrelHudApp:
 
     def _voice_loop(self) -> None:
         while True:
-            item = None
-            with self.voice_condition:
-                while not self.voice_pending:
-                    self.voice_condition.wait(timeout=5.0)
-                if not self.voice_pending:
-                    continue
-                now = time.monotonic()
-                due = float(self.voice_pending[0].get("due") or now)
-                if due > now:
-                    self.voice_condition.wait(timeout=min(5.0, due - now))
-                    continue
-                item = self.voice_pending.pop(0)
-                self.voice_runtime["speaking"] = True
-                self.voice_runtime["lastError"] = ""
-            schedule_id = str(item.get("persistentId") or "")
-            if schedule_id:
-                self._remove_persisted_voice(schedule_id=schedule_id)
-            settings = self.voice_settings_snapshot()
-            cue = str(item.get("cue") or "")
-            force = bool(item.get("force"))
-            row = (settings.get("cues") or {}).get(cue) or {}
-            if not force and (not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled", True)):
-                with self.voice_condition:
-                    self.voice_runtime["speaking"] = False
-                    self.voice_condition.notify_all()
-                continue
-            event = item.get("event") if isinstance(item.get("event"), dict) else {}
-            text = str(item.get("text") or "") if item.get("text") is not None else self._voice_text_for_event(cue, event)
-            if not text:
-                with self.voice_condition:
-                    self.voice_runtime["speaking"] = False
-                    self.voice_condition.notify_all()
-                continue
-
-            role = str(item.get("role") or self._voice_role_for_cue(cue))
-            if role not in VOICE_ROLE_IDS:
-                role = VOICE_ROLE_ANNOUNCEMENT
-            direct_identity = item.get("voiceIdentity") if isinstance(item.get("voiceIdentity"), dict) else None
-            identity = _normalized_voice_identity(direct_identity) if direct_identity else self._voice_identity_for_role(settings, role)
-            forced_profile = str(item.get("acousticProfile") or "")
-            acoustic_profile = forced_profile if forced_profile in ACOUSTIC_PROFILE_IDS else self._voice_acoustic_profile()
+            item: dict[str, Any] | None = None
             try:
+                with self.voice_condition:
+                    while not self.voice_pending:
+                        self.voice_condition.wait(timeout=5.0)
+                    if not self.voice_pending:
+                        continue
+                    now = time.monotonic()
+                    due = float(self.voice_pending[0].get("due") or now)
+                    if due > now:
+                        self.voice_condition.wait(timeout=min(5.0, due - now))
+                        continue
+                    item = self.voice_pending.pop(0)
+                    self.voice_runtime["speaking"] = True
+                    self.voice_runtime["lastError"] = ""
+
+                schedule_id = str(item.get("persistentId") or "")
+                if schedule_id:
+                    self._remove_persisted_voice(schedule_id=schedule_id)
+
+                settings = self.voice_settings_snapshot()
+                cue = str(item.get("cue") or "")
+                force = bool(item.get("force"))
+                request_id = str(item.get("requestId") or "")
+                row = (settings.get("cues") or {}).get(cue) or {}
+                if not force and (not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled", True)):
+                    with self.voice_condition:
+                        self.voice_runtime["speaking"] = False
+                        self.voice_condition.notify_all()
+                    continue
+
+                event = item.get("event") if isinstance(item.get("event"), dict) else {}
+                text = str(item.get("text") or "") if item.get("text") is not None else self._voice_text_for_event(cue, event)
+                if not text:
+                    with self.voice_condition:
+                        self.voice_runtime.update({
+                            "speaking": False,
+                            "lastRequestId": request_id,
+                            "lastError": "voice_text_empty",
+                            "lastErrorAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                        })
+                        self.voice_condition.notify_all()
+                    continue
+
+                role = str(item.get("role") or self._voice_role_for_cue(cue))
+                if role not in VOICE_ROLE_IDS:
+                    role = VOICE_ROLE_ANNOUNCEMENT
+                direct_identity = item.get("voiceIdentity") if isinstance(item.get("voiceIdentity"), dict) else None
+                identity = _normalized_voice_identity(direct_identity) if direct_identity else self._voice_identity_for_role(settings, role)
+                forced_profile = str(item.get("acousticProfile") or "")
+                acoustic_profile = forced_profile if forced_profile in ACOUSTIC_PROFILE_IDS else self._voice_acoustic_profile()
+
                 self._speak_voice_provider(
                     str(identity.get("voiceProvider") or VOICE_PROVIDER_SYSTEM),
                     text,
@@ -2923,15 +2964,24 @@ class MongrelHudApp:
                         "lastAcousticProfile": acoustic_profile,
                         "lastText": text,
                         "lastSpokenAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                        "lastRequestId": request_id,
                         "lastError": "",
+                        "lastErrorAt": "",
                     })
             except Exception as exc:
+                message = str(exc).strip() or type(exc).__name__
+                request_id = str(item.get("requestId") or "") if isinstance(item, dict) else ""
                 with self.voice_condition:
-                    self.voice_runtime["lastError"] = str(exc).strip() or type(exc).__name__
+                    self.voice_runtime.update({
+                        "lastRequestId": request_id,
+                        "lastError": message,
+                        "lastErrorAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    })
             finally:
                 with self.voice_condition:
                     self.voice_runtime["speaking"] = False
                     self.voice_condition.notify_all()
+
 
     @staticmethod
     def target_identity(target: dict[str, Any] | None) -> str:
