@@ -76,6 +76,13 @@ Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
 - v1 carrier cues: docking request (disabled by default), docking granted, docked/welcome, undocked/departure, jump scheduled, jump cancelled, jump complete. Combat voice callouts are a separate future pass.
 - Voice configuration lives in the existing local HUD `state.json` and therefore survives HUD self-updates. The HUD updater still updates only Mongrel HUD; Scout 1.11.0 remains a separate EDMC plugin update.
 
+Mongrel HUD 0.14.4 local comms tuning workflow:
+- Wolf wants Local Carrier Comms to blend better with Elite's included comms: lower clarity and some radio/static character, but clearly less degraded than Remote Radio.
+- To avoid repeated rebuilds for subjective 5–10% audio tuning, 0.14.4 adds a persistent Local Comms character setting with four presets: Clean, Light, Blend, and Gritty.
+- Blend is the new default target. Clean preserves the prior studio-like reference; Light adds subtle bandwidth/compression/static; Blend is the recommended Elite-style mix; Gritty is the strongest local-radio treatment while remaining below Remote Radio.
+- Changing the Local Comms character from the iPad saves it as the live setting and immediately queues the same Local Carrier Comms announcement sample, allowing rapid A/B comparison without another HUD release.
+- Interior PA, Hangar PA, and Remote Radio behavior are unchanged from the accepted 0.14.2/0.14.3 tuning.
+
 Mongrel HUD 0.14.2 carrier-acoustic tuning:
 - Wolf's 0.14.1 live test confirmed the profiles were now distinguishable but still conservative. Interior/hangar should sound more reverberant; Remote Radio sounded mainly quieter rather than convincingly transmitted; short link tones before/after were requested.
 - 0.14.2 strengthens Interior PA to 55/115/205/335/500 ms reflections and Hangar PA to 80/180/330/520/760/1050 ms with higher wet gains and darker speaker roll-off; Local carrier comms remains the clean reference.
