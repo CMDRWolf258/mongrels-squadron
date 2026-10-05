@@ -278,7 +278,7 @@ function render(){
   var relationLabel=relationship==="owner"?"YOUR CARRIER":relationship==="squadmate"?(official?"SQUAD CARRIER":"SQUADMATE CARRIER"):"VISITING CARRIER";
   setText(el("carrierVoiceTitle"),carrierName.toUpperCase()+" · "+relationLabel);
   setText(el("carrierVoiceDescription"),"Separate announcement and ATC voices with automatic remote radio, local comms, interior PA and hangar acoustics. Voice choices are local to this HUD; carrier personality and relationship choose the dialogue.");
-  setText(el("carrierIdentityStatus"),(carrierContext.callsign?carrierContext.callsign+" · ":"")+relationLabel+" · "+(personality==="mongrels"?"Mongrels personality":personality==="personal"?"Personal carrier personality":"Generic visitor profile")+(active?" · CURRENT CARRIER":""));
+  setText(el("carrierIdentityStatus"),(carrierContext.callsign?carrierContext.callsign+" · ":"")+relationLabel+" · "+(personality==="mongrels"?"Mongrels personality":personality==="personal"?"Personal carrier personality":personality==="professional"?"Professional carrier personality":"Generic visitor profile")+(active?" · CURRENT CARRIER":""));
   var voiceMaster=el("voiceMaster"),carrierPa=el("carrierPaToggle");
   setText(voiceMaster,voice.enabled===false?"VOICE OFF":"VOICE ON");voiceMaster.classList.toggle("active",voice.enabled!==false);
   setText(carrierPa,voice.carrierPa===false?"CARRIER PA OFF":"CARRIER PA ON");carrierPa.classList.toggle("active",voice.carrierPa!==false);
