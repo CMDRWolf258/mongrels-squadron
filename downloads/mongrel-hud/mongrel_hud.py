@@ -401,6 +401,36 @@ CARRIER_DIALOGUE_POOLS: dict[str, dict[str, dict[str, tuple[str, ...]]]] = {
             ),
         },
     },
+    "professional": {
+        "owner": {
+            "docking.granted": (
+                "Docking clearance confirmed. Proceed to {pad}.",
+                "Clearance granted. Approach {pad} when ready.",
+            ),
+            "docking.docked": (
+                "Docking complete. Welcome aboard {carrier}, Commander.",
+                "{carrier} confirms secure docking. Welcome aboard.",
+            ),
+            "docking.undocked": (
+                "Departure complete. Clear of {carrier}.",
+                "You are clear of the carrier. Safe travels, Commander.",
+            ),
+        },
+        "squadmate": {
+            "docking.granted": (
+                "Docking clearance confirmed. Proceed to {pad}.",
+                "Clearance granted, Commander. Continue to {pad}.",
+            ),
+            "docking.docked": (
+                "Docking complete. Welcome aboard {carrier}.",
+                "Welcome aboard {carrier}, Commander.",
+            ),
+            "docking.undocked": (
+                "Departure complete. Safe flying, Commander.",
+                "You are clear of {carrier}. Safe travels.",
+            ),
+        },
+    },
     "generic": {
         "visitor": {
             "docking.granted": (
@@ -1403,7 +1433,8 @@ class MongrelHudApp:
             profile = dict(matched)
             if relationship == "owner" or (owner_id and candidate_id and secrets.compare_digest(owner_id, candidate_id)):
                 profile["relationship"] = "owner"
-            profile["personality"] = "mongrels" if bool(profile.get("official")) else "personal"
+            personality = str(profile.get("personality") or "").strip().casefold()
+            profile["personality"] = personality if personality in {"personal", "professional", "mongrels"} else ("mongrels" if bool(profile.get("official")) else "personal")
             profile["registered"] = True
             return profile
 
