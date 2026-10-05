@@ -11,9 +11,23 @@ export async function onRequestGet({request,env}){
   let seeded=false;
   for(const carrier of carriers){
     const id=clean(carrier?.id,100);
-    if(!id||library.profiles[id])continue;
-    library.profiles[id]=starterProfile(carrier);
-    seeded=true;
+    if(!id)continue;
+    const existing=library.profiles[id];
+    if(!existing){
+      library.profiles[id]=starterProfile(carrier);
+      seeded=true;
+      continue;
+    }
+    if(Number(existing.starterSeedVersion||0)<1){
+      if(!Array.isArray(existing.lines)||existing.lines.length===0){
+        const starter=starterProfile(carrier);
+        starter.settings=existing.settings||starter.settings;
+        library.profiles[id]=starter;
+      }else{
+        library.profiles[id]=normalizeProfile({...existing,starterSeedVersion:1},id);
+      }
+      seeded=true;
+    }
   }
   if(seeded){
     library.updatedAt=new Date().toISOString();
@@ -174,7 +188,7 @@ function starterProfile(carrier){
   add('docking.undocked','visitor','Departure complete. Safe flying, Commander.');
   add('docking.undocked','visitor','You are clear of the carrier. Safe travels.','uncommon');
 
-  return normalizeProfile({carrierId:id,lines:rows,settings:{
+  return normalizeProfile({carrierId:id,starterSeedVersion:1,lines:rows,settings:{
     ambientEnabled:true,hangarMinSeconds:120,hangarMaxSeconds:240,concourseMinSeconds:90,concourseMaxSeconds:210
   }},id);
 }
