@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.14.3"
+APP_VERSION = "0.14.4"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -253,6 +253,12 @@ ACOUSTIC_PROFILE_LABELS = {
     ACOUSTIC_HANGAR: "Carrier hangar PA",
 }
 
+LOCAL_COMMS_CLEAN = "clean"
+LOCAL_COMMS_LIGHT = "light"
+LOCAL_COMMS_BLEND = "blend"
+LOCAL_COMMS_GRITTY = "gritty"
+LOCAL_COMMS_CHARACTER_IDS = frozenset((LOCAL_COMMS_CLEAN, LOCAL_COMMS_LIGHT, LOCAL_COMMS_BLEND, LOCAL_COMMS_GRITTY))
+
 KOKORO_PACK_ID = "kokoro-multi-lang-v1_0"
 KOKORO_PACK_DOWNLOAD_BYTES = 374_712_769
 KOKORO_ENGINE_VERSION = "1.13.8"
@@ -329,6 +335,7 @@ def default_voice_settings() -> dict[str, Any]:
         "carrierPa": True,
         "volume": 75,
         "rate": 0,
+        "localCommsCharacter": LOCAL_COMMS_BLEND,
         # Legacy mirror: announcement identity stays available at the old keys.
         **identity,
         "roles": {
@@ -362,6 +369,11 @@ def normalized_voice_settings(value: Any) -> dict[str, Any]:
         "carrierPa": bool(raw.get("carrierPa", defaults["carrierPa"])),
         "volume": max(0, min(100, volume)),
         "rate": max(-3, min(3, rate)),
+        "localCommsCharacter": (
+            str(raw.get("localCommsCharacter") or defaults["localCommsCharacter"]).strip().lower()
+            if str(raw.get("localCommsCharacter") or defaults["localCommsCharacter"]).strip().lower() in LOCAL_COMMS_CHARACTER_IDS
+            else defaults["localCommsCharacter"]
+        ),
         "voiceProvider": announcement["voiceProvider"],
         "voiceId": announcement["voiceId"],
         "voiceName": announcement["voiceName"],
@@ -1166,7 +1178,7 @@ class MongrelHudApp:
             raise ValueError("voice_settings_required")
         with self.store.lock:
             current = normalized_voice_settings(self.store.data.get("voice"))
-            for key in ("enabled", "carrierPa", "volume", "rate"):
+            for key in ("enabled", "carrierPa", "volume", "rate", "localCommsCharacter"):
                 if key in value:
                     current[key] = value[key]
 
@@ -2015,7 +2027,7 @@ class MongrelHudApp:
         return temp_dir / f"{prefix}-{secrets.token_hex(8)}.wav"
 
     @staticmethod
-    def _process_pcm16_wav(path: Path, volume: int, acoustic_profile: str) -> None:
+    def _process_pcm16_wav(path: Path, volume: int, acoustic_profile: str, local_comms_character: str = LOCAL_COMMS_BLEND) -> None:
         profile = acoustic_profile if acoustic_profile in ACOUSTIC_PROFILE_IDS else ACOUSTIC_LOCAL
         level = max(0.0, min(1.0, int(volume) / 100.0))
         with wave.open(str(path), "rb") as reader:
@@ -2111,6 +2123,50 @@ class MongrelHudApp:
             )
             processed = pre + filtered + post
 
+        elif profile == ACOUSTIC_LOCAL:
+            # Local carrier traffic should blend with Elite's own comms rather
+            # than sounding like pristine studio TTS. Presets let Wolf A/B the
+            # amount of degradation live without requiring another HUD build.
+            character = local_comms_character if local_comms_character in LOCAL_COMMS_CHARACTER_IDS else LOCAL_COMMS_BLEND
+            if character != LOCAL_COMMS_CLEAN:
+                params_by_character = {
+                    LOCAL_COMMS_LIGHT: (170.0, 5400.0, 7600.0, 13000.0, 70.0, 38.0),
+                    LOCAL_COMMS_BLEND: (240.0, 4450.0, 6500.0, 13700.0, 105.0, 72.0),
+                    LOCAL_COMMS_GRITTY: (320.0, 3550.0, 5600.0, 14200.0, 135.0, 108.0),
+                }
+                hp_hz, lp_hz, compression_scale, output_scale, quantum, static_amp = params_by_character[character]
+                dt = 1.0 / sample_rate
+                hp_rc = 1.0 / (2.0 * math.pi * hp_hz)
+                hp_alpha = hp_rc / (hp_rc + dt)
+                lp_rc = 1.0 / (2.0 * math.pi * lp_hz)
+                lp_alpha = dt / (lp_rc + dt)
+                filtered = [0.0] * len(source)
+                for channel in range(channels):
+                    prev_x = 0.0
+                    prev_hp = 0.0
+                    low = 0.0
+                    for idx in range(channel, len(source), channels):
+                        x = source[idx]
+                        high = hp_alpha * (prev_hp + x - prev_x)
+                        prev_x = x
+                        prev_hp = high
+                        low += lp_alpha * (high - low)
+                        shaped = math.tanh(low / compression_scale) * output_scale
+                        shaped = round(shaped / quantum) * quantum
+                        frame = idx // channels
+                        noise_state = ((frame * 1664525 + 1013904223) & 0xffffffff)
+                        static = ((noise_state / 2147483647.5) - 1.0) * static_amp
+                        speech_gate = min(1.0, abs(x) / 3000.0)
+                        static *= 0.18 + (0.82 * speech_gate)
+                        filtered[idx] = shaped + static
+
+                # Keep the chosen character close to the clean reference in
+                # perceived level; the difference should be texture/clarity.
+                source_rms = math.sqrt(sum(sample * sample for sample in source) / max(1, len(source)))
+                filtered_rms = math.sqrt(sum(sample * sample for sample in filtered) / max(1, len(filtered)))
+                gain = min(1.55, max(0.80, (source_rms * 1.03) / filtered_rms)) if filtered_rms > 1.0 else 1.0
+                processed = [sample * gain for sample in filtered]
+
         elif profile in {ACOUSTIC_PA, ACOUSTIC_HANGAR}:
             # Mounted PA reflections are intentionally more obvious than 0.14.1:
             # the interior has a firm short-room echo, while the hangar carries
@@ -2164,7 +2220,9 @@ class MongrelHudApp:
         temp.replace(path)
 
     def _play_voice_wav(self, path: Path, volume: int, acoustic_profile: str) -> None:
-        self._process_pcm16_wav(path, volume, acoustic_profile)
+        settings = self.voice_settings_snapshot()
+        local_character = str(settings.get("localCommsCharacter") or LOCAL_COMMS_BLEND).strip().lower()
+        self._process_pcm16_wav(path, volume, acoustic_profile, local_character)
         import winsound
         winsound.PlaySound(str(path), winsound.SND_FILENAME)
 
