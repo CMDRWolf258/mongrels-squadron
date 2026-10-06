@@ -22,10 +22,14 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.5"
+PLUGIN_VERSION = "1.12.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
+DEFAULT_ACTIVITY_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-activity"
+ACTIVITY_BATCH_DELAY_SECONDS = 8.0
+ACTIVITY_RETRY_SECONDS = 30.0
+ACTIVITY_BATCH_MAX = 24
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
 HUD_BRIDGE_VERSION = 9
@@ -123,6 +127,7 @@ KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
+KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -136,6 +141,11 @@ _last_system_address: Any = None
 _last_star_pos: Any = None
 _cargo_missions_lock = threading.RLock()
 _cargo_missions: dict[str, dict[str, dict[str, Any]]] = {}
+_activity_lock = threading.RLock()
+_activity_pending: list[dict[str, Any]] = []
+_activity_pending_fingerprints: set[str] = set()
+_activity_flush_scheduled = False
+_activity_mission_origins: dict[str, dict[str, Any]] = {}
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "timestamp": "",
@@ -195,6 +205,7 @@ def plugin_start3(plugin_dir: str) -> str:
     _restore_owner_carrier()
     _restore_last_system_context()
     _restore_cargo_missions()
+    _restore_activity_mission_origins()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -248,7 +259,12 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "station/carrier, travel and CarrierStats triggers are also normalized for the local HUD/voice bridge "
         "on 127.0.0.1. Commander name may "
         "exist in that local-only bridge state for future owner/squad greetings, but Commander name, "
-        "cargo, credits, ship build, materials, missions, and general travel history are not transmitted. "
+        "cargo inventory, credit balance, ship build, materials, and general travel history are not transmitted. "
+        "For near-real-time Mission Control and Colonization progress, Scout batches only selected journal results: "
+        "MissionCompleted faction/influence effects, RedeemVoucher bounty/combat-bond redemptions, "
+        "ColonisationContribution deliveries, and ColonisationConstructionDepot progress. Mission acceptance context "
+        "used to resolve source faction/system stays local except for the minimal origin fields attached to the completed "
+        "mission result. These activity batches are event-driven rather than continuously polled. "
         "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
         "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
         "Surface Mining can also use the token to submit explicit deposit reports to the curated 10-16 mining archive; "
@@ -406,6 +422,8 @@ def journal_entry(
 
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
+    if event == "MissionAccepted":
+        _remember_activity_mission_origin(entry, system, station, state)
     if event in {"FSDJump", "Location", "CarrierJump"}:
         _remember_location(entry, system)
     if event in {"ApproachBody", "LeaveBody", "SupercruiseEntry", "SupercruiseExit"}:
@@ -419,6 +437,10 @@ def journal_entry(
     _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
+
+    activity_payload = _build_realtime_activity_payload(entry, state, system, station)
+    if activity_payload is not None and token:
+        _queue_realtime_activity(activity_payload)
 
     if event in {"DockingRequested", "Docked"}:
         visit_payload = _build_station_visit_payload(entry, state, system, station)
@@ -2678,6 +2700,369 @@ def _contains_mongrels(factions: list[Any]) -> bool:
         if isinstance(row, Mapping) and str(row.get("Name") or "").strip().casefold() == MONGREL.casefold():
             return True
     return False
+
+
+def _restore_activity_mission_origins() -> None:
+    global _activity_mission_origins
+    try:
+        raw = config.get_str(KEY_ACTIVITY_MISSION_ORIGINS) or ""
+        parsed = json.loads(raw) if raw else {}
+    except Exception:
+        parsed = {}
+    restored: dict[str, dict[str, Any]] = {}
+    if isinstance(parsed, Mapping):
+        for mission_id, row in list(parsed.items())[-128:]:
+            if not isinstance(row, Mapping):
+                continue
+            origin_system = str(row.get("originSystem") or "").strip()[:140]
+            if not origin_system:
+                continue
+            restored[str(mission_id)] = {
+                "missionId": str(row.get("missionId") or mission_id),
+                "acceptedAt": str(row.get("acceptedAt") or "").strip()[:80],
+                "originSystem": origin_system,
+                "originSystemAddress": _decimal_text(row.get("originSystemAddress")),
+                "originStation": str(row.get("originStation") or "").strip()[:140],
+                "sourceFaction": str(row.get("sourceFaction") or "").strip()[:120],
+                "destinationSystem": str(row.get("destinationSystem") or "").strip()[:140],
+                "destinationStation": str(row.get("destinationStation") or "").strip()[:140],
+            }
+    with _activity_lock:
+        _activity_mission_origins = restored
+
+
+def _save_activity_mission_origins() -> None:
+    try:
+        with _activity_lock:
+            rows = list(_activity_mission_origins.items())
+            rows.sort(key=lambda item: str(item[1].get("acceptedAt") or ""))
+            compact = dict(rows[-128:])
+        config.set(KEY_ACTIVITY_MISSION_ORIGINS, json.dumps(compact, separators=(",", ":")))
+    except Exception:
+        pass
+
+
+def _remember_activity_mission_origin(
+    entry: Mapping[str, Any],
+    fallback_system: str,
+    fallback_station: str,
+    state: Mapping[str, Any],
+) -> None:
+    mission_id = _optional_int(entry.get("MissionID"))
+    if mission_id is None:
+        return
+    origin_system = str(
+        entry.get("StarSystem")
+        or state.get("SystemName")
+        or fallback_system
+        or _last_system_name
+        or ""
+    ).strip()
+    if not origin_system:
+        return
+    origin_address = _decimal_text(
+        entry.get("SystemAddress", state.get("SystemAddress", _last_system_address))
+    )
+    origin_station = str(
+        entry.get("StationName")
+        or fallback_station
+        or state.get("StationName")
+        or ""
+    ).strip()
+    row = {
+        "missionId": str(mission_id),
+        "acceptedAt": str(entry.get("timestamp") or "").strip()[:80],
+        "originSystem": origin_system[:140],
+        "originSystemAddress": origin_address,
+        "originStation": origin_station[:140],
+        "sourceFaction": str(entry.get("Faction") or "").strip()[:120],
+        "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:140],
+        "destinationStation": str(entry.get("DestinationStation") or "").strip()[:140],
+    }
+    with _activity_lock:
+        _activity_mission_origins[str(mission_id)] = row
+        if len(_activity_mission_origins) > 160:
+            oldest = sorted(
+                _activity_mission_origins,
+                key=lambda key: str(_activity_mission_origins[key].get("acceptedAt") or ""),
+            )[:32]
+            for key in oldest:
+                _activity_mission_origins.pop(key, None)
+    _save_activity_mission_origins()
+
+
+def _station_faction_name(entry: Mapping[str, Any], state: Mapping[str, Any]) -> str:
+    value = entry.get("StationFaction", state.get("StationFaction"))
+    if isinstance(value, Mapping):
+        value = value.get("Name")
+    return str(value or "").strip()[:120]
+
+
+def _activity_influence_rows(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for item in value[:16]:
+        if not isinstance(item, Mapping):
+            continue
+        rows.append(
+            {
+                "SystemAddress": _decimal_text(item.get("SystemAddress")),
+                "Influence": str(item.get("Influence") or "").strip()[:16],
+            }
+        )
+    return rows
+
+
+def _build_realtime_activity_payload(
+    entry: Mapping[str, Any],
+    state: Mapping[str, Any],
+    fallback_system: str,
+    fallback_station: str,
+) -> Optional[dict[str, Any]]:
+    event = str(entry.get("event") or "").strip()
+    if event not in {
+        "MissionCompleted",
+        "RedeemVoucher",
+        "ColonisationContribution",
+        "ColonisationConstructionDepot",
+    }:
+        return None
+
+    timestamp = str(entry.get("timestamp") or "").strip()
+    system_name = str(
+        entry.get("StarSystem")
+        or state.get("SystemName")
+        or fallback_system
+        or _last_system_name
+        or ""
+    ).strip()
+    system_address = _decimal_text(
+        entry.get("SystemAddress", state.get("SystemAddress", _last_system_address))
+    )
+    station_name = str(entry.get("StationName") or fallback_station or state.get("StationName") or "").strip()
+    station_type = str(entry.get("StationType") or state.get("StationType") or "").strip()
+    if not timestamp:
+        return None
+
+    base: dict[str, Any] = {
+        "event": event,
+        "timestamp": timestamp,
+        "system": system_name,
+        "systemAddress": system_address,
+        "station": station_name,
+        "stationType": station_type,
+        "stationFaction": _station_faction_name(entry, state),
+    }
+
+    if event == "MissionCompleted":
+        mission_id = _optional_int(entry.get("MissionID"))
+        if mission_id is None:
+            return None
+        with _activity_lock:
+            origin = dict(_activity_mission_origins.get(str(mission_id)) or {})
+        effects: list[dict[str, Any]] = []
+        for effect in (entry.get("FactionEffects") or [])[:16]:
+            if not isinstance(effect, Mapping):
+                continue
+            effects.append(
+                {
+                    "Faction": str(effect.get("Faction") or "").strip()[:120],
+                    "Reputation": str(effect.get("Reputation") or "").strip()[:16],
+                    "Influence": _activity_influence_rows(effect.get("Influence")),
+                }
+            )
+        if not effects:
+            return None
+        return {
+            **base,
+            "missionId": mission_id,
+            "faction": str(entry.get("Faction") or "").strip()[:120],
+            "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:140],
+            "missionOrigin": origin or None,
+            "factionEffects": effects,
+        }
+
+    if event == "RedeemVoucher":
+        voucher_type = str(entry.get("Type") or "").strip().lower()
+        if voucher_type not in {"bounty", "combatbond"}:
+            return None
+        factions = []
+        for row in (entry.get("Factions") or [])[:20]:
+            if not isinstance(row, Mapping):
+                continue
+            factions.append(
+                {
+                    "Faction": str(row.get("Faction") or "").strip()[:120],
+                    "Amount": row.get("Amount", 0),
+                }
+            )
+        return {
+            **base,
+            "voucherType": voucher_type,
+            "amount": entry.get("Amount", 0),
+            "faction": str(entry.get("Faction") or "").strip()[:120],
+            "factions": factions,
+        }
+
+    if event == "ColonisationContribution":
+        contributions = []
+        for row in (entry.get("Contributions") or [])[:64]:
+            if not isinstance(row, Mapping):
+                continue
+            contributions.append(
+                {
+                    "Name": str(row.get("Name") or "").strip()[:120],
+                    "Name_Localised": str(row.get("Name_Localised") or "").strip()[:120],
+                    "Amount": row.get("Amount", 0),
+                }
+            )
+        if not contributions:
+            return None
+        return {
+            **base,
+            "marketId": _decimal_text(entry.get("MarketID")),
+            "contributions": contributions,
+        }
+
+    resources = []
+    for row in (entry.get("ResourcesRequired") or [])[:96]:
+        if not isinstance(row, Mapping):
+            continue
+        resources.append(
+            {
+                "Name": str(row.get("Name") or "").strip()[:120],
+                "Name_Localised": str(row.get("Name_Localised") or "").strip()[:120],
+                "RequiredAmount": row.get("RequiredAmount", 0),
+                "ProvidedAmount": row.get("ProvidedAmount", 0),
+                "Payment": row.get("Payment", 0),
+            }
+        )
+    return {
+        **base,
+        "marketId": _decimal_text(entry.get("MarketID")),
+        "constructionProgress": entry.get("ConstructionProgress", 0),
+        "constructionComplete": bool(entry.get("ConstructionComplete")),
+        "constructionFailed": bool(entry.get("ConstructionFailed")),
+        "resourcesRequired": resources,
+    }
+
+
+def _activity_fingerprint(payload: Mapping[str, Any]) -> str:
+    try:
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    except Exception:
+        return repr(payload)
+
+
+def _queue_realtime_activity(payload: dict[str, Any]) -> None:
+    global _activity_flush_scheduled
+    fingerprint = _activity_fingerprint(payload)
+    with _activity_lock:
+        if fingerprint in _activity_pending_fingerprints:
+            return
+        _activity_pending.append(dict(payload))
+        _activity_pending_fingerprints.add(fingerprint)
+        if _activity_flush_scheduled:
+            return
+        _activity_flush_scheduled = True
+    threading.Thread(
+        target=_activity_flush_worker,
+        name="MongrelScoutActivityBatch",
+        daemon=True,
+    ).start()
+
+
+def _activity_endpoint(base_endpoint: str) -> str:
+    value = str(base_endpoint or DEFAULT_ENDPOINT).strip()
+    if not value:
+        return DEFAULT_ACTIVITY_ENDPOINT
+    try:
+        parsed = urlparse(value)
+        path = parsed.path or ""
+        if path.endswith("/scout-ingest"):
+            path = path[: -len("/scout-ingest")] + "/scout-activity"
+            return parsed._replace(path=path, query="", fragment="").geturl()
+    except Exception:
+        pass
+    return DEFAULT_ACTIVITY_ENDPOINT
+
+
+def _activity_flush_worker() -> None:
+    global _activity_flush_scheduled
+    time.sleep(ACTIVITY_BATCH_DELAY_SECONDS)
+    while True:
+        with _activity_lock:
+            if not _activity_pending:
+                _activity_flush_scheduled = False
+                return
+            batch = [dict(row) for row in _activity_pending[:ACTIVITY_BATCH_MAX]]
+            fingerprints = [_activity_fingerprint(row) for row in batch]
+            del _activity_pending[: len(batch)]
+            for fingerprint in fingerprints:
+                _activity_pending_fingerprints.discard(fingerprint)
+
+        token = (config.get_str(KEY_TOKEN) or "").strip()
+        if not token:
+            with _activity_lock:
+                _activity_flush_scheduled = False
+            return
+        endpoint = _activity_endpoint(config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
+        success, retryable = _send_activity_batch(endpoint, token, batch)
+        if success:
+            continue
+        if not retryable:
+            continue
+
+        with _activity_lock:
+            existing = {_activity_fingerprint(row) for row in _activity_pending}
+            restore = [row for row in batch if _activity_fingerprint(row) not in existing]
+            _activity_pending[0:0] = restore
+            _activity_pending_fingerprints.update(_activity_fingerprint(row) for row in restore)
+        time.sleep(ACTIVITY_RETRY_SECONDS)
+
+
+def _send_activity_batch(endpoint: str, token: str, events: list[dict[str, Any]]) -> tuple[bool, bool]:
+    if not events:
+        return True, False
+    payload = {
+        "version": 1,
+        "kind": "activity_batch",
+        "events": events[:ACTIVITY_BATCH_MAX],
+    }
+    with _send_lock:
+        try:
+            response = _session.post(
+                endpoint,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/json",
+                    "User-Agent": f"{_session.headers.get('User-Agent', 'EDMarketConnector')} MongrelScout/{PLUGIN_VERSION}",
+                },
+            )
+        except Exception:
+            return False, True
+
+    if 200 <= response.status_code < 300:
+        return True, False
+    try:
+        detail = str(response.json().get("error") or "")
+    except Exception:
+        detail = ""
+    if response.status_code == 401:
+        _set_status("Realtime activity token rejected")
+        return False, False
+    if response.status_code == 403 and detail == "scout_owner_not_bound":
+        _set_status("Realtime activity needs a bound Scout owner")
+        return False, False
+    if response.status_code == 429:
+        _set_status("Scout rate limit reached")
+        return False, True
+    if response.status_code >= 500:
+        return False, True
+    _set_status(f"Realtime activity upload failed ({response.status_code})")
+    return False, False
 
 
 def _send_snapshot(endpoint: str, token: str, payload: dict[str, Any]) -> None:
