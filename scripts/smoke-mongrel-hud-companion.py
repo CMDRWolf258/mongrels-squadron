@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.4"
+assert hud.APP_VERSION=="0.16.5"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -22,13 +22,13 @@ assert hud.version_tuple("0.16.0")==(0,16,0)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.15.0"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.0"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.4"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.5"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.5"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.6"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.16.5",
+    "name":"Mongrel HUD Windows v0.16.6",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.16.5" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.16.6" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -249,7 +249,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.16.4"
+    assert hud.APP_VERSION=="0.16.5"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -305,7 +305,7 @@ with tempfile.TemporaryDirectory() as td:
     assert fake_root.after_calls==2 and fake_window.withdrawn>=1
 
 html=(ROOT/"downloads"/"mongrel-hud"/"controller.html").read_text(encoding="utf-8")
-for token in ["COMBAT","SURFACE MINING","HUD CONTROL","CARRIER PA","FLEET CARRIER · COMMS","TEST ANNOUNCEMENT","voiceSelect","Windows Modern (WinRT)","LOCAL NEURAL · KOKORO","INSTALL VOICE PACK","REPAIR","REMOVE","voicePackProgress","/api/voice-pack-install","/api/voice-pack-repair","/api/voice-pack-remove","voiceProvider","providerLabel","data-voice-phrase","data-voice-cue=\"carrier.countdown_10\"","data-voice-cue=\"carrier.countdown_5\"","data-voice-cue=\"carrier.cooldown_ready\"","data-voice-offset","/api/voice","/api/voice-test","/api/voice-test-cue","/api/voice-test-concourse","voiceSelectConcourse1","voiceSelectConcourse4","CONCOURSE VOICE ENSEMBLE","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
+for token in ["COMBAT","SURFACE MINING","HUD CONTROL","CARRIER PA","FLEET CARRIER · COMMS","TEST ANNOUNCEMENT","voiceSelect","Windows Modern (WinRT)","LOCAL NEURAL · KOKORO","INSTALL VOICE PACK","REPAIR","REMOVE","voicePackProgress","/api/voice-pack-install","/api/voice-pack-repair","/api/voice-pack-remove","voiceProvider","providerLabel","data-voice-phrase","data-voice-cue=\"carrier.countdown_10\"","data-voice-cue=\"carrier.countdown_5\"","data-voice-cue=\"carrier.cooldown_ready\"","data-voice-offset","/api/voice","/api/voice-test","/api/voice-test-cue","/api/voice-test-concourse","voiceSelectConcourse1","voiceSelectConcourse4","CONCOURSE VOICE ENSEMBLE","TARGET LOADOUT SCANNER","SHIP CARGO","MISSION NEEDS","STOLEN CARGO","Next Run","cargoPriority","/api/cargo-priority","data-panel-visible=\"cargo\"","SCAN LOADOUT","recentTargetIntel","/api/target-scan","Current jump","Unladen (Frontier)","ownCurrentJump","ownMass","Mission Control","Trader's Outpost","Scout Board","Nearest Scout Jobs","Mining Intel","Faction Alerts","Daily Order Changes","HUD NOTES","UNLOCK LAYOUT","RESET LAYOUT","data-panel-scale","data-panel-profile","value=\"0.8\"","80%","value=\"0.85\"","85%","/api/layout","/api/panel","/api/layout-reset","/api/notes","/api/alert-ack","MINING LOCATIONS ON THIS BODY","SET / UPDATE CENTER","DEPOSITS IN SELECTED LOCATION","REPORT DEPOSIT","depositCommodity","depositCommodityOther","Other / not listed","depositSignal","centerSignal","/api/location-select","/api/site-center","/api/site-select","/api/deposit"]:
     assert token in html
 source=(ROOT/"downloads"/"mongrel-hud"/"mongrel_hud.py").read_text(encoding="utf-8")
 assert "Access-Control-Allow-Origin" not in source
@@ -380,6 +380,7 @@ assert 'str(row.get("systemName") or TEN16_SYSTEM)' in source
 assert "SURFACE_MINING_COMMODITIES" in source and '"Platinum"' in source and '"Monazite"' in source
 assert "_render_miningintel_canvas" in source and '"miningintel": "MINING INTEL"' in source
 assert "_render_cargo_canvas" in source and '"cargo": "CARGO"' in source
+assert "SCOUT_CARGO_PRIORITY_URL" in source and "set_cargo_priority" in source
 assert "width = round(410 * scale)" in source
 assert "mining_center_save_failed" in source and "signal_required" in source and '"/api/location-select"' in source
 assert "LOCATION CENTER · SIGNAL #" in source and "SELECTED DEPOSIT" in source
