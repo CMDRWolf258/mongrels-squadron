@@ -2058,7 +2058,6 @@ def _apply_cargo_priority(cargo: Mapping[str, Any], priority_faction: str = "") 
         row["stillNeeded"] = still_needed
         row["ready"] = still_needed == 0
         row["nextRun"] = bool(selected and str(row.get("faction") or "").casefold() == selected.casefold())
-        row.pop("firstAcceptedAt", None)
 
     result["missionNeeds"] = rows
     result["availableFactions"] = sorted(available_factions, key=str.casefold)
