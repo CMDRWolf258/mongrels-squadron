@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.3"
+APP_VERSION = "0.16.4"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -4895,14 +4895,21 @@ class MongrelHudApp:
         if mission_needs:
             self._draw_text(canvas, 8 * scale, y, "MISSION NEEDS", scale, 9, HUD_CYAN, True)
             y += 19 * scale
+            current_faction = None
             for row in mission_needs:
                 if not isinstance(row, dict):
                     continue
+                faction = str(row.get("faction") or "").strip() or "Faction Unknown"
+                if faction != current_faction:
+                    current_faction = faction
+                    faction_color = HUD_MUTED if faction.casefold() == "faction unknown" else HUD_CYAN
+                    self._draw_text(canvas, 12 * scale, y, self.clip_line(faction.upper(), 42), scale, 9, faction_color, True)
+                    y += 18 * scale
                 name = self.clip_line(row.get("name") or row.get("key") or "Commodity", 28)
                 in_hold = max(0, int(row.get("inHold") or 0))
                 remaining = max(0, int(row.get("remaining") or 0))
                 needed = max(0, int(row.get("stillNeeded") or 0))
-                self._draw_text(canvas, 12 * scale, y, name, scale, 10, HUD_WHITE, True)
+                self._draw_text(canvas, 20 * scale, y, name, scale, 10, HUD_WHITE, True)
                 self._draw_text(canvas, 270 * scale, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
                 status = "READY" if needed == 0 else f"NEED {needed:,}"
                 self._draw_text(canvas, width - 8 * scale, y, status, scale, 9, HUD_GREEN if needed == 0 else HUD_AMBER, True, "ne")
