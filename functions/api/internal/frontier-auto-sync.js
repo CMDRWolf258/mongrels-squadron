@@ -1,8 +1,12 @@
 import { json } from '../../../lib/auth.js';
-import { getAccount, listFrontierAccounts, saveAccount } from '../../../lib/frontier.js';
+import { getAccount, getEventStoreMeta, listFrontierAccounts, saveAccount } from '../../../lib/frontier.js';
 import { syncFrontierAccount } from '../frontier/sync.js';
 
-export const FRONTIER_AUTO_SYNC_INTERVAL_MS=24*60*60*1000;
+export const FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS=24*60*60*1000;
+export const FRONTIER_AUTO_SYNC_HARD_ELIGIBLE_MS=30*60*60*1000;
+export const FRONTIER_AUTO_SYNC_SCOUT_GRACE_MS=12*60*60*1000;
+// Backwards-compatible name used by existing diagnostics/tests.
+export const FRONTIER_AUTO_SYNC_INTERVAL_MS=FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS;
 export const FRONTIER_AUTO_SYNC_BATCH_SIZE=8;
 
 export async function onRequestPost({request,env}){
@@ -13,9 +17,17 @@ export async function onRequestPost({request,env}){
   const checkedAt=new Date(now).toISOString();
   try{
     const accounts=await listFrontierAccounts(env);
-    const due=accounts
-      .filter(row=>autoSyncDue(row?.account,now))
+    const candidates=accounts.filter(row=>autoSyncWindowOpen(row?.account,now));
+    const evaluated=await Promise.all(candidates.map(async row=>{
+      const activityMeta=needsScoutActivityCheck(row?.account,now)
+        ? await getEventStoreMeta(env,String(row?.userId||''))
+        : null;
+      return{...row,activityMeta,decision:autoSyncDecision(row?.account,activityMeta,now)};
+    }));
+    const due=evaluated
+      .filter(row=>row.decision.due)
       .sort((a,b)=>syncAgeKey(a?.account)-syncAgeKey(b?.account));
+    const scoutDeferred=evaluated.filter(row=>row.decision.reason==='recent_scout_activity');
     const selected=due.slice(0,FRONTIER_AUTO_SYNC_BATCH_SIZE);
     const results=[];
 
@@ -29,8 +41,12 @@ export async function onRequestPost({request,env}){
           results.push({commander,ok:false,error:'frontier_account_missing'});
           continue;
         }
-        if(!autoSyncDue(before,Date.now())){
-          results.push({commander,ok:true,skipped:true,reason:'no_longer_due'});
+        const activityMeta=needsScoutActivityCheck(before,Date.now())
+          ? await getEventStoreMeta(env,userId)
+          : null;
+        const decision=autoSyncDecision(before,activityMeta,Date.now());
+        if(!decision.due){
+          results.push({commander,ok:true,skipped:true,reason:decision.reason});
           continue;
         }
         await saveAccount(env,userId,{...before,lastAutoSyncAttemptAt:attemptAt});
@@ -47,6 +63,7 @@ export async function onRequestPost({request,env}){
           results.push({
             commander,
             ok:true,
+            reason:decision.reason,
             lastSyncAt:body?.account?.lastSyncAt||null,
             newEvents:Number(body?.newEvents)||0,
             storedEvents:Number(body?.storedEvents)||0,
@@ -69,13 +86,19 @@ export async function onRequestPost({request,env}){
       ok:true,
       checkedAt,
       connectedAccounts:accounts.length,
+      candidateAccounts:candidates.length,
       dueAccounts:due.length,
+      scoutDeferredAccounts:scoutDeferred.length,
       attempted:selected.length,
-      deferred:Math.max(0,due.length-selected.length),
+      deferred:Math.max(0,due.length-selected.length)+scoutDeferred.length,
+      batchDeferred:Math.max(0,due.length-selected.length),
       succeeded:results.filter(row=>row.ok&&!row.skipped).length,
       skipped:results.filter(row=>row.skipped).length,
       failed:results.filter(row=>!row.ok).length,
-      intervalHours:24,
+      softIntervalHours:24,
+      hardEligibilityHours:30,
+      maximumScheduledAgeHours:36,
+      scoutActivityGraceHours:12,
       schedulerCadenceHours:6,
       batchSize:FRONTIER_AUTO_SYNC_BATCH_SIZE,
       results,
@@ -86,14 +109,48 @@ export async function onRequestPost({request,env}){
   }
 }
 
-export function autoSyncDue(account,now=Date.now()){
+export function autoSyncDue(account,now=Date.now(),activityMeta=null){
+  return autoSyncDecision(account,activityMeta,now).due;
+}
+
+export function autoSyncDecision(account,activityMeta=null,now=Date.now()){
+  const current=Number(now);
+  const lastSync=Date.parse(account?.lastSyncAt||'');
+  const lastAttempt=Date.parse(account?.lastAutoSyncAttemptAt||'');
+
+  if(account?.autoSyncReauthRequired===true){
+    const due=!Number.isFinite(lastAttempt)||current-lastAttempt>=FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS;
+    return{due,reason:due?'reauth_retry_due':'reauth_retry_wait'};
+  }
+  if(!Number.isFinite(lastSync))return{due:true,reason:'never_synced'};
+
+  const age=current-lastSync;
+  if(age<FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS)return{due:false,reason:'recent_frontier_sync'};
+  if(age>=FRONTIER_AUTO_SYNC_HARD_ELIGIBLE_MS)return{due:true,reason:'hard_reconciliation_due'};
+
+  const lastScout=Date.parse(activityMeta?.lastScoutActivityAt||'');
+  if(Number.isFinite(lastScout)&&current-lastScout<FRONTIER_AUTO_SYNC_SCOUT_GRACE_MS){
+    return{due:false,reason:'recent_scout_activity',lastScoutActivityAt:new Date(lastScout).toISOString()};
+  }
+  return{due:true,reason:'soft_reconciliation_due'};
+}
+
+function autoSyncWindowOpen(account,now){
   const current=Number(now);
   const lastSync=Date.parse(account?.lastSyncAt||'');
   const lastAttempt=Date.parse(account?.lastAutoSyncAttemptAt||'');
   if(account?.autoSyncReauthRequired===true){
-    return !Number.isFinite(lastAttempt)||current-lastAttempt>=FRONTIER_AUTO_SYNC_INTERVAL_MS;
+    return !Number.isFinite(lastAttempt)||current-lastAttempt>=FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS;
   }
-  return !Number.isFinite(lastSync)||current-lastSync>=FRONTIER_AUTO_SYNC_INTERVAL_MS;
+  return !Number.isFinite(lastSync)||current-lastSync>=FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS;
+}
+
+function needsScoutActivityCheck(account,now){
+  const current=Number(now);
+  const lastSync=Date.parse(account?.lastSyncAt||'');
+  if(account?.autoSyncReauthRequired===true||!Number.isFinite(lastSync))return false;
+  const age=current-lastSync;
+  return age>=FRONTIER_AUTO_SYNC_SOFT_INTERVAL_MS&&age<FRONTIER_AUTO_SYNC_HARD_ELIGIBLE_MS;
 }
 
 function syncAgeKey(account){
