@@ -6,12 +6,15 @@ import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
 import { normalizeScoutFacilityVisit, deriveStationHostCandidate, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
+import { normalizeScoutActivityBatch, systemAuthorized as activitySystemAuthorized } from '../lib/scout-activity.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
   'downloads/mongrel-scout/README.md',
   'functions/api/operations/scout-tokens.js',
   'functions/api/operations/scout-ingest.js',
+  'functions/api/operations/scout-activity.js',
+  'lib/scout-activity.js',
   'functions/api/hud/auth.js',
   'functions/api/orrery/facility-observations.js',
   'lib/orrery-facility-observations.js',
@@ -114,7 +117,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.11\.5"/,
+  /PLUGIN_VERSION = "1\.12\.0"/,
   /HUD_BRIDGE_VERSION = 9/,
   /MongrelScoutCargoMissionCache/,
   /def _update_cargo_missions_from_journal/,
@@ -135,14 +138,28 @@ for(const pattern of [
   /Scout rate limit reached/,
   /BGS upload/,
   /detail_text/,
+  /DEFAULT_ACTIVITY_ENDPOINT/,
+  /ACTIVITY_BATCH_DELAY_SECONDS = 8\.0/,
+  /MongrelScoutActivityMissionOrigins/,
+  /def _remember_activity_mission_origin/,
+  /def _build_realtime_activity_payload/,
+  /def _queue_realtime_activity/,
+  /def _send_activity_batch/,
+  /MissionCompleted/,
+  /ColonisationContribution/,
+  /ColonisationConstructionDepot/,
+  /activity_batch/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
-assert.match(plugin,/Commander name[\s\S]{0,180}cargo, credits/i);
+assert.match(plugin,/Commander name[\s\S]{0,260}cargo inventory, credit balance/i);
 assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
 assert.match(plugin,/facility market ID, host body ID\/name, latitude and longitude/i,'Scout privacy copy should disclose facility placement fields');
 assert.match(plugin,/local-only bridge state/i,'Scout privacy copy should distinguish local HUD identity from cloud uploads');
 assert.match(plugin,/curated 10-16 mining archive/i,'Scout privacy copy should disclose explicit HUD mining submissions');
+assert.match(plugin,/near-real-time Mission Control and Colonization progress/i,'Scout privacy copy should disclose realtime activity uploads');
+assert.match(plugin,/MissionCompleted faction\/influence effects/i);
+assert.match(plugin,/event-driven rather than continuously polled/i);
 assert.match(plugin,/Intentionally no Access-Control-Allow-Origin header/,'Local bridge must not opt arbitrary web pages into CORS');
 assert.doesNotMatch(plugin,/send_header\("Access-Control-Allow-Origin"/,'Local HUD bridge must not emit a permissive CORS header');
 assert.match(plugin,/_publish_hud_event\(cmdr, system, station, entry\)[\s\S]*token = \(config\.get_str\(KEY_TOKEN\)/,'Local HUD events must publish before cloud token checks');
@@ -170,6 +187,9 @@ assert.doesNotMatch(tokenApi,/state\.tokens\[id\]\s*=\s*\{[^}]*token,/s,'Raw Sco
 const hudAuth=readFileSync('functions/api/hud/auth.js','utf8');
 for(const pattern of [/wolf-bgs-scout-tokens-v1/,/Authorization/,/Bearer/,/sha256Hex/,/constantTimeEqual/,/site_admin/])assert.match(hudAuth,pattern);
 assert.doesNotMatch(hudAuth,/token\s*:/i,'HUD auth response must not expose the raw Scout token');
+
+const activityEndpoint=readFileSync('functions/api/operations/scout-activity.js','utf8');
+for(const pattern of [/mergeEventsWithResult/,/normalizeScoutActivityBatch/,/lastScoutActivityAt/,/scout_owner_not_bound/,/scout_rate_limit_reached/])assert.match(activityEndpoint,pattern);
 
 const ingest=readFileSync('functions/api/operations/scout-ingest.js','utf8');
 for(const pattern of [
@@ -220,6 +240,72 @@ assert.equal(ingestHelpers.isFacilityPayload({kind:'facility'}),true);
 assert.equal(ingestHelpers.isFacilityVisitPayload({kind:'facility_visit'}),true);
 assert.equal(ingestHelpers.isFacilityHostPayload({event:'StationHost'}),true);
 assert.equal(ingestHelpers.isFacilityHostPayload({kind:'facility_host'}),true);
+
+const activityNow=Date.parse('2026-10-06T18:00:00Z');
+assert.equal(activitySystemAuthorized({scope:'restricted',allowedSystems:['NGC 2546 Sector UZ-G d10-16']},'ngc 2546 sector uz-g d10-16'),true);
+const realtime=normalizeScoutActivityBatch({
+  kind:'activity_batch',
+  events:[
+    {
+      event:'MissionCompleted',
+      timestamp:'2026-10-06T17:55:00Z',
+      system:'NGC 2546 Sector UZ-G d10-16',
+      systemAddress:'560820275507',
+      station:'Eon Blue Apocalypse',
+      missionId:8123,
+      faction:'Wolf 258 Dynasty',
+      missionOrigin:{
+        missionId:'8123',
+        acceptedAt:'2026-10-06T17:20:00Z',
+        originSystem:'NGC 2546 Sector OQ-H b38-0',
+        originSystemAddress:'111111111111',
+        originStation:'Test Port',
+        sourceFaction:'Wolf 258 Dynasty',
+        destinationSystem:'NGC 2546 Sector UZ-G d10-16',
+      },
+      factionEffects:[
+        {Faction:'Wolf 258 Dynasty',Reputation:'++',Influence:[{SystemAddress:'111111111111',Influence:'+++++'}]},
+        {Faction:'The Consortium',Reputation:'+',Influence:[{SystemAddress:'560820275507',Influence:'++++'}]},
+      ],
+    },
+    {
+      event:'RedeemVoucher',timestamp:'2026-10-06T17:56:00Z',
+      system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'560820275507',
+      station:'Eon Blue Apocalypse',stationType:'Orbis',stationFaction:'Regiment of Imperial Mongrels',
+      voucherType:'bounty',amount:12000000,
+      factions:[{Faction:'Regiment of Imperial Mongrels',Amount:12000000}],
+    },
+    {
+      event:'ColonisationContribution',timestamp:'2026-10-06T17:57:00Z',
+      system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'560820275507',
+      station:'Construction Site',marketId:'1234567890',
+      contributions:[{Name:'$Steel_Name;',Name_Localised:'Steel',Amount:384}],
+    },
+    {
+      event:'ColonisationConstructionDepot',timestamp:'2026-10-06T17:57:05Z',
+      system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'560820275507',
+      station:'Construction Site',marketId:'1234567890',constructionProgress:0.72,
+      resourcesRequired:[{Name:'$Steel_Name;',Name_Localised:'Steel',RequiredAmount:2000,ProvidedAmount:1400,Payment:1000}],
+    },
+  ],
+},{scope:'trusted',allowedSystems:[]},{now:activityNow});
+assert.equal(realtime.events.length,4);
+const realtimeMission=realtime.events.find(row=>row.type==='mission_inf');
+assert.equal(realtimeMission.provisional,true);
+assert.deepEqual(realtimeMission.effects.map(row=>[row.faction,row.system,row.infUnits]),[
+  ['Wolf 258 Dynasty','NGC 2546 Sector OQ-H b38-0',5],
+  ['The Consortium','NGC 2546 Sector UZ-G d10-16',4],
+]);
+assert.equal(realtime.events.find(row=>row.type==='bounties_redeemed').amount,12000000);
+assert.equal(realtime.events.find(row=>row.type==='colonization_contribution').totalTons,384);
+assert.equal(realtime.events.find(row=>row.type==='colonization_depot').resources[0].providedAmount,1400);
+const carrierVoucher=normalizeScoutActivityBatch({
+  kind:'activity_batch',
+  events:[{event:'RedeemVoucher',timestamp:'2026-10-06T17:58:00Z',system:'Diaba',systemAddress:'42',station:'Carrier',stationType:'FleetCarrier',voucherType:'bounty',amount:5000000}],
+},{scope:'trusted',allowedSystems:[]},{now:activityNow});
+assert.equal(carrierVoucher.events.length,0);
+assert.equal(carrierVoucher.excluded.length,1,'Fleet Carrier voucher redemption must remain excluded like Frontier sync');
+
 assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
 assert.deepEqual(ingestHelpers.normalizeCoordinates({x:1,y:2,z:3}),{x:1,y:2,z:3});
 assert.equal(ingestHelpers.normalizeCoordinates(['bad',2,3]),null);
