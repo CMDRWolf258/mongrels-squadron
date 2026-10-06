@@ -1,4 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
+import { HUD_SIGNAL_MISSION_PROGRESS, touchHudSignal } from '../../../lib/hud-change-signals.js';
 import { invalidateKeyListCache, listKeysCached } from '../../../lib/kv-list-cache.js';
 import { aggregateVerifiedOrderTotals, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { getEvents, listFrontierAccounts } from '../../../lib/frontier.js';
@@ -78,6 +79,7 @@ export async function onRequestPost({ request, env }) {
       const participants=mergeParticipants(duplicate.participants,[participant]);
       const updated={...duplicate,participants,updatedAt:now};
       await env.DAILY_ORDERS.put(submissionKey(cycleId(current),duplicate.reportId),JSON.stringify(stripStorageMeta(updated)));
+      await touchHudSignal(env,HUD_SIGNAL_MISSION_PROGRESS);
       await invalidateKeyListCache(env,reportListCacheKey('submissions',cycleId(current)));
       return mutationReply(env,current,auth.session,{...updated,storageKind:'submission'},participants.length>(duplicate.participants||[]).length?'joined-wing-result':'duplicate-result');
     }
@@ -111,6 +113,7 @@ export async function onRequestPost({ request, env }) {
   };
 
   await env.DAILY_ORDERS.put(submissionKey(record.cycleId, reportId), JSON.stringify(record));
+  await touchHudSignal(env,HUD_SIGNAL_MISSION_PROGRESS);
   await invalidateKeyListCache(env,reportListCacheKey('submissions',record.cycleId));
   return mutationReply(env, current, auth.session, record, 'created');
 }
@@ -152,6 +155,7 @@ export async function onRequestPatch({ request, env }) {
     updatedAt:new Date().toISOString(),
   };
   await env.DAILY_ORDERS.put(found.key, JSON.stringify(stripStorageMeta(record)));
+  await touchHudSignal(env,HUD_SIGNAL_MISSION_PROGRESS);
   return mutationReply(env, current, auth.session, {...record, reportId:found.reportId, storageKind:found.storageKind}, 'updated');
 }
 
@@ -172,6 +176,7 @@ export async function onRequestDelete({ request, env }) {
   if (!canModify(auth.session, found.record)) return reply({ok:false,error:'report_delete_forbidden'},403);
 
   await env.DAILY_ORDERS.delete(found.key);
+  await touchHudSignal(env,HUD_SIGNAL_MISSION_PROGRESS);
   await invalidateKeyListCache(env,reportListCacheKey(found.storageKind==='legacy'?'legacy':'submissions',cycleId(current)));
   const records = (await listCurrentRecords(env, current))
     .filter(record => String(record.reportId || '') !== String(found.reportId || ''));
