@@ -3339,7 +3339,14 @@ class MongrelHudApp:
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             method="POST",
         )
-        return request_scout_json(request, "cargo_priority_failed")
+        result = request_scout_json(request, "cargo_priority_failed")
+        cargo = result.get("cargo") if isinstance(result, dict) else None
+        if isinstance(cargo, dict):
+            with self.lock:
+                if not isinstance(self.snapshot.data, dict):
+                    self.snapshot.data = {}
+                self.snapshot.data["cargo"] = cargo
+        return result
 
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
