@@ -51,7 +51,7 @@
     <label data-carrier-official-wrap hidden><span>Registry Type</span><select data-carrier-official><option value="false">Member Carrier</option><option value="true">Official Squadron Carrier</option></select></label>
   </div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-carrier-delete hidden>Delete</button></div><span class="project-editor-status" data-carrier-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-carrier-cancel>Close</button><button class="btn btn-primary" type="submit">Save Carrier</button></div></div></form></section>
 
-  <section class="project-editor-shell" data-dialogue-editor-shell hidden aria-label="Carrier dialogue manager"><div class="project-editor-backdrop" data-dialogue-cancel></div><div class="project-editor-panel carrier-dialogue-panel"><div class="project-editor-head"><div><p class="eyebrow">HUD Voice Network</p><h2>Carrier Dialogue Manager</h2><p>Shared carrier dialogue is delivered through the authenticated Mongrel Scout feed. Only Site Admin can change this library.</p></div><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div>
+  <section class="project-editor-shell" data-dialogue-editor-shell hidden aria-label="Carrier dialogue manager"><div class="project-editor-backdrop" data-dialogue-cancel></div><div class="project-editor-panel carrier-dialogue-panel"><div class="project-editor-head"><div><p class="eyebrow">HUD Voice Network</p><h2>Carrier Dialogue Manager</h2><p>Each carrier can combine the Squadron Shared Pool with its own private lines. Carrier owners control only their personal carrier; Site Admin curates the shared pool and squad carrier.</p></div><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div>
     <div class="carrier-dialogue-toolbar">
       <label><span>Carrier</span><select data-dialogue-carrier></select></label>
       <label><span>Category</span><select data-dialogue-category>
@@ -74,16 +74,17 @@
     </div>
     <div class="carrier-dialogue-library-head"><div><h3>Current Pool</h3><p data-dialogue-pool-label>Choose a carrier/category/audience.</p></div><span data-dialogue-count>0 lines</span></div>
     <div class="carrier-dialogue-list" data-dialogue-list></div>
-    <div class="carrier-dialogue-ambient-settings">
-      <div><h3>Ambient Timing</h3><p>Used only while a Commander is walking in that carrier's hangar or concourse. The HUD randomizes the delay inside each range.</p></div>
+    <div class="carrier-dialogue-ambient-settings" data-dialogue-carrier-settings>
+      <div><h3>Carrier Voice Settings</h3><p>Shared Pool applies the centrally curated squad lines to this carrier. Ambient timing is used only while a Commander is walking in the hangar or concourse.</p></div>
       <div class="carrier-dialogue-timing-grid">
+        <label data-dialogue-shared-enabled-wrap><span>Squadron Shared Pool</span><select data-dialogue-shared-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
         <label><span>Hangar minimum</span><input type="number" min="45" max="1800" step="15" data-dialogue-hangar-min><small>seconds</small></label>
         <label><span>Hangar maximum</span><input type="number" min="45" max="2400" step="15" data-dialogue-hangar-max><small>seconds</small></label>
         <label><span>Concourse minimum</span><input type="number" min="45" max="1800" step="15" data-dialogue-concourse-min><small>seconds</small></label>
         <label><span>Concourse maximum</span><input type="number" min="45" max="2400" step="15" data-dialogue-concourse-max><small>seconds</small></label>
         <label><span>Ambient announcements</span><select data-dialogue-ambient-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
       </div>
-      <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-save-settings>Save Timing</button></div>
+      <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-save-settings>Save Carrier Voice Settings</button></div>
     </div>
     <div class="project-editor-actions is-standard"><div></div><span class="project-editor-status" data-dialogue-footer-status></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div></div>
   </div></section>
@@ -105,6 +106,6 @@
   </div><div class="project-editor-actions is-standard"><div class="project-editor-danger"><button class="btn btn-secondary" type="button" data-coord-delete hidden>Delete</button></div><span class="project-editor-status" data-coord-form-status aria-live="polite"></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-coord-cancel>Close</button><button class="btn btn-primary" type="submit">Save Post</button></div></div></form></section>
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
-<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=72"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
+<script src="../js/site.js?v=63"></script><script src="../js/auth-ui.js?v=58"></script><script src="../js/carriers.js?v=73"></script><script src="../js/carrier-editor-v2.js?v=2"></script><script src="../js/carrier-permissions-ui.js?v=1"></script>
 <script src="../js/mongrel-assistant.js?v=63"></script>
 </body></html>
