@@ -53,10 +53,11 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.4"
+APP_VERSION = "0.16.5"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
+SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
@@ -3330,6 +3331,16 @@ class MongrelHudApp:
             self.store.save()
         return selected
 
+    def set_cargo_priority(self, faction: str) -> dict[str, Any]:
+        selected = " ".join(str(faction or "auto").split())[:160] or "auto"
+        request = urllib.request.Request(
+            SCOUT_CARGO_PRIORITY_URL,
+            data=json.dumps({"faction": selected}, separators=(",", ":")).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        return request_scout_json(request, "cargo_priority_failed")
+
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
         for value in alert_ids[:40]:
@@ -4903,7 +4914,10 @@ class MongrelHudApp:
                 if faction != current_faction:
                     current_faction = faction
                     faction_color = HUD_MUTED if faction.casefold() == "faction unknown" else HUD_CYAN
-                    self._draw_text(canvas, 12 * scale, y, self.clip_line(faction.upper(), 42), scale, 9, faction_color, True)
+                    heading = faction.upper()
+                    if bool(row.get("nextRun")):
+                        heading += " · NEXT RUN"
+                    self._draw_text(canvas, 12 * scale, y, self.clip_line(heading, 42), scale, 9, faction_color, True)
                     y += 18 * scale
                 name = self.clip_line(row.get("name") or row.get("key") or "Commodity", 28)
                 in_hold = max(0, int(row.get("inHold") or 0))
@@ -5600,6 +5614,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voicePack": app.remove_voice_pack(), "voice": app.voice_settings_snapshot()}
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
+                elif path == "/api/cargo-priority":
+                    result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]
