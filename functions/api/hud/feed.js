@@ -7,7 +7,7 @@ import { loadRewardDiscordView } from '../../../lib/reward-discord.js';
 import { buildScoutJobBoard } from '../../../lib/scout-jobs.js';
 import { loadActiveMongrelSystems } from '../../../lib/scout-systems.js';
 import { isTradeRouteActive, readTradeRoutes } from '../../../lib/trade-intelligence.js';
-import { readCarrierDialogue, publicDialogueProfile } from '../../../lib/carrier-dialogue.js';
+import { effectiveDialogueProfile, readCarrierDialogue } from '../../../lib/carrier-dialogue.js';
 
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
 const ACK_PREFIX='hud-alert-acks-v1:';
@@ -116,7 +116,7 @@ export async function buildHudFeed(request,env,auth){
     carrierDialogue:Object.fromEntries(
       carrierProfiles
         .filter(profile=>dialogueLibrary.profiles?.[profile.id])
-        .map(profile=>[profile.id,publicDialogueProfile(dialogueLibrary.profiles[profile.id])])
+        .map(profile=>[profile.id,effectiveDialogueProfile(dialogueLibrary,dialogueLibrary.profiles[profile.id])])
     ),
     carrierDialogueUpdatedAt:dialogueLibrary.updatedAt||null,
     mission:summarizeMission(mission,currentOrders,orderProgress),
