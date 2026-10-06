@@ -5,9 +5,9 @@ import {buildHudFeed} from '../functions/api/hud/feed.js';
 import * as cycles from '../lib/daily-order-cycle.js';
 
 // Pins the complete 245-system/10-order/1-route response, including the
-// intentionally added carrier dialogue envelope. Time and data are fixed,
+// carrier dialogue envelope and authenticated viewer spoken-name field. Time and data are fixed,
 // rather than CPU milliseconds.
-const EXPECTED_FEED_SHA256='a5610317ce36ba8fc89f97b2c17c66437442b69d021349c2afd79cbf571c35cd';
+const EXPECTED_FEED_SHA256='425264140b846d612272bb78c362ccf1a659d81384064ba788896024d2679fda';
 const stamp='2026-10-04T18:00:00.000Z';
 const RealDate=Date;
 globalThis.Date=class extends RealDate{

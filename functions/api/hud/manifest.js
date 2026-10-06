@@ -28,6 +28,7 @@ export async function onRequestGet(context){
       viewer:{
         token:await digestToken({
           ownerId:auth.ownerId,
+          spokenName:auth.ownerSpokenName,
           lastSystem:auth.lastSystem,
           lastCoords:auth.lastCoords,
         }),
@@ -173,6 +174,7 @@ async function authenticateScout(request,env){
         label:clean(value.label),
         ownerId:clean(value.ownerId),
         ownerCommander:clean(value.ownerCommander),
+        ownerSpokenName:clean(value.ownerSpokenName),
         lastSystem:clean(value.lastSystem),
         lastSeenAt:value.lastSeenAt||null,
         lastEventAt:value.lastEventAt||null,

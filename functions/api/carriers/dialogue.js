@@ -1,6 +1,9 @@
 import { readCarrierDialogue, writeCarrierDialogue, normalizeLine, normalizeProfile, publicDialogueProfile, requireDialogueAdmin, dialogueReply } from '../../../lib/carrier-dialogue.js';
 
 const REGISTRY_KEY='registry-v1';
+const CANINE_CATALYST_ID='squad-carrier-r1mm';
+const CANINE_CATALYST_CALLSIGN='R1MM';
+const CANINE_STARTER_SEED_VERSION=2;
 
 export async function onRequestGet({request,env}){
   const auth=await requireDialogueAdmin(request,env);
@@ -13,18 +16,21 @@ export async function onRequestGet({request,env}){
     const id=clean(carrier?.id,100);
     if(!id)continue;
     const existing=library.profiles[id];
+    const targetSeed=isCanineCatalyst(carrier)?CANINE_STARTER_SEED_VERSION:1;
     if(!existing){
       library.profiles[id]=starterProfile(carrier);
       seeded=true;
       continue;
     }
-    if(Number(existing.starterSeedVersion||0)<1){
-      if(!Array.isArray(existing.lines)||existing.lines.length===0){
+    if(Number(existing.starterSeedVersion||0)<targetSeed){
+      const lines=Array.isArray(existing.lines)?existing.lines:[];
+      const starterOnly=lines.length===0||lines.every(line=>String(line?.id||'').startsWith('starter:'));
+      if(starterOnly){
         const starter=starterProfile(carrier);
         starter.settings=existing.settings||starter.settings;
         library.profiles[id]=starter;
       }else{
-        library.profiles[id]=normalizeProfile({...existing,starterSeedVersion:1},id);
+        library.profiles[id]=normalizeProfile({...existing,starterSeedVersion:targetSeed},id);
       }
       seeded=true;
     }
@@ -114,16 +120,48 @@ function clean(value,max=500){
   return text.slice(0,max);
 }
 
+function isCanineCatalyst(carrier){
+  return clean(carrier?.id,100)===CANINE_CATALYST_ID||clean(carrier?.callsign,20).toUpperCase()===CANINE_CATALYST_CALLSIGN;
+}
+
 function starterProfile(carrier){
   const id=clean(carrier?.id,100);
   const personality=clean(carrier?.voicePersonality,24)||(carrier?.official?'mongrels':'personal');
+  const canine=isCanineCatalyst(carrier);
+  const seedName=canine?'canine-catalyst':personality;
   const rows=[];
   const add=(category,audience,text,rarity='common')=>rows.push({
-    id:`starter:${personality}:${audience}:${category}:${rows.length+1}`,
+    id:`starter:${seedName}:${audience}:${category}:${rows.length+1}`,
     category,audience,rarity,enabled:true,text
   });
 
-  if(personality==='mongrels'){
+  if(canine){
+    add('docking.granted','owner','Squad command recognized. Welcome back, {commander}. Proceed to {pad}.');
+    add('docking.granted','owner','Canine Catalyst has your transponder, Commander {commander}. {pad} is clear.','uncommon');
+    add('docking.docked','owner','Commander {commander} aboard. Squadron command is home.');
+    add('docking.docked','owner','Welcome back, {commander}. The Catalyst is yours.','uncommon');
+    add('docking.undocked','owner','Command vessel clear. Good hunting, {commander}.');
+    add('docking.undocked','owner','Squad command departure confirmed. Bring the pack something worth talking about.','rare');
+    add('carrier.jump_request','owner','Squad carrier course locked for {destination}. Canine Catalyst is preparing to jump.');
+    add('carrier.jump','owner','Canine Catalyst is on station in {destination}. Squadron transit complete.');
+    add('carrier.cooldown_ready','owner','Canine Catalyst frame shift systems have recycled. Squad command is ready for another jump.');
+
+    add('docking.granted','squadmate','Mongrel transponder confirmed. Welcome to squad command, {commander}. Proceed to {pad}.');
+    add('docking.granted','squadmate','Pack traffic recognized. Canine Catalyst has {pad} ready for you, {commander}.','uncommon');
+    add('docking.docked','squadmate','Welcome aboard Canine Catalyst, {commander}. The pack has you.');
+    add('docking.docked','squadmate','Mongrel aboard. Welcome to squad command, {commander}.','uncommon');
+    add('docking.docked','squadmate','Welcome home, {commander}. Please keep the chewing to designated areas.','rare');
+    add('docking.undocked','squadmate','You are clear of Canine Catalyst. Good hunting, {commander}.');
+    add('docking.undocked','squadmate','Departure confirmed. Go make the Mongrels proud.','uncommon');
+
+    add('ambient.hangar','all','Canine Catalyst hangar control reminds all pilots to keep launch lanes clear.');
+    add('ambient.hangar','squadmate','Mongrel flight crews: squad support services remain available throughout the hangar deck.','uncommon');
+    add('ambient.concourse','all','Welcome aboard Canine Catalyst, operational flagship of the Regiment of Imperial Mongrels.');
+    add('ambient.concourse','squadmate','Mongrels: check Mission Control before departure for current squad priorities.','uncommon');
+    add('bulletin.concourse','all','Squad operations bulletin: flight crews should verify current orders before leaving Canine Catalyst.');
+    add('bulletin.concourse','squadmate','Pack bulletin: if you found trouble, log it. If you caused trouble, at least make it interesting.','rare');
+    add('advertisement.concourse','all','Need cargo moved, an escort, or a second set of guns? Check the Mongrel boards before departure.','uncommon');
+  }else if(personality==='mongrels'){
     add('docking.granted','owner','Command clearance granted. Proceed to {pad}.');
     add('docking.granted','owner','Carrier command recognized. {pad} is yours.','uncommon');
     add('docking.docked','owner','Carrier command aboard. Welcome back, Commander {commander}.');
@@ -181,14 +219,23 @@ function starterProfile(carrier){
     add('docking.undocked','squadmate','Departure corridor clear. We\'ll keep a pad open for you.','uncommon');
   }
 
-  add('docking.granted','visitor','Docking clearance confirmed. Proceed to {pad}.');
-  add('docking.granted','visitor','Clearance granted. Continue to {pad}.','uncommon');
-  add('docking.docked','visitor','Docking complete. Welcome aboard.');
-  add('docking.docked','visitor','Welcome aboard, Commander.','uncommon');
-  add('docking.undocked','visitor','Departure complete. Safe flying, Commander.');
-  add('docking.undocked','visitor','You are clear of the carrier. Safe travels.','uncommon');
+  if(canine){
+    add('docking.granted','visitor','Canine Catalyst confirms your clearance. Proceed to {pad}.');
+    add('docking.granted','visitor','Squad carrier traffic control has you. Continue to {pad}.','uncommon');
+    add('docking.docked','visitor','Docking complete. Welcome aboard Canine Catalyst.');
+    add('docking.docked','visitor','Welcome aboard the Regiment of Imperial Mongrels squad carrier.','uncommon');
+    add('docking.undocked','visitor','Departure complete. You are clear of Canine Catalyst.');
+    add('docking.undocked','visitor','Squad carrier departure corridor clear. Safe travels.','uncommon');
+  }else{
+    add('docking.granted','visitor','Docking clearance confirmed. Proceed to {pad}.');
+    add('docking.granted','visitor','Clearance granted. Continue to {pad}.','uncommon');
+    add('docking.docked','visitor','Docking complete. Welcome aboard.');
+    add('docking.docked','visitor','Welcome aboard, Commander.','uncommon');
+    add('docking.undocked','visitor','Departure complete. Safe flying, Commander.');
+    add('docking.undocked','visitor','You are clear of the carrier. Safe travels.','uncommon');
+  }
 
-  return normalizeProfile({carrierId:id,starterSeedVersion:1,lines:rows,settings:{
+  return normalizeProfile({carrierId:id,starterSeedVersion:canine?CANINE_STARTER_SEED_VERSION:1,lines:rows,settings:{
     ambientEnabled:true,hangarMinSeconds:120,hangarMaxSeconds:240,concourseMinSeconds:90,concourseMaxSeconds:210
   }},id);
 }

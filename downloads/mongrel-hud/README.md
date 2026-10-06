@@ -104,3 +104,10 @@ Mongrel HUD 0.7.1 uses the curated 10-16 mining database as the source of truth.
 - A same-Signal, same-commodity report within 1 km of an existing deposit is held as a **possible duplicate** instead of silently creating another coordinate. Mining Admin shows both entries side-by-side and lets the reviewer keep either the existing or new entry.
 - The local report log remains only as a troubleshooting/offline record; the curated archive is authoritative.
 
+
+
+### Preferred carrier spoken names and Canine Catalyst
+
+HUD 0.17.0 resolves the `{commander}` dialogue token through the authenticated HUD feed's optional member `spokenName` before falling back to Elite's full CMDR name. Members can set this once in their Mongrel profile; for example, `Wolf258` can use `Wolf` without changing the actual CMDR identity.
+
+Canine Catalyst (`R1MM`) is matched as the protected squad carrier by its registered squad identity/name as well as normal Market ID evidence. Its shared dialogue profile uses squad-command/flagship wording distinct from personal-carrier starter dialogue.

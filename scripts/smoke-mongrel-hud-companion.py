@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.9"
+assert hud.APP_VERSION=="0.17.0"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -27,12 +27,14 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.6"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.7"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.8"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.9"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.10"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.10"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.0"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.1"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.16.10",
+    "name":"Mongrel HUD Windows v0.17.1",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.16.10" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.17.1" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -127,6 +129,27 @@ with tempfile.TemporaryDirectory() as td:
     assert voice["cues"]["carrier.countdown_10"]["leadSeconds"]==600.0
     assert voice["cues"]["carrier.countdown_5"]["leadSeconds"]==300.0
     assert voice["cues"]["carrier.cooldown_ready"]["offsetSeconds"]==180.0
+    # Carrier dialogue uses a member-selected spoken name while preserving the
+    # actual Elite CMDR identity, and Canine Catalyst can match its squad-only ID/name.
+    app.snapshot=hud.ScoutSnapshot({
+        "commander":"Wolf258",
+        "siteFeed":{
+            "viewer":{"commander":"Wolf258","spokenName":"Wolf"},
+            "carriers":[{
+                "id":"squad-carrier-r1mm","marketId":"","callsign":"R1MM","name":"Canine Catalyst",
+                "ownershipType":"squad","official":True,"relationship":"owner","personality":"mongrels",
+            }],
+        },
+    },True,"")
+    canine=app._carrier_profile_for_ref({"stationName":"Canine Catalyst","stationType":"SquadronCarrier"})
+    assert canine is not None and canine["id"]=="squad-carrier-r1mm" and canine["registered"] is True
+    canine_by_tag=app._carrier_profile_for_ref({"stationName":"Canine Catalyst R1MM","stationType":"SquadronCarrier"})
+    assert canine_by_tag is not None and canine_by_tag["id"]=="squad-carrier-r1mm"
+    spoken=app._render_voice_tokens("Welcome back, Commander {commander}.",{"relationship":"owner"},canine)
+    assert "Commander Wolf" in spoken and "Wolf258" not in spoken
+    app.snapshot=hud.ScoutSnapshot({"commander":"Wolf258"},True,"")
+    fallback=app._render_voice_tokens("Welcome back, Commander {commander}.",{"relationship":"owner"})
+    assert "Wolf258" in fallback
     voice=app.set_voice_settings({"volume":65,"voiceProvider":"winrt","voiceId":"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_OneCore\\Voices\\Tokens\\MSTTS_V110_enUS_AvaM","voiceName":"Microsoft Ava","cues":{
         "docking.granted":{"minDelay":5,"maxDelay":5,"cooldown":20,"phrase":"Clearance confirmed for {carrier}. Proceed to {pad}."},
         "docking.docked":{"minDelay":3,"maxDelay":3,"cooldown":20},
@@ -268,7 +291,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.16.9"
+    assert hud.APP_VERSION=="0.17.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
