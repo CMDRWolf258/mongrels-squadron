@@ -342,3 +342,4 @@ function addDialogueExpansion(rows,{seedName,canine,personality}){
     add('canine-bulletin-pack','bulletin.concourse','squadmate','Pack bulletin: support requests, current operations, and carrier movements are available through squad channels.','uncommon');
     add('canine-advert-help','advertisement.concourse','squadmate','Need cargo hauled, a wingmate, or somebody to blame? The pack is already aboard.','rare');
   }
+}
