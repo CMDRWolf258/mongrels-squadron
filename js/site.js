@@ -124,6 +124,35 @@
   const groups = [...document.querySelectorAll('.site-header-v2 details.nav-group')];
   const closeGroups = except => groups.forEach(group => { if (group !== except) group.open = false; });
   const compactNav = () => window.matchMedia('(max-width:1060px)').matches;
+  const desktopHoverNav = window.matchMedia('(min-width:1061px) and (hover:hover) and (pointer:fine)');
+  const hoverCloseTimers = new WeakMap();
+  const hoverCloseDelay = 200;
+
+  const clearHoverClose = menu => {
+    const timer = hoverCloseTimers.get(menu);
+    if (!timer) return;
+    clearTimeout(timer);
+    hoverCloseTimers.delete(menu);
+  };
+
+  const bindDesktopHover = menu => {
+    if (!menu) return;
+    menu.addEventListener('pointerenter', () => {
+      if (!desktopHoverNav.matches) return;
+      clearHoverClose(menu);
+      menu.open = true;
+    });
+    menu.addEventListener('pointerleave', () => {
+      if (!desktopHoverNav.matches) return;
+      clearHoverClose(menu);
+      const timer = setTimeout(() => {
+        hoverCloseTimers.delete(menu);
+        if (desktopHoverNav.matches) menu.open = false;
+      }, hoverCloseDelay);
+      hoverCloseTimers.set(menu, timer);
+    });
+    menu.addEventListener('focusin', () => clearHoverClose(menu));
+  };
 
   const pinActivitiesTop = group => {
     if (!nav || !compactNav() || group?.dataset?.navKey !== 'activities') return;
@@ -131,6 +160,7 @@
   };
 
   groups.forEach(group => {
+    bindDesktopHover(group);
     const summary = group.querySelector(':scope > summary');
     summary?.addEventListener('click', event => {
       if (!compactNav()) return;
@@ -226,6 +256,7 @@
           button?.setAttribute('aria-expanded', 'false');
         }
       });
+      bindDesktopHover(menu);
       memberLink.replaceWith(menu);
       memberMenu = menu;
       return true;
