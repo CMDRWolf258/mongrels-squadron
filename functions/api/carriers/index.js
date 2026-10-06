@@ -5,6 +5,11 @@ const ALLOWED_ACCESS = new Set(['member','officer','site_admin']);
 const MANAGER_ACCESS = new Set(['officer','site_admin']);
 const REGISTRY_KEY = 'registry-v1';
 const COORD_KEY = 'coordination-v1';
+const SQUAD_OWNER_ID = 'squad:regiment-of-imperial-mongrels';
+const SQUAD_OWNER_NAME = 'Regiment of Imperial Mongrels';
+const SQUAD_CARRIER_ID = 'squad-carrier-r1mm';
+const SQUAD_CARRIER_CALLSIGN = 'R1MM';
+const SQUAD_CARRIER_NAME = 'Canine Catalyst';
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -13,8 +18,10 @@ export async function onRequestGet({ request, env }) {
 
   if (resource === 'registry') {
     let carriers = await readRegistry(env);
+    const seeded = ensureSquadCarrier(carriers);
+    carriers = seeded.carriers;
     const sync = await syncCarrierLocations(carriers);
-    if (sync.changed && env.CARRIERS && typeof env.CARRIERS.put === 'function') {
+    if ((seeded.changed || sync.changed) && env.CARRIERS && typeof env.CARRIERS.put === 'function') {
       carriers = sync.carriers;
       await writeRegistry(env, carriers);
     } else {
@@ -38,7 +45,8 @@ export async function onRequestGet({ request, env }) {
   if (resource === 'coordination') {
     const auth = requireMemberSession(session);
     if (auth) return auth;
-    const [carriers, posts] = await Promise.all([readRegistry(env), readCoordination(env)]);
+    const [rawCarriers, posts] = await Promise.all([readRegistry(env), readCoordination(env)]);
+    const carriers = ensureSquadCarrier(rawCarriers).carriers;
     const byCallsign = new Map(carriers.map(c => [c.callsign, c]));
     return reply({
       ok: true,
@@ -94,7 +102,7 @@ export async function onRequestDelete({ request, env }) {
 async function createCarrier(value, session, env) {
   const carriers = await readRegistry(env);
   const callsign = normalizeCallsign(value.callsign);
-  if (!validCallsign(callsign)) return reply({ok:false,error:'invalid_callsign'},400);
+  if (!validPersonalCallsign(callsign)) return reply({ok:false,error:'invalid_callsign'},400);
   if (carriers.some(c => c.callsign === callsign)) return reply({ok:false,error:'callsign_already_registered'},409);
   const now = new Date().toISOString();
   const item = normalizeCarrier(value, {
@@ -124,6 +132,7 @@ async function deleteCarrier(id, session, env) {
   if(idx<0) return reply({ok:false,error:'carrier_not_found'},404);
   const existing=carriers[idx]; const manager=MANAGER_ACCESS.has(session.access);
   if(!manager && existing.ownerId!==session.sub) return reply({ok:false,error:'not_carrier_owner'},403);
+  if((existing.ownershipType||'personal')==='squad') return reply({ok:false,error:'squad_carrier_protected'},403);
   const posts=await readCoordination(env);
   if(posts.some(p=>p.carrierCallsign===existing.callsign && p.status!=='complete')) return reply({ok:false,error:'carrier_has_active_coordination'},409);
   carriers.splice(idx,1); await writeRegistry(env,carriers);
@@ -174,8 +183,12 @@ function normalizeCarrier(value,fixed,session,existing={}) {
   const currentSystem=clean(src.currentSystem,existing.currentSystem||'',120);
   const previousSystem=existing.currentSystem||'';
   const locationChanged=currentSystem!==previousSystem;
+  const ownershipType=existing.ownershipType==='squad'?'squad':'personal';
   return {
     id:fixed.id, callsign:fixed.callsign, ownerId:fixed.ownerId, ownerName:fixed.ownerName,
+    ownershipType,
+    ownershipName: ownershipType==='squad' ? SQUAD_OWNER_NAME : clean(existing.ownershipName,fixed.ownerName||session.displayName,100),
+    custodianName: ownershipType==='squad' ? clean(src.custodianName,existing.custodianName||src.commanderName||existing.commanderName||'Wolf258',80) : '',
     marketId:clean(src.marketId,existing.marketId||'',24).replace(/[^0-9]/g,''),
     commanderName:clean(src.commanderName,existing.commanderName||session.displayName,80),
     name:clean(src.name,existing.name||'Unnamed Carrier',100), role:clean(src.role,existing.role||'General Logistics',80),
@@ -184,7 +197,7 @@ function normalizeCarrier(value,fixed,session,existing={}) {
     locationUpdatedAt: currentSystem ? (locationChanged || !existing.locationUpdatedAt ? fixed.updatedAt : existing.locationUpdatedAt) : '',
     telemetrySystem: existing.telemetrySystem || '', telemetryUpdatedAt: existing.telemetryUpdatedAt || '',
     telemetryCheckedAt: existing.telemetryCheckedAt || '', telemetrySource: existing.telemetrySource || '',
-    services:normalizeList(src.services,existing.services||[]), official:manager?Boolean(src.official):Boolean(existing.official),
+    services:normalizeList(src.services,existing.services||[]), official: ownershipType==='squad' ? true : (manager?Boolean(src.official):Boolean(existing.official)),
     voicePersonality:normalizeVoicePersonality(
       src.voicePersonality,
       existing.voicePersonality || ((manager?Boolean(src.official):Boolean(existing.official)) ? 'mongrels' : 'personal'),
@@ -209,8 +222,10 @@ function normalizeCoordination(value,fixed,session,existing={}) {
 
 function presentCarrier(item,session){
   const authenticated=Boolean(session&&ALLOWED_ACCESS.has(session.access));
-  const canEdit=authenticated&&(MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub);
-  return {id:item.id,marketId:item.marketId||'',callsign:item.callsign,name:item.name,commanderName:item.commanderName,role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official,voicePersonality:item.voicePersonality||(item.official?'mongrels':'personal'),updatedAt:item.updatedAt,canEdit,isMine:authenticated&&item.ownerId===session.sub};
+  const ownershipType=item.ownershipType==='squad'?'squad':'personal';
+  const canEdit=authenticated&&(MANAGER_ACCESS.has(session.access)||(ownershipType==='personal'&&item.ownerId===session.sub));
+  const canDelete=canEdit&&ownershipType==='personal';
+  return {id:item.id,marketId:item.marketId||'',callsign:item.callsign,name:item.name,commanderName:item.commanderName,ownershipType,ownershipName:item.ownershipName||(ownershipType==='squad'?SQUAD_OWNER_NAME:item.ownerName||item.commanderName||''),custodianName:item.custodianName||'',role:item.role,status:item.status,notes:item.notes,currentSystem:item.currentSystem,locationSource:item.locationSource,locationUpdatedAt:item.locationUpdatedAt,locationFreshness:freshness(item.locationUpdatedAt),telemetrySystem:item.telemetrySystem||'',telemetryUpdatedAt:item.telemetryUpdatedAt||'',telemetryCheckedAt:item.telemetryCheckedAt||'',telemetrySource:item.telemetrySource||'',services:item.services,official:item.official||ownershipType==='squad',voicePersonality:item.voicePersonality||((item.official||ownershipType==='squad')?'mongrels':'personal'),updatedAt:item.updatedAt,canEdit,canDelete,isMine:authenticated&&ownershipType==='personal'&&item.ownerId===session.sub};
 }
 function presentCoordination(item,session,carrier){return {...item,carrierName:carrier?.name||item.carrierCallsign,carrierCommander:carrier?.commanderName||'',currentSystem:carrier?.currentSystem||'',locationSource:carrier?.locationSource||'',locationUpdatedAt:carrier?.locationUpdatedAt||'',canEdit:MANAGER_ACCESS.has(session.access)||item.ownerId===session.sub,isMine:item.ownerId===session.sub};}
 
@@ -223,6 +238,7 @@ async function syncCarrierLocations(carriers) {
   const now = Date.now();
   const candidates = carriers
     .map((carrier, index) => ({ carrier, index }))
+    .filter(({ carrier }) => (carrier.ownershipType||'personal')!=='squad')
     .filter(({ carrier }) => !carrier.telemetryCheckedAt || now - timestamp(carrier.telemetryCheckedAt) >= TELEMETRY_LOOKUP_MS)
     .sort((a,b) => timestamp(a.carrier.telemetryCheckedAt) - timestamp(b.carrier.telemetryCheckedAt))
     .slice(0, TELEMETRY_BATCH);
@@ -286,6 +302,50 @@ function timestamp(value){ const n = value ? new Date(value).getTime() : 0; retu
 function validTimestamp(value){ const n = timestamp(value); return n ? new Date(n).toISOString() : ''; }
 function freshness(value){ const age = Date.now() - timestamp(value); if(!timestamp(value)) return 'unknown'; if(age <= 6*60*60*1000) return 'fresh'; if(age <= 24*60*60*1000) return 'aging'; return 'stale'; }
 
+
+function ensureSquadCarrier(carriers){
+  const list=Array.isArray(carriers)?carriers.map(item=>({...item})):[];
+  const now=new Date().toISOString();
+  const idx=list.findIndex(item=>item.id===SQUAD_CARRIER_ID||normalizeCallsign(item.callsign)===SQUAD_CARRIER_CALLSIGN);
+  const existing=idx>=0?list[idx]:{};
+  const seeded={
+    ...existing,
+    id:SQUAD_CARRIER_ID,
+    callsign:SQUAD_CARRIER_CALLSIGN,
+    ownerId:SQUAD_OWNER_ID,
+    ownerName:SQUAD_OWNER_NAME,
+    ownershipType:'squad',
+    ownershipName:SQUAD_OWNER_NAME,
+    custodianName:existing.custodianName||existing.commanderName||'Wolf258',
+    commanderName:existing.commanderName||'Wolf258',
+    name:SQUAD_CARRIER_NAME,
+    role:existing.role||'Squadron Flagship',
+    status:normalizeCarrierStatus(existing.status||'active'),
+    notes:existing.notes||'Official squad carrier of the Regiment of Imperial Mongrels.',
+    currentSystem:existing.currentSystem||'',
+    locationSource:existing.locationSource||'',
+    locationUpdatedAt:existing.locationUpdatedAt||'',
+    telemetrySystem:existing.telemetrySystem||'',
+    telemetryUpdatedAt:existing.telemetryUpdatedAt||'',
+    telemetryCheckedAt:existing.telemetryCheckedAt||'',
+    telemetrySource:existing.telemetrySource||'',
+    marketId:existing.marketId||'',
+    services:Array.isArray(existing.services)?existing.services:[],
+    official:true,
+    voicePersonality:existing.voicePersonality||'mongrels',
+    createdAt:existing.createdAt||now,
+    updatedAt:existing.updatedAt||now,
+    updatedBy:existing.updatedBy||'Squad Registry',
+  };
+  if(idx>=0){
+    const before=JSON.stringify(list[idx]);
+    list[idx]=seeded;
+    return {carriers:list,changed:before!==JSON.stringify(seeded)};
+  }
+  list.unshift(seeded);
+  return {carriers:list,changed:true};
+}
+
 async function readRegistry(env){if(!env.CARRIERS||typeof env.CARRIERS.get!=='function') return []; const v=await env.CARRIERS.get(REGISTRY_KEY,{type:'json'}); return Array.isArray(v)?v:[];}
 async function writeRegistry(env,v){await env.CARRIERS.put(REGISTRY_KEY,JSON.stringify(v.slice(0,300)));}
 async function readCoordination(env){if(!env.CARRIERS||typeof env.CARRIERS.get!=='function') return []; const v=await env.CARRIERS.get(COORD_KEY,{type:'json'}); return Array.isArray(v)?v:[];}
@@ -296,7 +356,8 @@ function validateSameOrigin(request){const origin=request.headers.get('Origin');
 async function readBody(request){try{return {value:await request.json()};}catch{return {response:reply({ok:false,error:'invalid_json'},400)};}}
 function viewer(s){return {id:s.sub,displayName:s.displayName,access:s.access};}
 function normalizeCallsign(v){return clean(v,'',20).toUpperCase().replace(/\s+/g,'');}
-function validCallsign(v){return /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(v);}
+function validPersonalCallsign(v){return /^[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(v);}
+function validSquadCallsign(v){return /^[A-Z0-9]{4}$/.test(v);}
 function normalizeCarrierStatus(v){const x=clean(v,'active',24).toLowerCase(); return ['active','relocating','supporting','maintenance','unavailable'].includes(x)?x:'active';}
 function normalizeVoicePersonality(v,fallback='personal',manager=false){
   const x=clean(v,fallback,24).toLowerCase();
