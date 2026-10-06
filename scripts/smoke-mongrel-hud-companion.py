@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.3"
+assert hud.APP_VERSION=="0.16.4"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -22,7 +22,7 @@ assert hud.version_tuple("0.16.0")==(0,16,0)
 assert hud.version_tuple("v1.2.3")==(1,2,3)
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.15.0"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.0"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.3"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.4"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.4"}) is True
 release=hud.update_from_release_payload({
     "name":"Mongrel HUD Windows v0.16.4",
@@ -249,7 +249,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.16.3"
+    assert hud.APP_VERSION=="0.16.4"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
