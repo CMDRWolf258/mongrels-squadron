@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.9"
+APP_VERSION = "0.17.0"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1514,10 +1514,28 @@ class MongrelHudApp:
         if not isinstance(value, dict):
             return False
         station_type = str(value.get("stationType") or value.get("type") or "").replace(" ", "").casefold()
-        if "fleetcarrier" in station_type:
+        if "fleetcarrier" in station_type or "squadroncarrier" in station_type or "squadcarrier" in station_type:
             return True
         name = value.get("stationName") or value.get("name")
         return bool(MongrelHudApp._carrier_callsign(name))
+
+    @staticmethod
+    def _registered_squad_carrier_match(candidate_name: str, profiles: list[dict[str, Any]]) -> dict[str, Any] | None:
+        name = " ".join(str(candidate_name or "").split())
+        if not name:
+            return None
+        folded = name.casefold()
+        upper = name.upper()
+        for row in profiles:
+            if str(row.get("ownershipType") or "").casefold() != "squad":
+                continue
+            callsign = " ".join(str(row.get("callsign") or "").split()).upper()
+            carrier_name = " ".join(str(row.get("name") or "").split()).casefold()
+            if carrier_name and folded == carrier_name:
+                return row
+            if callsign and (upper == callsign or re.search(rf"(?<![A-Z0-9]){re.escape(callsign)}(?![A-Z0-9])", upper)):
+                return row
+        return None
 
     def _carrier_profile_for_ref(self, value: Any) -> dict[str, Any] | None:
         if not isinstance(value, dict):
@@ -1535,6 +1553,8 @@ class MongrelHudApp:
             matched = next((row for row in profiles if str(row.get("marketId") or "") == candidate_id), None)
         if matched is None and candidate_callsign:
             matched = next((row for row in profiles if str(row.get("callsign") or "").upper() == candidate_callsign), None)
+        if matched is None:
+            matched = self._registered_squad_carrier_match(candidate_name, profiles)
 
         if matched is not None:
             profile = dict(matched)
@@ -1719,7 +1739,10 @@ class MongrelHudApp:
         minutes = event.get("minutes")
         if not isinstance(minutes, (int, float)):
             minutes = ""
-        commander = " ".join(str(self.scout_state().get("commander") or event.get("commander") or "").split()) or "Commander"
+        feed = self.scout_state().get("siteFeed")
+        viewer = feed.get("viewer") if isinstance(feed, dict) and isinstance(feed.get("viewer"), dict) else {}
+        preferred_name = " ".join(str(viewer.get("spokenName") or "").split())
+        commander = preferred_name or " ".join(str(self.scout_state().get("commander") or event.get("commander") or "").split()) or "Commander"
         carrier_name = " ".join(str(profile.get("name") or profile.get("callsign") or "").split()) if isinstance(profile, dict) else ""
         if not carrier_name:
             carrier_name = self._carrier_voice_name(event)
