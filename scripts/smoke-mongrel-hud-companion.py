@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.7"
+assert hud.APP_VERSION=="0.16.8"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -25,12 +25,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.0"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.5"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.6"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.7"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.8"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.8"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.9"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.16.8",
+    "name":"Mongrel HUD Windows v0.16.9",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.16.8" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.16.9" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -266,7 +267,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.16.7"
+    assert hud.APP_VERSION=="0.16.8"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -411,8 +412,11 @@ assert 'type="button" id="overlayMaster"' in html and 'type="button" id="layoutL
 assert 'function holdRefresh' in html and 'interactionUntil' in html and 'applyLayoutResult' in html
 assert 'Display control failed' in html and 'Layout lock failed' in html and 'Panel toggle failed' in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
-assert hud.TARGET_SCAN_DURATION==4.0 and hud.TARGET_SCAN_FRAMES==13
+assert hud.TARGET_SCAN_DURATION==3.0 and hud.TARGET_SCAN_FRAMES==10
 assert 'capture_interval = TARGET_SCAN_DURATION / max(1, TARGET_SCAN_FRAMES - 1)' in source
+assert "ThreadPoolExecutor" in source and 'executor.submit(analyze_frame, index, frame)' in source
+assert 'scan.get("active")' in source and 'scan.get("groups")' in source
+assert "mission_quantity_right = width - 112 * scale" in source and "mission_status_right = width - 8 * scale" in source
 assert 'if(r.scan)state.targetScan=r.scan;render();await load(true)' in html
 assert 'FRAMES '+'' in html and 'SCANNING — SCROLL / PAUSE' in html
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
