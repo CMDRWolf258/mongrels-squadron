@@ -111,7 +111,7 @@ export async function buildHudFeed(request,env,auth){
   return{
     ok:true,
     generatedAt:new Date().toISOString(),
-    viewer:{userId:auth.ownerId,commander:auth.ownerCommander||auth.label||'',access},
+    viewer:{userId:auth.ownerId,commander:auth.ownerCommander||auth.label||'',spokenName:auth.ownerSpokenName||'',access},
     carriers:carrierProfiles,
     carrierDialogue:Object.fromEntries(
       carrierProfiles
@@ -172,9 +172,11 @@ async function hudCarrierProfiles(request,env,auth){
       callsign:clean(item.callsign).toUpperCase(),
       name:clean(item.name)||clean(item.callsign)||'Fleet Carrier',
       commanderName:clean(item.commanderName)||clean(item.ownerName),
+      ownershipType:clean(item.ownershipType)||'personal',
+      custodianName:clean(item.custodianName),
       role:clean(item.role),
       official:Boolean(item.official),
-      relationship:String(item.ownerId||'')===String(auth.ownerId||'')?'owner':'squadmate',
+      relationship:(clean(item.ownershipType)==='squad'&&norm(item.custodianName)===norm(auth.ownerCommander))||String(item.ownerId||'')===String(auth.ownerId||'')?'owner':'squadmate',
       personality:clean(item.voicePersonality)|| (Boolean(item.official)?'mongrels':'personal'),
     }));
 }
@@ -543,7 +545,7 @@ async function authenticateScout(request,env){
   const stored=await env.DAILY_ORDERS.get(TOKENS_KEY,{type:'json'});
   for(const value of Object.values(stored?.tokens&&typeof stored.tokens==='object'?stored.tokens:{})){
     if(value?.hash&&constantTimeEqual(String(value.hash),hash)){
-      return{id:clean(value.id),label:clean(value.label),ownerId:clean(value.ownerId),ownerCommander:clean(value.ownerCommander)};
+      return{id:clean(value.id),label:clean(value.label),ownerId:clean(value.ownerId),ownerCommander:clean(value.ownerCommander),ownerSpokenName:clean(value.ownerSpokenName)};
     }
   }
   return null;
