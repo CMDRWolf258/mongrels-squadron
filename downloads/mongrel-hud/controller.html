@@ -193,6 +193,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <h2>SHIP CARGO</h2>
     <div class="row"><span>Hold</span><strong id="cargoHoldSummary">Waiting for Scout…</strong></div>
     <div class="row"><span>Limpets</span><strong id="cargoLimpets">—</strong></div>
+    <label for="cargoPriority">Next Run</label>
+    <select id="cargoPriority" class="voice-select"><option value="auto">Auto · earliest active faction first</option></select>
+    <div class="layout-hint" id="cargoPriorityHint">Mission-tagged cargo stays reserved for its exact mission. Ordinary cargo follows this priority.</div>
+    <div class="notice" id="cargoPriorityNotice"></div>
     <h3>MISSION NEEDS</h3>
     <div id="cargoMissionNeeds"><span class="muted">No tracked commodity missions.</span></div>
     <h3>STOLEN CARGO</h3>
@@ -425,7 +429,20 @@ function render(){
   el("cargoHoldSummary").textContent=cargoUsed===null?"Waiting for cargo data":cargoCap===null?(cargoUsed.toLocaleString()+" t"):(cargoUsed.toLocaleString()+" / "+cargoCap.toLocaleString()+" t"+(cargoFree===null?"":" · "+cargoFree.toLocaleString()+" t free"));
   el("cargoLimpets").textContent=Number.isInteger(cargo.limpets)?cargo.limpets.toLocaleString()+" t":"—";
   var missionNeeds=Array.isArray(cargo.missionNeeds)?cargo.missionNeeds:[],stolenCargo=Array.isArray(cargo.stolenItems)?cargo.stolenItems:[],cargoItems=Array.isArray(cargo.items)?cargo.items:[];
-  el("cargoMissionNeeds").innerHTML=missionNeeds.length?missionNeeds.map(function(row){var need=Math.max(0,Number(row.stillNeeded)||0),held=Math.max(0,Number(row.inHold)||0),remaining=Math.max(0,Number(row.remaining)||0);return '<div class="row"><span>'+escapeHtml(row.name||row.key||"Commodity")+'</span><strong>'+held.toLocaleString()+' / '+remaining.toLocaleString()+' t · '+(need===0?'READY':'NEED '+need.toLocaleString())+'</strong></div>'}).join(""):'<span class="muted">No tracked commodity missions.</span>';
+  var cargoFactions=Array.isArray(cargo.availableFactions)?cargo.availableFactions:[],cargoPriority=String(cargo.priorityFaction||""),prioritySelect=el("cargoPriority");
+  var priorityHtml='<option value="auto">Auto · earliest active faction first</option>'+cargoFactions.map(function(name){return '<option value="'+escapeAttr(name)+'">'+escapeHtml(name)+'</option>'}).join("");
+  if(prioritySelect.innerHTML!==priorityHtml)prioritySelect.innerHTML=priorityHtml;
+  if(document.activeElement!==prioritySelect)prioritySelect.value=cargoPriority||"auto";
+  prioritySelect.disabled=!cargoFactions.length;
+  el("cargoPriorityHint").textContent=cargoPriority?("Next Run: "+cargoPriority+" · mission-tagged cargo remains reserved first."):"Auto: earliest active faction first · mission-tagged cargo remains reserved first.";
+  var missionHtml="",lastFaction="";
+  missionNeeds.forEach(function(row){
+    var faction=String(row.faction||"Faction Unknown"),isNext=Boolean(row.nextRun);
+    if(faction!==lastFaction){lastFaction=faction;missionHtml+='<div class="module-group"><h3>'+escapeHtml(faction.toUpperCase()+(isNext?" · NEXT RUN":""))+'</h3></div>'}
+    var need=Math.max(0,Number(row.stillNeeded)||0),held=Math.max(0,Number(row.inHold)||0),remaining=Math.max(0,Number(row.remaining)||0);
+    missionHtml+='<div class="row"><span>'+escapeHtml(row.name||row.key||"Commodity")+'</span><strong>'+held.toLocaleString()+' / '+remaining.toLocaleString()+' t · '+(need===0?'READY':'NEED '+need.toLocaleString())+'</strong></div>';
+  });
+  el("cargoMissionNeeds").innerHTML=missionHtml||'<span class="muted">No tracked commodity missions.</span>';
   el("cargoStolen").innerHTML=stolenCargo.length?stolenCargo.map(function(row){return '<div class="row"><span>'+escapeHtml(row.name||row.key||"Cargo")+'</span><strong>'+Math.max(0,Number(row.count)||0).toLocaleString()+' t</strong></div>'}).join(""):'<span class="muted">None.</span>';
   el("cargoItems").innerHTML=cargoItems.length?cargoItems.map(function(row){return '<div class="row"><span>'+escapeHtml(row.name||row.key||"Cargo")+'</span><strong>'+Math.max(0,Number(row.count)||0).toLocaleString()+' t</strong></div>'}).join(""):'<span class="muted">Hold empty.</span>';
   el("ownMass").textContent=typeof own.currentMass==="number"?own.currentMass.toFixed(1)+" t":"—";
@@ -527,6 +544,7 @@ el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNoti
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{await api("/api/target-scan",{});await load()}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};
 el("missionSystemFilter").onchange=async function(){try{await api("/api/mission-filter",{system:el("missionSystemFilter").value||"all"});await load()}catch(e){el("siteFeedStatus").textContent="Mission filter failed · "+e.message}};
+el("cargoPriority").onchange=async function(){try{var faction=el("cargoPriority").value||"auto";await api("/api/cargo-priority",{faction:faction});el("cargoPriorityNotice").textContent=faction==="auto"?"Next Run set to Auto":"Next Run set to "+faction;await load(true)}catch(e){el("cargoPriorityNotice").textContent="Cargo priority failed · "+e.message}};
 async function ackAlertKind(kind){var feed=(state&&state.siteFeed)||(state&&state.scout&&state.scout.siteFeed)||{},ids=(feed.alerts||[]).filter(function(a){return String(a.type||"").toLowerCase()===kind&&!a.acknowledged}).map(function(a){return a.id}).filter(Boolean);if(!ids.length)return;try{await api("/api/alert-ack",{alertIds:ids});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}}
 el("ackFactionAlerts").onclick=function(){return ackAlertKind("faction")};
 el("ackOrderAlerts").onclick=function(){return ackAlertKind("orders")};
