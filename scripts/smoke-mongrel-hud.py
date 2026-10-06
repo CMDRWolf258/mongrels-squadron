@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.11.2"
+assert plugin.PLUGIN_VERSION == "1.11.3"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -353,22 +353,28 @@ assert facility is not None
 assert "commander" not in facility
 assert "cmdr" not in facility
 
-# Local cargo state uses EDMC CargoJSON and aggregates mission requirements by commodity.
-for mission_id, count in [(7001, 30), (7002, 46), (7003, 40)]:
+# Local cargo state uses EDMC CargoJSON and keeps mission requirements separated
+# by issuing faction while sharing the physical cargo hold only once.
+for mission_id, count, faction in [
+    (7001, 30, "Regiment of Imperial Mongrels"),
+    (7002, 46, "Regiment of Imperial Mongrels"),
+    (7003, 40, "Perez Ring Brewery"),
+]:
     plugin._update_cargo_missions_from_journal("Wolf258", {
         "event": "MissionAccepted",
-        "timestamp": "2026-10-04T10:00:00Z",
+        "timestamp": f"2026-10-04T10:00:0{mission_id - 7001}Z",
         "MissionID": mission_id,
         "Name": "Mission_Mining_name",
         "LocalisedName": f"Mine {count} units of Osmium",
         "Commodity": "$Osmium_Name;",
         "Commodity_Localised": "Osmium",
+        "Faction": faction,
         "Count": count,
         "Wing": mission_id == 7003,
     })
 plugin._update_cargo_missions_from_journal("Wolf258", {
     "event": "MissionAccepted",
-    "timestamp": "2026-10-04T10:00:01Z",
+    "timestamp": "2026-10-04T10:00:04Z",
     "MissionID": 7100,
     "Name": "Mission_Delivery_name",
     "LocalisedName": "Deliver 100 units of Gold",
@@ -392,17 +398,28 @@ cargo = plugin._build_local_cargo_state("Wolf258", cargo_state, "2026-10-04T10:0
 assert cargo is not None
 assert cargo["used"] == 206 and cargo["capacity"] == 512 and cargo["free"] == 306
 assert cargo["limpets"] == 29
-needs = {row["key"]: row for row in cargo["missionNeeds"]}
-assert needs["osmium"]["required"] == 116
-assert needs["osmium"]["inHold"] == 71
-assert needs["osmium"]["stillNeeded"] == 45
-assert needs["gold"]["inHold"] == 100 and needs["gold"]["ready"] is True
+needs = {(row["faction"], row["key"]): row for row in cargo["missionNeeds"]}
+mongrel_osmium = needs[("Regiment of Imperial Mongrels", "osmium")]
+perez_osmium = needs[("Perez Ring Brewery", "osmium")]
+unknown_gold = needs[("Faction Unknown", "gold")]
+assert mongrel_osmium["required"] == 76
+assert mongrel_osmium["inHold"] == 71
+assert mongrel_osmium["stillNeeded"] == 5
+assert perez_osmium["required"] == 40
+assert perez_osmium["inHold"] == 0
+assert perez_osmium["stillNeeded"] == 40
+assert unknown_gold["inHold"] == 100 and unknown_gold["ready"] is True
+assert [row["faction"] for row in cargo["missionNeeds"]] == [
+    "Regiment of Imperial Mongrels",
+    "Perez Ring Brewery",
+    "Faction Unknown",
+]
 assert cargo["stolenItems"] == [{"key": "lowtemperaturediamond", "name": "Low Temperature Diamonds", "count": 6}]
 assert {row["key"]: row["count"] for row in cargo["items"]} == {"gold": 100, "osmium": 71}
 assert config_module.config.get_str(plugin.KEY_CARGO_MISSIONS)
 
-# Partial wing delivery reduces the outstanding aggregate, while the hold calculator
-# still uses the live CargoJSON amount.
+# Partial wing delivery reduces only that faction's outstanding requirement. The
+# shared hold remains allocated once, so the same Osmium cannot make both groups ready.
 plugin._update_cargo_missions_from_journal("Wolf258", {
     "event": "CargoDepot",
     "MissionID": 7003,
@@ -410,9 +427,10 @@ plugin._update_cargo_missions_from_journal("Wolf258", {
     "TotalItemsToDeliver": 40,
 })
 cargo = plugin._build_local_cargo_state("Wolf258", cargo_state)
-needs = {row["key"]: row for row in cargo["missionNeeds"]}
-assert needs["osmium"]["remaining"] == 106
-assert needs["osmium"]["stillNeeded"] == 35
+needs = {(row["faction"], row["key"]): row for row in cargo["missionNeeds"]}
+assert needs[("Regiment of Imperial Mongrels", "osmium")]["stillNeeded"] == 5
+assert needs[("Perez Ring Brewery", "osmium")]["remaining"] == 30
+assert needs[("Perez Ring Brewery", "osmium")]["stillNeeded"] == 30
 
 # Mission lifecycle removes completed requirements, and cached mission details survive
 # a Scout restart even though Elite's startup Missions event does not repeat commodity/count.
@@ -424,8 +442,9 @@ with plugin._cargo_missions_lock:
 plugin._restore_cargo_missions()
 assert config_module.config.get_str(plugin.KEY_CARGO_MISSIONS) == saved_missions
 assert {row["missionId"] for row in plugin._cargo_mission_rows("Wolf258")} == {7002, 7003, 7100}
+assert {row["missionId"]: row.get("faction") for row in plugin._cargo_mission_rows("Wolf258")}[7003] == "Perez Ring Brewery"
 
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
-print("✓ Mongrel Scout v1.10.0 local HUD bridge covers docking/travel, carrier PA triggers, combat, cargo mission math, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout 1.11.3 local HUD bridge covers docking/travel, carrier PA triggers, faction-aware cargo mission math, surface HUD state, and authenticated mining-report proxying")
