@@ -90,7 +90,7 @@ No game inputs are generated. The companion is read-only with respect to Elite c
 
 ## Cargo overlay
 
-Mongrel HUD 0.8.0 adds an optional **Cargo** overlay. It is assigned to **Both** profiles but remains **OFF by default** so an update never rearranges an existing cockpit layout. When enabled it shows used/capacity/free tonnage, separates limpets and stolen cargo, lists the remaining normal cargo hold, and aggregates locally tracked commodity-mission requirements by commodity. For example, three Osmium missions requiring 30 + 46 + 40 tonnes are presented as one 116 t requirement, with the live hold amount and the remaining amount still needed. Mission details are supplied locally by Mongrel Scout and are not uploaded to the website.
+Mongrel HUD 0.8.0 adds an optional **Cargo** overlay. It is assigned to **Both** profiles but remains **OFF by default** so an update never rearranges an existing cockpit layout. As of HUD 0.16.4 with Scout 1.11.3, mission requirements are grouped by **issuing faction** and same-commodity requirements are aggregated only within that faction. The shared physical cargo hold is allocated only once across faction groups, so the same tonnes cannot make multiple factions appear ready. Older cached missions accepted before Scout knew their issuer appear under **Faction Unknown** until completed/replaced. The overlay also shows used/capacity/free tonnage, separates limpets and stolen cargo, and lists the remaining normal cargo hold. Mission details remain local and are not uploaded to the website.
 
 ### Surface Mining
 
