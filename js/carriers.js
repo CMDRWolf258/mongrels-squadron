@@ -44,11 +44,29 @@
     return `<div class="carrier-location-line"><span>${safe(c.currentSystem)}</span><button type="button" class="copy-system-btn" data-copy-system="${safe(c.currentSystem)}" aria-label="Copy system name">⧉</button></div><small><span class="carrier-freshness carrier-freshness-${safe(c.locationFreshness||'unknown')}">${safe(freshness)}</span> · ${safe(source)} · ${safe(timeAgo(c.locationUpdatedAt))}</small>`;
   }
 
+  function renderSquadCarrier(){
+    const section=$('[data-squad-carrier-section]');
+    const target=$('[data-squad-carrier-grid]');
+    if(!section||!target)return;
+    const c=carriers.find(row=>row.ownershipType==='squad');
+    section.hidden=!c;
+    target.replaceChildren();
+    if(!c)return;
+    const card=document.createElement('article');
+    card.className='carrier-card carrier-card-official carrier-squad-card';
+    const services=(c.services||[]).map(x=>`<span>${safe(x)}</span>`).join('');
+    card.innerHTML=`<div class="carrier-squad-banner"><span>REGIMENT OF IMPERIAL MONGRELS</span><strong>OFFICIAL SQUAD CARRIER</strong></div><div class="carrier-card-head"><div><p class="carrier-kicker">${safe(c.callsign)}</p><h3>${safe(c.name)}</h3><span class="carrier-owner">${safe(c.ownershipName||'Regiment of Imperial Mongrels')}</span></div><div class="carrier-card-actions"><span class="carrier-state carrier-state-${safe(c.status)}">${safe(label(c.status))}</span>${c.canEdit?'<button class="btn btn-secondary carrier-edit-btn" type="button">Manage</button>':''}</div></div><dl class="carrier-meta carrier-squad-meta"><div><dt>Ownership</dt><dd>${safe(c.ownershipName||'Regiment of Imperial Mongrels')}</dd></div><div><dt>Commander / Custodian</dt><dd>${safe(c.custodianName||c.commanderName||'Wolf258')}</dd></div><div><dt>Current Location</dt><dd>${locationMarkup(c)}</dd></div><div><dt>Primary Role</dt><dd>${safe(c.role||'Squadron Flagship')}</dd></div></dl>${c.notes?`<p class="carrier-notes">${safe(c.notes)}</p>`:''}<div class="carrier-services"><span class="carrier-label">Services</span><div>${services||'<span>Not listed</span>'}</div></div><small class="carrier-updated">Squad registry updated ${safe(timeAgo(c.updatedAt))}</small>`;
+    card.querySelector('[data-copy-system]')?.addEventListener('click',e=>copyText(c.currentSystem,e.currentTarget));
+    card.querySelector('.carrier-edit-btn')?.addEventListener('click',()=>openCarrierEditor(c));
+    target.appendChild(card);
+  }
+
   function renderRegistry(){
     const q=($('[data-carrier-search]')?.value||'').trim().toLowerCase();
     const role=$('[data-carrier-role]')?.value||'all';
     const status=$('[data-carrier-status]')?.value||'all';
-    const filtered=carriers.filter(c=>{
+    renderSquadCarrier();
+    const filtered=carriers.filter(c=>c.ownershipType!=='squad').filter(c=>{
       const hay=[c.name,c.callsign,c.commanderName,c.currentSystem,c.role,c.status,(c.services||[]).join(' ')].join(' ').toLowerCase();
       return (!q||hay.includes(q))&&(role==='all'||c.role===role)&&(status==='all'||c.status===status);
     });
@@ -64,7 +82,7 @@
     $('[data-carrier-empty]').hidden=filtered.length>0;
     $('[data-carrier-count]').textContent=carriers.length;
     $('[data-carrier-located]').textContent=carriers.filter(c=>c.currentSystem).length;
-    $('[data-carrier-mine]').textContent=session?carriers.filter(c=>c.isMine).length:'—';
+    $('[data-carrier-mine]').textContent=session?carriers.filter(c=>c.ownershipType!=='squad'&&c.isMine).length:'—';
   }
 
   function hydrateRoleFilter(){
@@ -111,12 +129,12 @@
   function manager(){return session&&['officer','site_admin'].includes(session.access);}
   function openCarrierEditor(c=null){
     editingCarrier=c;carrierDirty=false;$('[data-carrier-editor-shell]').hidden=false;document.body.classList.add('project-editor-open');
-    $('[data-carrier-form-title]').textContent=c?'Edit Carrier':'Register My Carrier'; $('[data-carrier-id]').value=c?.id||'';
+    $('[data-carrier-form-title]').textContent=c?(c.ownershipType==='squad'?'Manage Squad Carrier':'Edit Carrier'):'Register My Carrier'; $('[data-carrier-id]').value=c?.id||'';
     const callsign=$('[data-carrier-callsign]'); callsign.value=c?.callsign||''; callsign.disabled=Boolean(c);
     $('[data-carrier-name]').value=c?.name||''; $('[data-carrier-commander]').value=c?.commanderName||(session?.displayName||''); $('[data-carrier-role-edit]').value=c?.role||'General Logistics';
     $('[data-carrier-status-edit]').value=c?.status||'active'; $('[data-carrier-system]').value=c?.currentSystem||''; $('[data-carrier-services]').value=(c?.services||[]).join(', '); $('[data-carrier-notes]').value=c?.notes||'';
     const personality=$('[data-carrier-voice-personality]'); personality.value=c?.voicePersonality||(c?.official?'mongrels':'personal'); const mongrelsOption=[...personality.options].find(o=>o.value==='mongrels'); if(mongrelsOption)mongrelsOption.disabled=!manager();
-    $('[data-carrier-official-wrap]').hidden=!manager(); $('[data-carrier-official]').value=c?.official?'true':'false'; $('[data-carrier-delete]').hidden=!c; $('[data-carrier-form-status]').textContent='';
+    $('[data-carrier-official-wrap]').hidden=!manager()||c?.ownershipType==='squad'; $('[data-carrier-official]').value=c?.official?'true':'false'; $('[data-carrier-delete]').hidden=!c||c?.ownershipType==='squad'; $('[data-carrier-form-status]').textContent='';
   }
   function closeCarrierEditor(){if(carrierDirty&&!confirm('Discard unsaved carrier changes?'))return;$('[data-carrier-editor-shell]').hidden=true;document.body.classList.remove('project-editor-open');editingCarrier=null;carrierDirty=false;}
   async function saveCarrier(e){e.preventDefault();const status=$('[data-carrier-form-status]');status.textContent='Saving…';const body={resource:'carrier',id:$('[data-carrier-id]').value||undefined,callsign:$('[data-carrier-callsign]').value,name:$('[data-carrier-name]').value,commanderName:$('[data-carrier-commander]').value,role:$('[data-carrier-role-edit]').value,status:$('[data-carrier-status-edit]').value,currentSystem:$('[data-carrier-system]').value,services:$('[data-carrier-services]').value,notes:$('[data-carrier-notes]').value,voicePersonality:$('[data-carrier-voice-personality]').value,official:$('[data-carrier-official]').value==='true'};const {response,payload}=await apiFetch('/api/carriers',{method:editingCarrier?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'carrier-coordination'},body:JSON.stringify(body)});if(!response.ok){status.textContent=errorMessage(payload.error);return;}carrierDirty=false;closeCarrierEditor();await loadRegistry();await loadCoordination();}
@@ -134,7 +152,7 @@
   async function saveCoord(e){e.preventDefault();const status=$('[data-coord-form-status]');status.textContent='Saving…';const body={resource:'coordination',id:$('[data-coord-id]').value||undefined,carrierCallsign:$('[data-coord-carrier]').value,activityType:$('[data-coord-activity]').value,status:$('[data-coord-status]').value,priority:$('[data-coord-priority]').value,destination:$('[data-coord-destination]').value,departure:$('[data-coord-departure]').value,eta:$('[data-coord-eta]').value,commodity:$('[data-coord-commodity]').value,targetQuantity:Number($('[data-coord-target]').value)||0,remainingQuantity:Number($('[data-coord-remaining]').value)||0,purpose:$('[data-coord-purpose]').value,notes:$('[data-coord-notes]').value,official:$('[data-coord-official]').value==='true'};const {response,payload}=await apiFetch('/api/carriers',{method:editingPost?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'carrier-coordination'},body:JSON.stringify(body)});if(!response.ok){status.textContent=errorMessage(payload.error);return;}coordDirty=false;closeCoordEditor();await loadCoordination();}
   async function deleteCoord(){if(!editingPost||!confirm('Delete this coordination post?'))return;const {response,payload}=await apiFetch(`/api/carriers?resource=coordination&id=${encodeURIComponent(editingPost.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'carrier-coordination'}});if(!response.ok){$('[data-coord-form-status]').textContent=errorMessage(payload.error);return;}coordDirty=false;closeCoordEditor();await loadCoordination();}
 
-  function errorMessage(code){return ({invalid_callsign:'Use a callsign in the format ABC-123.',callsign_already_registered:'That carrier callsign is already registered.',carrier_has_active_coordination:'Complete or remove this carrier’s active coordination posts first.',not_carrier_owner:'You can only manage your own carrier.',not_post_owner:'You can only edit your own coordination posts.',carrier_not_registered:'Register the carrier before posting coordination.',carrier_storage_not_configured:'Carrier storage is not connected yet.'}[code]||code||'Unable to save changes.');}
+  function errorMessage(code){return ({invalid_callsign:'Use a callsign in the format ABC-123.',callsign_already_registered:'That carrier callsign is already registered.',carrier_has_active_coordination:'Complete or remove this carrier’s active coordination posts first.',not_carrier_owner:'You can only manage your own carrier.',not_post_owner:'You can only edit your own coordination posts.',carrier_not_registered:'Register the carrier before posting coordination.',carrier_storage_not_configured:'Carrier storage is not connected yet.',squad_carrier_protected:'The official squad carrier is a protected squad asset and cannot be deleted.'}[code]||code||'Unable to save changes.');}
 
 
 
