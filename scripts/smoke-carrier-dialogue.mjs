@@ -33,10 +33,12 @@ const publicProfile=publicDialogueProfile(profile);
 assert.equal(publicProfile.lines[0].weight,1);
 
 const manager=readFileSync('carriers/index.html','utf8');
-for(const token of ['Dialogue Manager','data-dialogue-category','ambient.hangar','ambient.concourse','bulletin.concourse','advertisement.concourse','Common · 6×','Rare · 1×'])assert.ok(manager.includes(token));
+const registryApi=readFileSync('functions/api/carriers/index.js','utf8');
+for(const token of ['Dialogue Manager','data-dialogue-category','ambient.hangar','ambient.concourse','bulletin.concourse','advertisement.concourse','Common · 6×','Rare · 1×','Official Squadron Asset','data-squad-carrier-grid','Member Carrier Directory'])assert.ok(manager.includes(token));
+for(const token of ["SQUAD_CARRIER_CALLSIGN = 'R1MM'","SQUAD_CARRIER_NAME = 'Canine Catalyst'","ownershipType:'squad'","squad_carrier_protected","validPersonalCallsign","(carrier.ownershipType||'personal')!=='squad'"])assert.ok(registryApi.includes(token));
 
 const managerJs=readFileSync('js/carriers.js','utf8');
-for(const token of ['/api/carriers/dialogue','carrier-dialogue','upsert_line','delete_line','saveDialogueSettings'])assert.ok(managerJs.includes(token));
+for(const token of ['/api/carriers/dialogue','carrier-dialogue','upsert_line','delete_line','saveDialogueSettings','renderSquadCarrier','OFFICIAL SQUAD CARRIER',"c.ownershipType!=='squad'"])assert.ok(managerJs.includes(token));
 
 const feed=readFileSync('functions/api/hud/feed.js','utf8');
 assert.ok(feed.includes('carrierDialogue'));
