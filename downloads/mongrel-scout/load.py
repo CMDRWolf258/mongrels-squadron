@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.1"
+PLUGIN_VERSION = "1.11.2"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -30,6 +30,7 @@ HUD_BRIDGE_PORT = 43857
 HUD_BRIDGE_VERSION = 8
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
+HUD_SITE_FEED_SAFETY_REFRESH_SECONDS = 600.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
 HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
@@ -753,6 +754,14 @@ def _hud_site_feed_endpoint() -> str:
     return base + (("?" + urlencode(params)) if params else "")
 
 
+def _hud_site_manifest_endpoint() -> str:
+    configured = (config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT).strip()
+    parsed = urlparse(configured)
+    if not parsed.scheme or not parsed.netloc:
+        parsed = urlparse(DEFAULT_ENDPOINT)
+    return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
+
+
 def _site_feed_headers(token: str) -> dict[str, str]:
     return {
         "Authorization": f"Bearer {token}",
@@ -901,9 +910,92 @@ def _refresh_hud_site_feed_once() -> bool:
         return False
 
 
+def _refresh_hud_site_manifest_once() -> dict[str, Any]:
+    endpoint = _hud_site_manifest_endpoint()
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return {
+            "ok": False,
+            "error": "scout_token_missing",
+            "endpoint": _public_hud_endpoint(endpoint),
+            "detail": "Scout token is unavailable",
+        }
+    try:
+        response = _session.get(endpoint, headers=_site_feed_headers(token))
+        payload, details = _hud_response_details(response, endpoint)
+        if not (200 <= response.status_code < 300):
+            return _hud_http_failure(details)
+        if (
+            not isinstance(payload, Mapping)
+            or payload.get("ok") is not True
+            or not isinstance(payload.get("channels"), Mapping)
+        ):
+            return {
+                **details,
+                "ok": False,
+                "error": "invalid_hud_manifest",
+                "detail": f"HTTP {response.status_code} · invalid HUD manifest ({details['responseFormat']})",
+            }
+        return {**details, "ok": True, "manifest": dict(payload)}
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc)
+
+
+def _hud_manifest_signature(payload: Mapping[str, Any]) -> str:
+    channels = payload.get("channels")
+    if not isinstance(channels, Mapping):
+        return ""
+    viewer = payload.get("viewer")
+    viewer_token = str(viewer.get("token") or "") if isinstance(viewer, Mapping) else ""
+    normalized = {
+        "version": int(payload.get("version") or 0),
+        "channels": {str(key): str(value or "") for key, value in channels.items()},
+        "viewer": viewer_token,
+    }
+    return json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+
+
 def _hud_site_feed_loop() -> None:
+    last_manifest_signature = ""
+    last_full_refresh = 0.0
+    last_feed_endpoint = ""
+
     while not _hud_site_feed_stop.is_set():
-        _refresh_hud_site_feed_once()
+        now = time.monotonic()
+        current_feed_endpoint = _hud_site_feed_endpoint()
+        full_due = (
+            last_full_refresh <= 0
+            or current_feed_endpoint != last_feed_endpoint
+            or now - last_full_refresh >= HUD_SITE_FEED_SAFETY_REFRESH_SECONDS
+        )
+        manifest_result: Optional[dict[str, Any]] = None
+        manifest_signature = ""
+
+        if not full_due:
+            manifest_result = _refresh_hud_site_manifest_once()
+            if manifest_result.get("ok"):
+                manifest = manifest_result.get("manifest")
+                manifest_signature = _hud_manifest_signature(manifest) if isinstance(manifest, Mapping) else ""
+                if not manifest_signature or not last_manifest_signature or manifest_signature != last_manifest_signature:
+                    full_due = True
+            else:
+                # Compatibility fallback: a missing/broken manifest must never
+                # prevent the legacy full feed from continuing to refresh.
+                full_due = True
+
+        if full_due:
+            if _refresh_hud_site_feed_once():
+                last_full_refresh = time.monotonic()
+                last_feed_endpoint = _hud_site_feed_endpoint()
+                baseline = _refresh_hud_site_manifest_once()
+                if baseline.get("ok"):
+                    manifest = baseline.get("manifest")
+                    baseline_signature = _hud_manifest_signature(manifest) if isinstance(manifest, Mapping) else ""
+                    if baseline_signature:
+                        last_manifest_signature = baseline_signature
+        elif manifest_signature:
+            last_manifest_signature = manifest_signature
+
         if _hud_site_feed_stop.wait(HUD_SITE_FEED_REFRESH_SECONDS):
             break
 
