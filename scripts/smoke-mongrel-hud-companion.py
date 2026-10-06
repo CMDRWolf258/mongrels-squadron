@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.16.6"
+assert hud.APP_VERSION=="0.16.7"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -24,12 +24,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.15.0"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.0"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.5"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.6"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.7"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.7"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.8"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.16.7",
+    "name":"Mongrel HUD Windows v0.16.8",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.16.7" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.16.8" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -66,6 +67,21 @@ assert upward==["Cargo Hatch","Drive","Mine Launcher","Power Plant","Frame Shift
 groups=hud.tactical_module_groups(stitched)
 assert groups["offense"][0]=={"name":"Mine Launcher","count":3}
 assert groups["defense"][-1]=={"name":"Shield Cell Bank","count":1}
+
+# Non-overlapping pauses and repeated passes must not discard tactical modules
+# or inflate counts when the same section is shown again.
+evidence_frames=[
+    ["Cargo Hatch","Beam Laser","Beam Laser","Chaff Launcher"],
+    ["Power Plant","Frame Shift Drive","Shield Cell Bank","FSD Interdictor"],
+    ["Cargo Hatch","Beam Laser","Beam Laser","Chaff Launcher"],
+]
+evidence_stitched=hud.stitch_module_frames(evidence_frames)
+assert "Shield Cell Bank" not in evidence_stitched
+evidence_groups=hud.tactical_module_groups(evidence_stitched,evidence_frames)
+assert {"name":"Beam Laser","count":2} in evidence_groups["offense"]
+assert {"name":"Chaff Launcher","count":1} in evidence_groups["defense"]
+assert {"name":"Shield Cell Bank","count":1} in evidence_groups["defense"]
+assert {"name":"FSD Interdictor","count":1} in evidence_groups["special"]
 
 with tempfile.TemporaryDirectory() as td:
     # Keep the smoke deterministic/offline; production starts the 60-second mining sync thread.
@@ -395,9 +411,10 @@ assert 'type="button" id="overlayMaster"' in html and 'type="button" id="layoutL
 assert 'function holdRefresh' in html and 'interactionUntil' in html and 'applyLayoutResult' in html
 assert 'Display control failed' in html and 'Layout lock failed' in html and 'Panel toggle failed' in html
 assert "RapidOCR" in source and "TARGET_SCAN_DURATION" in source and "recent_targets" in source and "stitch_module_frames" in source
-assert hud.TARGET_SCAN_DURATION==3.0 and hud.TARGET_SCAN_FRAMES==10
+assert hud.TARGET_SCAN_DURATION==4.0 and hud.TARGET_SCAN_FRAMES==13
 assert 'capture_interval = TARGET_SCAN_DURATION / max(1, TARGET_SCAN_FRAMES - 1)' in source
 assert 'if(r.scan)state.targetScan=r.scan;render();await load(true)' in html
+assert 'FRAMES '+'' in html and 'SCANNING — SCROLL / PAUSE' in html
 print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
 
 assert 'mutationEpoch' in html and 'mutationPending' in html and 'async function mutate' in html
