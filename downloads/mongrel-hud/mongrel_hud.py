@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.8"
+APP_VERSION = "0.16.9"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -5435,7 +5435,23 @@ class MongrelHudApp:
 
     def _check_for_update_worker(self, manual: bool) -> None:
         try:
-            release = update_from_release_payload(_powershell_release_json())
+            release = None
+            last_error: Exception | None = None
+            for attempt in range(6):
+                try:
+                    release = update_from_release_payload(_powershell_release_json())
+                    break
+                except ValueError as exc:
+                    last_error = exc
+                    # The rolling release replaces the fixed-name ZIP before its
+                    # metadata is fully visible. Retry only known transient
+                    # incomplete-release states; security failures still stop.
+                    if str(exc) not in {"release_metadata_incomplete", "release_digest_missing"}:
+                        raise
+                    if attempt < 5:
+                        time.sleep(1.5)
+            if release is None:
+                raise last_error or RuntimeError("update_check_failed")
             available = bool(version_tuple(release["version"]) > version_tuple(APP_VERSION))
             self._set_update_status(
                 checking=False,
