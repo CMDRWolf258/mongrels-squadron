@@ -21,13 +21,13 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.3"
+PLUGIN_VERSION = "1.11.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
 HUD_BRIDGE_HOST = "127.0.0.1"
 HUD_BRIDGE_PORT = 43857
-HUD_BRIDGE_VERSION = 8
+HUD_BRIDGE_VERSION = 9
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_SITE_FEED_SAFETY_REFRESH_SECONDS = 600.0
@@ -121,6 +121,7 @@ KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
 KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
+KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -673,7 +674,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -693,6 +694,14 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             endpoint = HUD_MINING_REPORT_ENDPOINT if parsed.path.endswith("/report") else HUD_MINING_CENTER_ENDPOINT
             result = _submit_hud_mining_request(endpoint, body)
             self._write_json(result, status=_hud_proxy_status(result))
+            return
+
+        if parsed.path == "/v1/cargo-priority":
+            try:
+                result = _set_hud_cargo_priority(str(body.get("faction") or "auto"))
+                self._write_json({"ok": True, "cargo": result})
+            except ValueError as exc:
+                self._write_json({"ok": False, "error": str(exc)}, status=400)
             return
 
         action = str(body.get("action") or "ack").strip().lower()
@@ -1135,7 +1144,11 @@ def _stop_hud_bridge() -> None:
 
 def _hud_state_snapshot() -> dict[str, Any]:
     with _hud_condition:
-        return json.loads(json.dumps(_hud_state))
+        snapshot = json.loads(json.dumps(_hud_state))
+    cargo = snapshot.get("cargo")
+    if isinstance(cargo, dict):
+        cargo.pop("_allocation", None)
+    return snapshot
 
 
 def _hud_events_after(after: int, wait_seconds: float) -> dict[str, Any]:
@@ -1865,16 +1878,32 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
     limpets = 0
     regular_items: list[dict[str, Any]] = []
     stolen_items: list[dict[str, Any]] = []
-    available_for_missions: dict[str, int] = {}
+    shared_available: dict[str, int] = {}
+    mission_available: dict[str, int] = {}
+    for row in rows:
+        key = str(row.get("key") or "")
+        if not key:
+            continue
+        count = max(0, int(row.get("count") or 0))
+        stolen = max(0, min(count, int(row.get("stolen") or 0)))
+        legal_count = max(0, count - stolen)
+        if key in {"drones", "limpet", "limpets"}:
+            limpets += count
+            continue
+        mission_id = _optional_int(row.get("missionId"))
+        if mission_id is None:
+            shared_available[key] = shared_available.get(key, 0) + legal_count
+        else:
+            mission_key = str(mission_id) + "\u0000" + key
+            mission_available[mission_key] = mission_available.get(mission_key, 0) + legal_count
+
     for item in aggregated.values():
         key = str(item["key"])
         count = max(0, int(item["count"]))
         stolen = max(0, min(count, int(item["stolen"])))
         legal_count = max(0, count - stolen)
         if key in {"drones", "limpet", "limpets"}:
-            limpets += count
             continue
-        available_for_missions[key] = legal_count
         if legal_count > 0:
             regular_items.append({"key": key, "name": item["name"], "count": legal_count, "missionCount": int(item["missionCount"])})
         if stolen > 0:
@@ -1883,9 +1912,9 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
     regular_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
     stolen_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
 
-    # Keep mission requirements separate by issuing faction. Cargo in the hold is
-    # still a shared physical pool, so allocate each commodity only once across
-    # faction groups instead of making the same tonnes appear READY for everyone.
+    # Keep requirements separate by issuing faction. Mission-tagged cargo stays
+    # reserved for its exact MissionID; ordinary cargo is then allocated according
+    # to the user's local Next Run priority.
     needs_by_faction_commodity: dict[str, dict[str, Any]] = {}
     for mission in _cargo_mission_rows(cmdr):
         count = max(0, int(mission.get("count") or 0))
@@ -1928,37 +1957,7 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
             "name": str(mission.get("localisedName") or mission.get("name") or ""),
         })
 
-    def mission_need_sort_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
-        faction = str(row.get("faction") or "Faction Unknown")
-        faction_folded = faction.casefold()
-        if faction_folded == MONGREL.casefold():
-            faction_rank = 0
-        elif faction_folded == "faction unknown":
-            faction_rank = 2
-        else:
-            faction_rank = 1
-        return (
-            faction_rank,
-            faction_folded,
-            str(row.get("firstAcceptedAt") or ""),
-            str(row.get("name") or "").casefold(),
-        )
-
-    mission_needs = sorted(needs_by_faction_commodity.values(), key=mission_need_sort_key)
-    cargo_remaining = {key: max(0, int(value)) for key, value in available_for_missions.items()}
-    for row in mission_needs:
-        key = str(row.get("key") or "")
-        remaining = max(0, int(row["remaining"]))
-        available = max(0, int(cargo_remaining.get(key) or 0))
-        in_hold = min(remaining, available)
-        cargo_remaining[key] = max(0, available - in_hold)
-        still_needed = max(0, remaining - in_hold)
-        row["inHold"] = in_hold
-        row["stillNeeded"] = still_needed
-        row["ready"] = still_needed == 0
-        row.pop("firstAcceptedAt", None)
-
-    return {
+    cargo = {
         "vessel": "Ship",
         "used": used,
         "capacity": capacity,
@@ -1966,10 +1965,133 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
         "limpets": limpets,
         "items": regular_items,
         "stolenItems": stolen_items,
-        "missionNeeds": mission_needs,
+        "missionNeeds": list(needs_by_faction_commodity.values()),
         "trackedMissionCount": len(_cargo_mission_rows(cmdr)),
         "updatedAt": str(timestamp or "").strip() or None,
+        "_allocation": {
+            "sharedAvailable": shared_available,
+            "missionAvailable": mission_available,
+        },
     }
+    return _apply_cargo_priority(cargo, _configured_cargo_priority())
+
+
+def _configured_cargo_priority() -> str:
+    return " ".join(str(config.get_str(KEY_CARGO_PRIORITY) or "").split())[:160]
+
+
+def _apply_cargo_priority(cargo: Mapping[str, Any], priority_faction: str = "") -> dict[str, Any]:
+    result = json.loads(json.dumps(cargo))
+    rows = [row for row in result.get("missionNeeds", []) if isinstance(row, dict)]
+    allocation = result.get("_allocation") if isinstance(result.get("_allocation"), dict) else {}
+    shared_available = {
+        str(key): max(0, int(value or 0))
+        for key, value in (allocation.get("sharedAvailable") or {}).items()
+    }
+    mission_available = {
+        str(key): max(0, int(value or 0))
+        for key, value in (allocation.get("missionAvailable") or {}).items()
+    }
+
+    faction_first: dict[str, str] = {}
+    available_factions: list[str] = []
+    for row in rows:
+        faction = str(row.get("faction") or "").strip() or "Faction Unknown"
+        accepted = str(row.get("firstAcceptedAt") or "")
+        current = faction_first.get(faction)
+        if current is None or (accepted and (not current or accepted < current)):
+            faction_first[faction] = accepted
+        if faction.casefold() != "faction unknown" and faction not in available_factions:
+            available_factions.append(faction)
+
+    requested = " ".join(str(priority_faction or "").split())[:160]
+    selected = next((name for name in available_factions if name.casefold() == requested.casefold()), "")
+    if requested and not selected:
+        config.set(KEY_CARGO_PRIORITY, "")
+
+    def faction_sort_key(name: str) -> tuple[Any, ...]:
+        folded = name.casefold()
+        unknown = folded == "faction unknown"
+        return (
+            0 if selected and folded == selected.casefold() else 1,
+            1 if unknown else 0,
+            faction_first.get(name) or "9999",
+            folded,
+        )
+
+    faction_order = sorted(faction_first, key=faction_sort_key)
+    faction_rank = {name.casefold(): index for index, name in enumerate(faction_order)}
+    rows.sort(key=lambda row: (
+        faction_rank.get(str(row.get("faction") or "Faction Unknown").casefold(), 999),
+        str(row.get("firstAcceptedAt") or ""),
+        str(row.get("name") or "").casefold(),
+    ))
+
+    # Reserve mission-specific cargo before distributing interchangeable cargo.
+    for row in rows:
+        key = str(row.get("key") or "")
+        reserved = 0
+        for mission in row.get("missions") or []:
+            if not isinstance(mission, Mapping):
+                continue
+            mission_id = _optional_int(mission.get("missionId"))
+            mission_remaining = max(0, int(mission.get("remaining") or 0))
+            if mission_id is None or mission_remaining <= 0:
+                continue
+            mission_key = str(mission_id) + "\u0000" + key
+            reserved += min(mission_remaining, max(0, int(mission_available.get(mission_key) or 0)))
+        row["missionReservedInHold"] = reserved
+
+    cargo_remaining = dict(shared_available)
+    for row in rows:
+        key = str(row.get("key") or "")
+        remaining = max(0, int(row.get("remaining") or 0))
+        reserved = min(remaining, max(0, int(row.get("missionReservedInHold") or 0)))
+        shared_needed = max(0, remaining - reserved)
+        available = max(0, int(cargo_remaining.get(key) or 0))
+        shared_used = min(shared_needed, available)
+        cargo_remaining[key] = max(0, available - shared_used)
+        in_hold = reserved + shared_used
+        still_needed = max(0, remaining - in_hold)
+        row["inHold"] = in_hold
+        row["sharedInHold"] = shared_used
+        row["stillNeeded"] = still_needed
+        row["ready"] = still_needed == 0
+        row["nextRun"] = bool(selected and str(row.get("faction") or "").casefold() == selected.casefold())
+        row.pop("firstAcceptedAt", None)
+
+    result["missionNeeds"] = rows
+    result["availableFactions"] = sorted(available_factions, key=str.casefold)
+    result["priorityFaction"] = selected
+    result["priorityMode"] = "faction" if selected else "auto"
+    return result
+
+
+def _set_hud_cargo_priority(value: str) -> dict[str, Any]:
+    requested = " ".join(str(value or "").split())[:160]
+    if requested.casefold() == "auto":
+        requested = ""
+    with _hud_condition:
+        current = _hud_state.get("cargo")
+        if not isinstance(current, Mapping):
+            raise ValueError("cargo_not_ready")
+        available = [
+            str(name)
+            for name in current.get("availableFactions", [])
+            if isinstance(name, str) and name.strip()
+        ]
+        if requested:
+            matched = next((name for name in available if name.casefold() == requested.casefold()), "")
+            if not matched:
+                raise ValueError("cargo_priority_not_current")
+            requested = matched
+        config.set(KEY_CARGO_PRIORITY, requested)
+        updated = _apply_cargo_priority(current, requested)
+        _hud_state["cargo"] = updated
+        _hud_condition.notify_all()
+        public = json.loads(json.dumps(updated))
+        public.pop("_allocation", None)
+        return public
 
 
 def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None) -> None:
