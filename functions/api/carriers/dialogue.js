@@ -1,4 +1,5 @@
-import { readCarrierDialogue, writeCarrierDialogue, normalizeLine, normalizeProfile, publicDialogueProfile, requireDialogueAdmin, dialogueReply } from '../../../lib/carrier-dialogue.js';
+import { readSession } from '../../../lib/auth.js';
+import { readCarrierDialogue, writeCarrierDialogue, normalizeLine, normalizeProfile, publicDialogueProfile, publicSharedDialogueProfile, SHARED_DIALOGUE_PROFILE_ID, dialogueReply } from '../../../lib/carrier-dialogue.js';
 
 const REGISTRY_KEY='registry-v1';
 const CANINE_CATALYST_ID='squad-carrier-r1mm';
@@ -8,8 +9,8 @@ const CANINE_STARTER_SEED_VERSION=3;
 const EXPANSION_SEED_PREFIX='starter:expansion-2026-10:';
 
 export async function onRequestGet({request,env}){
-  const auth=await requireDialogueAdmin(request,env);
-  if(auth.response)return auth.response;
+  const session=await readSession(request,env);
+  if(!dialogueMember(session))return dialogueReply({ok:false,error:session?'member_access_required':'authentication_required'},session?403:401);
   const url=new URL(request.url);
   const carrierId=clean(url.searchParams.get('carrierId'),100);
   const [library,carriers]=await Promise.all([readCarrierDialogue(env),readRegistry(env)]);
@@ -31,26 +32,55 @@ export async function onRequestGet({request,env}){
   }
   if(seeded){
     library.updatedAt=new Date().toISOString();
-    library.updatedBy=auth.session.displayName||auth.session.username||'Site Admin';
+    library.updatedBy=session.displayName||session.username||'Mongrel Member';
     await writeCarrierDialogue(env,library);
   }
+
+  const admin=dialogueAdmin(session,env);
+  const visibleCarriers=admin
+    ? carriers
+    : carriers.filter(item=>(item?.ownershipType||'personal')==='personal'&&String(item?.ownerId||'')===String(session.sub||''));
+  const visibleProfiles=Object.fromEntries(
+    visibleCarriers
+      .map(carrier=>[clean(carrier.id,100),library.profiles?.[clean(carrier.id,100)]])
+      .filter(([,profile])=>profile)
+      .map(([id,profile])=>[id,publicDialogueProfile(profile)])
+  );
+
   if(carrierId){
-    const carrier=carriers.find(item=>String(item?.id||'')===carrierId);
-    if(!carrier)return dialogueReply({ok:false,error:'carrier_not_found'},404);
-    return dialogueReply({ok:true,carrier:presentCarrier(carrier),profile:publicDialogueProfile(library.profiles[carrierId]||{carrierId})});
+    if(carrierId===SHARED_DIALOGUE_PROFILE_ID){
+      return dialogueReply({
+        ok:true,
+        canManageShared:admin,
+        sharedProfile:publicSharedDialogueProfile(library),
+        profile:publicSharedDialogueProfile(library),
+      });
+    }
+    const carrier=visibleCarriers.find(item=>String(item?.id||'')===carrierId);
+    if(!carrier)return dialogueReply({ok:false,error:'carrier_not_found_or_not_owned'},404);
+    return dialogueReply({
+      ok:true,
+      canManageShared:admin,
+      carrier:presentCarrier(carrier,session,env),
+      sharedProfile:publicSharedDialogueProfile(library),
+      profile:publicDialogueProfile(library.profiles[carrierId]||{carrierId}),
+    });
   }
+
   return dialogueReply({
     ok:true,
-    carriers:carriers.map(presentCarrier),
-    profiles:Object.fromEntries(Object.entries(library.profiles).map(([id,profile])=>[id,publicDialogueProfile(profile)])),
+    canManageShared:admin,
+    sharedProfile:publicSharedDialogueProfile(library),
+    carriers:visibleCarriers.map(item=>presentCarrier(item,session,env)),
+    profiles:visibleProfiles,
     updatedAt:library.updatedAt,
     updatedBy:library.updatedBy,
   });
 }
 
 export async function onRequestPost({request,env}){
-  const auth=await requireDialogueAdmin(request,env);
-  if(auth.response)return auth.response;
+  const session=await readSession(request,env);
+  if(!dialogueMember(session))return dialogueReply({ok:false,error:session?'member_access_required':'authentication_required'},session?403:401);
   if(!sameOrigin(request))return dialogueReply({ok:false,error:'request_validation_failed'},403);
   let body;
   try{body=await request.json();}catch{return dialogueReply({ok:false,error:'invalid_json'},400);}
@@ -58,12 +88,22 @@ export async function onRequestPost({request,env}){
   const carrierId=clean(body?.carrierId,100);
   if(!carrierId)return dialogueReply({ok:false,error:'carrier_id_required'},400);
 
-  const carriers=await readRegistry(env);
-  const carrier=carriers.find(item=>String(item?.id||'')===carrierId);
-  if(!carrier)return dialogueReply({ok:false,error:'carrier_not_found'},404);
+  const [carriers,library]=await Promise.all([readRegistry(env),readCarrierDialogue(env)]);
+  const admin=dialogueAdmin(session,env);
+  let profile;
+  let carrier=null;
 
-  const library=await readCarrierDialogue(env);
-  const profile=normalizeProfile(library.profiles[carrierId]||{carrierId},carrierId);
+  if(carrierId===SHARED_DIALOGUE_PROFILE_ID){
+    if(!admin)return dialogueReply({ok:false,error:'shared_dialogue_admin_required'},403);
+    profile=normalizeProfile(library.sharedProfile,SHARED_DIALOGUE_PROFILE_ID);
+  }else{
+    carrier=carriers.find(item=>String(item?.id||'')===carrierId);
+    if(!carrier)return dialogueReply({ok:false,error:'carrier_not_found'},404);
+    const personal=(carrier?.ownershipType||'personal')==='personal';
+    const owner=personal&&String(carrier?.ownerId||'')===String(session.sub||'');
+    if(!admin&&!owner)return dialogueReply({ok:false,error:'not_carrier_owner'},403);
+    profile=normalizeProfile(library.profiles[carrierId]||starterProfile(carrier),carrierId);
+  }
 
   if(action==='upsert_line'){
     const line=normalizeLine(body?.line);
@@ -76,16 +116,25 @@ export async function onRequestPost({request,env}){
     if(!lineId)return dialogueReply({ok:false,error:'line_id_required'},400);
     profile.lines=profile.lines.filter(item=>item.id!==lineId);
   }else if(action==='settings'){
+    if(carrierId===SHARED_DIALOGUE_PROFILE_ID)return dialogueReply({ok:false,error:'shared_pool_settings_not_supported'},400);
     profile.settings=normalizeProfile({carrierId,settings:body?.settings,lines:profile.lines},carrierId).settings;
   }else{
     return dialogueReply({ok:false,error:'unknown_action'},400);
   }
 
-  library.profiles[carrierId]=profile;
+  if(carrierId===SHARED_DIALOGUE_PROFILE_ID)library.sharedProfile=profile;
+  else library.profiles[carrierId]=profile;
   library.updatedAt=new Date().toISOString();
-  library.updatedBy=auth.session.displayName||auth.session.username||'Site Admin';
+  library.updatedBy=session.displayName||session.username||'Mongrel Member';
   await writeCarrierDialogue(env,library);
-  return dialogueReply({ok:true,carrier:presentCarrier(carrier),profile:publicDialogueProfile(profile),updatedAt:library.updatedAt});
+  return dialogueReply({
+    ok:true,
+    canManageShared:admin,
+    carrier:carrier?presentCarrier(carrier,session,env):null,
+    sharedProfile:publicSharedDialogueProfile(library),
+    profile:carrierId===SHARED_DIALOGUE_PROFILE_ID?publicSharedDialogueProfile(library):publicDialogueProfile(profile),
+    updatedAt:library.updatedAt,
+  });
 }
 
 async function readRegistry(env){
@@ -93,17 +142,29 @@ async function readRegistry(env){
   const rows=await env.CARRIERS.get(REGISTRY_KEY,{type:'json'});
   return Array.isArray(rows)?rows:[];
 }
-function presentCarrier(item){
+function presentCarrier(item,session=null,env=null){
+  const personal=(item?.ownershipType||'personal')==='personal';
+  const owner=personal&&String(item?.ownerId||'')===String(session?.sub||'');
   return{
     id:clean(item?.id,100),
     marketId:clean(item?.marketId,24),
     callsign:clean(item?.callsign,20),
     name:clean(item?.name,100)||clean(item?.callsign,20)||'Fleet Carrier',
     commanderName:clean(item?.commanderName,80),
+    ownershipType:clean(item?.ownershipType,24)||'personal',
     official:Boolean(item?.official),
     voicePersonality:clean(item?.voicePersonality,24)||(item?.official?'mongrels':'personal'),
+    canEditDialogue:Boolean(dialogueAdmin(session,env)||owner),
   };
 }
+function dialogueMember(session){
+  return Boolean(session&&['member','officer','site_admin'].includes(String(session.access||'')));
+}
+function dialogueAdmin(session,env){
+  const adminId=String(env?.ADMIN_USER_ID||'');
+  return Boolean(session&&adminId&&String(session.sub||'')===adminId);
+}
+
 function sameOrigin(request){
   const origin=request.headers.get('Origin');
   const expected=new URL(request.url).origin;
@@ -256,6 +317,32 @@ export function upgradeStarterProfile(existing,carrier){
 }
 
 function addDialogueExpansion(rows,{seedName,canine,personality}){
+  const add=(slug,category,audience,text,rarity='common')=>rows.push({
+    id:`${EXPANSION_SEED_PREFIX}${seedName}:${slug}`,
+    category,audience,rarity,enabled:true,text
+  });
+
+  // Generic operational and PA material now lives in the Shared Squadron Pool.
+  // Private starter additions are reserved for the carrier's own personality.
+  if(personality==='mongrels'||canine){
+    add('mongrel-hangar-pack','ambient.hangar','squadmate','Mongrel flight crews: check your loadout before launch. The pack can help; physics remains less flexible.','uncommon');
+    add('mongrel-hangar-chewing','ambient.hangar','squadmate','Pack notice: chewing on flight-deck equipment remains prohibited, even when the equipment started it.','rare');
+    add('mongrel-concourse-mission-control','ambient.concourse','squadmate','Mongrels: check Mission Control before departure. Someone has probably found productive trouble for you.','uncommon');
+    add('mongrel-concourse-stay','ambient.concourse','squadmate','Pack reminder: Mongrels never quite figured out the word stay. Departure boards are available near the lifts.','rare');
+    add('mongrel-bulletin-story','bulletin.concourse','squadmate','Pack bulletin: if the operation went well, log the result. If it went badly, at least improve the story.','rare');
+    add('mongrel-advert-escort','advertisement.concourse','squadmate','Need an escort? Find another Mongrel. Need several escorts? Whatever you are doing sounds interesting.','rare');
+  }
+
+  if(canine){
+    add('canine-hangar-flagship','ambient.hangar','all','Canine Catalyst flight deck is operating normally. Squadron support crews are standing by.');
+    add('canine-hangar-command','ambient.hangar','squadmate','Mongrel pilots aboard Canine Catalyst should verify current squad priorities before launch.','uncommon');
+    add('canine-concourse-flagship','ambient.concourse','all','Welcome aboard Canine Catalyst, squadron flagship of the Regiment of Imperial Mongrels.');
+    add('canine-concourse-command','ambient.concourse','squadmate','Squad command notice: Mission Control is current. Check assignments before heading back to the hangar.','uncommon');
+    add('canine-concourse-doghouse','ambient.concourse','squadmate','Canine Catalyst reminder: this is squad command, not the doghouse. Standards are marginally higher.','rare');
+    add('canine-bulletin-pack','bulletin.concourse','squadmate','Pack bulletin: support requests, current operations, and carrier movements are available through squad channels.','uncommon');
+    add('canine-advert-help','advertisement.concourse','squadmate','Need cargo hauled, a wingmate, or somebody to blame? The pack is already aboard.','rare');
+  }
+}){
   const add=(slug,category,audience,text,rarity='common')=>rows.push({
     id:`${EXPANSION_SEED_PREFIX}${seedName}:${slug}`,
     category,audience,rarity,enabled:true,text
