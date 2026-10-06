@@ -21,7 +21,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.2"
+PLUGIN_VERSION = "1.11.3"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1665,6 +1665,7 @@ def _normalized_cached_mission(value: Any) -> Optional[dict[str, Any]]:
         "localisedName": str(value.get("localisedName") or "").strip()[:240],
         "commodity": commodity,
         "commodityName": _commodity_display(value.get("commodityName") or value.get("commodity"), value.get("commodityName")),
+        "faction": str(value.get("faction") or "").strip()[:160],
         "count": count,
         "delivered": max(0, min(count, delivered)),
         "wing": bool(value.get("wing")),
@@ -1738,6 +1739,7 @@ def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> 
                     "localisedName": str(entry.get("LocalisedName") or "").strip()[:240],
                     "commodity": commodity,
                     "commodityName": _commodity_display(entry.get("Commodity"), entry.get("Commodity_Localised")),
+                    "faction": str(entry.get("Faction") or "").strip()[:160],
                     "count": count,
                     "delivered": 0,
                     "wing": bool(entry.get("Wing")),
@@ -1881,7 +1883,10 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
     regular_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
     stolen_items.sort(key=lambda row: (-int(row["count"]), str(row["name"]).casefold()))
 
-    needs_by_commodity: dict[str, dict[str, Any]] = {}
+    # Keep mission requirements separate by issuing faction. Cargo in the hold is
+    # still a shared physical pool, so allocate each commodity only once across
+    # faction groups instead of making the same tonnes appear READY for everyone.
+    needs_by_faction_commodity: dict[str, dict[str, Any]] = {}
     for mission in _cargo_mission_rows(cmdr):
         count = max(0, int(mission.get("count") or 0))
         delivered = max(0, min(count, int(mission.get("delivered") or 0)))
@@ -1891,40 +1896,67 @@ def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any
         key = str(mission.get("commodity") or "")
         if not key:
             continue
-        row = needs_by_commodity.setdefault(key, {
+        faction = str(mission.get("faction") or "").strip() or "Faction Unknown"
+        group_key = faction.casefold() + "\u0000" + key
+        row = needs_by_faction_commodity.setdefault(group_key, {
             "key": key,
             "name": str(mission.get("commodityName") or _commodity_display(key)),
+            "faction": faction,
             "required": 0,
             "delivered": 0,
             "remaining": 0,
             "missionCount": 0,
+            "firstAcceptedAt": str(mission.get("acceptedAt") or ""),
             "missions": [],
         })
         row["required"] += count
         row["delivered"] += delivered
         row["remaining"] += remaining
         row["missionCount"] += 1
+        accepted_at = str(mission.get("acceptedAt") or "")
+        if accepted_at and (not row["firstAcceptedAt"] or accepted_at < row["firstAcceptedAt"]):
+            row["firstAcceptedAt"] = accepted_at
         row["missions"].append({
             "missionId": int(mission["missionId"]),
             "required": count,
             "delivered": delivered,
             "remaining": remaining,
             "wing": bool(mission.get("wing")),
+            "faction": faction,
             "destinationSystem": str(mission.get("destinationSystem") or ""),
             "destinationStation": str(mission.get("destinationStation") or ""),
             "name": str(mission.get("localisedName") or mission.get("name") or ""),
         })
 
-    mission_needs: list[dict[str, Any]] = []
-    for key, row in needs_by_commodity.items():
+    def mission_need_sort_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
+        faction = str(row.get("faction") or "Faction Unknown")
+        faction_folded = faction.casefold()
+        if faction_folded == MONGREL.casefold():
+            faction_rank = 0
+        elif faction_folded == "faction unknown":
+            faction_rank = 2
+        else:
+            faction_rank = 1
+        return (
+            faction_rank,
+            faction_folded,
+            str(row.get("firstAcceptedAt") or ""),
+            str(row.get("name") or "").casefold(),
+        )
+
+    mission_needs = sorted(needs_by_faction_commodity.values(), key=mission_need_sort_key)
+    cargo_remaining = {key: max(0, int(value)) for key, value in available_for_missions.items()}
+    for row in mission_needs:
+        key = str(row.get("key") or "")
         remaining = max(0, int(row["remaining"]))
-        in_hold = min(remaining, max(0, int(available_for_missions.get(key) or 0)))
+        available = max(0, int(cargo_remaining.get(key) or 0))
+        in_hold = min(remaining, available)
+        cargo_remaining[key] = max(0, available - in_hold)
         still_needed = max(0, remaining - in_hold)
         row["inHold"] = in_hold
         row["stillNeeded"] = still_needed
         row["ready"] = still_needed == 0
-        mission_needs.append(row)
-    mission_needs.sort(key=lambda row: (int(row["stillNeeded"]) == 0, -int(row["stillNeeded"]), str(row["name"]).casefold()))
+        row.pop("firstAcceptedAt", None)
 
     return {
         "vessel": "Ship",
