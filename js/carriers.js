@@ -17,9 +17,11 @@
   let coordDirty = false;
   const memberParam = new URLSearchParams(location.search).get('member') || '';
   let memberFilter = null;
+  const SHARED_DIALOGUE_ID='shared:squad';
   let dialogueProfiles = {};
   let dialogueCarrierRows = [];
   let dialogueEditingId = '';
+  let dialogueCanManageShared = false;
 
   const apiFetch = async (url, options={}) => {
     const response = await fetch(`${url}${url.includes('?')?'&':'?'}_=${Date.now()}`, {credentials:'same-origin',cache:'no-store',...options});
@@ -152,11 +154,14 @@
   async function saveCoord(e){e.preventDefault();const status=$('[data-coord-form-status]');status.textContent='Saving…';const body={resource:'coordination',id:$('[data-coord-id]').value||undefined,carrierCallsign:$('[data-coord-carrier]').value,activityType:$('[data-coord-activity]').value,status:$('[data-coord-status]').value,priority:$('[data-coord-priority]').value,destination:$('[data-coord-destination]').value,departure:$('[data-coord-departure]').value,eta:$('[data-coord-eta]').value,commodity:$('[data-coord-commodity]').value,targetQuantity:Number($('[data-coord-target]').value)||0,remainingQuantity:Number($('[data-coord-remaining]').value)||0,purpose:$('[data-coord-purpose]').value,notes:$('[data-coord-notes]').value,official:$('[data-coord-official]').value==='true'};const {response,payload}=await apiFetch('/api/carriers',{method:editingPost?'PUT':'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'carrier-coordination'},body:JSON.stringify(body)});if(!response.ok){status.textContent=errorMessage(payload.error);return;}coordDirty=false;closeCoordEditor();await loadCoordination();}
   async function deleteCoord(){if(!editingPost||!confirm('Delete this coordination post?'))return;const {response,payload}=await apiFetch(`/api/carriers?resource=coordination&id=${encodeURIComponent(editingPost.id)}`,{method:'DELETE',headers:{'X-Mongrels-Request':'carrier-coordination'}});if(!response.ok){$('[data-coord-form-status]').textContent=errorMessage(payload.error);return;}coordDirty=false;closeCoordEditor();await loadCoordination();}
 
-  function errorMessage(code){return ({invalid_callsign:'Use a callsign in the format ABC-123.',callsign_already_registered:'That carrier callsign is already registered.',carrier_has_active_coordination:'Complete or remove this carrier’s active coordination posts first.',not_carrier_owner:'You can only manage your own carrier.',not_post_owner:'You can only edit your own coordination posts.',carrier_not_registered:'Register the carrier before posting coordination.',carrier_storage_not_configured:'Carrier storage is not connected yet.',squad_carrier_protected:'The official squad carrier is a protected squad asset and cannot be deleted.'}[code]||code||'Unable to save changes.');}
+  function errorMessage(code){return ({invalid_callsign:'Use a callsign in the format ABC-123.',callsign_already_registered:'That carrier callsign is already registered.',carrier_has_active_coordination:'Complete or remove this carrier’s active coordination posts first.',not_carrier_owner:'You can only manage your own personal carrier dialogue.',not_post_owner:'You can only edit your own coordination posts.',carrier_not_registered:'Register the carrier before posting coordination.',carrier_storage_not_configured:'Carrier storage is not connected yet.',squad_carrier_protected:'The official squad carrier is a protected squad asset and cannot be deleted.',shared_dialogue_admin_required:'Only Site Admin can edit the Squadron Shared Pool.',carrier_not_found_or_not_owned:'That carrier is not available in your dialogue manager.',member_access_required:'Mongrel member access is required.'}[code]||code||'Unable to save changes.');}
 
 
 
   function dialogueAdmin(){return session?.access==='site_admin';}
+  function dialogueAvailable(){return Boolean(session&&(dialogueAdmin()||carriers.some(c=>c.isMine&&(c.ownershipType||'personal')==='personal')));}
+  function currentDialogueCarrierRow(){const id=currentDialogueCarrierId();return dialogueCarrierRows.find(row=>row.id===id)||null;}
+  function dialogueEditable(){return currentDialogueCarrierId()===SHARED_DIALOGUE_ID?dialogueCanManageShared:Boolean(currentDialogueCarrierRow()?.canEditDialogue);}
   function dialogueCategoryLabel(value){
     const option=[...($('[data-dialogue-category]')?.options||[])].find(item=>item.value===value);
     return option?.textContent||label(value);
@@ -168,7 +173,7 @@
   function currentDialogueCarrierId(){return $('[data-dialogue-carrier]')?.value||'';}
   function currentDialogueProfile(){
     const id=currentDialogueCarrierId();
-    return dialogueProfiles[id]||{carrierId:id,settings:{ambientEnabled:true,hangarMinSeconds:120,hangarMaxSeconds:240,concourseMinSeconds:90,concourseMaxSeconds:210},lines:[]};
+    return dialogueProfiles[id]||{carrierId:id,settings:{sharedEnabled:true,ambientEnabled:true,hangarMinSeconds:120,hangarMaxSeconds:240,concourseMinSeconds:90,concourseMaxSeconds:210},lines:[]};
   }
   function resetDialogueEditor(){
     dialogueEditingId='';
@@ -179,12 +184,27 @@
     $('[data-dialogue-status]').textContent='';
   }
   function hydrateDialogueSettings(){
+    const shared=currentDialogueCarrierId()===SHARED_DIALOGUE_ID;
     const settings=currentDialogueProfile().settings||{};
+    $('[data-dialogue-shared-enabled]').value=settings.sharedEnabled===false?'false':'true';
     $('[data-dialogue-hangar-min]').value=settings.hangarMinSeconds??120;
     $('[data-dialogue-hangar-max]').value=settings.hangarMaxSeconds??240;
     $('[data-dialogue-concourse-min]').value=settings.concourseMinSeconds??90;
     $('[data-dialogue-concourse-max]').value=settings.concourseMaxSeconds??210;
     $('[data-dialogue-ambient-enabled]').value=settings.ambientEnabled===false?'false':'true';
+    const settingsBox=$('[data-dialogue-carrier-settings]');
+    if(settingsBox)settingsBox.hidden=shared;
+    syncDialoguePermissions();
+  }
+  function syncDialoguePermissions(){
+    const editable=dialogueEditable();
+    for(const selector of ['[data-dialogue-text]','[data-dialogue-rarity]','[data-dialogue-enabled]','[data-dialogue-new]','[data-dialogue-save]']){
+      const el=$(selector); if(el)el.disabled=!editable;
+    }
+    const settingsEditable=editable&&currentDialogueCarrierId()!==SHARED_DIALOGUE_ID;
+    for(const selector of ['[data-dialogue-shared-enabled]','[data-dialogue-hangar-min]','[data-dialogue-hangar-max]','[data-dialogue-concourse-min]','[data-dialogue-concourse-max]','[data-dialogue-ambient-enabled]','[data-dialogue-save-settings]']){
+      const el=$(selector); if(el)el.disabled=!settingsEditable;
+    }
   }
   function renderDialogueLines(){
     const target=$('[data-dialogue-list]'); if(!target)return;
@@ -197,17 +217,19 @@
       .slice()
       .sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''))||String(a.audience||'').localeCompare(String(b.audience||''))||String(a.text||'').localeCompare(String(b.text||'')));
     $('[data-dialogue-count]').textContent=`${rows.length} line${rows.length===1?'':'s'}`;
-    $('[data-dialogue-pool-label]').textContent=view==='all'?'All shared dialogue lines':`${dialogueCategoryLabel(category)} · ${dialogueAudienceLabel(audience)}`;
+    const poolName=currentDialogueCarrierId()===SHARED_DIALOGUE_ID?'Squadron Shared Pool':'Private Carrier Pool';
+    $('[data-dialogue-pool-label]').textContent=view==='all'?`All lines · ${poolName}`:`${dialogueCategoryLabel(category)} · ${dialogueAudienceLabel(audience)} · ${poolName}`;
     target.replaceChildren();
     if(!rows.length){
-      const empty=document.createElement('div'); empty.className='carrier-dialogue-empty'; empty.textContent='No shared lines in this pool yet.';
+      const empty=document.createElement('div'); empty.className='carrier-dialogue-empty'; empty.textContent='No lines in this pool yet.';
       target.appendChild(empty); return;
     }
     rows.forEach(row=>{
       const card=document.createElement('article'); card.className='carrier-dialogue-row'+(row.enabled===false?' is-disabled':'');
       const scopeBadges=view==='all'?'<span>'+safe(dialogueCategoryLabel(row.category))+'</span><span>'+safe(dialogueAudienceLabel(row.audience))+'</span>':'';
-      card.innerHTML=`<div class="carrier-dialogue-row-main"><div class="carrier-dialogue-badges">${scopeBadges}<span>${safe(label(row.rarity))}</span><span>${row.enabled===false?'Disabled':'Enabled'}</span></div><p>${safe(row.text)}</p></div><div class="carrier-dialogue-row-actions"><button class="btn btn-secondary" type="button" data-dialogue-edit-line>Edit</button><button class="btn btn-secondary" type="button" data-dialogue-delete-line>Delete</button></div>`;
-      card.querySelector('[data-dialogue-edit-line]').addEventListener('click',()=>{
+      const actions=dialogueEditable()?'<div class="carrier-dialogue-row-actions"><button class="btn btn-secondary" type="button" data-dialogue-edit-line>Edit</button><button class="btn btn-secondary" type="button" data-dialogue-delete-line>Delete</button></div>':'';
+      card.innerHTML=`<div class="carrier-dialogue-row-main"><div class="carrier-dialogue-badges">${scopeBadges}<span>${safe(label(row.rarity))}</span><span>${row.enabled===false?'Disabled':'Enabled'}</span></div><p>${safe(row.text)}</p></div>${actions}`;
+      card.querySelector('[data-dialogue-edit-line]')?.addEventListener('click',()=>{
         dialogueEditingId=row.id;
         $('[data-dialogue-line-id]').value=row.id;
         $('[data-dialogue-text]').value=row.text;
@@ -216,30 +238,35 @@
         $('[data-dialogue-status]').textContent='Editing existing line';
         $('[data-dialogue-text]').focus();
       });
-      card.querySelector('[data-dialogue-delete-line]').addEventListener('click',()=>deleteDialogueLine(row));
+      card.querySelector('[data-dialogue-delete-line]')?.addEventListener('click',()=>deleteDialogueLine(row));
       target.appendChild(card);
     });
   }
   async function loadDialogueLibrary(){
-    if(!dialogueAdmin())return false;
+    if(!dialogueAvailable())return false;
     const {response,payload}=await apiFetch('/api/carriers/dialogue');
     if(!response.ok){
       $('[data-dialogue-footer-status]').textContent=errorMessage(payload.error);
       return false;
     }
+    dialogueCanManageShared=payload.canManageShared===true;
     dialogueProfiles=payload.profiles&&typeof payload.profiles==='object'?payload.profiles:{};
+    if(payload.sharedProfile)dialogueProfiles[SHARED_DIALOGUE_ID]=payload.sharedProfile;
     dialogueCarrierRows=Array.isArray(payload.carriers)?payload.carriers:[];
     const select=$('[data-dialogue-carrier]');
     const prior=select.value;
-    select.innerHTML=dialogueCarrierRows.map(row=>`<option value="${safe(row.id)}">${safe(row.name)} · ${safe(row.callsign)}</option>`).join('');
-    if(prior&&dialogueCarrierRows.some(row=>row.id===prior))select.value=prior;
+    select.innerHTML=`<option value="${SHARED_DIALOGUE_ID}">Squadron Shared Pool${dialogueCanManageShared?' · Admin':' · Read only'}</option>`+
+      dialogueCarrierRows.map(row=>`<option value="${safe(row.id)}">${safe(row.name)} · ${safe(row.callsign)}</option>`).join('');
+    const validIds=new Set([SHARED_DIALOGUE_ID,...dialogueCarrierRows.map(row=>row.id)]);
+    if(prior&&validIds.has(prior))select.value=prior;
+    else if(dialogueCarrierRows.length)select.value=dialogueCarrierRows[0].id;
     hydrateDialogueSettings();
     renderDialogueLines();
-    $('[data-dialogue-footer-status]').textContent=payload.updatedAt?`Shared library updated ${timeAgo(payload.updatedAt)}`:'Shared library ready';
+    $('[data-dialogue-footer-status]').textContent=payload.updatedAt?`Dialogue library updated ${timeAgo(payload.updatedAt)}`:'Dialogue library ready';
     return true;
   }
   async function openDialogueManager(){
-    if(!dialogueAdmin())return;
+    if(!dialogueAvailable())return;
     $('[data-dialogue-editor-shell]').hidden=false; document.body.classList.add('project-editor-open');
     resetDialogueEditor();
     await loadDialogueLibrary();
@@ -251,10 +278,14 @@
     const {response,payload}=await apiFetch('/api/carriers/dialogue',{method:'POST',headers:{'Content-Type':'application/json','X-Mongrels-Request':'carrier-dialogue'},body:JSON.stringify(body)});
     if(!response.ok)throw new Error(errorMessage(payload.error));
     if(payload.profile)dialogueProfiles[payload.profile.carrierId]=payload.profile;
+    if(payload.sharedProfile)dialogueProfiles[SHARED_DIALOGUE_ID]=payload.sharedProfile;
+    dialogueCanManageShared=payload.canManageShared===true||dialogueCanManageShared;
     return payload;
   }
   async function saveDialogueLine(){
-    const status=$('[data-dialogue-status]'); status.textContent='Saving…';
+    const status=$('[data-dialogue-status]');
+    if(!dialogueEditable()){status.textContent='This pool is read only for your account.';return;}
+    status.textContent='Saving…';
     const text=$('[data-dialogue-text]').value.trim();
     if(!text){status.textContent='Enter a dialogue line first.';return;}
     try{
@@ -264,11 +295,12 @@
         line:{id,category:$('[data-dialogue-category]').value,audience:$('[data-dialogue-audience]').value,rarity:$('[data-dialogue-rarity]').value,enabled:$('[data-dialogue-enabled]').value==='true',text}
       });
       resetDialogueEditor(); renderDialogueLines(); hydrateDialogueSettings();
-      status.textContent='Saved to shared HUD dialogue library.';
+      status.textContent=currentDialogueCarrierId()===SHARED_DIALOGUE_ID?'Saved to Squadron Shared Pool.':'Saved to this carrier’s private pool.';
     }catch(error){status.textContent=error.message||'Save failed.';}
   }
   async function deleteDialogueLine(row){
-    if(!confirm('Delete this shared dialogue line?'))return;
+    if(!dialogueEditable())return;
+    if(!confirm(currentDialogueCarrierId()===SHARED_DIALOGUE_ID?'Delete this shared squad line?':'Delete this carrier-only dialogue line?'))return;
     try{
       await dialogueMutation({action:'delete_line',carrierId:currentDialogueCarrierId(),lineId:row.id});
       if(dialogueEditingId===row.id)resetDialogueEditor();
@@ -276,11 +308,14 @@
     }catch(error){$('[data-dialogue-status]').textContent=error.message||'Delete failed.';}
   }
   async function saveDialogueSettings(){
-    const status=$('[data-dialogue-footer-status]'); status.textContent='Saving ambient timing…';
+    const status=$('[data-dialogue-footer-status]');
+    if(!dialogueEditable()||currentDialogueCarrierId()===SHARED_DIALOGUE_ID){status.textContent='Select a carrier you can manage.';return;}
+    status.textContent='Saving carrier voice settings…';
     try{
       await dialogueMutation({
         action:'settings',carrierId:currentDialogueCarrierId(),
         settings:{
+          sharedEnabled:$('[data-dialogue-shared-enabled]').value==='true',
           ambientEnabled:$('[data-dialogue-ambient-enabled]').value==='true',
           hangarMinSeconds:Number($('[data-dialogue-hangar-min]').value),
           hangarMaxSeconds:Number($('[data-dialogue-hangar-max]').value),
@@ -288,7 +323,7 @@
           concourseMaxSeconds:Number($('[data-dialogue-concourse-max]').value),
         }
       });
-      hydrateDialogueSettings(); status.textContent='Ambient timing saved to shared library.';
+      hydrateDialogueSettings(); status.textContent='Carrier voice settings saved.';
     }catch(error){status.textContent=error.message||'Timing save failed.';}
   }
 
@@ -305,7 +340,7 @@
     section.insertBefore(banner, head);
   }
 
-  async function loadRegistry(){const memberQuery=memberParam?`&member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/carriers?resource=registry${memberQuery}`);if(!response.ok){$('[data-carrier-empty]').hidden=false;$('[data-carrier-empty] strong').textContent='Carrier registry unavailable.';return;}session=payload.viewer||session;carriers=Array.isArray(payload.carriers)?payload.carriers:[];memberFilter=payload.memberFilter||null;renderMemberFilter();hydrateRoleFilter();renderRegistry();$('[data-carrier-register]').hidden=!session;$('[data-dialogue-manage]').hidden=!dialogueAdmin();if(memberParam&&memberFilter&&!window.__memberCarrierAnchorHandled){window.__memberCarrierAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('carrier-directory')?.scrollIntoView({block:'start'}));}}
+  async function loadRegistry(){const memberQuery=memberParam?`&member=${encodeURIComponent(memberParam)}`:'';const {response,payload}=await apiFetch(`/api/carriers?resource=registry${memberQuery}`);if(!response.ok){$('[data-carrier-empty]').hidden=false;$('[data-carrier-empty] strong').textContent='Carrier registry unavailable.';return;}session=payload.viewer||session;carriers=Array.isArray(payload.carriers)?payload.carriers:[];memberFilter=payload.memberFilter||null;renderMemberFilter();hydrateRoleFilter();renderRegistry();$('[data-carrier-register]').hidden=!session;$('[data-dialogue-manage]').hidden=!dialogueAvailable();if(memberParam&&memberFilter&&!window.__memberCarrierAnchorHandled){window.__memberCarrierAnchorHandled=true;requestAnimationFrame(()=>document.getElementById('carrier-directory')?.scrollIntoView({block:'start'}));}}
   async function loadCoordination(){if(!session){$('[data-coord-signed-out]').hidden=false;$('[data-coord-board]').hidden=true;return;}const {response,payload}=await apiFetch('/api/carriers?resource=coordination');if(!response.ok){$('[data-coord-signed-out]').hidden=false;$('[data-coord-board]').hidden=true;return;}posts=Array.isArray(payload.posts)?payload.posts:[];$('[data-coord-signed-out]').hidden=true;$('[data-coord-board]').hidden=false;$('[data-coord-create]').hidden=false;renderCoordination();}
 
   $('[data-carrier-search]')?.addEventListener('input',renderRegistry);$('[data-carrier-role]')?.addEventListener('change',renderRegistry);$('[data-carrier-status]')?.addEventListener('change',renderRegistry);
