@@ -76,7 +76,7 @@ for(const pattern of [
   /autoSyncReauthRequired/,
   /FRONTIER_AUTO_SYNC_CRON_TOKEN/,
   /SCOUT_DISCORD_CRON_TOKEN/,
-  /no_longer_due/,
+  /recent_frontier_sync/,
 ])assert.match(endpoint,pattern);
 
 const sync=readFileSync('functions/api/frontier/sync.js','utf8');
