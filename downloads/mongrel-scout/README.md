@@ -47,7 +47,20 @@ For Orrery facility placement:
 
 Raw orbital visit context is kept server-side for resolver improvements and is not part of the public Orrery feed. The public feed exposes only verified location facts and does not expose the Scout token, Discord account, Commander identity, or route history.
 
-The plugin deliberately does **not** transmit the commander's name, cargo, credits, ship/loadout, materials, missions, or general route/history. The local HUD bridge is separate from those cloud uploads and may hold the current Commander name and docking/travel trigger state only on the local PC. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
+The plugin deliberately does **not** transmit the commander's name, cargo inventory, credit balance, ship/loadout, materials, or general route/history. The local HUD bridge is separate from those cloud uploads and may hold the current Commander name and docking/travel trigger state only on the local PC. BGS snapshots are uploaded only for systems containing the Regiment of Imperial Mongrels. Market snapshots may be uploaded from any visited station because they contain public station-market information rather than Commander inventory. Surface-facility observations are accepted only within the Scout token's current system access (or an active Scout claim) and are stored without Commander/token identity in the public facility record. The server already knows which issued Scout token submitted authenticated updates without requiring the Commander's name in the plugin payload.
+
+### Realtime Mission Control and Colonization activity
+
+Mongrel Scout 1.12.0 adds a small event-driven activity uplink. Scout does **not** upload every journal line and does not add another polling loop. It queues only four result types and waits briefly so nearby changes can share one request:
+
+- completed mission faction/influence effects, with the minimum locally remembered mission-origin fields needed to distinguish source and secondary effects;
+- redeemed bounty and combat-bond vouchers;
+- colonization construction contributions, including commodity tonnage and construction-site Market ID;
+- colonization construction-depot progress/resources.
+
+These records are written to the same deduplicated activity store used by Frontier Sync, so a later Sync Elite reconciles the same event instead of counting it twice. Realtime Scout records are explicitly **provisional for rewards**: Mission Control and Colonization Jobs may display them immediately, but payout issuance waits until Frontier CAPI confirms/replaces the event.
+
+The client batches activity for about 8 seconds, suppresses duplicate events already waiting in the same batch, retries temporary network/server failures, and otherwise falls back to the normal Frontier safety sync if realtime delivery is missed.
 
 Mongrel Scout 1.11.5 also makes the authenticated HUD site feed change-aware. Scout still downloads a complete feed at startup, then checks a compact change manifest every 30 seconds and only requests another full feed when relevant squad data changes. A full refresh is forced at least every 10 minutes as a safety net, and any manifest error automatically falls back to the legacy full-feed refresh path. This optimization does not alter local HUD rendering, mining-compass refresh, journal/event handling, or carrier voice timing.
 
