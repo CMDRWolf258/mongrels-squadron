@@ -23,6 +23,7 @@ import wave
 import zipfile
 from array import array
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import cookies
@@ -53,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.7"
+APP_VERSION = "0.16.8"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -102,8 +103,8 @@ UPDATE_ASSET_NAME = "MongrelHUD-Windows.zip"
 UPDATE_DOWNLOAD_PREFIX = "https://github.com/CMDRWolf258/mongrels-squadron/releases/download/"
 POLL_SECONDS = 0.20
 
-TARGET_SCAN_DURATION = 4.0
-TARGET_SCAN_FRAMES = 13
+TARGET_SCAN_DURATION = 3.0
+TARGET_SCAN_FRAMES = 10
 TARGET_SCAN_RECENT_LIMIT = 4
 TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
 HUD_CYAN = "#8ce7ff"
@@ -3183,6 +3184,10 @@ class MongrelHudApp:
                 "pilotName": str(target.get("pilotName") or ""),
                 "ship": str(target.get("ship") or ""),
                 "startedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "groups": {"offense": [], "defense": [], "special": []},
+                "framesCaptured": 0,
+                "framesRead": 0,
+                "analyzedFrames": 0,
             }
         threading.Thread(target=self._run_target_scan, args=(key, dict(target)), name="MongrelHudTargetScan", daemon=True).start()
         return self.scan_status_snapshot()
@@ -3192,37 +3197,95 @@ class MongrelHudApp:
             engine = self._ocr_engine_ready()
             if engine is None:
                 raise RuntimeError(self.ocr_status.get("error") or "ocr_unavailable")
-            frames: list[Any] = []
-            # Give the Tk loop one repaint so local overlay windows are hidden
-            # before the first foreground capture.
+
+            recognized_by_index: dict[int, list[str]] = {}
+            futures = []
+            frames_captured = 0
+
+            def analyze_frame(index: int, frame: Any) -> list[str]:
+                modules = self._ocr_modules_from_image(frame, engine)
+                if modules:
+                    recognized_by_index[index] = modules
+                ordered_frames = [recognized_by_index[key] for key in sorted(recognized_by_index)]
+                stitched_now = stitch_module_frames(ordered_frames)
+                groups_now = tactical_module_groups(stitched_now, ordered_frames)
+                tactical_now = sum(item["count"] for values in groups_now.values() for item in values)
+                with self.lock:
+                    if (
+                        self.target_scan_status.get("active")
+                        and self.target_scan_status.get("targetKey") == target_key
+                    ):
+                        analyzed = int(self.target_scan_status.get("analyzedFrames") or 0) + 1
+                        self.target_scan_status["analyzedFrames"] = analyzed
+                        self.target_scan_status["framesRead"] = len(ordered_frames)
+                        self.target_scan_status["groups"] = groups_now
+                        self.target_scan_status["tacticalCount"] = tactical_now
+                        if self.target_scan_status.get("phase") != "capturing":
+                            self.target_scan_status["message"] = (
+                                f"{tactical_now} TACTICAL MODULES · FINALIZING"
+                                if tactical_now
+                                else "READING LOADOUT"
+                            )
+                            self.target_scan_status["progress"] = min(
+                                98,
+                                72 + round((analyzed / max(1, TARGET_SCAN_FRAMES)) * 26),
+                            )
+                return modules
+
+            # Keep screenshots on a precise cadence while a single background
+            # OCR worker analyzes earlier frames. This turns the old
+            # capture-then-read pipeline into capture-and-read, so most of the
+            # tactical result is ready when the overlay returns.
             time.sleep(0.22)
             started = time.monotonic()
             capture_interval = TARGET_SCAN_DURATION / max(1, TARGET_SCAN_FRAMES - 1)
-            for index in range(TARGET_SCAN_FRAMES):
-                if index:
-                    next_at = started + (index * capture_interval)
-                    remaining = next_at - time.monotonic()
-                    if remaining > 0:
-                        time.sleep(remaining)
-                frames.append(self._foreground_capture())
+            with ThreadPoolExecutor(max_workers=1, thread_name_prefix="MongrelHudTargetOCR") as executor:
+                for index in range(TARGET_SCAN_FRAMES):
+                    if index:
+                        next_at = started + (index * capture_interval)
+                        remaining = next_at - time.monotonic()
+                        if remaining > 0:
+                            time.sleep(remaining)
+                    frame = self._foreground_capture()
+                    frames_captured += 1
+                    futures.append(executor.submit(analyze_frame, index, frame))
+                    with self.lock:
+                        self.target_scan_status["framesCaptured"] = frames_captured
+                        self.target_scan_status["progress"] = round(
+                            (frames_captured / TARGET_SCAN_FRAMES) * 70
+                        )
+
+                # Capturing is over, so HUD overlays can reappear immediately.
+                # Any already-recognized tactical groups become visible while
+                # the OCR worker finishes a small trailing backlog.
                 with self.lock:
-                    self.target_scan_status["progress"] = round(((index + 1) / TARGET_SCAN_FRAMES) * 70)
-            with self.lock:
-                self.target_scan_status.update({"phase": "reading", "progress": 72, "message": "READING LOADOUT"})
-            recognized_frames: list[list[str]] = []
-            for index, frame in enumerate(frames):
-                modules = self._ocr_modules_from_image(frame, engine)
-                if modules:
-                    recognized_frames.append(modules)
-                with self.lock:
-                    self.target_scan_status["progress"] = 72 + round(((index + 1) / max(1, len(frames))) * 25)
+                    current_groups = self.target_scan_status.get("groups")
+                    current_count = int(self.target_scan_status.get("tacticalCount") or 0)
+                    self.target_scan_status.update({
+                        "phase": "reading",
+                        "progress": max(72, int(self.target_scan_status.get("progress") or 0)),
+                        "message": (
+                            f"{current_count} TACTICAL MODULES · FINALIZING"
+                            if current_count
+                            else "READING LOADOUT"
+                        ),
+                        "groups": current_groups if isinstance(current_groups, dict) else {
+                            "offense": [],
+                            "defense": [],
+                            "special": [],
+                        },
+                    })
+
+                for future in futures:
+                    future.result()
+
+            recognized_frames = [recognized_by_index[key] for key in sorted(recognized_by_index)]
             stitched = stitch_module_frames(recognized_frames)
             groups = tactical_module_groups(stitched, recognized_frames)
             tactical_count = sum(item["count"] for values in groups.values() for item in values)
             if not stitched:
                 raise RuntimeError("no_module_text_found")
             frames_read = len(recognized_frames)
-            frames_captured = len(frames)
             row = {
                 "key": target_key,
                 "pilotName": str(target.get("pilotName") or ""),
@@ -3262,6 +3325,7 @@ class MongrelHudApp:
                     "tacticalCount": tactical_count,
                     "framesRead": frames_read,
                     "framesCaptured": frames_captured,
+                    "analyzedFrames": len(futures),
                 }
         except Exception as exc:
             with self.lock:
@@ -3960,6 +4024,20 @@ class MongrelHudApp:
 
     def tactical_groups_for_target(self, target: dict[str, Any] | None = None) -> dict[str, list[dict[str, Any]]]:
         current = target if isinstance(target, dict) else (self.scout_state().get("target") or {})
+        key = self.target_identity(current if isinstance(current, dict) else {})
+        scan = self.scan_status_snapshot()
+        scan_groups = scan.get("groups") if isinstance(scan.get("groups"), dict) else {}
+        if (
+            scan.get("active")
+            and key
+            and str(scan.get("targetKey") or "") == key
+            and any(scan_groups.get(category) for category in ("offense", "defense", "special"))
+        ):
+            return {
+                "offense": list(scan_groups.get("offense") or []),
+                "defense": list(scan_groups.get("defense") or []),
+                "special": list(scan_groups.get("special") or []),
+            }
         intel = self.target_intel(current)
         if isinstance(intel, dict) and isinstance(intel.get("groups"), dict):
             return {
@@ -4966,6 +5044,9 @@ class MongrelHudApp:
             self._draw_text(canvas, 8 * scale, y, "MISSION NEEDS", scale, 9, HUD_CYAN, True)
             y += 19 * scale
             current_faction = None
+            mission_left = 20 * scale
+            mission_quantity_right = width - 112 * scale
+            mission_status_right = width - 8 * scale
             for row in mission_needs:
                 if not isinstance(row, dict):
                     continue
@@ -4976,16 +5057,16 @@ class MongrelHudApp:
                     heading = faction.upper()
                     if bool(row.get("nextRun")):
                         heading += " · NEXT RUN"
-                    self._draw_text(canvas, 12 * scale, y, self.clip_line(heading, 42), scale, 9, faction_color, True)
+                    self._draw_text(canvas, mission_left, y, self.clip_line(heading, 40), scale, 9, faction_color, True)
                     y += 18 * scale
-                name = self.clip_line(row.get("name") or row.get("key") or "Commodity", 28)
+                name = self.clip_line(row.get("name") or row.get("key") or "Commodity", 23)
                 in_hold = max(0, int(row.get("inHold") or 0))
                 remaining = max(0, int(row.get("remaining") or 0))
                 needed = max(0, int(row.get("stillNeeded") or 0))
-                self._draw_text(canvas, 20 * scale, y, name, scale, 10, HUD_WHITE, True)
-                self._draw_text(canvas, 270 * scale, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
+                self._draw_text(canvas, mission_left, y, name, scale, 10, HUD_WHITE, True)
+                self._draw_text(canvas, mission_quantity_right, y, f"{in_hold:,} / {remaining:,} t", scale, 10, HUD_WHITE, True, "ne")
                 status = "READY" if needed == 0 else f"NEED {needed:,}"
-                self._draw_text(canvas, width - 8 * scale, y, status, scale, 9, HUD_GREEN if needed == 0 else HUD_AMBER, True, "ne")
+                self._draw_text(canvas, mission_status_right, y, status, scale, 9, HUD_GREEN if needed == 0 else HUD_AMBER, True, "ne")
                 y += 19 * scale
             y += 5 * scale
 
