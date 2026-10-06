@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.5"
+APP_VERSION = "0.16.6"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -102,8 +102,8 @@ UPDATE_ASSET_NAME = "MongrelHUD-Windows.zip"
 UPDATE_DOWNLOAD_PREFIX = "https://github.com/CMDRWolf258/mongrels-squadron/releases/download/"
 POLL_SECONDS = 0.20
 
-TARGET_SCAN_DURATION = 2.1
-TARGET_SCAN_FRAMES = 7
+TARGET_SCAN_DURATION = 3.0
+TARGET_SCAN_FRAMES = 10
 TARGET_SCAN_RECENT_LIMIT = 4
 TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
 HUD_CYAN = "#8ce7ff"
@@ -3156,14 +3156,16 @@ class MongrelHudApp:
             # before the first foreground capture.
             time.sleep(0.22)
             started = time.monotonic()
+            capture_interval = TARGET_SCAN_DURATION / max(1, TARGET_SCAN_FRAMES - 1)
             for index in range(TARGET_SCAN_FRAMES):
+                if index:
+                    next_at = started + (index * capture_interval)
+                    remaining = next_at - time.monotonic()
+                    if remaining > 0:
+                        time.sleep(remaining)
                 frames.append(self._foreground_capture())
                 with self.lock:
                     self.target_scan_status["progress"] = round(((index + 1) / TARGET_SCAN_FRAMES) * 70)
-                next_at = started + ((index + 1) * TARGET_SCAN_DURATION / TARGET_SCAN_FRAMES)
-                remaining = next_at - time.monotonic()
-                if remaining > 0:
-                    time.sleep(remaining)
             with self.lock:
                 self.target_scan_status.update({"phase": "reading", "progress": 72, "message": "READING LOADOUT"})
             recognized_frames: list[list[str]] = []
