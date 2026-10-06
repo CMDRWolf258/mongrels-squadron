@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.11.5"
+assert plugin.PLUGIN_VERSION == "1.12.0"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -509,4 +509,4 @@ with TemporaryDirectory() as journal_dir:
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
-print("✓ Mongrel Scout 1.11.5 local HUD bridge covers cargo journal backfill, dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout 1.12.0 local HUD bridge covers cargo journal backfill, dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
