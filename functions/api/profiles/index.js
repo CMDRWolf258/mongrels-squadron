@@ -86,7 +86,10 @@ export async function onRequestDelete({ request, env }) {
   if(idx<0) return reply({ok:false,error:'profile_not_found'},404);
   const existing=profiles[idx]; const manager=MANAGER_ACCESS.has(auth.session.access);
   if(!manager && existing.ownerId!==auth.session.sub) return reply({ok:false,error:'not_profile_owner'},403);
-  profiles.splice(idx,1); await writeProfiles(env,profiles); return reply({ok:true});
+  profiles.splice(idx,1);
+  await writeProfiles(env,profiles);
+  await syncSpokenNameToScoutTokens(env,existing.ownerId,'');
+  return reply({ok:true});
 }
 
 function normalizeProfile(value,fixed,session,existing={}) {
