@@ -5,6 +5,7 @@ import json
 import sys
 import types
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
 class StubConfig:
@@ -64,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.11.4"
+assert plugin.PLUGIN_VERSION == "1.11.5"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -468,7 +469,44 @@ assert config_module.config.get_str(plugin.KEY_CARGO_MISSIONS) == saved_missions
 assert {row["missionId"] for row in plugin._cargo_mission_rows("Wolf258")} == {7002, 7003, 7100}
 assert {row["missionId"]: row.get("faction") for row in plugin._cargo_mission_rows("Wolf258")}[7003] == "Perez Ring Brewery"
 
+# If Elite reports an active MissionID that Scout never cached (for example a
+# mission accepted before an update), recover its original MissionAccepted
+# details locally from recent journal history instead of silently omitting it.
+with TemporaryDirectory() as journal_dir:
+    journal_path = Path(journal_dir) / "Journal.2026-10-05T220000.01.log"
+    journal_path.write_text(
+        "\n".join([
+            json.dumps({
+                "timestamp":"2026-10-05T22:10:00Z","event":"MissionAccepted","MissionID":7999,
+                "Name":"Mission_Mining_name","LocalisedName":"Mine 45 units of Osmium",
+                "Commodity":"$Osmium_Name;","Commodity_Localised":"Osmium",
+                "Faction":"The Consortium","Count":45,"Wing":False,
+            }),
+            json.dumps({
+                "timestamp":"2026-10-05T22:25:00Z","event":"CargoDepot","MissionID":7999,
+                "ItemsDelivered":5,"TotalItemsToDeliver":45,
+            }),
+        ]) + "\n",
+        encoding="utf-8",
+    )
+    plugin.monitor.currentdir = journal_dir
+    plugin._update_cargo_missions_from_journal("Wolf258", {
+        "event":"Missions",
+        "Active":[
+            {"MissionID":7002},
+            {"MissionID":7003},
+            {"MissionID":7100},
+            {"MissionID":7999},
+        ],
+    })
+    recovered = {row["missionId"]: row for row in plugin._cargo_mission_rows("Wolf258")}
+    assert recovered[7999]["commodity"] == "osmium"
+    assert recovered[7999]["faction"] == "The Consortium"
+    assert recovered[7999]["count"] == 45
+    assert recovered[7999]["delivered"] == 5
+    plugin.monitor.currentdir = None
+
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
-print("✓ Mongrel Scout 1.11.4 local HUD bridge covers dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout 1.11.5 local HUD bridge covers cargo journal backfill, dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
