@@ -64,7 +64,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.11.3"
+assert plugin.PLUGIN_VERSION == "1.11.4"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -73,10 +73,11 @@ assert plugin.HUD_MINING_REPORT_ENDPOINT == "https://ten16-archive.pages.dev/api
 assert plugin.HUD_MINING_CENTER_ENDPOINT == "https://ten16-archive.pages.dev/api/hud/mining-center"
 assert plugin.HUD_MINING_DATA_ENDPOINT == "https://ten16-archive.pages.dev/api/mining"
 assert plugin.HUD_MINING_CENTERS_ENDPOINT == "https://ten16-archive.pages.dev/api/mining-centers"
-assert plugin.HUD_BRIDGE_VERSION == 8
+assert plugin.HUD_BRIDGE_VERSION == 9
 assert plugin.KEY_LAST_SYSTEM == "MongrelScoutLastSystem"
 assert plugin.KEY_LAST_SYSTEM_ADDRESS == "MongrelScoutLastSystemAddress"
 assert plugin.KEY_CARGO_MISSIONS == "MongrelScoutCargoMissionCache"
+assert plugin.KEY_CARGO_PRIORITY == "MongrelScoutCargoPriorityFaction"
 
 expected_types = {
     "DockingRequested": "docking.requested",
@@ -387,7 +388,8 @@ cargo_state = {
     "CargoJSON": {
         "Vessel": "Ship",
         "Inventory": [
-            {"Name": "osmium", "Count": 71, "Stolen": 0},
+            {"Name": "osmium", "Count": 20, "Stolen": 0, "MissionID": 7001},
+            {"Name": "osmium", "Count": 51, "Stolen": 0},
             {"Name": "gold", "Count": 100, "Stolen": 0, "MissionID": 7100},
             {"Name": "drones", "Count": 29, "Stolen": 0},
             {"Name": "lowtemperaturediamond", "Count": 6, "Stolen": 6},
@@ -408,8 +410,30 @@ assert mongrel_osmium["stillNeeded"] == 5
 assert perez_osmium["required"] == 40
 assert perez_osmium["inHold"] == 0
 assert perez_osmium["stillNeeded"] == 40
+assert mongrel_osmium["missionReservedInHold"] == 20
 assert unknown_gold["inHold"] == 100 and unknown_gold["ready"] is True
+assert cargo["priorityMode"] == "auto" and cargo["priorityFaction"] == ""
 assert [row["faction"] for row in cargo["missionNeeds"]] == [
+    "Regiment of Imperial Mongrels",
+    "Perez Ring Brewery",
+    "Faction Unknown",
+]
+
+# Switching Next Run reallocates only interchangeable cargo. The 20 t tagged to
+# mission 7001 remains with the Mongrels while Perez receives shared Osmium first.
+perez_first = plugin._apply_cargo_priority(cargo, "Perez Ring Brewery")
+perez_needs = {(row["faction"], row["key"]): row for row in perez_first["missionNeeds"]}
+assert perez_first["priorityFaction"] == "Perez Ring Brewery"
+assert perez_needs[("Perez Ring Brewery", "osmium")]["inHold"] == 40
+assert perez_needs[("Perez Ring Brewery", "osmium")]["ready"] is True
+assert perez_needs[("Regiment of Imperial Mongrels", "osmium")]["missionReservedInHold"] == 20
+assert perez_needs[("Regiment of Imperial Mongrels", "osmium")]["inHold"] == 31
+assert perez_needs[("Regiment of Imperial Mongrels", "osmium")]["stillNeeded"] == 45
+assert perez_needs[("Faction Unknown", "gold")]["inHold"] == 100
+
+auto_again = plugin._apply_cargo_priority(perez_first, "")
+assert auto_again["priorityMode"] == "auto"
+assert [row["faction"] for row in auto_again["missionNeeds"]] == [
     "Regiment of Imperial Mongrels",
     "Perez Ring Brewery",
     "Faction Unknown",
@@ -447,4 +471,4 @@ assert {row["missionId"]: row.get("faction") for row in plugin._cargo_mission_ro
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
-print("✓ Mongrel Scout 1.11.3 local HUD bridge covers docking/travel, carrier PA triggers, faction-aware cargo mission math, surface HUD state, and authenticated mining-report proxying")
+print("✓ Mongrel Scout 1.11.4 local HUD bridge covers dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
