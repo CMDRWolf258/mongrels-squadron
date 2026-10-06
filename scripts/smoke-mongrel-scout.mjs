@@ -7,6 +7,7 @@ import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, read
 import { normalizeScoutFacilityVisit, deriveStationHostCandidate, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
 import { normalizeScoutActivityBatch, systemAuthorized as activitySystemAuthorized } from '../lib/scout-activity.js';
+import { mergeEventsWithResult } from '../lib/frontier.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -305,6 +306,33 @@ const carrierVoucher=normalizeScoutActivityBatch({
 },{scope:'trusted',allowedSystems:[]},{now:activityNow});
 assert.equal(carrierVoucher.events.length,0);
 assert.equal(carrierVoucher.excluded.length,1,'Fleet Carrier voucher redemption must remain excluded like Frontier sync');
+
+// Realtime Scout and later Frontier reconciliation share the same event identity.
+const eventStore=new Map();
+let eventPutCount=0;
+const mergeEnv={DAILY_ORDERS:{
+  async get(key,{type}={}){const raw=eventStore.get(key);return raw===undefined?null:(type==='json'?JSON.parse(raw):raw);},
+  async put(key,value){eventPutCount+=1;eventStore.set(key,String(value));},
+}};
+const provisionalBounty=realtime.events.find(row=>row.type==='bounties_redeemed');
+const firstMerge=await mergeEventsWithResult(mergeEnv,'wolf-user',[provisionalBounty],[],{lastScoutActivityAt:provisionalBounty.timestamp});
+assert.equal(firstMerge.eventChanged,true);
+assert.equal(firstMerge.added,1);
+const putsAfterFirst=eventPutCount;
+const duplicateMerge=await mergeEventsWithResult(mergeEnv,'wolf-user',[provisionalBounty],[],{lastScoutActivityAt:provisionalBounty.timestamp});
+assert.equal(duplicateMerge.changed,false,'Identical Scout activity must not rewrite KV or touch the HUD signal');
+assert.equal(eventPutCount,putsAfterFirst,'Duplicate Scout activity must produce zero additional KV writes');
+const frontierConfirmed={...provisionalBounty};
+delete frontierConfirmed.provisional;
+delete frontierConfirmed.ingestSource;
+const reconciliation=await mergeEventsWithResult(mergeEnv,'wolf-user',[frontierConfirmed]);
+assert.equal(reconciliation.eventChanged,true);
+assert.equal(reconciliation.updated,1,'Frontier confirmation should replace the provisional record, not add a duplicate');
+assert.equal(reconciliation.events.length,1);
+assert.equal(reconciliation.events[0].provisional,undefined);
+
+const rewardRuntime=readFileSync('lib/reward-engine-runtime.js','utf8');
+assert.match(rewardRuntime,/filter\(event=>event\?\.provisional!==true\)/,'Provisional realtime activity must never issue payouts before Frontier confirmation');
 
 assert.deepEqual(ingestHelpers.normalizeCoordinates([-12.5,4,99.25]),{x:-12.5,y:4,z:99.25});
 assert.deepEqual(ingestHelpers.normalizeCoordinates({x:1,y:2,z:3}),{x:1,y:2,z:3});
