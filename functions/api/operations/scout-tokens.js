@@ -1,5 +1,6 @@
 import { json, readSession } from '../../../lib/auth.js';
 import { listFrontierAccounts } from '../../../lib/frontier.js';
+import { resolveMemberSpokenName } from '../../../lib/member-profile.js';
 
 const TOKENS_KEY = 'wolf-bgs-scout-tokens-v1';
 const MAX_TOKENS = 24;
@@ -49,6 +50,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const owner = await resolveOwner(env, body?.ownerId);
+  const ownerSpokenName = owner?.userId ? await resolveMemberSpokenName(env, owner.userId) : '';
   if (body?.ownerId && !owner) {
     return json({ok:false,error:'scout_owner_not_found'}, {status:400,headers:privateHeaders()});
   }
@@ -66,6 +68,7 @@ export async function onRequestPost({ request, env }) {
     allowedSystems:scope === 'trusted' ? [] : allowedSystems,
     ownerId:owner?.userId||'',
     ownerCommander:owner?.commander||'',
+    ownerSpokenName,
     createdAt:now,
     createdBy:actor,
     accessUpdatedAt:now,
@@ -114,6 +117,9 @@ export async function onRequestPatch({ request, env }) {
   const owner = body?.ownerId === undefined
     ? {userId:existing.ownerId||'',commander:existing.ownerCommander||''}
     : await resolveOwner(env, body.ownerId);
+  const ownerSpokenName = owner?.userId
+    ? (body?.ownerId === undefined ? cleanText(existing.ownerSpokenName,'',60) : await resolveMemberSpokenName(env, owner.userId))
+    : '';
   if (body?.ownerId && !owner) {
     return json({ok:false,error:'scout_owner_not_found'}, {status:400,headers:privateHeaders()});
   }
@@ -124,6 +130,7 @@ export async function onRequestPatch({ request, env }) {
     scope,
     ownerId:owner?.userId||'',
     ownerCommander:owner?.commander||'',
+    ownerSpokenName,
     allowedSystems:scope === 'trusted' ? [] : allowedSystems,
     accessUpdatedAt:now,
     accessUpdatedBy:auth.session.displayName || auth.session.username || 'CMDR Wolf258',
@@ -175,6 +182,7 @@ async function readState(env) {
         allowedSystems:scope === 'trusted' ? [] : normalizeAllowedSystems(value.allowedSystems),
         ownerId:cleanText(value.ownerId, '', 120),
         ownerCommander:cleanText(value.ownerCommander, '', 80),
+        ownerSpokenName:cleanText(value.ownerSpokenName, '', 60),
         createdAt:value.createdAt || null,
         createdBy:cleanText(value.createdBy, '', 120),
         accessUpdatedAt:value.accessUpdatedAt || value.createdAt || null,
@@ -200,6 +208,7 @@ function publicToken(value) {
     allowedSystems:[...(value.allowedSystems || [])],
     ownerId:value.ownerId||'',
     ownerCommander:value.ownerCommander||'',
+    ownerSpokenName:value.ownerSpokenName||'',
     rateLimitPerHour:DEFAULT_RATE_LIMIT_PER_HOUR,
     createdAt:value.createdAt,
     createdBy:value.createdBy,
