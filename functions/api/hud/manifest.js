@@ -29,8 +29,6 @@ export async function onRequestGet(context){
         token:await digestToken({
           ownerId:auth.ownerId,
           lastSystem:auth.lastSystem,
-          lastSeenAt:auth.lastSeenAt,
-          lastEventAt:auth.lastEventAt,
           lastCoords:auth.lastCoords,
         }),
       },
