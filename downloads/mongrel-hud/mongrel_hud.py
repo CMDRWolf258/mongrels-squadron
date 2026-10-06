@@ -53,7 +53,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.16.6"
+APP_VERSION = "0.16.7"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -102,8 +102,8 @@ UPDATE_ASSET_NAME = "MongrelHUD-Windows.zip"
 UPDATE_DOWNLOAD_PREFIX = "https://github.com/CMDRWolf258/mongrels-squadron/releases/download/"
 POLL_SECONDS = 0.20
 
-TARGET_SCAN_DURATION = 3.0
-TARGET_SCAN_FRAMES = 10
+TARGET_SCAN_DURATION = 4.0
+TARGET_SCAN_FRAMES = 13
 TARGET_SCAN_RECENT_LIMIT = 4
 TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
 HUD_CYAN = "#8ce7ff"
@@ -1122,20 +1122,61 @@ def stitch_module_frames(frames: list[list[str]]) -> list[str]:
     return merged
 
 
-def tactical_module_groups(modules: list[str]) -> dict[str, list[dict[str, Any]]]:
+def tactical_module_groups(
+    modules: list[str],
+    frames: list[list[str]] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     groups = {"offense": [], "defense": [], "special": []}
-    counters = {key: Counter() for key in groups}
+    stitched_counts = {key: Counter() for key in groups}
+    evidence_counts = {key: Counter() for key in groups}
     order = {key: [] for key in groups}
-    for module in modules:
+
+    def identity(module: str) -> tuple[str, str] | None:
         category = TACTICAL_MODULES.get(module)
         if not category:
-            continue
+            return None
         canonical = "Heatsink Launcher" if module == "Heat Sink Launcher" else module
-        if counters[category][canonical] == 0:
+        return category, canonical
+
+    def remember(category: str, canonical: str) -> None:
+        if canonical not in order[category]:
             order[category].append(canonical)
-        counters[category][canonical] += 1
+
+    for module in modules:
+        matched = identity(module)
+        if not matched:
+            continue
+        category, canonical = matched
+        remember(category, canonical)
+        stitched_counts[category][canonical] += 1
+
+    # The ordered stitcher is deliberately conservative and may reject a frame
+    # when the user jumps between non-overlapping sections or scrolls through
+    # the list more than once. Tactical intel should never lose a module that
+    # OCR actually recognized, so retain the maximum count seen in any single
+    # frame as independent evidence. Using MAX instead of SUM prevents repeated
+    # views of the same section from multiplying module counts.
+    for frame in frames or []:
+        frame_counts = {key: Counter() for key in groups}
+        for module in frame:
+            matched = identity(module)
+            if not matched:
+                continue
+            category, canonical = matched
+            remember(category, canonical)
+            frame_counts[category][canonical] += 1
+        for category in groups:
+            for canonical, count in frame_counts[category].items():
+                evidence_counts[category][canonical] = max(evidence_counts[category][canonical], count)
+
     for category in groups:
-        groups[category] = [{"name": name, "count": counters[category][name]} for name in order[category]]
+        groups[category] = [
+            {
+                "name": name,
+                "count": max(stitched_counts[category][name], evidence_counts[category][name]),
+            }
+            for name in order[category]
+        ]
     return groups
 
 
@@ -3136,7 +3177,7 @@ class MongrelHudApp:
                 "active": True,
                 "phase": "capturing",
                 "progress": 0,
-                "message": "SCANNING — SCROLL NOW",
+                "message": "SCANNING — SCROLL / PAUSE",
                 "error": "",
                 "targetKey": key,
                 "pilotName": str(target.get("pilotName") or ""),
@@ -3176,10 +3217,12 @@ class MongrelHudApp:
                 with self.lock:
                     self.target_scan_status["progress"] = 72 + round(((index + 1) / max(1, len(frames))) * 25)
             stitched = stitch_module_frames(recognized_frames)
-            groups = tactical_module_groups(stitched)
+            groups = tactical_module_groups(stitched, recognized_frames)
             tactical_count = sum(item["count"] for values in groups.values() for item in values)
             if not stitched:
                 raise RuntimeError("no_module_text_found")
+            frames_read = len(recognized_frames)
+            frames_captured = len(frames)
             row = {
                 "key": target_key,
                 "pilotName": str(target.get("pilotName") or ""),
@@ -3190,7 +3233,8 @@ class MongrelHudApp:
                 "groups": groups,
                 "moduleCount": len(stitched),
                 "tacticalCount": tactical_count,
-                "framesRead": len(recognized_frames),
+                "framesRead": frames_read,
+                "framesCaptured": frames_captured,
             }
             with self.lock:
                 # A new scan is a replacement for this target, never an additive
@@ -3206,12 +3250,18 @@ class MongrelHudApp:
                     "active": False,
                     "phase": "complete",
                     "progress": 100,
-                    "message": f"{tactical_count} TACTICAL MODULES" if tactical_count else "LOADOUT CAPTURED · NO TACTICAL MODULES",
+                    "message": (
+                        f"{tactical_count} TACTICAL MODULES · {frames_read}/{frames_captured} FRAMES"
+                        if tactical_count
+                        else f"LOADOUT CAPTURED · NO TACTICAL MODULES · {frames_read}/{frames_captured} FRAMES"
+                    ),
                     "error": "",
                     "targetKey": target_key,
                     "completedAt": row["capturedAt"],
                     "moduleCount": len(stitched),
                     "tacticalCount": tactical_count,
+                    "framesRead": frames_read,
+                    "framesCaptured": frames_captured,
                 }
         except Exception as exc:
             with self.lock:
