@@ -7,6 +7,7 @@ import threading
 import time
 import tkinter as tk
 from collections import deque
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping, MutableMapping, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
@@ -21,7 +22,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.11.4"
+PLUGIN_VERSION = "1.11.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1734,32 +1735,117 @@ def _cargo_mission_rows(cmdr: Any) -> list[dict[str, Any]]:
         return [dict(row) for row in bucket.values()]
 
 
+def _mission_from_accept_entry(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    mission_id = _optional_int(entry.get("MissionID"))
+    count = _optional_int(entry.get("Count"))
+    commodity = _commodity_key(entry.get("Commodity"))
+    if mission_id is None or mission_id <= 0 or count is None or count <= 0 or not commodity:
+        return None
+    return {
+        "missionId": mission_id,
+        "name": str(entry.get("Name") or "").strip()[:180],
+        "localisedName": str(entry.get("LocalisedName") or "").strip()[:240],
+        "commodity": commodity,
+        "commodityName": _commodity_display(entry.get("Commodity"), entry.get("Commodity_Localised")),
+        "faction": str(entry.get("Faction") or "").strip()[:160],
+        "count": count,
+        "delivered": 0,
+        "wing": bool(entry.get("Wing")),
+        "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:160],
+        "destinationStation": str(entry.get("DestinationStation") or "").strip()[:160],
+        "acceptedAt": str(entry.get("timestamp") or "").strip()[:80],
+    }
+
+
+def _recover_cargo_missions_from_recent_journals(mission_ids: set[str]) -> dict[str, dict[str, Any]]:
+    pending = {str(mid) for mid in mission_ids if str(mid)}
+    if not pending:
+        return {}
+
+    journal_dir = getattr(monitor, "currentdir", None) if monitor is not None else None
+    if not journal_dir:
+        try:
+            journal_dir = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
+        except Exception:
+            journal_dir = ""
+    if not journal_dir:
+        return {}
+
+    try:
+        paths = sorted(
+            Path(journal_dir).expanduser().glob("Journal*.log"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )[:16]
+    except Exception:
+        return {}
+
+    recovered: dict[str, dict[str, Any]] = {}
+    latest_depot: dict[str, Mapping[str, Any]] = {}
+    latest_depot_stamp: dict[str, str] = {}
+
+    # This is local-only recovery for active missions missing from Scout's cache.
+    # Search newest journals first and stop once every requested MissionID has an
+    # acceptance record. No journal contents leave the PC.
+    for path in paths:
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    if "MissionID" not in line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except Exception:
+                        continue
+                    if not isinstance(row, Mapping):
+                        continue
+                    mission_id = _optional_int(row.get("MissionID"))
+                    if mission_id is None:
+                        continue
+                    key = str(mission_id)
+                    if key not in pending:
+                        continue
+                    event = str(row.get("event") or "")
+                    if event == "CargoDepot":
+                        stamp = str(row.get("timestamp") or "")
+                        if key not in latest_depot_stamp or stamp >= latest_depot_stamp[key]:
+                            latest_depot[key] = row
+                            latest_depot_stamp[key] = stamp
+                    elif event == "MissionAccepted" and key not in recovered:
+                        mission = _mission_from_accept_entry(row)
+                        if mission is not None:
+                            recovered[key] = mission
+            if recovered.keys() >= pending:
+                break
+        except Exception:
+            continue
+
+    for key, mission in recovered.items():
+        depot = latest_depot.get(key)
+        if not depot:
+            continue
+        total = _optional_int(depot.get("TotalItemsToDeliver"))
+        delivered = _optional_int(depot.get("ItemsDelivered"))
+        if total is not None and total > 0:
+            mission["count"] = total
+        if delivered is not None:
+            mission["delivered"] = max(0, min(int(mission.get("count") or delivered), delivered))
+    return recovered
+
+
 def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> None:
     event = str(entry.get("event") or "")
     key = _cmdr_cache_key(cmdr)
     changed = False
+    missing_active_ids: set[str] = set()
+    active_ids: set[str] = set()
     with _cargo_missions_lock:
         bucket = _cargo_missions.setdefault(key, {})
 
         if event == "MissionAccepted":
-            mission_id = _optional_int(entry.get("MissionID"))
-            count = _optional_int(entry.get("Count"))
-            commodity = _commodity_key(entry.get("Commodity"))
-            if mission_id is not None and mission_id > 0 and count is not None and count > 0 and commodity:
-                bucket[str(mission_id)] = {
-                    "missionId": mission_id,
-                    "name": str(entry.get("Name") or "").strip()[:180],
-                    "localisedName": str(entry.get("LocalisedName") or "").strip()[:240],
-                    "commodity": commodity,
-                    "commodityName": _commodity_display(entry.get("Commodity"), entry.get("Commodity_Localised")),
-                    "faction": str(entry.get("Faction") or "").strip()[:160],
-                    "count": count,
-                    "delivered": 0,
-                    "wing": bool(entry.get("Wing")),
-                    "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:160],
-                    "destinationStation": str(entry.get("DestinationStation") or "").strip()[:160],
-                    "acceptedAt": str(entry.get("timestamp") or "").strip()[:80],
-                }
+            mission = _mission_from_accept_entry(entry)
+            if mission is not None:
+                bucket[str(mission["missionId"])] = mission
                 changed = True
 
         elif event == "CargoDepot":
@@ -1794,6 +1880,7 @@ def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> 
                     for mid in [_optional_int(row.get("MissionID"))]
                     if mid is not None
                 }
+                missing_active_ids = active_ids.difference(bucket)
                 for mission_id in list(bucket):
                     if mission_id not in active_ids:
                         bucket.pop(mission_id, None)
@@ -1801,6 +1888,19 @@ def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> 
 
         if not bucket:
             _cargo_missions.pop(key, None)
+
+    if missing_active_ids:
+        recovered = _recover_cargo_missions_from_recent_journals(missing_active_ids)
+        if recovered:
+            with _cargo_missions_lock:
+                bucket = _cargo_missions.setdefault(key, {})
+                for mission_id, mission in recovered.items():
+                    # The Missions snapshot that triggered recovery is authoritative.
+                    # Only restore IDs that were active in that same snapshot and are
+                    # still absent from the cache.
+                    if mission_id in active_ids and mission_id not in bucket:
+                        bucket[mission_id] = mission
+                        changed = True
 
     if changed:
         _save_cargo_missions()
