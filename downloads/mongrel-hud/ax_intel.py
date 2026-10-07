@@ -414,7 +414,7 @@ def encounter_snapshot(encounter: Any, now: float) -> dict[str, Any] | None:
 
     shutdown_expected = bool(
         hearts_total >= 2
-        and hearts_destroyed == hearts_total - 2
+        and hearts_remaining == 1
         and str(encounter.get("phase") or "") == "shield"
     )
     shutdown_next_heart = bool(hearts_total >= 2 and hearts_remaining == 2)
