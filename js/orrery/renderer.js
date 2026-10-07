@@ -59,6 +59,8 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
   const canvas = renderer.domElement;
   canvas.className = 'orrery-canvas';
   canvas.tabIndex = 0;
@@ -102,7 +104,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
 
   // Keep a low ambient floor so dark hemispheres remain readable, while
   // catalogued stars provide the directional lighting cue for nearby bodies.
-  scene.add(new THREE.HemisphereLight(0xbdd5e8, 0x222a34, 0.72));
+  scene.add(new THREE.HemisphereLight(0xbdd5e8, 0x171c22, 0.38));
 
   // A seeded backdrop is decorative only; it does not represent catalogued stars.
   const backdropPoints = [];
@@ -178,7 +180,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       for (const extra of visual.extras) addVisualExtra(body.id, extra);
 
       if (body.kind === 'star') {
-        const light = new THREE.PointLight(visual.profile.baseColor, 3.4, 0, 0);
+        const light = new THREE.PointLight(visual.profile.baseColor, 2.8, 0, 0);
         light.position.copy(position);
         scene.add(light);
       }
@@ -224,10 +226,18 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     const markerPosition = new THREE.Vector3(...placement.offset);
     const geometry = coordinateKnown ? new THREE.SphereGeometry(markerRadius, 12, 8) : new THREE.OctahedronGeometry(markerRadius);
     markerPosition.add(bodyPosition);
-    const material = new THREE.MeshBasicMaterial({ color: coordinateKnown ? 0x81edba : 0xf3bf6b, transparent: true, opacity: 0.9 });
+    const material = new THREE.MeshBasicMaterial({
+      color: coordinateKnown ? 0x81edba : 0xf3bf6b,
+      transparent:true,
+      opacity:1,
+      depthTest:false,
+      depthWrite:false,
+    });
     const marker = new THREE.Mesh(geometry, material);
     marker.position.copy(markerPosition);
+    marker.renderOrder = 8;
     register(location.id, marker, 'location', location.bodyId, markerRadius);
+    objects.get(location.id).placement = placement.placement;
     addLabel(location.id, location.name, markerPosition, 'location', location.bodyId);
     const button = labels.get(location.id).button;
     button.classList.add('orrery-location-label');
@@ -262,6 +272,8 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointer = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
+  const surfaceNormal = new THREE.Vector3();
+  const surfaceToCamera = new THREE.Vector3();
   const cameraNavigation = createCameraNavigation({ camera, controls,
     getBodyPositions: () => Array.from(objects.values())
       .filter(object => object.kind === 'body' && object.mesh.visible)
@@ -335,6 +347,20 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     controls.update();
     const verticalScale = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2 / height;
     for (const [id, object] of objects) {
+      if (object.kind === 'location') {
+        const match = hasLocationMatch(id);
+        if (object.placement === 'surface') {
+          const parent = layout.get(object.bodyId);
+          const bodyPosition = parent ? new THREE.Vector3(...parent.position) : null;
+          const frontFacing = bodyPosition
+            ? surfaceNormal.copy(object.mesh.position).sub(bodyPosition)
+              .dot(surfaceToCamera.copy(camera.position).sub(object.mesh.position)) > 0
+            : true;
+          object.mesh.visible = match && frontFacing;
+        } else {
+          object.mesh.visible = match;
+        }
+      }
       if (!object.proxy) continue;
       const unitsPerPixel = camera.position.distanceTo(object.mesh.position) * verticalScale;
       object.proxy.visible = object.radius / unitsPerPixel < 3;
