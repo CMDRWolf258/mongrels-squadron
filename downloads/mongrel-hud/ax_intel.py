@@ -278,6 +278,7 @@ def default_ax_settings() -> dict[str, Any]:
         "lightningDangerM": LIGHTNING_ATTACH_RANGE_M[1],
         "specialAvoidM": SPECIAL_ATTACK_AVOID_RANGE_M,
         "queuedShutdownEscapeM": QUEUED_SHUTDOWN_ESCAPE_RANGE_M,
+        "shipBoostMps": 0,
         "manualHeartControls": True,
         "audio": {
             "heartDown": False,
@@ -303,6 +304,7 @@ def normalize_ax_settings(value: Any) -> dict[str, Any]:
         ("lightningDangerM", 300, 2000),
         ("specialAvoidM", 1000, 10000),
         ("queuedShutdownEscapeM", 3000, 20000),
+        ("shipBoostMps", 0, 1200),
     ):
         try:
             number = int(round(float(src.get(key, defaults[key]))))
