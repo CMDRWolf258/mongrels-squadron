@@ -21,15 +21,17 @@ function harness() {
         toggle(name, force) { const enabled = force === undefined ? !classes.has(name) : force; if (enabled) classes.add(name); else classes.delete(name); },
         add(name) { classes.add(name); }, remove(name) { classes.delete(name); }, contains(name) { return classes.has(name); },
       },
-      getAttribute(name) { return attrs[name]; }, addEventListener() {},
+      dataset: {}, getAttribute(name) { return attrs[name]; }, addEventListener() {},
     };
     nodes.set(id, value);
     return value;
   }
   const profileButtons = ['combat', 'ax', 'surface'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
-  const visibilityButtons = ['own', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
-  const profileSelects = ['own', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
+  const visibilityButtons = ['own', 'axstatus', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
+  const scaleSelects = ['own', 'axstatus', 'surface', 'mission'].map(panel => node(panel + 'Scale', { 'data-panel-scale': panel }));
+  const profileSelects = ['own', 'axstatus', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
   const axActionButtons = ['heart_exerted','heart_down','shield_up','shield_down','reset'].map(action => node('axAction' + action, { 'data-ax-action': action }));
+  const axAlertButtons = ['emp','caustic_missile','clear'].map(code => node('axAlert' + code, { 'data-ax-alert': code }));
   const requests = [];
   const backend = {
     profile: 'combat',
@@ -37,6 +39,7 @@ function harness() {
       locked: true, masterVisible: true,
       panels: {
         own: { visible: true, scale: 1, profiles: ['combat', 'ax'] },
+        axstatus: { visible: true, scale: 1, profiles: ['ax'] },
         surface: { visible: true, scale: 1, profiles: ['surface'] },
         mission: { visible: true, scale: 0.9, profiles: ['combat', 'ax', 'surface'] },
       },
@@ -46,7 +49,7 @@ function harness() {
     document: {
       getElementById: node,
       querySelectorAll(selector) {
-        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects, '[data-ax-action]': axActionButtons })[selector] || [];
+        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-scale]': scaleSelects, '[data-panel-profile]': profileSelects, '[data-ax-action]': axActionButtons, '[data-ax-alert]': axAlertButtons })[selector] || [];
       }, addEventListener() {}, activeElement: null,
     },
     fetch(path, options) {
@@ -191,6 +194,30 @@ async function drain(h, expected) {
   assert.deepEqual(h.requests[1].body, { variantOverride:'basilisk', shipBoostMps:512, coldHeatPercent:20, orbitMinM:900, orbitMaxM:1500 });
   h.respond(h.requests[1], null, { ok:true, ax:{ settings:{ variantOverride:'basilisk' } } });
   await save;
+
+  const emp = h.node('axAlertemp').onclick();
+  await tick();
+  assert.equal(h.requests.length, 3);
+  assert.equal(h.requests[2].path, '/api/ax-alert');
+  assert.deepEqual(h.requests[2].body, { code:'emp', ttlSeconds:8, source:'test' });
+  h.respond(h.requests[2], null, { ok:true, ax:{ statusBar:{ code:'emp', severity:'critical', flash:true } } });
+  await emp;
+
+  const caustic = h.node('axAlertcaustic_missile').onclick();
+  await tick();
+  assert.equal(h.requests[3].path, '/api/ax-alert');
+  assert.deepEqual(h.requests[3].body, { code:'caustic_missile', ttlSeconds:8, source:'test' });
+  h.respond(h.requests[3], null, { ok:true, ax:{ statusBar:{ code:'caustic_missile', severity:'critical', flash:true } } });
+  await caustic;
+
+  h.node('axstatusScale').value='2';
+  const resize=h.node('axstatusScale').onchange();
+  await tick();
+  assert.equal(h.requests[4].path,'/api/panel');
+  assert.deepEqual(h.requests[4].body,{panel:'axstatus',scale:2});
+  h.respond(h.requests[4]);
+  await resize;
+  assert.equal(h.backend.layout.panels.axstatus.scale,2);
 }
 
 {
@@ -269,4 +296,7 @@ async function drain(h, expected) {
   assert.equal(h.node('pair').classList.contains('hidden'), false, 'Restarted HUD / expired pairing cookie reveals the pairing screen');
 }
 
-console.log('✓ Shipped HUD controller serializes Combat/AX/Surface controls, preserves assignments, recovers after errors and displays diagnostics');
+assert.match(html,/AX STATUS BAR/);
+assert.match(html,/TEST CAUSTIC/);
+assert.match(html,/Panel Scale changes both text size and window footprint/);
+console.log('✓ Shipped HUD controller serializes Combat/AX/Surface controls, AX status tests, responsive scaling, preserves assignments, recovers after errors and displays diagnostics');
