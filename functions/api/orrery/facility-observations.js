@@ -1,6 +1,6 @@
 import { json } from '../../../lib/auth.js';
 import { readScoutFacilityObservationPayload } from '../../../lib/scout-facility-observations.js';
-import { readScoutFacilityVisits, deriveMobileStationPlacement } from '../../../lib/scout-facility-visits.js';
+import { readScoutFacilityVisits, deriveStationHostCandidate, deriveMobileStationPlacement } from '../../../lib/scout-facility-visits.js';
 import { readFacilityHostOverridePayload } from '../../../lib/orrery-facility-host-overrides.js';
 
 const PRODUCTION_HOST='mongrels-squadron.pages.dev';
@@ -48,6 +48,7 @@ export async function onRequestGet({request,env}){
 }
 function latestStationVisits(visits){
   const latest=new Map();
+  const hostPlacements=new Map();
   const mobilePlacements=new Map();
   for(const row of Array.isArray(visits)?visits:[]){
     const marketId=String(row?.marketId||'');
@@ -57,7 +58,17 @@ function latestStationVisits(visits){
       stationName:String(row?.stationName||'').slice(0,180),
       stationType:String(row?.stationType||'').slice(0,80),
       observedAt:row?.observedAt||null,
+      distanceToArrivalLs:Number.isFinite(Number(row?.distanceToArrivalLs))?Number(row.distanceToArrivalLs):null,
     });
+    if(!hostPlacements.has(marketId)){
+      const placement=deriveStationHostCandidate(row);
+      if(placement)hostPlacements.set(marketId,{
+        bodyJournalId:placement.bodyJournalId,
+        bodyName:String(placement.bodyName||'').slice(0,180),
+        observedAt:row?.observedAt||null,
+        evidence:[...placement.evidence],
+      });
+    }
     if(!mobilePlacements.has(marketId)){
       const placement=deriveMobileStationPlacement(row);
       if(placement)mobilePlacements.set(marketId,{
@@ -76,6 +87,7 @@ function latestStationVisits(visits){
       && latestMs-placementMs<=10*60*1000;
     return{
       ...row,
+      ...(hostPlacements.has(row.marketId)?{hostPlacement:hostPlacements.get(row.marketId)}:{}),
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
     };
   });
