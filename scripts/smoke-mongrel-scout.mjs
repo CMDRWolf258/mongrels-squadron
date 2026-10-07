@@ -39,6 +39,7 @@ for(const pattern of [
   /lastDestination/,
   /facility_visit/,
   /_build_station_visit_payload/,
+  /distanceToArrivalLs/,
   /Station context recorded:/,
   /Host verified:/,
   /FSDJump/,
@@ -152,6 +153,7 @@ for(const pattern of [
   /activity_batch/,
 ])assert.match(plugin,pattern);
 assert.doesNotMatch(plugin,/"cmdr"\s*:/i,'Scout payload must not transmit commander name');
+assert.doesNotMatch(plugin, /_build_station_visit_payload[\s\S]{0,900}station_type\.casefold\(\)[\s\S]{0,120}fleetcarrier/i, 'Scout must not discard Fleet Carrier station visits');
 assert.match(plugin,/Commander name[\s\S]{0,260}cargo inventory, credit balance/i);
 assert.match(plugin,/history are not transmitted/i);
 assert.match(plugin,/commodity prices, supply and demand/i,'Scout privacy copy should disclose market fields');
@@ -369,8 +371,9 @@ const rawStationVisit={
     SupercruiseExit:{timestamp:'2026-10-03T01:14:58Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'Rivers Hub',bodyId:90,bodyType:'Station'},
   },
 };
-const normalizedVisit=normalizeScoutFacilityVisit(rawStationVisit);
+const normalizedVisit=normalizeScoutFacilityVisit({...rawStationVisit,distanceToArrivalLs:123.456});
 assert.equal(normalizedVisit.marketId,'4391607555');
+assert.equal(normalizedVisit.distanceToArrivalLs,123.456);
 assert.equal(normalizedVisit.destination.bodyId,61);
 assert.equal(normalizedVisit.currentBody.bodyId,61);
 assert.deepEqual(deriveStationHostCandidate(normalizedVisit),{
@@ -426,6 +429,40 @@ assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   ...rawStationVisit,
   stationType:'MegaShip',
 })),null,'Mobile megaships must never receive an automatic host');
+
+const asteroidVisit=normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  stationName:'New Asteroid Exchange',
+  stationType:'AsteroidBase',
+  marketId:'4999999001',
+  currentBody:{name:'New Asteroid Exchange',bodyId:190,bodyType:'Station'},
+  dashboard:{
+    ...rawStationVisit.dashboard,
+    bodyName:'New Asteroid Exchange',
+    destination:{name:'New Asteroid Exchange',bodyId:190,systemAddress:'668059324240760'},
+  },
+  context:{
+    ApproachBody:{timestamp:'2026-10-03T01:10:00Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',bodyId:61,bodyType:'Planet'},
+    SupercruiseExit:{timestamp:'2026-10-03T01:14:40Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'New Asteroid Exchange',bodyId:190,bodyType:'Station'},
+  },
+});
+assert.deepEqual(deriveStationHostCandidate(asteroidVisit),{
+  bodyJournalId:61,
+  bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
+  evidence:['recent_approach_body','supercruise_exit_station'],
+},'AsteroidBase may recover a host from an unbroken recent ApproachBody -> station exit chain');
+assert.equal(diagnoseStationHostCandidate(asteroidVisit).reason,'verified_approach_chain');
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...asteroidVisit,
+  context:{
+    ...asteroidVisit.context,
+    LeaveBody:{timestamp:'2026-10-03T01:12:00Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',bodyId:61,bodyType:'Planet'},
+  },
+})),null,'Leaving the approached body invalidates AsteroidBase host recovery');
+assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
+  ...asteroidVisit,
+  stationType:'Outpost',
+})),null,'Recent-approach fallback must not loosen ordinary fixed-station host rules');
 
 const mobileCarrierVisit=normalizeScoutFacilityVisit({
   ...rawStationVisit,
@@ -612,7 +649,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/mobilePlacement/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
