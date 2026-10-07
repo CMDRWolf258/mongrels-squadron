@@ -101,6 +101,7 @@ function renderDetails(record) {
   if (record.positionObservation?.event === 'ApproachSettlement') root.append(node('p', 'Exact surface placement was upgraded from a verified Mongrel Scout ApproachSettlement observation. Imported source notes below may describe the older snapshot before this visit.'));
   else if (record.positionObservation?.event === 'StationHostEstimate') root.append(node('p', 'Host body is an automated geometric estimate based on arrival distance and a strong runner-up margin. Officers can confirm or correct it below.'));
   else if (record.positionObservation?.event === 'StationHostOverride') root.append(node('p', 'Host body was confirmed or corrected by Mongrel leadership.'));
+  else if (record.positionObservation?.event === 'MobileStationOverride') root.append(node('p', 'Temporary current placement confirmed by Mongrel leadership. This is not a permanent carrier host.'));
   if (record.notes) root.append(node('p', record.notes));
   if (record.recordType === 'location' && ['host', 'ring'].includes(classifyLocationPlacement(record))) root.append(node('p', 'The amber diamond marks an association only. Dashed lanes arrange host markers for readability; they do not establish an actual orbit or surface position. Use the in-game navigation panel for this destination’s actual position.'));
   if (record.recordType === 'body' && record.kind === 'barycentre') root.append(node('p', 'Shared parent preserved from the real hierarchy. Orbital elements for this centre are unreported; display placement is schematic.'));
@@ -134,6 +135,8 @@ function renderDetails(record) {
   if (record.associationSource?.url) root.append(safeLink('Host association source ↗', record.associationSource.url));
   if (canManageHosts() && record.recordType === 'location' && record.marketId && record.latitude == null && record.longitude == null && ['station','settlement','installation'].includes(record.kind)) {
     root.append(buildHostEditor(record));
+  } else if (canManageHosts() && record.recordType === 'location' && record.marketId && record.kind === 'carrier') {
+    root.append(buildCarrierPlacementEditor(record));
   }
 }
 
@@ -179,6 +182,56 @@ function buildHostEditor(record) {
       $('status').textContent=`Verified host saved: ${record.name} → ${body.shortName||body.name}`;
     }catch{
       $('status').textContent='Host update failed · check sign-in and try again';
+      save.disabled=false;
+    }
+  });
+  actions.append(save);
+  box.append(label,actions);
+  return box;
+}
+
+function buildCarrierPlacementEditor(record) {
+  const box=node('div',null,'orrery-host-editor');
+  box.append(
+    node('h4','Current carrier placement'),
+    node('p','Temporary placement only. Update it again if the carrier moves.')
+  );
+  const label=node('label');
+  label.append(node('span','Currently near body'));
+  const selectEl=node('select');
+  const bodies=state.system.bodies
+    .filter(body=>body.kind!=='barycentre'&&Number.isInteger(body.bodyId))
+    .sort((a,b)=>a.bodyId-b.bodyId);
+  for(const body of bodies)selectEl.append(new Option(body.shortName||body.name,String(body.bodyId)));
+  const current=state.system.bodies.find(body=>body.id===record.bodyId);
+  if(current)selectEl.value=String(current.bodyId);
+  label.append(selectEl);
+  const actions=node('div',null,'orrery-host-editor-actions');
+  const save=action('Set current placement',async()=>{
+    const body=state.system.bodies.find(item=>String(item.bodyId)===selectEl.value);
+    if(!body)return;
+    save.disabled=true;
+    $('status').textContent=`Saving current placement for ${record.name}…`;
+    try{
+      const response=await fetch('../api/orrery/host-override',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Mongrels-Request':'orrery-host-editor'},
+        body:JSON.stringify({
+          systemId64:String(state.system.id64),
+          marketId:String(record.marketId),
+          facilityName:record.name,
+          bodyJournalId:body.bodyId,
+          bodyName:body.name,
+          placementMode:'temporary_mobile',
+        }),
+      });
+      const data=await response.json();
+      if(!response.ok||!data?.ok)throw new Error(data?.error||'save_failed');
+      const systemId=state.system.id;
+      await loadSystem(systemId,record.id);
+      $('status').textContent=`Current carrier placement saved: ${record.name} → ${body.shortName||body.name}`;
+    }catch{
+      $('status').textContent='Carrier placement update failed · check sign-in and try again';
       save.disabled=false;
     }
   });
