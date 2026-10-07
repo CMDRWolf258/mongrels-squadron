@@ -4,7 +4,7 @@ import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
 import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides, estimateHostBody } from '../lib/orrery-facility-observations.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
-import { normalizeScoutFacilityVisit, deriveStationHostCandidate, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
+import { normalizeScoutFacilityVisit, deriveStationHostCandidate, deriveMobileStationPlacement, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
 import { normalizeScoutActivityBatch, systemAuthorized as activitySystemAuthorized } from '../lib/scout-activity.js';
 import { mergeEventsWithResult } from '../lib/frontier.js';
@@ -427,6 +427,23 @@ assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   stationType:'MegaShip',
 })),null,'Mobile megaships must never receive an automatic host');
 
+const mobileCarrierVisit=normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  stationName:'TBG-B0G',
+  stationType:'FleetCarrier',
+  marketId:'3701258240',
+  dashboard:{
+    ...rawStationVisit.dashboard,
+    destination:{name:'TBG-B0G',bodyId:61,systemAddress:'668059324240760'},
+    lastDestination:{name:'TBG-B0G',bodyId:61,systemAddress:'668059324240760',observedAt:'2026-10-03T01:14:59Z'},
+  },
+});
+assert.deepEqual(deriveMobileStationPlacement(mobileCarrierVisit),{
+  bodyJournalId:61,
+  bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
+  evidence:['destination_body','edmc_current_body','dashboard_body_name'],
+},'Mobile carrier placement may be exposed as dated observational evidence without becoming a permanent host');
+
 const visitStore=new Map();
 const visitEnv={DAILY_ORDERS:{
   async get(key){return visitStore.has(key)?JSON.parse(visitStore.get(key)):null;},
@@ -595,7 +612,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/readFacilityHostOverridePayload/,/stationVisits/,/hostOverrides/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/mobilePlacement/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
