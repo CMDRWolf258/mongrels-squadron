@@ -22,7 +22,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.0"
+PLUGIN_VERSION = "1.12.1"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -2436,7 +2436,7 @@ def _build_station_visit_payload(
 ) -> Optional[dict[str, Any]]:
     station_name = str(entry.get("StationName") or fallback_station or "").strip()
     station_type = str(entry.get("StationType") or state.get("StationType") or "").strip()
-    if not station_name or station_type.casefold() in {"fleetcarrier", "fleet carrier"}:
+    if not station_name:
         return None
 
     market_id = entry.get("MarketID", state.get("MarketID"))
@@ -2488,6 +2488,9 @@ def _build_station_visit_payload(
         "stationName": station_name,
         "stationType": station_type,
         "marketId": market_id_text,
+        "distanceToArrivalLs": _optional_float(
+            entry.get("DistFromStarLS", state.get("DistFromStarLS", state.get("DistanceFromStarLS")))
+        ),
         "currentBody": current_body,
         "journalBody": journal_body,
         "dashboard": dashboard,
