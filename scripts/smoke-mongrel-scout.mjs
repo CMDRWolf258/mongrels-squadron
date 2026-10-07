@@ -9,6 +9,7 @@ import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacility
 import { latestStationVisits } from '../functions/api/orrery/facility-observations.js';
 import { normalizeScoutActivityBatch, systemAuthorized as activitySystemAuthorized } from '../lib/scout-activity.js';
 import { mergeEventsWithResult } from '../lib/frontier.js';
+import { readOrderProgressSnapshot } from '../functions/api/operations/order-reports.js';
 
 const required=[
   'downloads/mongrel-scout/load.py',
@@ -333,6 +334,38 @@ assert.equal(reconciliation.eventChanged,true);
 assert.equal(reconciliation.updated,1,'Frontier confirmation should replace the provisional record, not add a duplicate');
 assert.equal(reconciliation.events.length,1);
 assert.equal(reconciliation.events[0].provisional,undefined);
+
+const progressStore=new Map();
+let progressCacheWrites=0,progressListCalls=0;
+const progressEnv={DAILY_ORDERS:{
+  async get(key,{type}={}){
+    const raw=progressStore.get(key);
+    if(raw===undefined)return null;
+    return type==='json'?JSON.parse(raw):raw;
+  },
+  async put(key,value){
+    if(String(key).startsWith('order-progress-cache-v1:'))progressCacheWrites+=1;
+    progressStore.set(String(key),String(value));
+  },
+  async list({prefix=''}){progressListCalls+=1;return{keys:[...progressStore.keys()].filter(key=>key.startsWith(prefix)).map(name=>({name})),list_complete:true};},
+  async delete(key){progressStore.delete(String(key));},
+}};
+const progressCurrent={cycleId:'test-cycle',updatedAt:'2026-10-07T12:00:00Z',orders:[]};
+const firstProgress=await readOrderProgressSnapshot(progressEnv,progressCurrent,{now:new Date('2026-10-07T12:01:00Z')});
+assert.equal(firstProgress.cacheStatus,'miss');
+assert.equal(progressCacheWrites,1);
+const listCallsAfterFirst=progressListCalls;
+const secondProgress=await readOrderProgressSnapshot(progressEnv,progressCurrent,{now:new Date('2026-10-07T12:02:00Z')});
+assert.equal(secondProgress.cacheStatus,'hit','Unchanged Mission Control progress should use one derived snapshot instead of rereading every source record');
+assert.equal(progressCacheWrites,1);
+assert.equal(progressListCalls,listCallsAfterFirst,'Cache hit must not relist report/account records');
+progressStore.set('hud-change-signal-v1:mission-progress',JSON.stringify({version:1,channel:'mission-progress',token:'changed|1',updatedAt:'2026-10-07T12:02:30Z'}));
+const signaledProgress=await readOrderProgressSnapshot(progressEnv,progressCurrent,{now:new Date('2026-10-07T12:03:00Z')});
+assert.equal(signaledProgress.cacheStatus,'miss','Mission-progress signal changes must invalidate the derived snapshot immediately');
+assert.equal(progressCacheWrites,2);
+const revisedProgress=await readOrderProgressSnapshot(progressEnv,{...progressCurrent,updatedAt:'2026-10-07T12:04:00Z'},{now:new Date('2026-10-07T12:04:10Z')});
+assert.equal(revisedProgress.cacheStatus,'miss','Order/cycle fingerprint changes must invalidate the derived snapshot even without another signal');
+assert.equal(progressCacheWrites,3);
 
 const rewardRuntime=readFileSync('lib/reward-engine-runtime.js','utf8');
 assert.match(rewardRuntime,/filter\(event=>event\?\.provisional!==true\)/,'Provisional realtime activity must never issue payouts before Frontier confirmation');
@@ -1047,7 +1080,8 @@ const page=readFileSync('wolf-bgs/index.html','utf8');
 for(const pattern of [/Scout Network/,/data-scout-network/,/Restricted Scout/,/Trusted Scout/,/data-scout-create-systems/,/Download Mongrel Scout \(\.zip\)/,/\/api\/downloads\/mongrel-scout/,/wolf-bgs-scout\.js/])assert.match(page,pattern);
 
 const client=readFileSync('js/wolf-bgs-scout.js','utf8');
-for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/EDIT ACCESS/,/REVOKE/,/PATCH/,/restricted/,/trusted/,/allowedSystems/,/WolfBgsRefresh/,/setInterval\(\(\)=>load\(\),30000\)/])assert.match(client,pattern);
+for(const pattern of [/Generate Scout Token|Generating one-time scout token/,/COPY TOKEN|copied/i,/EDIT ACCESS/,/REVOKE/,/PATCH/,/restricted/,/trusted/,/allowedSystems/,/WolfBgsRefresh/,/AUTO_REFRESH_MS=30000/,/visibilitychange/,/panelIsOpen/,/scheduleAutoRefresh/])assert.match(client,pattern);
+assert.doesNotMatch(client,/setInterval\(\(\)=>load\(\),30000\)/,'Scout Network must not poll continuously while its panel or tab is hidden');
 new Function(client);
 
 const scoutCss=readFileSync('css/wolf-bgs.css','utf8');

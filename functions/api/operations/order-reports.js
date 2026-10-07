@@ -1,5 +1,5 @@
 import { json, readSession } from '../../../lib/auth.js';
-import { HUD_SIGNAL_MISSION_PROGRESS, touchHudSignal } from '../../../lib/hud-change-signals.js';
+import { HUD_SIGNAL_MISSION_PROGRESS, readHudSignal, touchHudSignal } from '../../../lib/hud-change-signals.js';
 import { invalidateKeyListCache, listKeysCached } from '../../../lib/kv-list-cache.js';
 import { aggregateVerifiedOrderTotals, matchVerifiedActivity, readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { getEvents, listFrontierAccounts } from '../../../lib/frontier.js';
@@ -17,6 +17,10 @@ const WING_RESULT_WINDOW_MS = 3 * 60 * 1000;
 const SOLO_DOUBLE_TAP_WINDOW_MS = 45 * 1000;
 const REPORT_TYPES = new Set(['cz', 'inf', 'bounties', 'trade', 'exploration']);
 const CREDIT_TYPES = new Set(['bounties', 'trade', 'exploration']);
+const PROGRESS_CACHE_VERSION=1;
+const PROGRESS_CACHE_PREFIX='order-progress-cache-v1:';
+const PROGRESS_CACHE_MAX_AGE_MS=10*60*1000;
+const PROGRESS_CACHE_TTL_SECONDS=30*24*60*60;
 
 export async function onRequestGet({ request, env }) {
   const auth = await requireMember(request, env);
@@ -25,10 +29,9 @@ export async function onRequestGet({ request, env }) {
   const canManage = MANAGER_ACCESS.has(auth.session.access);
   if (!current) return reply({ ok:true, cycleId:null, summaries:{}, verifiedSummaries:{}, reports:[], canManageReports:canManage });
 
-  const [records,verifiedSummaries] = await Promise.all([
-    listCurrentRecords(env, current),
-    summarizeVerifiedCurrent(env,current),
-  ]);
+  const progress=await readOrderProgressSnapshot(env,current);
+  const records=progress.records;
+  const verifiedSummaries=progress.verifiedSummaries;
   const summaries = summarizeCurrent(current, records, auth.session.sub);
   const wantsAdmin = new URL(request.url).searchParams.get('admin') === '1';
   const visible = wantsAdmin && canManage
@@ -214,14 +217,92 @@ async function summarizeVerifiedCurrent(env,current){
 
 export async function buildOrderProgressForHud(env,current,viewerId='') {
   if(!current)return{summaries:{},verifiedSummaries:{}};
-  const [records,verifiedSummaries]=await Promise.all([
-    listCurrentRecords(env,current),
-    summarizeVerifiedCurrent(env,current),
-  ]);
+  const progress=await readOrderProgressSnapshot(env,current);
   return{
-    summaries:summarizeCurrent(current,records,viewerId),
-    verifiedSummaries,
+    summaries:summarizeCurrent(current,progress.records,viewerId),
+    verifiedSummaries:progress.verifiedSummaries,
   };
+}
+
+export async function readOrderProgressSnapshot(env,current,{now=new Date()}={}) {
+  if(!current)return{records:[],verifiedSummaries:{},cacheStatus:'empty'};
+  const build=async()=>{
+    const [records,verifiedSummaries]=await Promise.all([
+      listCurrentRecords(env,current),
+      summarizeVerifiedCurrent(env,current),
+    ]);
+    return{records,verifiedSummaries};
+  };
+  const kv=env?.DAILY_ORDERS;
+  if(!kv||typeof kv.get!=='function'||typeof kv.put!=='function'){
+    return{...(await build()),cacheStatus:'bypass'};
+  }
+
+  const currentCycle=cycleId(current);
+  const fingerprint=orderProgressFingerprint(current);
+  const signal=await readHudSignal(env,HUD_SIGNAL_MISSION_PROGRESS);
+  const signalToken=clean(signal?.token);
+  const key=progressCacheKey(currentCycle);
+  const nowMs=now instanceof Date?now.getTime():new Date(now).getTime();
+
+  try{
+    const cached=await kv.get(key,{type:'json'});
+    const generatedMs=Date.parse(cached?.generatedAt||'');
+    const age=Number.isFinite(nowMs)&&Number.isFinite(generatedMs)?Math.max(0,nowMs-generatedMs):Infinity;
+    if(
+      cached?.version===PROGRESS_CACHE_VERSION
+      && cached?.cycleId===currentCycle
+      && cached?.fingerprint===fingerprint
+      && clean(cached?.signalToken)===signalToken
+      && age<=PROGRESS_CACHE_MAX_AGE_MS
+      && Array.isArray(cached?.records)
+      && cached?.verifiedSummaries
+      && typeof cached.verifiedSummaries==='object'
+      && !Array.isArray(cached.verifiedSummaries)
+    ){
+      return{
+        records:cached.records,
+        verifiedSummaries:cached.verifiedSummaries,
+        cacheStatus:'hit',
+      };
+    }
+  }catch(error){
+    console.error('Could not read Daily Order progress cache',error);
+  }
+
+  const built=await build();
+  try{
+    await kv.put(key,JSON.stringify({
+      version:PROGRESS_CACHE_VERSION,
+      cycleId:currentCycle,
+      fingerprint,
+      signalToken,
+      generatedAt:new Date(Number.isFinite(nowMs)?nowMs:Date.now()).toISOString(),
+      records:built.records,
+      verifiedSummaries:built.verifiedSummaries,
+    }),{expirationTtl:PROGRESS_CACHE_TTL_SECONDS});
+  }catch(error){
+    console.error('Could not write Daily Order progress cache',error);
+  }
+  return{...built,cacheStatus:'miss'};
+}
+
+function progressCacheKey(currentCycle){
+  return PROGRESS_CACHE_PREFIX+encodeURIComponent(String(currentCycle||'legacy'));
+}
+
+function orderProgressFingerprint(current){
+  const source=JSON.stringify({
+    cycleId:cycleId(current),
+    updatedAt:clean(current?.updatedAt),
+    orders:Array.isArray(current?.orders)?current.orders:[],
+  });
+  let hash=2166136261;
+  for(let i=0;i<source.length;i+=1){
+    hash^=source.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(36);
 }
 
 async function mutationReply(env, current, session, record, action) {

@@ -18,6 +18,9 @@
   let systemNames=[];
   let tokens=[];
   let owners=[];
+  let refreshTimer=null;
+  let refreshInFlight=false;
+  const AUTO_REFRESH_MS=30000;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const norm=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -149,6 +152,8 @@
       </article>`).join('');
   }
   async function load({forceRender=false}={}){
+    if(refreshInFlight)return;
+    refreshInFlight=true;
     try{
       const response=await fetch(`${API}?_=${Date.now()}`,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
       const data=await response.json().catch(()=>({}));
@@ -166,7 +171,39 @@
     }catch(error){
       console.error(error);
       setMessage('Could not load Scout Network.','error');
+    }finally{
+      refreshInFlight=false;
     }
+  }
+
+  function panelIsOpen(){
+    return host.tagName==='DETAILS'?host.open:true;
+  }
+  function activelyViewed(){
+    return document.visibilityState==='visible'&&panelIsOpen();
+  }
+  function stopAutoRefresh(){
+    if(refreshTimer!==null){
+      window.clearTimeout(refreshTimer);
+      refreshTimer=null;
+    }
+  }
+  function scheduleAutoRefresh(){
+    stopAutoRefresh();
+    if(!activelyViewed())return;
+    refreshTimer=window.setTimeout(async()=>{
+      refreshTimer=null;
+      await load();
+      scheduleAutoRefresh();
+    },AUTO_REFRESH_MS);
+  }
+  async function refreshWhenViewed({forceRender=false}={}){
+    if(!activelyViewed()){
+      stopAutoRefresh();
+      return;
+    }
+    await load({forceRender});
+    scheduleAutoRefresh();
   }
 
   scopeInput?.addEventListener('change',()=>{
@@ -311,7 +348,15 @@
     }
   });
 
+  host.addEventListener('toggle',()=>{
+    if(panelIsOpen())refreshWhenViewed({forceRender:true});
+    else stopAutoRefresh();
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')refreshWhenViewed({forceRender:true});
+    else stopAutoRefresh();
+  });
+
   refreshCreateSelector(false);
-  load({forceRender:true});
-  window.setInterval(()=>load(),30000);
+  load({forceRender:true}).finally(scheduleAutoRefresh);
 })();

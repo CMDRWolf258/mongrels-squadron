@@ -51,6 +51,14 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - **Bug-fix contract:** when Wolf reports something behaving incorrectly, treat the current intended behavior/configuration as the specification. Fix the mechanism without redesigning the feature, changing defaults, removing configurability, or assuming operator error. If a design change may help, explain it separately and get Wolf's approval before implementing it.
 - **Mongrel HUD profile behavior:** per-panel profile assignment is intentionally user-configurable with **Combat / Surface / Both**. Profile-switch bugs must be fixed without changing or hard-coding those assignments unless Wolf explicitly requests a redesign.
 
+### KV/read-efficiency safeguards
+
+- Optimize redundant reads without reducing active feature freshness. Source-of-truth records remain authoritative; caches are disposable derived data only.
+- BGS Control Scout Network keeps its 30-second refresh cadence only while that panel is open and the browser tab is visible. It refreshes immediately when reopened/returned to, and still performs the initial page-load refresh.
+- Daily Order/Mission Control shared progress uses a derived current-cycle snapshot of manual report records + verified squad totals. The snapshot is valid only while both the current order/cycle fingerprint and the existing HUD mission-progress signal match. Manual report mutations and Scout/Frontier activity invalidate through that signal; order/cycle changes invalidate through the fingerprint.
+- The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
+- Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
+
 ### Mongrel HUD / Scout integration
 
 The local data path is Scout's EDMC HTTPS session → loopback bridge `127.0.0.1:43857` → HUD data model → paired controller `43858` → independent desktop panels. Site data originates at the authenticated `/api/hud/feed`; Scout retains the last successful feed and reports the latest refresh status separately. A failed refresh must remain visible when old data is displayed.
