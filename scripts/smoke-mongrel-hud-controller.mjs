@@ -26,7 +26,7 @@ function harness() {
     nodes.set(id, value);
     return value;
   }
-  const profileButtons = ['combat', 'surface'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
+  const profileButtons = ['combat', 'ax', 'surface'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
   const visibilityButtons = ['own', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
   const profileSelects = ['own', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
   const requests = [];
@@ -35,9 +35,9 @@ function harness() {
     layout: {
       locked: true, masterVisible: true,
       panels: {
-        own: { visible: true, scale: 1, profiles: ['combat'] },
+        own: { visible: true, scale: 1, profiles: ['combat', 'ax'] },
         surface: { visible: true, scale: 1, profiles: ['surface'] },
-        mission: { visible: true, scale: 0.9, profiles: ['combat', 'surface'] },
+        mission: { visible: true, scale: 0.9, profiles: ['combat', 'ax', 'surface'] },
       },
     },
   };
@@ -93,6 +93,7 @@ async function drain(h, expected) {
   const assignments = clone(h.backend.layout.panels);
   const actions = [
     h.node('surfaceButton').onclick(),
+    h.node('axButton').onclick(),
     h.node('overlayMaster').onclick(),
     h.node('overlayMaster').onclick(),
     h.node('layoutLock').onclick(),
@@ -103,6 +104,7 @@ async function drain(h, expected) {
   ];
   await drain(h, [
     { path: '/api/profile', body: { profile: 'surface' } },
+    { path: '/api/profile', body: { profile: 'ax' } },
     { path: '/api/layout', body: { masterVisible: false } },
     { path: '/api/layout', body: { masterVisible: true } },
     { path: '/api/layout', body: { locked: false } },
@@ -113,7 +115,7 @@ async function drain(h, expected) {
   ]);
   await Promise.all(actions);
   assert.deepEqual(clone(h.controller.getState()), h.backend, 'Controller matches the final backend response');
-  assert.deepEqual(h.backend.layout.panels, assignments, 'Combat/Surface/Both assignments survive overlapping controls');
+  assert.deepEqual(h.backend.layout.panels, assignments, 'Combat/AX/Surface assignments survive overlapping controls');
 }
 
 {
@@ -121,7 +123,7 @@ async function drain(h, expected) {
   const actions = [];
   const expected = [];
   for (let cycle = 0; cycle < 12; cycle++) {
-    for (const profile of ['surface', 'combat']) {
+    for (const profile of ['surface', 'ax', 'combat']) {
       actions.push(h.node(profile + 'Button').onclick());
       expected.push({ path: '/api/profile', body: { profile } });
       for (const [button, field] of [['overlayMaster', 'masterVisible'], ['layoutLock', 'locked']]) {
@@ -145,8 +147,15 @@ async function drain(h, expected) {
   const select = h.node('ownProfiles');
   const actions = [];
   const expected = [];
-  for (const profiles of [['surface'], ['combat', 'surface'], ['combat']]) {
-    select.value = profiles.length === 2 ? 'both' : profiles[0];
+  for (const [profiles, value] of [
+    [['surface'], 'surface'],
+    [['combat', 'surface'], 'both'],
+    [['combat', 'ax'], 'combat_ax'],
+    [['combat', 'ax', 'surface'], 'all'],
+    [['ax'], 'ax'],
+    [['combat'], 'combat'],
+  ]) {
+    select.value = value;
     actions.push(select.onchange());
     expected.push({ path: '/api/panel', body: { panel: 'own', profiles } });
     actions.push(h.node('surfaceButton').onclick());
@@ -156,7 +165,7 @@ async function drain(h, expected) {
   await Promise.all(actions);
   assert.deepEqual(h.backend.layout.panels.own.profiles, ['combat']);
   assert.deepEqual(h.backend.layout.panels.surface.profiles, ['surface']);
-  assert.deepEqual(h.backend.layout.panels.mission.profiles, ['combat', 'surface']);
+  assert.deepEqual(h.backend.layout.panels.mission.profiles, ['combat', 'ax', 'surface']);
 }
 
 {
@@ -235,4 +244,4 @@ async function drain(h, expected) {
   assert.equal(h.node('pair').classList.contains('hidden'), false, 'Restarted HUD / expired pairing cookie reveals the pairing screen');
 }
 
-console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
+console.log('✓ Shipped HUD controller serializes Combat/AX/Surface controls, preserves assignments, recovers after errors and displays diagnostics');
