@@ -911,6 +911,15 @@ for(const pattern of [/galactic X\/Y\/Z coordinates/,/straight-line distance/,/L
 assert.doesNotMatch(zipSource,/TECHNICAL_NOTES\.md/,'Technical notes stay in Git and out of the member Scout ZIP');
 assert.doesNotMatch(apiZipSource,/TECHNICAL_NOTES\.md/,'Technical notes stay in Git and out of the member Scout ZIP');
 
+const hudReadme=readFileSync('downloads/mongrel-hud/README.md','utf8');
+for(const pattern of [/Short version:/,/MongrelHUD\.exe/,/Private networks/,/mongrel-hud\.local:43858/,/UNLOCK LAYOUT/,/Updating the HUD/,/Install Voice Pack/,/Privacy/,/member\/#mongrel-tools/,/TECHNICAL_NOTES\.md/])assert.match(hudReadme,pattern);
+assert.doesNotMatch(hudReadme,/sherpa-onnx|SHA-256|combat\.target|CarrierStats/,'Member HUD README should stay non-technical');
+const hudTechnicalNotes=readFileSync('downloads/mongrel-hud/TECHNICAL_NOTES.md','utf8');
+for(const pattern of [/sherpa-onnx/,/SHA-256/,/Carrier Dialogue Manager/,/combat\.target/,/CarrierStats/])assert.match(hudTechnicalNotes,pattern);
+const hudBuildWorkflow=readFileSync('.github/workflows/build-mongrel-hud-windows.yml','utf8');
+assert.match(hudBuildWorkflow,/Copy-Item downloads\/mongrel-hud\/README\.md package\/README\.md/);
+assert.doesNotMatch(hudBuildWorkflow,/TECHNICAL_NOTES/,'Technical notes stay in Git and out of the member HUD ZIP');
+
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
   const source=readFileSync(path,'utf8').replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'');
   new Function(source);
