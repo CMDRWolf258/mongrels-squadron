@@ -66,9 +66,9 @@ export function latestStationVisits(visits){
     if(row?.surfaceEvidence&&!surfaceEvidence.has(marketId)){
       surfaceEvidence.set(marketId,{
         hasLatLong:row.surfaceEvidence.hasLatLong===true,
-        latitude:Number.isFinite(Number(row.surfaceEvidence.latitude))?Number(row.surfaceEvidence.latitude):null,
-        longitude:Number.isFinite(Number(row.surfaceEvidence.longitude))?Number(row.surfaceEvidence.longitude):null,
-        planetRadius:Number.isFinite(Number(row.surfaceEvidence.planetRadius))?Number(row.surfaceEvidence.planetRadius):null,
+        latitude:finiteOptional(row.surfaceEvidence.latitude),
+        longitude:finiteOptional(row.surfaceEvidence.longitude),
+        planetRadius:finiteOptional(row.surfaceEvidence.planetRadius),
         observedAt:row.surfaceEvidence.observedAt||row?.observedAt||null,
       });
     }
@@ -117,6 +117,11 @@ export function latestStationVisits(visits){
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
     };
   });
+}
+function finiteOptional(value){
+  if(value===null||value===undefined||value==='')return null;
+  const number=Number(value);
+  return Number.isFinite(number)?number:null;
 }
 function finiteDistance(value){
   if(value===null||value===undefined||value==='')return null;
