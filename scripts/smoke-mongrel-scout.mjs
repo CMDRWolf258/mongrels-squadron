@@ -6,6 +6,7 @@ import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
 import { normalizeScoutFacilityVisit, deriveStationHostCandidate, deriveMobileStationPlacement, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
+import { latestStationVisits } from '../functions/api/orrery/facility-observations.js';
 import { normalizeScoutActivityBatch, systemAuthorized as activitySystemAuthorized } from '../lib/scout-activity.js';
 import { mergeEventsWithResult } from '../lib/frontier.js';
 
@@ -495,6 +496,14 @@ assert.equal(savedVisits.visits.length,1);
 assert.equal(savedVisits.visits[0].context.SupercruiseExit.bodyType,'Station');
 assert.doesNotMatch(JSON.stringify(savedVisits),/commander|cargo|credits|materials|missions/i,'Raw host evidence must remain sanitized');
 
+const aggregatedVisits=latestStationVisits([
+  {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:20:10Z',distanceToArrivalLs:null},
+  {...normalizedVisit,event:'DockingRequested',observedAt:'2026-10-07T05:20:00Z',distanceToArrivalLs:123.25},
+]);
+assert.equal(aggregatedVisits.length,1);
+assert.equal(aggregatedVisits[0].observedAt,'2026-10-07T05:20:10Z','Newest visit remains the public summary event');
+assert.equal(aggregatedVisits[0].distanceToArrivalLs,123.25,'Newest finite station distance survives a thinner companion visit');
+assert.equal(aggregatedVisits[0].distanceObservedAt,'2026-10-07T05:20:00Z');
 
 const orrerySystem=JSON.parse(readFileSync('data/orrery/ngc-2546-uz-g-d10-16.json','utf8'));
 const targetFacility=orrerySystem.locations.find(item=>String(item.marketId)==='4374918915');
@@ -649,7 +658,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
