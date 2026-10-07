@@ -76,6 +76,7 @@ SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
+SCOUT_TELEMETRY_URL = "http://127.0.0.1:43857/v1/telemetry"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
 MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
@@ -3516,6 +3517,39 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def telemetry_action(self, action: str, label: str = "", note: str = "") -> dict[str, Any]:
+        selected = str(action or "").strip().lower()
+        if selected not in {"start", "stop", "mark"}:
+            raise ValueError("invalid_telemetry_action")
+        payload: dict[str, Any] = {}
+        if selected == "start":
+            payload["label"] = " ".join(str(label or "ax").split())[:40] or "ax"
+        elif selected == "mark":
+            payload["label"] = " ".join(str(label or "").split())[:80]
+            payload["note"] = " ".join(str(note or "").split())[:240]
+            if not payload["label"]:
+                raise ValueError("telemetry_label_required")
+        request = urllib.request.Request(
+            f"{SCOUT_TELEMETRY_URL}/{selected}",
+            data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        result = request_scout_json(request, "telemetry_action_failed")
+        telemetry = result.get("telemetry") if isinstance(result, dict) else None
+        if isinstance(telemetry, dict):
+            with self.lock:
+                if not isinstance(self.snapshot.data, dict):
+                    self.snapshot.data = {}
+                self.snapshot.data["telemetry"] = telemetry
+        return result
+
+    def telemetry_mark_best_effort(self, label: str) -> None:
+        try:
+            self.telemetry_action("mark", label=label)
+        except Exception:
+            pass
+
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
         for value in alert_ids[:40]:
@@ -6222,7 +6256,22 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/ax-settings":
                     result = {"ok": True, "ax": app.set_ax_settings(body)}
                 elif path == "/api/ax-action":
-                    result = {"ok": True, "ax": app.ax_action(str(body.get("action") or ""))}
+                    action = str(body.get("action") or "")
+                    result = {"ok": True, "ax": app.ax_action(action)}
+                    marker = {
+                        "heart_exerted": "HEART EXERTED",
+                        "heart_down": "HEART DOWN",
+                        "shield_up": "SHIELD UP",
+                        "shield_down": "SHIELD DOWN",
+                    }.get(action)
+                    if marker:
+                        app.telemetry_mark_best_effort(marker)
+                elif path == "/api/telemetry":
+                    result = app.telemetry_action(
+                        str(body.get("action") or ""),
+                        label=str(body.get("label") or ""),
+                        note=str(body.get("note") or ""),
+                    )
                 elif path == "/api/ax-alert":
                     result = {"ok": True, "ax": app.set_ax_transient_alert(
                         str(body.get("code") or ""),
