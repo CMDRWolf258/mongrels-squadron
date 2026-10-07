@@ -32,6 +32,20 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ax_intel import (
+    AX_DATA_REVIEWED_AT,
+    apply_encounter_action,
+    compare_speed,
+    default_ax_settings,
+    encounter_snapshot,
+    format_seconds as ax_format_seconds,
+    new_encounter,
+    normalize_ax_settings,
+    resolve_ax_variant,
+    variant_ids,
+    variant_spec,
+)
+
 
 try:
     import numpy as np
@@ -206,7 +220,7 @@ MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys()
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
 PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
-VALID_PROFILES = ("combat", "surface")
+VALID_PROFILES = ("combat", "ax", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
@@ -748,20 +762,20 @@ def default_layout() -> dict[str, Any]:
         "locked": True,
         "masterVisible": True,
         "panels": {
-            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
-            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
+            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
-            "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
-            "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "scoutnearby": {"x": 1260, "y": 790, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
-            "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
-            "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "surface"]},
+            "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "scoutnearby": {"x": 1260, "y": 790, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
+            "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
+            "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
         },
     }
 
@@ -1185,10 +1199,18 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": []}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": [], "ax": {"settings": default_ax_settings(), "encounter": None, "targetKey": "", "targetVariant": "", "targetSource": ""}}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
         self.data["voice"] = normalized_voice_settings(self.data.get("voice"))
+        ax_state = self.data.get("ax") if isinstance(self.data.get("ax"), dict) else {}
+        self.data["ax"] = {
+            "settings": normalize_ax_settings(ax_state.get("settings")),
+            "encounter": ax_state.get("encounter") if isinstance(ax_state.get("encounter"), dict) else None,
+            "targetKey": str(ax_state.get("targetKey") or "")[:240],
+            "targetVariant": str(ax_state.get("targetVariant") or "")[:40],
+            "targetSource": str(ax_state.get("targetSource") or "")[:20],
+        }
         auth = self.data.get("controllerAuth")
         hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
         hashes = hashes if isinstance(hashes, list) else []
@@ -3510,7 +3532,7 @@ class MongrelHudApp:
         return result
 
     def set_profile(self, profile: str) -> str:
-        if profile not in {"combat", "surface"}:
+        if profile not in {"combat", "ax", "surface"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
