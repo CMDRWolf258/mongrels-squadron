@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateSystem, surfaceVector, buildLayout, getRecords, filterRecords, joinLocations, classifyLocationPlacement, buildLocationLayout, buildRingLayout } from '../lib/orrery-model.js';
 import { applyLocationPayload, loadLocationProvider } from '../lib/orrery-locations.js';
+import { bodyVisualProfile, ringVisualProfile, visualSeed } from '../js/orrery/body-materials.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = path => readFileSync(resolve(root, path), 'utf8');
@@ -29,6 +30,26 @@ const fixture = {
 };
 
 assert.equal(validateSystem(fixture), fixture);
+
+const visualSamples = [
+  [{ id:'earth', kind:'planet', subType:'Earth-like world', atmosphere:'Suitable for water-based life', temperatureK:290 }, 'earthlike'],
+  [{ id:'gas', kind:'planet', subType:'Class III gas giant', atmosphere:'No atmosphere', temperatureK:390 }, 'gas'],
+  [{ id:'ice', kind:'moon', subType:'Icy body', atmosphere:'No atmosphere', temperatureK:120 }, 'icy'],
+  [{ id:'metal', kind:'planet', subType:'High metal content world', atmosphere:'Hot thick Carbon dioxide-rich', temperatureK:900 }, 'metal'],
+  [{ id:'star-visual', kind:'star', subType:'F (White) Star', temperatureK:6500 }, 'star'],
+];
+for (const [body, category] of visualSamples) {
+  const first = bodyVisualProfile(body), second = bodyVisualProfile(structuredClone(body));
+  assert.equal(first.category, category, `Visual profile recognizes ${category}`);
+  assert.deepEqual(first, second, `Visual profile for ${category} is deterministic`);
+  assert.ok(Number.isInteger(first.baseColor) && first.baseColor >= 0 && first.baseColor <= 0xffffff);
+}
+assert.equal(bodyVisualProfile(visualSamples[3][0]).hasAtmosphere, true, 'Known atmosphere adds an atmosphere shell profile');
+assert.equal(bodyVisualProfile(visualSamples[2][0]).hasAtmosphere, false, 'No-atmosphere body does not receive an atmosphere shell');
+assert.equal(visualSeed('stable-body'), visualSeed('stable-body'), 'Visual seeds are stable');
+assert.notEqual(visualSeed('stable-body'), visualSeed('different-body'), 'Different body IDs normally receive different visual seeds');
+assert.ok(ringVisualProfile({ type:'Icy' }).baseColor !== ringVisualProfile({ type:'Rocky' }).baseColor, 'Ring composition changes procedural ring palette');
+console.log('✓ Orrery visual profiles are deterministic, body-informed and atmosphere-aware');
 assert.equal(validateSystem(copy(fixture)).bodies.find(body => body.id === 'pair').orbit.semiMajorAxisAu, null, 'Unknown barycentre elements stay null');
 const invalid = (mutate, pattern) => { const data = copy(fixture); mutate(data); assert.throws(() => validateSystem(data), pattern); };
 invalid(data => data.bodies.push(copy(data.bodies[0])), /Duplicate/);
@@ -198,6 +219,13 @@ assert.match(controller, /orrery-locations\.js/, 'Controller uses the reusable c
 const renderer = read('js/orrery/renderer.js');
 assert.match(renderer, /from ['"]\.\.\/\.\.\/vendor\/three\/three\.module\.js['"]/, 'Three.js is pinned locally');
 assert.match(renderer, /from ['"]\.\.\/\.\.\/vendor\/three\/OrbitControls\.js['"]/, 'Camera controls are pinned locally');
+assert.match(renderer, /body-materials\.js/, 'Renderer uses the isolated procedural body-material layer');
+assert.match(renderer, /createBodyVisual/, 'Renderer creates procedural body surfaces');
+assert.match(renderer, /createRingMaterial/, 'Renderer creates procedural ring materials');
+assert.match(renderer, /PointLight/, 'Catalogued stars provide the primary directional lighting cue');
+const bodyMaterials = read('js/orrery/body-materials.js');
+for (const token of ['CanvasTexture','earthlike','gas','icy','metal','atmosphereColor','createGlowTexture','ringVisualProfile']) assert.ok(bodyMaterials.includes(token), `Procedural body material feature missing: ${token}`);
+assert.doesNotMatch(bodyMaterials, /fetch\(|https?:\/\//, 'Procedural body rendering must not add network dependencies');
 for (const file of ['vendor/three/three.module.js','vendor/three/three.core.js','vendor/three/OrbitControls.js','vendor/three/LICENSE']) assert.ok(existsSync(resolve(root,file)), `Missing local dependency: ${file}`);
 assert.doesNotMatch(read('vendor/three/OrbitControls.js'), /from ['"]three['"]/, 'OrbitControls resolves its local Three.js dependency');
 console.log('✓ Orrery catalog, page, modules and local WebGL dependencies are wired');
