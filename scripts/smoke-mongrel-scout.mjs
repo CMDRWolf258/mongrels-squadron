@@ -915,7 +915,7 @@ const hudReadme=readFileSync('downloads/mongrel-hud/README.md','utf8');
 for(const pattern of [/Short version:/,/MongrelHUD\.exe/,/Private networks/,/mongrel-hud\.local:43858/,/UNLOCK LAYOUT/,/Updating the HUD/,/Install Voice Pack/,/Privacy/,/member\/#mongrel-tools/,/TECHNICAL_NOTES\.md/])assert.match(hudReadme,pattern);
 assert.doesNotMatch(hudReadme,/sherpa-onnx|SHA-256|combat\.target|CarrierStats/,'Member HUD README should stay non-technical');
 const hudTechnicalNotes=readFileSync('downloads/mongrel-hud/TECHNICAL_NOTES.md','utf8');
-for(const pattern of [/sherpa-onnx/,/SHA-256/,/Carrier Dialogue Manager/,/combat\.target/,/CarrierStats/])assert.match(hudTechnicalNotes,pattern);
+for(const pattern of [/sherpa-onnx/,/SHA-256/,/Carrier Dialogue Manager/,/Local Neural · Kokoro/,/CarrierStats/])assert.match(hudTechnicalNotes,pattern);
 const hudBuildWorkflow=readFileSync('.github/workflows/build-mongrel-hud-windows.yml','utf8');
 assert.match(hudBuildWorkflow,/Copy-Item downloads\/mongrel-hud\/README\.md package\/README\.md/);
 assert.doesNotMatch(hudBuildWorkflow,/TECHNICAL_NOTES/,'Technical notes stay in Git and out of the member HUD ZIP');
