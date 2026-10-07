@@ -223,8 +223,11 @@ assert.match(renderer, /body-materials\.js/, 'Renderer uses the isolated procedu
 assert.match(renderer, /createBodyVisual/, 'Renderer creates procedural body surfaces');
 assert.match(renderer, /createRingMaterial/, 'Renderer creates procedural ring materials');
 assert.match(renderer, /PointLight/, 'Catalogued stars provide the primary directional lighting cue');
+assert.match(renderer, /ACESFilmicToneMapping/, 'Orrery uses restrained tone mapping for procedural body contrast');
+assert.match(renderer, /depthTest:false/, 'Location markers remain visually legible over procedural body materials');
+assert.match(renderer, /frontFacing/, 'Exact surface markers still hide on the far side of their host body');
 const bodyMaterials = read('js/orrery/body-materials.js');
-for (const token of ['CanvasTexture','earthlike','gas','icy','metal','atmosphereColor','createGlowTexture','ringVisualProfile']) assert.ok(bodyMaterials.includes(token), `Procedural body material feature missing: ${token}`);
+for (const token of ['CanvasTexture','earthlike','gas','icy','metal','atmosphereColor','createGlowTexture','ringVisualProfile','bumpMap','bumpScale']) assert.ok(bodyMaterials.includes(token), `Procedural body material feature missing: ${token}`);
 assert.doesNotMatch(bodyMaterials, /fetch\(|https?:\/\//, 'Procedural body rendering must not add network dependencies');
 for (const file of ['vendor/three/three.module.js','vendor/three/three.core.js','vendor/three/OrbitControls.js','vendor/three/LICENSE']) assert.ok(existsSync(resolve(root,file)), `Missing local dependency: ${file}`);
 assert.doesNotMatch(read('vendor/three/OrbitControls.js'), /from ['"]three['"]/, 'OrbitControls resolves its local Three.js dependency');
