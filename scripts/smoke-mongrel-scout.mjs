@@ -120,7 +120,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.12\.1"/,
+  /PLUGIN_VERSION = "1\.12\.2"/,
   /HUD_BRIDGE_VERSION = 9/,
   /MongrelScoutCargoMissionCache/,
   /def _update_cargo_missions_from_journal/,
@@ -372,9 +372,19 @@ const rawStationVisit={
     SupercruiseExit:{timestamp:'2026-10-03T01:14:58Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'Rivers Hub',bodyId:90,bodyType:'Station'},
   },
 };
-const normalizedVisit=normalizeScoutFacilityVisit({...rawStationVisit,distanceToArrivalLs:123.456});
+const normalizedVisit=normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  distanceToArrivalLs:123.456,
+  dashboard:{
+    ...rawStationVisit.dashboard,
+    surface:{hasLatLong:false,latitude:null,longitude:null,planetRadius:null},
+  },
+});
 assert.equal(normalizedVisit.marketId,'4391607555');
 assert.equal(normalizedVisit.distanceToArrivalLs,123.456);
+assert.deepEqual(normalizedVisit.surfaceEvidence,{
+  hasLatLong:false,latitude:null,longitude:null,planetRadius:null,observedAt:normalizedVisit.dashboardObservedAt,
+});
 assert.equal(normalizedVisit.destination.bodyId,61);
 assert.equal(normalizedVisit.currentBody.bodyId,61);
 assert.deepEqual(deriveStationHostCandidate(normalizedVisit),{
