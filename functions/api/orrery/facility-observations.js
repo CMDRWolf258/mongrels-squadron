@@ -68,10 +68,17 @@ function latestStationVisits(visits){
       });
     }
   }
-  return [...latest.values()].slice(0,500).map(row=>({
-    ...row,
-    ...(mobilePlacements.has(row.marketId)?{mobilePlacement:mobilePlacements.get(row.marketId)}:{}),
-  }));
+  return [...latest.values()].slice(0,500).map(row=>{
+    const placement=mobilePlacements.get(row.marketId);
+    const latestMs=Date.parse(row.observedAt||''),placementMs=Date.parse(placement?.observedAt||'');
+    const placementIsCurrent=placement&&Number.isFinite(latestMs)&&Number.isFinite(placementMs)
+      && placementMs<=latestMs+60*1000
+      && latestMs-placementMs<=10*60*1000;
+    return{
+      ...row,
+      ...(placementIsCurrent?{mobilePlacement:placement}:{}),
+    };
+  });
 }
 function isPagesPreview(hostname){
   const host=String(hostname||'').toLowerCase();
