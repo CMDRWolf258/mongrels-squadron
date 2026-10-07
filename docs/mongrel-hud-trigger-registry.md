@@ -119,3 +119,19 @@ Existing prototype controls also write markers while capture is active:
 - SHIELD DOWN
 
 This lets a Hellhound flight generate a single timestamp-aligned JSONL session that can be compared against visible/audio events without changing the normal production alert policy.
+
+## Multi-interceptor validation protocol
+
+Do not trust the prototype heart counter as authoritative during this test; PR #158 still has one active AX encounter slot.
+
+Suggested wing sequence:
+
+1. Start AX telemetry capture before engaging.
+2. Target the first interceptor and tap **TARGET A** once the target card is populated.
+3. Target a second interceptor and tap **TARGET B**; use **TARGET C** if useful.
+4. Leave A untargeted and have another pilot destroy one of A's hearts. Tap **OFF-TARGET HEART DOWN** when the heart is visibly confirmed destroyed; this marker does **not** mutate the HUD counter.
+5. Reacquire A and tap **TARGET A** again.
+6. Repeat once with two interceptors of the same variant if practical, because identical Cyclops/Basilisk/etc. contacts are the hardest identity case.
+7. Stop capture after the encounter.
+
+The resulting capture should answer whether raw or normalized `ShipTargeted` data contains any stable per-vessel discriminator, whether target subsystem state re-synchronizes after reacquisition, and whether off-target heart loss becomes observable when the vessel is selected again.
