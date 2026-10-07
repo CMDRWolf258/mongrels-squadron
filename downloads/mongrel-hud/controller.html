@@ -161,11 +161,12 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   <div class="card">
     <h2>OVERLAY LAYOUT</h2>
     <div class="layout-actions"><button type="button" id="overlayMaster">OVERLAY ON</button><button type="button" id="layoutLock">UNLOCK LAYOUT</button><button type="button" id="layoutReset">RESET LAYOUT</button></div>
-    <div class="layout-hint" id="layoutHint">Locked: overlays are transparent and click-through.</div>
+    <div class="layout-hint" id="layoutHint">Locked: overlays are transparent and click-through. Panel Scale changes both text size and window footprint so each overlay auto-fits the selected size.</div>
     <div class="notice" id="layoutStatus"></div>
     <div id="panelControls">
       <div class="panel-control"><strong>Own Ship</strong><button class="panel-toggle" type="button" data-panel-visible="own">ON</button><select data-panel-scale="own" aria-label="Own Ship panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="own" aria-label="Own Ship profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax">AX</option><option value="surface">Surface</option></select></div>
       <div class="panel-control"><strong>Target</strong><button class="panel-toggle" type="button" data-panel-visible="target">ON</button><select data-panel-scale="target" aria-label="Target panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="target" aria-label="Target profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax">AX</option><option value="surface">Surface</option></select></div>
+      <div class="panel-control"><strong>AX Status Bar</strong><button class="panel-toggle" type="button" data-panel-visible="axstatus">ON</button><select data-panel-scale="axstatus" aria-label="AX Status Bar size"><option value="1">100%</option></select><select data-panel-profile="axstatus" aria-label="AX Status Bar profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax" selected>AX</option><option value="surface">Surface</option></select></div>
       <div class="panel-control"><strong>Target Loadout</strong><button class="panel-toggle" type="button" data-panel-visible="subsystems">ON</button><select data-panel-scale="subsystems" aria-label="Subsystems panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="subsystems" aria-label="Subsystem profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax">AX</option><option value="surface">Surface</option></select></div>
       <div class="panel-control"><strong>Bounties</strong><button class="panel-toggle" type="button" data-panel-visible="bounties">ON</button><select data-panel-scale="bounties" aria-label="Bounties panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="bounties" aria-label="Bounties profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax">AX</option><option value="surface">Surface</option></select></div>
       <div class="panel-control"><strong>Cargo</strong><button class="panel-toggle" type="button" data-panel-visible="cargo">OFF</button><select data-panel-scale="cargo" aria-label="Cargo panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9" selected>90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="cargo" aria-label="Cargo profiles"><option value="all">All</option><option value="combat_ax">Combat + AX</option><option value="both">Combat + Surface</option><option value="ax_surface">AX + Surface</option><option value="combat">Combat</option><option value="ax">AX</option><option value="surface">Surface</option></select></div>
@@ -241,6 +242,19 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="status" id="axTactical">Static tactical notes will appear here.</div>
     </div>
     <div class="card">
+      <h2>AX STATUS BAR</h2>
+      <div class="big" id="axStatusText">AX STATUS — STANDBY</div>
+      <div class="status" id="axStatusDetail">No high-priority phase alert.</div>
+      <div class="row"><span>Priority / source</span><strong id="axStatusMeta">STANDBY · NONE</strong></div>
+      <div class="layout-actions">
+        <button class="action" type="button" data-ax-alert="emp">TEST EMP</button>
+        <button class="action" type="button" data-ax-alert="caustic_missile">TEST CAUSTIC</button>
+        <button class="action" type="button" data-ax-alert="clear">CLEAR TEST</button>
+      </div>
+      <div class="layout-hint">Test buttons exercise the same local alert injection point intended for future visual/audio detection. They do not claim Elite currently exposes a caustic-missile lock in Status.json.</div>
+      <div class="notice" id="axStatusNotice"></div>
+    </div>
+    <div class="card">
       <h2>FIGHT PHASE TRACKER</h2>
       <div class="grid">
         <div><span class="muted">Phase</span><div class="big" id="axPhase">—</div></div>
@@ -307,7 +321,14 @@ function renderLayoutControls(layout){
   setText(lock,lockText);lock.classList.toggle("active",layout.locked===false);
   setText(el("layoutHint"),layout.locked===false?"Unlocked: drag the labeled panel headers on the PC, adjust sizes here, then lock the layout.":"Locked: overlays are transparent and click-through.");
   document.querySelectorAll("[data-panel-visible]").forEach(function(button){var id=button.getAttribute("data-panel-visible"),cfg=panels[id]||{},text=cfg.visible===false?"OFF":"ON";setText(button,text);button.classList.toggle("active",cfg.visible!==false)});
-  document.querySelectorAll("[data-panel-scale]").forEach(function(select){var id=select.getAttribute("data-panel-scale"),cfg=panels[id]||{},value=String(cfg.scale||1);if(select.value!==value)select.value=value});
+  document.querySelectorAll("[data-panel-scale]").forEach(function(select){
+    if(select.dataset.expanded!=="1"){
+      var values=[0.6,0.7,0.75,0.8,0.85,0.9,1,1.1,1.25,1.5,1.75,2];
+      select.innerHTML=values.map(function(v){return '<option value="'+v+'">'+Math.round(v*100)+'%</option>'}).join("");
+      select.dataset.expanded="1";
+    }
+    var id=select.getAttribute("data-panel-scale"),cfg=panels[id]||{},value=String(cfg.scale||1);if(select.value!==value)select.value=value
+  });
   document.querySelectorAll("[data-panel-profile]").forEach(function(select){var id=select.getAttribute("data-panel-profile"),cfg=panels[id]||{},profiles=cfg.profiles||[],c=profiles.includes("combat"),a=profiles.includes("ax"),s=profiles.includes("surface"),value=c&&a&&s?"all":c&&a?"combat_ax":c&&s?"both":a&&s?"ax_surface":a?"ax":s?"surface":"combat";if(select.value!==value)select.value=value});
 }
 function showLayoutStatus(message,isError){var node=el("layoutStatus");node.className="notice"+(isError?"":" success");node.textContent=message||""}
@@ -372,7 +393,7 @@ function render(){
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("axPanel").classList.toggle("hidden",profile!=="ax");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
   var layout=state.layout||{},panels=layout.panels||{};
   renderLayoutControls(layout);
-  var ax=state.ax||{},axSpec=ax.spec||{},axPhase=ax.phase||{},axSettings=ax.settings||{},axLive=ax.liveTarget||{},axConfidence=ax.confidence||{},axWarnings=Array.isArray(ax.warnings)?ax.warnings:[];
+  var ax=state.ax||{},axSpec=ax.spec||{},axPhase=ax.phase||{},axSettings=ax.settings||{},axLive=ax.liveTarget||{},axConfidence=ax.confidence||{},axWarnings=Array.isArray(ax.warnings)?ax.warnings:[],axStatus=ax.statusBar||{};
   setText(el("axTargetName"),String(axSpec.name||"NO AX TARGET").toUpperCase());
   setText(el("axTags"),Array.isArray(axSpec.tags)&&axSpec.tags.length?axSpec.tags.join(" · "):"Target an interceptor or select a manual variant.");
   setText(el("axHearts"),axSpec.hearts===0?"NONE":Number.isFinite(Number(axSpec.hearts))?String(axSpec.hearts):"—");
@@ -391,6 +412,9 @@ function render(){
   var splits=Array.isArray(axPhase.heartSplitsSeconds)?axPhase.heartSplitsSeconds:[];setText(el("axCurrentSplits"),splits.length?splits.map(function(v,i){return "H"+(i+1)+" "+fmtTime(v)}).join(" · "):"—");
   var fights=Array.isArray(ax.recentFights)?ax.recentFights:[],lastFight=fights.length?fights[fights.length-1]:null;setText(el("axLastFight"),lastFight?(String(lastFight.name||lastFight.variant||"AX")+" · "+fmtTime(lastFight.durationSeconds)+" · "+(Array.isArray(lastFight.heartSplitsSeconds)?lastFight.heartSplitsSeconds.map(function(v){return fmtTime(v)}).join(" / "):"")):"—");
   setText(el("axWarnings"),axWarnings.map(function(w){return String(w.text||"")}).filter(Boolean).join(" · "));
+  setText(el("axStatusText"),String(axStatus.text||"AX STATUS — STANDBY"));
+  setText(el("axStatusDetail"),String(axStatus.detail||"No high-priority phase alert."));
+  setText(el("axStatusMeta"),String(axStatus.severity||"standby").toUpperCase()+" · "+String(axStatus.source||"none").toUpperCase()+(axStatus.flash?" · FLASH":""));
   setText(el("axTracking"),"Target "+String(axConfidence.target||"unknown").toUpperCase()+" · Hearts "+String(axConfidence.hearts||"unknown").toUpperCase()+" · Timers "+String(axConfidence.timers||"none").toUpperCase()+" · AXI data "+String(ax.reviewedAt||""));
   if(document.activeElement!==el("axVariantOverride"))el("axVariantOverride").value=String(axSettings.variantOverride||"auto");
   if(document.activeElement!==el("axShipBoost"))el("axShipBoost").value=String(Number(axSettings.shipBoostMps)||0);
@@ -622,6 +646,7 @@ document.querySelectorAll("[data-panel-visible]").forEach(function(button){butto
 document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-scale"),scale:Number(select.value)});applyLayoutResult(r,"Panel size updated")}catch(e){showLayoutStatus("Panel size failed · "+e.message,true)}}});
 document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,map={all:["combat","ax","surface"],combat_ax:["combat","ax"],both:["combat","surface"],ax_surface:["ax","surface"],combat:["combat"],ax:["ax"],surface:["surface"]},profiles=map[value]||["combat"],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
 document.querySelectorAll("[data-ax-action]").forEach(function(button){button.onclick=async function(){try{var r=await mutate("/api/ax-action",{action:button.getAttribute("data-ax-action")});state=state||{};state.ax=r.ax;render();el("axActionNotice").textContent="Fight tracker updated"}catch(e){el("axActionNotice").textContent="AX tracker failed · "+e.message}}});
+document.querySelectorAll("[data-ax-alert]").forEach(function(button){button.onclick=async function(){var code=button.getAttribute("data-ax-alert");try{var r=await mutate("/api/ax-alert",{code:code,ttlSeconds:code==="clear"?1:8,source:"test"});state=state||{};state.ax=r.ax;render();el("axStatusNotice").textContent=code==="clear"?"Test alert cleared":"Status bar test active · "+code.replaceAll("_"," ")}catch(e){el("axStatusNotice").textContent="AX status test failed · "+e.message}}});
 el("saveAxSettings").onclick=async function(){try{var r=await mutate("/api/ax-settings",{variantOverride:el("axVariantOverride").value||"auto",shipBoostMps:Number(el("axShipBoost").value||0),coldHeatPercent:Number(el("axColdHeat").value||20),orbitMinM:Number(el("axOrbitMin").value||900),orbitMaxM:Number(el("axOrbitMax").value||1500)});state=state||{};state.ax=r.ax;render();el("axSettingsNotice").textContent="AX settings saved"}catch(e){el("axSettingsNotice").textContent="AX settings failed · "+e.message}};
 el("axVariantOverride").onchange=function(){el("axSettingsNotice").textContent="Variant changed · save to reset tracking for this target"};
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
