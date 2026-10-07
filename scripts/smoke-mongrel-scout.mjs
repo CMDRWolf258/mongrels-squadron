@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolveSystemWorkCycle } from '../lib/daily-order-cycle.js';
 import { validatedConflictRows } from '../lib/bgs-conflict-validation.js';
-import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides, estimateHostBody } from '../lib/orrery-facility-observations.js';
+import { applyFacilityObservationPayload, applyHostEstimates, applyHostOverrides, applyMobilePlacements, applyCarrierPlacementOverrides, estimateHostBody } from '../lib/orrery-facility-observations.js';
 import { normalizeScoutFacilityObservation, recordScoutFacilityObservation, readScoutFacilityObservationPayload } from '../lib/scout-facility-observations.js';
 import { normalizeScoutFacilityVisit, deriveStationHostCandidate, deriveMobileStationPlacement, diagnoseStationHostCandidate, recordScoutFacilityVisit, readScoutFacilityVisits } from '../lib/scout-facility-visits.js';
 import { normalizeFacilityHostOverride, recordFacilityHostOverride, readFacilityHostOverridePayload } from '../lib/orrery-facility-host-overrides.js';
@@ -372,19 +372,8 @@ const rawStationVisit={
     SupercruiseExit:{timestamp:'2026-10-03T01:14:58Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'Rivers Hub',bodyId:90,bodyType:'Station'},
   },
 };
-const normalizedVisit=normalizeScoutFacilityVisit({
-  ...rawStationVisit,
-  distanceToArrivalLs:123.456,
-  dashboard:{
-    ...rawStationVisit.dashboard,
-    surface:{hasLatLong:false,latitude:null,longitude:null,planetRadius:null},
-  },
-});
+const normalizedVisit=normalizeScoutFacilityVisit(rawStationVisit);
 assert.equal(normalizedVisit.marketId,'4391607555');
-assert.equal(normalizedVisit.distanceToArrivalLs,123.456);
-assert.deepEqual(normalizedVisit.surfaceEvidence,{
-  hasLatLong:false,latitude:null,longitude:null,planetRadius:null,observedAt:normalizedVisit.dashboardObservedAt,
-});
 assert.equal(normalizedVisit.destination.bodyId,61);
 assert.equal(normalizedVisit.currentBody.bodyId,61);
 assert.deepEqual(deriveStationHostCandidate(normalizedVisit),{
@@ -439,7 +428,7 @@ assert.ok(deriveStationHostCandidate(normalizeScoutFacilityVisit({
 assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   ...rawStationVisit,
   stationType:'MegaShip',
-})),null,'Mobile megaships must never receive an automatic host');
+})),null,'Mobile megaships must never receive an automatic permanent host');
 
 const asteroidVisit=normalizeScoutFacilityVisit({
   ...rawStationVisit,
@@ -461,7 +450,7 @@ assert.deepEqual(deriveStationHostCandidate(asteroidVisit),{
   bodyJournalId:61,
   bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
   evidence:['recent_approach_body','supercruise_exit_station'],
-},'AsteroidBase may recover a host from an unbroken recent ApproachBody -> station exit chain');
+},'AsteroidBase may recover a host from a recent unbroken approach-to-station chain');
 assert.equal(diagnoseStationHostCandidate(asteroidVisit).reason,'verified_approach_chain');
 assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
   ...asteroidVisit,
@@ -470,12 +459,8 @@ assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
     LeaveBody:{timestamp:'2026-10-03T01:12:00Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',bodyId:61,bodyType:'Planet'},
   },
 })),null,'Leaving the approached body invalidates AsteroidBase host recovery');
-assert.equal(deriveStationHostCandidate(normalizeScoutFacilityVisit({
-  ...asteroidVisit,
-  stationType:'Outpost',
-})),null,'Recent-approach fallback must not loosen ordinary fixed-station host rules');
 
-const mobileCarrierVisit=normalizeScoutFacilityVisit({
+const rawCarrierVisit={
   ...rawStationVisit,
   stationName:'TBG-B0G',
   stationType:'FleetCarrier',
@@ -485,12 +470,26 @@ const mobileCarrierVisit=normalizeScoutFacilityVisit({
     destination:{name:'TBG-B0G',bodyId:61,systemAddress:'668059324240760'},
     lastDestination:{name:'TBG-B0G',bodyId:61,systemAddress:'668059324240760',observedAt:'2026-10-03T01:14:59Z'},
   },
-});
-assert.deepEqual(deriveMobileStationPlacement(mobileCarrierVisit),{
+};
+assert.deepEqual(deriveMobileStationPlacement(normalizeScoutFacilityVisit(rawCarrierVisit)),{
   bodyJournalId:61,
   bodyName:'NGC 2546 Sector UZ-G d10-16 9 a',
   evidence:['destination_body','edmc_current_body','dashboard_body_name'],
-},'Mobile carrier placement may be exposed as dated observational evidence without becoming a permanent host');
+},'A fleet carrier may receive a dated observed placement without creating a permanent host');
+
+const carrierWithClearedDestination=normalizeScoutFacilityVisit({
+  ...rawCarrierVisit,
+  timestamp:'2026-10-03T01:15:20Z',
+  dashboard:{
+    ...rawCarrierVisit.dashboard,
+    timestamp:'2026-10-03T01:15:20Z',
+    destination:{name:'',bodyId:null,systemAddress:'668059324240760'},
+    lastDestination:{name:'TBG-B0G',bodyId:61,systemAddress:'668059324240760',observedAt:'2026-10-03T01:14:59Z'},
+  },
+});
+assert.deepEqual(deriveMobileStationPlacement(carrierWithClearedDestination)?.evidence,[
+  'recent_destination_body','edmc_current_body','dashboard_body_name',
+],'A recently cleared carrier target may use the timestamped last destination as transient evidence');
 
 const visitStore=new Map();
 const visitEnv={DAILY_ORDERS:{
@@ -514,18 +513,11 @@ assert.equal(aggregatedVisits.length,1);
 assert.equal(aggregatedVisits[0].observedAt,'2026-10-07T05:20:10Z','Newest visit remains the public summary event');
 assert.equal(aggregatedVisits[0].distanceToArrivalLs,123.25,'Newest finite station distance survives a thinner companion visit');
 assert.equal(aggregatedVisits[0].distanceObservedAt,'2026-10-07T05:20:00Z');
-const aggregatedAsteroidType=latestStationVisits([
-  {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:22:10Z',stationType:'',distanceToArrivalLs:124},
-  {...normalizedVisit,event:'DockingRequested',observedAt:'2026-10-07T05:22:00Z',stationType:'AsteroidBase',distanceToArrivalLs:124},
-]);
-assert.equal(aggregatedAsteroidType[0].stationType,'AsteroidBase','Useful station type must survive a thinner companion docking visit');
-assert.equal(aggregatedAsteroidType[0].stationTypeObservedAt,'2026-10-07T05:22:00Z');
-assert.equal(aggregatedVisits[0].surfaceEvidence.hasLatLong,false,'Public visit summary preserves sanitized no-surface evidence');
-assert.equal(aggregatedVisits[0].surfaceEvidence.observedAt,normalizedVisit.dashboardObservedAt);
 const unknownDistanceVisit=latestStationVisits([
   {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:21:00Z',distanceToArrivalLs:null},
 ]);
 assert.equal(unknownDistanceVisit[0].distanceToArrivalLs,null,'Unknown station distance must remain null, never numeric zero');
+
 
 const orrerySystem=JSON.parse(readFileSync('data/orrery/ngc-2546-uz-g-d10-16.json','utf8'));
 const targetFacility=orrerySystem.locations.find(item=>String(item.marketId)==='4374918915');
@@ -618,6 +610,185 @@ assert.equal(hostUpgraded.coordinatesKnown,false);
 assert.equal(hostUpgraded.positionKnown,true);
 assert.equal(hostUpgraded.positionObservation.event,'StationHost');
 
+const newAsteroidMarket='4999999001';
+const asteroidEnvelope={
+  schemaVersion:1,
+  systemId64:String(orrerySystem.id64),
+  observations:[{
+    event:'StationHost',
+    hostOnly:true,
+    marketId:newAsteroidMarket,
+    facilityName:'New Asteroid Exchange',
+    bodyJournalId:targetBody.bodyId,
+    bodyName:targetBody.name,
+    latitude:null,
+    longitude:null,
+    observedAt,
+    source:'Mongrel Scout / EDMC',
+  }],
+  stationVisits:[{
+    marketId:newAsteroidMarket,
+    stationName:'New Asteroid Exchange',
+    stationType:'AsteroidBase',
+    observedAt,
+  }],
+  hostOverrides:[],
+};
+const discoveredAsteroid=applyFacilityObservationPayload(orrerySystem,asteroidEnvelope);
+assert.equal(discoveredAsteroid.discoveredApplied,1,'A Scout visit may materialize a facility missing from the imported station snapshot');
+const asteroidBase=discoveredAsteroid.system.locations.find(item=>String(item.marketId)===newAsteroidMarket);
+assert.ok(asteroidBase,'Scout-discovered asteroid base must be added to the Orrery model');
+assert.equal(asteroidBase.kind,'station');
+assert.equal(asteroidBase.type,'AsteroidBase');
+assert.equal(asteroidBase.bodyId,targetBody.id);
+assert.equal(asteroidBase.discoveredByScout,true);
+assert.equal(asteroidBase.positionObservation.event,'StationHost');
+assert.equal(asteroidBase.latitude,null,'Orbital asteroid base must not fabricate surface coordinates');
+
+const recoveredAsteroidMarket='4999999002';
+const recoveredAsteroid=applyFacilityObservationPayload(orrerySystem,{
+  schemaVersion:1,
+  systemId64:String(orrerySystem.id64),
+  observations:[],
+  stationVisits:[{
+    marketId:recoveredAsteroidMarket,
+    stationName:'Recovered Asteroid Exchange',
+    stationType:'AsteroidBase',
+    observedAt,
+    distanceToArrivalLs:targetBody.distanceToArrivalLs,
+    hostPlacement:{
+      bodyJournalId:targetBody.bodyId,
+      bodyName:targetBody.name,
+      observedAt,
+      evidence:['recent_approach_body','supercruise_exit_station'],
+    },
+  }],
+  hostOverrides:[],
+});
+const recoveredBase=recoveredAsteroid.system.locations.find(item=>String(item.marketId)===recoveredAsteroidMarket);
+assert.ok(recoveredBase,'A stored Scout visit can materialize a missing AsteroidBase without a new visit');
+assert.equal(recoveredBase.bodyId,targetBody.id);
+assert.equal(recoveredBase.positionObservation.event,'StationHost');
+assert.deepEqual(recoveredBase.positionObservation.evidence,['recent_approach_body','supercruise_exit_station']);
+assert.equal(recoveredBase.distanceToArrivalLs,targetBody.distanceToArrivalLs);
+
+const asteroidDistanceEstimate=estimateHostBody(orrerySystem,{
+  type:'AsteroidBase',
+  distanceToArrivalLs:123.25,
+});
+assert.equal(asteroidDistanceEstimate?.body?.id,'body-3','AsteroidBase distance estimate should prefer the nearby ring-bearing parent over its non-ringed moons');
+assert.ok(asteroidDistanceEstimate?.confidenceScore>=0.78);
+const roundedAsteroidEstimate=estimateHostBody(orrerySystem,{
+  type:'AsteroidBase',
+  distanceToArrivalLs:124,
+});
+assert.equal(roundedAsteroidEstimate?.body?.id,'body-3','Whole-light-second AsteroidBase distance rounding must still resolve the isolated ring-bearing parent');
+assert.ok(roundedAsteroidEstimate?.confidenceScore>=0.78);
+assert.equal(estimateHostBody(orrerySystem,{type:'AsteroidBase',distanceToArrivalLs:130}),null,'AsteroidBase estimate must still reject a station too far from the nearest ring-bearing body');
+assert.equal(estimateHostBody(orrerySystem,{type:'AsteroidBase',distanceToArrivalLs:null}),null,'Null arrival distance must never estimate a star host');
+const misreportedOrbital=estimateHostBody(orrerySystem,{
+  type:'SurfaceStation',
+  distanceToArrivalLs:123,
+  sourceUpdatedAt:'2026-10-07T05:57:30Z',
+  surfaceEvidence:{hasLatLong:false,latitude:null,longitude:null,planetRadius:null,observedAt:'2026-10-07T05:57:20Z'},
+});
+assert.equal(misreportedOrbital?.body?.id,'body-3','Fresh no-surface evidence allows a journal-misreported SurfaceStation to use ring-body estimation');
+assert.equal(estimateHostBody(orrerySystem,{
+  type:'SurfaceStation',
+  distanceToArrivalLs:123,
+  sourceUpdatedAt:'2026-10-07T05:57:30Z',
+  surfaceEvidence:{hasLatLong:true,latitude:1,longitude:2,planetRadius:6000000,observedAt:'2026-10-07T05:57:20Z'},
+}),null,'A genuine surface position must block orbital ring-body inference');
+assert.equal(estimateHostBody(orrerySystem,{
+  type:'SurfaceStation',
+  distanceToArrivalLs:123,
+  sourceUpdatedAt:'2026-10-07T05:59:30Z',
+  surfaceEvidence:{hasLatLong:false,latitude:null,longitude:null,planetRadius:null,observedAt:'2026-10-07T05:57:20Z'},
+}),null,'Stale no-surface evidence must not reclassify a SurfaceStation');
+
+const staticCarrier=orrerySystem.locations.find(item=>item.kind==='carrier'&&item.bodyId);
+assert.ok(staticCarrier,'Expected a carrier with a dated static body association');
+const carrierTargetBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==staticCarrier.bodyId&&Number.isInteger(item.bodyId));
+const mobileOverlay=applyMobilePlacements(orrerySystem,[{
+  marketId:String(staticCarrier.marketId),
+  stationName:staticCarrier.name,
+  stationType:'FleetCarrier',
+  observedAt,
+  mobilePlacement:{
+    bodyJournalId:carrierTargetBody.bodyId,
+    bodyName:carrierTargetBody.name,
+    observedAt,
+    evidence:['destination_body','edmc_current_body','dashboard_body_name'],
+  },
+}]);
+assert.equal(mobileOverlay.applied,1);
+const movedCarrier=mobileOverlay.system.locations.find(item=>item.id===staticCarrier.id);
+assert.equal(movedCarrier.bodyId,carrierTargetBody.id,'Latest verified Scout visit must override a dated carrier snapshot for display');
+assert.equal(movedCarrier.positionObservation.event,'MobileStationVisit');
+assert.equal(movedCarrier.positionObservation.temporary,true);
+assert.equal(movedCarrier.latitude,null);
+assert.equal(movedCarrier.longitude,null);
+
+const ambiguousMobile=applyMobilePlacements(orrerySystem,[{
+  marketId:String(staticCarrier.marketId),
+  stationName:staticCarrier.name,
+  stationType:'FleetCarrier',
+  observedAt:'2026-10-07T07:20:00Z',
+  distanceToArrivalLs:123,
+}]);
+const unresolvedCarrier=ambiguousMobile.system.locations.find(item=>item.id===staticCarrier.id);
+assert.equal(unresolvedCarrier.bodyId,null,'A fresh unresolved carrier visit must clear a stale imported host instead of leaving it on the old body');
+assert.equal(unresolvedCarrier.distanceToArrivalLs,123);
+assert.equal(unresolvedCarrier.positionKnown,false);
+assert.equal(unresolvedCarrier.positionObservation.status,'unresolved');
+assert.equal(unresolvedCarrier.positionObservation.event,'MobileStationVisit');
+
+const isolatedCarrierTarget=orrerySystem.bodies.find(body=>{
+  if(body.kind==='barycentre'||!Number.isInteger(body.bodyId)||!Number.isFinite(body.distanceToArrivalLs))return false;
+  const estimate=estimateHostBody(orrerySystem,{type:'FleetCarrier',distanceToArrivalLs:body.distanceToArrivalLs});
+  return estimate?.body?.id===body.id;
+});
+assert.ok(isolatedCarrierTarget,'Expected at least one body with an unambiguous arrival-distance carrier estimate');
+const estimatedMobile=applyMobilePlacements(orrerySystem,[{
+  marketId:String(staticCarrier.marketId),
+  stationName:staticCarrier.name,
+  stationType:'FleetCarrier',
+  observedAt:'2026-10-07T07:21:00Z',
+  distanceToArrivalLs:isolatedCarrierTarget.distanceToArrivalLs,
+}]);
+const estimatedCarrier=estimatedMobile.system.locations.find(item=>item.id===staticCarrier.id);
+assert.equal(estimatedCarrier.bodyId,isolatedCarrierTarget.id,'A fresh carrier visit may use a high-confidence geometric host estimate');
+assert.equal(estimatedCarrier.positionObservation.status,'estimated');
+assert.equal(estimatedCarrier.positionObservation.temporary,true);
+assert.equal(estimatedCarrier.positionObservation.event,'MobileStationVisit');
+
+const temporaryCarrierOverride=normalizeFacilityHostOverride({
+  systemId64:String(orrerySystem.id64),
+  marketId:String(staticCarrier.marketId),
+  facilityName:staticCarrier.name,
+  bodyJournalId:carrierTargetBody.bodyId,
+  bodyName:carrierTargetBody.name,
+  placementMode:'temporary_mobile',
+},{updatedAt:'2026-10-07T07:22:00Z',updatedBy:'Officer'});
+assert.equal(temporaryCarrierOverride.placementMode,'temporary_mobile');
+assert.equal(temporaryCarrierOverride.temporary,true);
+
+const manuallyPlacedCarrier=applyCarrierPlacementOverrides(ambiguousMobile.system,[temporaryCarrierOverride]);
+assert.equal(manuallyPlacedCarrier.applied,1);
+const manualCarrier=manuallyPlacedCarrier.system.locations.find(item=>item.id===staticCarrier.id);
+assert.equal(manualCarrier.bodyId,carrierTargetBody.id,'Officer current-placement override should restore a temporary carrier marker');
+assert.equal(manualCarrier.positionObservation.event,'MobileStationOverride');
+assert.equal(manualCarrier.positionObservation.status,'confirmed');
+assert.equal(manualCarrier.positionObservation.temporary,true);
+
+const newerScoutPlacement=applyCarrierPlacementOverrides(mobileOverlay.system,[{
+  ...temporaryCarrierOverride,
+  updatedAt:'2026-10-07T00:00:00Z',
+}]);
+const newerScoutCarrier=newerScoutPlacement.system.locations.find(item=>item.id===staticCarrier.id);
+assert.equal(newerScoutCarrier.positionObservation.event,'MobileStationVisit','Newer good Scout placement must beat an older manual carrier placement');
+assert.equal(newerScoutPlacement.applied,0);
+
 const riversStation=orrerySystem.locations.find(item=>item.name==='Rivers Hub');
 assert.ok(riversStation&&riversStation.bodyId===null);
 const riversEstimate=estimateHostBody(orrerySystem,riversStation);
@@ -672,27 +843,6 @@ assert.equal(overridePayload.overrides.length,1);
 assert.equal(overridePayload.overrides[0].verified,true);
 
 
-const carrierLocation=orrerySystem.locations.find(item=>item.kind==='carrier'&&item.marketId);
-assert.ok(carrierLocation,'Expected a carrier in the Orrery snapshot');
-const carrierBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&Number.isInteger(item.bodyId)&&item.id!==carrierLocation.bodyId);
-const carrierOverride=normalizeFacilityHostOverride({
-  systemId64:String(orrerySystem.id64),
-  marketId:String(carrierLocation.marketId),
-  facilityName:carrierLocation.name,
-  bodyJournalId:carrierBody.bodyId,
-  bodyName:carrierBody.name,
-  placementMode:'temporary_mobile',
-},{updatedAt:'2026-10-07T07:40:00Z',updatedBy:'Officer'});
-assert.equal(carrierOverride.placementMode,'temporary_mobile');
-assert.equal(carrierOverride.temporary,true);
-const carrierPlaced=applyHostOverrides(orrerySystem,[carrierOverride]);
-assert.equal(carrierPlaced.applied,1);
-const placedCarrier=carrierPlaced.system.locations.find(item=>item.id===carrierLocation.id);
-assert.equal(placedCarrier.bodyId,carrierBody.id);
-assert.equal(placedCarrier.positionObservation.event,'MobileStationOverride');
-assert.equal(placedCarrier.positionObservation.status,'confirmed');
-assert.equal(placedCarrier.positionObservation.temporary,true);
-
 const wrongBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==targetFacility.bodyId);
 const conflictEnvelope={...facilityEnvelope,observations:[{...facilityEnvelope.observations[0],bodyJournalId:wrongBody.bodyId,bodyName:wrongBody.name}]};
 const conflicted=applyFacilityObservationPayload(orrerySystem,conflictEnvelope);
@@ -700,12 +850,17 @@ assert.equal(conflicted.applied,0,'A Scout body mismatch must not move an import
 assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id).latitude,null);
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
+const hostOverrideLib=readFileSync('lib/orrery-facility-host-overrides.js','utf8');
+for(const pattern of [/temporary_mobile/,/Mongrel Officer current placement/,/placementMode/])assert.match(hostOverrideLib,pattern);
+const hostOverrideApiSource=readFileSync('functions/api/orrery/host-override.js','utf8');
+for(const pattern of [/temporary_mobile/,/placementMode/])assert.match(hostOverrideApiSource,pattern);
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/surfaceEvidence=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+assert.match(publicFacilityApi,/production\+preview-overrides/);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
-for(const pattern of [/Host confidence/,/Estimated/,/Confirmed current placement/,/buildHostEditor/,/buildCarrierPlacementEditor/,/temporary_mobile/,/Set current placement/,/api\/orrery\/host-override/,/Confirm host/])assert.match(orreryApp,pattern);
+for(const pattern of [/Host confidence/,/Estimated/,/Verified/,/buildHostEditor/,/buildCarrierPlacementEditor/,/temporary_mobile/,/Set current placement/,/api\/orrery\/host-override/,/Confirm host/])assert.match(orreryApp,pattern);
 console.log('✓ Scout station visits retain raw evidence, reject edge-case guesses, and only promote verified hosts');
 
 

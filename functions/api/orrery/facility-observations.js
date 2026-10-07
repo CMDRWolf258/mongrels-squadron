@@ -17,12 +17,20 @@ export async function onRequestGet({request,env}){
       productionUrl.searchParams.set('systemId64',systemId64);
       const upstream=await fetch(productionUrl.toString(),{headers:{Accept:'application/json'}});
       if(upstream.ok){
-        return new Response(await upstream.text(),{
+        const productionPayload=await upstream.json();
+        let previewOverrides=[];
+        try{
+          previewOverrides=(await readFacilityHostOverridePayload(env,systemId64)).overrides||[];
+        }catch{}
+        const hostOverrides=mergeHostOverrides(productionPayload.hostOverrides||[],previewOverrides);
+        return json({
+          ...productionPayload,
+          hostOverrides,
+        },{
           status:upstream.status,
           headers:{
             ...headers(5),
-            'Content-Type':'application/json; charset=utf-8',
-            'X-Orrery-Observation-Source':'production',
+            'X-Orrery-Observation-Source':previewOverrides.length?'production+preview-overrides':'production',
           },
         });
       }
@@ -46,6 +54,20 @@ export async function onRequestGet({request,env}){
     return json({ok:false,error:code},{status:code==='bgs_storage_not_configured'?503:500,headers:headers(5)});
   }
 }
+function mergeHostOverrides(production,preview){
+  const byMarket=new Map();
+  for(const row of [...production,...preview]){
+    const marketId=String(row?.marketId||'');
+    if(!/^\d+$/.test(marketId))continue;
+    const current=byMarket.get(marketId);
+    const rowTime=Date.parse(row?.updatedAt||''),currentTime=Date.parse(current?.updatedAt||'');
+    if(!current||(!Number.isFinite(currentTime)&&Number.isFinite(rowTime))||(Number.isFinite(rowTime)&&rowTime>=currentTime)){
+      byMarket.set(marketId,row);
+    }
+  }
+  return [...byMarket.values()];
+}
+
 export function latestStationVisits(visits){
   const latest=new Map();
   const hostPlacements=new Map();
