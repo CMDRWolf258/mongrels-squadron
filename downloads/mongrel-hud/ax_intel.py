@@ -454,6 +454,139 @@ def encounter_snapshot(encounter: Any, now: float) -> dict[str, Any] | None:
     }
 
 
+def status_bar_alert(snapshot: Any, transient: Any = None) -> dict[str, Any]:
+    """Return the highest-priority AX situational-awareness banner.
+
+    The result is intentionally source-aware. A future visual/audio detector can
+    feed the same transient alert contract without changing the renderer.
+    """
+    ax = snapshot if isinstance(snapshot, dict) else {}
+    phase = ax.get("phase") if isinstance(ax.get("phase"), dict) else {}
+    spec = ax.get("spec") if isinstance(ax.get("spec"), dict) else {}
+    candidates: list[dict[str, Any]] = []
+
+    if isinstance(transient, dict):
+        code = str(transient.get("code") or "").strip().casefold()
+        source = str(transient.get("source") or "manual").strip().casefold() or "manual"
+        if code == "caustic_missile":
+            candidates.append({
+                "code": "caustic_missile",
+                "severity": "critical",
+                "priority": 100,
+                "text": "CAUSTIC MISSILE — EVADE",
+                "detail": "MISSILE LOCK / INBOUND",
+                "flash": True,
+                "source": source,
+            })
+        elif code == "emp":
+            candidates.append({
+                "code": "emp",
+                "severity": "critical",
+                "priority": 98,
+                "text": "ENERGY SURGE — PREPARE EMP",
+                "detail": "NEUTRALIZER READY · BOOST / COLD ESCAPE IF REQUIRED",
+                "flash": True,
+                "source": source,
+            })
+
+    if isinstance(phase, dict) and phase:
+        phase_name = str(phase.get("phase") or "").casefold()
+        if phase.get("shutdownExpected"):
+            candidates.append({
+                "code": "emp_expected",
+                "severity": "critical",
+                "priority": 96,
+                "text": "ENERGY SURGE — PREPARE EMP",
+                "detail": "SECOND-TO-LAST HEART DOWN · SHUTDOWN FIELD EXPECTED",
+                "flash": True,
+                "source": "estimated",
+            })
+        if phase_name == "heart_exerted":
+            heart_window = phase.get("heartWindowRemainingSeconds")
+            suffix = f" · {format_seconds(heart_window)} EST" if isinstance(heart_window, (int, float)) else ""
+            candidates.append({
+                "code": "heart_exerted",
+                "severity": "urgent",
+                "priority": 88,
+                "text": "HEART EXERTED — FIRE",
+                "detail": "HEART WINDOW OPEN" + suffix,
+                "flash": True,
+                "source": "manual" if str(phase.get("source") or "") == "manual" else "estimated",
+            })
+
+        enrage = phase.get("enrageRemainingSeconds")
+        if isinstance(enrage, (int, float)) and enrage <= 20:
+            candidates.append({
+                "code": "enrage_critical",
+                "severity": "critical",
+                "priority": 92,
+                "text": f"ENRAGE {format_seconds(enrage)}",
+                "detail": "BREAK THE HEART NOW",
+                "flash": True,
+                "source": "estimated",
+            })
+        elif isinstance(enrage, (int, float)) and enrage <= 60:
+            candidates.append({
+                "code": "enrage_warning",
+                "severity": "urgent",
+                "priority": 74,
+                "text": f"ENRAGE {format_seconds(enrage)}",
+                "detail": "HEART CYCLE DEADLINE APPROACHING",
+                "flash": True,
+                "source": "estimated",
+            })
+
+        if phase_name == "shield":
+            shield = phase.get("shieldRemainingSeconds")
+            detail = "RESET POSITION / SYNTH / CONTROL SWARM"
+            if isinstance(shield, (int, float)):
+                detail = f"SHIELD DECAY {format_seconds(shield)} EST · " + detail
+            candidates.append({
+                "code": "shield_phase",
+                "severity": "info",
+                "priority": 40,
+                "text": "SHIELD PHASE",
+                "detail": detail,
+                "flash": False,
+                "source": "estimated",
+            })
+        elif phase_name == "exert":
+            candidates.append({
+                "code": "exert_phase",
+                "severity": "info",
+                "priority": 35,
+                "text": "EXERT NEXT HEART",
+                "detail": "CONTROL HULL DAMAGE · KEEP THE ORBIT CLEAN",
+                "flash": False,
+                "source": "estimated",
+            })
+        elif phase_name == "finish":
+            candidates.append({
+                "code": "finish",
+                "severity": "urgent",
+                "priority": 82,
+                "text": "FINAL HEART DOWN — FINISH IT",
+                "detail": "INTERCEPTOR VULNERABLE",
+                "flash": True,
+                "source": "manual",
+            })
+
+    if not candidates:
+        name = str(spec.get("name") or "").upper()
+        return {
+            "code": "standby" if not name else "engaged",
+            "severity": "standby",
+            "priority": 0,
+            "text": "AX STATUS — STANDBY" if not name else f"AX ENGAGED — {name}",
+            "detail": "NO HIGH-PRIORITY PHASE ALERT",
+            "flash": False,
+            "source": "reference" if name else "none",
+        }
+
+    candidates.sort(key=lambda row: int(row.get("priority") or 0), reverse=True)
+    return candidates[0]
+
+
 def compare_speed(spec: Any, ship_boost_mps: Any) -> dict[str, Any] | None:
     if not isinstance(spec, dict):
         return None
