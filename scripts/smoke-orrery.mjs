@@ -227,7 +227,7 @@ assert.match(renderer, /ACESFilmicToneMapping/, 'Orrery uses restrained tone map
 assert.match(renderer, /depthTest:false/, 'Location markers remain visually legible over procedural body materials');
 assert.match(renderer, /frontFacing/, 'Exact surface markers still hide on the far side of their host body');
 assert.match(renderer, /setFocusedVisual/, 'Renderer promotes only the focused body to high detail');
-assert.match(renderer, /detailController\.setFocused/, 'Focused-body detail is explicitly enabled and released');
+assert.match(renderer, /detailController\?\.setFocused/, 'Focused-body detail is explicitly enabled and released');
 const bodyMaterials = read('js/orrery/body-materials.js');
 for (const token of ['CanvasTexture','DataTexture','ShaderMaterial','earthlike','gas','icy','metal','atmosphereColor','createGlowTexture','ringVisualProfile','createSphericalFractal','createNormalTexture','createCloudTexture','detailController','setVisualOpacity']) assert.ok(bodyMaterials.includes(token), `Procedural body material feature missing: ${token}`);
 assert.match(bodyMaterials, /quality === 'focus'[\s\S]*width:384/, 'Focused bodies promote to a bounded high-detail texture');
