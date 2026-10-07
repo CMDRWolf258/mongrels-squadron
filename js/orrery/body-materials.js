@@ -180,25 +180,33 @@ function spherePoint(u, v) {
   ];
 }
 
-function sphericalFractal(u, v, seed, octaves = 6) {
-  const [x, y, z] = spherePoint(u, v);
+function createSphericalFractal(seed, octaves = 6) {
   const random = seeded(seed);
-  let value = 0;
-  let weight = 0;
+  const layers = [];
   let amplitude = 1;
+  let weight = 0;
   for (let octave = 0; octave < octaves; octave++) {
-    const frequency = 1 << octave;
-    const a = 0.65 + random() * 1.75;
-    const b = 0.65 + random() * 1.75;
-    const d = 0.65 + random() * 1.75;
-    const phase = random() * TAU;
-    const ridge = Math.sin((x * a + y * b + z * d) * frequency * Math.PI + phase);
-    const cross = Math.cos((x * d - y * a + z * b) * frequency * Math.PI * 0.83 + phase * 0.71);
-    value += (ridge * 0.68 + cross * 0.32) * amplitude;
+    layers.push({
+      frequency:1 << octave,
+      a:0.65 + random() * 1.75,
+      b:0.65 + random() * 1.75,
+      d:0.65 + random() * 1.75,
+      phase:random() * TAU,
+      amplitude,
+    });
     weight += amplitude;
     amplitude *= 0.52;
   }
-  return weight ? value / weight : 0;
+  return (u, v) => {
+    const [x, y, z] = spherePoint(u, v);
+    let value = 0;
+    for (const layer of layers) {
+      const ridge = Math.sin((x * layer.a + y * layer.b + z * layer.d) * layer.frequency * Math.PI + layer.phase);
+      const cross = Math.cos((x * layer.d - y * layer.a + z * layer.b) * layer.frequency * Math.PI * 0.83 + layer.phase * 0.71);
+      value += (ridge * 0.68 + cross * 0.32) * layer.amplitude;
+    }
+    return weight ? value / weight : 0;
+  };
 }
 
 function craterField(u, v, profile, quality) {
@@ -272,12 +280,14 @@ function createCloudTexture(profile, width, height) {
   canvas.height = height;
   const context = canvas.getContext('2d');
   const image = context.createImageData(width, height);
+  const broadNoise = createSphericalFractal(profile.seed ^ 0x7f4a7c15, 5);
+  const wispNoise = createSphericalFractal(profile.seed ^ 0x18dd7731, 6);
   for (let y = 0; y < height; y++) {
     const v = y / Math.max(1, height - 1);
     for (let x = 0; x < width; x++) {
       const u = x / width;
-      const broad = sphericalFractal(u, v, profile.seed ^ 0x7f4a7c15, 5);
-      const wisps = sphericalFractal(u + broad * 0.018, v, profile.seed ^ 0x18dd7731, 6);
+      const broad = broadNoise(u, v);
+      const wisps = wispNoise(u + broad * 0.018, v);
       const cloud = clamp01((broad * 0.66 + wisps * 0.34 - 0.04) * 2.25);
       const alpha = Math.round(Math.pow(cloud, 1.55) * 190);
       const index = (y * width + x) * 4;
@@ -299,6 +309,9 @@ function buildSurfaceMaps(body, profile, quality = 'base') {
   const context = canvas.getContext('2d', { alpha:false });
   const image = context.createImageData(width, height);
   const heights = new Float32Array(width * height);
+  const broadNoise = createSphericalFractal(profile.seed ^ 0x31415926, quality === 'focus' ? 7 : 5);
+  const mediumNoise = createSphericalFractal(profile.seed ^ 0x91e10da5, quality === 'focus' ? 6 : 4);
+  const fineNoise = quality === 'focus' ? createSphericalFractal(profile.seed ^ 0x68bc21eb, 8) : null;
   const gasRandom = seeded(profile.seed ^ 0x73a4d91f);
   const gasPhase = gasRandom() * TAU;
   const gasStormLongitude = gasRandom();
@@ -310,9 +323,9 @@ function buildSurfaceMaps(body, profile, quality = 'base') {
     const latitude = Math.abs(v - 0.5) * 2;
     for (let x = 0; x < width; x++) {
       const u = x / width;
-      const broad = sphericalFractal(u, v, profile.seed ^ 0x31415926, quality === 'focus' ? 7 : 5);
-      const medium = sphericalFractal(u + broad * 0.022, v - broad * 0.012, profile.seed ^ 0x91e10da5, quality === 'focus' ? 6 : 4);
-      const fine = quality === 'focus' ? sphericalFractal(u, v, profile.seed ^ 0x68bc21eb, 8) : 0;
+      const broad = broadNoise(u, v);
+      const medium = mediumNoise(u + broad * 0.022, v - broad * 0.012);
+      const fine = fineNoise ? fineNoise(u, v) : 0;
       let elevation = broad * 0.58 + medium * 0.31 + fine * 0.11;
       elevation += craterField(u, v, profile, quality);
       heights[y * width + x] = elevation;
