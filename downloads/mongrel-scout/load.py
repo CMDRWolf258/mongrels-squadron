@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import secrets
 import threading
@@ -166,6 +167,15 @@ _session = timeout_session.new_session(timeout=8)
 _hud_condition = threading.Condition()
 _hud_session_id = secrets.token_hex(8)
 _hud_events: deque[dict[str, Any]] = deque(maxlen=HUD_EVENT_LIMIT)
+_telemetry_lock = threading.RLock()
+_telemetry_capture: dict[str, Any] = {
+    "enabled": False,
+    "sessionId": "",
+    "path": "",
+    "startedAt": "",
+    "records": 0,
+    "lastError": "",
+}
 _hud_state: dict[str, Any] = {
     "bridgeVersion": HUD_BRIDGE_VERSION,
     "pluginVersion": PLUGIN_VERSION,
@@ -185,6 +195,7 @@ _hud_state: dict[str, Any] = {
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
+    "telemetry": dict(_telemetry_capture),
     "lastEvent": None,
     "updatedAt": None,
 }
@@ -194,6 +205,86 @@ _hud_thread: Optional[threading.Thread] = None
 _hud_error = ""
 _hud_site_feed_thread: Optional[threading.Thread] = None
 _hud_site_feed_stop = threading.Event()
+
+
+def _telemetry_capture_dir() -> Path:
+    base = Path(os.environ.get("LOCALAPPDATA") or Path.home())
+    return base / "MongrelHUD" / "telemetry"
+
+
+def _telemetry_public_state() -> dict[str, Any]:
+    with _telemetry_lock:
+        return json.loads(json.dumps(_telemetry_capture))
+
+
+def _sync_telemetry_hud_state() -> None:
+    snapshot = _telemetry_public_state()
+    with _hud_condition:
+        _hud_state["telemetry"] = snapshot
+        _hud_condition.notify_all()
+
+
+def _telemetry_append(kind: str, payload: Mapping[str, Any]) -> bool:
+    with _telemetry_lock:
+        if not bool(_telemetry_capture.get("enabled")):
+            return False
+        path = str(_telemetry_capture.get("path") or "")
+        if not path:
+            return False
+        record = {
+            "schemaVersion": 1,
+            "capturedAtUnix": round(time.time(), 6),
+            "kind": str(kind or "unknown"),
+            "payload": dict(payload),
+        }
+        try:
+            target = Path(path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":"), default=str) + "\n")
+            _telemetry_capture["records"] = int(_telemetry_capture.get("records") or 0) + 1
+            _telemetry_capture["lastError"] = ""
+        except Exception as exc:
+            _telemetry_capture["lastError"] = str(exc)[:500]
+            return False
+    _sync_telemetry_hud_state()
+    return True
+
+
+def _telemetry_start(label: str = "ax") -> dict[str, Any]:
+    clean = re.sub(r"[^A-Za-z0-9_-]+", "-", str(label or "ax").strip()).strip("-")[:40] or "ax"
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+    session_id = secrets.token_hex(5)
+    target = _telemetry_capture_dir() / f"{stamp}-{clean}-{session_id}.jsonl"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with _telemetry_lock:
+        _telemetry_capture.update({
+            "enabled": True,
+            "sessionId": session_id,
+            "path": str(target),
+            "startedAt": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime()),
+            "records": 0,
+            "lastError": "",
+        })
+    _sync_telemetry_hud_state()
+    _telemetry_append("capture.start", {"label": clean})
+    return _telemetry_public_state()
+
+
+def _telemetry_stop() -> dict[str, Any]:
+    _telemetry_append("capture.stop", {})
+    with _telemetry_lock:
+        _telemetry_capture["enabled"] = False
+    _sync_telemetry_hud_state()
+    return _telemetry_public_state()
+
+
+def _telemetry_mark(label: str, note: str = "") -> dict[str, Any]:
+    clean = " ".join(str(label or "").split()).upper()[:80]
+    if not clean:
+        raise ValueError("telemetry_label_required")
+    _telemetry_append("marker", {"label": clean, "note": " ".join(str(note or "").split())[:240]})
+    return _telemetry_public_state()
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -298,6 +389,8 @@ def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
     """Track a small sanitized Status.json context for later station-host resolution."""
     if is_beta or not config.get_bool(KEY_ENABLED):
         return None
+
+    _telemetry_append("status", {"commander": str(cmdr or ""), "entry": dict(entry)})
 
     destination = entry.get("Destination")
     destination_name = ""
@@ -419,6 +512,13 @@ def journal_entry(
                 return None
         except Exception:
             pass
+
+    _telemetry_append("journal", {
+        "commander": str(cmdr or ""),
+        "system": str(system or ""),
+        "station": str(station or ""),
+        "entry": dict(entry),
+    })
 
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
@@ -672,6 +772,10 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json(_hud_state_snapshot())
             return
 
+        if parsed.path == "/v1/telemetry":
+            self._write_json({"ok": True, "telemetry": _telemetry_public_state()})
+            return
+
         if parsed.path == "/v1/events":
             params = parse_qs(parsed.query)
             try:
@@ -697,7 +801,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/telemetry/start", "/v1/telemetry/stop", "/v1/telemetry/mark"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -711,6 +815,22 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, Mapping):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+
+        if parsed.path == "/v1/telemetry/start":
+            self._write_json({"ok": True, "telemetry": _telemetry_start(str(body.get("label") or "ax"))})
+            return
+
+        if parsed.path == "/v1/telemetry/stop":
+            self._write_json({"ok": True, "telemetry": _telemetry_stop()})
+            return
+
+        if parsed.path == "/v1/telemetry/mark":
+            try:
+                telemetry = _telemetry_mark(str(body.get("label") or ""), str(body.get("note") or ""))
+                self._write_json({"ok": True, "telemetry": telemetry})
+            except ValueError as exc:
+                self._write_json({"ok": False, "error": str(exc)}, status=400)
             return
 
         if parsed.path in {"/v1/mining/report", "/v1/mining/center"}:
