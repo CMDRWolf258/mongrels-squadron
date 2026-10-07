@@ -904,8 +904,12 @@ const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-for(const pattern of [/Plugins → Open/,/actual plugin folder/,/MongrelScout FOLDER/,/whole folder, not the individual files/,/top-level \*\*README\.md\*\*/,/galactic X\/Y\/Z coordinates/,/straight-line distance/,/market data/i,/actual station or port/i,/Market updated: <station>/,/ApproachSettlement/,/Facility mapped: <facility>/,/latitude and longitude/i,/Local HUD \/ voice bridge/,/127\.0\.0\.1:43857/,/docking\.granted/,/CarrierStats/,/relationship: owner/,/not uploaded/i])assert.match(scoutReadme,pattern);
-assert.doesNotMatch(scoutReadme,/included `load\.py`/);
+for(const pattern of [/Short version:/,/Plugins → Open/,/real plugin folder/,/MongrelScout/,/Enable Mongrel Scout/,/Armed/,/Market updated: <station>/,/Facility mapped: <facility>/,/Host verified: <station> → <body>/,/Updating Scout/,/Privacy/,/member\/#mongrel-scout-setup/,/TECHNICAL_NOTES\.md/])assert.match(scoutReadme,pattern);
+assert.doesNotMatch(scoutReadme,/127\.0\.0\.1:43857|docking\.granted|CarrierStats|galactic X\/Y\/Z coordinates/,'Member README should stay non-technical');
+const scoutTechnicalNotes=readFileSync('downloads/mongrel-scout/TECHNICAL_NOTES.md','utf8');
+for(const pattern of [/galactic X\/Y\/Z coordinates/,/straight-line distance/,/Local HUD \/ voice bridge/,/127\.0\.0\.1:43857/,/docking\.granted/,/CarrierStats/,/relationship: owner/])assert.match(scoutTechnicalNotes,pattern);
+assert.doesNotMatch(zipSource,/TECHNICAL_NOTES\.md/,'Technical notes stay in Git and out of the member Scout ZIP');
+assert.doesNotMatch(apiZipSource,/TECHNICAL_NOTES\.md/,'Technical notes stay in Git and out of the member Scout ZIP');
 
 for(const path of ['functions/api/operations/scout-tokens.js','functions/api/operations/scout-ingest.js','functions/api/operations/wolf-bgs.js']){
   const source=readFileSync(path,'utf8').replace(/^import[^\n]+\n/gm,'').replace(/\bexport\s+/g,'');
