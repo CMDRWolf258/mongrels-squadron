@@ -2,7 +2,7 @@ import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { buildLayout, buildRingLayout, buildLocationLayout, locationPlacementText } from '../../lib/orrery-model.js';
 import { createCameraNavigation } from './camera.js';
-import { bodyProxyColor, createBodyVisual, createRingMaterial } from './body-materials.js';
+import { bodyProxyColor, createBodyVisual, createRingMaterial, setVisualOpacity } from './body-materials.js';
 
 const ACCENT = 0x22d3ee;
 
@@ -44,6 +44,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const disposables = new Set();
   const pointerStarts = new Map();
   let selectedId = null;
+  let focusedVisualId = null;
   let bodyIds = null;
   let locationIds = null;
   let showLabels = true;
@@ -177,6 +178,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       mesh.rotation.y = (visual.profile.seed / 4294967296) * Math.PI * 2;
       mesh.position.copy(position);
       register(body.id, mesh, 'body', body.id, value.radius);
+      objects.get(body.id).detailController = visual.detailController;
       for (const extra of visual.extras) addVisualExtra(body.id, extra);
 
       if (body.kind === 'star') {
@@ -406,9 +408,19 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     onSelect(id);
   }
 
+  function setFocusedVisual(id) {
+    const next = id && objects.get(id)?.kind === 'body' ? id : null;
+    if (focusedVisualId === next) return;
+    if (focusedVisualId) objects.get(focusedVisualId)?.detailController?.setFocused(false);
+    focusedVisualId = next;
+    if (focusedVisualId) objects.get(focusedVisualId)?.detailController?.setFocused(true);
+  }
+
   function focus(id) {
     const object = objects.get(id);
     if (!object) return;
+    const visualBodyId = object.kind === 'body' ? id : object.bodyId;
+    setFocusedVisual(visualBodyId);
     cameraNavigation.suspend();
     const parent = layout.get(object.bodyId);
     const target = object.mesh.position.clone();
@@ -430,6 +442,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   }
 
   function reset() {
+    setFocusedVisual(null);
     cameraNavigation.suspend();
     // Finish any damped gesture before replacing the camera and its target.
     controls.enableDamping = false;
@@ -497,7 +510,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
         for (const visual of object.visualExtras || []) {
           if (!visual.material) continue;
           const baseOpacity = Number(visual.userData.visualBaseOpacity ?? visual.material.opacity ?? 1);
-          visual.material.opacity = baseOpacity * (match ? 1 : 0.15);
+          setVisualOpacity(visual, baseOpacity * (match ? 1 : 0.15));
         }
       }
     }
@@ -605,6 +618,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       controls.removeEventListener('change', requestRender);
       cameraNavigation.dispose();
       controls.dispose();
+      for (const object of objects.values()) object.detailController?.dispose?.();
       scene.traverse(object => {
         if (object.geometry) disposables.add(object.geometry);
         for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
