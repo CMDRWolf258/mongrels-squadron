@@ -46,10 +46,11 @@ export async function onRequestGet({request,env}){
     return json({ok:false,error:code},{status:code==='bgs_storage_not_configured'?503:500,headers:headers(5)});
   }
 }
-function latestStationVisits(visits){
+export function latestStationVisits(visits){
   const latest=new Map();
   const hostPlacements=new Map();
   const mobilePlacements=new Map();
+  const distances=new Map();
   for(const row of Array.isArray(visits)?visits:[]){
     const marketId=String(row?.marketId||'');
     if(!/^\d+$/.test(marketId))continue;
@@ -60,6 +61,10 @@ function latestStationVisits(visits){
       observedAt:row?.observedAt||null,
       distanceToArrivalLs:Number.isFinite(Number(row?.distanceToArrivalLs))?Number(row.distanceToArrivalLs):null,
     });
+    const distance=Number(row?.distanceToArrivalLs);
+    if(Number.isFinite(distance)&&distance>=0&&!distances.has(marketId)){
+      distances.set(marketId,{value:distance,observedAt:row?.observedAt||null});
+    }
     if(!hostPlacements.has(marketId)){
       const placement=deriveStationHostCandidate(row);
       if(placement)hostPlacements.set(marketId,{
@@ -85,8 +90,10 @@ function latestStationVisits(visits){
     const placementIsCurrent=placement&&Number.isFinite(latestMs)&&Number.isFinite(placementMs)
       && placementMs<=latestMs+60*1000
       && latestMs-placementMs<=10*60*1000;
+    const distance=distances.get(row.marketId);
     return{
       ...row,
+      ...(distance?{distanceToArrivalLs:distance.value,distanceObservedAt:distance.observedAt}:{}),
       ...(hostPlacements.has(row.marketId)?{hostPlacement:hostPlacements.get(row.marketId)}:{}),
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
     };
