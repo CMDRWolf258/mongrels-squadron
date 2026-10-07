@@ -51,7 +51,7 @@ The plugin deliberately does **not** transmit the commander's name, cargo invent
 
 ### Realtime Mission Control and Colonization activity
 
-Mongrel Scout 1.12.1 adds a small event-driven activity uplink. Scout does **not** upload every journal line and does not add another polling loop. It queues only four result types and waits briefly so nearby changes can share one request:
+Mongrel Scout 1.12.2 adds a small event-driven activity uplink. Scout does **not** upload every journal line and does not add another polling loop. It queues only four result types and waits briefly so nearby changes can share one request:
 
 - completed mission faction/influence effects, with the minimum locally remembered mission-origin fields needed to distinguish source and secondary effects;
 - redeemed bounty and combat-bond vouchers;

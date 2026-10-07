@@ -120,7 +120,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.12\.1"/,
+  /PLUGIN_VERSION = "1\.12\.2"/,
   /HUD_BRIDGE_VERSION = 9/,
   /MongrelScoutCargoMissionCache/,
   /def _update_cargo_missions_from_journal/,
@@ -372,9 +372,19 @@ const rawStationVisit={
     SupercruiseExit:{timestamp:'2026-10-03T01:14:58Z',system:'NGC 2546 Sector UZ-G d10-16',systemAddress:'668059324240760',bodyName:'Rivers Hub',bodyId:90,bodyType:'Station'},
   },
 };
-const normalizedVisit=normalizeScoutFacilityVisit({...rawStationVisit,distanceToArrivalLs:123.456});
+const normalizedVisit=normalizeScoutFacilityVisit({
+  ...rawStationVisit,
+  distanceToArrivalLs:123.456,
+  dashboard:{
+    ...rawStationVisit.dashboard,
+    surface:{hasLatLong:false,latitude:null,longitude:null,planetRadius:null},
+  },
+});
 assert.equal(normalizedVisit.marketId,'4391607555');
 assert.equal(normalizedVisit.distanceToArrivalLs,123.456);
+assert.deepEqual(normalizedVisit.surfaceEvidence,{
+  hasLatLong:false,latitude:null,longitude:null,planetRadius:null,observedAt:normalizedVisit.dashboardObservedAt,
+});
 assert.equal(normalizedVisit.destination.bodyId,61);
 assert.equal(normalizedVisit.currentBody.bodyId,61);
 assert.deepEqual(deriveStationHostCandidate(normalizedVisit),{
@@ -510,6 +520,8 @@ const aggregatedAsteroidType=latestStationVisits([
 ]);
 assert.equal(aggregatedAsteroidType[0].stationType,'AsteroidBase','Useful station type must survive a thinner companion docking visit');
 assert.equal(aggregatedAsteroidType[0].stationTypeObservedAt,'2026-10-07T05:22:00Z');
+assert.equal(aggregatedVisits[0].surfaceEvidence.hasLatLong,false,'Public visit summary preserves sanitized no-surface evidence');
+assert.equal(aggregatedVisits[0].surfaceEvidence.observedAt,normalizedVisit.dashboardObservedAt);
 const unknownDistanceVisit=latestStationVisits([
   {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:21:00Z',distanceToArrivalLs:null},
 ]);
@@ -668,7 +680,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/surfaceEvidence=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');

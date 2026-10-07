@@ -22,7 +22,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.1"
+PLUGIN_VERSION = "1.12.2"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -150,6 +150,10 @@ _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "timestamp": "",
     "bodyName": "",
+    "hasLatLong": False,
+    "latitude": None,
+    "longitude": None,
+    "planetRadius": None,
     "destinationName": "",
     "destinationBodyId": None,
     "destinationSystem": None,
@@ -254,7 +258,9 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "replace schematic surface markers with verified positions. System coordinates support distance sorting. "
         "Orbital station visits send sanitized station context: station/market identity, Elite's selected "
         "Destination fields, EDMC's current Body fields, the live dashboard BodyName, and only the latest "
-        "relevant ApproachBody/LeaveBody/Supercruise context. The server stores those facts and only promotes "
+        "relevant ApproachBody/LeaveBody/Supercruise context, plus Status.json's surface-position flag/coordinates "
+        "at the visit so newly colonized stations misreported by the journal can be distinguished from real surface ports. "
+        "The server stores those facts and only promotes "
         "a host association when independent signals agree; Scout does not guess from proximity. Docking, "
         "station/carrier, travel and CarrierStats triggers are also normalized for the local HUD/voice bridge "
         "on 127.0.0.1. Commander name may "
@@ -314,9 +320,14 @@ def dashboard_entry(cmdr: str, is_beta: bool, entry: Mapping[str, Any]) -> None:
         "systemAddress": destination_system,
         "observedAt": str(entry.get("timestamp") or "").strip(),
     }
+    flags = _optional_int(entry.get("Flags")) or 0
     with _dashboard_context_lock:
         _dashboard_context["timestamp"] = str(entry.get("timestamp") or "").strip()
         _dashboard_context["bodyName"] = str(entry.get("BodyName") or "").strip()
+        _dashboard_context["hasLatLong"] = bool(flags & (1 << 21))
+        _dashboard_context["latitude"] = _optional_float(entry.get("Latitude"))
+        _dashboard_context["longitude"] = _optional_float(entry.get("Longitude"))
+        _dashboard_context["planetRadius"] = _optional_float(entry.get("PlanetRadius"))
         _dashboard_context["destinationName"] = destination_name
         _dashboard_context["destinationBodyId"] = destination_body_id
         _dashboard_context["destinationSystem"] = destination_system
@@ -2461,6 +2472,12 @@ def _build_station_visit_payload(
             "lastDestination": dict(_dashboard_context["lastDestination"])
             if isinstance(_dashboard_context.get("lastDestination"), Mapping)
             else None,
+            "surface": {
+                "hasLatLong": bool(_dashboard_context.get("hasLatLong")),
+                "latitude": _optional_float(_dashboard_context.get("latitude")),
+                "longitude": _optional_float(_dashboard_context.get("longitude")),
+                "planetRadius": _optional_float(_dashboard_context.get("planetRadius")),
+            },
         }
 
     with _journal_context_lock:

@@ -52,6 +52,7 @@ export function latestStationVisits(visits){
   const mobilePlacements=new Map();
   const distances=new Map();
   const stationTypes=new Map();
+  const surfaceEvidence=new Map();
   for(const row of Array.isArray(visits)?visits:[]){
     const marketId=String(row?.marketId||'');
     if(!/^\d+$/.test(marketId))continue;
@@ -62,6 +63,15 @@ export function latestStationVisits(visits){
       observedAt:row?.observedAt||null,
       distanceToArrivalLs:finiteDistance(row?.distanceToArrivalLs),
     });
+    if(row?.surfaceEvidence&&!surfaceEvidence.has(marketId)){
+      surfaceEvidence.set(marketId,{
+        hasLatLong:row.surfaceEvidence.hasLatLong===true,
+        latitude:finiteOptional(row.surfaceEvidence.latitude),
+        longitude:finiteOptional(row.surfaceEvidence.longitude),
+        planetRadius:finiteOptional(row.surfaceEvidence.planetRadius),
+        observedAt:row.surfaceEvidence.observedAt||row?.observedAt||null,
+      });
+    }
     const stationType=String(row?.stationType||'').trim().slice(0,80);
     if(stationType&&!stationTypes.has(marketId)){
       stationTypes.set(marketId,{value:stationType,observedAt:row?.observedAt||null});
@@ -97,14 +107,21 @@ export function latestStationVisits(visits){
       && latestMs-placementMs<=10*60*1000;
     const distance=distances.get(row.marketId);
     const stationType=stationTypes.get(row.marketId);
+    const surface=surfaceEvidence.get(row.marketId);
     return{
       ...row,
+      ...(surface?{surfaceEvidence:surface}:{}),
       ...(stationType?{stationType:stationType.value,stationTypeObservedAt:stationType.observedAt}:{}),
       ...(distance?{distanceToArrivalLs:distance.value,distanceObservedAt:distance.observedAt}:{}),
       ...(hostPlacements.has(row.marketId)?{hostPlacement:hostPlacements.get(row.marketId)}:{}),
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
     };
   });
+}
+function finiteOptional(value){
+  if(value===null||value===undefined||value==='')return null;
+  const number=Number(value);
+  return Number.isFinite(number)?number:null;
 }
 function finiteDistance(value){
   if(value===null||value===undefined||value==='')return null;
