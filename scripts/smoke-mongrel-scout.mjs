@@ -504,6 +504,12 @@ assert.equal(aggregatedVisits.length,1);
 assert.equal(aggregatedVisits[0].observedAt,'2026-10-07T05:20:10Z','Newest visit remains the public summary event');
 assert.equal(aggregatedVisits[0].distanceToArrivalLs,123.25,'Newest finite station distance survives a thinner companion visit');
 assert.equal(aggregatedVisits[0].distanceObservedAt,'2026-10-07T05:20:00Z');
+const aggregatedAsteroidType=latestStationVisits([
+  {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:22:10Z',stationType:'',distanceToArrivalLs:124},
+  {...normalizedVisit,event:'DockingRequested',observedAt:'2026-10-07T05:22:00Z',stationType:'AsteroidBase',distanceToArrivalLs:124},
+]);
+assert.equal(aggregatedAsteroidType[0].stationType,'AsteroidBase','Useful station type must survive a thinner companion docking visit');
+assert.equal(aggregatedAsteroidType[0].stationTypeObservedAt,'2026-10-07T05:22:00Z');
 const unknownDistanceVisit=latestStationVisits([
   {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:21:00Z',distanceToArrivalLs:null},
 ]);
@@ -662,7 +668,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
