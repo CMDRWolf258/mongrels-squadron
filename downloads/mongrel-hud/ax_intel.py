@@ -339,7 +339,8 @@ def new_encounter(variant: Any, now: float = 0.0, source: str = "manual") -> dic
         "lastHeartDestroyedAt": None,
         "shieldStartedAt": None,
         "enrageStartedAt": started if hearts else None,
-        "heartSplitsSeconds": [],\n        "manualEvents": 0,
+        "heartSplitsSeconds": [],
+        "manualEvents": 0,
     }
 
 
