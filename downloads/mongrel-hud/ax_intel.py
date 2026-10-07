@@ -330,16 +330,16 @@ def new_encounter(variant: Any, now: float = 0.0, source: str = "manual") -> dic
     return {
         "variant": spec["id"],
         "source": source if source in {"journal", "scanner", "manual", "estimated"} else "manual",
-        "startedAtMonotonic": started,
+        "startedAt": started,
         "heartsTotal": hearts,
         "heartsRemaining": hearts,
         "heartsDestroyed": 0,
         "phase": "engage" if hearts else "direct",
-        "heartExertedAtMonotonic": None,
-        "lastHeartDestroyedAtMonotonic": None,
-        "shieldStartedAtMonotonic": None,
-        "enrageStartedAtMonotonic": started if hearts else None,
-        "manualEvents": 0,
+        "heartExertedAt": None,
+        "lastHeartDestroyedAt": None,
+        "shieldStartedAt": None,
+        "enrageStartedAt": started if hearts else None,
+        "heartSplitsSeconds": [],\n        "manualEvents": 0,
     }
 
 
@@ -359,30 +359,37 @@ def apply_encounter_action(encounter: Any, action: Any, now: float) -> dict[str,
         if hearts_remaining <= 0:
             raise ValueError("no_ax_hearts_remaining")
         out["phase"] = "heart_exerted"
-        out["heartExertedAtMonotonic"] = when
+        out["heartExertedAt"] = when
     elif action_id == "heart_down":
         if hearts_remaining <= 0:
             raise ValueError("no_ax_hearts_remaining")
+        split_start = out.get("lastHeartDestroyedAt")
+        if not isinstance(split_start, (int, float)):
+            split_start = out.get("startedAt")
+        splits = [max(0.0, float(value)) for value in (out.get("heartSplitsSeconds") or []) if isinstance(value, (int, float))]
+        if isinstance(split_start, (int, float)):
+            splits.append(round(max(0.0, when - float(split_start)), 3))
+        out["heartSplitsSeconds"] = splits[-hearts_total:]
         hearts_remaining -= 1
         out["heartsRemaining"] = hearts_remaining
         out["heartsDestroyed"] = hearts_total - hearts_remaining
-        out["lastHeartDestroyedAtMonotonic"] = when
-        out["heartExertedAtMonotonic"] = None
+        out["lastHeartDestroyedAt"] = when
+        out["heartExertedAt"] = None
         if hearts_remaining > 0:
             out["phase"] = "shield"
-            out["shieldStartedAtMonotonic"] = when
+            out["shieldStartedAt"] = when
             # A completed heart starts the next heart-cycle deadline.
-            out["enrageStartedAtMonotonic"] = when
+            out["enrageStartedAt"] = when
         else:
             out["phase"] = "finish"
-            out["shieldStartedAtMonotonic"] = None
-            out["enrageStartedAtMonotonic"] = None
+            out["shieldStartedAt"] = None
+            out["enrageStartedAt"] = None
     elif action_id == "shield_up":
         out["phase"] = "shield"
-        out["shieldStartedAtMonotonic"] = when
+        out["shieldStartedAt"] = when
     elif action_id == "shield_down":
         out["phase"] = "exert"
-        out["shieldStartedAtMonotonic"] = None
+        out["shieldStartedAt"] = None
     elif action_id == "reset":
         return new_encounter(spec["id"], when, source="manual")
     else:
@@ -408,9 +415,9 @@ def encounter_snapshot(encounter: Any, now: float) -> dict[str, Any] | None:
             return None
         return max(0, int(round(float(start) + float(duration) - current)))
 
-    shield_remaining = remaining(encounter.get("shieldStartedAtMonotonic"), spec.get("shieldDecaySeconds"))
-    enrage_remaining = remaining(encounter.get("enrageStartedAtMonotonic"), spec.get("enrageSeconds"))
-    heart_window_remaining = remaining(encounter.get("heartExertedAtMonotonic"), HEART_EXERTION_WINDOW_SECONDS)
+    shield_remaining = remaining(encounter.get("shieldStartedAt"), spec.get("shieldDecaySeconds"))
+    enrage_remaining = remaining(encounter.get("enrageStartedAt"), spec.get("enrageSeconds"))
+    heart_window_remaining = remaining(encounter.get("heartExertedAt"), HEART_EXERTION_WINDOW_SECONDS)
 
     shutdown_expected = bool(
         hearts_total >= 2
@@ -440,6 +447,8 @@ def encounter_snapshot(encounter: Any, now: float) -> dict[str, Any] | None:
         "shutdownExpected": shutdown_expected,
         "shutdownNextHeart": shutdown_next_heart,
         "nextExertionHullPercent": exertion_percent,
+        "elapsedSeconds": max(0, int(round(current - float(encounter.get("startedAt") or current)))),
+        "heartSplitsSeconds": [round(float(value), 3) for value in encounter.get("heartSplitsSeconds") or [] if isinstance(value, (int, float))],
         "spec": spec,
     }
 
