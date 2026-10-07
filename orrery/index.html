@@ -8,7 +8,7 @@
   <title>System Orrery | The Mongrels</title>
   <meta name="description" content="Explore Mongrel systems in interactive 3D. Find bodies, rings and known installations in Elite Dangerous.">
   <link rel="stylesheet" href="../css/global.css?v=70">
-  <link rel="stylesheet" href="../css/orrery.css?v=1">
+  <link rel="stylesheet" href="../css/orrery.css?v=2">
 </head>
 <body class="page-orrery">
 <header class="site-header"><div class="container nav-wrap"><a class="brand" href="../"><img src="../assets/images/branding/mongrels-logo.png" alt="Regiment of Imperial Mongrels logo"><span class="brand-text"><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></span></a><button class="menu-toggle" type="button" data-menu-toggle aria-label="Toggle navigation" aria-expanded="false">MENU</button><nav class="nav-links" data-nav><a href="../">Home</a><a href="../guides/">Field Manual</a><a href="./" aria-current="page">System Orrery</a></nav></div></header>
@@ -22,10 +22,25 @@
       <label><span>Known resource</span><select id="orrery-resource"><option value="all">All resources</option></select></label>
       <button id="orrery-clear" class="orrery-button" type="button">Clear filters</button>
     </div>
+    <div class="orrery-layer-bar" aria-label="Orrery layer presets">
+      <span class="orrery-layer-label">View preset</span>
+      <div id="orrery-presets" class="orrery-presets">
+        <button type="button" data-preset="navigation">Navigation</button>
+        <button type="button" data-preset="mining">Mining</button>
+        <button type="button" data-preset="facilities">Facilities</button>
+        <button type="button" data-preset="everything" aria-pressed="true">Everything</button>
+      </div>
+      <span id="orrery-preset-help" class="orrery-layer-help">All mapped layers visible.</span>
+    </div>
+    <details id="orrery-hierarchy-panel" class="orrery-hierarchy-panel">
+      <summary><span>System hierarchy</span><span id="orrery-hierarchy-current">Entire system</span></summary>
+      <div id="orrery-hierarchy" class="orrery-hierarchy" role="tree" aria-label="System hierarchy"></div>
+    </details>
     <div class="orrery-explorer">
       <div class="orrery-map-column">
         <div id="orrery-viewport" class="orrery-viewport" aria-label="3D system view" aria-describedby="orrery-controls-help">
           <div class="orrery-map-header"><span id="orrery-status" role="status">Loading system…</span><span class="orrery-map-axis" aria-hidden="true">3D / ORBITAL VIEW</span></div>
+          <nav id="orrery-breadcrumb" class="orrery-breadcrumb" aria-label="Current Orrery path"></nav>
           <div id="orrery-fallback" class="orrery-fallback" hidden><strong>3D view unavailable</strong><p id="orrery-fallback-message">You can still search and select every known object below.</p><button id="orrery-retry" type="button" class="orrery-button">Retry 3D view</button></div>
           <div class="orrery-camera-bar" aria-label="Camera controls"><button id="orrery-reset" type="button" title="Reset camera">Overview</button><button id="orrery-zoom-in" type="button" aria-label="Zoom in">+</button><button id="orrery-zoom-out" type="button" aria-label="Zoom out">−</button><button id="orrery-pan-left" type="button" aria-label="Pan left">←</button><button id="orrery-pan-right" type="button" aria-label="Pan right">→</button><button id="orrery-pan-up" type="button" aria-label="Pan up">↑</button><button id="orrery-pan-down" type="button" aria-label="Pan down">↓</button></div>
         </div>
@@ -42,7 +57,7 @@
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><img src="../assets/images/branding/mongrels-logo.png" alt=""><div><strong>The Mongrels</strong><span>Regiment of Imperial Mongrels</span></div></div><div class="footer-note">© <span data-year></span> Regiment of Imperial Mongrels. Elite Dangerous is the property of Frontier Developments.</div></div></footer>
 <script src="../js/site.js?v=71"></script>
-<script type="module" src="../js/orrery/app.js?v=3"></script>
+<script type="module" src="../js/orrery/app.js?v=7"></script>
 <script src="../js/mongrel-assistant.js?v=66"></script>
 </body>
 </html>

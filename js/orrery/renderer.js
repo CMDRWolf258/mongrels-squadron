@@ -2,7 +2,7 @@ import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { buildLayout, buildRingLayout, buildLocationLayout, locationPlacementText } from '../../lib/orrery-model.js';
 import { createCameraNavigation } from './camera.js';
-import { bodyProxyColor, createBodyVisual, createRingMaterial, setVisualOpacity } from './body-materials.js';
+import { bodyProxyColor, createBodyVisual, createRingMaterial, setVisualOpacity } from './body-materials.js?v=2';
 
 const ACCENT = 0x22d3ee;
 
@@ -35,6 +35,12 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const layout = buildLayout(system);
   const locationLayout = buildLocationLayout(system, layout);
   const bodies = new Map(system.bodies.map(body => [body.id, body]));
+  const children = new Map();
+  for (const body of system.bodies) {
+    const list = children.get(body.parentId ?? null) || [];
+    list.push(body);
+    children.set(body.parentId ?? null, list);
+  }
   const objects = new Map();
   const labels = new Map();
   const pickable = [];
@@ -45,6 +51,10 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointerStarts = new Map();
   let selectedId = null;
   let focusedVisualId = null;
+  let localFocusBodyId = null;
+  let localBodyIds = null;
+  let localAncestorIds = null;
+  let layerPreset = 'everything';
   let bodyIds = null;
   let locationIds = null;
   let showLabels = true;
@@ -137,9 +147,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const dotTexture = new THREE.CanvasTexture(dotCanvas);
   disposables.add(dotTexture);
 
-  function register(id, mesh, kind, bodyId = id, radius = 1) {
+  function register(id, mesh, kind, bodyId = id, radius = 1, recordKind = kind) {
     mesh.userData = { id, kind, bodyId };
-    objects.set(id, { mesh, kind, bodyId, radius, baseOpacity: mesh.material?.opacity ?? 1, visualExtras:[] });
+    objects.set(id, { mesh, kind, bodyId, recordKind, radius, baseOpacity: mesh.material?.opacity ?? 1, visualExtras:[], displayOpacity:1, layerVisible:true });
     pickable.push(mesh);
     scene.add(mesh);
   }
@@ -177,7 +187,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       // presenting the same seam/longitude while remaining static.
       mesh.rotation.y = (visual.profile.seed / 4294967296) * Math.PI * 2;
       mesh.position.copy(position);
-      register(body.id, mesh, 'body', body.id, value.radius);
+      register(body.id, mesh, 'body', body.id, value.radius, body.kind);
       objects.get(body.id).detailController = visual.detailController;
       for (const extra of visual.extras) addVisualExtra(body.id, extra);
 
@@ -204,6 +214,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       );
       path.position.set(...parent.position);
       path.userData.bodyId = body.id;
+      path.userData.baseOpacity = body.kind === 'moon' ? 0.3 : 0.5;
       orbits.push(path);
       scene.add(path);
     }
@@ -214,7 +225,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 112), material);
       ringMesh.rotation.x = -Math.PI / 2 + (value.inclination || 0);
       ringMesh.position.copy(position);
-      register(ringId, ringMesh, 'ring', body.id, outer);
+      register(ringId, ringMesh, 'ring', body.id, outer, 'ring');
     }
   }
 
@@ -238,7 +249,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     const marker = new THREE.Mesh(geometry, material);
     marker.position.copy(markerPosition);
     marker.renderOrder = 8;
-    register(location.id, marker, 'location', location.bodyId, markerRadius);
+    register(location.id, marker, 'location', location.bodyId, markerRadius, location.kind);
     objects.get(location.id).placement = placement.placement;
     addLabel(location.id, location.name, markerPosition, 'location', location.bodyId);
     const button = labels.get(location.id).button;
@@ -289,10 +300,87 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   function hasBodyMatch(id) { return !bodyIds || bodyIds.has(id); }
   function hasLocationMatch(id) { return !locationIds || locationIds.has(id); }
 
+  function presetAllows(object) {
+    if (!object || layerPreset === 'everything') return true;
+    if (object.kind === 'body') return true;
+    if (layerPreset === 'navigation') return object.kind === 'ring' || (object.kind === 'location' && ['station','settlement','installation','carrier','custom'].includes(object.recordKind));
+    if (layerPreset === 'mining') return object.kind === 'ring' || (object.kind === 'location' && ['surface-deposit','ring-hotspot'].includes(object.recordKind));
+    if (layerPreset === 'facilities') return object.kind === 'location' && ['station','settlement','installation','carrier'].includes(object.recordKind);
+    return true;
+  }
+
+  function localFactor(object) {
+    if (!localFocusBodyId || !object) return 1;
+    if (object.kind === 'location') return localBodyIds?.has(object.bodyId) ? 1 : 0;
+    if (localBodyIds?.has(object.bodyId)) return 1;
+    if (localAncestorIds?.has(object.bodyId)) return 0.18;
+    return 0.055;
+  }
+
+  function applyVisibility() {
+    for (const [id, object] of objects) {
+      const searchMatch = object.kind === 'location' ? hasLocationMatch(id) : hasBodyMatch(object.bodyId);
+      const selected = id === selectedId;
+      const presetMatch = presetAllows(object) || selected;
+      const local = selected ? 1 : localFactor(object);
+      if (object.kind === 'location') {
+        object.layerVisible = presetMatch && searchMatch && local > 0;
+        object.displayOpacity = object.layerVisible ? 1 : 0;
+        object.mesh.visible = object.layerVisible;
+        object.mesh.material.opacity = object.layerVisible ? object.baseOpacity : 0;
+      } else {
+        object.layerVisible = presetMatch;
+        const searchFactor = searchMatch ? 1 : 0.18;
+        object.displayOpacity = presetMatch ? searchFactor * local : 0;
+        object.mesh.visible = object.displayOpacity > 0.015;
+        object.mesh.material.transparent = object.kind === 'ring' || object.displayOpacity < 0.999;
+        object.mesh.material.opacity = object.baseOpacity * object.displayOpacity;
+        object.mesh.material.depthWrite = object.kind !== 'ring' && object.displayOpacity > 0.9;
+        for (const visual of object.visualExtras || []) {
+          if (!visual.material) continue;
+          const baseOpacity = Number(visual.userData.visualBaseOpacity ?? visual.material.opacity ?? 1);
+          setVisualOpacity(visual, baseOpacity * object.displayOpacity);
+        }
+      }
+    }
+    for (const orbit of orbits) {
+      const pseudo = objects.get(orbit.userData.bodyId);
+      const searchFactor = hasBodyMatch(orbit.userData.bodyId) ? 1 : 0.25;
+      const factor = localFactor(pseudo);
+      orbit.visible = showOrbits && factor > 0.03;
+      orbit.material.opacity = Number(orbit.userData.baseOpacity ?? 0.48) * searchFactor * factor;
+    }
+    updateLocationGuides();
+    requestRender();
+  }
+
+  function rebuildLocalSets(bodyId) {
+    localFocusBodyId = bodyId && bodies.get(bodyId)?.kind !== 'star' ? bodyId : null;
+    localBodyIds = null;
+    localAncestorIds = null;
+    if (!localFocusBodyId) return;
+    localBodyIds = new Set();
+    const visit = id => {
+      const body = bodies.get(id);
+      if (!body) return;
+      if (body.kind !== 'barycentre') localBodyIds.add(body.id);
+      for (const child of children.get(id) || []) visit(child.id);
+    };
+    visit(localFocusBodyId);
+    localAncestorIds = new Set();
+    let cursor = bodies.get(localFocusBodyId)?.parentId;
+    while (cursor) {
+      const body = bodies.get(cursor);
+      if (!body) break;
+      if (body.kind !== 'barycentre') localAncestorIds.add(body.id);
+      cursor = body.parentId;
+    }
+  }
+
   function updateLocationGuides() {
     const host = objects.get(selectedId)?.bodyId;
     for (const { guide, bodyId, ids } of locationGuides.values()) {
-      guide.visible = showOrbits && host === bodyId && ids.some(hasLocationMatch);
+      guide.visible = showOrbits && host === bodyId && ids.some(id => hasLocationMatch(id) && objects.get(id)?.layerVisible);
     }
   }
 
@@ -305,11 +393,13 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       const parent = body && bodies.get(body.parentId);
       const selected = selectedId === id;
       const selectedParent = objects.get(selectedId)?.bodyId;
+      const object = objects.get(id);
       const match = label.kind === 'body' ? hasBodyMatch(id) : hasLocationMatch(id);
+      const visibleByLayer = object?.layerVisible !== false && (object?.displayOpacity ?? 1) > 0.12;
       const topLevel = label.kind === 'body' && (body.kind === 'star' || !parent || parent.kind === 'star' || parent.kind === 'barycentre');
       const matchingMoon = label.kind === 'body' && bodyIds && bodyIds.has(id);
       const detail = label.kind === 'location' && selectedParent === label.bodyId && match;
-      const allowed = selected || (showLabels && (topLevel || matchingMoon || detail));
+      const allowed = selected || (showLabels && visibleByLayer && (topLevel || matchingMoon || detail || (localFocusBodyId && localBodyIds?.has(label.bodyId))));
       if (!allowed) { label.button.hidden = true; continue; }
       projected.copy(label.position).project(camera);
       const inFront = label.position.clone().sub(camera.position).dot(cameraDirection) > 0;
@@ -317,7 +407,6 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
         label.button.hidden = true;
         continue;
       }
-      const object = objects.get(id);
       const x = (projected.x * 0.5 + 0.5) * width;
       const y = (-projected.y * 0.5 + 0.5) * height - 10;
       // Avoid labelling far-side surface sites through the parent sphere.
@@ -350,7 +439,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     const verticalScale = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2 / height;
     for (const [id, object] of objects) {
       if (object.kind === 'location') {
-        const match = hasLocationMatch(id);
+        if (!object.layerVisible) { object.mesh.visible = false; continue; }
         if (object.placement === 'surface') {
           const parent = layout.get(object.bodyId);
           const bodyPosition = parent ? new THREE.Vector3(...parent.position) : null;
@@ -358,16 +447,16 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
             ? surfaceNormal.copy(object.mesh.position).sub(bodyPosition)
               .dot(surfaceToCamera.copy(camera.position).sub(object.mesh.position)) > 0
             : true;
-          object.mesh.visible = match && frontFacing;
+          object.mesh.visible = object.layerVisible && frontFacing;
         } else {
-          object.mesh.visible = match;
+          object.mesh.visible = object.layerVisible;
         }
       }
       if (!object.proxy) continue;
       const unitsPerPixel = camera.position.distanceTo(object.mesh.position) * verticalScale;
       object.proxy.visible = object.radius / unitsPerPixel < 3;
       object.proxy.scale.setScalar(unitsPerPixel * 7);
-      object.proxy.material.opacity = hasBodyMatch(id) ? 0.95 : 0.22;
+      object.proxy.material.opacity = 0.95 * (object.displayOpacity ?? 1);
     }
     const selected = objects.get(selectedId);
     if (selected) {
@@ -399,8 +488,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       selection.scale.setScalar(object.radius * 1.3 + 0.08);
     }
     if (shouldFocus) focus(id);
-    updateLocationGuides();
-    requestRender();
+    applyVisibility();
   }
 
   function choose(id) {
@@ -500,23 +588,17 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   function setFilters(filters = {}) {
     bodyIds = filters.bodyIds instanceof Set ? filters.bodyIds : null;
     locationIds = filters.locationIds instanceof Set ? filters.locationIds : null;
-    for (const [id, object] of objects) {
-      const match = object.kind === 'location' ? hasLocationMatch(id) : hasBodyMatch(object.bodyId);
-      if (object.kind === 'location') object.mesh.visible = match;
-      else {
-        object.mesh.material.transparent = object.kind === 'ring' || !match;
-        object.mesh.material.opacity = object.baseOpacity * (match ? 1 : 0.18);
-        object.mesh.material.depthWrite = object.kind !== 'ring' && match;
-        for (const visual of object.visualExtras || []) {
-          if (!visual.material) continue;
-          const baseOpacity = Number(visual.userData.visualBaseOpacity ?? visual.material.opacity ?? 1);
-          setVisualOpacity(visual, baseOpacity * (match ? 1 : 0.15));
-        }
-      }
-    }
-    for (const orbit of orbits) orbit.material.opacity = hasBodyMatch(orbit.userData.bodyId) ? 0.48 : 0.12;
-    updateLocationGuides();
-    requestRender();
+    applyVisibility();
+  }
+
+  function setLayerPreset(name = 'everything') {
+    layerPreset = ['everything','navigation','mining','facilities'].includes(name) ? name : 'everything';
+    applyVisibility();
+  }
+
+  function setLocalFocus(bodyId = null) {
+    rebuildLocalSets(bodyId);
+    applyVisibility();
   }
 
   function pick(event) {
@@ -606,7 +688,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     zoom,
     pan,
     setFilters,
-    setOrbits(visible) { showOrbits = Boolean(visible); for (const orbit of orbits) orbit.visible = showOrbits; updateLocationGuides(); requestRender(); },
+    setLayerPreset,
+    setLocalFocus,
+    setOrbits(visible) { showOrbits = Boolean(visible); applyVisibility(); },
     setLabels(visible) { showLabels = Boolean(visible); requestRender(); },
     dispose() {
       if (disposed) return;
