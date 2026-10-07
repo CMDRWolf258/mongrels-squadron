@@ -72,6 +72,7 @@ snap = ax.encounter_snapshot(encounter, 180.0)
 assert snap["heartsRemaining"] == 4
 assert snap["shieldRemainingSeconds"] == 170
 assert snap["enrageRemainingSeconds"] == 410
+assert snap["heartSplitsSeconds"] == [70.0]
 assert snap["nextExertionHullPercent"] == 16
 
 # With two hearts remaining, the next heart kill is the second-to-last heart.
@@ -102,6 +103,8 @@ assert snap["heartsRemaining"] == 0
 assert snap["phase"] == "finish"
 assert snap["enrageRemainingSeconds"] is None
 assert snap["shieldRemainingSeconds"] is None
+assert len(snap["heartSplitsSeconds"]) == 5
+assert sum(snap["heartSplitsSeconds"]) == 870.0
 
 assert ax.variant_spec("orthrus")["hearts"] == 0
 assert ax.variant_spec("glaive")["antiGuardianField"] is True
