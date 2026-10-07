@@ -3988,6 +3988,149 @@ class MongrelHudApp:
         current_body = sorted(body_known, key=str.casefold)
         return current_body, all_choices
 
+    def ax_settings_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            ax_state = self.store.data.get("ax") if isinstance(self.store.data.get("ax"), dict) else {}
+            settings = normalize_ax_settings(ax_state.get("settings"))
+        return settings
+
+    def set_ax_settings(self, changes: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(changes, dict):
+            raise ValueError("invalid_ax_settings")
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            current = normalize_ax_settings(ax_state.get("settings"))
+            merged = {
+                **current,
+                **{key: value for key, value in changes.items() if key != "audio"},
+                "audio": {
+                    **(current.get("audio") if isinstance(current.get("audio"), dict) else {}),
+                    **(changes.get("audio") if isinstance(changes.get("audio"), dict) else {}),
+                },
+            }
+            settings = normalize_ax_settings(merged)
+            old_override = str(current.get("variantOverride") or "auto")
+            new_override = str(settings.get("variantOverride") or "auto")
+            ax_state["settings"] = settings
+            if new_override != old_override:
+                ax_state["encounter"] = None
+                ax_state["targetKey"] = ""
+                ax_state["targetVariant"] = ""
+                ax_state["targetSource"] = ""
+            self.store.save()
+        self._sync_ax_target(self.scout_state().get("target"))
+        return self.ax_snapshot()
+
+    def _sync_ax_target(self, target: Any) -> None:
+        target = target if isinstance(target, dict) else {}
+        target_key = self.target_identity(target)
+        settings = self.ax_settings_snapshot()
+        override = str(settings.get("variantOverride") or "auto")
+        spec = resolve_ax_variant(target, override)
+        if not spec:
+            return
+        variant = str(spec.get("id") or "")
+        exact = variant in variant_ids()
+        source = "manual" if override != "auto" else "journal"
+        if not exact:
+            source = "unknown"
+        tracking_key = target_key or (f"manual:{variant}" if override != "auto" else "")
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            existing_key = str(ax_state.get("targetKey") or "")
+            existing_variant = str(ax_state.get("targetVariant") or "")
+            if tracking_key and exact and (tracking_key != existing_key or variant != existing_variant):
+                ax_state["targetKey"] = tracking_key
+                ax_state["targetVariant"] = variant
+                ax_state["targetSource"] = source
+                ax_state["encounter"] = new_encounter(variant, time.monotonic(), source=source)
+                self.store.save()
+            elif tracking_key and not exact and (tracking_key != existing_key or variant != existing_variant):
+                ax_state["targetKey"] = tracking_key
+                ax_state["targetVariant"] = variant
+                ax_state["targetSource"] = source
+                ax_state["encounter"] = None
+                self.store.save()
+
+    def ax_action(self, action: str) -> dict[str, Any]:
+        current_target = self.scout_state().get("target")
+        self._sync_ax_target(current_target)
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            encounter = ax_state.get("encounter")
+            if not isinstance(encounter, dict):
+                settings = normalize_ax_settings(ax_state.get("settings"))
+                spec = resolve_ax_variant(
+                    current_target if isinstance(current_target, dict) else {},
+                    settings.get("variantOverride"),
+                )
+                if not spec or str(spec.get("id") or "") not in variant_ids():
+                    raise ValueError("ax_variant_required")
+                encounter = new_encounter(str(spec["id"]), time.monotonic(), source="manual")
+            ax_state["encounter"] = apply_encounter_action(encounter, action, time.monotonic())
+            ax_state["targetVariant"] = str(ax_state["encounter"].get("variant") or "")
+            ax_state["targetSource"] = "manual" if str(action or "").casefold() != "reset" else "manual"
+            self.store.save()
+        return self.ax_snapshot()
+
+    def ax_snapshot(self) -> dict[str, Any]:
+        state = self.scout_state()
+        target = state.get("target") if isinstance(state.get("target"), dict) else {}
+        self._sync_ax_target(target)
+        settings = self.ax_settings_snapshot()
+        spec = resolve_ax_variant(target, settings.get("variantOverride"))
+        with self.store.lock:
+            ax_state = self.store.data.get("ax") if isinstance(self.store.data.get("ax"), dict) else {}
+            encounter = json.loads(json.dumps(ax_state.get("encounter"))) if isinstance(ax_state.get("encounter"), dict) else None
+            target_source = str(ax_state.get("targetSource") or "")
+            target_key = str(ax_state.get("targetKey") or "")
+        phase = encounter_snapshot(encounter, time.monotonic()) if encounter else None
+
+        warnings: list[dict[str, str]] = []
+        if isinstance(spec, dict):
+            tags = [str(tag) for tag in spec.get("tags") or []]
+            if "FASTEST INTERCEPTOR" in tags:
+                warnings.append({"level": "amber", "code": "speed", "text": "FASTEST INTERCEPTOR · do not assume you can disengage by running"})
+            if spec.get("antiGuardianField"):
+                warnings.append({"level": "red", "code": "anti_guardian", "text": "ANTI-GUARDIAN FIELD · standard Guardian modules may be disabled/damaged"})
+        if isinstance(phase, dict):
+            if phase.get("shutdownExpected"):
+                warnings.append({"level": "red", "code": "shutdown_expected", "text": "SHUTDOWN PULSE EXPECTED · neutralizer or cold/range escape"})
+            elif phase.get("shutdownNextHeart"):
+                warnings.append({"level": "amber", "code": "shutdown_next", "text": "EMP AFTER NEXT HEART"})
+            enrage = phase.get("enrageRemainingSeconds")
+            if isinstance(enrage, int) and enrage <= 60:
+                warnings.append({"level": "red" if enrage <= 20 else "amber", "code": "enrage", "text": f"ENRAGE {ax_format_seconds(enrage)} EST"})
+            heart_window = phase.get("heartWindowRemainingSeconds")
+            if phase.get("phase") == "heart_exerted" and isinstance(heart_window, int) and heart_window <= 15:
+                warnings.append({"level": "amber", "code": "heart_window", "text": f"HEART WINDOW {ax_format_seconds(heart_window)} EST"})
+
+        speed = None
+        if isinstance(spec, dict):
+            speed = compare_speed(spec, settings.get("shipBoostMps"))
+        return {
+            "reviewedAt": AX_DATA_REVIEWED_AT,
+            "targetKey": target_key,
+            "targetSource": target_source or ("manual" if settings.get("variantOverride") != "auto" else "auto"),
+            "settings": settings,
+            "spec": spec,
+            "phase": phase,
+            "speedComparison": speed,
+            "warnings": warnings,
+            "confidence": {
+                "target": "known" if target and spec and str(spec.get("id") or "") in variant_ids() and settings.get("variantOverride") == "auto" else "manual" if settings.get("variantOverride") != "auto" else "unknown",
+                "hearts": "manual" if phase and int(phase.get("heartsDestroyed") or 0) > 0 else "reference",
+                "timers": "estimated" if phase else "none",
+                "liveHullShield": "journal" if target else "none",
+            },
+            "liveTarget": {
+                "shieldHealth": target.get("shieldHealth") if target else None,
+                "hullHealth": target.get("hullHealth") if target else None,
+                "scanStage": target.get("scanStage") if target else None,
+                "subsystem": (target.get("subsystem") or {}).get("name") if isinstance(target.get("subsystem"), dict) else None,
+            },
+        }
+
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
         with self.lock:
@@ -4033,6 +4176,7 @@ class MongrelHudApp:
             ],
             "targetScan": self.scan_status_snapshot(),
             "targetIntel": self.target_intel(state.get("target") if isinstance(state.get("target"), dict) else None),
+            "ax": self.ax_snapshot(),
             "recentTargets": self.recent_target_snapshot(),
         }
 
@@ -4420,6 +4564,8 @@ class MongrelHudApp:
         key = self.target_identity(target)
         if key != self._last_target_identity:
             self._last_target_identity = key
+            if key:
+                self._sync_ax_target(target)
             self._wanted_flash_key = ""
             if key and self.target_intel(target):
                 self.restored_target_until = time.monotonic() + 1.8
@@ -5823,6 +5969,10 @@ def make_handler(app: MongrelHudApp):
                     result = app.acknowledge_alerts(ids)
                 elif path == "/api/target-scan":
                     result = {"ok": True, "scan": app.start_target_scan()}
+                elif path == "/api/ax-settings":
+                    result = {"ok": True, "ax": app.set_ax_settings(body)}
+                elif path == "/api/ax-action":
+                    result = {"ok": True, "ax": app.ax_action(str(body.get("action") or ""))}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/location-select":
