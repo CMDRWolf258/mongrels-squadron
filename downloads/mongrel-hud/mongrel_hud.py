@@ -4094,6 +4094,9 @@ class MongrelHudApp:
             if spec.get("antiGuardianField"):
                 warnings.append({"level": "red", "code": "anti_guardian", "text": "ANTI-GUARDIAN FIELD · standard Guardian modules may be disabled/damaged"})
         if isinstance(phase, dict):
+            if phase.get("phase") == "shield" and int(phase.get("heartsRemaining") or 0) > 0:
+                warnings.append({"level": "amber", "code": "lightning", "text": "POST-HEART SPECIALS · lightning attaches around 700–800 m"})
+                warnings.append({"level": "amber", "code": "cold_range", "text": "KEEP COLD <20% OR OPEN >3 KM to suppress/avoid several specials"})
             if phase.get("shutdownExpected"):
                 warnings.append({"level": "red", "code": "shutdown_expected", "text": "SHUTDOWN PULSE EXPECTED · neutralizer or cold/range escape"})
             elif phase.get("shutdownNextHeart"):
@@ -4106,7 +4109,7 @@ class MongrelHudApp:
                 warnings.append({"level": "amber", "code": "heart_window", "text": f"HEART WINDOW {ax_format_seconds(heart_window)} EST"})
 
         speed = None
-        if isinstance(spec, dict):
+        if isinstance(spec, dict) and float(settings.get("shipBoostMps") or 0) > 0:
             speed = compare_speed(spec, settings.get("shipBoostMps"))
         return {
             "reviewedAt": AX_DATA_REVIEWED_AT,
