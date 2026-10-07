@@ -435,16 +435,16 @@ export function createRingMaterial(ring, disposables = null) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   if (disposables) disposables.add(texture);
-  const material = new THREE.MeshStandardMaterial({
+  // Rings are navigation features as well as scene geometry. Keep them
+  // unlit so a near-coplanar star cannot shade the annulus into invisibility.
+  const material = new THREE.MeshBasicMaterial({
     map:texture,
     color:0xffffff,
     side:THREE.DoubleSide,
     transparent:true,
-    opacity:profile.opacity,
-    roughness:0.93,
-    metalness:0.02,
+    opacity:Math.min(0.78, profile.opacity + 0.12),
     depthWrite:false,
-    alphaTest:0.025,
+    alphaTest:0.02,
   });
   return { material, profile };
 }
