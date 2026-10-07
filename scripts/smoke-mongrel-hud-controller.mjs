@@ -29,6 +29,7 @@ function harness() {
   const profileButtons = ['combat', 'ax', 'surface'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
   const visibilityButtons = ['own', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
   const profileSelects = ['own', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
+  const axActionButtons = ['heart_exerted','heart_down','shield_up','shield_down','reset'].map(action => node('axAction' + action, { 'data-ax-action': action }));
   const requests = [];
   const backend = {
     profile: 'combat',
@@ -45,7 +46,7 @@ function harness() {
     document: {
       getElementById: node,
       querySelectorAll(selector) {
-        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects })[selector] || [];
+        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects, '[data-ax-action]': axActionButtons })[selector] || [];
       }, addEventListener() {}, activeElement: null,
     },
     fetch(path, options) {
@@ -166,6 +167,30 @@ async function drain(h, expected) {
   assert.deepEqual(h.backend.layout.panels.own.profiles, ['combat']);
   assert.deepEqual(h.backend.layout.panels.surface.profiles, ['surface']);
   assert.deepEqual(h.backend.layout.panels.mission.profiles, ['combat', 'ax', 'surface']);
+}
+
+{
+  const h = harness();
+  const action = h.node('axActionheart_down').onclick();
+  await tick();
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].path, '/api/ax-action');
+  assert.deepEqual(h.requests[0].body, { action: 'heart_down' });
+  h.respond(h.requests[0], null, { ok:true, ax:{ phase:{ phase:'shield', heartsRemaining:4, heartsTotal:5 } } });
+  await action;
+
+  h.node('axVariantOverride').value='basilisk';
+  h.node('axShipBoost').value='512';
+  h.node('axColdHeat').value='20';
+  h.node('axOrbitMin').value='900';
+  h.node('axOrbitMax').value='1500';
+  const save = h.node('saveAxSettings').onclick();
+  await tick();
+  assert.equal(h.requests.length, 2);
+  assert.equal(h.requests[1].path, '/api/ax-settings');
+  assert.deepEqual(h.requests[1].body, { variantOverride:'basilisk', shipBoostMps:512, coldHeatPercent:20, orbitMinM:900, orbitMaxM:1500 });
+  h.respond(h.requests[1], null, { ok:true, ax:{ settings:{ variantOverride:'basilisk' } } });
+  await save;
 }
 
 {
