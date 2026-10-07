@@ -248,6 +248,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       </div>
       <div class="row"><span>Estimated timers</span><strong id="axTimers">—</strong></div>
       <div class="row"><span>Next exertion</span><strong id="axExertion">—</strong></div>
+      <div class="row"><span>Heart splits</span><strong id="axCurrentSplits">—</strong></div>
+      <div class="row"><span>Last completed fight</span><strong id="axLastFight">—</strong></div>
       <div class="notice" id="axWarnings"></div>
       <div class="layout-actions">
         <button class="action" type="button" data-ax-action="heart_exerted">HEART EXERTED</button>
@@ -386,6 +388,8 @@ function render(){
   setText(el("axHeartsLive"),Number.isFinite(Number(axPhase.heartsRemaining))?axPhase.heartsRemaining+"/"+axPhase.heartsTotal:"—");
   var timerBits=[];if(Number.isFinite(Number(axPhase.shieldRemainingSeconds)))timerBits.push("Shield "+fmtTime(axPhase.shieldRemainingSeconds));if(Number.isFinite(Number(axPhase.enrageRemainingSeconds)))timerBits.push("Enrage "+fmtTime(axPhase.enrageRemainingSeconds));if(Number.isFinite(Number(axPhase.heartWindowRemainingSeconds)))timerBits.push("Heart "+fmtTime(axPhase.heartWindowRemainingSeconds));setText(el("axTimers"),timerBits.length?timerBits.join(" · ")+" · EST":"—");
   setText(el("axExertion"),Number.isFinite(Number(axPhase.nextExertionHullPercent))?"~"+Math.round(Number(axPhase.nextExertionHullPercent))+"% current hull damage":"—");
+  var splits=Array.isArray(axPhase.heartSplitsSeconds)?axPhase.heartSplitsSeconds:[];setText(el("axCurrentSplits"),splits.length?splits.map(function(v,i){return "H"+(i+1)+" "+fmtTime(v)}).join(" · "):"—");
+  var fights=Array.isArray(ax.recentFights)?ax.recentFights:[],lastFight=fights.length?fights[fights.length-1]:null;setText(el("axLastFight"),lastFight?(String(lastFight.name||lastFight.variant||"AX")+" · "+fmtTime(lastFight.durationSeconds)+" · "+(Array.isArray(lastFight.heartSplitsSeconds)?lastFight.heartSplitsSeconds.map(function(v){return fmtTime(v)}).join(" / "):"")):"—");
   setText(el("axWarnings"),axWarnings.map(function(w){return String(w.text||"")}).filter(Boolean).join(" · "));
   setText(el("axTracking"),"Target "+String(axConfidence.target||"unknown").toUpperCase()+" · Hearts "+String(axConfidence.hearts||"unknown").toUpperCase()+" · Timers "+String(axConfidence.timers||"none").toUpperCase()+" · AXI data "+String(ax.reviewedAt||""));
   if(document.activeElement!==el("axVariantOverride"))el("axVariantOverride").value=String(axSettings.variantOverride||"auto");
