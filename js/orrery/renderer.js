@@ -2,31 +2,14 @@ import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { buildLayout, buildRingLayout, buildLocationLayout, locationPlacementText } from '../../lib/orrery-model.js';
 import { createCameraNavigation } from './camera.js';
+import { bodyProxyColor, createBodyVisual, createRingMaterial } from './body-materials.js';
 
 const ACCENT = 0x22d3ee;
-const BODY_COLOURS = [0x97a3b2, 0xc59a72, 0x688eb1, 0xbfcbd3, 0x9ea39c];
 
 function hash(value) {
   let result = 2166136261;
   for (const letter of String(value)) result = Math.imul(result ^ letter.charCodeAt(0), 16777619);
   return result >>> 0;
-}
-
-function bodyColour(body) {
-  if (body.kind === 'star') {
-    if (body.temperatureK >= 20000) return 0xb5ccff;
-    if (body.temperatureK >= 7500) return 0xe0eaff;
-    if (body.temperatureK >= 6000) return 0xfff3df;
-    if (body.temperatureK >= 5000) return 0xffdf9e;
-    if (body.temperatureK >= 3500) return 0xffb97c;
-    return 0xff987b;
-  }
-  const description = `${body.subType || ''} ${body.type || ''} ${body.classification || ''}`.toLowerCase();
-  if (description.includes('ice') || description.includes('icy')) return 0xa5c9e0;
-  if (description.includes('water')) return 0x588fae;
-  if (description.includes('earth')) return 0x5e9b99;
-  if (description.includes('gas')) return 0xc7ac86;
-  return BODY_COLOURS[hash(body.id) % BODY_COLOURS.length];
 }
 
 function circleGeometry(radius, inclination = 0, segments = 160) {
@@ -117,10 +100,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   controls.listenToKeyEvents(canvas);
   controls.keyPanSpeed = 24;
 
-  scene.add(new THREE.HemisphereLight(0xd7e8ff, 0x374051, 2.25));
-  const keyLight = new THREE.DirectionalLight(0xffd9ba, 2.2);
-  keyLight.position.set(-extent, extent, extent * 0.3);
-  scene.add(keyLight);
+  // Keep a low ambient floor so dark hemispheres remain readable, while
+  // catalogued stars provide the directional lighting cue for nearby bodies.
+  scene.add(new THREE.HemisphereLight(0xbdd5e8, 0x222a34, 0.72));
 
   // A seeded backdrop is decorative only; it does not represent catalogued stars.
   const backdropPoints = [];
@@ -154,9 +136,17 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
 
   function register(id, mesh, kind, bodyId = id, radius = 1) {
     mesh.userData = { id, kind, bodyId };
-    objects.set(id, { mesh, kind, bodyId, radius, baseOpacity: mesh.material?.opacity ?? 1 });
+    objects.set(id, { mesh, kind, bodyId, radius, baseOpacity: mesh.material?.opacity ?? 1, visualExtras:[] });
     pickable.push(mesh);
     scene.add(mesh);
+  }
+
+  function addVisualExtra(id, visual) {
+    const object = objects.get(id);
+    if (!object || !visual) return;
+    visual.userData.visualBaseOpacity = visual.userData.visualBaseOpacity ?? visual.material?.opacity ?? 1;
+    object.visualExtras.push(visual);
+    object.mesh.add(visual);
   }
 
   function addLabel(id, name, position, kind, bodyId = id) {
@@ -177,14 +167,23 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     if (!value) continue;
     const position = new THREE.Vector3(...value.position);
     if (body.kind !== 'barycentre') {
-      const geometry = new THREE.SphereGeometry(value.radius, body.kind === 'star' ? 40 : 28, 24);
-      const material = body.kind === 'star'
-        ? new THREE.MeshBasicMaterial({ color: bodyColour(body) })
-        : new THREE.MeshStandardMaterial({ color: bodyColour(body), roughness: 0.88, metalness: 0.04 });
-      const mesh = new THREE.Mesh(geometry, material);
+      const geometry = new THREE.SphereGeometry(value.radius, body.kind === 'star' ? 48 : 32, body.kind === 'star' ? 32 : 24);
+      const visual = createBodyVisual(body, value.radius, disposables);
+      const mesh = new THREE.Mesh(geometry, visual.material);
+      // Deterministic orientation prevents every generated texture from
+      // presenting the same seam/longitude while remaining static.
+      mesh.rotation.y = (visual.profile.seed / 4294967296) * Math.PI * 2;
       mesh.position.copy(position);
       register(body.id, mesh, 'body', body.id, value.radius);
-      const proxy = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTexture, color: bodyColour(body), transparent: true, depthWrite: false, opacity: 0.95 }));
+      for (const extra of visual.extras) addVisualExtra(body.id, extra);
+
+      if (body.kind === 'star') {
+        const light = new THREE.PointLight(visual.profile.baseColor, 3.4, 0, 0);
+        light.position.copy(position);
+        scene.add(light);
+      }
+
+      const proxy = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTexture, color: bodyProxyColor(body), transparent: true, depthWrite: false, opacity: 0.95 }));
       proxy.position.copy(position);
       proxy.userData = { id: body.id, kind: 'body', bodyId: body.id };
       objects.get(body.id).proxy = proxy;
@@ -206,8 +205,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     }
 
     for (const [ringId, { inner, outer }] of buildRingLayout(body, value)) {
-      const material = new THREE.MeshBasicMaterial({ color: 0xab9d8c, side: THREE.DoubleSide, transparent: true, opacity: 0.48, depthWrite: false });
-      const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 80), material);
+      const ring = (body.rings || []).find(item => item.id === ringId) || { id:ringId, type:'Unknown' };
+      const { material } = createRingMaterial(ring, disposables);
+      const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 112), material);
       ringMesh.rotation.x = -Math.PI / 2 + (value.inclination || 0);
       ringMesh.position.copy(position);
       register(ringId, ringMesh, 'ring', body.id, outer);
@@ -468,6 +468,11 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
         object.mesh.material.transparent = object.kind === 'ring' || !match;
         object.mesh.material.opacity = object.baseOpacity * (match ? 1 : 0.18);
         object.mesh.material.depthWrite = object.kind !== 'ring' && match;
+        for (const visual of object.visualExtras || []) {
+          if (!visual.material) continue;
+          const baseOpacity = Number(visual.userData.visualBaseOpacity ?? visual.material.opacity ?? 1);
+          visual.material.opacity = baseOpacity * (match ? 1 : 0.15);
+        }
       }
     }
     for (const orbit of orbits) orbit.material.opacity = hasBodyMatch(orbit.userData.bodyId) ? 0.48 : 0.12;
