@@ -1,6 +1,6 @@
 {
-  "version": "1",
-  "reviewedAt": "2026-09-16",
+  "version": "2",
+  "reviewedAt": "2026-10-06",
   "scope": "Expert Background Simulation reference knowledge for the Mongrels Field Manual, Ask the Mongrels, and future Mission Control intelligence. Entries distinguish stable doctrine from community-tested mechanics, observations, and legacy claims that require retesting.",
   "confidenceScale": {
     "confirmed": "Directly observable in-game behavior or authoritative data model with little meaningful dispute.",
@@ -14,7 +14,15 @@
       "id": "bgs-influence-shared-pool",
       "category": "BGS — Influence Mechanics",
       "topic": "Influence Is a Shared 100% Pool",
-      "keywords": ["influence pool", "100 percent", "zero sum", "normalization", "redistribution", "raise faction", "lower faction"],
+      "keywords": [
+        "influence pool",
+        "100 percent",
+        "zero sum",
+        "normalization",
+        "redistribution",
+        "raise faction",
+        "lower faction"
+      ],
       "ruleOfThumb": "Treat system influence as a shared pool, not a pile of percentage points you add directly. If one influence-unlocked faction gains displayed share, that share has to come from other participating factions when the results are normalized at the tick.",
       "details": [
         "System faction influence is displayed as percentages totaling approximately 100%.",
@@ -28,8 +36,14 @@
         "Flag cases where the priority faction rose but an unintended faction absorbed most of the opposing loss."
       ],
       "sources": [
-        {"name": "Elite BGS — Guide", "url": "https://elitebgs.app/guide"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Elite BGS — Guide",
+          "url": "https://elitebgs.app/guide"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -39,7 +53,15 @@
       "id": "bgs-mission-inf-is-weight-not-percent",
       "category": "BGS — Influence Mechanics",
       "topic": "Mission INF Pips Are Reward Weight, Not Influence Percentage",
-      "keywords": ["mission inf", "inf pips", "inf ticks", "influence reward", "inf+++++", "5 inf", "mission influence"],
+      "keywords": [
+        "mission inf",
+        "inf pips",
+        "inf ticks",
+        "influence reward",
+        "inf+++++",
+        "5 inf",
+        "mission influence"
+      ],
       "ruleOfThumb": "Mongrel reporting counts mission INF marks/pips as workload units. They are relative mission influence rewards, not percentage points of system influence.",
       "details": [
         "A mission with INF +++++ is recorded by the squad as 5 mission-INF units for workload tracking.",
@@ -53,8 +75,14 @@
         "Comparing mission-INF workloads between two systems as though population and opposition were identical."
       ],
       "sources": [
-        {"name": "Mongrels — BGS Field Manual", "url": "https://mongrels-squadron.pages.dev/guides/bgs/"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Mongrels — BGS Field Manual",
+          "url": "https://mongrels-squadron.pages.dev/guides/bgs/"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "mongrels-doctrine",
@@ -64,7 +92,17 @@
       "id": "bgs-no-universal-workload-conversion",
       "category": "BGS — Influence Mechanics",
       "topic": "There Is No Reliable Universal Workload-to-Percent Formula",
-      "keywords": ["how much inf", "how much influence", "inf formula", "influence formula", "daily cap", "daily target", "workload", "population", "calibration"],
+      "keywords": [
+        "how much inf",
+        "how much influence",
+        "inf formula",
+        "influence formula",
+        "daily cap",
+        "daily target",
+        "workload",
+        "population",
+        "calibration"
+      ],
       "ruleOfThumb": "Do not use a universal conversion such as 'X mission INF always equals Y%'. Experienced BGS testing finds that population, current faction influence, other activity and diminishing-return factors make the result system-specific.",
       "details": [
         "A 2025 Frontier forum discussion by experienced BGS operators explicitly notes that attempts to derive a generally accurate formula break down because the answer depends on population, current influence and other BGS activity.",
@@ -79,7 +117,10 @@
         "Warn when an order is being generated from insufficient local history."
       ],
       "sources": [
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -89,7 +130,14 @@
       "id": "bgs-low-influence-factions-move-more",
       "category": "BGS — Influence Mechanics",
       "topic": "Equivalent Effort Can Move a Low-Influence Faction More",
-      "keywords": ["low influence", "high influence", "same transaction", "outsized movement", "raise low faction", "equalize factions"],
+      "keywords": [
+        "low influence",
+        "high influence",
+        "same transaction",
+        "outsized movement",
+        "raise low faction",
+        "equalize factions"
+      ],
       "ruleOfThumb": "The same nominal positive action can produce more displayed movement for a low-influence faction than for a faction already high in the system. Treat current influence as part of workload planning.",
       "details": [
         "Long-running community testing reports that equivalent mission reward weight does not translate to equal displayed percentage movement at different starting influence levels.",
@@ -99,8 +147,14 @@
       "operations": "When raising a low faction, start with a smaller measured workload than you would use for a high controller and check the next tick before escalating.",
       "watchFor": "A low faction can overshoot a planned conflict or retreat-rescue band faster than expected, especially in a quiet system.",
       "sources": [
-        {"name": "Frontier Forums — BGS and massacre missions", "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Frontier Forums — BGS and massacre missions",
+          "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -110,7 +164,15 @@
       "id": "bgs-diminishing-returns-practical-saturation",
       "category": "BGS — Transaction Efficiency",
       "topic": "Diminishing Returns and Practical Saturation",
-      "keywords": ["diminishing returns", "saturation", "transactional limits", "daily cap", "hard cap", "too much work", "efficiency"],
+      "keywords": [
+        "diminishing returns",
+        "saturation",
+        "transactional limits",
+        "daily cap",
+        "hard cap",
+        "too much work",
+        "efficiency"
+      ],
       "ruleOfThumb": "More BGS work can continue to help, but the marginal displayed gain becomes less efficient. Do not confuse practical saturation with a simple universal hard cap.",
       "details": [
         "A 2025 community explanation describes influence effects as being normalized into an ever-larger total pool, so each additional unit has progressively less effect on the final percentage.",
@@ -124,8 +186,14 @@
         "Flag declining influence-per-workload response as possible saturation, but do not claim a hard cap without controlled evidence."
       ],
       "sources": [
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"},
-        {"name": "Frontier Forums — Where to spend Pilot Federation bonds best?", "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"}
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        },
+        {
+          "name": "Frontier Forums — Where to spend Pilot Federation bonds best?",
+          "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -135,7 +203,16 @@
       "id": "bgs-labelled-vs-asset-owner-attribution",
       "category": "BGS — Transaction Efficiency",
       "topic": "Labelled Effects vs Asset-Owner Effects",
-      "keywords": ["station owner", "asset owner", "trade influence", "exploration data influence", "missions influence", "bounties influence", "combat bonds influence", "attribution"],
+      "keywords": [
+        "station owner",
+        "asset owner",
+        "trade influence",
+        "exploration data influence",
+        "missions influence",
+        "bounties influence",
+        "combat bonds influence",
+        "attribution"
+      ],
       "ruleOfThumb": "For ordinary influence attribution, activities explicitly associated with a faction follow that faction, while unlabelled station services such as commodity sales and exploration-data hand-ins generally benefit the faction owning the receiving asset.",
       "details": [
         "Community BGS shorthand is: labelled influence follows the labelled faction; unlabelled influence follows the station or asset owner.",
@@ -150,7 +227,10 @@
         "Using ordinary influence rules as a substitute for conflict-victory rules."
       ],
       "sources": [
-        {"name": "Frontier Forums — Submitting exploration data has the influence during the elections?", "url": "https://forums.frontier.co.uk/threads/submitting-exploration-data-has-the-influence-during-the-elections.621554/"}
+        {
+          "name": "Frontier Forums — Submitting exploration data has the influence during the elections?",
+          "url": "https://forums.frontier.co.uk/threads/submitting-exploration-data-has-the-influence-during-the-elections.621554/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -160,7 +240,16 @@
       "id": "bgs-tick-as-calibration-boundary",
       "category": "BGS — Operational Science",
       "topic": "Use Each Tick as a Calibration Boundary",
-      "keywords": ["tick", "post tick", "before and after", "calibrate", "history", "historical influence", "measure bgs", "response model"],
+      "keywords": [
+        "tick",
+        "post tick",
+        "before and after",
+        "calibrate",
+        "history",
+        "historical influence",
+        "measure bgs",
+        "response model"
+      ],
       "ruleOfThumb": "Treat each daily BGS tick as an experiment boundary: record the board before the tick, record what the squad did, capture the board after the tick, then change the next order from evidence rather than intuition.",
       "details": [
         "Elite BGS exposes historical influence plus active, pending and recovering states, demonstrating the type of time-series record useful for operational analysis.",
@@ -176,10 +265,22 @@
         "Keep samples comparable by tagging conflict/state/population changes."
       ],
       "sources": [
-        {"name": "Elite BGS — Guide", "url": "https://elitebgs.app/guide"},
-        {"name": "Elite BGS API — Factions", "url": "https://elitebgs.app/ebgs/docs/V5/paths/factions"},
-        {"name": "Elite BGS API — Systems", "url": "https://elitebgs.app/ebgs/docs/V5/paths/systems"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Elite BGS — Guide",
+          "url": "https://elitebgs.app/guide"
+        },
+        {
+          "name": "Elite BGS API — Factions",
+          "url": "https://elitebgs.app/ebgs/docs/V5/paths/factions"
+        },
+        {
+          "name": "Elite BGS API — Systems",
+          "url": "https://elitebgs.app/ebgs/docs/V5/paths/systems"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -189,7 +290,16 @@
       "id": "bgs-external-traffic-is-opposition",
       "category": "BGS — Operational Science",
       "topic": "Uncoordinated Traffic Is Part of the BGS Equation",
-      "keywords": ["random traffic", "outside traffic", "opposition", "traffic report", "bounty report", "mission farmers", "unexplained influence", "background traffic"],
+      "keywords": [
+        "random traffic",
+        "outside traffic",
+        "opposition",
+        "traffic report",
+        "bounty report",
+        "mission farmers",
+        "unexplained influence",
+        "background traffic"
+      ],
       "ruleOfThumb": "Your squad's work is only one input. Uncoordinated commanders, mission farmers and opposing groups can create enough activity to flatten, reverse or distort the result you expected from your own workload.",
       "details": [
         "Community operators repeatedly recommend checking local traffic and bounty reports when influence behavior does not match planned activity.",
@@ -202,8 +312,14 @@
         "Surface traffic-report or other available activity indicators next to the tick delta when practical."
       ],
       "sources": [
-        {"name": "Frontier Forums — BGS and massacre missions", "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Frontier Forums — BGS and massacre missions",
+          "url": "https://forums.frontier.co.uk/threads/bgs-and-massacre-missions.564392/"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "strong-community-evidence",
@@ -213,7 +329,16 @@
       "id": "bgs-transaction-splitting-legacy-claim",
       "category": "BGS — Myths & Retest Queue",
       "topic": "Do Not Assume Many Tiny Hand-Ins Beat One Large Hand-In",
-      "keywords": ["split transactions", "many small transactions", "transaction count", "tiny hand ins", "one big hand in", "bounty splitting", "trade splitting", "transactional limits"],
+      "keywords": [
+        "split transactions",
+        "many small transactions",
+        "transaction count",
+        "tiny hand ins",
+        "one big hand in",
+        "bounty splitting",
+        "trade splitting",
+        "transactional limits"
+      ],
       "ruleOfThumb": "Historical BGS guides often recommend splitting activity into many small transactions, but the evidence reviewed for the current knowledge pack does not establish a universal modern rule. Do not build automation around transaction count until we retest the specific activity.",
       "details": [
         "Modern community discussion still refers to transactional limits and activity-specific throttles.",
@@ -227,12 +352,138 @@
         "suggestedMethod": "Use comparable quiet-system days with the same faction, similar starting influence and one activity type. Hold total value/work approximately constant, vary only transaction pattern, then compare post-tick movement across multiple samples."
       },
       "sources": [
-        {"name": "Frontier Forums — Where to spend Pilot Federation bonds best?", "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"},
-        {"name": "Frontier Forums — Quick question about INF (2025)", "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"}
+        {
+          "name": "Frontier Forums — Where to spend Pilot Federation bonds best?",
+          "url": "https://forums.frontier.co.uk/threads/where-to-spend-pilot-federation-bonds-best.625797/"
+        },
+        {
+          "name": "Frontier Forums — Quick question about INF (2025)",
+          "url": "https://forums.frontier.co.uk/threads/quick-question-about-inf.637557/"
+        }
       ],
       "reviewedAt": "2026-09-16",
       "confidence": "legacy-retest",
       "stability": "evolving"
+    },
+    {
+      "id": "bgs-war-odyssey-settlement-resolution",
+      "category": "BGS — Conflicts & Asset Ownership",
+      "topic": "You Can Win a War and Still Lose Odyssey Settlements",
+      "keywords": [
+        "win war lose settlement",
+        "war settlement ownership",
+        "odyssey settlement ownership",
+        "ground cz ownership",
+        "asset at risk",
+        "staked asset",
+        "settlement transfer",
+        "lose settlement"
+      ],
+      "ruleOfThumb": "Yes. Overall war victory determines the conflict's staked asset, but non-staked Odyssey settlements can resolve separately according to which side won the most ground Conflict Zones at each settlement.",
+      "details": [
+        "The asset shown as at risk in the conflict follows the overall war result.",
+        "Other Odyssey settlements are tracked separately: community BGS testing finds that the faction with the stronger ground-CZ result at a settlement can become its owner even if that faction loses the overall war.",
+        "If nobody fights at a particular Odyssey settlement during the conflict, it normally remains with its existing owner unless that settlement is itself the staked asset.",
+        "This makes it possible to deliberately retain system control while transferring selected Odyssey settlements to the opposing faction, or vice versa.",
+        "Ground-CZ traffic from unrelated commanders can therefore change settlement ownership even when your overall war score looks safe."
+      ],
+      "operations": "If settlement ownership matters, track each Odyssey settlement separately from the overall conflict score. Defend or attack the specific ground CZs you care about instead of assuming the war winner automatically receives every settlement.",
+      "commonMistakes": [
+        "Assuming a 4–0 or 4–1 overall war win guarantees every Odyssey settlement stays with the winner.",
+        "Ignoring a convenient High ground CZ because the settlement is not listed as the conflict's asset at risk.",
+        "Treating planetary ports or other normal staked assets as though they use the same unstaked-Odyssey-settlement rule."
+      ],
+      "sources": [
+        {
+          "name": "SINC — Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "Frontier Forums — Pirate cultivation / Odyssey settlement transfer guide",
+          "url": "https://forums.frontier.co.uk/threads/a-simple-bgs-guide-to-pirate-cultivation-setting-up-stable-odyssey-farming-grounds-for-fun-and-profit.597018/"
+        }
+      ],
+      "reviewedAt": "2026-10-06",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-war-draw-assets-remain",
+      "category": "BGS — Conflicts & Asset Ownership",
+      "topic": "War Draws Do Not Automatically Transfer the Staked Asset",
+      "keywords": [
+        "war draw",
+        "conflict draw",
+        "tie war",
+        "no winner",
+        "asset at risk draw",
+        "staked asset stays",
+        "seven day war"
+      ],
+      "ruleOfThumb": "If a War or Civil War ends without an overall winner, each faction keeps its staked asset. Fighting happened, but the conflict did not award the opponent's asset simply because the timer ended.",
+      "details": [
+        "Wars resolve by daily victories and can finish without a winner when the final score does not establish one.",
+        "Community BGS guides report that when there is no overall winner, the assets at risk remain with their current owners and the post-conflict influence movement is small.",
+        "Non-staked Odyssey settlements can still have their own ground-CZ ownership outcome, so a draw in the overall war does not necessarily mean every surface settlement is unchanged.",
+        "There is normally a short conflict cooldown afterward, during which ordinary influence work can be used to separate the factions or set up another conflict."
+      ],
+      "operations": "When the objective is a specific station or controlling asset, do not treat a draw as 'good enough.' Confirm the overall conflict winner as well as any separate Odyssey-settlement results.",
+      "sources": [
+        {
+          "name": "SINC — Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "SINC — Complete Elite Dangerous BGS Guide 2024",
+          "url": "https://sinc.science/guides/sinc/"
+        }
+      ],
+      "reviewedAt": "2026-10-06",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
+    },
+    {
+      "id": "bgs-war-missions-need-combat-for-war-state",
+      "category": "BGS — Conflict Work",
+      "topic": "Not Every Wartime Mission Helps Win the War Day",
+      "keywords": [
+        "war mission",
+        "wartime salvage mission",
+        "wartime courier mission",
+        "strategic courier",
+        "salvage war",
+        "win conflict day",
+        "combat mission",
+        "war tie breaker",
+        "combat bonds"
+      ],
+      "ruleOfThumb": "If the objective is to win a War/Civil War day, prioritize actual combat results. Community BGS testing warns that wartime salvage and strategic-courier missions performed without combat are unlikely to count toward the conflict win state just because the mission is war-themed.",
+      "details": [
+        "The strongest conflict-day lever is winning Conflict Zones for your side.",
+        "When CZ wins are tied, combat-related activity such as eligible combat missions, combat bonds and bounties can contribute to the tie-break calculation.",
+        "A mission generated during a war is not automatically a war-winning action; the mission's activity type matters.",
+        "SINC specifically cautions that wartime salvage and strategic courier jobs without combat are unlikely to count toward winning the day.",
+        "Those missions can still have rewards or other ordinary effects; the warning is specifically about relying on them as conflict-victory work."
+      ],
+      "operations": "When Daily Orders say WIN THE WAR, assign CZ wins and verified combat tie-break work. Do not substitute courier/salvage mission volume merely because the mission board labels the jobs around the active conflict.",
+      "commonMistakes": [
+        "Assuming every mission offered by a faction in War state advances the war score.",
+        "Completing many non-combat wartime missions and then being surprised when the conflict day does not move.",
+        "Confusing ordinary post-war influence/security effects with the activity that actually determines the daily conflict victory."
+      ],
+      "sources": [
+        {
+          "name": "SINC — Complete BGS Guide 2025 v3.0",
+          "url": "https://sinc.science/bgsguide.pdf"
+        },
+        {
+          "name": "SINC — Complete Elite Dangerous BGS Guide 2024",
+          "url": "https://sinc.science/guides/sinc/"
+        }
+      ],
+      "reviewedAt": "2026-10-06",
+      "confidence": "strong-community-evidence",
+      "stability": "community-reviewed"
     }
   ]
 }
