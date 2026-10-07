@@ -71,6 +71,31 @@ Pinned optional-pack assets for 0.13.0:
 The provider boundary remains the extension point for future optional local voice packs; do not bundle large voice models into the core HUD EXE.
 
 
+## Experimental AX Combat profile
+
+The `exp/ax-hud-foundation` branch contains an **unreleased AX Combat** profile. It is intentionally isolated from the rolling Windows build until the Hellhounds can validate the fight-state assumptions in live Elite sessions.
+
+The first AX target card keeps four evidence classes separate:
+
+- **Reference** — static target facts reviewed against the Anti-Xeno Initiative Wiki, such as heart count, top speed, swarm size, enrage duration, passive shield decay, reward, armor, human-weapon resistance and approximate Medium Gauss shots per heart.
+- **Journal** — live target facts that Elite actually exposes to Mongrel Scout, currently target identity plus reported hull/shield/scan/subsystem values when available.
+- **Manual** — heart exertion, heart destruction and shield-phase controls explicitly tapped by the pilot from the paired controller.
+- **Estimated** — heart vulnerability, shield-decay and per-heart enrage countdowns derived from the manual event time. The overlay labels these timers as estimates rather than pretending Elite reported them.
+
+Reference variants currently include Cyclops, Basilisk, Medusa, Hydra, Orthrus, Glaive, Scythe and Thargoid Scout. Unknown Thargoid/Interceptor targets remain explicitly unknown rather than inheriting a guessed heart count.
+
+The paired controller adds **COMBAT / AX COMBAT / SURFACE MINING** as independent profiles. AX Combat includes manual **HEART EXERTED**, **HEART DOWN**, **SHIELD UP**, **SHIELD DOWN** and **RESET FIGHT** controls plus a manual variant override for cases where the journal target name does not identify the variant. The shared/local HUD state remembers the active AX encounter only on the PC.
+
+Default tactical thresholds are a cold-orbit baseline below 20% heat and roughly 900–1500 m, lightning-attachment caution around 700–800 m, common special-attack avoidance beyond 3 km, and a 10 km escape reference once a shutdown pulse is already queued. Exact live heat and target range are **not** claimed yet because the current Scout bridge does not expose reliable numeric values for those fields. The settings exist now so they can become live coaching inputs later without redesigning the AX profile.
+
+An optional local **your boost speed** value can be entered to compare the current target's reference top speed against the pilot's ship. This is deliberately manual until a reliable ship-speed source is added.
+
+AX source baseline reviewed 2026-10-06:
+- Anti-Xeno Initiative Wiki — Thargoid specifications
+- Anti-Xeno Initiative Wiki — Interceptor shields
+- Anti-Xeno Initiative Wiki — Heart exertion
+- Anti-Xeno Initiative Wiki — Special attacks and cold-orbit combat guidance
+
 ## Profiles
 
 ### Combat
