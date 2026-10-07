@@ -59,10 +59,10 @@ export function latestStationVisits(visits){
       stationName:String(row?.stationName||'').slice(0,180),
       stationType:String(row?.stationType||'').slice(0,80),
       observedAt:row?.observedAt||null,
-      distanceToArrivalLs:Number.isFinite(Number(row?.distanceToArrivalLs))?Number(row.distanceToArrivalLs):null,
+      distanceToArrivalLs:finiteDistance(row?.distanceToArrivalLs),
     });
-    const distance=Number(row?.distanceToArrivalLs);
-    if(Number.isFinite(distance)&&distance>=0&&!distances.has(marketId)){
+    const distance=finiteDistance(row?.distanceToArrivalLs);
+    if(distance!==null&&!distances.has(marketId)){
       distances.set(marketId,{value:distance,observedAt:row?.observedAt||null});
     }
     if(!hostPlacements.has(marketId)){
@@ -98,6 +98,11 @@ export function latestStationVisits(visits){
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
     };
   });
+}
+function finiteDistance(value){
+  if(value===null||value===undefined||value==='')return null;
+  const number=Number(value);
+  return Number.isFinite(number)&&number>=0?number:null;
 }
 function isPagesPreview(hostname){
   const host=String(hostname||'').toLowerCase();
