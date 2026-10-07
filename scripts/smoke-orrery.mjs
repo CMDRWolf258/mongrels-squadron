@@ -228,6 +228,7 @@ assert.match(renderer, /depthTest:false/, 'Location markers remain visually legi
 assert.match(renderer, /frontFacing/, 'Exact surface markers still hide on the far side of their host body');
 const bodyMaterials = read('js/orrery/body-materials.js');
 for (const token of ['CanvasTexture','earthlike','gas','icy','metal','atmosphereColor','createGlowTexture','ringVisualProfile','bumpMap','bumpScale']) assert.ok(bodyMaterials.includes(token), `Procedural body material feature missing: ${token}`);
+assert.match(bodyMaterials, /Rings are navigation features[\s\S]*MeshBasicMaterial/, 'Procedural rings remain unlit and visible independent of star angle');
 assert.doesNotMatch(bodyMaterials, /fetch\(|https?:\/\//, 'Procedural body rendering must not add network dependencies');
 for (const file of ['vendor/three/three.module.js','vendor/three/three.core.js','vendor/three/OrbitControls.js','vendor/three/LICENSE']) assert.ok(existsSync(resolve(root,file)), `Missing local dependency: ${file}`);
 assert.doesNotMatch(read('vendor/three/OrbitControls.js'), /from ['"]three['"]/, 'OrbitControls resolves its local Three.js dependency');
