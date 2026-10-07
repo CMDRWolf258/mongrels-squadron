@@ -32,6 +32,21 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from ax_intel import (
+    AX_DATA_REVIEWED_AT,
+    apply_encounter_action,
+    compare_speed,
+    default_ax_settings,
+    encounter_snapshot,
+    format_seconds as ax_format_seconds,
+    new_encounter,
+    normalize_ax_settings,
+    resolve_ax_variant,
+    status_bar_alert,
+    variant_ids,
+    variant_spec,
+)
+
 
 try:
     import numpy as np
@@ -61,6 +76,7 @@ SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
+SCOUT_TELEMETRY_URL = "http://127.0.0.1:43857/v1/telemetry"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
 MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
@@ -205,11 +221,12 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
-VALID_PROFILES = ("combat", "surface")
+PANEL_IDS = ("own", "target", "axstatus", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
+VALID_PROFILES = ("combat", "ax", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
+    "axstatus": "AX STATUS",
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
     "cargo": "CARGO",
@@ -748,20 +765,21 @@ def default_layout() -> dict[str, Any]:
         "locked": True,
         "masterVisible": True,
         "panels": {
-            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
-            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat"]},
+            "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
+            "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
+            "axstatus": {"x": 420, "y": 35, "visible": True, "scale": 1.0, "profiles": ["ax"]},
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
-            "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
-            "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "scoutnearby": {"x": 1260, "y": 790, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
-            "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
-            "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
-            "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "surface"]},
+            "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "scoutnearby": {"x": 1260, "y": 790, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
+            "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
+            "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
+            "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "ax", "surface"]},
         },
     }
 
@@ -801,7 +819,7 @@ def normalized_layout(value: Any) -> dict[str, Any]:
             "x": x,
             "y": y,
             "visible": bool(raw.get("visible", base["visible"])),
-            "scale": max(0.75, min(1.5, scale)),
+            "scale": max(0.6, min(2.0, scale)),
             "profiles": profiles,
         }
     return out
@@ -1185,10 +1203,19 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": []}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": [], "ax": {"settings": default_ax_settings(), "encounter": None, "targetKey": "", "targetVariant": "", "targetSource": "", "recentFights": []}}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
         self.data["voice"] = normalized_voice_settings(self.data.get("voice"))
+        ax_state = self.data.get("ax") if isinstance(self.data.get("ax"), dict) else {}
+        self.data["ax"] = {
+            "settings": normalize_ax_settings(ax_state.get("settings")),
+            "encounter": ax_state.get("encounter") if isinstance(ax_state.get("encounter"), dict) else None,
+            "targetKey": str(ax_state.get("targetKey") or "")[:240],
+            "targetVariant": str(ax_state.get("targetVariant") or "")[:40],
+            "targetSource": str(ax_state.get("targetSource") or "")[:20],
+            "recentFights": [row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)][-20:],
+        }
         auth = self.data.get("controllerAuth")
         hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
         hashes = hashes if isinstance(hashes, list) else []
@@ -1277,6 +1304,9 @@ class MongrelHudApp:
         self.restored_target_until = 0.0
         self.wanted_flash_until = 0.0
         self._wanted_flash_key = ""
+        # Session-only AX alert injection point. Future visual/audio detectors
+        # should feed this same contract instead of bypassing the priority bar.
+        self.ax_transient_alert: dict[str, Any] | None = None
         self._last_target_identity = ""
         self.mining_lock = threading.RLock()
         self.mining_sites: list[dict[str, Any]] = []
@@ -3409,7 +3439,7 @@ class MongrelHudApp:
                     parsed = float(scale)
                 except (TypeError, ValueError):
                     raise ValueError("invalid_scale")
-                if not 0.75 <= parsed <= 1.5:
+                if not 0.6 <= parsed <= 2.0:
                     raise ValueError("invalid_scale")
                 panel["scale"] = round(parsed, 2)
             if profiles is not None:
@@ -3487,6 +3517,39 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def telemetry_action(self, action: str, label: str = "", note: str = "") -> dict[str, Any]:
+        selected = str(action or "").strip().lower()
+        if selected not in {"start", "stop", "mark"}:
+            raise ValueError("invalid_telemetry_action")
+        payload: dict[str, Any] = {}
+        if selected == "start":
+            payload["label"] = " ".join(str(label or "ax").split())[:40] or "ax"
+        elif selected == "mark":
+            payload["label"] = " ".join(str(label or "").split())[:80]
+            payload["note"] = " ".join(str(note or "").split())[:240]
+            if not payload["label"]:
+                raise ValueError("telemetry_label_required")
+        request = urllib.request.Request(
+            f"{SCOUT_TELEMETRY_URL}/{selected}",
+            data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        result = request_scout_json(request, "telemetry_action_failed")
+        telemetry = result.get("telemetry") if isinstance(result, dict) else None
+        if isinstance(telemetry, dict):
+            with self.lock:
+                if not isinstance(self.snapshot.data, dict):
+                    self.snapshot.data = {}
+                self.snapshot.data["telemetry"] = telemetry
+        return result
+
+    def telemetry_mark_best_effort(self, label: str) -> None:
+        try:
+            self.telemetry_action("mark", label=label)
+        except Exception:
+            pass
+
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
         for value in alert_ids[:40]:
@@ -3510,7 +3573,7 @@ class MongrelHudApp:
         return result
 
     def set_profile(self, profile: str) -> str:
-        if profile not in {"combat", "surface"}:
+        if profile not in {"combat", "ax", "surface"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
@@ -3966,6 +4029,208 @@ class MongrelHudApp:
         current_body = sorted(body_known, key=str.casefold)
         return current_body, all_choices
 
+    def ax_settings_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            ax_state = self.store.data.get("ax") if isinstance(self.store.data.get("ax"), dict) else {}
+            settings = normalize_ax_settings(ax_state.get("settings"))
+        return settings
+
+    def set_ax_settings(self, changes: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(changes, dict):
+            raise ValueError("invalid_ax_settings")
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            current = normalize_ax_settings(ax_state.get("settings"))
+            merged = {
+                **current,
+                **{key: value for key, value in changes.items() if key != "audio"},
+                "audio": {
+                    **(current.get("audio") if isinstance(current.get("audio"), dict) else {}),
+                    **(changes.get("audio") if isinstance(changes.get("audio"), dict) else {}),
+                },
+            }
+            settings = normalize_ax_settings(merged)
+            old_override = str(current.get("variantOverride") or "auto")
+            new_override = str(settings.get("variantOverride") or "auto")
+            ax_state["settings"] = settings
+            if new_override != old_override:
+                ax_state["encounter"] = None
+                ax_state["targetKey"] = ""
+                ax_state["targetVariant"] = ""
+                ax_state["targetSource"] = ""
+            self.store.save()
+        self._sync_ax_target(self.scout_state().get("target"))
+        return self.ax_snapshot()
+
+    def _sync_ax_target(self, target: Any) -> None:
+        target = target if isinstance(target, dict) else {}
+        target_key = self.target_identity(target)
+        settings = self.ax_settings_snapshot()
+        override = str(settings.get("variantOverride") or "auto")
+        spec = resolve_ax_variant(target, override)
+        if not spec:
+            return
+        variant = str(spec.get("id") or "")
+        exact = variant in variant_ids()
+        source = "manual" if override != "auto" else "journal"
+        if not exact:
+            source = "unknown"
+        tracking_key = target_key or (f"manual:{variant}" if override != "auto" else "")
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            existing_key = str(ax_state.get("targetKey") or "")
+            existing_variant = str(ax_state.get("targetVariant") or "")
+            if tracking_key and exact and (tracking_key != existing_key or variant != existing_variant):
+                ax_state["targetKey"] = tracking_key
+                ax_state["targetVariant"] = variant
+                ax_state["targetSource"] = source
+                ax_state["encounter"] = new_encounter(variant, time.time(), source=source)
+                self.store.save()
+            elif tracking_key and not exact and (tracking_key != existing_key or variant != existing_variant):
+                ax_state["targetKey"] = tracking_key
+                ax_state["targetVariant"] = variant
+                ax_state["targetSource"] = source
+                ax_state["encounter"] = None
+                self.store.save()
+
+    def ax_action(self, action: str) -> dict[str, Any]:
+        current_target = self.scout_state().get("target")
+        self._sync_ax_target(current_target)
+        with self.store.lock:
+            ax_state = self.store.data.setdefault("ax", {})
+            encounter = ax_state.get("encounter")
+            if not isinstance(encounter, dict):
+                settings = normalize_ax_settings(ax_state.get("settings"))
+                spec = resolve_ax_variant(
+                    current_target if isinstance(current_target, dict) else {},
+                    settings.get("variantOverride"),
+                )
+                if not spec or str(spec.get("id") or "") not in variant_ids():
+                    raise ValueError("ax_variant_required")
+                encounter = new_encounter(str(spec["id"]), time.time(), source="manual")
+            before_remaining = int(encounter.get("heartsRemaining") or 0)
+            ax_state["encounter"] = apply_encounter_action(encounter, action, time.time())
+            ax_state["targetVariant"] = str(ax_state["encounter"].get("variant") or "")
+            ax_state["targetSource"] = "manual"
+            after = encounter_snapshot(ax_state["encounter"], time.time())
+            if (
+                str(action or "").casefold() == "heart_down"
+                and before_remaining > 0
+                and isinstance(after, dict)
+                and int(after.get("heartsRemaining") or 0) == 0
+            ):
+                spec = after.get("spec") if isinstance(after.get("spec"), dict) else {}
+                record = {
+                    "variant": str(after.get("variant") or ""),
+                    "name": str(spec.get("name") or after.get("name") or "Thargoid"),
+                    "endedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "durationSeconds": int(after.get("elapsedSeconds") or 0),
+                    "heartSplitsSeconds": list(after.get("heartSplitsSeconds") or []),
+                    "source": str(encounter.get("source") or "manual"),
+                }
+                fights = [row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)]
+                fights.append(record)
+                ax_state["recentFights"] = fights[-20:]
+            self.store.save()
+        return self.ax_snapshot()
+
+    def set_ax_transient_alert(self, code: str, *, ttl_seconds: Any = 8, source: str = "manual") -> dict[str, Any]:
+        alert_code = str(code or "").strip().casefold()
+        if alert_code in {"", "clear", "none"}:
+            with self.lock:
+                self.ax_transient_alert = None
+            return self.ax_snapshot()
+        if alert_code not in {"caustic_missile", "emp"}:
+            raise ValueError("invalid_ax_alert")
+        try:
+            ttl = float(ttl_seconds)
+        except (TypeError, ValueError):
+            ttl = 8.0
+        ttl = max(1.0, min(30.0, ttl))
+        alert_source = str(source or "manual").strip().casefold()
+        if alert_source not in {"manual", "test", "detector", "audio", "visual"}:
+            alert_source = "manual"
+        with self.lock:
+            self.ax_transient_alert = {
+                "code": alert_code,
+                "source": alert_source,
+                "expiresAt": time.monotonic() + ttl,
+            }
+        return self.ax_snapshot()
+
+    def _active_ax_transient_alert(self) -> dict[str, Any] | None:
+        with self.lock:
+            row = dict(self.ax_transient_alert) if isinstance(self.ax_transient_alert, dict) else None
+            if row and float(row.get("expiresAt") or 0) <= time.monotonic():
+                self.ax_transient_alert = None
+                return None
+        return row
+
+    def ax_snapshot(self) -> dict[str, Any]:
+        state = self.scout_state()
+        target = state.get("target") if isinstance(state.get("target"), dict) else {}
+        self._sync_ax_target(target)
+        settings = self.ax_settings_snapshot()
+        spec = resolve_ax_variant(target, settings.get("variantOverride"))
+        with self.store.lock:
+            ax_state = self.store.data.get("ax") if isinstance(self.store.data.get("ax"), dict) else {}
+            encounter = json.loads(json.dumps(ax_state.get("encounter"))) if isinstance(ax_state.get("encounter"), dict) else None
+            target_source = str(ax_state.get("targetSource") or "")
+            target_key = str(ax_state.get("targetKey") or "")
+            recent_fights = json.loads(json.dumps([row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)][-20:]))
+        phase = encounter_snapshot(encounter, time.time()) if encounter else None
+
+        warnings: list[dict[str, str]] = []
+        if isinstance(spec, dict):
+            tags = [str(tag) for tag in spec.get("tags") or []]
+            if "FASTEST INTERCEPTOR" in tags:
+                warnings.append({"level": "amber", "code": "speed", "text": "FASTEST INTERCEPTOR · do not assume you can disengage by running"})
+            if spec.get("antiGuardianField"):
+                warnings.append({"level": "red", "code": "anti_guardian", "text": "ANTI-GUARDIAN FIELD · standard Guardian modules may be disabled/damaged"})
+        if isinstance(phase, dict):
+            if phase.get("phase") == "shield" and int(phase.get("heartsRemaining") or 0) > 0:
+                warnings.append({"level": "amber", "code": "lightning", "text": "POST-HEART SPECIALS · lightning attaches around 700–800 m"})
+                warnings.append({"level": "amber", "code": "cold_range", "text": "KEEP COLD <20% OR OPEN >3 KM to suppress/avoid several specials"})
+            if phase.get("shutdownExpected"):
+                warnings.append({"level": "red", "code": "shutdown_expected", "text": "SHUTDOWN PULSE EXPECTED · neutralizer or cold/range escape"})
+            elif phase.get("shutdownNextHeart"):
+                warnings.append({"level": "amber", "code": "shutdown_next", "text": "EMP AFTER NEXT HEART"})
+            enrage = phase.get("enrageRemainingSeconds")
+            if isinstance(enrage, int) and enrage <= 60:
+                warnings.append({"level": "red" if enrage <= 20 else "amber", "code": "enrage", "text": f"ENRAGE {ax_format_seconds(enrage)} EST"})
+            heart_window = phase.get("heartWindowRemainingSeconds")
+            if phase.get("phase") == "heart_exerted" and isinstance(heart_window, int) and heart_window <= 15:
+                warnings.append({"level": "amber", "code": "heart_window", "text": f"HEART WINDOW {ax_format_seconds(heart_window)} EST"})
+
+        speed = None
+        if isinstance(spec, dict) and float(settings.get("shipBoostMps") or 0) > 0:
+            speed = compare_speed(spec, settings.get("shipBoostMps"))
+        snapshot = {
+            "reviewedAt": AX_DATA_REVIEWED_AT,
+            "targetKey": target_key,
+            "targetSource": target_source or ("manual" if settings.get("variantOverride") != "auto" else "auto"),
+            "settings": settings,
+            "spec": spec,
+            "phase": phase,
+            "speedComparison": speed,
+            "warnings": warnings,
+            "recentFights": recent_fights,
+            "confidence": {
+                "target": "known" if target and spec and str(spec.get("id") or "") in variant_ids() and settings.get("variantOverride") == "auto" else "manual" if settings.get("variantOverride") != "auto" else "unknown",
+                "hearts": "manual" if phase and int(phase.get("heartsDestroyed") or 0) > 0 else "reference",
+                "timers": "estimated" if phase else "none",
+                "liveHullShield": "journal" if target else "none",
+            },
+            "liveTarget": {
+                "shieldHealth": target.get("shieldHealth") if target else None,
+                "hullHealth": target.get("hullHealth") if target else None,
+                "scanStage": target.get("scanStage") if target else None,
+                "subsystem": (target.get("subsystem") or {}).get("name") if isinstance(target.get("subsystem"), dict) else None,
+            },
+        }
+        snapshot["statusBar"] = status_bar_alert(snapshot, self._active_ax_transient_alert())
+        return snapshot
+
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
         with self.lock:
@@ -4011,6 +4276,7 @@ class MongrelHudApp:
             ],
             "targetScan": self.scan_status_snapshot(),
             "targetIntel": self.target_intel(state.get("target") if isinstance(state.get("target"), dict) else None),
+            "ax": self.ax_snapshot(),
             "recentTargets": self.recent_target_snapshot(),
         }
 
@@ -4398,6 +4664,8 @@ class MongrelHudApp:
         key = self.target_identity(target)
         if key != self._last_target_identity:
             self._last_target_identity = key
+            if key:
+                self._sync_ax_target(target)
             self._wanted_flash_key = ""
             if key and self.target_intel(target):
                 self.restored_target_until = time.monotonic() + 1.8
@@ -4658,6 +4926,10 @@ class MongrelHudApp:
         return width, round(y + 8 * scale)
 
     def _render_target_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        with self.store.lock:
+            profile = str(self.store.data.get("profile") or "combat")
+        if profile == "ax":
+            return self._render_ax_target_canvas(canvas, scale)
         state = self.scout_state(); target = state.get("target") or {}
         self._target_transients(target if isinstance(target, dict) else {})
         width = round(420 * scale); y = self._draw_title(canvas, "TARGET", scale, width)
@@ -4686,6 +4958,184 @@ class MongrelHudApp:
             label = "LOADOUT RESTORED" if time.monotonic() < self.restored_target_until else "LOADOUT CACHED"
             self._draw_text(canvas, 8 * scale, y, label, scale, 9, HUD_GREEN, True); y += 18 * scale
         return width, round(y + 8 * scale)
+
+    def _render_ax_target_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        target = state.get("target") if isinstance(state.get("target"), dict) else {}
+        self._target_transients(target)
+        ax = self.ax_snapshot()
+        spec = ax.get("spec") if isinstance(ax.get("spec"), dict) else None
+        phase = ax.get("phase") if isinstance(ax.get("phase"), dict) else None
+        confidence = ax.get("confidence") if isinstance(ax.get("confidence"), dict) else {}
+        width = round(500 * scale)
+        y = self._draw_title(canvas, "AX TARGET", scale, width, HUD_AMBER)
+
+        if not spec:
+            if target:
+                name = str(target.get("pilotName") or target.get("ship") or "TARGET")
+                self._draw_text(canvas, 8 * scale, y, name, scale, 14, HUD_WHITE, True); y += 23 * scale
+                self._draw_text(canvas, 8 * scale, y, "NOT RECOGNIZED AS AX TARGET", scale, 10, HUD_MUTED, True); y += 20 * scale
+                self._draw_text(canvas, 8 * scale, y, "Choose a manual variant in AX Combat controls if needed.", scale, 9, HUD_MUTED, False, "nw", width - 16 * scale); y += 35 * scale
+            else:
+                self._draw_text(canvas, 8 * scale, y, "NO THARGOID TARGET", scale, 14, HUD_MUTED, True); y += 24 * scale
+                self._draw_text(canvas, 8 * scale, y, "Target a vessel or choose a manual AX variant.", scale, 9, HUD_MUTED, False, "nw", width - 16 * scale); y += 30 * scale
+            return width, round(y + 8 * scale)
+
+        name = str(spec.get("name") or "THARGOID")
+        family = str(spec.get("family") or "unknown").replace("-", " ").upper()
+        self._draw_text(canvas, 8 * scale, y, name.upper(), scale, 18, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y + 3 * scale, family, scale, 9, HUD_MUTED, True, "ne")
+        y += 27 * scale
+
+        tags = [str(tag) for tag in spec.get("tags") or []]
+        if tags:
+            tag_text = " · ".join(tags[:3])
+            tag_color = HUD_RED if any(tag in {"ANTI-GUARDIAN FIELD", "FASTEST INTERCEPTOR"} for tag in tags) else HUD_AMBER
+            self._draw_text(canvas, 8 * scale, y, tag_text, scale, 9, tag_color, True, "nw", width - 16 * scale)
+            y += 20 * scale
+
+        hearts = spec.get("hearts")
+        speed = spec.get("topSpeedMps")
+        swarm = spec.get("swarmSize")
+        enrage = spec.get("enrageSeconds")
+        shield_decay = spec.get("shieldDecaySeconds")
+        reward = spec.get("killReward")
+        heart_text = "—" if hearts is None else "NONE" if int(hearts or 0) == 0 else str(int(hearts))
+        self._draw_text(canvas, 8 * scale, y, "HEARTS", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 78 * scale, y, heart_text, scale, 12, HUD_WHITE, True)
+        self._draw_text(canvas, 150 * scale, y, "TOP SPEED", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 245 * scale, y, f"{int(speed)} m/s" if isinstance(speed, (int, float)) else "—", scale, 12, HUD_WHITE, True)
+        self._draw_text(canvas, 350 * scale, y, "SWARM", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 415 * scale, y, str(int(swarm)) if isinstance(swarm, (int, float)) else "—", scale, 12, HUD_WHITE, True)
+        y += 21 * scale
+
+        self._draw_text(canvas, 8 * scale, y, "ENRAGE", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 78 * scale, y, ax_format_seconds(enrage), scale, 11, HUD_WHITE, True)
+        self._draw_text(canvas, 150 * scale, y, "SHIELD DECAY", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 265 * scale, y, ax_format_seconds(shield_decay), scale, 11, HUD_WHITE, True)
+        if isinstance(reward, (int, float)):
+            self._draw_text(canvas, width - 8 * scale, y, f"{int(reward):,} CR", scale, 10, HUD_GREEN, True, "ne")
+        y += 24 * scale
+
+        gauss = spec.get("optimalMediumGaussHeartShots")
+        armor = spec.get("armorRating")
+        resistance = spec.get("humanWeaponResistancePercent")
+        details = []
+        if isinstance(gauss, (int, float)):
+            details.append(f"MED GAUSS/HEART ~{int(gauss)}")
+        if isinstance(armor, (int, float)):
+            details.append(f"ARMOR {int(armor)}")
+        if isinstance(resistance, (int, float)):
+            details.append(f"HUMAN RESIST {int(resistance)}%")
+        if details:
+            self._draw_text(canvas, 8 * scale, y, " · ".join(details), scale, 9, HUD_MUTED, True, "nw", width - 16 * scale)
+            y += 20 * scale
+
+        speed_cmp = ax.get("speedComparison") if isinstance(ax.get("speedComparison"), dict) else None
+        if speed_cmp:
+            color = HUD_GREEN if speed_cmp.get("canOutrun") else HUD_RED
+            self._draw_text(
+                canvas, 8 * scale, y,
+                f"YOUR BOOST {speed_cmp['shipMps']} m/s · {speed_cmp['label']} ({speed_cmp['marginMps']:+d} m/s)",
+                scale, 10, color, True,
+            )
+            y += 20 * scale
+
+        live = ax.get("liveTarget") if isinstance(ax.get("liveTarget"), dict) else {}
+        live_bits = []
+        if isinstance(live.get("shieldHealth"), (int, float)):
+            live_bits.append(f"SHIELD {float(live['shieldHealth']):.0f}%")
+        if isinstance(live.get("hullHealth"), (int, float)):
+            live_bits.append(f"HULL {float(live['hullHealth']):.0f}%")
+        if live_bits:
+            self._draw_text(canvas, 8 * scale, y, "LIVE · " + " · ".join(live_bits), scale, 10, HUD_CYAN, True)
+            y += 21 * scale
+
+        if phase and int(phase.get("heartsTotal") or 0) > 0:
+            total = int(phase.get("heartsTotal") or 0)
+            remaining = int(phase.get("heartsRemaining") or 0)
+            hearts_bar = "●" * remaining + "○" * max(0, total - remaining)
+            self._draw_text(canvas, 8 * scale, y, "HEARTS", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 78 * scale, y - 2 * scale, hearts_bar, scale, 14, HUD_RED, True)
+            self._draw_text(canvas, width - 8 * scale, y, f"{remaining}/{total}", scale, 11, HUD_WHITE, True, "ne")
+            y += 24 * scale
+
+            phase_name = str(phase.get("phase") or "engage").replace("_", " ").upper()
+            self._draw_text(canvas, 8 * scale, y, "PHASE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 78 * scale, y, phase_name, scale, 12, HUD_AMBER if phase_name != "FINISH" else HUD_GREEN, True)
+            y += 21 * scale
+
+            timer_rows = []
+            if isinstance(phase.get("shieldRemainingSeconds"), int):
+                timer_rows.append(("SHIELD", ax_format_seconds(phase["shieldRemainingSeconds"])))
+            if isinstance(phase.get("enrageRemainingSeconds"), int):
+                timer_rows.append(("ENRAGE", ax_format_seconds(phase["enrageRemainingSeconds"])))
+            if isinstance(phase.get("heartWindowRemainingSeconds"), int):
+                timer_rows.append(("HEART WINDOW", ax_format_seconds(phase["heartWindowRemainingSeconds"])))
+            if timer_rows:
+                timer_text = "   ".join(f"{label} {value}" for label, value in timer_rows)
+                self._draw_text(canvas, 8 * scale, y, timer_text + " · EST", scale, 10, HUD_WHITE, True, "nw", width - 16 * scale)
+                y += 21 * scale
+
+            exertion = phase.get("nextExertionHullPercent")
+            if isinstance(exertion, (int, float)) and remaining > 0:
+                self._draw_text(canvas, 8 * scale, y, f"NEXT EXERTION ~{int(exertion)}% CURRENT HULL DAMAGE", scale, 9, HUD_MUTED, True)
+                y += 19 * scale
+
+        warnings = ax.get("warnings") if isinstance(ax.get("warnings"), list) else []
+        for warning in warnings[:4]:
+            if not isinstance(warning, dict):
+                continue
+            color = HUD_RED if warning.get("level") == "red" else HUD_AMBER
+            self._draw_text(canvas, 8 * scale, y, str(warning.get("text") or ""), scale, 10, color, True, "nw", width - 16 * scale)
+            y += 21 * scale
+
+        notes = [str(note) for note in spec.get("tacticalNotes") or []]
+        if notes:
+            self._draw_text(canvas, 8 * scale, y, "TACTICAL", scale, 9, HUD_CYAN, True); y += 18 * scale
+            for note in notes[:3]:
+                self._draw_text(canvas, 16 * scale, y, "• " + note, scale, 8, HUD_WHITE, False, "nw", width - 24 * scale)
+                y += 29 * scale
+
+        tracking = f"TARGET {str(confidence.get('target') or 'unknown').upper()} · HEARTS {str(confidence.get('hearts') or 'unknown').upper()} · TIMERS {str(confidence.get('timers') or 'none').upper()}"
+        self._draw_text(canvas, 8 * scale, y, tracking, scale, 8, HUD_MUTED, True, "nw", width - 16 * scale)
+        y += 18 * scale
+        return width, round(y + 8 * scale)
+
+    def _render_ax_status_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        ax = self.ax_snapshot()
+        alert = ax.get("statusBar") if isinstance(ax.get("statusBar"), dict) else {}
+        severity = str(alert.get("severity") or "standby").casefold()
+        flashing = bool(alert.get("flash"))
+        width = round(900 * scale)
+        height = round(88 * scale)
+        color = HUD_RED if severity == "critical" else HUD_AMBER if severity == "urgent" else HUD_CYAN if severity == "info" else HUD_DIM
+
+        active_fill = flashing and flash_on
+        if active_fill:
+            canvas.create_rectangle(
+                2 * scale, 2 * scale, width - 2 * scale, height - 2 * scale,
+                fill=color, outline=color, width=max(2, round(2 * scale)),
+            )
+            main_color = HUD_SHADOW
+            detail_color = HUD_SHADOW
+        else:
+            canvas.create_rectangle(
+                2 * scale, 2 * scale, width - 2 * scale, height - 2 * scale,
+                outline=color, width=max(2, round(2 * scale)),
+            )
+            main_color = color if severity != "standby" else HUD_MUTED
+            detail_color = HUD_WHITE if severity != "standby" else HUD_MUTED
+
+        text = str(alert.get("text") or "AX STATUS — STANDBY")
+        detail = str(alert.get("detail") or "")
+        source = str(alert.get("source") or "").upper()
+        self._draw_text(canvas, width / 2, 12 * scale, text, scale, 25, main_color, True, "n")
+        if detail:
+            self._draw_text(canvas, width / 2, 50 * scale, detail, scale, 10, detail_color, True, "n")
+        if source and source not in {"NONE", "REFERENCE"}:
+            self._draw_text(canvas, width - 10 * scale, height - 8 * scale, source, scale, 7, detail_color, True, "se")
+        return width, height
 
     def _render_loadout_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state(); target = state.get("target") or {}
@@ -5155,6 +5605,8 @@ class MongrelHudApp:
             width, height = self._render_own_canvas(canvas, scale)
         elif panel_id == "target":
             width, height = self._render_target_canvas(canvas, scale, flash_on)
+        elif panel_id == "axstatus":
+            width, height = self._render_ax_status_canvas(canvas, scale, flash_on)
         elif panel_id == "subsystems":
             width, height = self._render_loadout_canvas(canvas, scale)
         elif panel_id == "cargo":
@@ -5801,6 +6253,31 @@ def make_handler(app: MongrelHudApp):
                     result = app.acknowledge_alerts(ids)
                 elif path == "/api/target-scan":
                     result = {"ok": True, "scan": app.start_target_scan()}
+                elif path == "/api/ax-settings":
+                    result = {"ok": True, "ax": app.set_ax_settings(body)}
+                elif path == "/api/ax-action":
+                    action = str(body.get("action") or "")
+                    result = {"ok": True, "ax": app.ax_action(action)}
+                    marker = {
+                        "heart_exerted": "HEART EXERTED",
+                        "heart_down": "HEART DOWN",
+                        "shield_up": "SHIELD UP",
+                        "shield_down": "SHIELD DOWN",
+                    }.get(action)
+                    if marker:
+                        app.telemetry_mark_best_effort(marker)
+                elif path == "/api/telemetry":
+                    result = app.telemetry_action(
+                        str(body.get("action") or ""),
+                        label=str(body.get("label") or ""),
+                        note=str(body.get("note") or ""),
+                    )
+                elif path == "/api/ax-alert":
+                    result = {"ok": True, "ax": app.set_ax_transient_alert(
+                        str(body.get("code") or ""),
+                        ttl_seconds=body.get("ttlSeconds", 8),
+                        source=str(body.get("source") or "manual"),
+                    )}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/location-select":

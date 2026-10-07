@@ -255,6 +255,39 @@ with tempfile.TemporaryDirectory() as td:
     assert state["connected"] is True and state["activeSite"]["id"]==42
     assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
+    assert "ax" in state and state["ax"]["settings"]["variantOverride"]=="auto"
+    ax_state=app.set_ax_settings({"variantOverride":"basilisk","shipBoostMps":512})
+    assert ax_state["spec"]["id"]=="basilisk"
+    assert ax_state["speedComparison"]["canOutrun"] is False
+    assert ax_state["statusBar"]["code"] in {"engaged","exert_phase"}
+
+    # AX status bar is priority-driven: exertion flashes, the EMP transition
+    # overrides normal phase chatter, and future detector input can use the same
+    # transient contract for caustic missiles without claiming Status.json has it.
+    app.ax_action("reset")
+    exerted=app.ax_action("heart_exerted")
+    assert exerted["statusBar"]["code"]=="heart_exerted"
+    assert exerted["statusBar"]["severity"]=="urgent" and exerted["statusBar"]["flash"] is True
+    app.ax_action("reset")
+    for _ in range(4):
+        emp_state=app.ax_action("heart_down")
+    assert emp_state["phase"]["heartsRemaining"]==1
+    assert emp_state["statusBar"]["code"]=="emp_expected"
+    assert emp_state["statusBar"]["severity"]=="critical"
+    caustic=app.set_ax_transient_alert("caustic_missile",ttl_seconds=8,source="test")
+    assert caustic["statusBar"]["code"]=="caustic_missile"
+    assert caustic["statusBar"]["priority"]>emp_state["statusBar"]["priority"]
+    assert caustic["statusBar"]["source"]=="test"
+    cleared=app.set_ax_transient_alert("clear")
+    assert cleared["statusBar"]["code"]=="emp_expected"
+
+    app.ax_action("reset")
+    for _ in range(5):
+        app.ax_action("heart_down")
+    completed=app.ax_snapshot()["recentFights"][-1]
+    assert completed["variant"]=="basilisk"
+    assert len(completed["heartSplitsSeconds"])==5
+    app.set_ax_settings({"variantOverride":"auto","shipBoostMps":0})
     # Saved centers must survive a HUD restart even if the remote center feed is temporarily unavailable.
     app.set_site_center = app.set_site_center
     assert "Periclase" in state["miningCommodities"]
@@ -275,6 +308,17 @@ with tempfile.TemporaryDirectory() as td:
     assert hud.MongrelHudApp.module_category("Shield Cell Bank")=="defense"
     layout=app.layout_snapshot()
     assert layout["locked"] is True and set(layout["panels"])==set(hud.PANEL_IDS)
+    assert layout["panels"]["axstatus"]["visible"] is True
+    assert layout["panels"]["axstatus"]["profiles"]==["ax"]
+    app.set_panel_settings("axstatus",scale=0.6,profiles=["ax"])
+    assert app.layout_snapshot()["panels"]["axstatus"]["scale"]==0.6
+    app.set_panel_settings("axstatus",scale=2.0)
+    assert app.layout_snapshot()["panels"]["axstatus"]["scale"]==2.0
+    try:
+        app.set_panel_settings("axstatus",scale=2.01)
+        raise AssertionError("Oversize panel scale was accepted")
+    except ValueError as exc:
+        assert str(exc)=="invalid_scale"
     app.set_layout_locked(False)
     assert app.layout_snapshot()["locked"] is False
     app.set_panel_settings("subsystems",visible=False,scale=1.25,profiles=["combat","surface"])
@@ -283,7 +327,7 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["subsystems"]["profiles"]==["combat","surface"]
     assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"] and "miningintel" in app.layout_snapshot()["panels"] and "cargo" in app.layout_snapshot()["panels"]
     assert app.layout_snapshot()["panels"]["cargo"]["visible"] is False
-    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","ax","surface"]
     app.set_mission_system_filter("Diaba")
     assert app.mission_system_filter()=="Diaba"
     app.set_notes("Check tick after dinner")
@@ -307,6 +351,9 @@ with tempfile.TemporaryDirectory() as td:
     assert custom_profiles!=before_profiles
     assert app.set_profile("surface")=="surface"
     assert store.data["profile"]=="surface"
+    assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
+    assert app.set_profile("ax")=="ax"
+    assert store.data["profile"]=="ax"
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
     assert app.set_profile("combat")=="combat"
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
@@ -446,7 +493,7 @@ assert "release_metadata_incomplete" in source and "release_digest_missing" in s
 assert "time.sleep(1.5)" in source
 assert 'if(r.scan)state.targetScan=r.scan;render();await load(true)' in html
 assert 'FRAMES '+'' in html and 'SCANNING — SCROLL / PAUSE' in html
-print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
+print("✓ Mongrel HUD companion Combat/AX/Surface profiles, surface navigation, local report flow and paired LAN boundary are wired")
 
 assert 'mutationEpoch' in html and 'mutationPending' in html and 'async function mutate' in html
 assert 'Profile switch failed' in html and 'profile active' in html
