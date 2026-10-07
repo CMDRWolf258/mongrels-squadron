@@ -19,7 +19,7 @@ for(const id of [
 }
 
 const settlement=byId(bgs,'bgs-war-odyssey-settlement-resolution');
-assert.match(settlement.ruleOfThumb,/win a war/i);
+assert.match(settlement.ruleOfThumb,/overall war victory/i);
 assert.match(settlement.ruleOfThumb,/Odyssey settlements/i);
 assert.ok(settlement.details.some(row=>/nobody fights/i.test(row)),'Settlement entry should explain untouched settlements');
 
