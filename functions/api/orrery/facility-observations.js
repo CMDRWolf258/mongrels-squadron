@@ -1,12 +1,34 @@
 import { json } from '../../../lib/auth.js';
 import { readScoutFacilityObservationPayload } from '../../../lib/scout-facility-observations.js';
-import { readScoutFacilityVisits } from '../../../lib/scout-facility-visits.js';
+import { readScoutFacilityVisits, deriveMobileStationPlacement } from '../../../lib/scout-facility-visits.js';
 import { readFacilityHostOverridePayload } from '../../../lib/orrery-facility-host-overrides.js';
 
+const PRODUCTION_HOST='mongrels-squadron.pages.dev';
+
 export async function onRequestGet({request,env}){
-  const systemId64=new URL(request.url).searchParams.get('systemId64')||'';
+  const requestUrl=new URL(request.url);
+  const systemId64=requestUrl.searchParams.get('systemId64')||'';
   if(!/^\d{1,32}$/.test(systemId64)){
     return json({ok:false,error:'invalid_system_id64'},{status:400,headers:headers(5)});
+  }
+  if(isPagesPreview(requestUrl.hostname)){
+    try{
+      const productionUrl=new URL('/api/orrery/facility-observations',`https://${PRODUCTION_HOST}`);
+      productionUrl.searchParams.set('systemId64',systemId64);
+      const upstream=await fetch(productionUrl.toString(),{headers:{Accept:'application/json'}});
+      if(upstream.ok){
+        return new Response(await upstream.text(),{
+          status:upstream.status,
+          headers:{
+            ...headers(5),
+            'Content-Type':'application/json; charset=utf-8',
+            'X-Orrery-Observation-Source':'production',
+          },
+        });
+      }
+    }catch(error){
+      console.error('Could not proxy production Orrery observations into preview',error);
+    }
   }
   try{
     const [payload,visits,overrides]=await Promise.all([
@@ -26,6 +48,7 @@ export async function onRequestGet({request,env}){
 }
 function latestStationVisits(visits){
   const latest=new Map();
+  const mobilePlacements=new Map();
   for(const row of Array.isArray(visits)?visits:[]){
     const marketId=String(row?.marketId||'');
     if(!/^\d+$/.test(marketId))continue;
@@ -35,8 +58,24 @@ function latestStationVisits(visits){
       stationType:String(row?.stationType||'').slice(0,80),
       observedAt:row?.observedAt||null,
     });
+    if(!mobilePlacements.has(marketId)){
+      const placement=deriveMobileStationPlacement(row);
+      if(placement)mobilePlacements.set(marketId,{
+        bodyJournalId:placement.bodyJournalId,
+        bodyName:String(placement.bodyName||'').slice(0,180),
+        observedAt:row?.observedAt||null,
+        evidence:[...placement.evidence],
+      });
+    }
   }
-  return [...latest.values()].slice(0,500);
+  return [...latest.values()].slice(0,500).map(row=>({
+    ...row,
+    ...(mobilePlacements.has(row.marketId)?{mobilePlacement:mobilePlacements.get(row.marketId)}:{}),
+  }));
+}
+function isPagesPreview(hostname){
+  const host=String(hostname||'').toLowerCase();
+  return host!==PRODUCTION_HOST&&host.endsWith('.mongrels-squadron.pages.dev');
 }
 function headers(maxAge){
   return{
