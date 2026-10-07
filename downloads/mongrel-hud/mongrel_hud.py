@@ -1199,7 +1199,7 @@ class LocalStore:
     def __init__(self, path: Path):
         self.path = path
         self.lock = threading.RLock()
-        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": [], "ax": {"settings": default_ax_settings(), "encounter": None, "targetKey": "", "targetVariant": "", "targetSource": ""}}
+        self.data: dict[str, Any] = {"profile": "combat", "sites": {}, "activeSite": None, "activeMiningLocationSignal": None, "activeMiningSiteId": None, "miningCenters": [], "deposits": [], "bounty": {"unclaimed": 0}, "eventCursor": {"sessionId": "", "seq": 0}, "layout": default_layout(), "notes": "", "missionSystem": "all", "controllerAuth": {"tokenHashes": []}, "voice": default_voice_settings(), "voiceSchedule": [], "ax": {"settings": default_ax_settings(), "encounter": None, "targetKey": "", "targetVariant": "", "targetSource": "", "recentFights": []}}
         self.load()
         self.data["layout"] = normalized_layout(self.data.get("layout"))
         self.data["voice"] = normalized_voice_settings(self.data.get("voice"))
@@ -1210,6 +1210,7 @@ class LocalStore:
             "targetKey": str(ax_state.get("targetKey") or "")[:240],
             "targetVariant": str(ax_state.get("targetVariant") or "")[:40],
             "targetSource": str(ax_state.get("targetSource") or "")[:20],
+            "recentFights": [row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)][-20:],
         }
         auth = self.data.get("controllerAuth")
         hashes = auth.get("tokenHashes") if isinstance(auth, dict) else []
@@ -4043,7 +4044,7 @@ class MongrelHudApp:
                 ax_state["targetKey"] = tracking_key
                 ax_state["targetVariant"] = variant
                 ax_state["targetSource"] = source
-                ax_state["encounter"] = new_encounter(variant, time.monotonic(), source=source)
+                ax_state["encounter"] = new_encounter(variant, time.time(), source=source)
                 self.store.save()
             elif tracking_key and not exact and (tracking_key != existing_key or variant != existing_variant):
                 ax_state["targetKey"] = tracking_key
@@ -4066,10 +4067,30 @@ class MongrelHudApp:
                 )
                 if not spec or str(spec.get("id") or "") not in variant_ids():
                     raise ValueError("ax_variant_required")
-                encounter = new_encounter(str(spec["id"]), time.monotonic(), source="manual")
-            ax_state["encounter"] = apply_encounter_action(encounter, action, time.monotonic())
+                encounter = new_encounter(str(spec["id"]), time.time(), source="manual")
+            before_remaining = int(encounter.get("heartsRemaining") or 0)
+            ax_state["encounter"] = apply_encounter_action(encounter, action, time.time())
             ax_state["targetVariant"] = str(ax_state["encounter"].get("variant") or "")
-            ax_state["targetSource"] = "manual" if str(action or "").casefold() != "reset" else "manual"
+            ax_state["targetSource"] = "manual"
+            after = encounter_snapshot(ax_state["encounter"], time.time())
+            if (
+                str(action or "").casefold() == "heart_down"
+                and before_remaining > 0
+                and isinstance(after, dict)
+                and int(after.get("heartsRemaining") or 0) == 0
+            ):
+                spec = after.get("spec") if isinstance(after.get("spec"), dict) else {}
+                record = {
+                    "variant": str(after.get("variant") or ""),
+                    "name": str(spec.get("name") or after.get("name") or "Thargoid"),
+                    "endedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    "durationSeconds": int(after.get("elapsedSeconds") or 0),
+                    "heartSplitsSeconds": list(after.get("heartSplitsSeconds") or []),
+                    "source": str(encounter.get("source") or "manual"),
+                }
+                fights = [row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)]
+                fights.append(record)
+                ax_state["recentFights"] = fights[-20:]
             self.store.save()
         return self.ax_snapshot()
 
@@ -4084,7 +4105,8 @@ class MongrelHudApp:
             encounter = json.loads(json.dumps(ax_state.get("encounter"))) if isinstance(ax_state.get("encounter"), dict) else None
             target_source = str(ax_state.get("targetSource") or "")
             target_key = str(ax_state.get("targetKey") or "")
-        phase = encounter_snapshot(encounter, time.monotonic()) if encounter else None
+            recent_fights = json.loads(json.dumps([row for row in (ax_state.get("recentFights") or []) if isinstance(row, dict)][-20:]))
+        phase = encounter_snapshot(encounter, time.time()) if encounter else None
 
         warnings: list[dict[str, str]] = []
         if isinstance(spec, dict):
@@ -4120,6 +4142,7 @@ class MongrelHudApp:
             "phase": phase,
             "speedComparison": speed,
             "warnings": warnings,
+            "recentFights": recent_fights,
             "confidence": {
                 "target": "known" if target and spec and str(spec.get("id") or "") in variant_ids() and settings.get("variantOverride") == "auto" else "manual" if settings.get("variantOverride") != "auto" else "unknown",
                 "hearts": "manual" if phase and int(phase.get("heartsDestroyed") or 0) > 0 else "reference",
