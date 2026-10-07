@@ -283,7 +283,7 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["subsystems"]["profiles"]==["combat","surface"]
     assert "scoutnearby" in app.layout_snapshot()["panels"] and "orderalerts" in app.layout_snapshot()["panels"] and "miningintel" in app.layout_snapshot()["panels"] and "cargo" in app.layout_snapshot()["panels"]
     assert app.layout_snapshot()["panels"]["cargo"]["visible"] is False
-    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","ax","surface"]
     app.set_mission_system_filter("Diaba")
     assert app.mission_system_filter()=="Diaba"
     app.set_notes("Check tick after dinner")
@@ -307,6 +307,9 @@ with tempfile.TemporaryDirectory() as td:
     assert custom_profiles!=before_profiles
     assert app.set_profile("surface")=="surface"
     assert store.data["profile"]=="surface"
+    assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
+    assert app.set_profile("ax")=="ax"
+    assert store.data["profile"]=="ax"
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
     assert app.set_profile("combat")=="combat"
     assert {panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}==custom_profiles
@@ -446,7 +449,7 @@ assert "release_metadata_incomplete" in source and "release_digest_missing" in s
 assert "time.sleep(1.5)" in source
 assert 'if(r.scan)state.targetScan=r.scan;render();await load(true)' in html
 assert 'FRAMES '+'' in html and 'SCANNING — SCROLL / PAUSE' in html
-print("✓ Mongrel HUD companion profiles, surface navigation, local report flow and paired LAN boundary are wired")
+print("✓ Mongrel HUD companion Combat/AX/Surface profiles, surface navigation, local report flow and paired LAN boundary are wired")
 
 assert 'mutationEpoch' in html and 'mutationPending' in html and 'async function mutate' in html
 assert 'Profile switch failed' in html and 'profile active' in html
