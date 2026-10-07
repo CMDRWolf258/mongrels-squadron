@@ -2,6 +2,11 @@
 
 Experimental reference for PR #158. This registry separates what Elite can expose locally from what MongrelHUD should actually alert on.
 
+## Test checklists
+
+- [Solo AX telemetry test](./ax-telemetry-test-solo-checklist.md)
+- [Wing / multi-Interceptor AX telemetry test](./ax-telemetry-test-wing-checklist.md)
+
 ## Policy
 
 - **Observable is not the same as actionable.** Scout may record or normalize a trigger without surfacing it to the pilot.
