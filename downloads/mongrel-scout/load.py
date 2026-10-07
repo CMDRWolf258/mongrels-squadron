@@ -1323,13 +1323,29 @@ def _publish_hud_event(
     if normalized is None:
         return
     global _hud_seq
+    previous_target = None
+    current_target = None
     with _hud_condition:
+        if str(normalized.get("journalEvent") or "") == "ShipTargeted":
+            previous = _hud_state.get("target")
+            previous_target = json.loads(json.dumps(previous)) if isinstance(previous, Mapping) else None
         _hud_seq += 1
         normalized["seq"] = _hud_seq
         normalized["sessionId"] = _hud_session_id
         _hud_events.append(normalized)
         _update_hud_state_locked(normalized)
+        if str(normalized.get("journalEvent") or "") == "ShipTargeted":
+            current = _hud_state.get("target")
+            current_target = json.loads(json.dumps(current)) if isinstance(current, Mapping) else None
         _hud_condition.notify_all()
+
+    if str(normalized.get("journalEvent") or "") == "ShipTargeted":
+        _telemetry_append("target.transition", {
+            "normalizedEvent": dict(normalized),
+            "previousTarget": previous_target,
+            "currentTarget": current_target,
+            "note": "Target snapshots are observational only; repeated Thargoids may not have a unique stable identity.",
+        })
 
 
 def _normalize_hud_event(
