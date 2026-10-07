@@ -89,7 +89,7 @@ function renderDetails(record) {
     if (record.latitude != null) { pair('Latitude', number(record.latitude, '°', 6)); pair('Longitude', number(record.longitude, '°', 6)); }
     else pair('Coordinates', 'Unknown');
     if (record.positionObservation?.source) pair('Placement source', record.positionObservation.source);
-    if (record.positionObservation?.status) pair('Host confidence', record.positionObservation.status === 'estimated' ? 'Estimated' : 'Verified');
+    if (record.positionObservation?.status) pair('Host confidence', record.positionObservation.status === 'estimated' ? 'Estimated' : record.positionObservation.status === 'confirmed' ? 'Confirmed current placement' : 'Verified');
     if (record.positionObservation?.confidenceScore != null) pair('Estimate confidence', `${Math.round(record.positionObservation.confidenceScore * 100)}%`);
     if (record.positionObservation?.observedAt) {
       const observed = new Date(record.positionObservation.observedAt);
