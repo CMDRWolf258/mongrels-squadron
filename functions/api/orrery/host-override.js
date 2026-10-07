@@ -11,9 +11,11 @@ export async function onRequestPost({request,env}){
 
   let body;
   try{body=await request.json();}catch{return reply({ok:false,error:'invalid_json'},400);}
+  const placementMode=body?.placementMode==='temporary_mobile'?'temporary_mobile':'fixed';
   const result=await recordFacilityHostOverride(env,body,{
     updatedAt:new Date().toISOString(),
     updatedBy:session.displayName||session.username||'Mongrel Officer',
+    placementMode,
   });
   if(result?.error){
     const status=result.error==='bgs_storage_not_configured'?503:400;
@@ -25,6 +27,8 @@ export async function onRequestPost({request,env}){
     bodyJournalId:result.override.bodyJournalId,
     bodyName:result.override.bodyName,
     updatedAt:result.override.updatedAt,
+    placementMode:result.override.placementMode,
+    temporary:result.override.temporary===true,
     verified:true,
   }});
 }
