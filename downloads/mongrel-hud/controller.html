@@ -276,6 +276,25 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="notice" id="axActionNotice"></div>
     </div>
     <div class="card">
+      <h2>AX TELEMETRY CAPTURE</h2>
+      <div class="row"><span>Recorder</span><strong id="axTelemetryStatus">OFF</strong></div>
+      <div class="status" id="axTelemetryPath">Capture is local-only and disabled by default.</div>
+      <div class="layout-actions">
+        <button class="action" id="axTelemetryStart" type="button">START CAPTURE</button>
+        <button class="action" id="axTelemetryStop" type="button">STOP CAPTURE</button>
+      </div>
+      <div class="layout-actions">
+        <button class="action" type="button" data-telemetry-marker="ENERGY SURGE">ENERGY SURGE</button>
+        <button class="action" type="button" data-telemetry-marker="EMP HIT">EMP HIT</button>
+        <button class="action" type="button" data-telemetry-marker="CAUSTIC MISSILE">CAUSTIC MISSILE</button>
+        <button class="action" type="button" data-telemetry-marker="LIGHTNING">LIGHTNING</button>
+        <button class="action" type="button" data-telemetry-marker="SWARM LAUNCH">SWARM LAUNCH</button>
+        <button class="action" type="button" data-telemetry-marker="SWARM DOWN">SWARM DOWN</button>
+      </div>
+      <div class="layout-hint">While capture is ON, the existing HEART EXERTED / HEART DOWN / SHIELD buttons also write timestamped markers automatically. Raw Journal and Status.json records stay on this PC.</div>
+      <div class="notice" id="axTelemetryNotice"></div>
+    </div>
+    <div class="card">
       <h2>AX COMBAT SETTINGS</h2>
       <label for="axVariantOverride">Target variant</label>
       <select id="axVariantOverride" class="voice-select">
@@ -416,6 +435,9 @@ function render(){
   setText(el("axStatusDetail"),String(axStatus.detail||"No high-priority phase alert."));
   setText(el("axStatusMeta"),String(axStatus.severity||"standby").toUpperCase()+" · "+String(axStatus.source||"none").toUpperCase()+(axStatus.flash?" · FLASH":""));
   setText(el("axTracking"),"Target "+String(axConfidence.target||"unknown").toUpperCase()+" · Hearts "+String(axConfidence.hearts||"unknown").toUpperCase()+" · Timers "+String(axConfidence.timers||"none").toUpperCase()+" · AXI data "+String(ax.reviewedAt||""));
+  var telemetry=((state.scout||{}).telemetry)||{};
+  setText(el("axTelemetryStatus"),telemetry.enabled?("ON · "+String(Number(telemetry.records)||0)+" RECORDS"):"OFF");
+  setText(el("axTelemetryPath"),telemetry.enabled?(String(telemetry.path||"Local capture active")):(telemetry.path?("Last capture · "+String(telemetry.path)):"Capture is local-only and disabled by default."));
   if(document.activeElement!==el("axVariantOverride"))el("axVariantOverride").value=String(axSettings.variantOverride||"auto");
   if(document.activeElement!==el("axShipBoost"))el("axShipBoost").value=String(Number(axSettings.shipBoostMps)||0);
   if(document.activeElement!==el("axColdHeat"))el("axColdHeat").value=String(Number(axSettings.coldHeatPercent)||20);
@@ -647,6 +669,9 @@ document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.
 document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,map={all:["combat","ax","surface"],combat_ax:["combat","ax"],both:["combat","surface"],ax_surface:["ax","surface"],combat:["combat"],ax:["ax"],surface:["surface"]},profiles=map[value]||["combat"],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
 document.querySelectorAll("[data-ax-action]").forEach(function(button){button.onclick=async function(){try{var r=await mutate("/api/ax-action",{action:button.getAttribute("data-ax-action")});state=state||{};state.ax=r.ax;render();el("axActionNotice").textContent="Fight tracker updated"}catch(e){el("axActionNotice").textContent="AX tracker failed · "+e.message}}});
 document.querySelectorAll("[data-ax-alert]").forEach(function(button){button.onclick=async function(){var code=button.getAttribute("data-ax-alert");try{var r=await mutate("/api/ax-alert",{code:code,ttlSeconds:code==="clear"?1:8,source:"test"});state=state||{};state.ax=r.ax;render();el("axStatusNotice").textContent=code==="clear"?"Test alert cleared":"Status bar test active · "+code.replaceAll("_"," ")}catch(e){el("axStatusNotice").textContent="AX status test failed · "+e.message}}});
+el("axTelemetryStart").onclick=async function(){try{var r=await mutate("/api/telemetry",{action:"start",label:"ax"});state=state||{};state.scout=state.scout||{};state.scout.telemetry=r.telemetry||{};render();el("axTelemetryNotice").textContent="Telemetry capture started"}catch(e){el("axTelemetryNotice").textContent="Capture start failed · "+e.message}};
+el("axTelemetryStop").onclick=async function(){try{var r=await mutate("/api/telemetry",{action:"stop"});state=state||{};state.scout=state.scout||{};state.scout.telemetry=r.telemetry||{};render();el("axTelemetryNotice").textContent="Telemetry capture stopped"}catch(e){el("axTelemetryNotice").textContent="Capture stop failed · "+e.message}};
+document.querySelectorAll("[data-telemetry-marker]").forEach(function(button){button.onclick=async function(){var label=button.getAttribute("data-telemetry-marker");try{var r=await mutate("/api/telemetry",{action:"mark",label:label});state=state||{};state.scout=state.scout||{};state.scout.telemetry=r.telemetry||{};render();el("axTelemetryNotice").textContent="Marked · "+label}catch(e){el("axTelemetryNotice").textContent="Marker failed · "+e.message}}});
 el("saveAxSettings").onclick=async function(){try{var r=await mutate("/api/ax-settings",{variantOverride:el("axVariantOverride").value||"auto",shipBoostMps:Number(el("axShipBoost").value||0),coldHeatPercent:Number(el("axColdHeat").value||20),orbitMinM:Number(el("axOrbitMin").value||900),orbitMaxM:Number(el("axOrbitMax").value||1500)});state=state||{};state.ax=r.ax;render();el("axSettingsNotice").textContent="AX settings saved"}catch(e){el("axSettingsNotice").textContent="AX settings failed · "+e.message}};
 el("axVariantOverride").onchange=function(){el("axSettingsNotice").textContent="Variant changed · save to reset tracking for this target"};
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
