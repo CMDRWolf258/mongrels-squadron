@@ -255,6 +255,17 @@ with tempfile.TemporaryDirectory() as td:
     assert state["connected"] is True and state["activeSite"]["id"]==42
     assert state["activeCenter"]["signal"]==10 and state["activeLocationSignal"]==10
     assert state["miningStatus"]["ok"] is True
+    assert "ax" in state and state["ax"]["settings"]["variantOverride"]=="auto"
+    ax_state=app.set_ax_settings({"variantOverride":"basilisk","shipBoostMps":512})
+    assert ax_state["spec"]["id"]=="basilisk"
+    assert ax_state["speedComparison"]["canOutrun"] is False
+    app.ax_action("reset")
+    for _ in range(5):
+        app.ax_action("heart_down")
+    completed=app.ax_snapshot()["recentFights"][-1]
+    assert completed["variant"]=="basilisk"
+    assert len(completed["heartSplitsSeconds"])==5
+    app.set_ax_settings({"variantOverride":"auto","shipBoostMps":0})
     # Saved centers must survive a HUD restart even if the remote center feed is temporarily unavailable.
     app.set_site_center = app.set_site_center
     assert "Periclase" in state["miningCommodities"]
