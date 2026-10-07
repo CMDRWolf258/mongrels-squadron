@@ -672,6 +672,27 @@ assert.equal(overridePayload.overrides.length,1);
 assert.equal(overridePayload.overrides[0].verified,true);
 
 
+const carrierLocation=orrerySystem.locations.find(item=>item.kind==='carrier'&&item.marketId);
+assert.ok(carrierLocation,'Expected a carrier in the Orrery snapshot');
+const carrierBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&Number.isInteger(item.bodyId)&&item.id!==carrierLocation.bodyId);
+const carrierOverride=normalizeFacilityHostOverride({
+  systemId64:String(orrerySystem.id64),
+  marketId:String(carrierLocation.marketId),
+  facilityName:carrierLocation.name,
+  bodyJournalId:carrierBody.bodyId,
+  bodyName:carrierBody.name,
+  placementMode:'temporary_mobile',
+},{updatedAt:'2026-10-07T07:40:00Z',updatedBy:'Officer'});
+assert.equal(carrierOverride.placementMode,'temporary_mobile');
+assert.equal(carrierOverride.temporary,true);
+const carrierPlaced=applyHostOverrides(orrerySystem,[carrierOverride]);
+assert.equal(carrierPlaced.applied,1);
+const placedCarrier=carrierPlaced.system.locations.find(item=>item.id===carrierLocation.id);
+assert.equal(placedCarrier.bodyId,carrierBody.id);
+assert.equal(placedCarrier.positionObservation.event,'MobileStationOverride');
+assert.equal(placedCarrier.positionObservation.status,'confirmed');
+assert.equal(placedCarrier.positionObservation.temporary,true);
+
 const wrongBody=orrerySystem.bodies.find(item=>item.kind!=='barycentre'&&item.id!==targetFacility.bodyId);
 const conflictEnvelope={...facilityEnvelope,observations:[{...facilityEnvelope.observations[0],bodyJournalId:wrongBody.bodyId,bodyName:wrongBody.name}]};
 const conflicted=applyFacilityObservationPayload(orrerySystem,conflictEnvelope);
@@ -684,7 +705,7 @@ for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readSc
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
-for(const pattern of [/Host confidence/,/Estimated/,/Verified/,/buildHostEditor/,/api\/orrery\/host-override/,/Confirm host/])assert.match(orreryApp,pattern);
+for(const pattern of [/Host confidence/,/Estimated/,/Confirmed current placement/,/buildHostEditor/,/buildCarrierPlacementEditor/,/temporary_mobile/,/Set current placement/,/api\/orrery\/host-override/,/Confirm host/])assert.match(orreryApp,pattern);
 console.log('✓ Scout station visits retain raw evidence, reject edge-case guesses, and only promote verified hosts');
 
 
