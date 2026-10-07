@@ -4826,6 +4826,10 @@ class MongrelHudApp:
         return width, round(y + 8 * scale)
 
     def _render_target_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        with self.store.lock:
+            profile = str(self.store.data.get("profile") or "combat")
+        if profile == "ax":
+            return self._render_ax_target_canvas(canvas, scale)
         state = self.scout_state(); target = state.get("target") or {}
         self._target_transients(target if isinstance(target, dict) else {})
         width = round(420 * scale); y = self._draw_title(canvas, "TARGET", scale, width)
@@ -4853,6 +4857,149 @@ class MongrelHudApp:
         if self.target_intel(target):
             label = "LOADOUT RESTORED" if time.monotonic() < self.restored_target_until else "LOADOUT CACHED"
             self._draw_text(canvas, 8 * scale, y, label, scale, 9, HUD_GREEN, True); y += 18 * scale
+        return width, round(y + 8 * scale)
+
+    def _render_ax_target_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        state = self.scout_state()
+        target = state.get("target") if isinstance(state.get("target"), dict) else {}
+        self._target_transients(target)
+        ax = self.ax_snapshot()
+        spec = ax.get("spec") if isinstance(ax.get("spec"), dict) else None
+        phase = ax.get("phase") if isinstance(ax.get("phase"), dict) else None
+        confidence = ax.get("confidence") if isinstance(ax.get("confidence"), dict) else {}
+        width = round(500 * scale)
+        y = self._draw_title(canvas, "AX TARGET", scale, width, HUD_AMBER)
+
+        if not spec:
+            if target:
+                name = str(target.get("pilotName") or target.get("ship") or "TARGET")
+                self._draw_text(canvas, 8 * scale, y, name, scale, 14, HUD_WHITE, True); y += 23 * scale
+                self._draw_text(canvas, 8 * scale, y, "NOT RECOGNIZED AS AX TARGET", scale, 10, HUD_MUTED, True); y += 20 * scale
+                self._draw_text(canvas, 8 * scale, y, "Choose a manual variant in AX Combat controls if needed.", scale, 9, HUD_MUTED, False, "nw", width - 16 * scale); y += 35 * scale
+            else:
+                self._draw_text(canvas, 8 * scale, y, "NO THARGOID TARGET", scale, 14, HUD_MUTED, True); y += 24 * scale
+                self._draw_text(canvas, 8 * scale, y, "Target a vessel or choose a manual AX variant.", scale, 9, HUD_MUTED, False, "nw", width - 16 * scale); y += 30 * scale
+            return width, round(y + 8 * scale)
+
+        name = str(spec.get("name") or "THARGOID")
+        family = str(spec.get("family") or "unknown").replace("-", " ").upper()
+        self._draw_text(canvas, 8 * scale, y, name.upper(), scale, 18, HUD_WHITE, True)
+        self._draw_text(canvas, width - 8 * scale, y + 3 * scale, family, scale, 9, HUD_MUTED, True, "ne")
+        y += 27 * scale
+
+        tags = [str(tag) for tag in spec.get("tags") or []]
+        if tags:
+            tag_text = " · ".join(tags[:3])
+            tag_color = HUD_RED if any(tag in {"ANTI-GUARDIAN FIELD", "FASTEST INTERCEPTOR"} for tag in tags) else HUD_AMBER
+            self._draw_text(canvas, 8 * scale, y, tag_text, scale, 9, tag_color, True, "nw", width - 16 * scale)
+            y += 20 * scale
+
+        hearts = spec.get("hearts")
+        speed = spec.get("topSpeedMps")
+        swarm = spec.get("swarmSize")
+        enrage = spec.get("enrageSeconds")
+        shield_decay = spec.get("shieldDecaySeconds")
+        reward = spec.get("killReward")
+        heart_text = "—" if hearts is None else "NONE" if int(hearts or 0) == 0 else str(int(hearts))
+        self._draw_text(canvas, 8 * scale, y, "HEARTS", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 78 * scale, y, heart_text, scale, 12, HUD_WHITE, True)
+        self._draw_text(canvas, 150 * scale, y, "TOP SPEED", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 245 * scale, y, f"{int(speed)} m/s" if isinstance(speed, (int, float)) else "—", scale, 12, HUD_WHITE, True)
+        self._draw_text(canvas, 350 * scale, y, "SWARM", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 415 * scale, y, str(int(swarm)) if isinstance(swarm, (int, float)) else "—", scale, 12, HUD_WHITE, True)
+        y += 21 * scale
+
+        self._draw_text(canvas, 8 * scale, y, "ENRAGE", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 78 * scale, y, ax_format_seconds(enrage), scale, 11, HUD_WHITE, True)
+        self._draw_text(canvas, 150 * scale, y, "SHIELD DECAY", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, 265 * scale, y, ax_format_seconds(shield_decay), scale, 11, HUD_WHITE, True)
+        if isinstance(reward, (int, float)):
+            self._draw_text(canvas, width - 8 * scale, y, f"{int(reward):,} CR", scale, 10, HUD_GREEN, True, "ne")
+        y += 24 * scale
+
+        gauss = spec.get("optimalMediumGaussHeartShots")
+        armor = spec.get("armorRating")
+        resistance = spec.get("humanWeaponResistancePercent")
+        details = []
+        if isinstance(gauss, (int, float)):
+            details.append(f"MED GAUSS/HEART ~{int(gauss)}")
+        if isinstance(armor, (int, float)):
+            details.append(f"ARMOR {int(armor)}")
+        if isinstance(resistance, (int, float)):
+            details.append(f"HUMAN RESIST {int(resistance)}%")
+        if details:
+            self._draw_text(canvas, 8 * scale, y, " · ".join(details), scale, 9, HUD_MUTED, True, "nw", width - 16 * scale)
+            y += 20 * scale
+
+        speed_cmp = ax.get("speedComparison") if isinstance(ax.get("speedComparison"), dict) else None
+        if speed_cmp:
+            color = HUD_GREEN if speed_cmp.get("canOutrun") else HUD_RED
+            self._draw_text(
+                canvas, 8 * scale, y,
+                f"YOUR BOOST {speed_cmp['shipMps']} m/s · {speed_cmp['label']} ({speed_cmp['marginMps']:+d} m/s)",
+                scale, 10, color, True,
+            )
+            y += 20 * scale
+
+        live = ax.get("liveTarget") if isinstance(ax.get("liveTarget"), dict) else {}
+        live_bits = []
+        if isinstance(live.get("shieldHealth"), (int, float)):
+            live_bits.append(f"SHIELD {float(live['shieldHealth']):.0f}%")
+        if isinstance(live.get("hullHealth"), (int, float)):
+            live_bits.append(f"HULL {float(live['hullHealth']):.0f}%")
+        if live_bits:
+            self._draw_text(canvas, 8 * scale, y, "LIVE · " + " · ".join(live_bits), scale, 10, HUD_CYAN, True)
+            y += 21 * scale
+
+        if phase and int(phase.get("heartsTotal") or 0) > 0:
+            total = int(phase.get("heartsTotal") or 0)
+            remaining = int(phase.get("heartsRemaining") or 0)
+            hearts_bar = "●" * remaining + "○" * max(0, total - remaining)
+            self._draw_text(canvas, 8 * scale, y, "HEARTS", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 78 * scale, y - 2 * scale, hearts_bar, scale, 14, HUD_RED, True)
+            self._draw_text(canvas, width - 8 * scale, y, f"{remaining}/{total}", scale, 11, HUD_WHITE, True, "ne")
+            y += 24 * scale
+
+            phase_name = str(phase.get("phase") or "engage").replace("_", " ").upper()
+            self._draw_text(canvas, 8 * scale, y, "PHASE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, 78 * scale, y, phase_name, scale, 12, HUD_AMBER if phase_name != "FINISH" else HUD_GREEN, True)
+            y += 21 * scale
+
+            timer_rows = []
+            if isinstance(phase.get("shieldRemainingSeconds"), int):
+                timer_rows.append(("SHIELD", ax_format_seconds(phase["shieldRemainingSeconds"])))
+            if isinstance(phase.get("enrageRemainingSeconds"), int):
+                timer_rows.append(("ENRAGE", ax_format_seconds(phase["enrageRemainingSeconds"])))
+            if isinstance(phase.get("heartWindowRemainingSeconds"), int):
+                timer_rows.append(("HEART WINDOW", ax_format_seconds(phase["heartWindowRemainingSeconds"])))
+            if timer_rows:
+                timer_text = "   ".join(f"{label} {value}" for label, value in timer_rows)
+                self._draw_text(canvas, 8 * scale, y, timer_text + " · EST", scale, 10, HUD_WHITE, True, "nw", width - 16 * scale)
+                y += 21 * scale
+
+            exertion = phase.get("nextExertionHullPercent")
+            if isinstance(exertion, (int, float)) and remaining > 0:
+                self._draw_text(canvas, 8 * scale, y, f"NEXT EXERTION ~{int(exertion)}% CURRENT HULL DAMAGE", scale, 9, HUD_MUTED, True)
+                y += 19 * scale
+
+        warnings = ax.get("warnings") if isinstance(ax.get("warnings"), list) else []
+        for warning in warnings[:4]:
+            if not isinstance(warning, dict):
+                continue
+            color = HUD_RED if warning.get("level") == "red" else HUD_AMBER
+            self._draw_text(canvas, 8 * scale, y, str(warning.get("text") or ""), scale, 10, color, True, "nw", width - 16 * scale)
+            y += 21 * scale
+
+        notes = [str(note) for note in spec.get("tacticalNotes") or []]
+        if notes:
+            self._draw_text(canvas, 8 * scale, y, "TACTICAL", scale, 9, HUD_CYAN, True); y += 18 * scale
+            for note in notes[:3]:
+                self._draw_text(canvas, 16 * scale, y, "• " + note, scale, 8, HUD_WHITE, False, "nw", width - 24 * scale)
+                y += 29 * scale
+
+        tracking = f"TARGET {str(confidence.get('target') or 'unknown').upper()} · HEARTS {str(confidence.get('hearts') or 'unknown').upper()} · TIMERS {str(confidence.get('timers') or 'none').upper()}"
+        self._draw_text(canvas, 8 * scale, y, tracking, scale, 8, HUD_MUTED, True, "nw", width - 16 * scale)
+        y += 18 * scale
         return width, round(y + 8 * scale)
 
     def _render_loadout_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
