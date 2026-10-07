@@ -73,6 +73,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-hud-feed.mjs
           node --experimental-default-type=module scripts/smoke-hud-manifest.mjs
           python3 scripts/smoke-mongrel-hud.py
+          python3 scripts/smoke-mongrel-hud-ax.py
           python3 scripts/smoke-mongrel-hud-companion.py
           node --experimental-default-type=module scripts/smoke-mongrel-hud-controller.mjs
           node --experimental-default-type=module scripts/smoke-carrier-dialogue.mjs
