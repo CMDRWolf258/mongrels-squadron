@@ -169,16 +169,57 @@ export function bodyProxyColor(body) {
   return bodyVisualProfile(body).baseColor;
 }
 
-function terrainSignal(u, v, randomValues) {
+function spherePoint(u, v) {
+  const latitude = (v - 0.5) * Math.PI;
+  const longitude = u * TAU;
+  const cosLatitude = Math.cos(latitude);
+  return [
+    cosLatitude * Math.cos(longitude),
+    Math.sin(latitude),
+    cosLatitude * Math.sin(longitude),
+  ];
+}
+
+function sphericalFractal(u, v, seed, octaves = 6) {
+  const [x, y, z] = spherePoint(u, v);
+  const random = seeded(seed);
   let value = 0;
-  for (let octave = 0; octave < 4; octave++) {
+  let weight = 0;
+  let amplitude = 1;
+  for (let octave = 0; octave < octaves; octave++) {
     const frequency = 1 << octave;
-    const phaseA = randomValues[octave * 2] * TAU;
-    const phaseB = randomValues[octave * 2 + 1] * TAU;
-    value += Math.sin(u * TAU * frequency + phaseA)
-      * Math.cos(v * Math.PI * frequency + phaseB) / (1 << octave);
+    const a = 0.65 + random() * 1.75;
+    const b = 0.65 + random() * 1.75;
+    const d = 0.65 + random() * 1.75;
+    const phase = random() * TAU;
+    const ridge = Math.sin((x * a + y * b + z * d) * frequency * Math.PI + phase);
+    const cross = Math.cos((x * d - y * a + z * b) * frequency * Math.PI * 0.83 + phase * 0.71);
+    value += (ridge * 0.68 + cross * 0.32) * amplitude;
+    weight += amplitude;
+    amplitude *= 0.52;
   }
-  return value / 1.875;
+  return weight ? value / weight : 0;
+}
+
+function craterField(u, v, profile, quality) {
+  if (!['rocky','metal','rocky-ice','icy'].includes(profile.category)) return 0;
+  const random = seeded(profile.seed ^ 0xa511e9b3);
+  const count = quality === 'focus' ? 18 : 10;
+  const point = spherePoint(u, v);
+  let height = 0;
+  for (let i = 0; i < count; i++) {
+    const centreU = random();
+    const centreV = 0.08 + random() * 0.84;
+    const centre = spherePoint(centreU, centreV);
+    const dot = Math.max(-1, Math.min(1, point[0] * centre[0] + point[1] * centre[1] + point[2] * centre[2]));
+    const angular = Math.acos(dot);
+    const radius = 0.025 + random() * 0.065;
+    if (angular > radius * 1.45) continue;
+    const normalized = angular / radius;
+    if (normalized < 0.72) height -= (1 - normalized / 0.72) * 0.32;
+    else if (normalized < 1.12) height += (1 - Math.abs(normalized - 0.92) / 0.2) * 0.23;
+  }
+  return height;
 }
 
 function writePixel(data, index, colour, shade = 1, alpha = 255) {
@@ -189,112 +230,137 @@ function writePixel(data, index, colour, shade = 1, alpha = 255) {
   data[index + 3] = alpha;
 }
 
-function paintCraters(context, width, height, profile) {
-  if (!['rocky','metal','rocky-ice','icy'].includes(profile.category)) return;
-  const random = seeded(profile.seed ^ 0xa511e9b3);
-  const count = profile.category === 'icy' ? 8 : 14;
-  context.save();
-  context.globalCompositeOperation = 'source-over';
-  for (let i = 0; i < count; i++) {
-    const x = random() * width;
-    const y = (0.12 + random() * 0.76) * height;
-    const r = (1.5 + random() * 5.5) * (width / 128);
-    context.beginPath();
-    context.ellipse(x, y, r * 1.4, r, 0, 0, TAU);
-    context.strokeStyle = 'rgba(25,28,30,.22)';
-    context.lineWidth = Math.max(0.7, r * 0.22);
-    context.stroke();
-    context.beginPath();
-    context.ellipse(x - r * 0.15, y - r * 0.12, Math.max(0.5, r * 0.65), Math.max(0.5, r * 0.45), 0, 0, TAU);
-    context.strokeStyle = 'rgba(255,255,255,.08)';
-    context.lineWidth = Math.max(0.5, r * 0.15);
-    context.stroke();
-  }
-  context.restore();
+function dimensions(profile, quality) {
+  if (quality === 'focus') return { width:384, height:192 };
+  if (['gas','star','earthlike','water'].includes(profile.category)) return { width:192, height:96 };
+  return { width:128, height:64 };
 }
 
-function paintGasFeatures(context, width, height, profile) {
-  if (profile.category !== 'gas') return;
-  const random = seeded(profile.seed ^ 0x73a4d91f);
-  context.save();
-  for (let i = 0; i < 2; i++) {
-    const x = (0.15 + random() * 0.7) * width;
-    const y = (0.2 + random() * 0.6) * height;
-    const rx = (5 + random() * 11) * width / 128;
-    const ry = rx * (0.28 + random() * 0.18);
-    context.beginPath();
-    context.ellipse(x, y, rx, ry, random() * 0.2 - 0.1, 0, TAU);
-    context.fillStyle = i ? 'rgba(255,235,210,.10)' : 'rgba(90,50,40,.10)';
-    context.fill();
-  }
-  context.restore();
+function createTextureFromCanvas(canvas, { srgb = true } = {}) {
+  const texture = new THREE.CanvasTexture(canvas);
+  if (srgb) texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.needsUpdate = true;
+  return texture;
 }
 
-function paintIceFractures(context, width, height, profile) {
-  if (!['icy','rocky-ice'].includes(profile.category)) return;
-  const random = seeded(profile.seed ^ 0xe6c8b913);
-  context.save();
-  context.strokeStyle = 'rgba(225,245,250,.18)';
-  context.lineWidth = Math.max(0.6, width / 220);
-  for (let line = 0; line < 5; line++) {
-    const phase = random() * TAU;
-    const base = (0.15 + random() * 0.7) * height;
-    context.beginPath();
-    for (let x = 0; x <= width; x += 4) {
-      const y = base + Math.sin(x / width * TAU * (1 + line % 2) + phase) * height * (0.025 + random() * 0.005);
-      if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
+function createNormalTexture(heights, width, height, strength) {
+  const pixels = new Uint8Array(width * height * 4);
+  const at = (x, y) => heights[Math.max(0, Math.min(height - 1, y)) * width + ((x % width + width) % width)];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const dx = (at(x - 1, y) - at(x + 1, y)) * strength;
+      const dy = (at(x, y - 1) - at(x, y + 1)) * strength;
+      const length = Math.hypot(dx, dy, 1) || 1;
+      const index = (y * width + x) * 4;
+      pixels[index] = Math.round((dx / length * 0.5 + 0.5) * 255);
+      pixels[index + 1] = Math.round((dy / length * 0.5 + 0.5) * 255);
+      pixels[index + 2] = Math.round((1 / length * 0.5 + 0.5) * 255);
+      pixels[index + 3] = 255;
     }
-    context.stroke();
   }
-  context.restore();
+  const texture = new THREE.DataTexture(pixels, width, height, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.needsUpdate = true;
+  return texture;
 }
 
-export function createBodyTexture(body, disposables = null) {
-  const profile = bodyVisualProfile(body);
-  const width = profile.category === 'gas' || profile.category === 'star' || profile.category === 'earthlike' ? 256 : 128;
-  const height = width / 2;
+function createCloudTexture(profile, width, height) {
+  if (!['earthlike','water'].includes(profile.category)) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  const image = context.createImageData(width, height);
+  for (let y = 0; y < height; y++) {
+    const v = y / Math.max(1, height - 1);
+    for (let x = 0; x < width; x++) {
+      const u = x / width;
+      const broad = sphericalFractal(u, v, profile.seed ^ 0x7f4a7c15, 5);
+      const wisps = sphericalFractal(u + broad * 0.018, v, profile.seed ^ 0x18dd7731, 6);
+      const cloud = clamp01((broad * 0.66 + wisps * 0.34 - 0.04) * 2.25);
+      const alpha = Math.round(Math.pow(cloud, 1.55) * 190);
+      const index = (y * width + x) * 4;
+      image.data[index] = 242;
+      image.data[index + 1] = 248;
+      image.data[index + 2] = 252;
+      image.data[index + 3] = alpha;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return createTextureFromCanvas(canvas);
+}
+
+function buildSurfaceMaps(body, profile, quality = 'base') {
+  const { width, height } = dimensions(profile, quality);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d', { alpha:false });
   const image = context.createImageData(width, height);
-  const random = seeded(profile.seed ^ 0x31415926);
-  const noiseArgs = Array.from({ length:8 }, () => random());
+  const heights = new Float32Array(width * height);
+  const gasRandom = seeded(profile.seed ^ 0x73a4d91f);
+  const gasPhase = gasRandom() * TAU;
+  const gasStormLongitude = gasRandom();
+  const gasStormLatitude = 0.2 + gasRandom() * 0.6;
+  const gasStormStrength = 0.65 + gasRandom() * 0.55;
 
   for (let y = 0; y < height; y++) {
     const v = y / Math.max(1, height - 1);
     const latitude = Math.abs(v - 0.5) * 2;
     for (let x = 0; x < width; x++) {
       const u = x / width;
-      const noise = terrainSignal(u, v, noiseArgs);
+      const broad = sphericalFractal(u, v, profile.seed ^ 0x31415926, quality === 'focus' ? 7 : 5);
+      const medium = sphericalFractal(u + broad * 0.022, v - broad * 0.012, profile.seed ^ 0x91e10da5, quality === 'focus' ? 6 : 4);
+      const fine = quality === 'focus' ? sphericalFractal(u, v, profile.seed ^ 0x68bc21eb, 8) : 0;
+      let elevation = broad * 0.58 + medium * 0.31 + fine * 0.11;
+      elevation += craterField(u, v, profile, quality);
+      heights[y * width + x] = elevation;
+
       let colour = profile.baseColor;
       let shade = 1;
 
       if (profile.category === 'gas') {
-        const band = Math.sin(v * Math.PI * 18 + noise * 2.4);
-        colour = band > 0.2 ? mix(profile.baseColor, profile.accentColor, 0.12)
-          : band < -0.3 ? profile.secondaryColor
-          : mix(profile.baseColor, profile.accentColor, 0.38);
-        shade = 0.88 + noise * 0.15;
+        const warp = broad * 0.035 + medium * 0.018 + Math.sin(u * TAU * 2 + gasPhase) * 0.008;
+        const band = Math.sin((v + warp) * Math.PI * 25 + gasPhase)
+          + Math.sin((v - warp * 0.6) * Math.PI * 53 + gasPhase * 0.7) * 0.34;
+        let amount = clamp01(0.5 + band * 0.24);
+        const du = Math.min(Math.abs(u - gasStormLongitude), 1 - Math.abs(u - gasStormLongitude));
+        const dv = v - gasStormLatitude;
+        const stormDistance = Math.hypot(du * 3.1, dv);
+        if (stormDistance < 0.085) amount = clamp01(amount + (0.085 - stormDistance) * gasStormStrength * 4.5);
+        colour = mix(profile.secondaryColor, profile.baseColor, amount);
+        if (band > 0.82) colour = mix(colour, profile.accentColor, 0.42);
+        shade = 0.9 + medium * 0.12;
+        heights[y * width + x] = 0;
       } else if (profile.category === 'earthlike') {
-        const polarIce = latitude > 0.82;
-        if (polarIce) colour = mix(profile.accentColor, 0xffffff, 0.35);
-        else if (noise > 0.12) colour = noise > 0.46 ? 0x786f4e : profile.secondaryColor;
-        else colour = profile.baseColor;
-        shade = 0.94 + noise * 0.08;
+        const polarIce = latitude > 0.83 + medium * 0.03;
+        if (polarIce) colour = mix(profile.accentColor, 0xffffff, 0.42);
+        else if (elevation > 0.06) {
+          colour = elevation > 0.37 ? 0x8a7756 : elevation > 0.17 ? 0x607c45 : profile.secondaryColor;
+        } else colour = mix(profile.baseColor, 0x173f67, clamp01(-elevation * 0.55));
+        shade = 0.9 + elevation * 0.16;
       } else if (profile.category === 'water') {
-        colour = noise > 0.55 ? mix(profile.baseColor, profile.accentColor, 0.35) : profile.baseColor;
-        if (latitude > 0.88) colour = profile.accentColor;
-        shade = 0.94 + noise * 0.06;
+        colour = elevation > 0.48 ? mix(profile.baseColor, profile.accentColor, 0.55) : profile.baseColor;
+        if (latitude > 0.9) colour = mix(profile.accentColor, 0xffffff, 0.25);
+        shade = 0.91 + elevation * 0.12;
       } else if (profile.category === 'star') {
-        colour = noise > 0.12 ? profile.baseColor : profile.secondaryColor;
-        shade = 1.02 + noise * 0.12;
+        const granulation = broad * 0.48 + medium * 0.52;
+        colour = granulation > 0.05 ? mix(profile.baseColor, profile.accentColor, 0.17) : profile.secondaryColor;
+        shade = 1.03 + granulation * 0.14;
+        heights[y * width + x] = 0;
+      } else if (profile.category === 'icy' || profile.category === 'rocky-ice') {
+        colour = elevation > 0.18 ? mix(profile.baseColor, profile.accentColor, 0.52)
+          : elevation < -0.22 ? profile.secondaryColor
+          : profile.baseColor;
+        const fracture = Math.abs(Math.sin((u + medium * 0.035) * TAU * 8 + broad * 5));
+        if (fracture < 0.075) colour = mix(colour, profile.accentColor, 0.65);
+        shade = 0.84 + elevation * 0.18;
       } else {
-        const threshold = noise > 0.04;
-        colour = threshold ? profile.baseColor : profile.secondaryColor;
-        if (noise > 0.42) colour = mix(colour, profile.accentColor, 0.62);
-        if (noise < -0.48) colour = scale(colour, 0.72);
-        shade = 0.78 + (noise + 1) * 0.16;
+        colour = elevation > 0.08 ? profile.baseColor : profile.secondaryColor;
+        if (elevation > 0.34) colour = mix(colour, profile.accentColor, 0.62);
+        if (elevation < -0.34) colour = scale(colour, 0.7);
+        shade = 0.82 + elevation * 0.22;
       }
 
       writePixel(image.data, (y * width + x) * 4, colour, shade);
@@ -302,30 +368,18 @@ export function createBodyTexture(body, disposables = null) {
   }
 
   context.putImageData(image, 0, 0);
-  paintCraters(context, width, height, profile);
-  paintGasFeatures(context, width, height, profile);
-  paintIceFractures(context, width, height, profile);
+  const colorTexture = createTextureFromCanvas(canvas);
+  const reliefStrength = profile.category === 'icy' ? 2.2 : profile.category === 'metal' ? 3.0 : 2.6;
+  const normalTexture = ['rocky','metal','rocky-ice','icy','earthlike','water'].includes(profile.category)
+    ? createNormalTexture(heights, width, height, reliefStrength)
+    : null;
+  const cloudTexture = createCloudTexture(profile, width, height);
+  return { colorTexture, normalTexture, cloudTexture };
+}
 
-  if (profile.category === 'earthlike') {
-    const randomCloud = seeded(profile.seed ^ 0x7f4a7c15);
-    context.save();
-    context.fillStyle = 'rgba(245,250,255,.13)';
-    for (let i = 0; i < 20; i++) {
-      const x = randomCloud() * width, y = (0.12 + randomCloud() * 0.76) * height;
-      const rx = (3 + randomCloud() * 9) * width / 128;
-      context.beginPath();
-      context.ellipse(x, y, rx, rx * 0.28, randomCloud() * 0.4 - 0.2, 0, TAU);
-      context.fill();
-    }
-    context.restore();
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.needsUpdate = true;
-  if (disposables) disposables.add(texture);
-  return { texture, profile };
+function disposeMaps(maps) {
+  if (!maps) return;
+  for (const texture of [maps.colorTexture, maps.normalTexture, maps.cloudTexture]) texture?.dispose?.();
 }
 
 function createGlowTexture(disposables = null) {
@@ -334,43 +388,102 @@ function createGlowTexture(disposables = null) {
   canvas.height = 96;
   const context = canvas.getContext('2d');
   const gradient = context.createRadialGradient(48, 48, 6, 48, 48, 48);
-  gradient.addColorStop(0, 'rgba(255,255,255,.72)');
-  gradient.addColorStop(0.22, 'rgba(255,255,255,.26)');
-  gradient.addColorStop(0.55, 'rgba(255,255,255,.08)');
+  gradient.addColorStop(0, 'rgba(255,255,255,.76)');
+  gradient.addColorStop(0.20, 'rgba(255,255,255,.30)');
+  gradient.addColorStop(0.55, 'rgba(255,255,255,.09)');
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   context.fillStyle = gradient;
   context.fillRect(0, 0, 96, 96);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  const texture = createTextureFromCanvas(canvas);
   if (disposables) disposables.add(texture);
   return texture;
 }
 
+function createAtmosphereMaterial(profile) {
+  const colour = new THREE.Color(profile.atmosphereColor);
+  const material = new THREE.ShaderMaterial({
+    uniforms:{
+      glowColor:{ value:colour },
+      visualOpacity:{ value:profile.atmosphereOpacity },
+    },
+    vertexShader:`
+      varying vec3 vNormal;
+      varying vec3 vView;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vNormal = normalize(normalMatrix * normal);
+        vView = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader:`
+      uniform vec3 glowColor;
+      uniform float visualOpacity;
+      varying vec3 vNormal;
+      varying vec3 vView;
+      void main() {
+        float rim = pow(1.0 - max(dot(normalize(vNormal), normalize(vView)), 0.0), 2.2);
+        float alpha = rim * visualOpacity * 2.25;
+        gl_FragColor = vec4(glowColor, alpha);
+      }
+    `,
+    transparent:true,
+    depthWrite:false,
+    side:THREE.FrontSide,
+    blending:THREE.AdditiveBlending,
+  });
+  material.opacity = profile.atmosphereOpacity;
+  return material;
+}
+
+export function setVisualOpacity(visual, opacity) {
+  if (!visual?.material) return;
+  visual.material.opacity = opacity;
+  if (visual.material.uniforms?.visualOpacity) visual.material.uniforms.visualOpacity.value = opacity;
+}
+
 export function createBodyVisual(body, radius, disposables = null) {
-  const { texture, profile } = createBodyTexture(body, disposables);
+  const profile = bodyVisualProfile(body);
+  const baseMaps = buildSurfaceMaps(body, profile, 'base');
+  for (const texture of [baseMaps.colorTexture, baseMaps.normalTexture, baseMaps.cloudTexture]) if (texture && disposables) disposables.add(texture);
+
   const material = profile.category === 'star'
-    ? new THREE.MeshBasicMaterial({ map:texture, color:0xffffff })
+    ? new THREE.MeshBasicMaterial({ map:baseMaps.colorTexture, color:0xffffff })
     : new THREE.MeshStandardMaterial({
-      map:texture,
+      map:baseMaps.colorTexture,
+      normalMap:baseMaps.normalTexture || null,
+      normalScale:new THREE.Vector2(0.72, 0.72),
       color:0xffffff,
       roughness:profile.roughness,
       metalness:profile.metalness,
-      ...(['rocky','metal','rocky-ice','icy'].includes(profile.category)
-        ? { bumpMap:texture, bumpScale:profile.category === 'icy' ? radius * 0.018 : radius * 0.028 }
-        : {}),
     });
 
   const extras = [];
-  if (profile.hasAtmosphere && body.kind !== 'star') {
-    const geometry = new THREE.SphereGeometry(radius * 1.045, 32, 22);
-    const atmosphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-      color:profile.atmosphereColor,
+  let cloudMaterial = null;
+  if (baseMaps.cloudTexture) {
+    cloudMaterial = new THREE.MeshStandardMaterial({
+      map:baseMaps.cloudTexture,
+      color:0xffffff,
       transparent:true,
-      opacity:profile.atmosphereOpacity,
-      side:THREE.BackSide,
+      opacity:0.68,
+      roughness:1,
+      metalness:0,
       depthWrite:false,
-      blending:THREE.AdditiveBlending,
-    }));
+      alphaTest:0.025,
+    });
+    const clouds = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.018, 36, 26), cloudMaterial);
+    clouds.rotation.y = profile.seed / 4294967296 * Math.PI * 1.4;
+    clouds.userData.visualRole = 'clouds';
+    clouds.userData.visualBaseOpacity = 0.68;
+    extras.push(clouds);
+  }
+
+  if (profile.hasAtmosphere && body.kind !== 'star') {
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 1.055, 36, 26),
+      createAtmosphereMaterial(profile),
+    );
+    atmosphere.userData.visualRole = 'atmosphere';
     atmosphere.userData.visualBaseOpacity = profile.atmosphereOpacity;
     extras.push(atmosphere);
   }
@@ -380,16 +493,41 @@ export function createBodyVisual(body, radius, disposables = null) {
       map:createGlowTexture(disposables),
       color:profile.baseColor,
       transparent:true,
-      opacity:0.58,
+      opacity:0.62,
       depthWrite:false,
       blending:THREE.AdditiveBlending,
     }));
-    glow.scale.set(radius * 4.8, radius * 4.8, 1);
-    glow.userData.visualBaseOpacity = 0.58;
+    glow.scale.set(radius * 4.9, radius * 4.9, 1);
+    glow.userData.visualRole = 'star-glow';
+    glow.userData.visualBaseOpacity = 0.62;
     extras.push(glow);
   }
 
-  return { material, extras, profile };
+  let focusedMaps = null;
+  const detailController = {
+    setFocused(focused) {
+      if (focused) {
+        if (!focusedMaps) focusedMaps = buildSurfaceMaps(body, profile, 'focus');
+        material.map = focusedMaps.colorTexture;
+        if ('normalMap' in material) material.normalMap = focusedMaps.normalTexture || null;
+        if (cloudMaterial) cloudMaterial.map = focusedMaps.cloudTexture || baseMaps.cloudTexture;
+      } else {
+        material.map = baseMaps.colorTexture;
+        if ('normalMap' in material) material.normalMap = baseMaps.normalTexture || null;
+        if (cloudMaterial) cloudMaterial.map = baseMaps.cloudTexture;
+        disposeMaps(focusedMaps);
+        focusedMaps = null;
+      }
+      material.needsUpdate = true;
+      if (cloudMaterial) cloudMaterial.needsUpdate = true;
+    },
+    dispose() {
+      disposeMaps(focusedMaps);
+      focusedMaps = null;
+    },
+  };
+
+  return { material, extras, profile, detailController };
 }
 
 export function ringVisualProfile(ring) {
