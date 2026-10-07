@@ -259,6 +259,28 @@ with tempfile.TemporaryDirectory() as td:
     ax_state=app.set_ax_settings({"variantOverride":"basilisk","shipBoostMps":512})
     assert ax_state["spec"]["id"]=="basilisk"
     assert ax_state["speedComparison"]["canOutrun"] is False
+    assert ax_state["statusBar"]["code"] in {"engaged","exert_phase"}
+
+    # AX status bar is priority-driven: exertion flashes, the EMP transition
+    # overrides normal phase chatter, and future detector input can use the same
+    # transient contract for caustic missiles without claiming Status.json has it.
+    app.ax_action("reset")
+    exerted=app.ax_action("heart_exerted")
+    assert exerted["statusBar"]["code"]=="heart_exerted"
+    assert exerted["statusBar"]["severity"]=="urgent" and exerted["statusBar"]["flash"] is True
+    app.ax_action("reset")
+    for _ in range(4):
+        emp_state=app.ax_action("heart_down")
+    assert emp_state["phase"]["heartsRemaining"]==1
+    assert emp_state["statusBar"]["code"]=="emp_expected"
+    assert emp_state["statusBar"]["severity"]=="critical"
+    caustic=app.set_ax_transient_alert("caustic_missile",ttl_seconds=8,source="test")
+    assert caustic["statusBar"]["code"]=="caustic_missile"
+    assert caustic["statusBar"]["priority"]>emp_state["statusBar"]["priority"]
+    assert caustic["statusBar"]["source"]=="test"
+    cleared=app.set_ax_transient_alert("clear")
+    assert cleared["statusBar"]["code"]=="emp_expected"
+
     app.ax_action("reset")
     for _ in range(5):
         app.ax_action("heart_down")
@@ -286,6 +308,17 @@ with tempfile.TemporaryDirectory() as td:
     assert hud.MongrelHudApp.module_category("Shield Cell Bank")=="defense"
     layout=app.layout_snapshot()
     assert layout["locked"] is True and set(layout["panels"])==set(hud.PANEL_IDS)
+    assert layout["panels"]["axstatus"]["visible"] is True
+    assert layout["panels"]["axstatus"]["profiles"]==["ax"]
+    app.set_panel_settings("axstatus",scale=0.6,profiles=["ax"])
+    assert app.layout_snapshot()["panels"]["axstatus"]["scale"]==0.6
+    app.set_panel_settings("axstatus",scale=2.0)
+    assert app.layout_snapshot()["panels"]["axstatus"]["scale"]==2.0
+    try:
+        app.set_panel_settings("axstatus",scale=2.01)
+        raise AssertionError("Oversize panel scale was accepted")
+    except ValueError as exc:
+        assert str(exc)=="invalid_scale"
     app.set_layout_locked(False)
     assert app.layout_snapshot()["locked"] is False
     app.set_panel_settings("subsystems",visible=False,scale=1.25,profiles=["combat","surface"])
