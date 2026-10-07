@@ -520,6 +520,8 @@ const aggregatedAsteroidType=latestStationVisits([
 ]);
 assert.equal(aggregatedAsteroidType[0].stationType,'AsteroidBase','Useful station type must survive a thinner companion docking visit');
 assert.equal(aggregatedAsteroidType[0].stationTypeObservedAt,'2026-10-07T05:22:00Z');
+assert.equal(aggregatedVisits[0].surfaceEvidence.hasLatLong,false,'Public visit summary preserves sanitized no-surface evidence');
+assert.equal(aggregatedVisits[0].surfaceEvidence.observedAt,normalizedVisit.dashboardObservedAt);
 const unknownDistanceVisit=latestStationVisits([
   {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:21:00Z',distanceToArrivalLs:null},
 ]);
@@ -678,7 +680,7 @@ assert.equal(conflicted.system.locations.find(item=>item.id===targetFacility.id)
 assert.throws(()=>applyFacilityObservationPayload(orrerySystem,{...facilityEnvelope,systemId64:'999'}),/system\/schema mismatch/);
 
 const publicFacilityApi=readFileSync('functions/api/orrery/facility-observations.js','utf8');
-for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
+for(const pattern of [/systemId64/,/readScoutFacilityObservationPayload/,/readScoutFacilityVisits/,/deriveStationHostCandidate/,/deriveMobileStationPlacement/,/readFacilityHostOverridePayload/,/stationVisits/,/hostPlacement/,/mobilePlacement/,/distanceToArrivalLs/,/distanceObservedAt/,/stationTypeObservedAt/,/stationTypes=new Map/,/surfaceEvidence=new Map/,/distances=new Map/,/hostOverrides/,/PRODUCTION_HOST/,/isPagesPreview/,/X-Orrery-Observation-Source/,/placementIsCurrent/,/10\*60\*1000/,/headers\(5\)/,/public, max-age=\$\{maxAge\}/])assert.match(publicFacilityApi,pattern);
 const hostOverrideApi=readFileSync('functions/api/orrery/host-override.js','utf8');
 for(const pattern of [/readSession/,/officer/,/site_admin/,/orrery-host-editor/,/recordFacilityHostOverride/])assert.match(hostOverrideApi,pattern);
 const orreryApp=readFileSync('js/orrery/app.js','utf8');
