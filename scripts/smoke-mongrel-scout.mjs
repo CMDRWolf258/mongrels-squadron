@@ -504,6 +504,10 @@ assert.equal(aggregatedVisits.length,1);
 assert.equal(aggregatedVisits[0].observedAt,'2026-10-07T05:20:10Z','Newest visit remains the public summary event');
 assert.equal(aggregatedVisits[0].distanceToArrivalLs,123.25,'Newest finite station distance survives a thinner companion visit');
 assert.equal(aggregatedVisits[0].distanceObservedAt,'2026-10-07T05:20:00Z');
+const unknownDistanceVisit=latestStationVisits([
+  {...normalizedVisit,event:'Docked',observedAt:'2026-10-07T05:21:00Z',distanceToArrivalLs:null},
+]);
+assert.equal(unknownDistanceVisit[0].distanceToArrivalLs,null,'Unknown station distance must remain null, never numeric zero');
 
 const orrerySystem=JSON.parse(readFileSync('data/orrery/ngc-2546-uz-g-d10-16.json','utf8'));
 const targetFacility=orrerySystem.locations.find(item=>String(item.marketId)==='4374918915');
