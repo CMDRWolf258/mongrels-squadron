@@ -42,6 +42,7 @@ from ax_intel import (
     new_encounter,
     normalize_ax_settings,
     resolve_ax_variant,
+    status_bar_alert,
     variant_ids,
     variant_spec,
 )
@@ -219,11 +220,12 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
+PANEL_IDS = ("own", "target", "axstatus", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
 VALID_PROFILES = ("combat", "ax", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
+    "axstatus": "AX STATUS",
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
     "cargo": "CARGO",
@@ -764,6 +766,7 @@ def default_layout() -> dict[str, Any]:
         "panels": {
             "own": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
             "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat", "ax"]},
+            "axstatus": {"x": 420, "y": 35, "visible": True, "scale": 1.0, "profiles": ["ax"]},
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "ax", "surface"]},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
@@ -815,7 +818,7 @@ def normalized_layout(value: Any) -> dict[str, Any]:
             "x": x,
             "y": y,
             "visible": bool(raw.get("visible", base["visible"])),
-            "scale": max(0.75, min(1.5, scale)),
+            "scale": max(0.6, min(2.0, scale)),
             "profiles": profiles,
         }
     return out
@@ -1300,6 +1303,9 @@ class MongrelHudApp:
         self.restored_target_until = 0.0
         self.wanted_flash_until = 0.0
         self._wanted_flash_key = ""
+        # Session-only AX alert injection point. Future visual/audio detectors
+        # should feed this same contract instead of bypassing the priority bar.
+        self.ax_transient_alert: dict[str, Any] | None = None
         self._last_target_identity = ""
         self.mining_lock = threading.RLock()
         self.mining_sites: list[dict[str, Any]] = []
@@ -3432,7 +3438,7 @@ class MongrelHudApp:
                     parsed = float(scale)
                 except (TypeError, ValueError):
                     raise ValueError("invalid_scale")
-                if not 0.75 <= parsed <= 1.5:
+                if not 0.6 <= parsed <= 2.0:
                     raise ValueError("invalid_scale")
                 panel["scale"] = round(parsed, 2)
             if profiles is not None:
@@ -4094,6 +4100,38 @@ class MongrelHudApp:
             self.store.save()
         return self.ax_snapshot()
 
+    def set_ax_transient_alert(self, code: str, *, ttl_seconds: Any = 8, source: str = "manual") -> dict[str, Any]:
+        alert_code = str(code or "").strip().casefold()
+        if alert_code in {"", "clear", "none"}:
+            with self.lock:
+                self.ax_transient_alert = None
+            return self.ax_snapshot()
+        if alert_code not in {"caustic_missile", "emp"}:
+            raise ValueError("invalid_ax_alert")
+        try:
+            ttl = float(ttl_seconds)
+        except (TypeError, ValueError):
+            ttl = 8.0
+        ttl = max(1.0, min(30.0, ttl))
+        alert_source = str(source or "manual").strip().casefold()
+        if alert_source not in {"manual", "test", "detector", "audio", "visual"}:
+            alert_source = "manual"
+        with self.lock:
+            self.ax_transient_alert = {
+                "code": alert_code,
+                "source": alert_source,
+                "expiresAt": time.monotonic() + ttl,
+            }
+        return self.ax_snapshot()
+
+    def _active_ax_transient_alert(self) -> dict[str, Any] | None:
+        with self.lock:
+            row = dict(self.ax_transient_alert) if isinstance(self.ax_transient_alert, dict) else None
+            if row and float(row.get("expiresAt") or 0) <= time.monotonic():
+                self.ax_transient_alert = None
+                return None
+        return row
+
     def ax_snapshot(self) -> dict[str, Any]:
         state = self.scout_state()
         target = state.get("target") if isinstance(state.get("target"), dict) else {}
@@ -4133,7 +4171,7 @@ class MongrelHudApp:
         speed = None
         if isinstance(spec, dict) and float(settings.get("shipBoostMps") or 0) > 0:
             speed = compare_speed(spec, settings.get("shipBoostMps"))
-        return {
+        snapshot = {
             "reviewedAt": AX_DATA_REVIEWED_AT,
             "targetKey": target_key,
             "targetSource": target_source or ("manual" if settings.get("variantOverride") != "auto" else "auto"),
@@ -4156,6 +4194,8 @@ class MongrelHudApp:
                 "subsystem": (target.get("subsystem") or {}).get("name") if isinstance(target.get("subsystem"), dict) else None,
             },
         }
+        snapshot["statusBar"] = status_bar_alert(snapshot, self._active_ax_transient_alert())
+        return snapshot
 
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
@@ -5028,6 +5068,41 @@ class MongrelHudApp:
         y += 18 * scale
         return width, round(y + 8 * scale)
 
+    def _render_ax_status_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        ax = self.ax_snapshot()
+        alert = ax.get("statusBar") if isinstance(ax.get("statusBar"), dict) else {}
+        severity = str(alert.get("severity") or "standby").casefold()
+        flashing = bool(alert.get("flash"))
+        width = round(900 * scale)
+        height = round(88 * scale)
+        color = HUD_RED if severity == "critical" else HUD_AMBER if severity == "urgent" else HUD_CYAN if severity == "info" else HUD_DIM
+
+        active_fill = flashing and flash_on
+        if active_fill:
+            canvas.create_rectangle(
+                2 * scale, 2 * scale, width - 2 * scale, height - 2 * scale,
+                fill=color, outline=color, width=max(2, round(2 * scale)),
+            )
+            main_color = HUD_SHADOW
+            detail_color = HUD_SHADOW
+        else:
+            canvas.create_rectangle(
+                2 * scale, 2 * scale, width - 2 * scale, height - 2 * scale,
+                outline=color, width=max(2, round(2 * scale)),
+            )
+            main_color = color if severity != "standby" else HUD_MUTED
+            detail_color = HUD_WHITE if severity != "standby" else HUD_MUTED
+
+        text = str(alert.get("text") or "AX STATUS — STANDBY")
+        detail = str(alert.get("detail") or "")
+        source = str(alert.get("source") or "").upper()
+        self._draw_text(canvas, width / 2, 12 * scale, text, scale, 25, main_color, True, "n")
+        if detail:
+            self._draw_text(canvas, width / 2, 50 * scale, detail, scale, 10, detail_color, True, "n")
+        if source and source not in {"NONE", "REFERENCE"}:
+            self._draw_text(canvas, width - 10 * scale, height - 8 * scale, source, scale, 7, detail_color, True, "se")
+        return width, height
+
     def _render_loadout_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state(); target = state.get("target") or {}
         width = round(440 * scale); y = self._draw_title(canvas, "TARGET LOADOUT", scale, width)
@@ -5496,6 +5571,8 @@ class MongrelHudApp:
             width, height = self._render_own_canvas(canvas, scale)
         elif panel_id == "target":
             width, height = self._render_target_canvas(canvas, scale, flash_on)
+        elif panel_id == "axstatus":
+            width, height = self._render_ax_status_canvas(canvas, scale, flash_on)
         elif panel_id == "subsystems":
             width, height = self._render_loadout_canvas(canvas, scale)
         elif panel_id == "cargo":
@@ -6146,6 +6223,12 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "ax": app.set_ax_settings(body)}
                 elif path == "/api/ax-action":
                     result = {"ok": True, "ax": app.ax_action(str(body.get("action") or ""))}
+                elif path == "/api/ax-alert":
+                    result = {"ok": True, "ax": app.set_ax_transient_alert(
+                        str(body.get("code") or ""),
+                        ttl_seconds=body.get("ttlSeconds", 8),
+                        source=str(body.get("source") or "manual"),
+                    )}
                 elif path == "/api/site-center":
                     result = {"ok": True, "site": app.set_site_center(int(body.get("siteNumber") or 0), str(body.get("commodity") or ""))}
                 elif path == "/api/location-select":
