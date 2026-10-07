@@ -271,9 +271,11 @@ export function createBodyTexture(body, disposables = null) {
       let shade = 1;
 
       if (profile.category === 'gas') {
-        const band = Math.sin(v * Math.PI * 18 + noise * 1.9);
-        colour = band > 0.15 ? profile.baseColor : band < -0.35 ? profile.secondaryColor : mix(profile.baseColor, profile.accentColor, 0.28);
-        shade = 0.93 + noise * 0.08;
+        const band = Math.sin(v * Math.PI * 18 + noise * 2.4);
+        colour = band > 0.2 ? mix(profile.baseColor, profile.accentColor, 0.12)
+          : band < -0.3 ? profile.secondaryColor
+          : mix(profile.baseColor, profile.accentColor, 0.38);
+        shade = 0.88 + noise * 0.15;
       } else if (profile.category === 'earthlike') {
         const polarIce = latitude > 0.82;
         if (polarIce) colour = mix(profile.accentColor, 0xffffff, 0.35);
@@ -288,10 +290,11 @@ export function createBodyTexture(body, disposables = null) {
         colour = noise > 0.12 ? profile.baseColor : profile.secondaryColor;
         shade = 1.02 + noise * 0.12;
       } else {
-        const threshold = noise > 0.1;
+        const threshold = noise > 0.04;
         colour = threshold ? profile.baseColor : profile.secondaryColor;
-        if (noise > 0.58) colour = mix(colour, profile.accentColor, 0.45);
-        shade = 0.9 + (noise + 1) * 0.09;
+        if (noise > 0.42) colour = mix(colour, profile.accentColor, 0.62);
+        if (noise < -0.48) colour = scale(colour, 0.72);
+        shade = 0.78 + (noise + 1) * 0.16;
       }
 
       writePixel(image.data, (y * width + x) * 4, colour, shade);
@@ -352,6 +355,9 @@ export function createBodyVisual(body, radius, disposables = null) {
       color:0xffffff,
       roughness:profile.roughness,
       metalness:profile.metalness,
+      ...(['rocky','metal','rocky-ice','icy'].includes(profile.category)
+        ? { bumpMap:texture, bumpScale:profile.category === 'icy' ? radius * 0.018 : radius * 0.028 }
+        : {}),
     });
 
   const extras = [];
