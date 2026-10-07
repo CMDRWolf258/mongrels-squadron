@@ -2,31 +2,14 @@ import * as THREE from '../../vendor/three/three.module.js';
 import { OrbitControls } from '../../vendor/three/OrbitControls.js';
 import { buildLayout, buildRingLayout, buildLocationLayout, locationPlacementText } from '../../lib/orrery-model.js';
 import { createCameraNavigation } from './camera.js';
+import { bodyProxyColor, createBodyVisual, createRingMaterial, setVisualOpacity } from './body-materials.js';
 
 const ACCENT = 0x22d3ee;
-const BODY_COLOURS = [0x97a3b2, 0xc59a72, 0x688eb1, 0xbfcbd3, 0x9ea39c];
 
 function hash(value) {
   let result = 2166136261;
   for (const letter of String(value)) result = Math.imul(result ^ letter.charCodeAt(0), 16777619);
   return result >>> 0;
-}
-
-function bodyColour(body) {
-  if (body.kind === 'star') {
-    if (body.temperatureK >= 20000) return 0xb5ccff;
-    if (body.temperatureK >= 7500) return 0xe0eaff;
-    if (body.temperatureK >= 6000) return 0xfff3df;
-    if (body.temperatureK >= 5000) return 0xffdf9e;
-    if (body.temperatureK >= 3500) return 0xffb97c;
-    return 0xff987b;
-  }
-  const description = `${body.subType || ''} ${body.type || ''} ${body.classification || ''}`.toLowerCase();
-  if (description.includes('ice') || description.includes('icy')) return 0xa5c9e0;
-  if (description.includes('water')) return 0x588fae;
-  if (description.includes('earth')) return 0x5e9b99;
-  if (description.includes('gas')) return 0xc7ac86;
-  return BODY_COLOURS[hash(body.id) % BODY_COLOURS.length];
 }
 
 function circleGeometry(radius, inclination = 0, segments = 160) {
@@ -61,6 +44,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const disposables = new Set();
   const pointerStarts = new Map();
   let selectedId = null;
+  let focusedVisualId = null;
   let bodyIds = null;
   let locationIds = null;
   let showLabels = true;
@@ -76,6 +60,8 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
   const canvas = renderer.domElement;
   canvas.className = 'orrery-canvas';
   canvas.tabIndex = 0;
@@ -117,10 +103,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   controls.listenToKeyEvents(canvas);
   controls.keyPanSpeed = 24;
 
-  scene.add(new THREE.HemisphereLight(0xd7e8ff, 0x374051, 2.25));
-  const keyLight = new THREE.DirectionalLight(0xffd9ba, 2.2);
-  keyLight.position.set(-extent, extent, extent * 0.3);
-  scene.add(keyLight);
+  // Keep a low ambient floor so dark hemispheres remain readable, while
+  // catalogued stars provide the directional lighting cue for nearby bodies.
+  scene.add(new THREE.HemisphereLight(0xbdd5e8, 0x171c22, 0.38));
 
   // A seeded backdrop is decorative only; it does not represent catalogued stars.
   const backdropPoints = [];
@@ -154,9 +139,17 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
 
   function register(id, mesh, kind, bodyId = id, radius = 1) {
     mesh.userData = { id, kind, bodyId };
-    objects.set(id, { mesh, kind, bodyId, radius, baseOpacity: mesh.material?.opacity ?? 1 });
+    objects.set(id, { mesh, kind, bodyId, radius, baseOpacity: mesh.material?.opacity ?? 1, visualExtras:[] });
     pickable.push(mesh);
     scene.add(mesh);
+  }
+
+  function addVisualExtra(id, visual) {
+    const object = objects.get(id);
+    if (!object || !visual) return;
+    visual.userData.visualBaseOpacity = visual.userData.visualBaseOpacity ?? visual.material?.opacity ?? 1;
+    object.visualExtras.push(visual);
+    object.mesh.add(visual);
   }
 
   function addLabel(id, name, position, kind, bodyId = id) {
@@ -177,14 +170,24 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     if (!value) continue;
     const position = new THREE.Vector3(...value.position);
     if (body.kind !== 'barycentre') {
-      const geometry = new THREE.SphereGeometry(value.radius, body.kind === 'star' ? 40 : 28, 24);
-      const material = body.kind === 'star'
-        ? new THREE.MeshBasicMaterial({ color: bodyColour(body) })
-        : new THREE.MeshStandardMaterial({ color: bodyColour(body), roughness: 0.88, metalness: 0.04 });
-      const mesh = new THREE.Mesh(geometry, material);
+      const geometry = new THREE.SphereGeometry(value.radius, body.kind === 'star' ? 48 : 32, body.kind === 'star' ? 32 : 24);
+      const visual = createBodyVisual(body, value.radius, disposables);
+      const mesh = new THREE.Mesh(geometry, visual.material);
+      // Deterministic orientation prevents every generated texture from
+      // presenting the same seam/longitude while remaining static.
+      mesh.rotation.y = (visual.profile.seed / 4294967296) * Math.PI * 2;
       mesh.position.copy(position);
       register(body.id, mesh, 'body', body.id, value.radius);
-      const proxy = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTexture, color: bodyColour(body), transparent: true, depthWrite: false, opacity: 0.95 }));
+      objects.get(body.id).detailController = visual.detailController;
+      for (const extra of visual.extras) addVisualExtra(body.id, extra);
+
+      if (body.kind === 'star') {
+        const light = new THREE.PointLight(visual.profile.baseColor, 2.8, 0, 0);
+        light.position.copy(position);
+        scene.add(light);
+      }
+
+      const proxy = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTexture, color: bodyProxyColor(body), transparent: true, depthWrite: false, opacity: 0.95 }));
       proxy.position.copy(position);
       proxy.userData = { id: body.id, kind: 'body', bodyId: body.id };
       objects.get(body.id).proxy = proxy;
@@ -206,8 +209,9 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     }
 
     for (const [ringId, { inner, outer }] of buildRingLayout(body, value)) {
-      const material = new THREE.MeshBasicMaterial({ color: 0xab9d8c, side: THREE.DoubleSide, transparent: true, opacity: 0.48, depthWrite: false });
-      const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 80), material);
+      const ring = (body.rings || []).find(item => item.id === ringId) || { id:ringId, type:'Unknown' };
+      const { material } = createRingMaterial(ring, disposables);
+      const ringMesh = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 112), material);
       ringMesh.rotation.x = -Math.PI / 2 + (value.inclination || 0);
       ringMesh.position.copy(position);
       register(ringId, ringMesh, 'ring', body.id, outer);
@@ -224,10 +228,18 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     const markerPosition = new THREE.Vector3(...placement.offset);
     const geometry = coordinateKnown ? new THREE.SphereGeometry(markerRadius, 12, 8) : new THREE.OctahedronGeometry(markerRadius);
     markerPosition.add(bodyPosition);
-    const material = new THREE.MeshBasicMaterial({ color: coordinateKnown ? 0x81edba : 0xf3bf6b, transparent: true, opacity: 0.9 });
+    const material = new THREE.MeshBasicMaterial({
+      color: coordinateKnown ? 0x81edba : 0xf3bf6b,
+      transparent:true,
+      opacity:1,
+      depthTest:false,
+      depthWrite:false,
+    });
     const marker = new THREE.Mesh(geometry, material);
     marker.position.copy(markerPosition);
+    marker.renderOrder = 8;
     register(location.id, marker, 'location', location.bodyId, markerRadius);
+    objects.get(location.id).placement = placement.placement;
     addLabel(location.id, location.name, markerPosition, 'location', location.bodyId);
     const button = labels.get(location.id).button;
     button.classList.add('orrery-location-label');
@@ -262,6 +274,8 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   const pointer = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const cameraDirection = new THREE.Vector3();
+  const surfaceNormal = new THREE.Vector3();
+  const surfaceToCamera = new THREE.Vector3();
   const cameraNavigation = createCameraNavigation({ camera, controls,
     getBodyPositions: () => Array.from(objects.values())
       .filter(object => object.kind === 'body' && object.mesh.visible)
@@ -335,6 +349,20 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     controls.update();
     const verticalScale = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2 / height;
     for (const [id, object] of objects) {
+      if (object.kind === 'location') {
+        const match = hasLocationMatch(id);
+        if (object.placement === 'surface') {
+          const parent = layout.get(object.bodyId);
+          const bodyPosition = parent ? new THREE.Vector3(...parent.position) : null;
+          const frontFacing = bodyPosition
+            ? surfaceNormal.copy(object.mesh.position).sub(bodyPosition)
+              .dot(surfaceToCamera.copy(camera.position).sub(object.mesh.position)) > 0
+            : true;
+          object.mesh.visible = match && frontFacing;
+        } else {
+          object.mesh.visible = match;
+        }
+      }
       if (!object.proxy) continue;
       const unitsPerPixel = camera.position.distanceTo(object.mesh.position) * verticalScale;
       object.proxy.visible = object.radius / unitsPerPixel < 3;
@@ -380,9 +408,19 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
     onSelect(id);
   }
 
+  function setFocusedVisual(id) {
+    const next = id && objects.get(id)?.kind === 'body' ? id : null;
+    if (focusedVisualId === next) return;
+    if (focusedVisualId) objects.get(focusedVisualId)?.detailController?.setFocused(false);
+    focusedVisualId = next;
+    if (focusedVisualId) objects.get(focusedVisualId)?.detailController?.setFocused(true);
+  }
+
   function focus(id) {
     const object = objects.get(id);
     if (!object) return;
+    const visualBodyId = object.kind === 'body' ? id : object.bodyId;
+    setFocusedVisual(visualBodyId);
     cameraNavigation.suspend();
     const parent = layout.get(object.bodyId);
     const target = object.mesh.position.clone();
@@ -404,6 +442,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
   }
 
   function reset() {
+    setFocusedVisual(null);
     cameraNavigation.suspend();
     // Finish any damped gesture before replacing the camera and its target.
     controls.enableDamping = false;
@@ -468,6 +507,11 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
         object.mesh.material.transparent = object.kind === 'ring' || !match;
         object.mesh.material.opacity = object.baseOpacity * (match ? 1 : 0.18);
         object.mesh.material.depthWrite = object.kind !== 'ring' && match;
+        for (const visual of object.visualExtras || []) {
+          if (!visual.material) continue;
+          const baseOpacity = Number(visual.userData.visualBaseOpacity ?? visual.material.opacity ?? 1);
+          setVisualOpacity(visual, baseOpacity * (match ? 1 : 0.15));
+        }
       }
     }
     for (const orbit of orbits) orbit.material.opacity = hasBodyMatch(orbit.userData.bodyId) ? 0.48 : 0.12;
@@ -574,6 +618,7 @@ export function createOrrery({ container, system, onSelect = () => {}, onError =
       controls.removeEventListener('change', requestRender);
       cameraNavigation.dispose();
       controls.dispose();
+      for (const object of objects.values()) object.detailController?.dispose?.();
       scene.traverse(object => {
         if (object.geometry) disposables.add(object.geometry);
         for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
