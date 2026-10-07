@@ -32,6 +32,7 @@ function harness() {
   const profileSelects = ['own', 'axstatus', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
   const axActionButtons = ['heart_exerted','heart_down','shield_up','shield_down','reset'].map(action => node('axAction' + action, { 'data-ax-action': action }));
   const axAlertButtons = ['emp','caustic_missile','clear'].map(code => node('axAlert' + code, { 'data-ax-alert': code }));
+  const telemetryMarkerButtons = ['ENERGY SURGE','TARGET A','OFF-TARGET HEART DOWN'].map((label,index) => node('telemetryMarker' + index, { 'data-telemetry-marker': label }));
   const requests = [];
   const backend = {
     profile: 'combat',
@@ -49,7 +50,7 @@ function harness() {
     document: {
       getElementById: node,
       querySelectorAll(selector) {
-        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-scale]': scaleSelects, '[data-panel-profile]': profileSelects, '[data-ax-action]': axActionButtons, '[data-ax-alert]': axAlertButtons })[selector] || [];
+        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-scale]': scaleSelects, '[data-panel-profile]': profileSelects, '[data-ax-action]': axActionButtons, '[data-ax-alert]': axAlertButtons, '[data-telemetry-marker]': telemetryMarkerButtons })[selector] || [];
       }, addEventListener() {}, activeElement: null,
     },
     fetch(path, options) {
@@ -218,6 +219,34 @@ async function drain(h, expected) {
   h.respond(h.requests[4]);
   await resize;
   assert.equal(h.backend.layout.panels.axstatus.scale,2);
+
+  const startCapture=h.node('axTelemetryStart').onclick();
+  await tick();
+  assert.equal(h.requests[5].path,'/api/telemetry');
+  assert.deepEqual(h.requests[5].body,{action:'start',label:'ax'});
+  h.respond(h.requests[5],null,{ok:true,telemetry:{enabled:true,records:1,path:'C:/test/ax.jsonl'}});
+  await startCapture;
+
+  const markTarget=h.node('telemetryMarker1').onclick();
+  await tick();
+  assert.equal(h.requests[6].path,'/api/telemetry');
+  assert.deepEqual(h.requests[6].body,{action:'mark',label:'TARGET A'});
+  h.respond(h.requests[6],null,{ok:true,telemetry:{enabled:true,records:2,path:'C:/test/ax.jsonl'}});
+  await markTarget;
+
+  const offTarget=h.node('telemetryMarker2').onclick();
+  await tick();
+  assert.equal(h.requests[7].path,'/api/telemetry');
+  assert.deepEqual(h.requests[7].body,{action:'mark',label:'OFF-TARGET HEART DOWN'});
+  h.respond(h.requests[7],null,{ok:true,telemetry:{enabled:true,records:3,path:'C:/test/ax.jsonl'}});
+  await offTarget;
+
+  const stopCapture=h.node('axTelemetryStop').onclick();
+  await tick();
+  assert.equal(h.requests[8].path,'/api/telemetry');
+  assert.deepEqual(h.requests[8].body,{action:'stop'});
+  h.respond(h.requests[8],null,{ok:true,telemetry:{enabled:false,records:4,path:'C:/test/ax.jsonl'}});
+  await stopCapture;
 }
 
 {
@@ -298,5 +327,7 @@ async function drain(h, expected) {
 
 assert.match(html,/AX STATUS BAR/);
 assert.match(html,/TEST CAUSTIC/);
+assert.match(html,/AX TELEMETRY CAPTURE/);
+assert.match(html,/OFF-TARGET HEART DOWN/);
 assert.match(html,/Panel Scale changes both text size and window footprint/);
 console.log('✓ Shipped HUD controller serializes Combat/AX/Surface controls, AX status tests, responsive scaling, preserves assignments, recovers after errors and displays diagnostics');
