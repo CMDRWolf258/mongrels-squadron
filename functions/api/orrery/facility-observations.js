@@ -51,6 +51,7 @@ export function latestStationVisits(visits){
   const hostPlacements=new Map();
   const mobilePlacements=new Map();
   const distances=new Map();
+  const stationTypes=new Map();
   for(const row of Array.isArray(visits)?visits:[]){
     const marketId=String(row?.marketId||'');
     if(!/^\d+$/.test(marketId))continue;
@@ -61,6 +62,10 @@ export function latestStationVisits(visits){
       observedAt:row?.observedAt||null,
       distanceToArrivalLs:finiteDistance(row?.distanceToArrivalLs),
     });
+    const stationType=String(row?.stationType||'').trim().slice(0,80);
+    if(stationType&&!stationTypes.has(marketId)){
+      stationTypes.set(marketId,{value:stationType,observedAt:row?.observedAt||null});
+    }
     const distance=finiteDistance(row?.distanceToArrivalLs);
     if(distance!==null&&!distances.has(marketId)){
       distances.set(marketId,{value:distance,observedAt:row?.observedAt||null});
@@ -91,8 +96,10 @@ export function latestStationVisits(visits){
       && placementMs<=latestMs+60*1000
       && latestMs-placementMs<=10*60*1000;
     const distance=distances.get(row.marketId);
+    const stationType=stationTypes.get(row.marketId);
     return{
       ...row,
+      ...(stationType?{stationType:stationType.value,stationTypeObservedAt:stationType.observedAt}:{}),
       ...(distance?{distanceToArrivalLs:distance.value,distanceObservedAt:distance.observedAt}:{}),
       ...(hostPlacements.has(row.marketId)?{hostPlacement:hostPlacements.get(row.marketId)}:{}),
       ...(placementIsCurrent?{mobilePlacement:placement}:{}),
