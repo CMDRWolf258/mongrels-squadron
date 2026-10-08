@@ -4,6 +4,9 @@ import {
   classifyTradeDataAge,
   defaultTradeControl,
   normalizeTradeControl,
+  readTradeControl,
+  writeTradeControl,
+  TRADE_CONTROL_KEY,
   tradeDiscordChannelId,
   tradePriorityProfile,
 } from '../lib/trade-intelligence.js';
@@ -17,10 +20,29 @@ import {
 } from '../lib/trade-discord.js';
 
 const control=defaultTradeControl();
-assert.equal(control.discord.mode,'testing');
+assert.equal(control.version,2);
+assert.equal(control.discord.mode,'live');
 assert.equal(control.discord.testingChannelId,'1552127291234983956');
 assert.equal(control.discord.productionChannelId,'1029221573988720722');
-assert.equal(tradeDiscordChannelId(control),'1552127291234983956');
+assert.equal(tradeDiscordChannelId(control),'1029221573988720722');
+// Deployed v1 settings used KV testing mode; preserve thresholds and promote the effective destination.
+const legacyControl={...control,version:1,discord:{...control.discord,mode:'testing'},priorities:{...control.priorities,critical:{...control.priorities.critical,refreshMinutes:20}}};
+let storedControl=JSON.stringify(legacyControl);
+let controlWrites=0;
+const fakeStorage={get:async key=>{assert.equal(key,TRADE_CONTROL_KEY);return JSON.parse(storedControl);},put:async(key,value)=>{assert.equal(key,TRADE_CONTROL_KEY);storedControl=value;controlWrites++;}};
+const migrated=await readTradeControl({TRADES:fakeStorage});
+assert.equal(migrated.discord.mode,'live','legacy testing channel must promote on deployment');
+assert.equal(tradeDiscordChannelId(migrated),'1029221573988720722');
+assert.equal(migrated.priorities.critical.refreshMinutes,20,'preserve custom officer thresholds');
+assert.equal(controlWrites,0,'routing must not add KV writes to reads');
+assert.equal((await readTradeControl({TRADES:{get:async()=>null}})).discord.mode,'live','new empty KV must use production defaults');
+assert.equal(normalizeTradeControl({}).discord.mode,'live','missing mode must inherit production default');
+await writeTradeControl({TRADES:fakeStorage},migrated);
+assert.equal(controlWrites,1);
+assert.equal(JSON.parse(storedControl).version,2);
+const explicitTest={...migrated,discord:{...migrated.discord,mode:'testing'}};
+await writeTradeControl({TRADES:fakeStorage},explicitTest);
+assert.equal((await readTradeControl({TRADES:fakeStorage})).discord.mode,'testing','explicit v2 testing setting remains supported');
 assert.equal(control.priorities.critical.refreshMinutes,5);
 assert.equal(control.priorities.critical.freshMinutes,30);
 assert.equal(control.priorities.critical.agingMinutes,90);
@@ -70,7 +92,9 @@ assert.deepEqual(parseTradeAlertCustomId(disableId),{routeId:route.id,action:'di
 
 const payload=buildTradeDiscordPayload(route,{origin:'https://mongrels-squadron.pages.dev',control,subscriberCount:3});
 assert.equal(payload.allowed_mentions.parse.length,0);
-assert.match(payload.embeds[0].description,/TEST FEED/);
+assert.doesNotMatch(payload.embeds[0].description,/TEST FEED/);
+const testingControl=normalizeTradeControl({...control,discord:{...control.discord,mode:'testing'}});
+assert.match(buildTradeDiscordPayload(route,{origin:'https://mongrels-squadron.pages.dev',control:testingControl}).embeds[0].description,/TEST FEED/);
 assert.match(payload.embeds[0].footer.text,/3 watching/);
 assert.equal(payload.components[0].components[0].custom_id,customId);
 assert.equal(payload.components[0].components[0].label,'Alert Me');
@@ -118,7 +142,8 @@ assert.match(html,/project-editor-primary-actions/);
 assert.match(html,/Trade Operations Control/);
 assert.match(html,/1552127291234983956/);
 assert.match(html,/1029221573988720722/);
-assert.match(html,/production routing is locked during development/i);
+assert.match(html,/Current automatic publishing destination/);
+assert.doesNotMatch(html,/production routing is locked during development/i);
 assert.match(html,/data-priority-duration="refreshMinutes"/);
 assert.match(html,/data-priority-duration="freshMinutes"/);
 assert.match(html,/data-priority-duration="agingMinutes"/);
