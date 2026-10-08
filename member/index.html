@@ -222,7 +222,7 @@
 
         <article class="member-command-card" id="mongrel-scout">
           <div class="member-command-card-head"><div><p class="eyebrow">Elite Uplink</p><h3>Elite Connection & Scout</h3></div><span class="member-command-badge">Frontier + EDMC</span></div>
-          <p>Connect Elite for reward verification, and use Live Scout for fresh faction-board data plus direct station-market updates.</p>
+          <p>Connect Elite for reward verification, and use Live Scout for fresh faction-board data, station-market updates, and eligible trade-profit reporting.</p>
           <div class="member-scout-actions"><a class="btn btn-primary" href="/api/frontier/login" data-frontier-card-connect>Connect Elite Account</a><a class="btn btn-ghost" href="#mongrel-scout-setup">Scout & Setup</a></div>
         </article>
 
@@ -235,7 +235,7 @@
 
       <section class="member-resource-panel member-scout-panel" id="mongrel-scout-setup">
         <div class="member-panel-heading"><div><p class="eyebrow">Member Tool · EDMC</p><h3>Mongrel Scout Setup</h3></div><span>Scout Uplink</span></div>
-        <p>Scout is a lightweight EDMC plugin for approved Mongrel members. It sends BGS fields to Wolf BGS Control in Mongrel systems and fresh public station-market snapshots to Trader's Outpost when a scout visits a market.</p>
+        <p>Scout is a lightweight EDMC plugin for approved Mongrel members. It sends BGS fields to Wolf BGS Control in Mongrel systems, fresh public station-market snapshots to Trader's Outpost, and limited eligible trade-profit results to Mission Control.</p>
         <div class="member-scout-steps">
           <div class="member-scout-step"><b>1. Install EDMC</b><span>Use a working Elite Dangerous Market Connector installation on the machine that can read your live Elite journal folder.</span></div>
           <div class="member-scout-step"><b>2. Read the README</b><span>Download and unzip Scout, then read the top-level <strong>README.md</strong> before installing. The plugin folder itself can be treated as a black box.</span></div>
@@ -255,7 +255,7 @@
           <dt>Scout rate limit reached</dt><dd>Scout has hit its upload safety limit. Leave it running and try again later.</dd>
           <dt>Upload failed</dt><dd>EDMC could not reach the Scout service. Check the network connection first.</dd>
         </dl>
-        <p class="member-scout-note"><strong>Privacy:</strong> Scout does not upload your Commander name, cargo, credits, ship build, materials, missions, or general travel history. Market uploads contain public station/commodity data only. For a VM or second-PC setup, the important requirement is reliable live access to the Elite journal folder; a direct LAN share is preferable to cloud-sync folders.</p>
+        <p class="member-scout-note"><strong>Privacy:</strong> Scout does not upload your Commander name, cargo inventory, credit balance, ship build, materials, complete missions, or general travel history. Public Market snapshots contain station/commodity data. Qualifying trade-sale activity uploads contain limited sale/profit metadata; purchase-origin lots stay local in EDMC. For a VM or second-PC setup, the important requirement is reliable live access to the Elite journal folder; a direct LAN share is preferable to cloud-sync folders.</p>
         <p class="member-scout-note"><strong>Tokens are managed by leadership.</strong> Members can use the token they are issued, but token creation, system assignments, access scope, and revocation stay in Wolf BGS Control.</p>
       </section>
 
