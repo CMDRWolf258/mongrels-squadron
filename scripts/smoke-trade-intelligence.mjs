@@ -35,6 +35,8 @@ assert.equal(migrated.discord.mode,'live','legacy testing channel must promote o
 assert.equal(tradeDiscordChannelId(migrated),'1029221573988720722');
 assert.equal(migrated.priorities.critical.refreshMinutes,20,'preserve custom officer thresholds');
 assert.equal(controlWrites,0,'routing must not add KV writes to reads');
+assert.equal((await readTradeControl({TRADES:{get:async()=>null}})).discord.mode,'live','new empty KV must use production defaults');
+assert.equal(normalizeTradeControl({}).discord.mode,'live','missing mode must inherit production default');
 await writeTradeControl({TRADES:fakeStorage},migrated);
 assert.equal(controlWrites,1);
 assert.equal(JSON.parse(storedControl).version,2);
