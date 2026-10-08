@@ -1425,6 +1425,11 @@ class MongrelHudApp:
         return None
 
     def _voice_key_is_owner(self, key: str) -> bool:
+        # Legacy HUDs may start without Scout carrier identity. Preserve that
+        # unbound local profile only until a named carrier becomes available.
+        if key == "generic":
+            context = self.carrier_voice_context()
+            return not context.get("active") and not self._owner_carrier_for_voice()
         owner = self._owner_carrier_for_voice()
         if not owner:
             return False
@@ -2580,10 +2585,27 @@ class MongrelHudApp:
                 if isinstance(slot, dict) and slot.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
                     slots[index] = {**slot, "voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
                     changed = True
+            profiles = self.store.data.get("voiceProfiles")
+            profiles = dict(profiles) if isinstance(profiles, dict) else {}
+            for key, saved in profiles.items():
+                candidate = normalized_voice_settings(saved)
+                changed_profile = False
+                for role, identity in candidate["roles"].items():
+                    if identity.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                        candidate["roles"][role] = {"voiceProvider":"system","voiceId":"","voiceName":""}
+                        changed_profile = True
+                for index, slot in enumerate(candidate["concourseVoices"]):
+                    if slot.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                        candidate["concourseVoices"][index] = {**slot,"voiceProvider":"system","voiceId":"","voiceName":""}
+                        changed_profile = True
+                if changed_profile:
+                    profiles[key] = normalized_voice_settings(candidate)
+                    changed = True
             if changed:
                 voice["roles"] = roles
                 voice["concourseVoices"] = slots
                 self.store.data["voice"] = normalized_voice_settings(voice)
+                self.store.data["voiceProfiles"] = profiles
                 self.store.save()
         self._voice_catalog_worker()
         self._set_voice_pack_status(
