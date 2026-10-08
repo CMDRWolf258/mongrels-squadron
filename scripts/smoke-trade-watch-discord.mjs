@@ -262,10 +262,13 @@ globalThis.fetch=async (input,options={})=>{
     const id=url.split('/').pop();
     return new Response(JSON.stringify({id}),{status:200,headers:{'Content-Type':'application/json'}});
   }
-  if(url.includes('/channels/1552127291234983956/messages')){
+  if(url.includes('/channels/1029221573988720722/messages')){
     channelPostCount+=1;
     const id=channelPostCount===1?'900000000000000001':'900000000000000002';
     return new Response(JSON.stringify({id}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  if(url.includes('/channels/1552127291234983956/messages')){
+    return new Response(JSON.stringify({id:'900000000000000003'}),{status:200,headers:{'Content-Type':'application/json'}});
   }
   return new Response('{}',{status:200,headers:{'Content-Type':'application/json'}});
 };
@@ -283,7 +286,7 @@ try{
 
   let stored=(await readTradeWatches(env))[0];
   assert.equal(stored.discord.messageId,'900000000000000001');
-  assert.equal(stored.discord.channelId,'1552127291234983956');
+  assert.equal(stored.discord.channelId,'1029221573988720722');
 
   await toggleTradeAlertSubscription(env,{
     routeId:stored.id,
@@ -337,14 +340,19 @@ try{
   assert.equal(stored.evaluation.matchCount,1);
 
   const alertChannelPosts=discordCalls.filter(call=>
+    call.url.includes('/channels/1029221573988720722/messages')
+    &&call.method==='POST'
+  );
+  assert.equal(alertChannelPosts.length,2,'live channel gets routine Watch card and real transition alert only');
+  assert.match(alertChannelPosts[0].body,/"flags":4096/,'routine Watch card must suppress channel notifications');
+  assert.match(alertChannelPosts[1].body,/"flags":4096/,'transition channel alert must also stay silent for everyone');
+  const testChannelPosts=discordCalls.filter(call=>
     call.url.includes('/channels/1552127291234983956/messages')
     &&call.method==='POST'
   );
-  assert.equal(alertChannelPosts.length,3,'baseline card + test alert + transition alert should be separate channel posts');
-  assert.match(alertChannelPosts[0].body,/"flags":4096/,'routine Watch card must suppress channel notifications');
-  assert.match(alertChannelPosts[1].body,/TEST ALERT/,'Officer Test Alert must be unmistakably labeled');
-  assert.match(alertChannelPosts[1].body,/"flags":4096/,'Test Alert channel message must stay silent for everyone');
-  assert.match(alertChannelPosts[2].body,/"flags":4096/,'transition channel alert must also stay silent for everyone');
+  assert.equal(testChannelPosts.length,1,'Officer Test Alert must stay isolated from production');
+  assert.match(testChannelPosts[0].body,/TEST ALERT/,'Officer Test Alert must be unmistakably labeled');
+  assert.match(testChannelPosts[0].body,/"flags":4096/,'test alert must stay silent for everyone');
   assert.ok(discordCalls.some(call=>call.url.includes('/users/@me/channels')),'subscriber should receive the DM delivery path');
 
   const noChange=await evaluateTradeWatches(env,{
