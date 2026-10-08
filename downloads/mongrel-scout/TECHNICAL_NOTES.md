@@ -55,14 +55,15 @@ The plugin deliberately does **not** transmit the commander's name, cargo invent
 
 ### Realtime Mission Control and Colonization activity
 
-Mongrel Scout 1.12.2 adds a small event-driven activity uplink. Scout does **not** upload every journal line and does not add another polling loop. It queues only four result types and waits briefly so nearby changes can share one request:
+Mongrel Scout 1.12.3 extends the small event-driven activity uplink. Scout does **not** upload every journal line and does not add another polling loop. It queues only eligible result types and waits briefly so nearby changes can share one request:
 
 - completed mission faction/influence effects, with the minimum locally remembered mission-origin fields needed to distinguish source and secondary effects;
 - redeemed bounty and combat-bond vouchers;
+- profitable `MarketSell` results where the local EDMC purchase ledger verifies station-market origin (never raw cargo contents);
 - colonization construction contributions, including commodity tonnage and construction-site Market ID;
 - colonization construction-depot progress/resources.
 
-These records are written to the same deduplicated activity store used by Frontier Sync, so a later Sync Elite reconciles the same event instead of counting it twice. Realtime Scout records are explicitly **provisional for rewards**: Mission Control and Colonization Jobs may display them immediately, but payout issuance waits until Frontier CAPI confirms/replaces the event.
+These records are written to the same deduplicated activity store used by Frontier Sync, so a later Sync Elite reconciles the same event instead of counting it twice. For live trade, Scout stores a per-commander, per-commodity FIFO purchase-origin ledger in **local** EDMC configuration; it reconciles quantities against EDMC's local ship cargo snapshot to avoid falsely crediting pre-existing, mined, collected, carrier-transferred or otherwise unknown cargo. Only a sanitized eligible sale (commodity, quantity, price/cost basis, station identity and provenance status) is transmitted. No cargo inventory, purchase records, route history or commander name is transmitted. Sales without complete proof are intentionally omitted and remain recoverable through manual/periodic Frontier Sync. Mined and carrier purchases never count as eligible BGS trade. Realtime Scout records are explicitly **provisional for rewards**: Mission Control and Colonization Jobs may display them immediately, but payout issuance waits until Frontier CAPI confirms/replaces the event.
 
 The client batches activity for about 8 seconds, suppresses duplicate events already waiting in the same batch, retries temporary network/server failures, and otherwise falls back to the normal Frontier safety sync if realtime delivery is missed.
 
