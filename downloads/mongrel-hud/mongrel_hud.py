@@ -2017,7 +2017,9 @@ class MongrelHudApp:
         return out
 
     def _persist_scheduled_voice(self, schedule_id: str, cue: str, fire_at: datetime, event: dict[str, Any]) -> None:
+        carrier_key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
         row = {
+            "carrierKey": carrier_key,
             "id": schedule_id,
             "cue": cue,
             "fireAt": fire_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -2026,12 +2028,12 @@ class MongrelHudApp:
         with self.store.lock:
             schedule = self.store.data.get("voiceSchedule")
             schedule = list(schedule) if isinstance(schedule, list) else []
-            schedule = [item for item in schedule if isinstance(item, dict) and str(item.get("id") or "") != schedule_id and str(item.get("cue") or "") != cue]
+            schedule = [item for item in schedule if isinstance(item, dict) and str(item.get("id") or "") != schedule_id and not (str(item.get("cue") or "") == cue and str(item.get("carrierKey") or "") == carrier_key)]
             schedule.append(row)
             self.store.data["voiceSchedule"] = schedule[-16:]
             self.store.save()
 
-    def _remove_persisted_voice(self, *, schedule_id: str = "", cues: set[str] | None = None) -> None:
+    def _remove_persisted_voice(self, *, schedule_id: str = "", cues: set[str] | None = None, carrier_key: str = "") -> None:
         with self.store.lock:
             schedule = self.store.data.get("voiceSchedule")
             schedule = list(schedule) if isinstance(schedule, list) else []
@@ -2041,7 +2043,7 @@ class MongrelHudApp:
                     continue
                 if schedule_id and str(row.get("id") or "") == schedule_id:
                     continue
-                if cues and str(row.get("cue") or "") in cues:
+                if cues and str(row.get("cue") or "") in cues and (not carrier_key or str(row.get("carrierKey") or "") == carrier_key):
                     continue
                 filtered.append(row)
             if filtered != schedule:
@@ -2085,7 +2087,7 @@ class MongrelHudApp:
         if persist:
             self._persist_scheduled_voice(schedule_id, cue, fire_at, event)
         with self.voice_condition:
-            self.voice_pending = [item for item in self.voice_pending if str(item.get("cue") or "") != cue]
+            self.voice_pending = [item for item in self.voice_pending if not (str(item.get("cue") or "") == cue and str(item.get("carrierKey") or "") == key)]
             self.voice_pending.append({
                 "cue": cue,
                 "carrierKey": key,
@@ -2125,14 +2127,14 @@ class MongrelHudApp:
             self.voice_condition.notify_all()
         return True
 
-    def _cancel_voice_cues(self, *cues: str) -> None:
+    def _cancel_voice_cues(self, *cues: str, carrier_key: str = "") -> None:
         wanted = {str(cue) for cue in cues if cue}
         if not wanted:
             return
         with self.voice_condition:
-            self.voice_pending = [row for row in self.voice_pending if str(row.get("cue") or "") not in wanted]
+            self.voice_pending = [row for row in self.voice_pending if not (str(row.get("cue") or "") in wanted and (not carrier_key or str(row.get("carrierKey") or "") == carrier_key))]
             self.voice_condition.notify_all()
-        self._remove_persisted_voice(cues=wanted)
+        self._remove_persisted_voice(cues=wanted,carrier_key=carrier_key)
 
     def _schedule_departure_countdowns(self, event: dict[str, Any]) -> None:
         departure = self._parse_voice_time(event.get("departureTime"))
@@ -2161,9 +2163,10 @@ class MongrelHudApp:
 
     def handle_voice_event(self, event: dict[str, Any]) -> None:
         cue = str(event.get("type") or "")
+        carrier_key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
         if cue not in CARRIER_VOICE_CUES:
             if cue in {"docking.denied", "docking.cancelled", "docking.timeout"}:
-                self._cancel_voice_cues("docking.requested", "docking.granted")
+                self._cancel_voice_cues("docking.requested", "docking.granted", carrier_key=carrier_key)
             return
         if cue in {"carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready"}:
             return
@@ -2171,18 +2174,18 @@ class MongrelHudApp:
             return
 
         if cue == "docking.granted":
-            self._cancel_voice_cues("docking.requested")
+            self._cancel_voice_cues("docking.requested", carrier_key=carrier_key)
         elif cue == "docking.docked":
-            self._cancel_voice_cues("docking.requested", "docking.granted")
+            self._cancel_voice_cues("docking.requested", "docking.granted", carrier_key=carrier_key)
         elif cue == "docking.undocked":
-            self._cancel_voice_cues("docking.docked")
+            self._cancel_voice_cues("docking.docked", carrier_key=carrier_key)
         elif cue == "carrier.jump_request":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready", carrier_key=carrier_key)
             self._schedule_departure_countdowns(event)
         elif cue == "carrier.jump_cancelled":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
         elif cue == "carrier.jump":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
             self._schedule_cooldown_ready(event)
 
         self._queue_configured_voice(cue, event)
@@ -4141,7 +4144,8 @@ class MongrelHudApp:
             "voiceStatus": self.voice_status_snapshot(),
             "voiceCatalog": self.voice_catalog_snapshot(),
             "voicePack": self.voice_pack_status_snapshot(),
-            "carrierVoiceContext": self.carrier_voice_context(),
+            "carrierVoiceContext": {**self.carrier_voice_context(), "key":self._carrier_voice_profile_key(self.carrier_voice_context())},
+            "localVoiceProfileKeys": list((self.store.data.get("voiceProfiles") or {}).keys()),
             "carrierProfiles": self._carrier_profiles_for_voice(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
