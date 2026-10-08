@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import secrets
 import threading
@@ -22,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.2"
+PLUGIN_VERSION = "1.12.3"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -128,6 +129,7 @@ KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
+KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -146,6 +148,9 @@ _activity_pending: list[dict[str, Any]] = []
 _activity_pending_fingerprints: set[str] = set()
 _activity_flush_scheduled = False
 _activity_mission_origins: dict[str, dict[str, Any]] = {}
+_activity_trade_lots: dict[str, dict[str, list[dict[str, Any]]]] = {}
+_activity_trade_station: dict[str, Any] = {}
+_activity_trade_commander = ""
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "timestamp": "",
@@ -210,6 +215,7 @@ def plugin_start3(plugin_dir: str) -> str:
     _restore_last_system_context()
     _restore_cargo_missions()
     _restore_activity_mission_origins()
+    _restore_activity_trade_provenance()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -449,7 +455,8 @@ def journal_entry(
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
 
-    activity_payload = _build_realtime_activity_payload(entry, state, system, station)
+    trade_sale = _observe_activity_trade(cmdr, entry, state, system, station)
+    activity_payload = _build_realtime_activity_payload(entry, state, system, station, trade_sale)
     if activity_payload is not None and token:
         _queue_realtime_activity(activity_payload)
 
@@ -2834,11 +2841,212 @@ def _activity_influence_rows(value: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def _restore_activity_trade_provenance() -> None:
+    """Purchase-origin lots are private EDMC state, never cloud cargo inventory."""
+    global _activity_trade_lots
+    try:
+        raw = config.get_str(KEY_ACTIVITY_TRADE_PROVENANCE) or "{}"
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = {}
+    restored: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    if isinstance(parsed, Mapping):
+        for commander, commodities in list(parsed.items())[-6:]:
+            if not isinstance(commodities, Mapping):
+                continue
+            ledger: dict[str, list[dict[str, Any]]] = {}
+            for commodity, lots in list(commodities.items())[-100:]:
+                key = _commodity_key(commodity)
+                if not key or not isinstance(lots, list):
+                    continue
+                valid = []
+                for row in lots[:64]:
+                    if not isinstance(row, Mapping):
+                        continue
+                    source = str(row.get("source") or "unknown")
+                    count = _optional_int(row.get("count")) or 0
+                    if source not in {"station_market", "carrier_market", "mined", "unknown"}:
+                        source = "unknown"
+                    if 0 < count <= 25000:
+                        valid.append({"source": source, "count": count})
+                if valid:
+                    ledger[key] = valid
+            if ledger:
+                restored[str(commander)[:120]] = ledger
+    with _activity_lock:
+        _activity_trade_lots = restored
+
+
+def _save_activity_trade_provenance() -> None:
+    with _activity_lock:
+        payload = {cmdr: dict(list(commodities.items())[-100:])
+                   for cmdr, commodities in list(_activity_trade_lots.items())[-6:]}
+        try:
+            config.set(KEY_ACTIVITY_TRADE_PROVENANCE, json.dumps(payload, separators=(",", ":")))
+        except Exception:
+            pass
+
+
+def _trade_inventory_count(state: Mapping[str, Any], commodity: str) -> Optional[int]:
+    # EDMC's Cargo/CargoJSON is examined only locally. It is never uploaded.
+    if not isinstance(state, Mapping) or not isinstance(state.get("Cargo"), Mapping) and not isinstance(state.get("CargoJSON"), Mapping):
+        return None
+    vessel, rows = _cargo_inventory_from_edmc_state(state)
+    if str(vessel).casefold() != "ship":
+        return None
+    return sum(max(0, int(row.get("count") or 0)) for row in rows if row.get("key") == commodity)
+
+
+def _trade_lot_total(lots: list[dict[str, Any]]) -> int:
+    return sum(max(0, int(lot.get("count") or 0)) for lot in lots)
+
+
+def _trade_reconcile_quantity(lots: list[dict[str, Any]], actual: Optional[int]) -> None:
+    # If cargo exists outside the known purchase ledger, discard claimed provenance.
+    # This favors a false negative and later Frontier verification over a false BGS credit.
+    if actual is not None and _trade_lot_total(lots) != actual:
+        lots[:] = [{"source": "unknown", "count": actual}] if actual > 0 else []
+
+
+def _trade_add_lot(lots: list[dict[str, Any]], source: str, count: int) -> None:
+    if count <= 0:
+        return
+    if lots and lots[-1]["source"] == source:
+        lots[-1]["count"] += count
+    else:
+        lots.append({"source": source, "count": count})
+
+
+def _trade_consume_lots(lots: list[dict[str, Any]], count: int) -> dict[str, Any]:
+    remaining = count
+    sources: set[str] = set()
+    while remaining > 0 and lots:
+        lot = lots[0]
+        used = min(remaining, int(lot["count"]))
+        remaining -= used
+        lot["count"] -= used
+        sources.add(lot["source"])
+        if lot["count"] <= 0:
+            lots.pop(0)
+    if remaining:
+        sources.add("unknown")
+    source = next(iter(sources)) if len(sources) == 1 else "mixed"
+    return {"source": source, "verified": remaining == 0 and source == "station_market"}
+
+
+def _observe_activity_trade(
+    cmdr: str,
+    entry: Mapping[str, Any],
+    state: Mapping[str, Any],
+    fallback_system: str,
+    fallback_station: str,
+) -> Optional[dict[str, Any]]:
+    """Observe only trade origin and sale eligibility; send no cargo or purchase history."""
+    global _activity_trade_commander, _activity_trade_station
+    event = str(entry.get("event") or "")
+    commander = _cmdr_cache_key(cmdr)
+    with _activity_lock:
+        if _activity_trade_commander != commander:
+            _activity_trade_station = {}
+            _activity_trade_commander = commander
+
+        system = str(entry.get("StarSystem") or state.get("SystemName") or fallback_system or _last_system_name or "").strip()
+        station = str(entry.get("StationName") or state.get("StationName") or fallback_station or "").strip()
+        station_type = str(entry.get("StationType") or state.get("StationType") or "").strip()
+        faction = _station_faction_name(entry, state)
+        if event == "Docked" or event == "Location" and entry.get("Docked") is True:
+            _activity_trade_station = {"system": system, "station": station, "type": station_type, "faction": faction}
+        elif event in {"Undocked", "FSDJump", "CarrierJump"} or event == "Location" and entry.get("Docked") is False:
+            _activity_trade_station = {}
+
+        cached = _activity_trade_station
+        if cached and cached.get("station") == station and cached.get("system") == system:
+            station_type = station_type or str(cached.get("type") or "")
+            faction = faction or str(cached.get("faction") or "")
+        if event not in {"MarketBuy", "MarketSell", "MiningRefined", "CollectCargo", "CargoTransfer", "EjectCargo", "Cargo"}:
+            return None
+
+        ledger = _activity_trade_lots.setdefault(commander, {})
+        commodity = _commodity_key(entry.get("Type"))
+        if event == "Cargo":
+            # Fresh cargo snapshots can reveal imports, mining, mission cargo or
+            # other changes that were not journaled while Scout was online.
+            if not isinstance(state.get("Cargo"), Mapping) and not isinstance(state.get("CargoJSON"), Mapping):
+                return None
+            vessel, rows = _cargo_inventory_from_edmc_state(state)
+            if str(vessel).casefold() == "ship":
+                snapshot: dict[str, int] = {}
+                for row in rows:
+                    key = str(row.get("key") or "")
+                    snapshot[key] = snapshot.get(key, 0) + max(0, int(row.get("count") or 0))
+                for key in set(ledger).union(snapshot):
+                    lots = ledger.setdefault(key, [])
+                    _trade_reconcile_quantity(lots, snapshot.get(key, 0))
+                    if not lots:
+                        ledger.pop(key, None)
+                _save_activity_trade_provenance()
+            return None
+        if event == "CargoTransfer":
+            for row in entry.get("Transfers") or []:
+                if isinstance(row, Mapping):
+                    key = _commodity_key(row.get("Type"))
+                    if key:
+                        qty = _trade_inventory_count(state, key)
+                        ledger[key] = [{"source": "unknown", "count": qty}] if qty else []
+                        if not ledger[key]:
+                            ledger.pop(key, None)
+            _save_activity_trade_provenance()
+            return None
+        if not commodity:
+            return None
+        count = _optional_int(entry.get("Count")) or (1 if event == "MiningRefined" else 0)
+        if event in {"CollectCargo", "EjectCargo"}:
+            qty = _trade_inventory_count(state, commodity)
+            if qty is not None:
+                ledger[commodity] = [{"source": "unknown", "count": qty}] if qty > 0 else []
+                if not ledger[commodity]:
+                    ledger.pop(commodity, None)
+                _save_activity_trade_provenance()
+            return None
+        if count <= 0 or count > 25000:
+            return None
+        lots = ledger.setdefault(commodity, [])
+        actual_post = _trade_inventory_count(state, commodity)
+        if event == "MarketBuy":
+            # The snapshot is *after* the purchase. Unknown preexisting stock
+            # must precede the new purchase rather than becoming falsely verified.
+            before = max(0, actual_post - count) if actual_post is not None and actual_post >= count else None
+            _trade_reconcile_quantity(lots, before)
+            source = ("carrier_market" if station_type.casefold() == "fleetcarrier"
+                      else "station_market" if station_type and station and system else "unknown")
+            if before is None:
+                source = "unknown"
+            _trade_add_lot(lots, source, count)
+            _save_activity_trade_provenance()
+            return None
+        if event == "MiningRefined":
+            before = max(0, actual_post - count) if actual_post is not None and actual_post >= count else None
+            _trade_reconcile_quantity(lots, before)
+            _trade_add_lot(lots, "mined", count)
+            _save_activity_trade_provenance()
+            return None
+        # Sale: compare expected pre-sale holdings with known purchase history.
+        before = actual_post + count if actual_post is not None else None
+        _trade_reconcile_quantity(lots, before)
+        source = _trade_consume_lots(lots, count)
+        if not lots:
+            ledger.pop(commodity, None)
+        _save_activity_trade_provenance()
+        return {**source, "stationFaction": faction, "stationType": station_type,
+                "system": system, "station": station}
+
+
 def _build_realtime_activity_payload(
     entry: Mapping[str, Any],
     state: Mapping[str, Any],
     fallback_system: str,
     fallback_station: str,
+    trade_sale: Optional[Mapping[str, Any]] = None,
 ) -> Optional[dict[str, Any]]:
     event = str(entry.get("event") or "").strip()
     if event not in {
@@ -2846,6 +3054,7 @@ def _build_realtime_activity_payload(
         "RedeemVoucher",
         "ColonisationContribution",
         "ColonisationConstructionDepot",
+        "MarketSell",
     }:
         return None
 
@@ -2874,6 +3083,44 @@ def _build_realtime_activity_payload(
         "stationType": station_type,
         "stationFaction": _station_faction_name(entry, state),
     }
+
+    if event == "MarketSell":
+        # Only purchases traced to a standard station market can provisionally
+        # increase verified trade progress. Unknown/mined/carrier lots stay local.
+        if not trade_sale or trade_sale.get("verified") is not True:
+            return None
+        if not system_name or not station_name or not trade_sale.get("stationFaction"):
+            return None
+        if str(trade_sale.get("stationType") or "").casefold() in {"", "fleetcarrier"}:
+            return None
+        if bool(entry.get("BlackMarket") or entry.get("StolenGoods")):
+            return None
+        count = _optional_int(entry.get("Count")) or 0
+        try:
+            total = float(entry.get("TotalSale"))
+            avg_price = float(entry.get("AvgPricePaid"))
+            sell_price = float(entry.get("SellPrice"))
+        except (TypeError, ValueError):
+            return None
+        profit = total - avg_price * count
+        if not all(math.isfinite(n) for n in (total, avg_price, sell_price, profit)):
+            return None
+        if count <= 0 or not (avg_price > 0 and total > 0 and profit > 0):
+            return None
+        return {
+            **base,
+            "stationFaction": str(trade_sale["stationFaction"])[:120],
+            "stationType": str(trade_sale["stationType"])[:80],
+            "commodity": _commodity_display(entry.get("Type"), entry.get("Type_Localised")),
+            "count": count,
+            "sellPrice": sell_price,
+            "total": total,
+            "avgPricePaid": avg_price,
+            "tradeSource": "station_market",
+            "tradeSourceVerified": True,
+            "blackMarket": False,
+            "stolenGoods": False,
+        }
 
     if event == "MissionCompleted":
         mission_id = _optional_int(entry.get("MissionID"))
