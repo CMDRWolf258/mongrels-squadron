@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {buildHudFeed} from '../functions/api/hud/feed.js';
+import {buildMissionControlData} from '../lib/bgs-operations.js';
 import * as cycles from '../lib/daily-order-cycle.js';
 
 // Pins the complete 245-system/10-order/1-route response, including the
@@ -43,6 +44,9 @@ globalThis.fetch=async()=>Response.json({faction:'Regiment of Imperial Mongrels'
 const feed=await buildHudFeed(new Request('https://example.invalid/api/hud/feed'),env,{ownerId:'fixture-admin',ownerCommander:'Fixture CMDR'});
 assert.equal(readCounts.get('wolf-bgs-control-v1'),2,'Timing control must be shared across all three HUD feed builders; a separate raw alert-state read remains necessary');
 assert.equal(readCounts.get('wolf-bgs-scout-snapshots-v1'),1,'Mission Control and Scout Board must reuse a single snapshot without delaying refresh');
+const readsBeforeUnauthorized=Array.from(readCounts.values()).reduce((sum,value)=>sum+value,0);
+assert.equal(await buildMissionControlData(new Request('https://example.invalid/api/operations/wolf-bgs'),env,null),null,'Unauthorized Mission Control must return before any KV reads');
+assert.equal(Array.from(readCounts.values()).reduce((sum,value)=>sum+value,0),readsBeforeUnauthorized,'Unauthenticated caller must not initiate fallback KV reads');
 assert.equal(feed.mission.orderCount,10);
 assert.equal(feed.trade.activeCount,1);
 assert.equal(feed.scout.jobs.length,245);
