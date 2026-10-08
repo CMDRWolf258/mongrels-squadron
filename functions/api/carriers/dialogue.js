@@ -1,5 +1,5 @@
 import { readSession } from '../../../lib/auth.js';
-import { readCarrierDialogue, writeCarrierDialogue, normalizeLine, normalizeProfile, publicDialogueProfile, publicSharedDialogueProfile, SHARED_DIALOGUE_PROFILE_ID, dialogueReply } from '../../../lib/carrier-dialogue.js';
+import { readCarrierDialogue, writeCarrierDialogue, normalizeLine, normalizeProfile, normalizeVoicePreferences, publicDialogueProfile, publicSharedDialogueProfile, SHARED_DIALOGUE_PROFILE_ID, dialogueReply } from '../../../lib/carrier-dialogue.js';
 
 const REGISTRY_KEY='registry-v1';
 const CANINE_CATALYST_ID='squad-carrier-r1mm';
@@ -118,6 +118,9 @@ export async function onRequestPost({request,env}){
   }else if(action==='settings'){
     if(carrierId===SHARED_DIALOGUE_PROFILE_ID)return dialogueReply({ok:false,error:'shared_pool_settings_not_supported'},400);
     profile.settings=normalizeProfile({carrierId,settings:body?.settings,lines:profile.lines},carrierId).settings;
+  }else if(action==='publish_voice'){
+    if(carrierId===SHARED_DIALOGUE_PROFILE_ID)return dialogueReply({ok:false,error:'shared_pool_settings_not_supported'},400);
+    profile.voicePreferences=normalizeVoicePreferences(body?.voicePreferences);
   }else{
     return dialogueReply({ok:false,error:'unknown_action'},400);
   }
