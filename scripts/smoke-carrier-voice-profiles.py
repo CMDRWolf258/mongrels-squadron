@@ -79,6 +79,22 @@ with tempfile.TemporaryDirectory() as dirname:
     assert {pneuma_key,canine_key,other_key}.issubset({row["key"] for row in options})
     assert app._carrier_voice_profile_key(site[2])==other_key
 
+    # Simultaneous traffic at two carriers must not share a cue cooldown, nor
+    # may Canine's docking transition cancel a still-valid Pneuma clearance.
+    pneuma_event={"type":"docking.granted","marketId":pneuma_id,
+        "stationName":"Pneuma","stationType":"FleetCarrier","landingPad":12}
+    canine_event={"type":"docking.granted","stationName":"Canine Catalyst",
+        "stationType":"SquadronCarrier","landingPad":3}
+    app.handle_voice_event(pneuma_event)
+    app.handle_voice_event(canine_event)
+    with app.voice_condition:
+        granted=[row for row in app.voice_pending if row.get("cue")=="docking.granted"]
+        assert {row.get("carrierKey") for row in granted}=={pneuma_key,canine_key}
+    app.handle_voice_event({**canine_event,"type":"docking.docked"})
+    with app.voice_condition:
+        surviving=[row for row in app.voice_pending if row.get("cue")=="docking.granted"]
+        assert len(surviving)==1 and surviving[0]["carrierKey"]==pneuma_key
+
     # Rebuilding the HUD state must preserve the independent, local voice sets.
     stored=hud.LocalStore(Path(dirname)/"state.json")
     restarted=hud.MongrelHudApp(stored,"<html></html>")
