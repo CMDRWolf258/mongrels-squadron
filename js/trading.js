@@ -215,7 +215,7 @@
     if(target)target.textContent=payload.discord?.targetLabel||'💰〡trader’s-outpost';
     if(mode)mode.textContent=`${String(payload.discord?.mode||'live').toUpperCase()} · routing is managed by the website deployment.`;
     const summary=$('[data-trade-control-summary]');
-    if(summary)summary.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · ${control.priorities?.critical?.refreshMinutes||5} min fastest`;
+    if(summary)summary.textContent=`${String(payload.discord?.mode||'live').toUpperCase()} · ${control.priorities?.critical?.refreshMinutes||5} min fastest`;
     const healthTitle=$('[data-trade-market-health-title]');
     const healthDetail=$('[data-trade-market-health-detail]');
     const health=payload.marketData||{};
