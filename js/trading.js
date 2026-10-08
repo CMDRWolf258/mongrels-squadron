@@ -212,8 +212,8 @@
     $('[data-trade-discord-compact]').checked=control.discord?.compactSuperseded!==false;
     const target=$('[data-trade-discord-target]');
     const mode=$('[data-trade-discord-mode]');
-    if(target)target.textContent=payload.discord?.targetLabel||'🧪〡system-testing';
-    if(mode)mode.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · production routing is locked during development.`;
+    if(target)target.textContent=payload.discord?.targetLabel||'💰〡trader’s-outpost';
+    if(mode)mode.textContent=`${String(payload.discord?.mode||'live').toUpperCase()} · routing is managed by the website deployment.`;
     const summary=$('[data-trade-control-summary]');
     if(summary)summary.textContent=`${String(payload.discord?.mode||'testing').toUpperCase()} · ${control.priorities?.critical?.refreshMinutes||5} min fastest`;
     const healthTitle=$('[data-trade-market-health-title]');
