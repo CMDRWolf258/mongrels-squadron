@@ -59,6 +59,18 @@ The HUD will update itself and keep your local layout/settings.
 
 If you ever update manually, close the HUD, unzip the new build, and run the new **MongrelHUD.exe**. Your normal HUD settings live separately from the EXE.
 
+## Per-carrier voice and announcement timing (HUD 0.17.1+)
+
+The paired iPad/phone controller's **CARRIER PA** tab has a **Carrier voice and timing profile** selector. Choose **Pneuma**, **Canine Catalyst**, or another detected/registered carrier before setting ATC/announcement voices, four optional concourse speakers, cue delays, cooldowns and volume.
+
+- **Pneuma:** your pre-upgrade local voice choices and cue delays remain unchanged.
+- **Canine Catalyst:** has an independent local profile. Setting its voices or timing does not alter Pneuma.
+- **Other commanders' registered carriers:** the HUD uses the owner's **published** preferences from the site (subject to installed voices). It never treats Pneuma's voice as the visitor default. If no preferences are published, normal carrier defaults apply.
+- **Local overrides:** manually changing another carrier's profile changes only **your PC**. It never edits what the carrier owner publishes for other visitors.
+- **Publishing for visitors:** sign in to the [Carrier Registry](https://mongrels-squadron.pages.dev/carriers/) as that carrier's owner (or Site Admin), open **Dialogue Manager**, choose the carrier, then publish voice preferences and event timing. The website shares identity/timing preferences, not voice pack files.
+
+Voice providers are available only if installed locally; unavailable choices safely fall back to a Windows/system voice. The website and HUD continue using the existing Scout feed—no new constant polling or cloud read loop is required. Hangar/concourse ambient intervals remain independently managed in the website's **Carrier Voice Settings**.
+
 ## Voice pack
 
 The optional neural voice pack is **not required** to use Mongrel HUD.
@@ -101,3 +113,11 @@ https://mongrels-squadron.pages.dev/member/#mongrel-tools
 Developer/engineering details are intentionally kept out of this README. They are preserved in the repository at:
 
 `downloads/mongrel-hud/TECHNICAL_NOTES.md`
+
+
+### Independent carrier voice and timing profiles (HUD 0.17.1)
+
+In the paired iPad controller open **Carrier PA → Carrier voice and timing profile**. Use **Automatic** for the carrier currently detected in Elite, or select Pneuma, Canine Catalyst, or another registered carrier to edit that carrier's ATC, announcements, concourse ensemble, PA and event delays. Edits on this screen are **local overrides saved on this PC**; they never overwrite a different carrier's selections. Existing pre-0.17.1 Pneuma voices and delays are preserved for your owner carrier.
+
+The [website Carrier Dialogue Manager](https://mongrels-squadron.pages.dev/carriers/) now has a **Published Carrier Voice Profile** section. Carrier owners (site admins for the squad carrier) can publish preferred ATC, announcement and concourse voice identifiers, plus docking/jump timing, for visiting commanders. Visitors use the detected registered carrier's published dialogue, ambient intervals, and published voice/cue preferences by default. A visitor's explicit local override takes precedence, and voice files/audio are never sent between computers; a requested voice missing on the visiting PC falls back to a locally available system voice. **Editing the iPad's local override does not publish it to other commanders**; publish separately from the website when you want the entire squad to hear the same carrier preferences. Unregistered carriers with no published settings use neutral HUD defaults, not Pneuma's voices.
+

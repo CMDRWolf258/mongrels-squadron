@@ -183,6 +183,98 @@
     $('[data-dialogue-enabled]').value='true';
     $('[data-dialogue-status]').textContent='';
   }
+  const PUBLISHED_CUE_LABELS={
+    'docking.requested':'Docking request','docking.granted':'Docking granted',
+    'docking.docked':'Welcome aboard','docking.undocked':'Departure',
+    'carrier.jump_request':'Jump scheduled','carrier.countdown_10':'10-minute countdown',
+    'carrier.countdown_5':'5-minute countdown','carrier.jump_cancelled':'Jump cancelled',
+    'carrier.jump':'Jump complete','carrier.cooldown_ready':'Cooldown ready',
+  };
+  const PUBLISHED_CUE_DEFAULTS={
+    'docking.requested':[7,10,20,false],'docking.granted':[5,7,20,true],
+    'docking.docked':[3,5,20,true],'docking.undocked':[4,6,20,true],
+    'carrier.jump_request':[3,5,30,true],'carrier.countdown_10':[0,0,30,true],
+    'carrier.countdown_5':[0,0,30,true],'carrier.jump_cancelled':[2,3,30,true],
+    'carrier.jump':[8,11,30,true],'carrier.cooldown_ready':[0,0,30,true],
+  };
+  function hydratePublishedVoice(){
+    const settings=currentDialogueProfile().voicePreferences||{};
+    const roles=settings.roles||{};
+    for(const role of ['announcement','atc']){
+      const identity=roles[role]||{};
+      $('[data-publish-'+role+'-provider]').value=identity.voiceProvider||'system';
+      $('[data-publish-'+role+'-id]').value=identity.voiceId||'';
+    }
+    const concourse=$('[data-published-concourse-grid]');
+    concourse.replaceChildren();
+    for(let i=0;i<4;i++){
+      const slot=(settings.concourseVoices||[])[i]||{};
+      const wrapper=document.createElement('div');
+      wrapper.className='carrier-dialogue-published-slot';
+      const index=i+1;
+      wrapper.innerHTML='<label><span>Concourse voice '+index+'</span><select data-concourse-provider="'+i+'">'+
+        '<option value="system">Windows Legacy</option><option value="winrt">Windows Modern</option><option value="kokoro">Kokoro</option></select></label>'+
+        '<label><span>Installed voice ID</span><input maxlength="300" data-concourse-id="'+i+'" placeholder="Optional voice ID"></label>'+
+        '<label><span>Enabled</span><select data-concourse-enabled="'+i+'"><option value="true">Yes</option><option value="false">No</option></select></label>';
+      concourse.appendChild(wrapper);
+      wrapper.querySelector('[data-concourse-provider]').value=slot.voiceProvider||'system';
+      wrapper.querySelector('[data-concourse-id]').value=slot.voiceId||'';
+      wrapper.querySelector('[data-concourse-enabled]').value=slot.enabled===false||(!settings.concourseVoices?.length&&i>0)?'false':'true';
+    }
+    const grid=$('[data-published-cue-grid]');
+    grid.replaceChildren();
+    for(const [cue,label] of Object.entries(PUBLISHED_CUE_LABELS)){
+      const cfg=(settings.cues||{})[cue]||{};
+      const defaults=PUBLISHED_CUE_DEFAULTS[cue];
+      const card=document.createElement('div');card.className='carrier-dialogue-published-cue';
+      card.dataset.publishCue=cue;
+      card.innerHTML='<strong>'+safe(label)+'</strong><div class="carrier-dialogue-timing-grid">'+
+        '<label><span>Enabled</span><select data-publish-enabled><option value="true">Yes</option><option value="false">No</option></select></label>'+
+        '<label><span>Min delay (s)</span><input data-publish-min type="number" min="0" max="60" step="0.5"></label>'+
+        '<label><span>Max delay (s)</span><input data-publish-max type="number" min="0" max="60" step="0.5"></label>'+
+        '<label><span>Cooldown (s)</span><input data-publish-cooldown type="number" min="0" max="300" step="0.5"></label>'+
+        (cue==='carrier.cooldown_ready'?'<label><span>Ready after jump (s)</span><input data-publish-offset type="number" min="0" max="900" step="1"></label>':'')+
+        '</div>';
+      grid.appendChild(card);
+      card.querySelector('[data-publish-enabled]').value=String(cfg.enabled??defaults[3]);
+      card.querySelector('[data-publish-min]').value=String(cfg.minDelay??defaults[0]);
+      card.querySelector('[data-publish-max]').value=String(cfg.maxDelay??defaults[1]);
+      card.querySelector('[data-publish-cooldown]').value=String(cfg.cooldown??defaults[2]);
+      if(cue==='carrier.cooldown_ready')card.querySelector('[data-publish-offset]').value=String(cfg.offsetSeconds??180);
+    }
+    $('[data-dialogue-publish-voice]').disabled=!dialogueEditable()||currentDialogueCarrierId()===SHARED_DIALOGUE_ID;
+  }
+  async function publishCarrierVoice(){
+    if(!dialogueEditable()||currentDialogueCarrierId()===SHARED_DIALOGUE_ID)return;
+    const status=$('[data-dialogue-footer-status]');
+    const roles={};
+    for(const role of ['announcement','atc']){
+      roles[role]={voiceProvider:$('[data-publish-'+role+'-provider]').value,voiceId:$('[data-publish-'+role+'-id]').value.trim()};
+    }
+    const concourseVoices=[];
+    for(let i=0;i<4;i++)concourseVoices.push({
+      voiceProvider:$('[data-concourse-provider="'+i+'"]').value,
+      voiceId:$('[data-concourse-id="'+i+'"]').value.trim(),
+      enabled:$('[data-concourse-enabled="'+i+'"]').value==='true',
+    });
+    const cues={};
+    for(const item of document.querySelectorAll('[data-publish-cue]')){
+      const cue=item.dataset.publishCue;
+      cues[cue]={enabled:item.querySelector('[data-publish-enabled]').value==='true',
+        minDelay:Number(item.querySelector('[data-publish-min]').value),
+        maxDelay:Number(item.querySelector('[data-publish-max]').value),
+        cooldown:Number(item.querySelector('[data-publish-cooldown]').value)};
+      const offset=item.querySelector('[data-publish-offset]');
+      if(offset)cues[cue].offsetSeconds=Number(offset.value);
+    }
+    status.textContent='Publishing carrier voice preferences…';
+    try{
+      await dialogueMutation({action:'publish_voice',carrierId:currentDialogueCarrierId(),
+        voicePreferences:{roles,concourseVoices,cues}});
+      hydratePublishedVoice();
+      status.textContent='Carrier voice profile published for visiting HUDs.';
+    }catch(error){status.textContent=error.message||'Voice profile publish failed.';}
+  }
   function hydrateDialogueSettings(){
     const shared=currentDialogueCarrierId()===SHARED_DIALOGUE_ID;
     const settings=currentDialogueProfile().settings||{};
@@ -195,6 +287,7 @@
     const settingsBox=$('[data-dialogue-carrier-settings]');
     if(settingsBox)settingsBox.hidden=shared;
     syncDialoguePermissions();
+    hydratePublishedVoice();
   }
   function syncDialoguePermissions(){
     const editable=dialogueEditable();
@@ -346,7 +439,8 @@
   $('[data-carrier-search]')?.addEventListener('input',renderRegistry);$('[data-carrier-role]')?.addEventListener('change',renderRegistry);$('[data-carrier-status]')?.addEventListener('change',renderRegistry);
   $('[data-carrier-register]')?.addEventListener('click',()=>openCarrierEditor());$$('[data-carrier-cancel]').forEach(x=>x.addEventListener('click',closeCarrierEditor));$('[data-carrier-form]')?.addEventListener('submit',saveCarrier);$('[data-carrier-form]')?.addEventListener('input',()=>carrierDirty=true);$('[data-carrier-delete]')?.addEventListener('click',deleteCarrier);
   $('[data-coord-create]')?.addEventListener('click',()=>openCoordEditor());$$('[data-coord-cancel]').forEach(x=>x.addEventListener('click',closeCoordEditor));$('[data-coord-form]')?.addEventListener('submit',saveCoord);$('[data-coord-form]')?.addEventListener('input',()=>coordDirty=true);$('[data-coord-delete]')?.addEventListener('click',deleteCoord);
-  $('[data-dialogue-manage]')?.addEventListener('click',openDialogueManager);$$('[data-dialogue-cancel]').forEach(x=>x.addEventListener('click',closeDialogueManager));$('[data-dialogue-new]')?.addEventListener('click',resetDialogueEditor);$('[data-dialogue-save]')?.addEventListener('click',saveDialogueLine);$('[data-dialogue-save-settings]')?.addEventListener('click',saveDialogueSettings);
+  $('[data-dialogue-manage]')?.addEventListener('click',openDialogueManager);
+  $('[data-dialogue-publish-voice]')?.addEventListener('click',publishCarrierVoice);$$('[data-dialogue-cancel]').forEach(x=>x.addEventListener('click',closeDialogueManager));$('[data-dialogue-new]')?.addEventListener('click',resetDialogueEditor);$('[data-dialogue-save]')?.addEventListener('click',saveDialogueLine);$('[data-dialogue-save-settings]')?.addEventListener('click',saveDialogueSettings);
   $('[data-dialogue-carrier]')?.addEventListener('change',()=>{resetDialogueEditor();hydrateDialogueSettings();renderDialogueLines();});$('[data-dialogue-category]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});$('[data-dialogue-audience]')?.addEventListener('change',()=>{resetDialogueEditor();renderDialogueLines();});$('[data-dialogue-view]')?.addEventListener('change',renderDialogueLines);
   $$('[data-coord-filter]').forEach(btn=>btn.addEventListener('click',()=>{$$('[data-coord-filter]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');coordFilter=btn.dataset.coordFilter;renderCoordination();}));
   window.addEventListener('beforeunload',e=>{if(carrierDirty||coordDirty){e.preventDefault();e.returnValue='';}});

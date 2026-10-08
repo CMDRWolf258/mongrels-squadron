@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.0"
+APP_VERSION = "0.17.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -239,8 +239,8 @@ VOICE_ROLE_ANNOUNCEMENT = "announcement"
 VOICE_ROLE_ATC = "atc"
 VOICE_ROLE_IDS = frozenset((VOICE_ROLE_ANNOUNCEMENT, VOICE_ROLE_ATC))
 VOICE_ROLE_LABELS = {
-    VOICE_ROLE_ANNOUNCEMENT: "Pneuma announcements",
-    VOICE_ROLE_ATC: "Pneuma ATC",
+    VOICE_ROLE_ANNOUNCEMENT: "Carrier announcements",
+    VOICE_ROLE_ATC: "Carrier ATC",
 }
 
 ACOUSTIC_REMOTE = "remote_radio"
@@ -1368,9 +1368,119 @@ class MongrelHudApp:
         self.handle_voice_event(event)
 
 
-    def voice_settings_snapshot(self) -> dict[str, Any]:
+    @staticmethod
+    def _carrier_voice_profile_key(profile: dict[str, Any] | None) -> str:
+        if not isinstance(profile, dict):
+            return "generic"
+        identity = str(profile.get("id") or "").strip()
+        if identity:
+            return "registry:" + identity[:100]
+        market_id = str(profile.get("marketId") or "").strip()
+        if market_id and re.fullmatch(r"\d{4,24}", market_id):
+            return "market:" + market_id
+        callsign = str(profile.get("callsign") or "").strip().upper()
+        if callsign and re.fullmatch(r"[A-Z0-9]{3}-[A-Z0-9]{3}", callsign):
+            return "callsign:" + callsign
+        return "generic"
+
+    def _voice_profile_options(self) -> list[dict[str, Any]]:
+        profiles = self._carrier_profiles_for_voice()
+        owner = self._owner_carrier_for_voice()
+        if owner and not any(str(row.get("marketId") or "") == str(owner.get("carrierId") or "") for row in profiles):
+            profiles.append({
+                "marketId": owner.get("carrierId"), "name": owner.get("name") or "Own carrier",
+                "callsign": owner.get("callsign"), "relationship": "owner", "registered": False,
+            })
+        current = self.carrier_voice_context()
+        if current.get("active") and self._carrier_voice_profile_key(current) not in {self._carrier_voice_profile_key(row) for row in profiles}:
+            profiles.append(current)
+        choices, seen = [], set()
+        for profile in profiles[:100]:
+            key = self._carrier_voice_profile_key(profile)
+            if key in seen or key == "generic":
+                continue
+            seen.add(key)
+            choices.append({
+                "key": key, "name": str(profile.get("name") or profile.get("callsign") or "Carrier"),
+                "callsign": str(profile.get("callsign") or ""),
+                "ownershipType": str(profile.get("ownershipType") or ""),
+            })
+        return choices
+
+    def _carrier_profile_by_key(self, key: str) -> dict[str, Any] | None:
+        profile = self.carrier_voice_context()
+        if key == self._carrier_voice_profile_key(profile):
+            return profile
+        owner = self._owner_carrier_for_voice()
+        for candidate in self._carrier_profiles_for_voice():
+            if key == self._carrier_voice_profile_key(candidate):
+                return candidate
+        if owner and key == self._carrier_voice_profile_key({
+            "marketId": owner.get("carrierId"), "callsign": owner.get("callsign"),
+        }):
+            return {
+                "marketId": owner.get("carrierId"), "name": owner.get("name") or "Own carrier",
+                "callsign": owner.get("callsign"), "relationship": "owner",
+            }
+        return None
+
+    def _voice_key_is_owner(self, key: str) -> bool:
+        # Legacy HUDs may start without Scout carrier identity. Preserve that
+        # unbound local profile only until a named carrier becomes available.
+        if key == "generic":
+            context = self.carrier_voice_context()
+            return not context.get("active") and not self._owner_carrier_for_voice()
+        owner = self._owner_carrier_for_voice()
+        if not owner:
+            return False
+        owned_id = str(owner.get("carrierId") or "")
+        owned_callsign = self._carrier_callsign(owner.get("callsign"))
+        profile = self._carrier_profile_by_key(key)
+        if not profile:
+            return False
+        return (
+            bool(owned_id) and str(profile.get("marketId") or "") == owned_id
+        ) or (
+            bool(owned_callsign) and self._carrier_callsign(profile.get("callsign")) == owned_callsign
+        )
+
+    def voice_settings_snapshot(self, carrier_key: str = "") -> dict[str, Any]:
+        key = carrier_key or self._carrier_voice_profile_key(self.carrier_voice_context())
+        profile = self._carrier_profile_by_key(key)
         with self.store.lock:
-            return json.loads(json.dumps(normalized_voice_settings(self.store.data.get("voice"))))
+            profiles = self.store.data.get("voiceProfiles")
+            local = profiles.get(key) if isinstance(profiles, dict) else None
+            if isinstance(local, dict):
+                settings = normalized_voice_settings(local)
+            elif self._voice_key_is_owner(key):
+                # The existing 0.17.0 voice state remains the Pneuma profile.
+                # It must never leak into Canine or another member's carrier.
+                settings = normalized_voice_settings(self.store.data.get("voice"))
+            else:
+                settings = default_voice_settings()
+                state = self.scout_state()
+                feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+                libraries = feed.get("carrierDialogue") if isinstance(feed.get("carrierDialogue"), dict) else {}
+                published = libraries.get(profile.get("id")) if isinstance(profile, dict) else None
+                prefs = published.get("voicePreferences") if isinstance(published, dict) else {}
+                if isinstance(prefs, dict):
+                    roles = prefs.get("roles") if isinstance(prefs.get("roles"), dict) else {}
+                    for role in VOICE_ROLE_IDS:
+                        if isinstance(roles.get(role), dict):
+                            settings["roles"][role] = _normalized_voice_identity(roles[role])
+                    slots = prefs.get("concourseVoices") if isinstance(prefs.get("concourseVoices"), list) else []
+                    for index, slot in enumerate(slots[:4]):
+                        if isinstance(slot, dict):
+                            settings["concourseVoices"][index] = {
+                                **_normalized_voice_identity(slot), "enabled": slot.get("enabled") is not False,
+                            }
+                    cues = prefs.get("cues") if isinstance(prefs.get("cues"), dict) else {}
+                    for cue, row in cues.items():
+                        if cue in CARRIER_VOICE_CUES and isinstance(row, dict):
+                            settings["cues"][cue] = {**settings["cues"][cue],
+                                **{field:row[field] for field in ("enabled","minDelay","maxDelay","cooldown","offsetSeconds") if field in row}}
+                settings = normalized_voice_settings(settings)
+        return json.loads(json.dumps(settings))
 
     def voice_catalog_snapshot(self) -> list[dict[str, str]]:
         with self.lock:
@@ -1408,8 +1518,11 @@ class MongrelHudApp:
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
         if not isinstance(value, dict):
             raise ValueError("voice_settings_required")
+        carrier_key = str(value.get("carrierKey") or self._carrier_voice_profile_key(self.carrier_voice_context()))
+        if carrier_key != "generic" and self._carrier_profile_by_key(carrier_key) is None:
+            raise ValueError("unknown_voice_carrier")
+        current = self.voice_settings_snapshot(carrier_key)
         with self.store.lock:
-            current = normalized_voice_settings(self.store.data.get("voice"))
             for key in ("enabled", "carrierPa", "volume", "rate", "localCommsCharacter"):
                 if key in value:
                     current[key] = value[key]
@@ -1467,13 +1580,19 @@ class MongrelHudApp:
                     merged_cues[cue] = row
                 current["cues"] = merged_cues
             normalized = normalized_voice_settings(current)
-            self.store.data["voice"] = normalized
+            profiles = self.store.data.get("voiceProfiles")
+            profiles = dict(profiles) if isinstance(profiles, dict) else {}
+            profiles[carrier_key] = normalized
+            self.store.data["voiceProfiles"] = profiles
+            if self._voice_key_is_owner(carrier_key):
+                # Preserve original owner's settings for older HUD releases.
+                self.store.data["voice"] = normalized
             self.store.save()
         if not normalized["enabled"] or not normalized["carrierPa"]:
             with self.voice_condition:
                 self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
-        return self.voice_settings_snapshot()
+        return self.voice_settings_snapshot(carrier_key)
 
     @staticmethod
     def _voice_role_for_cue(cue: str) -> str:
@@ -1789,7 +1908,7 @@ class MongrelHudApp:
         while True:
             try:
                 context = self._ambient_voice_context()
-                settings = self.voice_settings_snapshot()
+                settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(context[3])) if context else self.voice_settings_snapshot()
                 if context is None or not settings.get("enabled") or not settings.get("carrierPa"):
                     self.ambient_context_key = ""
                     self.ambient_next_due = 0.0
@@ -1825,6 +1944,7 @@ class MongrelHudApp:
                         with self.voice_condition:
                             self.voice_pending.append({
                                 "cue": f"ambient.{room}",
+                                "carrierKey": self._carrier_voice_profile_key(carrier),
                                 "role": VOICE_ROLE_ANNOUNCEMENT,
                                 "voiceIdentity": identity,
                                 "acousticProfile": acoustic,
@@ -1869,7 +1989,7 @@ class MongrelHudApp:
         return selected
 
     def _voice_text_for_event(self, cue: str, event: dict[str, Any]) -> str:
-        settings = self.voice_settings_snapshot()
+        settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(self._carrier_profile_for_event(event)))
         row = (settings.get("cues") or {}).get(cue) or {}
         phrase = self._dialogue_phrase(cue, event, row)
         if not phrase:
@@ -1902,7 +2022,9 @@ class MongrelHudApp:
         return out
 
     def _persist_scheduled_voice(self, schedule_id: str, cue: str, fire_at: datetime, event: dict[str, Any]) -> None:
+        carrier_key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
         row = {
+            "carrierKey": carrier_key,
             "id": schedule_id,
             "cue": cue,
             "fireAt": fire_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1911,12 +2033,12 @@ class MongrelHudApp:
         with self.store.lock:
             schedule = self.store.data.get("voiceSchedule")
             schedule = list(schedule) if isinstance(schedule, list) else []
-            schedule = [item for item in schedule if isinstance(item, dict) and str(item.get("id") or "") != schedule_id and str(item.get("cue") or "") != cue]
+            schedule = [item for item in schedule if isinstance(item, dict) and str(item.get("id") or "") != schedule_id and not (str(item.get("cue") or "") == cue and str(item.get("carrierKey") or "") == carrier_key)]
             schedule.append(row)
             self.store.data["voiceSchedule"] = schedule[-16:]
             self.store.save()
 
-    def _remove_persisted_voice(self, *, schedule_id: str = "", cues: set[str] | None = None) -> None:
+    def _remove_persisted_voice(self, *, schedule_id: str = "", cues: set[str] | None = None, carrier_key: str = "") -> None:
         with self.store.lock:
             schedule = self.store.data.get("voiceSchedule")
             schedule = list(schedule) if isinstance(schedule, list) else []
@@ -1926,7 +2048,7 @@ class MongrelHudApp:
                     continue
                 if schedule_id and str(row.get("id") or "") == schedule_id:
                     continue
-                if cues and str(row.get("cue") or "") in cues:
+                if cues and str(row.get("cue") or "") in cues and (not carrier_key or str(row.get("carrierKey") or "") == carrier_key):
                     continue
                 filtered.append(row)
             if filtered != schedule:
@@ -1956,7 +2078,8 @@ class MongrelHudApp:
                 self.store.save()
 
     def _queue_scheduled_voice(self, cue: str, event: dict[str, Any], fire_at: datetime, *, persist: bool = True, schedule_id: str = "") -> bool:
-        settings = self.voice_settings_snapshot()
+        key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
+        settings = self.voice_settings_snapshot(key)
         row = (settings.get("cues") or {}).get(cue) or {}
         if cue not in CARRIER_VOICE_CUES or not row.get("enabled"):
             return False
@@ -1965,13 +2088,14 @@ class MongrelHudApp:
         if seconds <= 0.5:
             return False
         if not schedule_id:
-            schedule_id = f"{cue}:{int(fire_at.timestamp())}"
+            schedule_id = f"{key}:{cue}:{int(fire_at.timestamp())}"
         if persist:
             self._persist_scheduled_voice(schedule_id, cue, fire_at, event)
         with self.voice_condition:
-            self.voice_pending = [item for item in self.voice_pending if str(item.get("cue") or "") != cue]
+            self.voice_pending = [item for item in self.voice_pending if not (str(item.get("cue") or "") == cue and str(item.get("carrierKey") or "") == key)]
             self.voice_pending.append({
                 "cue": cue,
+                "carrierKey": key,
                 "event": self._voice_schedule_context(event),
                 "due": time.monotonic() + seconds,
                 "persistentId": schedule_id,
@@ -1981,7 +2105,8 @@ class MongrelHudApp:
         return True
 
     def _queue_configured_voice(self, cue: str, event: dict[str, Any]) -> bool:
-        settings = self.voice_settings_snapshot()
+        key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
+        settings = self.voice_settings_snapshot(key)
         if not settings.get("enabled") or not settings.get("carrierPa"):
             return False
         row = (settings.get("cues") or {}).get(cue) or {}
@@ -1990,15 +2115,16 @@ class MongrelHudApp:
         now = time.monotonic()
         cooldown = max(0.0, float(row.get("cooldown") or 0.0))
         with self.voice_condition:
-            previous = float(self.voice_last_scheduled.get(cue) or 0.0)
+            previous = float(self.voice_last_scheduled.get(key+'|'+cue) or 0.0)
             if previous and now - previous < cooldown:
                 return False
             minimum = max(0.0, float(row.get("minDelay") or 0.0))
             maximum = max(minimum, float(row.get("maxDelay") or minimum))
             fraction = secrets.randbelow(1_000_001) / 1_000_000.0 if maximum > minimum else 0.0
-            self.voice_last_scheduled[cue] = now
+            self.voice_last_scheduled[key+'|'+cue] = now
             self.voice_pending.append({
                 "cue": cue,
+                "carrierKey": key,
                 "event": self._voice_schedule_context(event),
                 "due": now + minimum + ((maximum - minimum) * fraction),
             })
@@ -2006,14 +2132,14 @@ class MongrelHudApp:
             self.voice_condition.notify_all()
         return True
 
-    def _cancel_voice_cues(self, *cues: str) -> None:
+    def _cancel_voice_cues(self, *cues: str, carrier_key: str = "") -> None:
         wanted = {str(cue) for cue in cues if cue}
         if not wanted:
             return
         with self.voice_condition:
-            self.voice_pending = [row for row in self.voice_pending if str(row.get("cue") or "") not in wanted]
+            self.voice_pending = [row for row in self.voice_pending if not (str(row.get("cue") or "") in wanted and (not carrier_key or str(row.get("carrierKey") or "") == carrier_key))]
             self.voice_condition.notify_all()
-        self._remove_persisted_voice(cues=wanted)
+        self._remove_persisted_voice(cues=wanted,carrier_key=carrier_key)
 
     def _schedule_departure_countdowns(self, event: dict[str, Any]) -> None:
         departure = self._parse_voice_time(event.get("departureTime"))
@@ -2030,7 +2156,7 @@ class MongrelHudApp:
             self._queue_scheduled_voice(cue, context, fire_at)
 
     def _schedule_cooldown_ready(self, event: dict[str, Any]) -> None:
-        settings = self.voice_settings_snapshot()
+        settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(self._carrier_profile_for_event(event)))
         row = (settings.get("cues") or {}).get("carrier.cooldown_ready") or {}
         if not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled"):
             return
@@ -2042,9 +2168,10 @@ class MongrelHudApp:
 
     def handle_voice_event(self, event: dict[str, Any]) -> None:
         cue = str(event.get("type") or "")
+        carrier_key = self._carrier_voice_profile_key(self._carrier_profile_for_event(event))
         if cue not in CARRIER_VOICE_CUES:
             if cue in {"docking.denied", "docking.cancelled", "docking.timeout"}:
-                self._cancel_voice_cues("docking.requested", "docking.granted")
+                self._cancel_voice_cues("docking.requested", "docking.granted", carrier_key=carrier_key)
             return
         if cue in {"carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready"}:
             return
@@ -2052,29 +2179,31 @@ class MongrelHudApp:
             return
 
         if cue == "docking.granted":
-            self._cancel_voice_cues("docking.requested")
+            self._cancel_voice_cues("docking.requested", carrier_key=carrier_key)
         elif cue == "docking.docked":
-            self._cancel_voice_cues("docking.requested", "docking.granted")
+            self._cancel_voice_cues("docking.requested", "docking.granted", carrier_key=carrier_key)
         elif cue == "docking.undocked":
-            self._cancel_voice_cues("docking.docked")
+            self._cancel_voice_cues("docking.docked", carrier_key=carrier_key)
         elif cue == "carrier.jump_request":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready", carrier_key=carrier_key)
             self._schedule_departure_countdowns(event)
         elif cue == "carrier.jump_cancelled":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
         elif cue == "carrier.jump":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5")
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
             self._schedule_cooldown_ready(event)
 
         self._queue_configured_voice(cue, event)
 
-    def queue_voice_test(self, role: str = VOICE_ROLE_ANNOUNCEMENT, acoustic_profile: str = "") -> dict[str, Any]:
+    def queue_voice_test(self, role: str = VOICE_ROLE_ANNOUNCEMENT, acoustic_profile: str = "", carrier_key: str = "") -> dict[str, Any]:
         if role not in VOICE_ROLE_IDS:
             raise ValueError("voice_role_invalid")
         profile = str(acoustic_profile or "").strip()
         if profile and profile not in ACOUSTIC_PROFILE_IDS:
             raise ValueError("voice_acoustic_profile_invalid")
-        carrier = self.carrier_voice_context()
+        carrier = self._carrier_profile_by_key(carrier_key) if carrier_key else self.carrier_voice_context()
+        carrier = carrier or self.carrier_voice_context()
+        carrier_key = carrier_key or self._carrier_voice_profile_key(carrier)
         name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         label = "traffic control" if role == VOICE_ROLE_ATC else "public address"
         request_id = secrets.token_hex(8)
@@ -2082,6 +2211,7 @@ class MongrelHudApp:
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": "test",
+                "carrierKey": carrier_key,
                 "role": role,
                 "acousticProfile": profile,
                 "text": f"{name} {label} test. Audio link online.",
@@ -2095,10 +2225,12 @@ class MongrelHudApp:
         status["requestId"] = request_id
         return status
 
-    def queue_voice_cue_test(self, cue: str) -> dict[str, Any]:
+    def queue_voice_cue_test(self, cue: str, carrier_key: str = "") -> dict[str, Any]:
         if cue not in CARRIER_VOICE_CUES:
             raise ValueError("voice_cue_invalid")
-        carrier = self.carrier_voice_context()
+        carrier = self._carrier_profile_by_key(carrier_key) if carrier_key else self.carrier_voice_context()
+        carrier = carrier or self.carrier_voice_context()
+        carrier_key = carrier_key or self._carrier_voice_profile_key(carrier)
         name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         event = {
             "relationship": str(carrier.get("relationship") or "visitor"),
@@ -2118,6 +2250,7 @@ class MongrelHudApp:
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": cue,
+                "carrierKey": carrier_key,
                 "role": self._voice_role_for_cue(cue),
                 "event": event,
                 "due": time.monotonic(),
@@ -2130,20 +2263,23 @@ class MongrelHudApp:
         status["requestId"] = request_id
         return status
 
-    def queue_concourse_voice_test(self, slot_index: int) -> dict[str, Any]:
+    def queue_concourse_voice_test(self, slot_index: int, carrier_key: str = "") -> dict[str, Any]:
         if slot_index < 0 or slot_index > 3:
             raise ValueError("concourse_voice_slot_invalid")
-        settings = self.voice_settings_snapshot()
+        settings = self.voice_settings_snapshot(carrier_key)
         slots = settings.get("concourseVoices") if isinstance(settings.get("concourseVoices"), list) else []
         slot = slots[slot_index] if slot_index < len(slots) and isinstance(slots[slot_index], dict) else {}
         identity = _normalized_voice_identity(slot, self._voice_identity_for_role(settings, VOICE_ROLE_ANNOUNCEMENT))
-        carrier = self.carrier_voice_context()
+        carrier = self._carrier_profile_by_key(carrier_key) if carrier_key else self.carrier_voice_context()
+        carrier = carrier or self.carrier_voice_context()
+        carrier_key = carrier_key or self._carrier_voice_profile_key(carrier)
         name = " ".join(str(carrier.get("name") or carrier.get("callsign") or "").split()) or "Fleet Carrier"
         request_id = secrets.token_hex(8)
         self._ensure_voice_worker()
         with self.voice_condition:
             self.voice_pending.append({
                 "cue": "test.concourse",
+                "carrierKey": carrier_key,
                 "role": VOICE_ROLE_ANNOUNCEMENT,
                 "voiceIdentity": identity,
                 "acousticProfile": ACOUSTIC_PA,
@@ -2449,10 +2585,27 @@ class MongrelHudApp:
                 if isinstance(slot, dict) and slot.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
                     slots[index] = {**slot, "voiceProvider": VOICE_PROVIDER_SYSTEM, "voiceId": "", "voiceName": ""}
                     changed = True
+            profiles = self.store.data.get("voiceProfiles")
+            profiles = dict(profiles) if isinstance(profiles, dict) else {}
+            for key, saved in profiles.items():
+                candidate = normalized_voice_settings(saved)
+                changed_profile = False
+                for role, identity in candidate["roles"].items():
+                    if identity.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                        candidate["roles"][role] = {"voiceProvider":"system","voiceId":"","voiceName":""}
+                        changed_profile = True
+                for index, slot in enumerate(candidate["concourseVoices"]):
+                    if slot.get("voiceProvider") == VOICE_PROVIDER_KOKORO:
+                        candidate["concourseVoices"][index] = {**slot,"voiceProvider":"system","voiceId":"","voiceName":""}
+                        changed_profile = True
+                if changed_profile:
+                    profiles[key] = normalized_voice_settings(candidate)
+                    changed = True
             if changed:
                 voice["roles"] = roles
                 voice["concourseVoices"] = slots
                 self.store.data["voice"] = normalized_voice_settings(voice)
+                self.store.data["voiceProfiles"] = profiles
                 self.store.save()
         self._voice_catalog_worker()
         self._set_voice_pack_status(
@@ -3000,7 +3153,9 @@ class MongrelHudApp:
                 if schedule_id:
                     self._remove_persisted_voice(schedule_id=schedule_id)
 
-                settings = self.voice_settings_snapshot()
+                event = item.get("event") if isinstance(item.get("event"), dict) else {}
+                carrier_key = str(item.get("carrierKey") or self._carrier_voice_profile_key(self._carrier_profile_for_event(event)))
+                settings = self.voice_settings_snapshot(carrier_key)
                 cue = str(item.get("cue") or "")
                 force = bool(item.get("force"))
                 request_id = str(item.get("requestId") or "")
@@ -3011,7 +3166,6 @@ class MongrelHudApp:
                         self.voice_condition.notify_all()
                     continue
 
-                event = item.get("event") if isinstance(item.get("event"), dict) else {}
                 text = str(item.get("text") or "") if item.get("text") is not None else self._voice_text_for_event(cue, event)
                 if not text:
                     with self.voice_condition:
@@ -3029,6 +3183,18 @@ class MongrelHudApp:
                     role = VOICE_ROLE_ANNOUNCEMENT
                 direct_identity = item.get("voiceIdentity") if isinstance(item.get("voiceIdentity"), dict) else None
                 identity = _normalized_voice_identity(direct_identity) if direct_identity else self._voice_identity_for_role(settings, role)
+                # Published provider identifiers are advisory, not guaranteed to
+                # be installed on a visitor's PC. Never fail the cue merely
+                # because another commander selected a different voice pack.
+                with self.lock:
+                    available = list(self.voice_catalog)
+                identity_id = str(identity.get("voiceId") or identity.get("voiceName") or "")
+                if identity_id and available and not any(
+                    row.get("provider") == identity.get("voiceProvider") and
+                    (str(row.get("id") or "") == identity_id or str(row.get("name") or "") == identity_id)
+                    for row in available
+                ):
+                    identity = _normalized_voice_identity(None)
                 forced_profile = str(item.get("acousticProfile") or "")
                 acoustic_profile = forced_profile if forced_profile in ACOUSTIC_PROFILE_IDS else self._voice_acoustic_profile()
 
@@ -3995,10 +4161,13 @@ class MongrelHudApp:
             "notes": self.notes_text(),
             "missionSystem": self.mission_system_filter(),
             "voice": self.voice_settings_snapshot(),
+            "voiceProfileOptions": self._voice_profile_options(),
+            "voiceProfiles": {row["key"]:self.voice_settings_snapshot(row["key"]) for row in self._voice_profile_options()},
             "voiceStatus": self.voice_status_snapshot(),
             "voiceCatalog": self.voice_catalog_snapshot(),
             "voicePack": self.voice_pack_status_snapshot(),
-            "carrierVoiceContext": self.carrier_voice_context(),
+            "carrierVoiceContext": {**self.carrier_voice_context(), "key":self._carrier_voice_profile_key(self.carrier_voice_context())},
+            "localVoiceProfileKeys": list((self.store.data.get("voiceProfiles") or {}).keys()),
             "carrierProfiles": self._carrier_profiles_for_voice(),
             "siteFeed": state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else None,
             "siteFeedStatus": state.get("siteFeedStatus") if isinstance(state.get("siteFeedStatus"), dict) else None,
@@ -5780,11 +5949,12 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voiceStatus": app.queue_voice_test(
                         str(body.get("role") or VOICE_ROLE_ANNOUNCEMENT),
                         str(body.get("acousticProfile") or ""),
+                        str(body.get("carrierKey") or ""),
                     )}
                 elif path == "/api/voice-test-cue":
-                    result = {"ok": True, "voiceStatus": app.queue_voice_cue_test(str(body.get("cue") or ""))}
+                    result = {"ok": True, "voiceStatus": app.queue_voice_cue_test(str(body.get("cue") or ""),str(body.get("carrierKey") or ""))}
                 elif path == "/api/voice-test-concourse":
-                    result = {"ok": True, "voiceStatus": app.queue_concourse_voice_test(int(body.get("slot") or 0))}
+                    result = {"ok": True, "voiceStatus": app.queue_concourse_voice_test(int(body.get("slot") or 0),str(body.get("carrierKey") or ""))}
                 elif path == "/api/voice-pack-install":
                     result = {"ok": True, "voicePack": app.start_voice_pack_install(repair=False)}
                 elif path == "/api/voice-pack-repair":
