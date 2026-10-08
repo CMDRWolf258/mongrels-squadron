@@ -94,6 +94,7 @@
           <label><span>Announcement provider</span><select data-publish-announcement-provider><option value="system">Windows Legacy</option><option value="winrt">Windows Modern</option><option value="kokoro">Kokoro (local)</option></select></label>
           <label><span>Announcement voice ID</span><input data-publish-announcement-id maxlength="300" placeholder="Optional installed voice ID"></label>
         </div>
+        <details><summary>Published concourse voices (up to four)</summary><div class="carrier-dialogue-timing-grid" data-published-concourse-grid></div></details>
         <details><summary>Published docking and jump-event timing</summary><p class="muted">Each event has a minimum and maximum delay in seconds and a cooldown. These apply to visitors only when the event is detected, not to the fixed 10/5-minute jump countdown targets.</p><div class="carrier-dialogue-published-cues" data-published-cue-grid></div></details>
         <div class="carrier-dialogue-edit-actions"><button class="btn btn-primary" type="button" data-dialogue-publish-voice>Publish Voice Profile</button></div>
       </div>
