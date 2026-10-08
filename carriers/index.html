@@ -85,6 +85,19 @@
         <label><span>Ambient announcements</span><select data-dialogue-ambient-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
       </div>
       <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-save-settings>Save Carrier Voice Settings</button></div>
+      <div class="carrier-dialogue-voice-publish" data-dialogue-voice-publish>
+        <h3>Published Carrier Voice Profile</h3>
+        <p class="muted">Your carrier's voice preferences and event delays can be used by visiting MongrelHUD commanders. The sound is generated on each visitor's PC; if your chosen voice is missing, their HUD uses an available local fallback. These are separate from locally selected HUD overrides.</p>
+        <div class="carrier-dialogue-timing-grid">
+          <label><span>ATC provider</span><select data-publish-atc-provider><option value="system">Windows Legacy</option><option value="winrt">Windows Modern</option><option value="kokoro">Kokoro (local)</option></select></label>
+          <label><span>ATC voice ID</span><input data-publish-atc-id maxlength="300" placeholder="Optional installed voice ID"></label>
+          <label><span>Announcement provider</span><select data-publish-announcement-provider><option value="system">Windows Legacy</option><option value="winrt">Windows Modern</option><option value="kokoro">Kokoro (local)</option></select></label>
+          <label><span>Announcement voice ID</span><input data-publish-announcement-id maxlength="300" placeholder="Optional installed voice ID"></label>
+        </div>
+        <details><summary>Published docking and jump-event timing</summary><p class="muted">Each event has a minimum and maximum delay in seconds and a cooldown. These apply to visitors only when the event is detected, not to the fixed 10/5-minute jump countdown targets.</p><div class="carrier-dialogue-published-cues" data-published-cue-grid></div></details>
+        <div class="carrier-dialogue-edit-actions"><button class="btn btn-primary" type="button" data-dialogue-publish-voice>Publish Voice Profile</button></div>
+      </div>
+
     </div>
     <div class="project-editor-actions is-standard"><div></div><span class="project-editor-status" data-dialogue-footer-status></span><div class="project-editor-primary-actions"><button class="btn btn-secondary" type="button" data-dialogue-cancel>Close</button></div></div>
   </div></section>
