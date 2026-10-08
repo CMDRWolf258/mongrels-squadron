@@ -275,6 +275,104 @@
       status.textContent='Carrier voice profile published for visiting HUDs.';
     }catch(error){status.textContent=error.message||'Voice profile publish failed.';}
   }
+  const portableVoices={
+    'af_alloy':'Alloy','af_aoede':'Aoede','af_bella':'Bella','af_heart':'Heart',
+    'af_jessica':'Jessica','af_kore':'Kore','af_nicole':'Nicole','af_nova':'Nova',
+    'af_river':'River','af_sarah':'Sarah','af_sky':'Sky','am_adam':'Adam',
+    'am_echo':'Echo','am_eric':'Eric','am_fenrir':'Fenrir','am_liam':'Liam',
+    'am_michael':'Michael','am_onyx':'Onyx','am_puck':'Puck','am_santa':'Santa',
+    'bf_alice':'Alice','bf_emma':'Emma','bf_isabella':'Isabella','bf_lily':'Lily',
+    'bm_daniel':'Daniel','bm_fable':'Fable','bm_george':'George','bm_lewis':'Lewis',
+  };
+  const cueDefaults={
+    'docking.requested':['Docking request',false,7,10,20],
+    'docking.granted':['Docking granted',true,5,7,20],
+    'docking.docked':['Docked / welcome',true,3,5,20],
+    'docking.undocked':['Undocked / departure',true,4,6,20],
+    'carrier.jump_request':['Jump scheduled',true,3,5,30],
+    'carrier.countdown_10':['10-minute departure',true,0,0,30],
+    'carrier.countdown_5':['5-minute departure',true,0,0,30],
+    'carrier.jump_cancelled':['Jump cancelled',true,2,3,30],
+    'carrier.jump':['Jump complete',true,8,11,30],
+    'carrier.cooldown_ready':['Ready for next jump',true,0,0,30],
+  };
+  function portableVoiceOptions(){
+    return '<option value="system|">System default · no voice pack required</option>'+
+      Object.entries(portableVoices).map(([id,name])=>'<option value="kokoro|'+id+'">Kokoro · '+safe(name)+'</option>').join('');
+  }
+  function publishedVoiceSelect(element,value){
+    if(!element)return;
+    const options=portableVoiceOptions();
+    if(element.innerHTML!==options)element.innerHTML=options;
+    const identity=value&&typeof value==='object'?value:{};
+    element.value=identity.voiceProvider==='kokoro'&&portableVoices[identity.voiceId]?'kokoro|'+identity.voiceId:'system|';
+  }
+  function publishedVoiceObject(element){
+    const [provider,id]=String(element?.value||'system|').split('|');
+    return provider==='kokoro'&&portableVoices[id]?{voiceProvider:'kokoro',voiceId:id}:{voiceProvider:'system',voiceId:''};
+  }
+  function hydratePublishedVoice(){
+    const current=currentDialogueProfile().settings?.voiceProfile||{};
+    const roles=current.roles||{};
+    publishedVoiceSelect($('[data-dialogue-published-atc]'),roles.atc);
+    publishedVoiceSelect($('[data-dialogue-published-announcement]'),roles.announcement);
+    const slots=Array.isArray(current.concourseVoices)?current.concourseVoices:[];
+    const concourse=$('[data-dialogue-published-concourse]');
+    if(concourse){
+      concourse.replaceChildren();
+      for(let i=0;i<4;i++){
+        const label=document.createElement('label');
+        label.textContent='Concourse voice '+(i+1);
+        const toggle=document.createElement('input');
+        toggle.type='checkbox';toggle.dataset.publishedVoiceEnabled=String(i);
+        toggle.checked=slots[i]?.enabled===true||i===0&&slots[i]?.enabled!==false;
+        const select=document.createElement('select');
+        select.dataset.publishedVoiceSlot=String(i);
+        publishedVoiceSelect(select,slots[i]);
+        label.append(toggle,select);
+        concourse.append(label);
+      }
+    }
+    const grid=$('[data-dialogue-published-cues]');
+    if(!grid)return;
+    grid.replaceChildren();
+    for(const [cue,defaults] of Object.entries(cueDefaults)){
+      const cfg=current.cues?.[cue]||{};
+      const label=document.createElement('label');
+      label.dataset.publishedCue=cue;
+      const caption=document.createElement('strong');caption.textContent=defaults[0];
+      label.append(caption);
+      const toggle=document.createElement('input');toggle.type='checkbox';toggle.dataset.publishedCueEnabled='';
+      toggle.checked=cfg.enabled===undefined?defaults[1]:cfg.enabled===true;
+      label.append(toggle);
+      const values=[['Min delay (s)','minDelay',defaults[2],60],['Max delay (s)','maxDelay',defaults[3],60],['Cooldown (s)','cooldown',defaults[4],300]];
+      if(cue==='carrier.cooldown_ready')values.push(['Ready after jump (s)','offsetSeconds',180,900]);
+      for(const [name,key,fallback,max] of values){
+        const heading=document.createElement('small');heading.textContent=name;
+        const input=document.createElement('input');input.type='number';input.min='0';input.max=String(max);
+        input.step='0.5';input.dataset.publishedCueValue=key;input.value=String(cfg[key]??fallback);
+        label.append(heading,input);
+      }
+      grid.append(label);
+    }
+  }
+  function readPublishedVoice(){
+    const slots=[...document.querySelectorAll('[data-published-voice-slot]')].map((select,i)=>({
+      ...publishedVoiceObject(select),
+      enabled:Boolean(document.querySelector('[data-published-voice-enabled="'+i+'"]')?.checked),
+    }));
+    const cues={};
+    for(const row of document.querySelectorAll('[data-published-cue]')){
+      const cue=row.dataset.publishedCue;
+      const data={enabled:row.querySelector('[data-published-cue-enabled]')?.checked===true};
+      for(const input of row.querySelectorAll('[data-published-cue-value]'))data[input.dataset.publishedCueValue]=Number(input.value);
+      cues[cue]=data;
+    }
+    return{roles:{
+      atc:publishedVoiceObject($('[data-dialogue-published-atc]')),
+      announcement:publishedVoiceObject($('[data-dialogue-published-announcement]')),
+    },concourseVoices:slots,cues};
+  }
   function hydrateDialogueSettings(){
     const shared=currentDialogueCarrierId()===SHARED_DIALOGUE_ID;
     const settings=currentDialogueProfile().settings||{};
@@ -284,6 +382,7 @@
     $('[data-dialogue-concourse-min]').value=settings.concourseMinSeconds??90;
     $('[data-dialogue-concourse-max]').value=settings.concourseMaxSeconds??210;
     $('[data-dialogue-ambient-enabled]').value=settings.ambientEnabled===false?'false':'true';
+    hydratePublishedVoice();
     const settingsBox=$('[data-dialogue-carrier-settings]');
     if(settingsBox)settingsBox.hidden=shared;
     syncDialoguePermissions();
@@ -295,6 +394,7 @@
       const el=$(selector); if(el)el.disabled=!editable;
     }
     const settingsEditable=editable&&currentDialogueCarrierId()!==SHARED_DIALOGUE_ID;
+    for(const el of document.querySelectorAll('[data-dialogue-published-atc],[data-dialogue-published-announcement],[data-dialogue-published-concourse] select,[data-dialogue-published-concourse] input,[data-dialogue-published-cues] input'))el.disabled=!settingsEditable;
     for(const selector of ['[data-dialogue-shared-enabled]','[data-dialogue-hangar-min]','[data-dialogue-hangar-max]','[data-dialogue-concourse-min]','[data-dialogue-concourse-max]','[data-dialogue-ambient-enabled]','[data-dialogue-save-settings]']){
       const el=$(selector); if(el)el.disabled=!settingsEditable;
     }
@@ -414,6 +514,7 @@
           hangarMaxSeconds:Number($('[data-dialogue-hangar-max]').value),
           concourseMinSeconds:Number($('[data-dialogue-concourse-min]').value),
           concourseMaxSeconds:Number($('[data-dialogue-concourse-max]').value),
+          voiceProfile:readPublishedVoice(),
         }
       });
       hydrateDialogueSettings(); status.textContent='Carrier voice settings saved.';
