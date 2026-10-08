@@ -1,5 +1,7 @@
 import { json } from '../../../lib/auth.js';
 import { buildMissionControlData } from '../../../lib/bgs-operations.js';
+import { readDailyOrderTimingControl } from '../../../lib/daily-order-cycle.js';
+import { readScoutSnapshots } from '../../../lib/scout-jobs.js';
 import { listOrderPublications } from '../../../lib/order-history.js';
 import { readCurrentOrderCycle } from '../../../lib/order-activity.js';
 import { buildOrderProgressForHud } from '../operations/order-reports.js';
@@ -60,13 +62,17 @@ export async function buildHudFeed(request,env,auth){
     displayName:auth.ownerCommander||auth.label||'Mongrel Scout',
     access,
   };
+  // Share immutable inputs within this response only; no cross-request cache
+  // or changes to the HUD refresh frequency and invalidation contract.
+  const timingControl=readDailyOrderTimingControl(env);
+  const scoutSnapshots=readScoutSnapshots(env);
   const [carrierProfiles,dialogueLibrary]=await Promise.all([
     hudCarrierProfiles(request,env,auth),
     readCarrierDialogue(env),
   ]);
   const [mission,currentOrders,routes,systems,bgsAlertState,rewardView,history,ackState,orderReviewState]=await Promise.all([
-    buildMissionControlData(request,env,session),
-    readCurrentOrderCycle(env),
+    buildMissionControlData(request,env,session,{timingControl,scoutState:scoutSnapshots}),
+    readCurrentOrderCycle(env,{timingControl}),
     readTradeRoutes(env),
     loadActiveMongrelSystems(request),
     readBgsFactionAlertState(env),
@@ -87,6 +93,8 @@ export async function buildHudFeed(request,env,auth){
       commander:auth.ownerCommander||auth.label||'Mongrel CMDR',
     },
     now:new Date(),
+    timingControl,
+    scoutSnapshots,
   });
 
   const severityRank={critical:0,high:1,medium:2,low:3};
