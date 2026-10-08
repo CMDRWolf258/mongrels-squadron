@@ -1,0 +1,70 @@
+/* AX Field Manual — static, progressive disclosure, no network or runtime reads */
+.page-ax-guide section[id]{scroll-margin-top:145px}
+.page-ax-guide .ax-flare{background:radial-gradient(circle at 83% 25%,rgba(45,194,186,.13),transparent 30%),linear-gradient(180deg,rgba(255,255,255,.018),transparent)}
+.ax-hero-art{width:100%;height:290px;object-fit:cover;object-position:center;border:1px solid var(--line-accent);border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.ax-kicker{font-size:.68rem;color:var(--accent);letter-spacing:.13em;font-weight:900;text-transform:uppercase;margin-bottom:17px}
+.ax-brief{margin:24px 0;padding:20px 24px;border:1px solid var(--line);background:rgba(34,211,238,.03);border-radius:14px}
+.ax-brief h3{margin:0 0 12px;font-size:1.05rem;text-transform:uppercase;color:#eff8fa}
+.ax-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 25px;padding-left:21px;margin:0;color:#c5d6db;line-height:1.5;font-size:.89rem}
+.ax-lead{margin:20px 0 0;font-size:1.04rem;line-height:1.68;color:#d5e6e8}
+.ax-lead strong{color:var(--accent)}
+.ax-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ax-layout .guide-detail-card{min-width:0}
+.ax-layout .guide-table{min-width:580px}
+.page-ax-guide .guide-detail-card ol{padding-left:23px;color:#b8c7cb;line-height:1.68}
+.page-ax-guide .guide-detail-card li+li{margin-top:8px}
+.page-ax-guide .guide-detail-card h3 small{display:block;margin-top:5px;font-size:.64rem;letter-spacing:.07em;color:var(--accent);text-transform:uppercase}
+.page-ax-guide .guide-card-grid{margin-top:16px}
+.page-ax-guide .guide-card-grid .guide-card{min-width:0}
+.ax-fact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:16px 0}
+.ax-fact-grid article{display:grid;gap:5px;background:rgba(34,211,238,.035);padding:17px;border:1px solid var(--line-accent);border-radius:12px}
+.ax-fact-grid article span{color:var(--accent);font-size:1.28rem;font-weight:900}
+.ax-fact-grid article strong{font-size:.9rem}
+.ax-fact-grid article small{color:var(--muted);line-height:1.5}
+.ax-caption{margin:16px 0 0;color:var(--muted);font-size:.83rem;line-height:1.6}
+.ax-depth{margin-top:18px;border:1px solid rgba(34,211,238,.24);border-radius:13px;background:rgba(6,13,16,.7);overflow:hidden}
+.ax-depth summary{list-style:none;cursor:pointer;padding:18px 46px 18px 19px;position:relative;color:#e5f2f4;font-weight:700;line-height:1.45}
+.ax-depth summary::-webkit-details-marker{display:none}
+.ax-depth summary::after{content:"+";position:absolute;right:17px;top:50%;transform:translateY(-50%);font-size:1.6rem;font-weight:400;color:var(--accent)}
+.ax-depth[open] summary::after{content:"−"}
+.ax-depth summary span{display:inline-block;font-size:.67rem;color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-right:9px}
+.ax-depth summary:hover{background:rgba(34,211,238,.045)}
+.ax-depth summary:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.ax-depth-body{border-top:1px solid var(--line);padding:18px 20px;color:#b5c4c8}
+.ax-depth-body p{margin:0 0 12px;line-height:1.72}
+.ax-depth-body p:last-child{margin-bottom:0}
+.ax-depth-body strong{color:#e8f6f7}
+.ax-depth-body h3{margin:10px 0 7px;color:#e8f6f7;font-size:1rem}
+.ax-phase-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.ax-phase-list>div{min-width:0;border:1px solid var(--line);background:rgba(255,255,255,.02);padding:18px 15px}
+.ax-phase-list span{font-size:.72rem;font-weight:900;color:var(--accent);letter-spacing:.12em}
+.ax-phase-list strong{display:block;margin:9px 0 7px;color:#f0f8f9;line-height:1.35}
+.ax-phase-list p{margin:0;color:var(--muted);line-height:1.5;font-size:.84rem}
+.ax-notice{padding:16px 20px;margin-top:16px;border-left:3px solid var(--accent);background:rgba(34,211,238,.055);color:#bfced1;line-height:1.65}
+.ax-notice strong{color:#e8f7f8}
+.ax-hazard-grid,.ax-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.ax-hazard-grid .guide-detail-card{min-width:0}
+.ax-flight-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:16px}
+.ax-diagram{margin:0;padding:12px;background:#061014;border:1px solid var(--line-accent);border-radius:14px;min-width:0;align-self:start}
+.ax-diagram svg{width:100%;height:auto;display:block}
+.ax-diagram figcaption{font-size:.78rem;line-height:1.6;color:var(--muted);padding:8px 10px 9px}
+.ax-diagram figcaption strong{color:#e6f4f6}
+.ax-flight-principles{display:grid;gap:12px}
+.ax-flight-principles .guide-detail-card{padding:16px 18px}
+.ax-flight-principles .guide-detail-card p{font-size:.88rem}
+.ax-comms{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:18px}
+.ax-comms strong{margin-right:8px;font-size:.75rem;color:#edf7f9}
+.ax-comms span{padding:6px 10px;border:1px solid var(--line-accent);border-radius:7px;color:#b7e8ed;font-size:.78rem;background:rgba(34,211,238,.025)}
+.ax-roadmap{counter-reset:ax-step;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;list-style:none;margin:0;padding:0}
+.ax-roadmap li{counter-increment:ax-step;position:relative;padding:18px 18px 18px 53px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.019)}
+.ax-roadmap li::before{content:counter(ax-step,decimal-leading-zero);position:absolute;left:13px;top:18px;font-weight:900;color:var(--accent);font-size:.75rem}
+.ax-roadmap li strong{display:block;color:#f1f8f9;margin-bottom:6px}
+.ax-roadmap li span{display:block;color:var(--muted);line-height:1.56;font-size:.87rem}
+.ax-sources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ax-sources a{padding:11px 14px;background:rgba(34,211,238,.027);border:1px solid var(--line);border-radius:8px;color:#9ee7f2;font-size:.86rem;text-decoration:none}
+.ax-sources a:hover{border-color:var(--line-accent);background:var(--accent-soft)}
+.page-ax-guide .guide-table th,.page-ax-guide .guide-table td{padding:11px 13px}
+.page-ax-guide .guide-table{min-width:620px}
+@media(max-width:1040px){.ax-phase-list{grid-template-columns:repeat(3,minmax(0,1fr))}.ax-roadmap{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.ax-layout,.ax-hazard-grid,.ax-history-grid,.ax-flight-grid{grid-template-columns:1fr}.ax-checks{grid-template-columns:1fr}.ax-hero-art{height:230px}.ax-phase-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ax-fact-grid{grid-template-columns:1fr 1fr}.ax-roadmap{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.page-ax-guide section[id]{scroll-margin-top:115px}.ax-brief{padding:17px}.ax-phase-list,.ax-roadmap,.ax-fact-grid,.ax-sources{grid-template-columns:1fr}.ax-depth summary{font-size:.92rem}.ax-depth-body{padding:15px}.ax-hero-art{height:190px}.ax-phase-list>div{padding:15px}}
