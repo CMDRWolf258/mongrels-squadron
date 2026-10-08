@@ -31,10 +31,10 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.10"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.0"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.2"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.17.1",
+    "name":"Mongrel HUD Windows v0.17.2",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.17.1" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.17.2" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
