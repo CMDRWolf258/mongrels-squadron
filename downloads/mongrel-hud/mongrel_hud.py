@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.0"
+APP_VERSION = "0.17.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -239,8 +239,8 @@ VOICE_ROLE_ANNOUNCEMENT = "announcement"
 VOICE_ROLE_ATC = "atc"
 VOICE_ROLE_IDS = frozenset((VOICE_ROLE_ANNOUNCEMENT, VOICE_ROLE_ATC))
 VOICE_ROLE_LABELS = {
-    VOICE_ROLE_ANNOUNCEMENT: "Pneuma announcements",
-    VOICE_ROLE_ATC: "Pneuma ATC",
+    VOICE_ROLE_ANNOUNCEMENT: "Carrier announcements",
+    VOICE_ROLE_ATC: "Carrier ATC",
 }
 
 ACOUSTIC_REMOTE = "remote_radio"
@@ -1368,9 +1368,114 @@ class MongrelHudApp:
         self.handle_voice_event(event)
 
 
-    def voice_settings_snapshot(self) -> dict[str, Any]:
+    @staticmethod
+    def _carrier_voice_profile_key(profile: dict[str, Any] | None) -> str:
+        if not isinstance(profile, dict):
+            return "generic"
+        identity = str(profile.get("id") or "").strip()
+        if identity:
+            return "registry:" + identity[:100]
+        market_id = str(profile.get("marketId") or "").strip()
+        if market_id and re.fullmatch(r"\d{4,24}", market_id):
+            return "market:" + market_id
+        callsign = str(profile.get("callsign") or "").strip().upper()
+        if callsign and re.fullmatch(r"[A-Z0-9]{3}-[A-Z0-9]{3}", callsign):
+            return "callsign:" + callsign
+        return "generic"
+
+    def _voice_profile_options(self) -> list[dict[str, Any]]:
+        profiles = self._carrier_profiles_for_voice()
+        owner = self._owner_carrier_for_voice()
+        if owner and not any(str(row.get("marketId") or "") == str(owner.get("carrierId") or "") for row in profiles):
+            profiles.append({
+                "marketId": owner.get("carrierId"), "name": owner.get("name") or "Own carrier",
+                "callsign": owner.get("callsign"), "relationship": "owner", "registered": False,
+            })
+        current = self.carrier_voice_context()
+        if current.get("active") and self._carrier_voice_profile_key(current) not in {self._carrier_voice_profile_key(row) for row in profiles}:
+            profiles.append(current)
+        choices, seen = [], set()
+        for profile in profiles[:100]:
+            key = self._carrier_voice_profile_key(profile)
+            if key in seen or key == "generic":
+                continue
+            seen.add(key)
+            choices.append({
+                "key": key, "name": str(profile.get("name") or profile.get("callsign") or "Carrier"),
+                "callsign": str(profile.get("callsign") or ""),
+                "ownershipType": str(profile.get("ownershipType") or ""),
+            })
+        return choices
+
+    def _carrier_profile_by_key(self, key: str) -> dict[str, Any] | None:
+        profile = self.carrier_voice_context()
+        if key == self._carrier_voice_profile_key(profile):
+            return profile
+        owner = self._owner_carrier_for_voice()
+        for candidate in self._carrier_profiles_for_voice():
+            if key == self._carrier_voice_profile_key(candidate):
+                return candidate
+        if owner and key == self._carrier_voice_profile_key({
+            "marketId": owner.get("carrierId"), "callsign": owner.get("callsign"),
+        }):
+            return {
+                "marketId": owner.get("carrierId"), "name": owner.get("name") or "Own carrier",
+                "callsign": owner.get("callsign"), "relationship": "owner",
+            }
+        return None
+
+    def _voice_key_is_owner(self, key: str) -> bool:
+        owner = self._owner_carrier_for_voice()
+        if not owner:
+            return False
+        owned_id = str(owner.get("carrierId") or "")
+        owned_callsign = self._carrier_callsign(owner.get("callsign"))
+        profile = self._carrier_profile_by_key(key)
+        if not profile:
+            return False
+        return (
+            bool(owned_id) and str(profile.get("marketId") or "") == owned_id
+        ) or (
+            bool(owned_callsign) and self._carrier_callsign(profile.get("callsign")) == owned_callsign
+        )
+
+    def voice_settings_snapshot(self, carrier_key: str = "") -> dict[str, Any]:
+        key = carrier_key or self._carrier_voice_profile_key(self.carrier_voice_context())
+        profile = self._carrier_profile_by_key(key)
         with self.store.lock:
-            return json.loads(json.dumps(normalized_voice_settings(self.store.data.get("voice"))))
+            profiles = self.store.data.get("voiceProfiles")
+            local = profiles.get(key) if isinstance(profiles, dict) else None
+            if isinstance(local, dict):
+                settings = normalized_voice_settings(local)
+            elif self._voice_key_is_owner(key):
+                # The existing 0.17.0 voice state remains the Pneuma profile.
+                # It must never leak into Canine or another member's carrier.
+                settings = normalized_voice_settings(self.store.data.get("voice"))
+            else:
+                settings = default_voice_settings()
+                state = self.scout_state()
+                feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+                libraries = feed.get("carrierDialogue") if isinstance(feed.get("carrierDialogue"), dict) else {}
+                published = libraries.get(profile.get("id")) if isinstance(profile, dict) else None
+                prefs = published.get("voicePreferences") if isinstance(published, dict) else {}
+                if isinstance(prefs, dict):
+                    roles = prefs.get("roles") if isinstance(prefs.get("roles"), dict) else {}
+                    for role in VOICE_ROLE_IDS:
+                        if isinstance(roles.get(role), dict):
+                            settings["roles"][role] = _normalized_voice_identity(roles[role])
+                    slots = prefs.get("concourseVoices") if isinstance(prefs.get("concourseVoices"), list) else []
+                    for index, slot in enumerate(slots[:4]):
+                        if isinstance(slot, dict):
+                            settings["concourseVoices"][index] = {
+                                **_normalized_voice_identity(slot), "enabled": slot.get("enabled") is not False,
+                            }
+                    cues = prefs.get("cues") if isinstance(prefs.get("cues"), dict) else {}
+                    for cue, row in cues.items():
+                        if cue in CARRIER_VOICE_CUES and isinstance(row, dict):
+                            settings["cues"][cue] = {**settings["cues"][cue],
+                                **{field:row[field] for field in ("enabled","minDelay","maxDelay","cooldown","offsetSeconds") if field in row}}
+                settings = normalized_voice_settings(settings)
+        return json.loads(json.dumps(settings))
 
     def voice_catalog_snapshot(self) -> list[dict[str, str]]:
         with self.lock:
@@ -1408,8 +1513,11 @@ class MongrelHudApp:
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
         if not isinstance(value, dict):
             raise ValueError("voice_settings_required")
+        key = str(value.get("carrierKey") or self._carrier_voice_profile_key(self.carrier_voice_context()))
+        if key != "generic" and self._carrier_profile_by_key(key) is None:
+            raise ValueError("unknown_voice_carrier")
+        current = self.voice_settings_snapshot(key)
         with self.store.lock:
-            current = normalized_voice_settings(self.store.data.get("voice"))
             for key in ("enabled", "carrierPa", "volume", "rate", "localCommsCharacter"):
                 if key in value:
                     current[key] = value[key]
@@ -1467,13 +1575,19 @@ class MongrelHudApp:
                     merged_cues[cue] = row
                 current["cues"] = merged_cues
             normalized = normalized_voice_settings(current)
-            self.store.data["voice"] = normalized
+            profiles = self.store.data.get("voiceProfiles")
+            profiles = dict(profiles) if isinstance(profiles, dict) else {}
+            profiles[key] = normalized
+            self.store.data["voiceProfiles"] = profiles
+            if self._voice_key_is_owner(key):
+                # Preserve original owner's settings for older HUD releases.
+                self.store.data["voice"] = normalized
             self.store.save()
         if not normalized["enabled"] or not normalized["carrierPa"]:
             with self.voice_condition:
                 self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
-        return self.voice_settings_snapshot()
+        return self.voice_settings_snapshot(key)
 
     @staticmethod
     def _voice_role_for_cue(cue: str) -> str:
