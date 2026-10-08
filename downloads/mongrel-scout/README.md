@@ -12,9 +12,11 @@ Mongrel Scout is an EDMC plugin for the squad. It quietly sends the specific Eli
 - BGS faction-board updates
 - station market prices, supply and demand
 - station/facility placement information for the Orrery
-- selected mission, bounty and colonization results used by Mission Control
+- selected mission, bounty, eligible purchased-cargo trade-profit and colonization results used by Mission Control
 
 It is event-driven. There is nothing you need to "run" inside the plugin after setup.
+
+**Live trade-profit progress (v1.12.3):** Scout tracks purchase-origin quantities **locally** and batches eligible profitable sales at ordinary station markets into Mission Control within the existing 8-second activity upload window. No cargo inventory or purchase history is uploaded. Mined cargo, carrier-bought cargo, black-market/stolen sales, and sales with incomplete/unknown purchase history will **not** be credited live; use Frontier **Sync Activity** to reconcile missed or uncertain transactions. Start Scout before purchasing the cargo so the journal origin can be verified.
 
 ## Install
 
@@ -69,7 +71,7 @@ Mongrel HUD talks to Scout locally, so Scout should be installed, enabled and ru
 
 Scout does **not** upload your full journal, Commander name, cargo inventory, credit balance, ship build, materials, or general route history.
 
-It only sends the squad data it is designed to report, such as BGS snapshots, public station-market data, facility-placement facts, and selected mission/bounty/colonization results used by Mongrel tools.
+It only sends the squad data it is designed to report, such as BGS snapshots, public station-market data, facility-placement facts, and selected mission/bounty/colonization/**eligible trade-sale** results used by Mongrel tools. Local purchase-origin tracking stays on the PC and is never uploaded.
 
 ## Need help?
 
