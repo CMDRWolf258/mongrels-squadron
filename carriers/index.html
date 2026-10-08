@@ -84,6 +84,14 @@
         <label><span>Concourse maximum</span><input type="number" min="45" max="2400" step="15" data-dialogue-concourse-max><small>seconds</small></label>
         <label><span>Ambient announcements</span><select data-dialogue-ambient-enabled><option value="true">Enabled</option><option value="false">Disabled</option></select></label>
       </div>
+      <div class="carrier-dialogue-library-head"><div><h3>Published Carrier Voice Profile</h3><p>Owner voice preferences follow this carrier to visiting commanders. Kokoro voices are used where installed; otherwise visitors hear their system default. Your iPad's local carrier overrides stay on your own PC.</p></div></div>
+      <div class="carrier-dialogue-timing-grid">
+        <label><span>Published ATC voice</span><select data-dialogue-published-atc></select></label>
+        <label><span>Published announcement voice</span><select data-dialogue-published-announcement></select></label>
+      </div>
+      <div class="carrier-dialogue-timing-grid" data-dialogue-published-concourse></div>
+      <div class="carrier-dialogue-library-head"><div><h3>Published Event Timing</h3><p>Per-carrier delays, cooldowns and enabled cues. These apply to visiting HUDs and to this carrier unless the commander's own local override is selected.</p></div></div>
+      <div class="carrier-dialogue-timing-grid" data-dialogue-published-cues></div>
       <div class="carrier-dialogue-edit-actions"><button class="btn btn-secondary" type="button" data-dialogue-save-settings>Save Carrier Voice Settings</button></div>
       <div class="carrier-dialogue-voice-publish" data-dialogue-voice-publish>
         <h3>Published Carrier Voice Profile</h3>
