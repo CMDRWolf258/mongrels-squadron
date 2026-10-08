@@ -32,14 +32,17 @@ const records=new Map([
   ['wolf-bgs-control-v1',{defaults:{defaultTick:'19:00',transitionMinutes:90,lateGraceHours:3,rolloverPolicy:'safety'},systemSettings:Object.fromEntries(systems.map((s,i)=>[s.name,i%11===0?{customTick:'18:15'}:{}]))}],
   ['trade-board-v1',[{id:'fixture-trade',title:'Fixture Trade',status:'active',estimatedLoopProfit:1000000}]],
 ]);
+const readCounts=new Map();
 const store={
-  async get(key){return structuredClone(records.get(key)??null);},
+  async get(key){readCounts.set(String(key),(readCounts.get(String(key))||0)+1);return structuredClone(records.get(key)??null);},
   async put(key,value){records.set(key,JSON.parse(value));},
   async list(){return{keys:[],list_complete:true};},
 };
 const env={DAILY_ORDERS:store,PROJECTS:store,TRADES:store,ADMIN_USER_ID:'fixture-admin'};
 globalThis.fetch=async()=>Response.json({faction:'Regiment of Imperial Mongrels',systems});
 const feed=await buildHudFeed(new Request('https://example.invalid/api/hud/feed'),env,{ownerId:'fixture-admin',ownerCommander:'Fixture CMDR'});
+assert.equal(readCounts.get('wolf-bgs-control-v1'),2,'Timing control must be shared across all three HUD feed builders; a separate raw alert-state read remains necessary');
+assert.equal(readCounts.get('wolf-bgs-scout-snapshots-v1'),1,'Mission Control and Scout Board must reuse a single snapshot without delaying refresh');
 assert.equal(feed.mission.orderCount,10);
 assert.equal(feed.trade.activeCount,1);
 assert.equal(feed.scout.jobs.length,245);
