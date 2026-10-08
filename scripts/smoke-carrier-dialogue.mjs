@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { effectiveDialogueProfile, normalizeLine, normalizeProfile, normalizeLibrary, publicDialogueProfile, rarityWeight, sharedStarterProfile, SHARED_DIALOGUE_PROFILE_ID } from '../lib/carrier-dialogue.js';
+import { effectiveDialogueProfile, normalizeLine, normalizeProfile, normalizeVoicePreferences, normalizeLibrary, publicDialogueProfile, rarityWeight, sharedStarterProfile, SHARED_DIALOGUE_PROFILE_ID } from '../lib/carrier-dialogue.js';
 import { starterProfile, upgradeStarterProfile } from '../functions/api/carriers/dialogue.js';
 
 assert.equal(rarityWeight('common'),6);
@@ -17,6 +17,27 @@ assert.deepEqual(line,{
 });
 assert.equal(normalizeLine({category:'invalid',audience:'all',rarity:'common',text:'Nope'}),null);
 assert.equal(normalizeLine({category:'ambient.hangar',audience:'invalid',rarity:'common',text:'Nope'}),null);
+
+// Owner-published voices and timings remain carrier-specific, sanitized and
+// delivered in the existing read-only HUD feed without new polling.
+const published=normalizeVoicePreferences({roles:{
+  atc:{voiceProvider:'kokoro',voiceId:'af_heart'},
+  announcement:{voiceProvider:'winrt',voiceId:'Microsoft Ava'},
+  invalid:{voiceProvider:'kokoro',voiceId:'ignored'},
+},concourseVoices:[{voiceProvider:'kokoro',voiceId:'af_bella',enabled:true}],
+ cues:{'docking.granted':{enabled:true,minDelay:7,maxDelay:9,cooldown:35},
+  'carrier.jump':{minDelay:120,maxDelay:0,cooldown:999},
+  'unauthorized.cue':{enabled:true}}});
+assert.equal(published.roles.atc.voiceId,'af_heart');
+assert.equal(published.roles.invalid,undefined);
+assert.deepEqual(published.cues['docking.granted'],{enabled:true,minDelay:7,maxDelay:9,cooldown:35});
+assert.equal(published.cues['carrier.jump'].minDelay,60);
+assert.equal(published.cues['carrier.jump'].maxDelay,60);
+assert.equal(published.cues['carrier.jump'].cooldown,300);
+assert.equal(published.cues['unauthorized.cue'],undefined);
+const pubCarrier=normalizeProfile({carrierId:'canine',voicePreferences:published},'canine');
+assert.deepEqual(publicDialogueProfile(pubCarrier).voicePreferences,published);
+assert.deepEqual(effectiveDialogueProfile(normalizeLibrary({profiles:{canine:pubCarrier}}),pubCarrier).voicePreferences,published);
 
 const profile=normalizeProfile({
   carrierId:'carrier-1',
@@ -113,10 +134,12 @@ const dialogueApi=readFileSync('functions/api/carriers/dialogue.js','utf8');
 const profileApi=readFileSync('functions/api/profiles/index.js','utf8');
 const profilesJs=readFileSync('js/profiles.js','utf8');
 const manifest=readFileSync('functions/api/hud/manifest.js','utf8');
+assert.ok(manager.includes('data-dialogue-publish-voice')&&manager.includes('data-publish-atc-provider'),'Owner must be able to publish per-carrier voice preferences');
 for(const token of ['Dialogue Manager','data-dialogue-category','data-dialogue-shared-enabled','Squadron Shared Pool','ambient.hangar','ambient.concourse','bulletin.concourse','advertisement.concourse','Common · 6×','Rare · 1×','Official Squadron Asset','data-squad-carrier-grid','Member Carrier Directory'])assert.ok(manager.includes(token));
 for(const token of ["SQUAD_CARRIER_CALLSIGN = 'R1MM'","SQUAD_CARRIER_NAME = 'Canine Catalyst'","ownershipType:'squad'","squad_carrier_protected","validPersonalCallsign","(carrier.ownershipType||'personal')!=='squad'"])assert.ok(registryApi.includes(token));
 
 const managerJs=readFileSync('js/carriers.js','utf8');
+assert.ok(dialogueApi.includes('publish_voice')&&managerJs.includes('publishCarrierVoice'),'Only carrier owners/admins may publish speaker defaults');
 for(const token of ['/api/carriers/dialogue','carrier-dialogue','SHARED_DIALOGUE_ID','dialogueAvailable','dialogueEditable','sharedEnabled','upsert_line','delete_line','saveDialogueSettings','renderSquadCarrier','OFFICIAL SQUAD CARRIER',"c.ownershipType!=='squad'"])assert.ok(managerJs.includes(token));
 
 const feed=readFileSync('functions/api/hud/feed.js','utf8');
