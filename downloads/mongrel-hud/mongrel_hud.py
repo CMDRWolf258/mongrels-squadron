@@ -1518,10 +1518,10 @@ class MongrelHudApp:
     def set_voice_settings(self, value: Any) -> dict[str, Any]:
         if not isinstance(value, dict):
             raise ValueError("voice_settings_required")
-        key = str(value.get("carrierKey") or self._carrier_voice_profile_key(self.carrier_voice_context()))
-        if key != "generic" and self._carrier_profile_by_key(key) is None:
+        carrier_key = str(value.get("carrierKey") or self._carrier_voice_profile_key(self.carrier_voice_context()))
+        if carrier_key != "generic" and self._carrier_profile_by_key(carrier_key) is None:
             raise ValueError("unknown_voice_carrier")
-        current = self.voice_settings_snapshot(key)
+        current = self.voice_settings_snapshot(carrier_key)
         with self.store.lock:
             for key in ("enabled", "carrierPa", "volume", "rate", "localCommsCharacter"):
                 if key in value:
@@ -1582,9 +1582,9 @@ class MongrelHudApp:
             normalized = normalized_voice_settings(current)
             profiles = self.store.data.get("voiceProfiles")
             profiles = dict(profiles) if isinstance(profiles, dict) else {}
-            profiles[key] = normalized
+            profiles[carrier_key] = normalized
             self.store.data["voiceProfiles"] = profiles
-            if self._voice_key_is_owner(key):
+            if self._voice_key_is_owner(carrier_key):
                 # Preserve original owner's settings for older HUD releases.
                 self.store.data["voice"] = normalized
             self.store.save()
@@ -1592,7 +1592,7 @@ class MongrelHudApp:
             with self.voice_condition:
                 self.voice_pending = [row for row in self.voice_pending if bool(row.get("persistentId"))]
                 self.voice_condition.notify_all()
-        return self.voice_settings_snapshot(key)
+        return self.voice_settings_snapshot(carrier_key)
 
     @staticmethod
     def _voice_role_for_cue(cue: str) -> str:
