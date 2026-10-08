@@ -13,6 +13,10 @@ const CARRIER_REGISTRY_KEY='registry-v1';
 const CARRIER_DIALOGUE_KEY='carrier-dialogue-v1';
 const SHARED_CACHE_SECONDS=10;
 const MANIFEST_VERSION=1;
+// Request-local cache misses can arrive together from several active HUDs.
+// Keep only an in-flight rebuild for each origin; no retained content or
+// extended TTL, so the existing 30-second freshness contract is unchanged.
+const inFlightManifests=new Map();
 
 export async function onRequestGet(context){
   const {request,env}=context;
@@ -99,7 +103,7 @@ export async function buildHudChangeManifest(request,env,{now=new Date()}={}){
   };
 }
 
-async function sharedManifest(request,env,context){
+export async function sharedManifest(request,env,context){
   const cache=globalThis.caches?.default;
   if(!cache)return buildHudChangeManifest(request,env);
   const cacheUrl=new URL('/__mongrels-cache/hud-change-manifest-v1',request.url);
@@ -114,22 +118,35 @@ async function sharedManifest(request,env,context){
     console.error('HUD manifest cache read failed',error);
   }
 
-  const body=await buildHudChangeManifest(request,env);
-  const cached=new Response(JSON.stringify(body),{
-    status:200,
-    headers:{
-      'Content-Type':'application/json; charset=utf-8',
-      'Cache-Control':`public, max-age=${SHARED_CACHE_SECONDS}`,
-    },
-  });
-  try{
-    const write=cache.put(cacheKey,cached);
-    if(typeof context?.waitUntil==='function')context.waitUntil(write);
-    else await write;
-  }catch(error){
-    console.error('HUD manifest cache write failed',error);
+  // On simultaneous misses, return the same source-of-truth snapshot instead
+  // of issuing 10 identical KV reads per HUD. Authentication remains
+  // per-request and is completed BEFORE entering this shared-data path.
+  const sharedKey=cacheKey.url;
+  const existing=inFlightManifests.get(sharedKey);
+  if(existing)return existing;
+  const build=(async()=>{
+    const body=await buildHudChangeManifest(request,env);
+    const cached=new Response(JSON.stringify(body),{
+      status:200,
+      headers:{
+        'Content-Type':'application/json; charset=utf-8',
+        'Cache-Control':`public, max-age=${SHARED_CACHE_SECONDS}`,
+      },
+    });
+    try{
+      const write=cache.put(cacheKey,cached);
+      if(typeof context?.waitUntil==='function')context.waitUntil(write);
+      else await write;
+    }catch(error){
+      console.error('HUD manifest cache write failed',error);
+    }
+    return body;
+  })();
+  inFlightManifests.set(sharedKey,build);
+  try{return await build;}
+  finally{
+    if(inFlightManifests.get(sharedKey)===build)inFlightManifests.delete(sharedKey);
   }
-  return body;
 }
 
 async function readLiveBgsStamp(request){

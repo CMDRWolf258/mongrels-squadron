@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildHudChangeManifest } from '../functions/api/hud/manifest.js';
+import { buildHudChangeManifest, sharedManifest } from '../functions/api/hud/manifest.js';
 import { HUD_SIGNAL_MISSION_PROGRESS, signalKey, touchHudSignal } from '../lib/hud-change-signals.js';
 
 function makeStore(entries={}){
@@ -102,6 +102,48 @@ carriers.records.set('carrier-dialogue-v1',{version:1,updatedAt:'2026-10-06T00:1
 const dialogueChanged=await buildHudChangeManifest(request,env,{now:new Date('2026-10-06T00:16:01Z')});
 assert.notEqual(dialogueChanged.channels.dialogue,liveChanged.channels.dialogue);
 assert.equal(dialogueChanged.channels.carriers,liveChanged.channels.carriers);
+
+// Multiple HUDs can arrive together just after the shared 10s cache
+// expires. A single isolate should build only one common manifest, while
+// authentication (performed by onRequestGet) remains per-request.
+const previousCaches=globalThis.caches;
+const cacheRecords=new Map();
+let sharedWrites=0;
+globalThis.caches={default:{
+  async match(req){
+    const hit=cacheRecords.get(req.url);
+    return hit?hit.clone():null;
+  },
+  async put(req,response){
+    sharedWrites++;
+    cacheRecords.set(req.url,response.clone());
+  },
+}};
+const context={waitUntil(promise){void promise;}};
+const readsBefore={
+  daily:daily.counts.get,
+  trades:trades.counts.get,
+  carriers:carriers.counts.get,
+};
+const concurrent=await Promise.all(
+  Array.from({length:6},()=>sharedManifest(request,env,context))
+);
+assert.equal(daily.counts.get-readsBefore.daily,7,'Concurrent manifest requests must share the seven DAILY_ORDERS reads');
+assert.equal(trades.counts.get-readsBefore.trades,1,'Concurrent manifest requests must share the TRADES read');
+assert.equal(carriers.counts.get-readsBefore.carriers,2,'Concurrent manifest requests must share the two CARRIERS reads');
+assert.equal(sharedWrites,1,'Only one common manifest should be cached on a concurrent miss');
+for(const row of concurrent)assert.deepEqual(row.channels,concurrent[0].channels);
+const cachedReads=daily.counts.get;
+const afterHit=await sharedManifest(request,env,context);
+assert.deepEqual(afterHit.channels,concurrent[0].channels);
+assert.equal(daily.counts.get,cachedReads,'Cache hit must use zero new daily KV reads');
+// A different origin must not share its in-flight/cache record; previews
+// can have different static BGS snapshots.
+const preview=await sharedManifest(new Request('https://preview.invalid/api/hud/manifest'),env,context);
+assert.equal(preview.ok,true);
+assert.equal(sharedWrites,2);
+assert.equal(daily.counts.get,cachedReads+7);
+globalThis.caches=previousCaches;
 
 globalThis.fetch=realFetch;
 console.log('✓ HUD manifest isolates section changes, tracks contribution/tick progress, and keeps shared reads bounded');
