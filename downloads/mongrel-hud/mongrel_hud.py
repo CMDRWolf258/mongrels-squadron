@@ -3783,13 +3783,9 @@ class MongrelHudApp:
         return payload
 
     def _refresh_mining_data_once(self) -> bool:
-        state = self.scout_state()
-        scope = local_mining_scope(state) if not self._in_ten16(state) else None
-        remote_id = (scope["systemAddress"] if (
-            MULTI_MINING_REMOTE_READS_ENABLED and scope is not None
-        ) else "")
-        deposit_url = MINING_DATA_URL + ("?systemAddress=" + remote_id if remote_id else "")
-        center_url = MINING_CENTERS_URL + ("?systemAddress=" + remote_id if remote_id else "")
+        # The periodic 10-16 feed must never be replaced with another
+        # system's data. Other systems are fetched on demand into a separate
+        # ID64-keyed browser cache, leaving legacy compass data untouched.
         deposit_error = ""
         center_error = ""
         deposit_ok = False
@@ -3798,7 +3794,7 @@ class MongrelHudApp:
         center_diagnostics = None
 
         try:
-            payload = self._load_mining_bridge_payload(deposit_url, "invalid_mining_payload")
+            payload = self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")
             rows: list[dict[str, Any]] = []
             for raw in payload:
                 if not isinstance(raw, dict):
@@ -3832,12 +3828,11 @@ class MongrelHudApp:
             deposit_error = deposit_diagnostics["detail"][:160]
 
         try:
-            center_payload = self._load_mining_bridge_payload(center_url, "invalid_mining_centers_payload")
+            center_payload = self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")
             centers: list[dict[str, Any]] = []
             for raw in center_payload:
                 try:
-                    center = (canonical_multisystem_center(raw, remote_id)
-                              if remote_id else canonical_mining_center(raw))
+                    center = canonical_mining_center(raw)
                 except ValueError as exc:
                     raise HudRequestError(scout_diagnostics(None, MINING_CENTERS_URL, 200, "invalid_mining_center_response")) from exc
                 centers.append({
@@ -4078,11 +4073,14 @@ class MongrelHudApp:
                 local_rows = [dict(row) for row in self.store.data.get("localMiningDeposits", [])
                               if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
             with self.mining_lock:
-                remote_rows = [dict(row) for row in self.mining_sites
-                               if str(row.get("systemAddress") or "") == scope["systemAddress"]
-                               and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
-                               and isinstance(row.get("latitude"), (int, float))
-                               and isinstance(row.get("longitude"), (int, float))]
+                cache = getattr(self, "mining_browser_remote_cache", {}).get(scope["systemAddress"], {})
+                remote_rows = [
+                    {**row, "storage": "shared"} for row in cache.get("deposits", [])
+                    if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                    and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
+                    and isinstance(row.get("latitude"), (int, float))
+                    and isinstance(row.get("longitude"), (int, float))
+                ] if cache.get("expires", 0) > time.monotonic() else []
             # Local entries remain available when remote storage is offline.
             return sorted(remote_rows + local_rows, key=lambda row: (
                 int(row.get("signal") or 0), int(row.get("id") or 0)))
@@ -4121,9 +4119,12 @@ class MongrelHudApp:
                 local_rows = [dict(row) for row in self.store.data.get("localMiningCenters", [])
                               if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
             with self.mining_lock:
-                remote_rows = [dict(row) for row in self.mining_centers
-                               if str(row.get("systemAddress") or "") == scope["systemAddress"]
-                               and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()]
+                cache = getattr(self, "mining_browser_remote_cache", {}).get(scope["systemAddress"], {})
+                remote_rows = [
+                    {**row, "storage": "shared"} for row in cache.get("centers", [])
+                    if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                    and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
+                ] if cache.get("expires", 0) > time.monotonic() else []
             # Prefer remotely approved center coordinates for matching signals.
             by_signal = {int(row["signal"]):row for row in local_rows}
             by_signal.update({int(row["signal"]):row for row in remote_rows})
