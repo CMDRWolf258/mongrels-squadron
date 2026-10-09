@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../downloads/mongrel-hud/controller.html',import.meta.url),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||'';
-for(const id of ['browseSystemInput','browseSystemSuggestions','browseCommodity','browseBody','browseRigs','browseResults','browseStatus','browseRefresh']){
+for(const id of ['browseSystemInput','browseSystemSuggestions','browseCommodity','browseBody','browseRigs','browseResults','browseStatus','browseRefresh','browseNavNotice']){
   assert.match(html,new RegExp('id="'+id+'"'));
 }
 assert.match(script,/miningBrowser\.selected/);
@@ -15,7 +15,7 @@ const pick=(start,end)=>script.slice(script.indexOf(start),script.indexOf(end));
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 const elements=new Map();
 function el(id){
-  if(!elements.has(id))elements.set(id,{value:'',innerHTML:'',textContent:''});
+  if(!elements.has(id))elements.set(id,{value:'',innerHTML:'',textContent:'',querySelectorAll(){return []}});
   return elements.get(id);
 }
 const context={
@@ -59,4 +59,17 @@ test('Combined commodity, body, minimum rig count are applied locally without an
   assert.doesNotMatch(body.html,/Signal #3/);
   const none=run('Gold','Icy Test A 2 a',0);
   assert.match(none.status,/0 matching deposits/);
+});
+
+test('result cards reveal deliberate Navigate controls for deposits and center-only signals',()=>{
+  const all=run();
+  assert.match(all.html,/data-browse-navigate="deposit"/);
+  assert.match(all.html,/data-browse-navigate="center"/);
+  assert.match(all.html,/NAVIGATE/);
+  assert.match(all.html,/<details/);
+  assert.match(all.html,/<summary>/);
+  assert.doesNotMatch(all.html,/<img src=x/,'Source notes must remain HTML-escaped');
+  assert.match(script,/\/api\/mining-browser\/navigate/);
+  assert.doesNotMatch(pick('async function navigateMiningSearchResult','function populateMiningFilters'),/\/api\/site-select|\/api\/location-select/,
+    'Browser Navigate must use the verified ID64+row-ID endpoint, not raw legacy selection');
 });
