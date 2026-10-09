@@ -17,6 +17,36 @@ You need:
 
 The HUD runs on the Elite PC because the overlay has to appear over the game and it talks to Scout through a local connection.
 
+## Surface mining in other systems (development preview)
+
+The multi-system mining update is currently in **draft PR #182**, not the
+downloadable HUD release. When it is tested and included in a future HUD
+build, commanders will be able to save **mining location centers and individual
+deposit coordinates in other systems** using their existing iPad controls.
+
+- In **10-16**, the original curated central mining archive and its deposit
+  review process continue to work exactly as before.
+- **Outside 10-16**, deposits are stored **on your own Windows PC only** in
+  `%LOCALAPPDATA%\MongrelHUD\state.json`. They survive normal HUD restarts
+  and app updates as long as the local state file is retained.
+- The HUD requires the Frontier **system ID64**, the exact **full body name**,
+  and measured surface latitude/longitude before saving. It never assigns
+  a deposit to a guessed system or to a generic short body label.
+- Each system/body keeps separate signal numbers, locations, selected deposit
+  and compass target. The same Signal #1 on two icy moons will not mix.
+- A report close to a previous deposit of the same commodity on the same
+  signal is **flagged for local duplicate review**, not uploaded to the
+  shared queue. Local reports display **NOT SQUAD SYNCED**.
+- You should back up your local `state.json` if you need these coordinates
+  before shared multi-system storage is available. Do not delete the file
+  during app cleanup or reinstallation.
+
+**This is not yet squad-wide mining storage.** The existing
+`ten16-archive.pages.dev` backend still needs a separately reviewed
+multi-system schema/API update, data migration and secure ID64/body-keyed
+read-write tests. We intentionally do not send other-system records to that
+legacy endpoint until it can safely store them.
+
 ## Install and start
 
 1. Download **MongrelHUD-Windows.zip** from the Mongrels site.
