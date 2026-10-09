@@ -141,6 +141,7 @@ _endpoint_var: Optional[tk.StringVar] = None
 _scout_link_var: Optional[tk.IntVar] = None
 _scout_link_send_lock = threading.Lock()
 _scout_link_last_sent = 0.0
+_scout_link_last_attempt = 0.0
 _scout_link_last_signature = ""
 _send_lock = threading.Lock()
 _status_lock = threading.Lock()
@@ -1116,7 +1117,7 @@ def _scout_link_payload() -> Optional[dict[str, Any]]:
 
 
 def _schedule_optional_scout_link_upload() -> None:
-    global _scout_link_last_sent, _scout_link_last_signature
+    global _scout_link_last_sent, _scout_link_last_attempt, _scout_link_last_signature
     if not config.get_bool(KEY_SCOUT_LINK_ENABLED):
         return
     token = (config.get_str(KEY_TOKEN) or "").strip()
@@ -1134,6 +1135,10 @@ def _schedule_optional_scout_link_upload() -> None:
     now = time.monotonic()
     if not _scout_link_send_lock.acquire(blocking=False):
         return
+    if now - _scout_link_last_attempt < 60.0:
+        _scout_link_send_lock.release()
+        return
+    _scout_link_last_attempt = now
     if signature == _scout_link_last_signature and now - _scout_link_last_sent < SCOUT_LINK_MIN_INTERVAL_SECONDS:
         _scout_link_send_lock.release()
         return
@@ -1143,7 +1148,9 @@ def _schedule_optional_scout_link_upload() -> None:
         try:
             if not config.get_bool(KEY_SCOUT_LINK_ENABLED):
                 return
-            response = _session.post(
+            # Independent HTTP session: do not interfere with the normal HUD feed.
+            link_session = timeout_session.new_session(timeout=6)
+            response = link_session.post(
                 SCOUT_LINK_INGEST_ENDPOINT,
                 json=payload,
                 headers={**_site_feed_headers(token), "Content-Type": "application/json"},
