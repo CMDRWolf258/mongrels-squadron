@@ -714,6 +714,15 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
         if parsed.path in {"/v1/mining/data", "/v1/mining/centers"}:
             endpoint = HUD_MINING_DATA_ENDPOINT if parsed.path.endswith("/data") else HUD_MINING_CENTERS_ENDPOINT
+            requested = parse_qs(parsed.query).get("systemAddress", [])
+            if requested:
+                address = str(requested[0] or "").strip()
+                # Never forward arbitrary query strings or allow external URLs.
+                # Current 10-16 clients retain their unchanged URLs.
+                if not re.fullmatch(r"[0-9]{1,20}", address):
+                    self._write_json({"ok": False, "error": "invalid_system_address"}, status=400)
+                    return
+                endpoint += "?" + urlencode({"systemAddress": address})
             result = _fetch_hud_mining_resource(endpoint)
             self._write_json(result, status=_hud_proxy_status(result))
             return
