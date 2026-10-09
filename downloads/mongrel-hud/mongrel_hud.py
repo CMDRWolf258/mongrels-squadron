@@ -66,6 +66,9 @@ MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
+# Stays OFF until the archive's new D1 bindings, backup and PR deploy are
+# verified. Existing off-system local records work with no network requests.
+MULTI_MINING_REMOTE_READS_ENABLED = False
 SURFACE_MINING_COMMODITIES = (
     "Alexandrite",
     "Deuterium",
@@ -733,6 +736,32 @@ def _validated_mining_center(value: Any, *, body: str | None = None, signal: int
 
 def canonical_mining_center(value: Any, *, body: str | None = None, signal: int | None = None) -> dict[str, Any]:
     return _validated_mining_center(value, body=body, signal=signal)
+
+
+def canonical_multisystem_center(value: Any, expected_address: str) -> dict[str, Any]:
+    """Validate off-system center without relaxing the legacy 10-16 validator."""
+    if not isinstance(value, dict):
+        raise ValueError("invalid_mining_center_response")
+    addr = str(value.get("systemAddress") or "").strip()
+    name = str(value.get("systemName") or "").strip()
+    body = str(value.get("body") or "").strip()
+    if not (addr == expected_address and re.fullmatch(r"[0-9]{1,20}", addr)
+            and name and body.casefold().startswith((name + " ").casefold())):
+        raise ValueError("invalid_mining_center_response")
+    try:
+        ident, signal = int(value.get("id")), int(value.get("signal"))
+        lat, lon = float(value.get("latitude")), float(value.get("longitude"))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("invalid_mining_center_response") from exc
+    if not (ident >= 2000000000 and 1 <= signal <= 999
+            and math.isfinite(lat) and abs(lat) <= 90
+            and math.isfinite(lon) and abs(lon) <= 180):
+        raise ValueError("invalid_mining_center_response")
+    return {
+        "id": ident, "signal": signal, "body": body, "bodyType": value.get("bodyType"),
+        "systemName": name, "systemAddress": addr, "latitude": lat,
+        "longitude": lon, "source": "multisystem", "updatedAt": value.get("updatedAt"),
+    }
 
 
 def cached_mining_center(value: Any) -> dict[str, Any]:
@@ -3753,6 +3782,13 @@ class MongrelHudApp:
         return payload
 
     def _refresh_mining_data_once(self) -> bool:
+        state = self.scout_state()
+        scope = local_mining_scope(state) if not self._in_ten16(state) else None
+        remote_id = (scope["systemAddress"] if (
+            MULTI_MINING_REMOTE_READS_ENABLED and scope is not None
+        ) else "")
+        deposit_url = MINING_DATA_URL + ("?systemAddress=" + remote_id if remote_id else "")
+        center_url = MINING_CENTERS_URL + ("?systemAddress=" + remote_id if remote_id else "")
         deposit_error = ""
         center_error = ""
         deposit_ok = False
@@ -3761,7 +3797,7 @@ class MongrelHudApp:
         center_diagnostics = None
 
         try:
-            payload = self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")
+            payload = self._load_mining_bridge_payload(deposit_url, "invalid_mining_payload")
             rows: list[dict[str, Any]] = []
             for raw in payload:
                 if not isinstance(raw, dict):
@@ -3795,11 +3831,12 @@ class MongrelHudApp:
             deposit_error = deposit_diagnostics["detail"][:160]
 
         try:
-            center_payload = self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")
+            center_payload = self._load_mining_bridge_payload(center_url, "invalid_mining_centers_payload")
             centers: list[dict[str, Any]] = []
             for raw in center_payload:
                 try:
-                    center = canonical_mining_center(raw)
+                    center = (canonical_multisystem_center(raw, remote_id)
+                              if remote_id else canonical_mining_center(raw))
                 except ValueError as exc:
                     raise HudRequestError(scout_diagnostics(None, MINING_CENTERS_URL, 200, "invalid_mining_center_response")) from exc
                 centers.append({
@@ -3873,11 +3910,17 @@ class MongrelHudApp:
             if scope is None:
                 return []
             with self.store.lock:
-                return sorted(
-                    (dict(row) for row in self.store.data.get("localMiningDeposits", [])
-                     if isinstance(row, dict) and row.get("scopeKey") == scope["key"]),
-                    key=lambda row: (int(row.get("signal") or 0), int(row.get("id") or 0)),
-                )
+                local_rows = [dict(row) for row in self.store.data.get("localMiningDeposits", [])
+                              if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
+            with self.mining_lock:
+                remote_rows = [dict(row) for row in self.mining_sites
+                               if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                               and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
+                               and isinstance(row.get("latitude"), (int, float))
+                               and isinstance(row.get("longitude"), (int, float))]
+            # Local entries remain available when remote storage is offline.
+            return sorted(remote_rows + local_rows, key=lambda row: (
+                int(row.get("signal") or 0), int(row.get("id") or 0)))
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
@@ -3910,11 +3953,16 @@ class MongrelHudApp:
             if scope is None:
                 return []
             with self.store.lock:
-                return sorted(
-                    (dict(row) for row in self.store.data.get("localMiningCenters", [])
-                     if isinstance(row, dict) and row.get("scopeKey") == scope["key"]),
-                    key=lambda row: int(row.get("signal") or 0),
-                )
+                local_rows = [dict(row) for row in self.store.data.get("localMiningCenters", [])
+                              if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
+            with self.mining_lock:
+                remote_rows = [dict(row) for row in self.mining_centers
+                               if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                               and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()]
+            # Prefer remotely approved center coordinates for matching signals.
+            by_signal = {int(row["signal"]):row for row in local_rows}
+            by_signal.update({int(row["signal"]):row for row in remote_rows})
+            return [by_signal[key] for key in sorted(by_signal)]
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
