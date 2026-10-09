@@ -1136,3 +1136,13 @@ for(const path of ['functions/api/operations/scout-tokens.js','functions/api/ope
 }
 
 console.log('✓ Mongrel Scout cloud uplink, local HUD event contract, privacy boundary, token security, and BGS integration are wired');
+
+
+// Every authenticated Scout owner, not only ADMIN_USER_ID, must see shared
+// Mission Control verified progress. The progress helper already scopes
+// viewer-specific report details; the previous admin guard returned zeroes.
+const tradeHudFeedSource = readFileSync('functions/api/hud/feed.js', 'utf8');
+assert.match(tradeHudFeedSource,/const orderProgress=await buildOrderProgressForHud\(env,currentOrders,auth\.ownerId\)/);
+assert.doesNotMatch(tradeHudFeedSource,/const orderProgress=access==='site_admin'/);
+assert.match(readFileSync('downloads/mongrel-hud/controller.html','utf8'),/LIVE TRADE PROFIT DIAGNOSTICS/);
+assert.match(readFileSync('downloads/mongrel-scout/load.py','utf8'),/server_rejected/);
