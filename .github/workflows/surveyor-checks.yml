@@ -8,6 +8,7 @@ on:
     paths:
       - 'downloads/mongrel-scout/**'
       - 'scripts/test_surveyor.py'
+      - 'scripts/test_surveyor_history.py'
       - '.github/workflows/surveyor-checks.yml'
 
 jobs:
