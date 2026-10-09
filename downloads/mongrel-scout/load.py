@@ -3397,7 +3397,12 @@ def _send_activity_batch(endpoint: str, token: str, events: list[dict[str, Any]]
         if received and rejected is not None and rejected >= received and not normalized:
             _record_trade_upload_result(events, "excluded", "server_rejected", result)
             return False, False
-        _record_trade_upload_result(events, "accepted", "server_processed", result)
+        _record_trade_upload_result(
+            events,
+            "accepted" if not rejected else "partial",
+            "server_processed" if not rejected else "mixed_batch_needs_review",
+            result,
+        )
         return True, False
     try:
         detail = str(response.json().get("error") or "")
