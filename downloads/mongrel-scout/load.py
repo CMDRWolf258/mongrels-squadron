@@ -132,6 +132,7 @@ HUD_EVENT_TYPES = {
 
 KEY_VERSION = "MongrelScoutConfigVersion"
 KEY_ENABLED = "MongrelScoutEnabled"
+KEY_SURVEY_INTEL_ENABLED = "MongrelScoutSurveyorCommunityIntel"
 KEY_TOKEN = "MongrelScoutToken"
 KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
@@ -144,6 +145,7 @@ KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
+_survey_intel_var: Optional[tk.IntVar] = None
 _token_var: Optional[tk.StringVar] = None
 _endpoint_var: Optional[tk.StringVar] = None
 _send_lock = threading.Lock()
@@ -283,6 +285,8 @@ def _fetch_surveyor_intelligence() -> None:
                 return
         commander, system_name, address = work
         try:
+            if not config.get_bool(KEY_SURVEY_INTEL_ENABLED):
+                continue
             surveyor = _get_surveyor()
             cache = surveyor.cached_intelligence(commander, address)
             if cache and int(cache.get("expiresAt") or 0) > time.time():
@@ -328,7 +332,7 @@ def _schedule_surveyor_intelligence(cmdr: str, system_name: str, address: Any) -
     """Never perform remote lookups on EDMC's journal callback thread."""
     global _surveyor_intel_pending, _surveyor_intel_worker_running
     addr = _decimal_text(address)
-    if not cmdr or not system_name or not addr:
+    if not cmdr or not system_name or not addr or not config.get_bool(KEY_SURVEY_INTEL_ENABLED):
         return
     with _surveyor_intel_lock:
         _surveyor_intel_pending = (str(cmdr), str(system_name), addr)
@@ -348,6 +352,9 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_VERSION, 1)
         config.set(KEY_ENABLED, 1)
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
+    if config.get_int(KEY_VERSION) < 2:
+        config.set(KEY_SURVEY_INTEL_ENABLED, 1)
+        config.set(KEY_VERSION, 2)
     _restore_owner_carrier()
     _restore_last_system_context()
     _restore_cargo_missions()
@@ -372,8 +379,9 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _token_var, _endpoint_var
+    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var
 
+    _survey_intel_var = tk.IntVar(value=1 if config.get_bool(KEY_SURVEY_INTEL_ENABLED) else 0)
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
     _token_var = tk.StringVar(value=config.get_str(KEY_TOKEN) or "")
     _endpoint_var = tk.StringVar(value=config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
@@ -391,6 +399,12 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     nb.Label(frame, text="Endpoint").grid(row=3, column=0, sticky=tk.W, pady=(8, 0))
     endpoint_entry = tk.Entry(frame, textvariable=_endpoint_var, width=52)
     endpoint_entry.grid(row=3, column=1, sticky=tk.EW, padx=(8, 0), pady=(8, 0))
+
+    nb.Checkbutton(
+        frame,
+        text="Surveyor: enrich current systems from EDSM and Spansh (local cache; shares system only)",
+        variable=_survey_intel_var,
+    ).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
 
     privacy = (
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
@@ -417,10 +431,14 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
         "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
         "Surface Mining can also use the token to submit explicit deposit reports to the curated 10-16 mining archive; "
-        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC."
+        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC. "
+        "If Surveyor community intelligence is enabled, the current visited system name and numeric system ID "
+        "are requested from EDSM and Spansh, not from Cloudflare; these providers can observe each lookup. "
+        "Surveyor does not send commander identity, raw journal events or estimated earnings to those providers. "
+        "Disable the Surveyor checkbox above to prevent these third-party system lookups."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=5, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
@@ -429,6 +447,8 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     """Save plugin settings when EDMC Settings closes."""
     if _enabled_var is not None:
         config.set(KEY_ENABLED, int(_enabled_var.get()))
+    if _survey_intel_var is not None:
+        config.set(KEY_SURVEY_INTEL_ENABLED, int(_survey_intel_var.get()))
     if _token_var is not None:
         config.set(KEY_TOKEN, _token_var.get().strip())
     if _endpoint_var is not None:
