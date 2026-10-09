@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.3"
+PLUGIN_VERSION = "1.12.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -2974,7 +2974,7 @@ def _recover_trade_lots_from_recent_journals(
         # Files are chronological by Frontier's timestamped filename.
         files = sorted(
             Path(journal_dir).expanduser().glob("Journal*.log"),
-            key=lambda p: (p.stat().st_mtime, p.name),
+            key=lambda p: p.name,  # Frontier timestamped journal filenames
         )[-20:]
         sizes = [p.stat().st_size for p in files]
         if not files or sum(sizes) > 32 * 1024 * 1024:
@@ -3117,6 +3117,12 @@ def _recover_trade_lots_from_recent_journals(
                         _trade_add_lot(lots, "unknown", count)
                     elif kind in {"EjectCargo", "CargoTransfer"}:
                         return None  # Insufficient provenance after unknown movement.
+            # A journal segment without a CMDR identity may contain missing
+            # transactions. Invalidate earlier reconstruction evidence until
+            # a later trusted cargo baseline is encountered.
+            if not file_cmdr and baseline and not matches:
+                baseline = False
+                lots.clear()
     except (OSError, UnicodeError):
         return None
 
