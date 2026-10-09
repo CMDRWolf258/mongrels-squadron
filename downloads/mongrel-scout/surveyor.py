@@ -186,6 +186,25 @@ class Surveyor:
                 (cmdr, address, body_id, encoded),
             )
 
+    def _revalue_system(self, conn: sqlite3.Connection, commander: str, address: str) -> None:
+        info = self._load(conn, "systems", commander, address)
+        sold_at = _text(info.get("lastKnownSaleAt"))
+        total = 0
+        counted = 0
+        for row in conn.execute(
+            "SELECT info FROM bodies WHERE commander=? AND address=?", (commander, address)
+        ):
+            body = _body_view(json.loads(row["info"]))
+            acquired_at = _text(body.get("lastDataAcquiredAt"))
+            if sold_at and acquired_at and acquired_at <= sold_at:
+                continue
+            if body["currentValue"] is not None:
+                total += body["currentValue"]
+                counted += 1
+        info["estimatedOutstanding"] = total
+        info["valueCoverage"] = counted
+        self._save(conn, "systems", commander, address, info)
+
     def apply(self, commander: str, event: Mapping[str, Any], fallback_system: str = "",
               fallback_address: Any = None) -> dict[str, Any] | None:
         kind = _text(event.get("event"))
@@ -232,6 +251,7 @@ class Surveyor:
                 count = _int(event.get("Count"))
                 if count is not None:
                     system["bodyCount"] = count
+            revalue_systems = set()
             if kind in {"SellExplorationData", "MultiSellExplorationData"}:
                 amount = _int(event.get("TotalEarnings"))
                 if amount is not None and amount >= 0:
@@ -250,6 +270,9 @@ class Surveyor:
                             previous["lastKnownSaleAt"] = timestamp
                             previous["salesPartiallyReconciled"] = True
                             self._save(conn, "systems", commander, record["address"], previous)
+                            revalue_systems.add(record["address"])
+                            if record["address"] == address:
+                                system.update(previous)
             if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound"}:
                 raw_id = event.get("BodyID")
                 body_id = _text(raw_id) if raw_id is not None else ""
@@ -289,7 +312,10 @@ class Surveyor:
                                 for s in signals if isinstance(s, Mapping)
                             ]
                     self._save(conn, "bodies", commander, address, body, body_id)
+                    revalue_systems.add(address)
             self._save(conn, "systems", commander, address, system)
+            for touched in revalue_systems:
+                self._revalue_system(conn, commander, touched)
             return self._snapshot(conn, commander, active or address)
 
     def snapshot(self, commander: str) -> dict[str, Any]:
@@ -321,6 +347,17 @@ class Surveyor:
             discovery = "new_body_candidates"
         else:
             discovery = "unknown"
+        estimates = conn.execute(
+            "SELECT info FROM systems WHERE commander=?", (commander,)
+        ).fetchall()
+        unsold = sum(
+            max(0, _int(json.loads(row["info"]).get("estimatedOutstanding")) or 0)
+            for row in estimates
+        )
+        covered = sum(
+            max(0, _int(json.loads(row["info"]).get("valueCoverage")) or 0)
+            for row in estimates
+        )
         sale_total = conn.execute(
             "SELECT COALESCE(SUM(total),0) AS total FROM sales WHERE commander=?", (commander,)
         ).fetchone()["total"]
@@ -338,8 +375,12 @@ class Surveyor:
             "currentSystemValueCoverage": len(known_current),
             "additionalMappingPotential": sum(b.get("mappingGain") or 0 for b in bodies),
             "confirmedSalesLifetime": sale_total,
-            "unsoldEstimate": None,
-            "unsoldEstimateStatus": "needs_sale_reconciliation",
+            "unsoldEstimate": unsold if covered else None,
+            "unsoldValueCoverage": covered,
+            "unsoldEstimateStatus": (
+                "partial_sale_reconciliation" if sale_total else
+                "journal_tracking_only"
+            ),
             "valueModel": MODEL,
             "valuesAreEstimates": True,
             "bodies": bodies[:40],
