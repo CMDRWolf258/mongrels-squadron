@@ -1,6 +1,6 @@
 import { getCookie, cookie, readSession } from '../../../../lib/auth.js';
 import { linkAdmin } from '../../../../lib/scout-link.js';
-import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, putSecret, readSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
+import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, putSecret, readSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
 
 const CONSENT_COOKIE = '__Host-mongrel-scout-link-consent';
 const redirect = (url) => noStore(new Response(null,{status:303,headers:{Location:url}}));
@@ -31,7 +31,7 @@ export async function onRequestGet({request,env}) {
       url.searchParams.get('response_type') !== 'code' ||
       url.searchParams.get('code_challenge_method') !== 'S256' ||
       !challenge || !/^[A-Za-z0-9_-]{43}$/.test(challenge) ||
-      scope !== SCOPE || state.length > 1000) return oauthError('invalid_request',400);
+      !scopeAllowed(scope) || state.length > 1000) return oauthError('invalid_request',400);
   const user = await adminFor(request,env);
   if (!user) {
     const returnTo = url.pathname + url.search;
