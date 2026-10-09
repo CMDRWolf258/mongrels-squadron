@@ -17,6 +17,31 @@ You need:
 
 The HUD runs on the Elite PC because the overlay has to appear over the game and it talks to Scout through a local connection.
 
+## Surface Mining system browser (development preview)
+
+In the **Surface Mining** iPad HUD control profile, the new **Mining Database
+· System Browser** lets you select from saved systems or type/paste part of
+a system name or ID64 to see matching saved-system suggestions. Once selected,
+it lists known mining deposits and any center-only signals; filters can be
+combined for **commodity**, **planet/moon**, and **minimum mining rig count**
+(including 7+). Results show coordinates and clearly label local-only versus
+approved/shared data. Your selected browsing system is saved on the Windows
+HUD PC and survives restarts.
+
+**Browsing does not change Elite's real location, the active deposit/center
+compass, or where new reports are saved.** The existing "Locations on this
+body", "Set center" and "Report Deposit" controls still follow your actual
+Frontier journal and surface coordinates.
+
+The controller uses local filtering after retrieving the selected system's
+records: **typing triggers no Cloudflare requests**. The directory is
+requested only when opening the Surface Mining profile or explicitly tapping
+Refresh, cached for one hour. Shared system reads are user-selected and
+cached for ten minutes. Those additional archive calls remain disabled until
+the separate `ten16-archive` multi-system backend is verified, backed up
+and deployed; the development build currently browses saved local records
+and already loaded legacy 10-16 entries.
+
 ## Surface mining in other systems (development preview)
 
 The multi-system mining update is currently in **draft PR #182**, not the
