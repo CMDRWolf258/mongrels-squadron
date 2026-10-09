@@ -68,9 +68,37 @@ Your Scout token is stored in EDMC's settings and normally does not need to be e
 
 Mongrel HUD talks to Scout locally, so Scout should be installed, enabled and running whenever you use the HUD.
 
+
+## Surveyor community intelligence (development build)
+
+Mongrel Surveyor maintains a persistent, **local** exploration ledger of
+your journal-confirmed scans, maps, possible first discoveries, and
+**estimated** unsold cartographic data. Its experimental cartographic
+estimates may differ from Frontier sales and are not guaranteed values.
+
+With the **Surveyor: enrich current systems from EDSM and Spansh** checkbox
+enabled (the default), Scout requests known system information directly from
+those two providers as you enter systems. Only the current system name/ID is
+used in these HTTPS lookups; their servers can observe the requested systems.
+No Commander name, account token, journal contents, or estimated earnings are
+sent to EDSM or Spansh. You can uncheck the box in EDMC's Mongrel Scout
+settings at any time. Local journal tracking continues without either service.
+
+Cached intelligence is advisory; *missing* public database entries do not
+prove a first discovery, and the external body catalog never creates
+personal cartographic earnings. The optional **Mongrel Surveyor** overlay
+can be enabled and sized in the paired HUD layout controls. Existing panels
+remain in their prior profiles/positions and the new panel defaults off.
+
+This feature remains on a **draft development branch**, not an installed
+production release. No Cloudflare exploration-history storage or
+automatic squad publication is involved.
+
 ## Privacy
 
 Scout does **not** upload your full journal, Commander name, cargo inventory, credit balance, ship build, materials, or general route history.
+
+Surveyor's optional EDSM/Spansh requests disclose only your current system name/ID to those third parties. Disable community lookups in EDMC settings to avoid that disclosure.
 
 It only sends the squad data it is designed to report, such as BGS snapshots, public station-market data, facility-placement facts, and selected mission/bounty/colonization/**eligible trade-sale** results used by Mongrel tools. Local purchase-origin tracking stays on the PC and is never uploaded.
 
