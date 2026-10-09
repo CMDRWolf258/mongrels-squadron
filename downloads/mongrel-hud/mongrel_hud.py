@@ -3990,10 +3990,20 @@ class MongrelHudApp:
                     for row in self.mining_centers if str(row.get("systemAddress") or TEN16_ID64) == TEN16_ID64
                 ]
             else:
+                # Already observed central records (e.g. after visiting that
+                # system) are browsable without another server read.
+                deposits += [{**row, "storage": "shared"} for row in self.mining_sites
+                             if str(row.get("systemAddress") or "") == addr]
+                centers += [{**row, "storage": "shared"} for row in self.mining_centers
+                            if str(row.get("systemAddress") or "") == addr]
                 remote = getattr(self, "mining_browser_remote_cache", {}).get(addr)
                 if isinstance(remote, dict) and remote.get("expires", 0) > time.monotonic():
-                    deposits += [dict(row) for row in remote.get("deposits", [])]
-                    centers += [dict(row) for row in remote.get("centers", [])]
+                    known_ids = {str(row.get("id")) for row in deposits}
+                    deposits += [dict(row) for row in remote.get("deposits", [])
+                                 if str(row.get("id")) not in known_ids]
+                    known_centers = {str(row.get("id")) for row in centers}
+                    centers += [dict(row) for row in remote.get("centers", [])
+                                if str(row.get("id")) not in known_centers]
         warning = ""
         if addr != TEN16_ID64 and MULTI_MINING_REMOTE_READS_ENABLED:
             cached = getattr(self, "mining_browser_remote_cache", {}).get(addr)
