@@ -9,6 +9,7 @@ import math
 import re
 import threading
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,13 +32,15 @@ method_names = {
     "select_site", "active_site", "_nav_to_point", "location_nav",
     "deposit_nav", "surface_nav", "_mining_selection", "_select_mining",
     "_next_local_mining_id_locked", "set_site_center", "report_deposit",
-    "mining_commodity_choices",
+    "mining_commodity_choices", "mining_browser_catalog",
+    "refresh_mining_browser_directory", "select_mining_browser_system",
+    "browse_mining_system",
 }
 methods = [x for x in classes[0].body if isinstance(x, ast.FunctionDef) and x.name in method_names]
 assert {x.name for x in methods} == method_names
 container = ast.ClassDef(name="Harness", bases=[], keywords=[], body=methods, decorator_list=[])
 scope = {
-    "Any": Any, "math": math, "re": re,
+    "Any": Any, "math": math, "re": re, "time": time, "MULTI_MINING_REMOTE_READS_ENABLED": False,
     "threading": threading, "datetime": datetime, "timezone": timezone,
     "TEN16_ID64": "560820275507",
     "TEN16_SYSTEM": "NGC 2546 Sector UZ-G d10-16",
@@ -222,6 +225,27 @@ with tempfile.TemporaryDirectory() as temp:
     }
     assert restarted.active_center()["id"] == 2000000001
     assert restarted.centers_for_current_body()[0]["latitude"] == 12.1
+    # Browser can select other logged systems without moving navigation to a
+    # distant body or touching live surface selectors.
+    first_nav = restarted.deposit_nav()
+    catalog = restarted.mining_browser_catalog()
+    names = {r["systemAddress"]: r["systemName"] for r in catalog["systems"]}
+    assert "12345678901234567" in names and "88888888888888888" in names
+    assert "560820275507" in names
+    browsing = restarted.browse_mining_system("12345678901234567")
+    assert browsing["system"]["systemName"] == "Icy Test"
+    assert any(r["commodity"] == "Alexandrite" for r in browsing["deposits"])
+    assert len(browsing["deposits"]) == 4
+    assert restarted.refresh_mining_browser_directory()["ok"]
+    restarted.select_mining_browser_system("88888888888888888")
+    assert restarted.mining_browser_catalog()["selected"] == "88888888888888888"
+    assert restarted.deposit_nav() == first_nav, "Browsing must not move the compass"
+    assert restarted.active_location_signal() == 1
+    assert restarted.browse_mining_system("88888888888888888")["system"]["systemName"] == "Icy Test"
+    raises("mining_system_not_logged", restarted.select_mining_browser_system, "99999999")
+    raises("mining_system_not_logged", restarted.browse_mining_system, "99999999")
+    restarted_again = make(Store(path), scene())
+    assert restarted_again.mining_browser_catalog()["selected"] == "88888888888888888"
     # Strict center validation rejects substituted ID64/body and invalid coords.
     center_validator = scope["canonical_multisystem_center"] if "canonical_multisystem_center" in scope else None
     if center_validator:
