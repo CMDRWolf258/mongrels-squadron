@@ -12,6 +12,7 @@ import math
 import os
 import sqlite3
 import threading
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -321,6 +322,29 @@ class Surveyor:
                 self._revalue_system(conn, commander, touched)
             return self._snapshot(conn, commander, active or address)
 
+    def cached_intelligence(self, commander: str, address: str) -> dict[str, Any] | None:
+        """Cache survives restarts; expiration never destroys a previous result."""
+        with self.lock, self._connect() as conn:
+            system = self._load(conn, "systems", _text(commander), _text(address))
+        intel = system.get("intelligence")
+        return dict(intel) if isinstance(intel, dict) else None
+
+    def set_intelligence(self, commander: str, address: str,
+                         details: Mapping[str, Any], ttl_seconds: int = 43200) -> dict[str, Any]:
+        """Store derived community facts, never synthesize journal scans/earnings."""
+        with self.lock, self._connect() as conn:
+            addr = _text(address)
+            system = self._load(conn, "systems", _text(commander), addr)
+            if not addr or not system:
+                return self._snapshot(conn, _text(commander), addr)
+            intel = dict(details)
+            intel["fetchedAt"] = int(time.time())
+            intel["expiresAt"] = int(time.time()) + max(600, min(86400, int(ttl_seconds)))
+            system["intelligence"] = intel
+            self._save(conn, "systems", _text(commander), addr, system)
+            row = conn.execute("SELECT active_address FROM meta WHERE commander=?", (_text(commander),)).fetchone()
+            return self._snapshot(conn, _text(commander), row["active_address"] if row else addr)
+
     def snapshot(self, commander: str) -> dict[str, Any]:
         with self.lock, self._connect() as conn:
             row = conn.execute(
@@ -370,6 +394,7 @@ class Surveyor:
             "commander": commander,
             "system": current or None,
             "discoveryStatus": discovery,
+            "intelligence": current.get("intelligence") if current else None,
             "knownBodies": len(bodies),
             "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in bodies),
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
