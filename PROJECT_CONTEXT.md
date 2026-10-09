@@ -1607,3 +1607,33 @@ estimates and gain, first-mapping status, and selected community candidates.
 Historical import, accurate current-game payout calibration, true local
 discovery confirmation, in-game Windows UI review, and full-destination
 optimization are still outstanding release gates.
+
+
+### Surveyor milestone: local history and conservative cartographics (October 9, 2026)
+
+Draft PR #179 is based on current main including merged trade fixes PR #180
+and historical trade provenance recovery PR #181 (Scout 1.12.4). These
+fixes and the new trade diagnostic flow **must remain intact**; Surveyor is
+still draft, not a production release.
+
+- \`surveyor_history.py\` imports a bounded (32 recent files, 32 MiB,
+  120,000 lines) window of locally stored Frontier journals in a background
+  worker once per Commander per EDMC session. Every file establishes its own
+  Commander/LoadGame identity. Events without an explicit, trustworthy
+  current system address are skipped rather than attributed by guesswork.
+- History \`surveyor.apply(..., historic=True)\` reuses the persistent SQLite
+  journal-digest dedupe, preserves the live system pointer, timestamps and
+  already confirmed sales, and avoids recomputing expedition-wide snapshots
+  for each imported record. Prior journals do not enter Scout's live
+  cloud activity upload queue.
+- \`surveyor.py\` estimates include basic vs efficient mapping ranges and a
+  clear provisional model identifier. It records Frontier TotalEarnings
+  separately; a sale may include bonuses not represented in the scan model.
+  Critically, \`MultiSellExplorationData.Discovered\` does *not* identify all
+  sold systems, so the corresponding event must **not** erase a system's
+  unsold body estimates. The HUD labels sale reconciliation as incomplete.
+- Existing surveyor module tests, history-import tests and site smoke tests
+  are the regression gate; no live Frontier Windows/EDMC validation has
+  been performed. Do not call the value model calibrated until compared
+  with actual post-sale journal records. Keep Surveyor unmerged until real
+  Scout/HUD overlay checks and acceptable error/CPU behavior are confirmed.
