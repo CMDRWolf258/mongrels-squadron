@@ -206,6 +206,7 @@ _hud_state: dict[str, Any] = {
     "status": None,
     "exploration": None,
     "explorationStatus": {"ok": False, "error": "not_started"},
+    "explorationImport": {"status": "not_started", "files": 0, "processed": 0, "duplicates": 0},
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
@@ -224,6 +225,55 @@ _surveyor_init_lock = threading.Lock()
 _surveyor_intel_lock = threading.Lock()
 _surveyor_intel_pending: Optional[tuple[str, str, str]] = None
 _surveyor_intel_worker_running = False
+_surveyor_history_lock = threading.Lock()
+_surveyor_history_started: set[str] = set()
+
+
+def _run_surveyor_history(commander: str, journal_dir: str) -> None:
+    """Local bounded replay; no journal data enters Scout's upload queues."""
+    try:
+        filename = Path(__file__).with_name("surveyor_history.py")
+        spec = importlib.util.spec_from_file_location("mongrel_surveyor_history", filename)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("history_module_unavailable")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        surveyor = _get_surveyor()
+        result = module.import_recent_journals(surveyor, commander, journal_dir)
+        snapshot = surveyor.snapshot(commander)
+        with _hud_condition:
+            if str(_hud_state.get("commander") or "") == commander:
+                _hud_state["exploration"] = snapshot
+                _hud_state["explorationImport"] = dict(result)
+                _hud_condition.notify_all()
+    except Exception:
+        with _hud_condition:
+            _hud_state["explorationImport"] = {"status": "local_replay_unavailable"}
+            _hud_condition.notify_all()
+
+
+def _schedule_surveyor_history(commander: str) -> None:
+    """At most one import per Commander per EDMC run, off the journal thread."""
+    if not commander:
+        return
+    journal_dir = getattr(monitor, "currentdir", None) if monitor is not None else None
+    if not journal_dir:
+        try:
+            journal_dir = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
+        except Exception:
+            journal_dir = ""
+    if not journal_dir:
+        return
+    with _surveyor_history_lock:
+        if commander in _surveyor_history_started:
+            return
+        _surveyor_history_started.add(commander)
+    threading.Thread(
+        target=_run_surveyor_history,
+        args=(str(commander), str(journal_dir)),
+        name="MongrelSurveyorLocalHistory",
+        daemon=True,
+    ).start()
 
 
 def _get_surveyor() -> Any:
@@ -598,6 +648,7 @@ def journal_entry(
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
     _observe_surveyor(cmdr, system, entry, state)
+    _schedule_surveyor_history(cmdr)
     if event in {"FSDJump", "Location", "CarrierJump"}:
         _schedule_surveyor_intelligence(
             cmdr, str(entry.get("StarSystem") or system or ""),
