@@ -102,7 +102,8 @@ def _body_view(body: dict[str, Any]) -> dict[str, Any]:
     owned_map = bool(body.get("personallyMapped"))
     scan = _value(body, mapped=False, efficient=False) if owned_scan else None
     efficiency = body.get("mappingEfficiency")
-    mapped = _value(body, mapped=True, efficient=efficiency is not False)
+    is_star = bool(body.get("starType"))
+    mapped = None if is_star else _value(body, mapped=True, efficient=efficiency is not False)
     # No credit is projected from an externally reported body or a navigation
     # beacon record the commander has not scanned personally.
     current = mapped if owned_map else scan
@@ -115,7 +116,7 @@ def _body_view(body: dict[str, Any]) -> dict[str, Any]:
         "valueModel": MODEL,
         "estimated": True,
         "mappedValueAssumesEfficient": efficiency is None and not owned_map,
-        "mappingStatus": "mapped_by_you" if owned_map else (
+        "mappingStatus": "not_applicable" if is_star else "mapped_by_you" if owned_map else (
             "previously_mapped" if body.get("wasMapped") is True else
             "potential_first_mapping" if body.get("wasMapped") is False else "unknown"
         ),
