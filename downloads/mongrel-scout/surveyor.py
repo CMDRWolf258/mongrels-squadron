@@ -134,6 +134,97 @@ def _body_view(body: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+ADVISOR_MODEL = "journal-confirmed-mapping-gain-distance-v1"
+
+
+def _mapping_advisor(bodies: list[dict[str, Any]]) -> dict[str, Any]:
+    """Rank *personally scanned*, not-yet-DSS-mapped planets only.
+
+    Score is a relative decision aid, NOT an ETA or credits-per-hour figure:
+    estimated basic/efficient DSS gain with a moderate logarithmic discount
+    for distance from the system's arrival star. Unknown distances are marked
+    as such and never represented as measured route travel.
+    """
+    ranked: list[dict[str, Any]] = []
+    unvalued = 0
+    for body in bodies:
+        # Catalog-only and NavBeaconDetail scans cannot prove this commander
+        # scanned the world. Stars, completed DSS scans and unpriced bodies
+        # are deliberately omitted from the ranked recommendations.
+        if (
+            not body.get("personallyScanned")
+            or body.get("personallyMapped")
+            or body.get("starType")
+            or not _text(body.get("planetClass"))
+        ):
+            continue
+
+        low = _int(body.get("mappingGainMin"))
+        high = _int(body.get("mappingGainMax"))
+        if low is None or high is None or low <= 0 or high < low:
+            unvalued += 1
+            continue
+        distance = _number(body.get("distanceLs"))
+        known_distance = distance is not None and distance >= 0
+        # Travel in supercruise isn't linear in light seconds. This modest
+        # discount is explicitly only a heuristic, not a trip-time model.
+        travel_weight = (1.0 + 0.55 * math.log10(1 + distance / 500.0)
+                         if known_distance else 1.15)
+        typical_gain = (low + high) / 2
+        score = typical_gain / travel_weight
+
+        tags: list[str] = []
+        if body.get("wasMapped") is False:
+            tags.append("Potential first mapping")
+        if body.get("terraformState") == "Terraformable":
+            tags.append("Terraformable")
+        if body.get("planetClass") in {"Earthlike body", "Water world", "Ammonia world"}:
+            tags.append("High-value body class")
+        if known_distance and distance <= 500:
+            tags.append("Near arrival star")
+        if not known_distance:
+            tags.append("Distance unconfirmed")
+        if not tags:
+            tags.append("Estimated DSS gain")
+        ranked.append({
+            "bodyId": _text(body.get("bodyId")),
+            "name": _text(body.get("name")) or "Unnamed body",
+            "planetClass": _text(body.get("planetClass")),
+            "distanceLs": round(distance, 1) if known_distance else None,
+            "distanceStatus": "journal_confirmed_from_arrival" if known_distance else "unknown",
+            "dssGainMin": low,
+            "dssGainMax": high,
+            "firstMappingCandidate": body.get("wasMapped") is False,
+            "tier": "high" if low >= 200_000 else "medium" if low >= 50_000 else "low",
+            "reasons": tags[:3],
+            "_score": score,
+        })
+
+    # Stable tie-breaker ensures HUD doesn't reshuffle identically scored
+    # bodies after restarts or duplicated historical journal imports.
+    ranked.sort(key=lambda row: (
+        -row["_score"], -row["dssGainMin"],
+        row["name"].casefold(), row["bodyId"],
+    ))
+    total = len(ranked)
+    for index, row in enumerate(ranked, 1):
+        row.pop("_score", None)
+        row["rank"] = index
+    return {
+        "model": ADVISOR_MODEL,
+        "status": "ranked" if ranked else "no_valued_unmapped_scans",
+        "source": "commander_frontier_journal_only",
+        "rankingBasis": "provisional_dss_gain_and_arrival_distance_heuristic_not_eta",
+        "eligibleCount": total,
+        "unvaluedScans": unvalued,
+        "distanceUnknownCount": sum(row["distanceLs"] is None for row in ranked),
+        "potentialGainMin": sum(row["dssGainMin"] for row in ranked),
+        "potentialGainMax": sum(row["dssGainMax"] for row in ranked),
+        "targets": ranked[:8],
+        "targetsTruncated": max(0, total - 8),
+    }
+
+
 class Surveyor:
     SURVEY_EVENTS = SURVEY_EVENTS
 
@@ -380,6 +471,7 @@ class Surveyor:
                     "SELECT info FROM bodies WHERE commander=? AND address=?", (commander, active)
                 )
             ]
+        advisor = _mapping_advisor(bodies)
         bodies.sort(key=lambda body: (-(body.get("mappingGain") or 0), body.get("name", "")))
         known_current = [b["currentValue"] for b in bodies if b["currentValue"] is not None]
         firsts = [b for b in bodies if b.get("personallyScanned") and b.get("wasDiscovered") is False]
@@ -423,6 +515,7 @@ class Surveyor:
             "additionalMappingPotential": sum(b.get("mappingGainMax") or 0 for b in bodies),
             "additionalMappingPotentialMin": sum(b.get("mappingGainMin") or 0 for b in bodies),
             "additionalMappingPotentialMax": sum(b.get("mappingGainMax") or 0 for b in bodies),
+            "mappingAdvisor": advisor,
             "confirmedSalesLifetime": sale_total,
             "confirmedSalesBasis": "Frontier journal TotalEarnings; may include bonuses",
             "unsoldEstimate": unsold if covered else None,
