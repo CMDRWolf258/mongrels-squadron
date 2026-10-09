@@ -77,6 +77,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-hud-feed.mjs
           node --experimental-default-type=module scripts/smoke-hud-manifest.mjs
           python3 scripts/smoke-mongrel-hud.py
+          python3 scripts/test_multi_system_mining.py
           python3 scripts/smoke-mongrel-hud-companion.py
           python3 scripts/smoke-carrier-voice-profiles.py
           node --experimental-default-type=module scripts/smoke-mongrel-hud-controller.mjs
