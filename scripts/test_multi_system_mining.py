@@ -235,7 +235,8 @@ with tempfile.TemporaryDirectory() as temp:
     browsing = restarted.browse_mining_system("12345678901234567")
     assert browsing["system"]["systemName"] == "Icy Test"
     assert any(r["commodity"] == "Alexandrite" for r in browsing["deposits"])
-    assert len(browsing["deposits"]) == 4
+    assert len(browsing["deposits"]) == 5
+    assert any(row["commodity"] == "Other-Star" for row in browsing["deposits"])
     assert restarted.refresh_mining_browser_directory()["ok"]
     restarted.select_mining_browser_system("88888888888888888")
     assert restarted.mining_browser_catalog()["selected"] == "88888888888888888"
