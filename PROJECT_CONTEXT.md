@@ -1542,3 +1542,41 @@ The Orrery applies that feed after imported system data and any curated POI prov
 The local bridge may contain the active Commander name because future owner/squadmate greetings need the local pilot identity; that does not change the cloud privacy boundary. `CarrierStats` learns the current Commander's own carrier ID/callsign/name/docking access and persists that identity only in EDMC's local config, allowing later matching MarketID events to be labeled `relationship: owner`. Other carriers remain `unknown` until a future trusted squad carrier registry exists. The v1.4 bridge does not yet render an overlay, speak audio, register squadmate carriers, or upload general docking/travel history.
 
 `scripts/smoke-orrery.mjs` covers the shared model and page/module/vendor wiring; `scripts/smoke-orrery-data.mjs` covers both real-system relationships, provenance, catalog registration and offline import; `scripts/smoke-curated-pois.mjs` covers exact body joins, immutable canonical identities, coordinate/metadata preservation, tags and unchanged core data. All run in the existing site smoke workflow. Smoke success does not establish mouse/touch behavior or production deployment; browser checks remain necessary for system switching, camera, selection, filters, fallback and desktop/iPad/phone layouts in both systems, and the personal POI representation must be verified deployed separately.
+
+
+## Mongrel Surveyor foundation (development branch, not deployed)
+
+Draft PR #179 adds a local-only exploration data foundation to MongrelScout.
+The authoritative source is each commander's Frontier journal, and the
+prototype's persistent ledger is an independent SQLite database under
+%LOCALAPPDATA%\MongrelScout\surveyor.sqlite3 (or the platform's user data
+directory). This is intentionally **not** stored inside the replaceable EDMC
+plugin folder or in the website's D1/KV stores.
+
+- \`downloads/mongrel-scout/surveyor.py\` handles FSDJump/Location, FSS honk
+  counts, FSSAllBodiesFound, Scan, DSS mapping, signals, and known sales.
+  It uses exact decimal SystemAddress and BodyID identities, scopes records
+  by commander, and deduplicates full journal events before applying them.
+- \`load.py\` invokes the Surveyor behind an exception-isolated observer; errors
+  can affect the *exploration* status only, not the pre-existing BGS, cargo,
+  mining, carrier, mission, or cloud event pipelines.
+- New local bridge event types are additive and the full exploration snapshot
+  appears as \`exploration\` in the existing \`/v1/state\` model.
+  No new Cloudflare reads, writes, bindings, or user-data uploads are added.
+- \`functions/downloads/mongrel-scout.zip.js\` includes the sibling Python
+  module in the Scout plugin ZIP. The ledger survives normal plugin updates.
+- \`scripts/test_surveyor.py\` covers replay deduplication, first-arrival-star
+  candidates, mapping upgrades, cross-system totals, mapped-by-others status,
+  system-scoped sale reconciliation, persistence and commander isolation.
+  \`scripts/smoke-mongrel-hud.py\` guards the additive event vocabulary.
+- Initial scan/mapping prices are *provisional community-derived estimates*.
+  They exclude incomplete honk/system bonuses, possible policy effects, and
+  ambiguous sale reconciliation. \`unsoldEstimateStatus\` and
+  \`valuesAreEstimates\` must remain visible until calibrated against current
+  journal sales. Unobserved community bodies never create earnings.
+- No EDSM/Spansh queries, historical import, HUD visual Surveyor panel,
+  website expedition sharing, or voice dialogue is included in this foundation.
+
+**Release gate:** Do not merge/deploy this draft until CI smoke/regression,
+real EDMC Windows journal replay, value calibration, and existing
+HUD overlay/controller/BGS/mining/carrier regression checks are satisfactory.
