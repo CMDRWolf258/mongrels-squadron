@@ -135,6 +135,8 @@ def _body_view(body: dict[str, Any]) -> dict[str, Any]:
 
 
 class Surveyor:
+    SURVEY_EVENTS = SURVEY_EVENTS
+
     def __init__(self, db_path: str | Path | None = None):
         base = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / ".local" / "share"))
         self.path = Path(db_path) if db_path else base / "MongrelScout" / "surveyor.sqlite3"
