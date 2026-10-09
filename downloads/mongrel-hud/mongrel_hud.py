@@ -205,7 +205,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
 VALID_PROFILES = ("combat", "surface")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -215,6 +215,7 @@ PANEL_TITLES = {
     "cargo": "CARGO",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
+    "surveyor": "MONGREL SURVEYOR",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -755,6 +756,7 @@ def default_layout() -> dict[str, Any]:
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
+            "surveyor": {"x": 420, "y": 70, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -4536,9 +4538,71 @@ class MongrelHudApp:
             "alerts": "\n".join(alert_lines),
         }
 
+    def surveyor_panel_text(self) -> str:
+        """Read-only local journal summary; never consults the website from HUD."""
+        snapshot = self.scout_state()
+        survey = snapshot.get("exploration")
+        status = snapshot.get("explorationStatus")
+        if not isinstance(survey, dict):
+            if isinstance(status, dict) and status.get("error") == "local_surveyor_unavailable":
+                return "MONGREL SURVEYOR\nLocal exploration data unavailable"
+            return "MONGREL SURVEYOR\nAwaiting Scout exploration journal data"
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        lines = ["MONGREL SURVEYOR", self.clip_line(system.get("name") or "Unknown system", 42)]
+        labels = {
+            "potential_first_arrival_star": "POTENTIAL FIRST ARRIVAL STAR",
+            "previously_discovered_arrival_star": "ARRIVAL STAR PREVIOUSLY DISCOVERED",
+            "new_body_candidates": "POTENTIAL FIRST BODY DISCOVERY",
+            "unknown": "DISCOVERY STATUS UNKNOWN",
+        }
+        lines.append(labels.get(survey.get("discoveryStatus"), "DISCOVERY STATUS UNKNOWN"))
+        known, scanned, mapped = (
+            int(survey.get("knownBodies") or 0),
+            int(survey.get("personallyScannedBodies") or 0),
+            int(survey.get("personallyMappedBodies") or 0),
+        )
+        total = system.get("bodyCount")
+        lines.append(f"FSS: {scanned} observed / {total if isinstance(total, int) else '?'} bodies")
+        lines.append(f"DSS personally mapped: {mapped}  |  First candidates: {int(survey.get('potentialFirstBodies') or 0)}")
+        estimate = survey.get("unsoldEstimate")
+        lines.append(
+            f"Estimated unsold: {int(estimate):,} CR"
+            if isinstance(estimate, (int, float)) else "Estimated unsold: insufficient evidence"
+        )
+        lines.append("Valuation provisional; sales may be partially matched")
+        gain = survey.get("additionalMappingPotential")
+        if isinstance(gain, (int, float)):
+            lines.append(f"Additional mapping potential: +{int(gain):,} CR")
+        intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        if intel:
+            providers = intel.get("providers") if isinstance(intel.get("providers"), list) else []
+            source = ", ".join(str(x) for x in providers[:2]) or "community"
+            recorded = intel.get("catalogedBodies")
+            lines.append(
+                f"Catalog: {recorded} bodies ({source}; NOT Frontier claim evidence)"
+                if isinstance(recorded, int) else f"Community intelligence: {source}"
+            )
+        rows = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
+        if rows:
+            lines.append("MAPPING OPPORTUNITIES")
+        for body in rows[:5]:
+            if not isinstance(body, dict):
+                continue
+            name = self.clip_line(body.get("name") or "Body", 30)
+            extra = body.get("mappingGain")
+            if isinstance(extra, (int, float)) and extra > 0:
+                label = f"+{int(extra):,} CR"
+            elif body.get("personallyMapped"):
+                label = "Mapped"
+            else:
+                label = "Pending"
+            lines.append(f"{name}: {label}")
+        return "\n".join(lines)
+
     def panel_texts(self) -> dict[str, str]:
         panels = self.combat_panel_texts()
         panels["surface"] = "\n".join(self.surface_lines())
+        panels["surveyor"] = self.surveyor_panel_text()
         panels.update(self.site_panel_texts())
         notes = self.notes_text().strip()
         panels["notes"] = "NOTES\n" + (notes if notes else "No notes.")
@@ -5300,7 +5364,7 @@ class MongrelHudApp:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
         title = lines[0] if lines else PANEL_TITLES.get(panel_id, panel_id.upper())
-        widths = {"bounties": 350, "trade": 500, "scoutboard": 500, "notes": 500, "surface": 480}
+        widths = {"bounties": 350, "trade": 500, "scoutboard": 500, "notes": 500, "surface": 480, "surveyor": 510}
         width = round(widths.get(panel_id, 440) * scale)
         y = self._draw_title(canvas, title, scale, width)
         for line in lines[1:]:
