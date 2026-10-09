@@ -4597,33 +4597,35 @@ class MongrelHudApp:
                 f"Catalog: {recorded} bodies ({source}; NOT Frontier claim evidence)"
                 if isinstance(recorded, int) else f"Community intelligence: {source}"
             )
-        rows = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
-        if rows:
-            lines.append("MAPPING OPPORTUNITIES")
-        mapped_rows = [
-            body for body in rows if isinstance(body, dict) and body.get("planetClass")
-        ]
-        for body in mapped_rows[:4]:
-            name = self.clip_line(body.get("name") or "Body", 34)
-            current = body.get("currentValue")
-            mapped_value = body.get("mappedValue")
-            gain = body.get("mappingGain")
-            status = str(body.get("mappingStatus") or "unknown")
-            labels = {
-                "mapped_by_you": "MAPPED BY YOU",
-                "previously_mapped": "PREVIOUSLY MAPPED",
-                "potential_first_mapping": "POTENTIAL FIRST MAPPING",
-                "unknown": "PREVIOUS MAPPING UNKNOWN",
-            }
-            lines.append(name + "  |  " + labels.get(status, "STATUS UNKNOWN"))
-            scan_str = f"{int(current):,}" if isinstance(current, (int, float)) else "?"
-            map_str = f"{int(mapped_value):,}" if isinstance(mapped_value, (int, float)) else "?"
-            gain_str = f"+{int(gain):,}" if isinstance(gain, (int, float)) else "N/A"
-            gain_min_body = body.get("mappingGainMin")
-            gain_max_body = body.get("mappingGainMax")
-            if isinstance(gain_min_body, (int, float)) and isinstance(gain_max_body, (int, float)):
-                gain_str = f"+{int(gain_min_body):,}–{int(gain_max_body):,}"
-            lines.append(f"  Current {scan_str}  |  DSS {map_str}  |  Gain {gain_str} CR")
+        advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
+        targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+        lines.append("DSS MAPPING ADVISOR · LOCAL CONFIRMED SCANS")
+        lines.append("Ranked by provisional gain + arrival distance (NOT ETA)")
+        if not targets:
+            if int(advisor.get("unvaluedScans") or 0):
+                lines.append("Unpriced worlds found · more scan data needed")
+            else:
+                lines.append("No unmapped valued worlds yet · continue FSS scanning")
+        for target in targets[:3]:
+            if not isinstance(target, dict):
+                continue
+            name = self.clip_line(target.get("name") or "Body", 28)
+            dist = target.get("distanceLs")
+            dist_label = f"{dist:,.0f} LS" if isinstance(dist, (float, int)) else "distance ?"
+            tier = str(target.get("tier") or "unknown").upper()
+            rank = int(target.get("rank") or 0)
+            lines.append(f"#{rank} {name} · {tier} · {dist_label}")
+            min_gain, max_gain = target.get("dssGainMin"), target.get("dssGainMax")
+            if isinstance(min_gain, (int, float)) and isinstance(max_gain, (int, float)):
+                tags = target.get("reasons") if isinstance(target.get("reasons"), list) else []
+                reason = str(tags[0]) if tags else "journal estimate"
+                lines.append(
+                    f"  +{int(min_gain):,}–{int(max_gain):,} CR (DSS est.) · "
+                    + self.clip_line(reason, 28)
+                )
+        remaining = int(advisor.get("eligibleCount") or 0) - min(3, len(targets))
+        if remaining > 0:
+            lines.append(f"... {remaining} more ranked DSS targets")
         if intel.get("highlights"):
             lines.append("COMMUNITY CANDIDATES (UNVERIFIED)")
             for body in intel["highlights"][:3]:
