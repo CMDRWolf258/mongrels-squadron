@@ -4165,9 +4165,15 @@ class MongrelHudApp:
         chosen = valid_point(row)
         if chosen is None:
             raise ValueError("invalid_mining_navigation_coordinates")
-        paired = next((item for item in data["centers"]
-                       if str(item.get("body") or "").casefold() == body.casefold()
-                       and int(item.get("signal") or 0) == sig), None)
+        candidates = [item for item in data["centers"]
+                      if str(item.get("body") or "").casefold() == body.casefold()
+                      and int(item.get("signal") or 0) == sig]
+        # Prefer the approved shared center when a commander also has a
+        # different local-only center for the same signal.
+        paired = next((item for item in candidates
+                       if item.get("storage") != "local_only"), None)
+        if paired is None and candidates:
+            paired = candidates[0]
         center = valid_point(paired)
         target = {
             "systemAddress": addr, "systemName": system_name, "body": body,
