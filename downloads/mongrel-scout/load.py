@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
@@ -117,10 +118,21 @@ HUD_EVENT_TYPES = {
     "Bounty": "bounty.awarded",
     "RedeemVoucher": "bounty.redeemed",
     "Died": "ship.died",
+    # Additive, local-only exploration notifications. Existing HUD clients can
+    # safely ignore these; no exploration event enters Scout's cloud activity queue.
+    "FSSDiscoveryScan": "exploration.honk",
+    "FSSAllBodiesFound": "exploration.fss_complete",
+    "Scan": "exploration.body_scan",
+    "SAAScanComplete": "exploration.mapped",
+    "FSSBodySignals": "exploration.body_signals",
+    "SAASignalsFound": "exploration.surface_signals",
+    "SellExplorationData": "exploration.sale",
+    "MultiSellExplorationData": "exploration.sale",
 }
 
 KEY_VERSION = "MongrelScoutConfigVersion"
 KEY_ENABLED = "MongrelScoutEnabled"
+KEY_SURVEY_INTEL_ENABLED = "MongrelScoutSurveyorCommunityIntel"
 KEY_TOKEN = "MongrelScoutToken"
 KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
@@ -133,6 +145,7 @@ KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
+_survey_intel_var: Optional[tk.IntVar] = None
 _token_var: Optional[tk.StringVar] = None
 _endpoint_var: Optional[tk.StringVar] = None
 _send_lock = threading.Lock()
@@ -191,6 +204,9 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
+    "exploration": None,
+    "explorationStatus": {"ok": False, "error": "not_started"},
+    "explorationImport": {"status": "not_started", "files": 0, "processed": 0, "duplicates": 0},
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
@@ -204,6 +220,181 @@ _hud_thread: Optional[threading.Thread] = None
 _hud_error = ""
 _hud_site_feed_thread: Optional[threading.Thread] = None
 _hud_site_feed_stop = threading.Event()
+_surveyor_instance: Any = None
+_surveyor_init_lock = threading.Lock()
+_surveyor_intel_lock = threading.Lock()
+_surveyor_intel_pending: Optional[tuple[str, str, str]] = None
+_surveyor_intel_worker_running = False
+_surveyor_history_lock = threading.Lock()
+_surveyor_history_started: set[str] = set()
+
+
+def _run_surveyor_history(commander: str, journal_dir: str) -> None:
+    """Local bounded replay; no journal data enters Scout's upload queues."""
+    try:
+        filename = Path(__file__).with_name("surveyor_history.py")
+        spec = importlib.util.spec_from_file_location("mongrel_surveyor_history", filename)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("history_module_unavailable")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        surveyor = _get_surveyor()
+        result = module.import_recent_journals(surveyor, commander, journal_dir)
+        snapshot = surveyor.snapshot(commander)
+        with _hud_condition:
+            if str(_hud_state.get("commander") or "") == commander:
+                _hud_state["exploration"] = snapshot
+                _hud_state["explorationImport"] = dict(result)
+                _hud_condition.notify_all()
+    except Exception:
+        with _hud_condition:
+            _hud_state["explorationImport"] = {"status": "local_replay_unavailable"}
+            _hud_condition.notify_all()
+
+
+def _schedule_surveyor_history(commander: str) -> None:
+    """At most one import per Commander per EDMC run, off the journal thread."""
+    if not commander:
+        return
+    journal_dir = getattr(monitor, "currentdir", None) if monitor is not None else None
+    if not journal_dir:
+        try:
+            journal_dir = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
+        except Exception:
+            journal_dir = ""
+    if not journal_dir:
+        return
+    with _surveyor_history_lock:
+        if commander in _surveyor_history_started:
+            return
+        _surveyor_history_started.add(commander)
+    threading.Thread(
+        target=_run_surveyor_history,
+        args=(str(commander), str(journal_dir)),
+        name="MongrelSurveyorLocalHistory",
+        daemon=True,
+    ).start()
+
+
+def _get_surveyor() -> Any:
+    """Load the sibling module without depending on EDMC's import path rules."""
+    global _surveyor_instance
+    if _surveyor_instance is not None:
+        return _surveyor_instance
+    with _surveyor_init_lock:
+        if _surveyor_instance is None:
+            filename = Path(__file__).with_name("surveyor.py")
+            spec = importlib.util.spec_from_file_location("mongrel_surveyor", filename)
+            if spec is None or spec.loader is None:
+                raise RuntimeError("surveyor_module_unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _surveyor_instance = module.Surveyor()
+    return _surveyor_instance
+
+
+def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
+                      state: Mapping[str, Any]) -> None:
+    """Exploration errors must NEVER interrupt combat/BGS/market pipelines."""
+    kind = str(entry.get("event") or "")
+    if kind not in {
+        "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
+        "FSSAllBodiesFound", "Scan", "SAAScanComplete",
+        "FSSBodySignals", "SAASignalsFound", "SellExplorationData",
+        "MultiSellExplorationData",
+    }:
+        return
+    try:
+        fallback_address = state.get("SystemAddress") if isinstance(state, Mapping) else None
+        surveyor = _get_surveyor()
+        updated = surveyor.apply(cmdr, entry, system, fallback_address)
+        if updated is None:
+            return  # Replayed event: identical input was already applied.
+        with _hud_condition:
+            _hud_state["exploration"] = updated
+            _hud_state["explorationStatus"] = {"ok": True, "error": None}
+            _hud_condition.notify_all()
+    except Exception:
+        # Do not include journal fields, account identity or file paths in HUD status.
+        with _hud_condition:
+            _hud_state["explorationStatus"] = {
+                "ok": False, "error": "local_surveyor_unavailable"
+            }
+            _hud_condition.notify_all()
+
+
+def _fetch_surveyor_intelligence() -> None:
+    """One background worker; latest jump supersedes pending lookups."""
+    global _surveyor_intel_pending, _surveyor_intel_worker_running
+    last_request_at = 0.0
+    while True:
+        with _surveyor_intel_lock:
+            work = _surveyor_intel_pending
+            _surveyor_intel_pending = None
+            if work is None:
+                _surveyor_intel_worker_running = False
+                return
+        commander, system_name, address = work
+        try:
+            if not config.get_bool(KEY_SURVEY_INTEL_ENABLED):
+                continue
+            surveyor = _get_surveyor()
+            cache = surveyor.cached_intelligence(commander, address)
+            if cache and int(cache.get("expiresAt") or 0) > time.time():
+                continue
+            # The same worker serializes all external requests and enforces
+            # a small floor between jumps to avoid hitting third-party APIs.
+            pause = max(0.0, 3.0 - (time.monotonic() - last_request_at))
+            if pause:
+                time.sleep(pause)
+            with _surveyor_intel_lock:
+                if _surveyor_intel_pending is not None:
+                    continue  # skip a superseded destination
+            filename = Path(__file__).with_name("surveyor_intel.py")
+            spec = importlib.util.spec_from_file_location("mongrel_surveyor_intel", filename)
+            if spec is None or spec.loader is None:
+                raise RuntimeError("surveyor_intelligence_module_unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            last_request_at = time.monotonic()
+            intelligence, failed = module.query(system_name, address)
+            # Preserve previously successful details on transient failures.
+            if intelligence.get("status") == "providers_unavailable" and cache and cache.get("providers"):
+                continue
+            snapshot = surveyor.set_intelligence(
+                commander, address, intelligence,
+                ttl_seconds=900 if failed else (43200 if intelligence.get("providers") else 3600),
+            )
+            with _hud_condition:
+                current = _hud_state.get("system")
+                if (
+                    str(_hud_state.get("commander") or "") == commander
+                    and isinstance(current, Mapping)
+                    and str(current.get("address") or "") == address
+                ):
+                    _hud_state["exploration"] = snapshot
+                    _hud_condition.notify_all()
+        except Exception:
+            # No impact on the journal callback or existing HTTP uplink.
+            continue
+
+
+def _schedule_surveyor_intelligence(cmdr: str, system_name: str, address: Any) -> None:
+    """Never perform remote lookups on EDMC's journal callback thread."""
+    global _surveyor_intel_pending, _surveyor_intel_worker_running
+    addr = _decimal_text(address)
+    if not cmdr or not system_name or not addr or not config.get_bool(KEY_SURVEY_INTEL_ENABLED):
+        return
+    with _surveyor_intel_lock:
+        _surveyor_intel_pending = (str(cmdr), str(system_name), addr)
+        if _surveyor_intel_worker_running:
+            return
+        _surveyor_intel_worker_running = True
+        threading.Thread(
+            target=_fetch_surveyor_intelligence,
+            name="MongrelSurveyorCommunityLookup",
+            daemon=True,
+        ).start()
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -212,6 +403,11 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_VERSION, 1)
         config.set(KEY_ENABLED, 1)
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
+    if config.get_int(KEY_VERSION) < 2:
+        # External EDSM/Spansh calls require an explicit opt-in from the
+        # Commander; local Surveyor journals and DSS advice remain available.
+        config.set(KEY_SURVEY_INTEL_ENABLED, 0)
+        config.set(KEY_VERSION, 2)
     _restore_owner_carrier()
     _restore_last_system_context()
     _restore_cargo_missions()
@@ -236,8 +432,9 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _token_var, _endpoint_var
+    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var
 
+    _survey_intel_var = tk.IntVar(value=1 if config.get_bool(KEY_SURVEY_INTEL_ENABLED) else 0)
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
     _token_var = tk.StringVar(value=config.get_str(KEY_TOKEN) or "")
     _endpoint_var = tk.StringVar(value=config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
@@ -255,6 +452,12 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     nb.Label(frame, text="Endpoint").grid(row=3, column=0, sticky=tk.W, pady=(8, 0))
     endpoint_entry = tk.Entry(frame, textvariable=_endpoint_var, width=52)
     endpoint_entry.grid(row=3, column=1, sticky=tk.EW, padx=(8, 0), pady=(8, 0))
+
+    nb.Checkbutton(
+        frame,
+        text="Surveyor: enrich current systems from EDSM and Spansh (local cache; shares system only)",
+        variable=_survey_intel_var,
+    ).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
 
     privacy = (
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
@@ -281,10 +484,14 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
         "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
         "Surface Mining can also use the token to submit explicit deposit reports to the curated 10-16 mining archive; "
-        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC."
+        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC. "
+        "If Surveyor community intelligence is enabled, the current visited system name and numeric system ID "
+        "are requested from EDSM and Spansh, not from Cloudflare; these providers can observe each lookup. "
+        "Surveyor does not send commander identity, raw journal events or estimated earnings to those providers. "
+        "Disable the Surveyor checkbox above to prevent these third-party system lookups."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=5, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
@@ -293,6 +500,8 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     """Save plugin settings when EDMC Settings closes."""
     if _enabled_var is not None:
         config.set(KEY_ENABLED, int(_enabled_var.get()))
+    if _survey_intel_var is not None:
+        config.set(KEY_SURVEY_INTEL_ENABLED, int(_survey_intel_var.get()))
     if _token_var is not None:
         config.set(KEY_TOKEN, _token_var.get().strip())
     if _endpoint_var is not None:
@@ -440,6 +649,13 @@ def journal_entry(
 
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
+    _observe_surveyor(cmdr, system, entry, state)
+    _schedule_surveyor_history(cmdr)
+    if event in {"FSDJump", "Location", "CarrierJump"}:
+        _schedule_surveyor_intelligence(
+            cmdr, str(entry.get("StarSystem") or system or ""),
+            entry.get("SystemAddress") or state.get("SystemAddress"),
+        )
     if event == "MissionAccepted":
         _remember_activity_mission_origin(entry, system, station, state)
     if event in {"FSDJump", "Location", "CarrierJump"}:
@@ -1385,6 +1601,16 @@ def _normalize_hud_event(
         destination_type = str(entry.get("Type") or "").strip()
         if destination_type:
             payload["destinationType"] = destination_type
+
+    if journal_event in {
+        "Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound"
+    }:
+        body_name = str(entry.get("BodyName") or "").strip()
+        body_id = _optional_int(entry.get("BodyID"))
+        if body_name:
+            payload["bodyName"] = body_name
+        if body_id is not None:
+            payload["bodyId"] = body_id
 
     if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
         body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()

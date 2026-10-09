@@ -1542,3 +1542,129 @@ The Orrery applies that feed after imported system data and any curated POI prov
 The local bridge may contain the active Commander name because future owner/squadmate greetings need the local pilot identity; that does not change the cloud privacy boundary. `CarrierStats` learns the current Commander's own carrier ID/callsign/name/docking access and persists that identity only in EDMC's local config, allowing later matching MarketID events to be labeled `relationship: owner`. Other carriers remain `unknown` until a future trusted squad carrier registry exists. The v1.4 bridge does not yet render an overlay, speak audio, register squadmate carriers, or upload general docking/travel history.
 
 `scripts/smoke-orrery.mjs` covers the shared model and page/module/vendor wiring; `scripts/smoke-orrery-data.mjs` covers both real-system relationships, provenance, catalog registration and offline import; `scripts/smoke-curated-pois.mjs` covers exact body joins, immutable canonical identities, coordinate/metadata preservation, tags and unchanged core data. All run in the existing site smoke workflow. Smoke success does not establish mouse/touch behavior or production deployment; browser checks remain necessary for system switching, camera, selection, filters, fallback and desktop/iPad/phone layouts in both systems, and the personal POI representation must be verified deployed separately.
+
+
+## Mongrel Surveyor foundation (development branch, not deployed)
+
+Draft PR #179 adds a local-only exploration data foundation to MongrelScout.
+The authoritative source is each commander's Frontier journal, and the
+prototype's persistent ledger is an independent SQLite database under
+%LOCALAPPDATA%\MongrelScout\surveyor.sqlite3 (or the platform's user data
+directory). This is intentionally **not** stored inside the replaceable EDMC
+plugin folder or in the website's D1/KV stores.
+
+- \`downloads/mongrel-scout/surveyor.py\` handles FSDJump/Location, FSS honk
+  counts, FSSAllBodiesFound, Scan, DSS mapping, signals, and known sales.
+  It uses exact decimal SystemAddress and BodyID identities, scopes records
+  by commander, and deduplicates full journal events before applying them.
+- \`load.py\` invokes the Surveyor behind an exception-isolated observer; errors
+  can affect the *exploration* status only, not the pre-existing BGS, cargo,
+  mining, carrier, mission, or cloud event pipelines.
+- New local bridge event types are additive and the full exploration snapshot
+  appears as \`exploration\` in the existing \`/v1/state\` model.
+  No new Cloudflare reads, writes, bindings, or user-data uploads are added.
+- \`functions/downloads/mongrel-scout.zip.js\` includes the sibling Python
+  module in the Scout plugin ZIP. The ledger survives normal plugin updates.
+- \`scripts/test_surveyor.py\` covers replay deduplication, first-arrival-star
+  candidates, mapping upgrades, cross-system totals, mapped-by-others status,
+  system-scoped sale reconciliation, persistence and commander isolation.
+  \`scripts/smoke-mongrel-hud.py\` guards the additive event vocabulary.
+- Initial scan/mapping prices are *provisional community-derived estimates*.
+  They exclude incomplete honk/system bonuses, possible policy effects, and
+  ambiguous sale reconciliation. \`unsoldEstimateStatus\` and
+  \`valuesAreEstimates\` must remain visible until calibrated against current
+  journal sales. Unobserved community bodies never create earnings.
+- No EDSM/Spansh queries, historical import, HUD visual Surveyor panel,
+  website expedition sharing, or voice dialogue is included in this foundation.
+
+**Release gate:** Do not merge/deploy this draft until CI smoke/regression,
+real EDMC Windows journal replay, value calibration, and existing
+HUD overlay/controller/BGS/mining/carrier regression checks are satisfactory.
+
+### Surveyor intelligence-assisted HUD (draft expansion, not deployed)
+
+The same draft PR includes a new **opt-in-visible** Mongrel Surveyor panel in
+\`downloads/mongrel-hud/mongrel_hud.py\` plus paired iPad layout controls.
+It defaults **hidden** and honors the existing independent combat/surface
+profile assignments, text sizing and layout controls; existing panel default
+positions/profiles are unchanged. HUD reads only the local Scout snapshot.
+
+\`downloads/mongrel-scout/surveyor_intel.py\` performs read-only Spansh ID64
+and EDSM exact-name body lookups in Scout's bounded background worker, never
+the EDMC journal thread or Cloudflare. A per-Commander/system local cache has
+a success TTL and shorter empty/error TTL; recently superseded destinations
+are skipped. Other providers may still return results during a partial outage.
+External data is explicitly *not* first-discovery proof and never creates
+personal cartographic earnings. Only a system name/ID leaves the machine for
+the external data providers. The EDMC Mongrel Scout settings checkbox
+(\`MongrelScoutSurveyorCommunityIntel\`) defaults **disabled** on a new
+installation and requires explicit Commander opt-in for any third-party
+EDSM/Spansh lookup. Local journal recording and DSS guidance work offline.
+The Scout plugin ZIP packages both Surveyor modules.
+
+The initial HUD shows journal-confirmed discovery flags, body and mapping
+counts, an experimental persistent unsold estimate, per-planet scan/DSS
+estimates and gain, first-mapping status, and selected community candidates.
+Historical import, accurate current-game payout calibration, true local
+discovery confirmation, in-game Windows UI review, and full-destination
+optimization are still outstanding release gates.
+
+
+### Surveyor milestone: local history and conservative cartographics (October 9, 2026)
+
+Draft PR #179 is based on current main including merged trade fixes PR #180
+and historical trade provenance recovery PR #181 (Scout 1.12.4). These
+fixes and the new trade diagnostic flow **must remain intact**; Surveyor is
+still draft, not a production release.
+
+- \`surveyor_history.py\` imports a bounded (32 recent files, 32 MiB,
+  120,000 lines) window of locally stored Frontier journals in a background
+  worker once per Commander per EDMC session. Every file establishes its own
+  Commander/LoadGame identity. Events without an explicit, trustworthy
+  current system address are skipped rather than attributed by guesswork.
+- History \`surveyor.apply(..., historic=True)\` reuses the persistent SQLite
+  journal-digest dedupe, preserves the live system pointer, timestamps and
+  already confirmed sales, and avoids recomputing expedition-wide snapshots
+  for each imported record. Prior journals do not enter Scout's live
+  cloud activity upload queue.
+- \`surveyor.py\` estimates include basic vs efficient mapping ranges and a
+  clear provisional model identifier. It records Frontier TotalEarnings
+  separately; a sale may include bonuses not represented in the scan model.
+  Critically, \`MultiSellExplorationData.Discovered\` does *not* identify all
+  sold systems, so the corresponding event must **not** erase a system's
+  unsold body estimates. The HUD labels sale reconciliation as incomplete.
+- Existing surveyor module tests, history-import tests and site smoke tests
+  are the regression gate; no live Frontier Windows/EDMC validation has
+  been performed. Do not call the value model calibrated until compared
+  with actual post-sale journal records. Keep Surveyor unmerged until real
+  Scout/HUD overlay checks and acceptable error/CPU behavior are confirmed.
+
+
+### Surveyor milestone: DSS mapping advisor (October 9, 2026)
+
+The Surveyor draft PR #179 now contains a local, journal-grounded DSS advisor.
+It ranks only personally FSS-scanned planetary bodies that the current
+Commander has **not** already DSS-mapped. Candidate records derived solely
+from EDSM/Spansh or NavBeaconDetail are not promoted to verified priorities.
+For each candidate, the estimate includes basic-vs-efficient incremental
+DSS mapping credit gains from the current **provisional** cartographic model,
+the journal-reported distance in LS from the arrival star when available,
+mapping status, tentative first-mapping hints, and reason tags.
+
+The rank uses a mild logarithmic arrival-distance penalty; it is strictly
+a relative convenience heuristic, not a supercruise time prediction, route
+optimizer, credit/hour model, or confirmed payout. Missing or invalid distance
+is displayed as unknown rather than fabricated. Targets with insufficient
+mass/value evidence are counted as unvalued but not ranked. The current system
+snapshot includes \`mappingAdvisor\`, showing up to eight ranked targets;
+the Surveyor HUD panel shows the first three. Mapping completion removes the
+body; deduplicated journal imports do not re-add it. No website/Cloudflare
+fetches or writes are needed.
+
+Automated ranking and HUD text tests: \`scripts/test_surveyor_advisor.py\`
+and \`scripts/test_surveyor_advisor_hud.py\` in the Surveyor checks workflow.
+Third-party catalog lookups now default OFF at first Scout install (explicit
+opt-in), unlike an earlier draft. Earlier preexisting user preferences remain
+untouched. Continue to treat PR #179 as **unmerged** until actual EDMC/Elite
+journal, display-size/iPad and existing Scout/HUD regression testing on
+Serenity is satisfactory.

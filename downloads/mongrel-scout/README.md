@@ -13,6 +13,7 @@ Mongrel Scout is an EDMC plugin for the squad. It quietly sends the specific Eli
 - station market prices, supply and demand
 - station/facility placement information for the Orrery
 - selected mission, bounty, eligible purchased-cargo trade-profit and colonization results used by Mission Control
+- **Mongrel Surveyor foundation (development):** keeps a private SQLite exploration journal, scan/map history and preliminary cartographic estimates on the PC; nothing from this new history is sent to Cloudflare
 
 It is event-driven. There is nothing you need to "run" inside the plugin after setup.
 
@@ -67,9 +68,80 @@ Your Scout token is stored in EDMC's settings and normally does not need to be e
 
 Mongrel HUD talks to Scout locally, so Scout should be installed, enabled and running whenever you use the HUD.
 
+
+## Surveyor historic journal recovery (development build)
+
+On the first eligible EDMC journal callback for each Commander, Scout starts a
+**local background import** of up to 32 recent Frontier journal files and no
+more than 32 MiB / 120,000 lines. The import matches `Commander` and
+`LoadGame` identities per file, requires explicit system identity, and
+replays observed FSS/DSS scans and Universal Cartographics sales into the same
+SQLite event ledger that handles live observations. Repeating the import is
+safe: identical events do not change scan counts, sale totals or outstanding
+estimates. Historical journal events are **never submitted** as live mission,
+trade or exploration activity to the website.
+
+Surveyor also preserves the live system pointer while importing older systems.
+When journal coverage is missing, the HUD can display a **partial** result.
+The scanner cannot reconstruct data outside the bounded journal window, infer
+unknown past scans, or guarantee an unsold balance if a cartographic sale does
+not enumerate the sold systems. `MultiSellExplorationData.Discovered` is a
+discovery list, not a complete list of sold systems.
+
+Cartographic credit values remain **experimental**. The HUD now shows a
+basic-versus-efficient DSS potential range, and recorded Frontier
+`TotalEarnings` separately from estimated outstanding scans. Powerplay,
+system completion and other modifiers prevent exact predictions. The estimated
+unsold figure must not be interpreted as your guaranteed future payout.
+
+## DSS mapping advisor (development build)
+
+The Surveyor HUD panel now ranks **up to eight** unmapped, personally scanned
+planetary bodies and displays its **top three** actionable DSS candidates.
+Each recommendation shows a range for *additional* mapping credits (basic versus
+efficient DSS mapping), known distance from the system's arrival star in LS
+(or "distance unknown"), and journal-grounded hints such as a potential first
+mapping or terraformability. These are **provisional estimates**, not guaranteed
+sale payouts. The ranking uses a light logarithmic distance penalty; it does
+**not** estimate supercruise time, choose a flight route, or navigate your ship.
+
+Mapping the body removes it from your remaining DSS suggestions. Replaying the
+same journal does not recreate it. Bodies seen only in EDSM/Spansh catalogs or
+NavBeaconDetails are **not** eligible for ranked personal scan recommendations.
+No additional Cloudflare requests or writes are made for the advisor.
+
+## Surveyor community intelligence (development build)
+
+Mongrel Surveyor maintains a persistent, **local** exploration ledger of
+your journal-confirmed scans, maps, possible first discoveries, and
+**estimated** unsold cartographic data. Its experimental cartographic
+estimates may differ from Frontier sales and are not guaranteed values.
+
+Only if you explicitly enable the **Surveyor: enrich current systems from
+EDSM and Spansh** checkbox does Scout request known system information
+directly from those two providers as you enter systems. New installations
+start with this checkbox **off**; local exploration and DSS advice work
+without it. Only the current system name/ID is
+used in these HTTPS lookups; their servers can observe the requested systems.
+No Commander name, account token, journal contents, or estimated earnings are
+sent to EDSM or Spansh. You can uncheck the box in EDMC's Mongrel Scout
+settings at any time. Local journal tracking continues without either service.
+
+Cached intelligence is advisory; *missing* public database entries do not
+prove a first discovery, and the external body catalog never creates
+personal cartographic earnings. The optional **Mongrel Surveyor** overlay
+can be enabled and sized in the paired HUD layout controls. Existing panels
+remain in their prior profiles/positions and the new panel defaults off.
+
+This feature remains on a **draft development branch**, not an installed
+production release. No Cloudflare exploration-history storage or
+automatic squad publication is involved.
+
 ## Privacy
 
 Scout does **not** upload your full journal, Commander name, cargo inventory, credit balance, ship build, materials, or general route history.
+
+Surveyor's optional EDSM/Spansh requests disclose only your current system name/ID to those third parties. Disable community lookups in EDMC settings to avoid that disclosure.
 
 It only sends the squad data it is designed to report, such as BGS snapshots, public station-market data, facility-placement facts, and selected mission/bounty/colonization/**eligible trade-sale** results used by Mongrel tools. Local purchase-origin tracking stays on the PC and is never uploaded.
 
