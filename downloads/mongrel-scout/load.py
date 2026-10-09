@@ -3016,9 +3016,16 @@ def _observe_activity_trade(
         lots = ledger.setdefault(commodity, [])
         actual_post = _trade_inventory_count(state, commodity)
         if event == "MarketBuy":
-            # The snapshot is *after* the purchase. Unknown preexisting stock
-            # must precede the new purchase rather than becoming falsely verified.
-            before = max(0, actual_post - count) if actual_post is not None and actual_post >= count else None
+            # EDMC Cargo can be one journal event behind. Accept either a
+            # validated post-buy snapshot or a pre-buy snapshot matching the
+            # already-known ledger. Anything else remains unknown origin.
+            tracked_before = _trade_lot_total(lots)
+            if actual_post is not None and actual_post == tracked_before:
+                before = actual_post  # Cargo still reflects pre-purchase
+            elif actual_post is not None and actual_post >= count:
+                before = actual_post - count  # Cargo already reflects purchase
+            else:
+                before = None
             _trade_reconcile_quantity(lots, before)
             source = ("carrier_market" if station_type.casefold() == "fleetcarrier"
                       else "station_market" if station_type and station and system else "unknown")
@@ -3033,8 +3040,16 @@ def _observe_activity_trade(
             _trade_add_lot(lots, "mined", count)
             _save_activity_trade_provenance()
             return None
-        # Sale: compare expected pre-sale holdings with known purchase history.
-        before = actual_post + count if actual_post is not None else None
+        # Sale: EDMC Cargo may still show pre-sale holdings. Preserve the
+        # verified lot when that pre-sale snapshot exactly matches our ledger;
+        # otherwise require the normal post-sale quantity reconciliation.
+        # A mismatch stays 'unknown' rather than manufacturing profit credit.
+        tracked_before = _trade_lot_total(lots)
+        before = (
+            tracked_before if actual_post is not None
+            and actual_post == tracked_before and tracked_before >= count
+            else actual_post + count if actual_post is not None else None
+        )
         _trade_reconcile_quantity(lots, before)
         source = _trade_consume_lots(lots, count)
         if not lots:
