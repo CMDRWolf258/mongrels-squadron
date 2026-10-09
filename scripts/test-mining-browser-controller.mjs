@@ -27,7 +27,7 @@ const context={
     ],centers:[
       {body:'Icy Test C 1',signal:4,latitude:4,longitude:2,storage:'shared'},
     ]}},
-  el,escapeHtml,
+  el,escapeHtml,escapeAttr:escapeHtml,
 };
 vm.createContext(context);
 const selectionCode=pick('function browserMatches','function showMiningSuggestions');
