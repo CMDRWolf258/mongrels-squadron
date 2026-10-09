@@ -219,6 +219,14 @@ with tempfile.TemporaryDirectory() as temp:
         {"id": 2000000002, "systemAddress": "88888888888888888",
          "body": "icy test a 2 a", "signal": 1, "latitude": 0.0, "longitude": 0.0},
     ]
+    # New-system read-through data is held outside the 10-16 periodic feed.
+    restarted.mining_browser_remote_cache = {
+        "12345678901234567": {
+            "expires": time.monotonic() + 600,
+            "deposits": [restarted.mining_sites[0]],
+            "centers": [restarted.mining_centers[0]],
+        }
+    }
     assert len(restarted.sites_for_current_body()) == 4
     assert {x["commodity"] for x in restarted.sites_for_current_body()} == {
         "Low Temperature Diamonds", "Bromellite", "Alexandrite"
@@ -263,6 +271,8 @@ with tempfile.TemporaryDirectory() as temp:
 hud_source = file.read_text(encoding="utf-8")
 scout_source = (file.parents[1] / "mongrel-scout/load.py").read_text(encoding="utf-8")
 assert "MULTI_MINING_REMOTE_READS_ENABLED = False" in hud_source
+assert 'self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")' in hud_source
+assert 'self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")' in hud_source
 assert 'endpoint += "?" + urlencode({"systemAddress": address})' in scout_source
 controller = (file.parent / "controller.html").read_text(encoding="utf-8")
 assert 'state.miningStorage==="local_only"' in controller
