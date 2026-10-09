@@ -28,10 +28,23 @@ combined for **commodity**, **planet/moon**, and **minimum mining rig count**
 approved/shared data. Your selected browsing system is saved on the Windows
 HUD PC and survives restarts.
 
-**Browsing does not change Elite's real location, the active deposit/center
-compass, or where new reports are saved.** The existing "Locations on this
-body", "Set center" and "Report Deposit" controls still follow your actual
-Frontier journal and surface coordinates.
+**Browsing itself does not change Elite's real location, the active
+deposit/center compass, or where new reports are saved.** Expand a deposit
+search result and tap **Navigate** to deliberately set the HUD's deposit
+compass. If that mining signal has a saved center, the second compass points
+to the center at the same time. Center-only signals have their own Navigate
+button; choosing one does not invent a deposit waypoint.
+
+For a result on another body or system, Navigate shows **Destination Queued**.
+The current active compass remains untouched until the Frontier journal
+confirms both the correct system ID64 and planetary body; then the new
+selection activates. The active waypoint and any pending destination persist
+in the HUD PC's local state file across restarts. If the shared archive is
+temporarily unreachable, the specifically selected, validated deposit and
+center coordinates remain locally pinned for navigation. A later manual
+signal/deposit selection cancels the browser navigation preference. The
+existing "Locations on this body", "Set center" and "Report Deposit" controls
+still follow actual Frontier position rather than the browsed system.
 
 The controller uses local filtering after retrieving the selected system's
 records: **typing triggers no Cloudflare requests**. The directory is
