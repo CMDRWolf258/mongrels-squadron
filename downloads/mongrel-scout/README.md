@@ -69,6 +69,31 @@ Your Scout token is stored in EDMC's settings and normally does not need to be e
 Mongrel HUD talks to Scout locally, so Scout should be installed, enabled and running whenever you use the HUD.
 
 
+## Surveyor historic journal recovery (development build)
+
+On the first eligible EDMC journal callback for each Commander, Scout starts a
+**local background import** of up to 32 recent Frontier journal files and no
+more than 32 MiB / 120,000 lines. The import matches `Commander` and
+`LoadGame` identities per file, requires explicit system identity, and
+replays observed FSS/DSS scans and Universal Cartographics sales into the same
+SQLite event ledger that handles live observations. Repeating the import is
+safe: identical events do not change scan counts, sale totals or outstanding
+estimates. Historical journal events are **never submitted** as live mission,
+trade or exploration activity to the website.
+
+Surveyor also preserves the live system pointer while importing older systems.
+When journal coverage is missing, the HUD can display a **partial** result.
+The scanner cannot reconstruct data outside the bounded journal window, infer
+unknown past scans, or guarantee an unsold balance if a cartographic sale does
+not enumerate the sold systems. `MultiSellExplorationData.Discovered` is a
+discovery list, not a complete list of sold systems.
+
+Cartographic credit values remain **experimental**. The HUD now shows a
+basic-versus-efficient DSS potential range, and recorded Frontier
+`TotalEarnings` separately from estimated outstanding scans. Powerplay,
+system completion and other modifiers prevent exact predictions. The estimated
+unsold figure must not be interpreted as your guaranteed future payout.
+
 ## Surveyor community intelligence (development build)
 
 Mongrel Surveyor maintains a persistent, **local** exploration ledger of
