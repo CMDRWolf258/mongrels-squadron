@@ -4270,7 +4270,9 @@ class MongrelHudApp:
             by_signal = {int(row["signal"]):row for row in local_rows}
             by_signal.update({int(row["signal"]):row for row in remote_rows})
             pinned = self._mining_nav_pin_row("center")
-            if pinned and int(pinned.get("signal") or 0) not in by_signal:
+            if pinned:
+                # An explicitly selected saved center wins over another
+                # center record carrying the same body/signal.
                 by_signal[int(pinned["signal"])] = pinned
             return [by_signal[key] for key in sorted(by_signal)]
         body = short_body_name(state).casefold()
@@ -4286,7 +4288,9 @@ class MongrelHudApp:
                 and str(row.get("body") or "").casefold() == body
             ]
         pinned = self._mining_nav_pin_row("center")
-        if pinned and int(pinned.get("signal") or 0) not in {int(r.get("signal") or 0) for r in rows}:
+        if pinned:
+            rows = [row for row in rows
+                    if int(row.get("signal") or 0) != int(pinned["signal"])]
             rows.append(pinned)
         return sorted(rows, key=lambda row: int(row.get("signal") or 0))
 
