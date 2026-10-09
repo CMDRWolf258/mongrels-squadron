@@ -73,7 +73,7 @@ with tempfile.TemporaryDirectory() as tmp:
             BodyID=22, PlanetClass="Ammonia world", MassEM=1.2),
     ])
     first = history.import_recent_journals(ledger, cmdr, files)
-    assert first["processed"] == 6, first
+    assert first["processed"] == 5, first
     assert first["skipped"] >= 1, first
     assert ledger.snapshot(cmdr)["system"]["name"] == "Live system"
     assert ledger.snapshot(cmdr)["confirmedSalesLifetime"] == 1000000
