@@ -34,7 +34,9 @@ method_names = {
     "_next_local_mining_id_locked", "set_site_center", "report_deposit",
     "mining_commodity_choices", "mining_browser_catalog",
     "refresh_mining_browser_directory", "select_mining_browser_system",
-    "browse_mining_system",
+    "browse_mining_system", "navigate_mining_browser_result",
+    "mining_browser_navigation_status", "_mining_nav_on_current_body",
+    "_mining_nav_pin_row", "_activate_pending_mining_navigation",
 }
 methods = [x for x in classes[0].body if isinstance(x, ast.FunctionDef) and x.name in method_names]
 assert {x.name for x in methods} == method_names
@@ -255,6 +257,84 @@ with tempfile.TemporaryDirectory() as temp:
     raises("mining_system_not_logged", restarted.browse_mining_system, "99999999")
     restarted_again = make(Store(path), scene())
     assert restarted_again.mining_browser_catalog()["selected"] == "88888888888888888"
+    # Searching does NOT change navigation, but clicking Navigate activates
+    # the stored deposit and its center together on the current world.
+    site_nav = restarted.navigate_mining_browser_result(
+        "12345678901234567", "deposit", "2000000001")
+    assert site_nav["navigation"]["status"] == "active", site_nav
+    assert site_nav["navigation"]["centerAvailable"] is True
+    assert restarted.active_site()["id"] == 2000000001
+    assert restarted.active_center()["id"] == 2000000001
+    assert restarted.deposit_nav()["target"]["id"] == 2000000001
+    assert restarted.location_nav()["target"]["id"] == 2000000001
+    # Navigation snapshot persists even if the separate shared browser cache
+    # expires or the HUD is restarted offline.
+    restarted.mining_browser_remote_cache = {}
+    remembered = make(Store(path), scene())
+    assert remembered.active_location_signal() == 1
+    assert remembered.active_site()["id"] == 2000000001
+    assert remembered.active_center()["id"] == 2000000001
+    assert remembered.deposit_nav() is not None
+    assert remembered.location_nav() is not None
+
+    # Rejection of unlisted IDs and invalid types MUST preserve current
+    # compass selection and existing browser navigation.
+    raises("mining_location_not_found", remembered.navigate_mining_browser_result,
+           "12345678901234567", "deposit", "42424242")
+    raises("invalid_mining_navigation_type", remembered.navigate_mining_browser_result,
+           "12345678901234567", "custom", "2000000001")
+    assert remembered.active_site()["id"] == 2000000001
+
+    # A center-only destination in another system must queue without changing
+    # either current compass; activation waits for BOTH system and full body.
+    target_center = next(row for row in remembered.store.data["localMiningCenters"]
+                         if row["systemAddress"] == "88888888888888888"
+                         and row["body"] == "Icy Test A 2 b")
+    before = remembered.deposit_nav()
+    pending = remembered.navigate_mining_browser_result(
+        "88888888888888888", "center", str(target_center["id"]))
+    assert pending["navigation"]["status"] == "queued"
+    assert pending["navigation"]["centerAvailable"] is True
+    assert remembered.deposit_nav() == before
+    resumed = make(Store(path), scene())
+    assert resumed.mining_browser_navigation_status()["status"] == "queued"
+    assert resumed.active_site() is not None
+    resumed.current = scene(system_id="88888888888888888", body="Icy Test A 2 a")
+    assert resumed.mining_browser_navigation_status()["status"] == "queued"
+    resumed.current = scene(system_id="88888888888888888", body="Icy Test A 2 b")
+    assert resumed.active_location_signal() == 1
+    assert resumed.mining_browser_navigation_status()["status"] == "active"
+    assert resumed.active_center()["id"] == target_center["id"]
+    assert resumed.location_nav()["target"]["id"] == target_center["id"]
+    assert resumed.active_site() is None
+    assert resumed.deposit_nav() is None
+    # An explicit manual navigation selection cancels pending/pinned routes.
+    resumed.select_location(1)
+    assert resumed.mining_browser_navigation_status() is None
+
+    # 10-16 still understands its original SHORT mining body labels and
+    # navigates to saved center and site with original central IDs.
+    resumed.current = scene(
+        system_id="560820275507", name="NGC 2546 Sector UZ-G d10-16",
+        body="NGC 2546 Sector UZ-G d10-16 3")
+    resumed.mining_sites = [{
+        "id": 51, "systemName": "NGC 2546 Sector UZ-G d10-16",
+        "systemAddress": "560820275507", "body": "3", "signal": 13,
+        "commodity": "Platinum", "latitude": 31.8870, "longitude": 28.4079, "rigs": 4,
+    }]
+    resumed.mining_centers = [{
+        "id": 42, "systemName": "NGC 2546 Sector UZ-G d10-16",
+        "systemAddress": "560820275507", "body": "3", "signal": 13,
+        "latitude": 31.8800, "longitude": 28.4000,
+    }]
+    central = resumed.navigate_mining_browser_result("560820275507", "deposit", "51")
+    assert central["navigation"]["status"] == "active", central
+    assert central["navigation"]["centerAvailable"] is True
+    assert resumed.active_site()["id"] == 51
+    assert resumed.active_center()["id"] == 42
+    assert resumed.deposit_nav() is not None
+    assert resumed.location_nav() is not None
+
     # Strict center validation rejects substituted ID64/body and invalid coords.
     center_validator = scope["canonical_multisystem_center"] if "canonical_multisystem_center" in scope else None
     if center_validator:
