@@ -63,6 +63,7 @@ SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
 MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
+MINING_SYSTEMS_URL = "http://127.0.0.1:43857/v1/mining/systems"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
@@ -3887,6 +3888,159 @@ class MongrelHudApp:
             self._refresh_mining_data_once()
             time.sleep(MINING_REFRESH_SECONDS)
 
+    def mining_browser_catalog(self) -> dict[str, Any]:
+        """System choices include saved local and central data; no scan per keystroke."""
+        with self.store.lock:
+            saved = list(self.store.data.get("localMiningDeposits") or [])
+            saved += list(self.store.data.get("localMiningCenters") or [])
+            selected = str(self.store.data.get("miningBrowserSystem") or "")
+        with self.mining_lock:
+            shared = list(self.mining_sites) + list(self.mining_centers)
+            known_remote = list(getattr(self, "mining_browser_directory", []))
+        systems: dict[str, dict[str, str]] = {
+            TEN16_ID64: {"systemName": TEN16_SYSTEM, "systemAddress": TEN16_ID64}
+        }
+        for row in saved + shared + known_remote:
+            if not isinstance(row, dict):
+                continue
+            address = str(row.get("systemAddress") or "").strip()
+            name = str(row.get("systemName") or "").strip()
+            if not re.fullmatch(r"[0-9]{1,20}", address) or not name:
+                continue
+            if address == TEN16_ID64:
+                continue
+            systems[address] = {"systemName": name[:160], "systemAddress": address}
+        current = self.scout_state().get("system") or {}
+        address = str(current.get("address") or "").strip()
+        # A system without saved mining records is not a catalog entry.
+        if selected not in systems:
+            selected = address if address in systems else TEN16_ID64
+        return {
+            "ok": True, "systems": sorted(systems.values(), key=lambda row: row["systemName"].casefold()),
+            "selected": selected,
+            "remoteDirectoryEnabled": bool(MULTI_MINING_REMOTE_READS_ENABLED),
+            "currentSystemAddress": address,
+        }
+
+    def refresh_mining_browser_directory(self, *, force: bool = False) -> dict[str, Any]:
+        """One on-demand, cached Scout request; never triggered by typing."""
+        if not MULTI_MINING_REMOTE_READS_ENABLED:
+            return self.mining_browser_catalog()
+        now = time.monotonic()
+        with self.mining_lock:
+            fresh = now - float(getattr(self, "mining_browser_directory_checked", 0)) < 3600
+            if fresh and not force:
+                return self.mining_browser_catalog()
+            # Reserve the next hour before I/O so simultaneous iPad calls don't
+            # generate a burst of duplicate Cloudflare requests.
+            self.mining_browser_directory_checked = now
+        try:
+            with urllib.request.urlopen(MINING_SYSTEMS_URL, timeout=9) as response:
+                data = json.load(response)
+            if not isinstance(data, dict) or data.get("ok") is not True or not isinstance(data.get("systems"), list):
+                raise ValueError("invalid_mining_directory")
+            rows = []
+            for item in data["systems"][:1000]:
+                if not isinstance(item, dict):
+                    continue
+                ident, name = str(item.get("systemAddress") or ""), str(item.get("systemName") or "").strip()
+                if re.fullmatch(r"[0-9]{1,20}", ident) and name:
+                    rows.append({"systemAddress": ident, "systemName": name[:160]})
+            with self.mining_lock:
+                self.mining_browser_directory = rows
+                self.mining_browser_directory_error = ""
+        except (OSError, ValueError, TimeoutError) as exc:
+            with self.mining_lock:
+                self.mining_browser_directory_error = type(exc).__name__
+        return self.mining_browser_catalog()
+
+    def select_mining_browser_system(self, address: str) -> dict[str, Any]:
+        address = str(address or "").strip()
+        if address not in {row["systemAddress"] for row in self.mining_browser_catalog()["systems"]}:
+            raise ValueError("mining_system_not_logged")
+        with self.store.lock:
+            self.store.data["miningBrowserSystem"] = address
+            self.store.save()
+        return {"ok": True, "selected": address}
+
+    def browse_mining_system(self, address: str) -> dict[str, Any]:
+        """Read-only catalogue; cannot change live compass/body/signal."""
+        addr = str(address or "").strip()
+        catalog = self.mining_browser_catalog()
+        record = next((s for s in catalog["systems"] if s["systemAddress"] == addr), None)
+        if record is None:
+            raise ValueError("mining_system_not_logged")
+        with self.store.lock:
+            deposits = [
+                dict(row) for row in self.store.data.get("localMiningDeposits", [])
+                if isinstance(row, dict) and str(row.get("systemAddress") or "") == addr
+            ]
+            centers = [
+                dict(row) for row in self.store.data.get("localMiningCenters", [])
+                if isinstance(row, dict) and str(row.get("systemAddress") or "") == addr
+            ]
+        with self.mining_lock:
+            if addr == TEN16_ID64:
+                deposits += [
+                    {**row, "storage": "shared"}
+                    for row in self.mining_sites if str(row.get("systemAddress") or TEN16_ID64) == TEN16_ID64
+                ]
+                centers += [
+                    {**row, "storage": "shared"}
+                    for row in self.mining_centers if str(row.get("systemAddress") or TEN16_ID64) == TEN16_ID64
+                ]
+            else:
+                remote = getattr(self, "mining_browser_remote_cache", {}).get(addr)
+                if isinstance(remote, dict) and remote.get("expires", 0) > time.monotonic():
+                    deposits += [dict(row) for row in remote.get("deposits", [])]
+                    centers += [dict(row) for row in remote.get("centers", [])]
+        warning = ""
+        if addr != TEN16_ID64 and MULTI_MINING_REMOTE_READS_ENABLED:
+            cached = getattr(self, "mining_browser_remote_cache", {}).get(addr)
+            if not isinstance(cached, dict) or cached.get("expires", 0) <= time.monotonic():
+                try:
+                    if not re.fullmatch(r"[0-9]{1,20}", addr):
+                        raise ValueError("invalid_system_address")
+                    suffix = "?systemAddress=" + addr
+                    raw_sites = self._load_mining_bridge_payload(MINING_DATA_URL + suffix, "mining_browser_unavailable")
+                    raw_centers = self._load_mining_bridge_payload(MINING_CENTERS_URL + suffix, "mining_browser_unavailable")
+                    shared_sites = [
+                        {**row, "storage": "shared"}
+                        for row in raw_sites if isinstance(row, dict)
+                        and str(row.get("systemAddress") or "") == addr
+                    ]
+                    shared_centers = [
+                        {**row, "storage": "shared"}
+                        for row in raw_centers if isinstance(row, dict)
+                        and str(row.get("systemAddress") or "") == addr
+                    ]
+                    with self.mining_lock:
+                        if not hasattr(self, "mining_browser_remote_cache"):
+                            self.mining_browser_remote_cache = {}
+                        self.mining_browser_remote_cache[addr] = {
+                            "expires": time.monotonic() + 600,
+                            "deposits": shared_sites, "centers": shared_centers,
+                        }
+                    deposits += shared_sites
+                    centers += shared_centers
+                except (OSError, ValueError, HudRequestError):
+                    warning = "Shared records temporarily unavailable; displaying local records."
+        def safe_row(row: dict[str, Any]) -> dict[str, Any]:
+            return {
+                key: row.get(key) for key in (
+                    "id", "body", "bodyType", "signal", "commodity", "rigs", "latitude",
+                    "longitude", "notes", "storage", "preferred", "needsReview",
+                )
+            }
+        # Capped response for iPad memory; filter in the UI without more reads.
+        return {
+            "ok": True, "system": record,
+            "deposits": [safe_row(row) for row in deposits[:2000]],
+            "centers": [safe_row(row) for row in centers[:1000]],
+            "truncated": len(deposits) > 2000 or len(centers) > 1000,
+            "warning": warning,
+        }
+
     def mining_status_snapshot(self) -> dict[str, Any]:
         with self.mining_lock:
             return {
@@ -6162,6 +6316,20 @@ def make_handler(app: MongrelHudApp):
                     return
                 self.send_json(app.controller_state())
                 return
+            if path in {"/api/mining-browser/catalog", "/api/mining-browser/system"}:
+                if not self.authorized():
+                    self.send_json({"ok": False, "error": "pair_required"}, 401)
+                    return
+                try:
+                    if path.endswith("/catalog"):
+                        self.send_json(app.refresh_mining_browser_directory())
+                    else:
+                        query = parse_qs(urlparse(self.path).query)
+                        addr = str((query.get("systemAddress") or [""])[0])
+                        self.send_json(app.browse_mining_system(addr))
+                except ValueError as exc:
+                    self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
             self.send_json({"ok": False, "error": "not_found"}, 404)
 
         def do_POST(self) -> None:
@@ -6217,6 +6385,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voicePack": app.start_voice_pack_install(repair=True)}
                 elif path == "/api/voice-pack-remove":
                     result = {"ok": True, "voicePack": app.remove_voice_pack(), "voice": app.voice_settings_snapshot()}
+                elif path == "/api/mining-browser/selected":
+                    result = app.select_mining_browser_system(str(body.get("systemAddress") or ""))
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
