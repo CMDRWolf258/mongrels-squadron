@@ -4569,10 +4569,25 @@ class MongrelHudApp:
             f"Estimated unsold: {int(estimate):,} CR"
             if isinstance(estimate, (int, float)) else "Estimated unsold: insufficient evidence"
         )
-        lines.append("Valuation provisional; sales may be partially matched")
-        gain = survey.get("additionalMappingPotential")
-        if isinstance(gain, (int, float)):
-            lines.append(f"Additional mapping potential: +{int(gain):,} CR")
+        lines.append("ESTIMATES ONLY · actual cartographic sales may differ")
+        history = snapshot.get("explorationImport") if isinstance(snapshot.get("explorationImport"), dict) else {}
+        if history:
+            history_state = str(history.get("status") or "not_started")
+            if history_state in {"completed", "partial"}:
+                lines.append(
+                    f"Journal recovery: {history_state.upper()} · "
+                    f"{int(history.get('processed') or 0)} new / "
+                    f"{int(history.get('duplicates') or 0)} known"
+                )
+            elif history_state == "local_replay_unavailable":
+                lines.append("Journal recovery unavailable · current scans still tracked")
+        sale_status = str(survey.get("unsoldEstimateStatus") or "")
+        if sale_status == "incomplete_sale_reconciliation":
+            lines.append("Sales recorded; UNSOLD estimate may include already-sold bodies")
+        gain_min = survey.get("additionalMappingPotentialMin")
+        gain_max = survey.get("additionalMappingPotentialMax")
+        if isinstance(gain_min, (int, float)) and isinstance(gain_max, (int, float)):
+            lines.append(f"DSS potential (basic / efficient): +{int(gain_min):,}–{int(gain_max):,} CR")
         intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
         if intel:
             providers = intel.get("providers") if isinstance(intel.get("providers"), list) else []
@@ -4604,6 +4619,10 @@ class MongrelHudApp:
             scan_str = f"{int(current):,}" if isinstance(current, (int, float)) else "?"
             map_str = f"{int(mapped_value):,}" if isinstance(mapped_value, (int, float)) else "?"
             gain_str = f"+{int(gain):,}" if isinstance(gain, (int, float)) else "N/A"
+            gain_min_body = body.get("mappingGainMin")
+            gain_max_body = body.get("mappingGainMax")
+            if isinstance(gain_min_body, (int, float)) and isinstance(gain_max_body, (int, float)):
+                gain_str = f"+{int(gain_min_body):,}–{int(gain_max_body):,}"
             lines.append(f"  Current {scan_str}  |  DSS {map_str}  |  Gain {gain_str} CR")
         if intel.get("highlights"):
             lines.append("COMMUNITY CANDIDATES (UNVERIFIED)")
