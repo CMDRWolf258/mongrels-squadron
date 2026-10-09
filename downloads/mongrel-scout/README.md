@@ -13,6 +13,7 @@ Mongrel Scout is an EDMC plugin for the squad. It quietly sends the specific Eli
 - station market prices, supply and demand
 - station/facility placement information for the Orrery
 - selected mission, bounty, eligible purchased-cargo trade-profit and colonization results used by Mission Control
+- **Mongrel Surveyor foundation (development):** keeps a private SQLite exploration journal, scan/map history and preliminary cartographic estimates on the PC; nothing from this new history is sent to Cloudflare
 
 It is event-driven. There is nothing you need to "run" inside the plugin after setup.
 
