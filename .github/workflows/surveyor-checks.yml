@@ -1,0 +1,24 @@
+name: Mongrel Surveyor checks
+
+on:
+  push:
+    branches:
+      - 'feature/mongrel-surveyor-*'
+  pull_request:
+    paths:
+      - 'downloads/mongrel-scout/**'
+      - 'scripts/test_surveyor.py'
+      - '.github/workflows/surveyor-checks.yml'
+
+jobs:
+  surveyor-journal-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Python syntax and compilation
+        run: python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py scripts/test_surveyor.py
+      - name: Test persistent exploration ledger
+        run: python scripts/test_surveyor.py
