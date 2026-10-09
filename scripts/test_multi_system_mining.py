@@ -195,8 +195,49 @@ with tempfile.TemporaryDirectory() as temp:
     # Off-system scoped selections cannot replace old 10-16 selection key.
     assert "activeMiningLocationSignal" not in restarted.store.data
 
+    # Approved shared records can be read alongside local ones once the
+    # release gate is enabled; other ID64/body data must never bleed through.
+    restarted.current = scene()
+    restarted.mining_sites = [
+        {"id": 2000000001, "systemAddress": "12345678901234567",
+         "body": "icy test a 2 a", "signal": 1, "commodity": "Alexandrite",
+         "latitude": 12.5, "longitude": -44.5, "rigs": 2},
+        {"id": 2000000002, "systemAddress": "88888888888888888",
+         "body": "icy test a 2 a", "signal": 1, "commodity": "Other-System",
+         "latitude": 12.0, "longitude": -45.0, "rigs": 4},
+        {"id": 2000000003, "systemAddress": "12345678901234567",
+         "body": "icy test b 2 a", "signal": 1, "commodity": "Other-Star",
+         "latitude": 12.0, "longitude": -45.0, "rigs": 4},
+    ]
+    restarted.mining_centers = [
+        {"id": 2000000001, "systemAddress": "12345678901234567",
+         "body": "icy test a 2 a", "signal": 1, "latitude": 12.1, "longitude": -45.0},
+        {"id": 2000000002, "systemAddress": "88888888888888888",
+         "body": "icy test a 2 a", "signal": 1, "latitude": 0.0, "longitude": 0.0},
+    ]
+    assert len(restarted.sites_for_current_body()) == 4
+    assert {x["commodity"] for x in restarted.sites_for_current_body()} == {
+        "Low Temperature Diamonds", "Bromellite", "Alexandrite"
+    }
+    assert restarted.active_center()["id"] == 2000000001
+    assert restarted.centers_for_current_body()[0]["latitude"] == 12.1
+    # Strict center validation rejects substituted ID64/body and invalid coords.
+    center_validator = scope["canonical_multisystem_center"] if "canonical_multisystem_center" in scope else None
+    if center_validator:
+        assert center_validator({"id": 2000000001,"systemAddress": "12345678901234567",
+            "systemName": "Icy Test", "body": "Icy Test A 2 a", "signal": 1,
+            "latitude": 10.0,"longitude": 20.0}, "12345678901234567")["id"] == 2000000001
+        raises("invalid_mining_center_response", center_validator, {
+            "id": 2000000001,"systemAddress": "88888888888888888",
+            "systemName": "Icy Test","body":"Icy Test A 2 a",
+            "signal": 1,"latitude": 10,"longitude": 20}, "12345678901234567")
+
 # The paired controller must never represent an off-system local save as a
 # successful central shared submission or a queued central duplicate review.
+hud_source = file.read_text(encoding="utf-8")
+scout_source = (file.parents[1] / "mongrel-scout/load.py").read_text(encoding="utf-8")
+assert "MULTI_MINING_REMOTE_READS_ENABLED = False" in hud_source
+assert 'endpoint += "?" + urlencode({"systemAddress": address})' in scout_source
 controller = (file.parent / "controller.html").read_text(encoding="utf-8")
 assert 'state.miningStorage==="local_only"' in controller
 assert 'status==="saved_local"' in controller
