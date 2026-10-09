@@ -159,6 +159,13 @@ with tempfile.TemporaryDirectory() as temp:
     app.report_deposit("Diamonds", 1, "moon", 1)
     assert [r["commodity"] for r in app.sites_for_current_body()] == ["Diamonds"]
 
+    # Multi-star body labels with the same short '2a' must remain separate.
+    app.current = scene(system_id="88888888888888888", body="Icy Test B 2 a")
+    assert not app.sites_for_current_body()
+    assert not app.centers_for_current_body()
+    raises("invalid_signal", app.set_site_center, 1000)
+    assert app.mining_locations_for_current_body() == []
+
     # A restart retains all locally recorded bodies and independent selections.
     restarted = make(Store(path), scene())
     assert len(restarted.sites_for_current_body()) == 3
@@ -187,5 +194,13 @@ with tempfile.TemporaryDirectory() as temp:
     assert restarted._in_ten16(ten16)
     # Off-system scoped selections cannot replace old 10-16 selection key.
     assert "activeMiningLocationSignal" not in restarted.store.data
+
+# The paired controller must never represent an off-system local save as a
+# successful central shared submission or a queued central duplicate review.
+controller = (file.parent / "controller.html").read_text(encoding="utf-8")
+assert 'state.miningStorage==="local_only"' in controller
+assert 'status==="saved_local"' in controller
+assert 'status==="duplicate_review_local"' in controller
+assert "NOT SQUAD SYNCED" in controller
 
 print("Multi-system local mining persistence, identity isolation, duplicate review, compass, legacy 10-16 guard PASSED")
