@@ -16,7 +16,7 @@ Mongrel Scout is an EDMC plugin for the squad. It quietly sends the specific Eli
 
 It is event-driven. There is nothing you need to "run" inside the plugin after setup.
 
-**Live trade-profit progress (v1.12.3):** Scout tracks purchase-origin quantities **locally** and batches eligible profitable sales at ordinary station markets into Mission Control within the existing 8-second activity upload window. No cargo inventory or purchase history is uploaded. Mined cargo, carrier-bought cargo, black-market/stolen sales, and sales with incomplete/unknown purchase history will **not** be credited live; use Frontier **Sync Activity** to reconcile missed or uncertain transactions. Start Scout before purchasing the cargo so the journal origin can be verified.
+**Live trade-profit progress (v1.12.4):** Scout tracks purchase-origin quantities **locally** and batches eligible profitable sales at ordinary station markets into Mission Control within the existing 8-second activity upload window. When Scout was not running for a purchase, it can reconstruct purchase origins from recent local Frontier journals on the next live sale. Recovery requires a known ship-cargo starting point, the same Commander, a unique matching sale, continuous journal history and reconciled cargo quantities; ambiguous or incomplete evidence remains excluded. Historic purchases and sales are **not uploaded**. Mined cargo, carrier-bought cargo, black-market/stolen sales and unverifiable or mixed-origin cargo remain ineligible; use Frontier **Sync Activity** if journal recovery cannot verify a transaction. No cargo inventory or purchase history is uploaded.
 
 ## Install
 

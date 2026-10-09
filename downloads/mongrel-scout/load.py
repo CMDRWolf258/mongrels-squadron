@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.3"
+PLUGIN_VERSION = "1.12.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -456,6 +456,10 @@ def journal_entry(
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
 
+    # On-demand recovery only when the live ledger cannot prove the sale's origin.
+    # This never uploads or queues historical journal events themselves.
+    if event == "MarketSell":
+        _restore_trade_origin_for_sale(cmdr, entry, state)
     trade_sale = _observe_activity_trade(cmdr, entry, state, system, station)
     activity_payload = _build_realtime_activity_payload(entry, state, system, station, trade_sale)
     if event == "MarketSell":
@@ -2935,6 +2939,227 @@ def _trade_consume_lots(lots: list[dict[str, Any]], count: int) -> dict[str, Any
         sources.add("unknown")
     source = next(iter(sources)) if len(sources) == 1 else "mixed"
     return {"source": source, "verified": remaining == 0 and source == "station_market"}
+
+
+def _recover_trade_lots_from_recent_journals(
+    cmdr: str, sale: Mapping[str, Any], state: Mapping[str, Any],
+) -> Optional[list[dict[str, Any]]]:
+    """Recover *purchase provenance*, never replay historical sales to cloud.
+
+    Require: same CMDR, a real empty-hold or exact inventory baseline,
+    uninterrupted journal activity, a uniquely identified current sale, and
+    an exact pre/post-sale cargo count. Unknown changes remain unknown.
+    Bounded scan runs only on a sale whose live provenance is insufficient.
+    """
+    commodity = _commodity_key(sale.get("Type"))
+    sale_count = _optional_int(sale.get("Count")) or 0
+    stamp = str(sale.get("timestamp") or "")
+    sale_total = sale.get("TotalSale")
+    if not cmdr or not commodity or not stamp or sale_count <= 0 or sale_total is None:
+        return None
+    actual = _trade_inventory_count(state, commodity)
+    if actual is None:
+        return None
+
+    journal_dir = getattr(monitor, "currentdir", None) if monitor is not None else None
+    if not journal_dir:
+        try:
+            journal_dir = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
+        except Exception:
+            return None
+    if not journal_dir:
+        return None
+    try:
+        # Never read the user's full expedition or history into memory.
+        # Files are chronological by Frontier's timestamped filename.
+        files = sorted(
+            Path(journal_dir).expanduser().glob("Journal*.log"),
+            key=lambda p: p.name,  # Frontier timestamped journal filenames
+        )[-20:]
+        sizes = [p.stat().st_size for p in files]
+        if not files or sum(sizes) > 32 * 1024 * 1024:
+            return None
+    except (OSError, ValueError):
+        return None
+
+    commander = _cmdr_cache_key(cmdr)
+    lots: list[dict[str, Any]] = []
+    baseline = False
+    dock: dict[str, str] = {}
+    matches = 0
+    recovered: Optional[list[dict[str, Any]]] = None
+    lines_seen = 0
+
+    def matches_sale(row: Mapping[str, Any]) -> bool:
+        return (
+            row.get("event") == "MarketSell"
+            and str(row.get("timestamp") or "") == stamp
+            and _commodity_key(row.get("Type")) == commodity
+            and (_optional_int(row.get("Count")) or 0) == sale_count
+            and str(row.get("TotalSale")) == str(sale_total)
+            and (not sale.get("MarketID") or
+                 str(row.get("MarketID") or "") == str(sale.get("MarketID")))
+        )
+
+    try:
+        for file in files:
+            # Frontier journals can belong to different CMDRs on one PC.
+            # Every file must establish its own Commander/LoadGame identity.
+            file_cmdr = ""
+            with file.open("r", encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    lines_seen += 1
+                    if lines_seen > 80000:
+                        return None
+                    if '"event"' not in line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except (ValueError, UnicodeError):
+                        continue  # Incomplete tail of current journal
+                    if not isinstance(row, Mapping):
+                        continue
+                    kind = str(row.get("event") or "")
+                    if kind in {"Commander", "LoadGame"}:
+                        identity = str((row.get("Name") if kind == "Commander" else row.get("Commander")) or "")
+                        file_cmdr = _cmdr_cache_key(identity)
+                        dock = {}
+                        if file_cmdr != commander:
+                            baseline = False
+                            lots.clear()
+                        continue
+                    if file_cmdr != commander:
+                        continue
+                    # Search all selected files for duplicate indistinguishable
+                    # sale records; only a unique event can anchor this replay.
+                    if matches_sale(row):
+                        matches += 1
+                        if matches == 1 and baseline and (
+                            not dock.get("market") or not sale.get("MarketID")
+                            or dock["market"] == str(sale.get("MarketID"))
+                        ):
+                            reconstructed = [dict(item) for item in lots]
+                            pre_count = _trade_lot_total(reconstructed)
+                            if pre_count >= sale_count and actual in {pre_count, pre_count - sale_count}:
+                                check = [dict(item) for item in reconstructed]
+                                provenance = _trade_consume_lots(check, sale_count)
+                                if provenance["verified"]:
+                                    recovered = reconstructed
+                        continue
+                    if matches:
+                        continue  # Never replay future events into the candidate sale.
+
+                    if kind in {"Docked", "Location"} and (
+                        kind == "Docked" or row.get("Docked") is True
+                    ):
+                        dock = {
+                            "station": str(row.get("StationName") or ""),
+                            "system": str(row.get("StarSystem") or ""),
+                            "type": str(row.get("StationType") or ""),
+                            "market": str(row.get("MarketID") or ""),
+                        }
+                    elif kind in {"Undocked", "FSDJump", "CarrierJump"} or (
+                        kind == "Location" and row.get("Docked") is False
+                    ):
+                        dock = {}
+                    if kind == "Cargo" and str(row.get("Vessel") or "Ship").casefold() == "ship":
+                        inventory = row.get("Inventory")
+                        if isinstance(inventory, list):
+                            observed = sum(
+                                (_optional_int(item.get("Count")) or 0)
+                                for item in inventory
+                                if isinstance(item, Mapping)
+                                and _commodity_key(item.get("Name") or item.get("Type")) == commodity
+                            )
+                            if observed == 0:
+                                lots.clear()
+                                baseline = True
+                            elif _trade_lot_total(lots) != observed:
+                                lots[:] = [{"source": "unknown", "count": observed}]
+                                baseline = True  # Known holdings, origin unknown
+                        elif _optional_int(row.get("Count")) == 0:
+                            lots.clear()
+                            baseline = True
+                        continue
+                    if not baseline:
+                        continue
+                    if _commodity_key(row.get("Type")) != commodity:
+                        if kind == "CargoTransfer" and any(
+                            isinstance(item, Mapping)
+                            and _commodity_key(item.get("Type")) == commodity
+                            for item in (row.get("Transfers") or [])
+                        ):
+                            return None  # Transfer provenance/direction is ambiguous.
+                        continue
+                    count = _optional_int(row.get("Count")) or (
+                        1 if kind == "MiningRefined" else 0
+                    )
+                    if count <= 0 or count > 25000:
+                        continue
+                    if kind == "MarketBuy":
+                        source = (
+                            "station_market"
+                            if dock.get("station") and dock.get("system")
+                            and dock.get("type") and dock["type"].casefold() != "fleetcarrier"
+                            and (not row.get("MarketID") or not dock.get("market")
+                                 or str(row.get("MarketID")) == dock["market"])
+                            else "carrier_market" if dock.get("type", "").casefold() == "fleetcarrier"
+                            else "unknown"
+                        )
+                        _trade_add_lot(lots, source, count)
+                    elif kind == "MiningRefined":
+                        _trade_add_lot(lots, "mined", count)
+                    elif kind == "MarketSell":
+                        _trade_consume_lots(lots, count)
+                    elif kind == "CollectCargo":
+                        # Unknown cargo enters before later station purchases; preserve
+                        # FIFO so the added lot cannot masquerade as purchased stock.
+                        _trade_add_lot(lots, "unknown", count)
+                    elif kind in {"EjectCargo", "CargoTransfer"}:
+                        return None  # Insufficient provenance after unknown movement.
+            # A journal segment without a CMDR identity may contain missing
+            # transactions. Invalidate earlier reconstruction evidence until
+            # a later trusted cargo baseline is encountered.
+            if not file_cmdr and baseline and not matches:
+                baseline = False
+                lots.clear()
+    except (OSError, UnicodeError):
+        return None
+
+    return recovered if matches == 1 else None
+
+
+def _restore_trade_origin_for_sale(
+    cmdr: str, entry: Mapping[str, Any], state: Mapping[str, Any],
+) -> bool:
+    """Repair only missing/unknown origin; never overwrite a verified live lot."""
+    commodity = _commodity_key(entry.get("Type"))
+    count = _optional_int(entry.get("Count")) or 0
+    if not commodity or count <= 0:
+        return False
+    commander = _cmdr_cache_key(cmdr)
+    actual = _trade_inventory_count(state, commodity)
+    if actual is None:
+        return False
+    with _activity_lock:
+        current = _activity_trade_lots.get(commander, {}).get(commodity, [])
+        covered = [dict(row) for row in current]
+        if _trade_lot_total(covered) >= count and _trade_consume_lots(covered, count)["verified"]:
+            return False
+    recovered = _recover_trade_lots_from_recent_journals(cmdr, entry, state)
+    if recovered is None:
+        return False
+    with _activity_lock:
+        current = _activity_trade_lots.setdefault(commander, {}).get(commodity, [])
+        covered = [dict(row) for row in current]
+        if _trade_lot_total(covered) >= count and _trade_consume_lots(covered, count)["verified"]:
+            return False
+        pre = _trade_lot_total(recovered)
+        if actual not in {pre, pre - count}:
+            return False
+        _activity_trade_lots[commander][commodity] = recovered
+        _save_activity_trade_provenance()
+    return True
 
 
 def _observe_activity_trade(
