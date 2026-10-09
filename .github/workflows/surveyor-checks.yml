@@ -9,6 +9,8 @@ on:
       - 'downloads/mongrel-scout/**'
       - 'scripts/test_surveyor.py'
       - 'scripts/test_surveyor_history.py'
+      - 'scripts/test_surveyor_advisor.py'
+      - 'scripts/test_surveyor_advisor_hud.py'
       - '.github/workflows/surveyor-checks.yml'
 
 jobs:
@@ -20,10 +22,12 @@ jobs:
         with:
           python-version: '3.11'
       - name: Python syntax and compilation
-        run: python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_history.py scripts/test_surveyor.py scripts/test_surveyor_intel.py scripts/test_surveyor_history.py downloads/mongrel-hud/mongrel_hud.py
+        run: python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_history.py scripts/test_surveyor.py scripts/test_surveyor_intel.py scripts/test_surveyor_history.py scripts/test_surveyor_advisor.py scripts/test_surveyor_advisor_hud.py downloads/mongrel-hud/mongrel_hud.py
       - name: Test persistent exploration ledger
         run: |
           python scripts/test_surveyor.py
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_advisor.py
+          python scripts/test_surveyor_advisor_hud.py
 
