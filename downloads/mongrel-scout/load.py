@@ -3021,7 +3021,7 @@ def _recover_trade_lots_from_recent_journals(
                         continue
                     kind = str(row.get("event") or "")
                     if kind in {"Commander", "LoadGame"}:
-                        identity = str(row.get("Name") if kind == "Commander" else row.get("Commander") or "")
+                        identity = str((row.get("Name") if kind == "Commander" else row.get("Commander")) or "")
                         file_cmdr = _cmdr_cache_key(identity)
                         dock = {}
                         if file_cmdr != commander:
@@ -3034,7 +3034,10 @@ def _recover_trade_lots_from_recent_journals(
                     # sale records; only a unique event can anchor this replay.
                     if matches_sale(row):
                         matches += 1
-                        if matches == 1 and baseline:
+                        if matches == 1 and baseline and (
+                            not dock.get("market") or not sale.get("MarketID")
+                            or dock["market"] == str(sale.get("MarketID"))
+                        ):
                             reconstructed = [dict(item) for item in lots]
                             pre_count = _trade_lot_total(reconstructed)
                             if pre_count >= sale_count and actual in {pre_count, pre_count - sale_count}:
@@ -3074,7 +3077,7 @@ def _recover_trade_lots_from_recent_journals(
                             elif _trade_lot_total(lots) != observed:
                                 lots[:] = [{"source": "unknown", "count": observed}]
                                 baseline = True  # Known holdings, origin unknown
-                        elif (_optional_int(row.get("Count")) or -1) == 0:
+                        elif _optional_int(row.get("Count")) == 0:
                             lots.clear()
                             baseline = True
                         continue
@@ -3086,7 +3089,7 @@ def _recover_trade_lots_from_recent_journals(
                             and _commodity_key(item.get("Type")) == commodity
                             for item in (row.get("Transfers") or [])
                         ):
-                            lots[:] = [{"source": "unknown", "count": _trade_lot_total(lots)}] if lots else []
+                            return None  # Transfer provenance/direction is ambiguous.
                         continue
                     count = _optional_int(row.get("Count")) or (
                         1 if kind == "MiningRefined" else 0
@@ -3108,9 +3111,12 @@ def _recover_trade_lots_from_recent_journals(
                         _trade_add_lot(lots, "mined", count)
                     elif kind == "MarketSell":
                         _trade_consume_lots(lots, count)
-                    elif kind in {"CollectCargo", "EjectCargo", "CargoTransfer"}:
-                        # No exact source/quantity inference across transfers.
-                        lots[:] = [{"source": "unknown", "count": _trade_lot_total(lots)}] if lots else []
+                    elif kind == "CollectCargo":
+                        # Unknown cargo enters before later station purchases; preserve
+                        # FIFO so the added lot cannot masquerade as purchased stock.
+                        _trade_add_lot(lots, "unknown", count)
+                    elif kind in {"EjectCargo", "CargoTransfer"}:
+                        return None  # Insufficient provenance after unknown movement.
     except (OSError, UnicodeError):
         return None
 
