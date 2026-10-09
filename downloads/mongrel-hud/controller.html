@@ -188,6 +188,17 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   </div>
 
   <div class="card">
+    <details>
+      <summary>LIVE TRADE PROFIT DIAGNOSTICS</summary>
+      <div class="layout-hint">Shows Scout's most recent market sale and whether it reached the activity server. A queued or accepted sale is not necessarily matched to a Daily Order.</div>
+      <div class="row"><span>Last sale</span><strong id="tradeLastSale">None observed</strong></div>
+      <div class="row"><span>Scout processing</span><strong id="tradeLastStatus">Waiting for a sale</strong></div>
+      <div class="row"><span>Server result</span><strong id="tradeLastServer">—</strong></div>
+      <div class="layout-hint" id="tradeLastReason"></div>
+    </details>
+  </div>
+
+  <div class="card">
     <div class="top"><h2>DAILY ORDER CHANGES</h2><button class="alert-ack" id="ackOrderAlerts" type="button">ACK ORDERS</button></div>
     <div id="orderAlerts"><span class="muted">No order changes.</span></div>
   </div>
@@ -314,6 +325,34 @@ function render(){
   if(!state)return;
   var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
   el("connection").textContent=(state.connected?"Scout connected":"Scout waiting")+(safePanelErrors.length?" · Panel errors: "+safePanelErrors.map(function(row){return row.panel+" ("+row.errorType+")"}).join(", "):"");
+  var trade=(state.scout&&state.scout.tradeActivity)||{};
+  var reasons={
+    no_sale_observed:"No MarketSell journal event seen since Scout started.",
+    awaiting_server:"Sale qualified locally. Waiting for Scout's upload batch.",
+    scout_token_missing:"Scout token missing: live activity cannot upload.",
+    no_purchase_history:"Scout has no verified origin for the sold cargo.",
+    purchase_origin_unknown:"Cargo origin could not be verified against purchase history.",
+    purchase_origin_mixed:"Sale includes mixed purchase origins and cannot be auto-credited.",
+    purchase_origin_mined:"Mined commodities do not qualify as purchased trade profit.",
+    purchase_origin_carrier_market:"Carrier-purchased cargo is excluded from automatic trade profit.",
+    not_standard_station:"Sale station must be a regular station market.",
+    station_faction_unresolved:"Station controlling faction was not resolved for the sale.",
+    black_market_or_stolen:"Black-market or stolen goods do not qualify.",
+    price_fields_missing:"Journal sale did not include all profit fields.",
+    not_profitable_or_missing_price:"Sale has no verified positive profit.",
+    unqualified_sale:"Sale was not eligible for automatic verified trade credit.",
+    server_rejected:"Activity server rejected the submitted event; check Frontier Sync Activity.",
+    server_processed:"Server processed the batch; Daily Order matching still requires the correct system, faction and work cycle.",
+    mixed_batch_needs_review:"Some events in the batch were rejected; sale acceptance is uncertain.",
+    network_error:"Upload failed; Scout is retrying.",
+  };
+  if(el("tradeLastSale")){
+    el("tradeLastSale").textContent=trade.timestamp?(String(trade.station||trade.system||"MarketSell")+" · "+String(trade.timestamp)):"None observed";
+    el("tradeLastStatus").textContent=String(trade.status||"waiting").toUpperCase();
+    var srv=typeof trade.serverNormalized==="number"?"Normalized "+trade.serverNormalized+" · Rejected "+(trade.serverRejected||0):"—";
+    el("tradeLastServer").textContent=srv;
+    el("tradeLastReason").textContent=reasons[trade.reason]||String(trade.reason||"");
+  }
   var profile=state.profile||"combat";
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
