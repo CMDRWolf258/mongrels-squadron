@@ -18,6 +18,7 @@ tree = ast.parse(file.read_text(encoding="utf-8"))
 wanted = {
     "local_mining_scope", "local_mining_point", "short_body_name",
     "body_type_for_short_name", "great_circle_nav",
+    "canonical_multisystem_center",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
 assert {x.name for x in functions} == wanted
