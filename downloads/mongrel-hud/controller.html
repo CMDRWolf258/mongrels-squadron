@@ -14,6 +14,7 @@ main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:
 label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);font-size:16px}.mining-select{width:100%;min-height:58px;padding:12px 42px 12px 14px;border:1px solid var(--line);border-radius:10px;background:#10232d;color:var(--text);font-size:18px;font-weight:750}textarea{min-height:80px}.action{width:100%;margin-top:12px;background:#12323e}.notice{color:var(--warn);min-height:24px;margin-top:8px}.notice.success{color:#67e39a;font-weight:800}.notice.review{color:var(--warn);font-weight:800}.hidden{display:none!important}
 #pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}.module-group{margin-top:12px}.module-group h3{margin:0 0 5px;color:var(--accent);font-size:.78rem;letter-spacing:.08em}.module-row{display:grid;grid-template-columns:minmax(0,1fr) 4.5em 5em;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}.module-health,.module-age{text-align:right;font-variant-numeric:tabular-nums}.alert-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}.alert-item:last-child{border:0}.alert-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.alert-ack{min-height:40px;border:1px solid var(--line);border-radius:8px;background:#10232d;color:var(--text);font-weight:700;padding:6px 10px}.alert-critical strong{color:var(--warn)}.alert-red{border-left:3px solid #ff4d55;padding-left:9px}.alert-amber{border-left:3px solid #ffb229;padding-left:9px}.alert-cyan{border-left:3px solid #56d7ef;padding-left:9px}.alert-item.is-acknowledged{opacity:.72}.ack-state{font-size:.72rem;font-weight:800;color:var(--muted);white-space:nowrap}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.layout-actions{grid-template-columns:1fr}.panel-control{grid-template-columns:minmax(0,1fr) 76px}.panel-control select{width:100%}.voice-timing,.voice-role-grid{grid-template-columns:1fr}}
+.mining-lookup{position:relative}.mining-suggestions{max-height:260px;overflow:auto;border:1px solid var(--accent);border-radius:8px;background:#10232d}.mining-suggestions button{display:block;text-align:left;width:100%;min-height:48px;padding:10px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line)}.mining-suggestions button:focus{background:#174454}.mining-suggestions small,.mining-browser-item small{display:block;color:var(--muted)}.mining-browser-results{display:grid;gap:8px}.mining-browser-item{padding:11px;border:1px solid var(--line);background:#07131a;border-radius:8px}.mining-browser-item strong{color:var(--accent)}.mining-browser-item p{margin:5px 0}.mining-browser-item small{margin-top:5px}.mining-browser-local{color:var(--warn)!important}
 </style>
 </head>
 <body>
@@ -241,6 +242,23 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 
   <section id="surfacePanel" class="hidden">
     <div class="card"><h2>SURFACE POSITION</h2><div class="big" id="surfaceBody">—</div><div class="row"><span>System</span><strong id="surfaceSystem">—</strong></div><div class="row"><span>Coordinates</span><strong id="coords">—</strong></div><div class="row"><span>Selected mining location</span><strong id="activeLocation">—</strong></div><div class="row"><span>Location center</span><strong id="centerNav">—</strong></div><div class="row"><span>Selected deposit</span><strong id="activeDeposit">—</strong></div><div class="row"><span>Deposit navigation</span><strong id="depositNav">—</strong></div><div class="status" id="miningDbStatus">Mining database loading…</div></div>
+    <div class="card" id="miningBrowserCard">
+      <h2>MINING DATABASE · SYSTEM BROWSER</h2>
+      <p class="muted">Browse logged systems without changing your current compass target or report location.</p>
+      <label for="browseSystemInput">System · type, paste, or select a saved system</label>
+      <div class="mining-lookup">
+        <input id="browseSystemInput" type="search" placeholder="Search saved systems…" role="combobox" aria-controls="browseSystemSuggestions" aria-autocomplete="list" aria-expanded="false" autocomplete="off">
+        <div id="browseSystemSuggestions" class="mining-suggestions hidden" role="listbox" aria-label="Saved mining systems"></div>
+      </div>
+      <button type="button" id="browseRefresh" class="action">REFRESH SAVED SYSTEMS</button>
+      <div class="grid">
+        <div><label for="browseCommodity">Commodity</label><select id="browseCommodity" class="mining-select"><option value="">All commodities</option></select></div>
+        <div><label for="browseBody">Planet / moon</label><select id="browseBody" class="mining-select"><option value="">All bodies</option></select></div>
+        <div><label for="browseRigs">Minimum rig count</label><select id="browseRigs" class="mining-select"><option value="0">Any size</option><option value="1">1+ rigs</option><option value="2">2+ rigs</option><option value="3">3+ rigs</option><option value="4">4+ rigs</option><option value="5">5+ rigs</option><option value="6">6+ rigs</option><option value="7">7+ rigs</option></select></div>
+      </div>
+      <p class="status" id="browseStatus" aria-live="polite">Open Surface Mining to load saved systems.</p>
+      <div id="browseResults" class="mining-browser-results"></div>
+    </div>
     <div class="card"><h2>MINING LOCATIONS ON THIS BODY</h2><p class="muted">Choose the planetary signal first. Its center and deposits are separate navigation targets.</p><div class="sites" id="miningLocations"><span class="muted">No mining locations found.</span></div></div>
     <div class="card"><h2>SET MINING LOCATION CENTER</h2><div class="grid"><div><label for="centerSignal">Signal #</label><input id="centerSignal" type="number" min="1" max="999" placeholder="13"></div><div><label>Coordinates</label><div class="status">Captured automatically from Elite</div></div></div><button class="action" id="setCenter">SET / UPDATE CENTER</button><div class="notice" id="siteNotice"></div></div>
     <div class="card"><h2>DEPOSITS IN SELECTED LOCATION</h2><p class="muted">Tap a deposit to make it the second HUD navigation target. The location-center compass remains active at the same time.</p><div class="sites" id="sites"><span class="muted">Select a mining location first.</span></div></div>
@@ -252,6 +270,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 (function(){
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
+var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0};
 var controllerTab="hud";
 function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
 function el(id){return document.getElementById(id)}
@@ -356,6 +375,7 @@ function render(){
   var profile=state.profile||"combat";
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
+  if(profile==="surface"&&!miningBrowser.loaded&&!miningBrowser.loading)loadMiningBrowserCatalog(false);
   var layout=state.layout||{},panels=layout.panels||{};
   renderLayoutControls(layout);
   var voiceStatus=state.voiceStatus||{},voiceCatalog=Array.isArray(state.voiceCatalog)?state.voiceCatalog:[],carrierContext=state.carrierVoiceContext||{};
@@ -540,6 +560,89 @@ function render(){
   document.querySelectorAll("[data-site]").forEach(function(b){b.onclick=async function(){try{await api("/api/site-select",{siteId:b.getAttribute("data-site")});await load();var a=state.activeSite||{};if(a.commodity){var choices=Array.isArray(state.miningCommodities)?state.miningCommodities:[];if(choices.includes(a.commodity)){el("depositCommodity").value=a.commodity;el("depositCommodityOther").classList.add("hidden")}else{el("depositCommodity").value="__other";el("depositCommodityOther").value=a.commodity;el("depositCommodityOther").classList.remove("hidden")}}if(a.signal){el("depositSignal").value=a.signal;el("centerSignal").value=a.signal}}catch(e){el("depositNotice").textContent=e.message}}});
   if(activeSignal){if(document.activeElement!==el("centerSignal"))el("centerSignal").value=activeSignal;if(document.activeElement!==el("depositSignal"))el("depositSignal").value=activeSignal}
 }
+function browserMatches(text){
+  var query=String(text||"").trim().toLowerCase();
+  return miningBrowser.systems.filter(function(row){
+    return !query||String(row.systemName||"").toLowerCase().includes(query)||String(row.systemAddress||"").includes(query);
+  }).slice(0,12);
+}
+function showMiningSuggestions(){
+  var input=el("browseSystemInput"),rows=browserMatches(input.value),list=el("browseSystemSuggestions");
+  list.innerHTML=rows.map(function(row){return '<button type="button" role="option" data-browse-system="'+escapeAttr(row.systemAddress)+'">'+escapeHtml(row.systemName)+'<small>ID64 '+escapeHtml(row.systemAddress)+'</small></button>'}).join("")||'<p class="status">No saved system matches</p>';
+  list.classList.toggle("hidden",!input.value.trim()&&miningBrowser.selected!==""||!miningBrowser.systems.length);
+  input.setAttribute("aria-expanded",list.classList.contains("hidden")?"false":"true");
+  list.querySelectorAll("[data-browse-system]").forEach(function(btn){btn.onclick=function(){pickMiningSystem(btn.getAttribute("data-browse-system"))}});
+}
+function browseFilterOptions(id,title,values){
+  var select=el(id),old=select.value;
+  select.innerHTML='<option value="">'+escapeHtml(title)+'</option>'+values.map(function(s){return '<option value="'+escapeAttr(s)+'">'+escapeHtml(s)+'</option>'}).join("");
+  select.value=values.includes(old)?old:"";
+}
+function renderMiningBrowseResults(){
+  var data=miningBrowser.data;
+  if(!data)return;
+  var sites=Array.isArray(data.deposits)?data.deposits:[],centers=Array.isArray(data.centers)?data.centers:[];
+  var commodity=el("browseCommodity").value,body=el("browseBody").value,rigs=Number(el("browseRigs").value)||0;
+  var filtered=sites.filter(function(row){
+    return (!commodity||row.commodity===commodity)&&(!body||row.body===body)&&(!rigs||Number(row.rigs||0)>=rigs);
+  }).sort(function(a,b){return Number(b.rigs||0)-Number(a.rigs||0)||String(a.body||"").localeCompare(String(b.body||""))||Number(a.signal||0)-Number(b.signal||0)});
+  var centerOnly=centers.filter(function(row){return !commodity&&!rigs&&(!body||row.body===body)&&!sites.some(function(site){return site.body===row.body&&Number(site.signal)===Number(row.signal)})});
+  var system=miningBrowser.systems.find(function(row){return row.systemAddress===miningBrowser.selected});
+  el("browseStatus").textContent=(system?system.systemName+" · ":"")+filtered.length+" matching deposits"
+    +(centerOnly.length?" · "+centerOnly.length+" center-only signals":"")+(data.truncated?" · Results capped":"")+(data.warning?" · "+data.warning:"");
+  var html=filtered.slice(0,500).map(function(row){
+    var count=Number(row.rigs||0),label=count>=7?"7+":String(count||"?");
+    var local=row.storage==="local_only",coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
+    return '<div class="mining-browser-item"><strong>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs</strong>'
+      +'<p>'+escapeHtml(row.body||"Unknown body")+' · Signal #'+escapeHtml(row.signal||"?")+'</p>'
+      +'<small>'+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+(local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+(row.needsReview?" · DUPLICATE NEEDS REVIEW":"")+'</small>'
+      +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')+'</div>';
+  }).join("");
+  html+=centerOnly.slice(0,50).map(function(row){
+    return '<div class="mining-browser-item"><strong>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</strong><small>'
+      +escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
+      +'<small>'+(row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small></div>';
+  }).join("");
+  el("browseResults").innerHTML=html||'<p class="muted">No saved locations match these filters.</p>';
+}
+function populateMiningFilters(){
+  var data=miningBrowser.data||{},sites=data.deposits||[],centers=data.centers||[];
+  browseFilterOptions("browseCommodity","All commodities",Array.from(new Set(sites.map(function(x){return String(x.commodity||"")}).filter(Boolean))).sort());
+  browseFilterOptions("browseBody","All bodies",Array.from(new Set(sites.concat(centers).map(function(x){return String(x.body||"")}).filter(Boolean))).sort());
+  renderMiningBrowseResults();
+}
+async function browseSelectedMiningSystem(address){
+  var seq=++miningBrowser.requestSeq;
+  el("browseStatus").textContent="Loading saved locations…";
+  try{
+    var data=await api("/api/mining-browser/system?systemAddress="+encodeURIComponent(address));
+    if(seq!==miningBrowser.requestSeq||address!==miningBrowser.selected)return;
+    miningBrowser.data=data;populateMiningFilters();
+  }catch(err){if(seq===miningBrowser.requestSeq){miningBrowser.data=null;el("browseResults").textContent="";el("browseStatus").textContent="Database browser: "+err.message}}
+}
+async function pickMiningSystem(address){
+  var row=miningBrowser.systems.find(function(item){return item.systemAddress===String(address)});
+  if(!row)return;
+  miningBrowser.selected=row.systemAddress;miningBrowser.data=null;
+  el("browseSystemInput").value=row.systemName;
+  el("browseSystemSuggestions").classList.add("hidden");el("browseSystemInput").setAttribute("aria-expanded","false");
+  el("browseCommodity").value="";el("browseBody").value="";el("browseRigs").value="0";
+  // Browsing is independent of live Scout coordinates and HUD navigation.
+  try{await api("/api/mining-browser/selected",{systemAddress:row.systemAddress})}
+  catch(err){el("browseStatus").textContent="Selection not saved: "+err.message;return}
+  await browseSelectedMiningSystem(row.systemAddress);
+}
+async function loadMiningBrowserCatalog(force){
+  if(miningBrowser.loading)return;
+  miningBrowser.loading=true;el("browseStatus").textContent="Loading saved systems…";
+  try{
+    var catalog=await api("/api/mining-browser/catalog"+(force?"?refresh=1":""));
+    miningBrowser.systems=Array.isArray(catalog.systems)?catalog.systems:[];
+    miningBrowser.loaded=true;miningBrowser.loading=false;
+    var target=miningBrowser.selected&&miningBrowser.systems.some(function(x){return x.systemAddress===miningBrowser.selected})?miningBrowser.selected:catalog.selected;
+    if(target)await pickMiningSystem(target);else el("browseStatus").textContent="No logged systems found.";
+  }catch(err){miningBrowser.loading=false;el("browseStatus").textContent="Unable to load system directory: "+err.message}
+}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function escapeAttr(v){return escapeHtml(v)}
 async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.code==="pair_required")el("pair").classList.remove("hidden")}}
@@ -608,6 +711,14 @@ el("cargoPriority").onchange=async function(){try{var faction=el("cargoPriority"
 async function ackAlertKind(kind){var feed=(state&&state.siteFeed)||(state&&state.scout&&state.scout.siteFeed)||{},ids=(feed.alerts||[]).filter(function(a){return String(a.type||"").toLowerCase()===kind&&!a.acknowledged}).map(function(a){return a.id}).filter(Boolean);if(!ids.length)return;try{await api("/api/alert-ack",{alertIds:ids});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}}
 el("ackFactionAlerts").onclick=function(){return ackAlertKind("faction")};
 el("ackOrderAlerts").onclick=function(){return ackAlertKind("orders")};
+el("browseSystemInput").oninput=function(){miningBrowser.data=null;el("browseResults").textContent="";el("browseStatus").textContent="Choose a matching saved system";showMiningSuggestions()};
+el("browseSystemInput").onfocus=showMiningSuggestions;
+el("browseSystemInput").onkeydown=function(event){
+  if(event.key==="Escape"){el("browseSystemSuggestions").classList.add("hidden");el("browseSystemInput").setAttribute("aria-expanded","false")}
+  if(event.key==="Enter"){var hits=browserMatches(el("browseSystemInput").value);if(hits.length){event.preventDefault();pickMiningSystem(hits[0].systemAddress)}}
+};
+el("browseRefresh").onclick=function(){return loadMiningBrowserCatalog(true)};
+["browseCommodity","browseBody","browseRigs"].forEach(function(id){el(id).onchange=renderMiningBrowseResults});
 el("setCenter").onclick=async function(){try{var signal=Number(el("centerSignal").value||0);if(!signal)throw new Error("signal_required");var r=await api("/api/site-center",{siteNumber:signal});var local=r.site&&r.site.storage==="local_only";el("siteNotice").textContent=(local?"CENTER SAVED LOCALLY · NOT SQUAD SYNCED":"Center saved")+" · Signal #"+signal+" · "+Number(r.site.latitude).toFixed(6)+", "+Number(r.site.longitude).toFixed(6);el("depositSignal").value=signal;await api("/api/location-select",{signal:signal});await load()}catch(e){el("siteNotice").textContent=e.message}};
 el("depositCommodity").onchange=function(){var other=el("depositCommodityOther"),show=el("depositCommodity").value==="__other";other.classList.toggle("hidden",!show);if(show)other.focus()};
 el("reportDeposit").onclick=async function(){var notice=el("depositNotice");try{var selected=el("depositCommodity").value,commodity=selected==="__other"?el("depositCommodityOther").value.trim():selected;if(!commodity)throw new Error("commodity_required");var signal=Number(el("depositSignal").value||0),rigs=Number(el("rigs").value||1),rigLabel=rigs>=7?"7+":String(rigs);var r=await api("/api/deposit",{commodity:commodity,signal:signal,rigs:rigs,notes:el("notes").value});var status=String(r.deposit.status||"");notice.className="notice "+(status==="duplicate_review"?"review":"success");notice.textContent=status==="duplicate_review_local"?("POSSIBLE DUPLICATE · SAVED LOCALLY FOR REVIEW · NOT SYNCED · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="saved_local"?("SAVED ON THIS PC ONLY · NOT SQUAD SYNCED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="duplicate_review"?("POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="existing"?("ALREADY RECORDED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):("SAVED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal);el("depositCommodity").value="";el("depositCommodityOther").value="";el("depositCommodityOther").classList.add("hidden");el("rigs").value="1";el("notes").value="";await load()}catch(e){notice.className="notice";notice.textContent=e.message}};
