@@ -143,4 +143,28 @@ track("MarketBuy",state(100),Count=100)
 bad=track("MarketSell",state(0),Count=100)
 for overrides in ({"AvgPricePaid":0}, {"BlackMarket":True}, {"StolenGoods":True}):
     assert build({**sale,**overrides},state(0),"Diaba","Niijima Station",bad) is None
+# EDMC may supply the previous Cargo snapshot while processing a journal event.
+# Both sale and purchase provenance must survive legitimate one-event lag.
+reset()
+track("MarketBuy", state(0), Count=100)  # pre-buy: cargo state still empty
+assert scope["_activity_trade_lots"]["wolf258"]["gold"][0]["source"] == "station_market"
+track("MarketBuy", state(100), Count=50)  # pre-buy: second purchase not yet reflected
+stale_sale = track("MarketSell", state(150), Count=150)  # pre-sale inventory still 150
+assert stale_sale["source"] == "station_market" and stale_sale["verified"] is True, stale_sale
+assert build(sale, state(150), "Diaba", "Niijima Station", stale_sale) is not None
+
+# Incorrect or unexplained cargo changes must *not* become verified sales.
+reset()
+track("MarketBuy", state(50), Count=50)
+track("MarketBuy", state(150), Count=50)  # unmatched extra 50 t already aboard
+unexpected = track("MarketSell", state(100), Count=50)
+assert unexpected["verified"] is False, unexpected
+
+# A new transfer explicitly invalidates provenance, even with stale snapshots.
+reset()
+track("MarketBuy", state(100), Count=100)
+track("CargoTransfer", state(100), Transfers=[{"Type": "$Gold_Name;", "Count": 1}])
+after_transfer = track("MarketSell", state(100), Count=100)
+assert after_transfer["verified"] is False, after_transfer
+
 print("Scout purchase-origin, restart, FIFO, mined/carrier/transfer, privacy and sale guards passed")

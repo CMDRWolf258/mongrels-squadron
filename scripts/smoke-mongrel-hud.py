@@ -510,3 +510,56 @@ with TemporaryDirectory() as journal_dir:
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
 
 print("✓ Mongrel Scout 1.12.0 local HUD bridge covers cargo journal backfill, dynamic faction-priority cargo math, exact mission reservations, surface HUD state, and authenticated mining-report proxying")
+
+
+# Trade diagnostic state is local-only and never relaxes eligibility.
+sale_event = {
+    "event": "MarketSell",
+    "timestamp": "2026-10-09T01:10:00Z",
+    "Count": 20,
+    "TotalSale": 400000,
+    "AvgPricePaid": 12000,
+}
+plugin._update_trade_activity_status(sale_event, {"verified": False, "source": "unknown"}, None, True)
+assert plugin._hud_state_snapshot()["tradeActivity"]["reason"] == "purchase_origin_unknown"
+plugin._update_trade_activity_status(sale_event, {"verified": True, "stationType": "Coriolis", "stationFaction": "The Consortium"}, {"event": "MarketSell"}, True)
+assert plugin._hud_state_snapshot()["tradeActivity"]["status"] == "queued"
+
+original_session = plugin._session
+class MockTradeResponse:
+    status_code = 200
+    def __init__(self, body):
+        self.body = body
+    def json(self):
+        return self.body
+
+class MockTradeSession:
+    headers = {"User-Agent": "EDMC/Smoke"}
+    def __init__(self, body):
+        self.body = body
+    def post(self, *args, **kwargs):
+        return MockTradeResponse(self.body)
+
+trade_batch = [{"event": "MarketSell", "timestamp": sale_event["timestamp"], "commodity": "Gold"}]
+try:
+    plugin._session = MockTradeSession({"ok": True, "received": 1, "normalized": 0, "rejected": 1})
+    success, retryable = plugin._send_activity_batch("https://example.invalid/scout-activity", "mscout_test", trade_batch)
+    assert success is False and retryable is False
+    trade_status = plugin._hud_state_snapshot()["tradeActivity"]
+    assert trade_status["status"] == "excluded" and trade_status["reason"] == "server_rejected"
+    assert trade_status["serverRejected"] == 1
+
+    plugin._session = MockTradeSession({"ok": True, "received": 1, "normalized": 1, "rejected": 0, "added": 1})
+    success, retryable = plugin._send_activity_batch("https://example.invalid/scout-activity", "mscout_test", trade_batch)
+    assert success is True and retryable is False
+    trade_status = plugin._hud_state_snapshot()["tradeActivity"]
+    assert trade_status["status"] == "accepted" and trade_status["serverNormalized"] == 1
+
+    plugin._session = MockTradeSession({"ok": True, "received": 2, "normalized": 1, "rejected": 1})
+    success, retryable = plugin._send_activity_batch("https://example.invalid/scout-activity", "mscout_test", trade_batch)
+    assert success is True and retryable is False
+    assert plugin._hud_state_snapshot()["tradeActivity"]["status"] == "partial"
+finally:
+    plugin._session = original_session
+
+print("✓ Trade diagnostics preserve eligibility exclusions and distinguish server rejection from acceptance")

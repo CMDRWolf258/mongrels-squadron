@@ -81,9 +81,11 @@ export async function buildHudFeed(request,env,auth){
     readAcks(env,auth.ownerId),
     access==='site_admin'?readOrderReviewState(env):Promise.resolve({updatedAt:null,reviews:{}}),
   ]);
-  const orderProgress=access==='site_admin'
-    ?await buildOrderProgressForHud(env,currentOrders,auth.ownerId)
-    :{summaries:{},verifiedSummaries:{}};
+  // Mission Control progress is shared with all authorized Scout owners.
+  // Previously, non-root-admin HUDs silently received empty progress even
+  // when their Scout activity had been accepted and the manifest changed.
+  // buildOrderProgressForHud already scopes viewer-specific report details.
+  const orderProgress=await buildOrderProgressForHud(env,currentOrders,auth.ownerId);
 
   const scoutBoard=await buildScoutJobBoard(env,{
     systems,
