@@ -1,6 +1,7 @@
 const FILES = [
   { source:'/downloads/mongrel-scout/load.py', path:'MongrelScout/load.py' },
   { source:'/downloads/mongrel-scout/surveyor.py', path:'MongrelScout/surveyor.py' },
+  { source:'/downloads/mongrel-scout/surveyor_intel.py', path:'MongrelScout/surveyor_intel.py' },
   { source:'/downloads/mongrel-scout/README.md', path:'README.md' },
 ];
 
