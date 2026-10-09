@@ -4079,9 +4079,9 @@ class MongrelHudApp:
 
     def _activate_pending_mining_navigation(self) -> None:
         with self.store.lock:
-            target = self.store.data.get("miningBrowserNavigation")
+            target = self.store.data.get("miningBrowserPendingNavigation")
             target = dict(target) if isinstance(target, dict) else {}
-        if not target or target.get("status") != "queued" or not self._mining_nav_on_current_body(target):
+        if not target or not self._mining_nav_on_current_body(target):
             return
         # May activate in orbit before surface lat/lon is available; no false
         # bearing is calculated until the actual surface status arrives.
@@ -4090,15 +4090,19 @@ class MongrelHudApp:
         site_id = int(selected["id"]) if isinstance(selected, dict) else 0
         self._select_mining(signal=signal, site_id=site_id)
         with self.store.lock:
-            current = self.store.data.get("miningBrowserNavigation")
+            current = self.store.data.get("miningBrowserPendingNavigation")
             if isinstance(current, dict) and current == target:
-                current["status"] = "active"
+                self.store.data["miningBrowserNavigation"] = {**target, "status": "active"}
+                self.store.data.pop("miningBrowserPendingNavigation", None)
                 self.store.save()
 
     def mining_browser_navigation_status(self) -> dict[str, Any] | None:
         with self.store.lock:
-            target = self.store.data.get("miningBrowserNavigation")
-            target = dict(target) if isinstance(target, dict) else {}
+            pending = self.store.data.get("miningBrowserPendingNavigation")
+            active = self.store.data.get("miningBrowserNavigation")
+            target = dict(pending) if isinstance(pending, dict) else (
+                dict(active) if isinstance(active, dict) else {}
+            )
         if not target:
             return None
         same_body = self._mining_nav_on_current_body(target)
@@ -4182,7 +4186,9 @@ class MongrelHudApp:
             "status": "queued",
         }
         with self.store.lock:
-            self.store.data["miningBrowserNavigation"] = target
+            # Queue independently; preserve the current saved compass target
+            # until Elite reports the selected destination body.
+            self.store.data["miningBrowserPendingNavigation"] = target
             self.store.save()
         self._activate_pending_mining_navigation()
         return {"ok": True, "navigation": self.mining_browser_navigation_status(),
@@ -4378,6 +4384,7 @@ class MongrelHudApp:
         # A manual selection cancels a previously queued browser destination.
         with self.store.lock:
             self.store.data.pop("miningBrowserNavigation", None)
+            self.store.data.pop("miningBrowserPendingNavigation", None)
             self.store.save()
         wanted = int(signal)
         locations = self.mining_locations_for_current_body()
@@ -4411,6 +4418,7 @@ class MongrelHudApp:
     def select_site(self, site_id: str) -> dict[str, Any]:
         with self.store.lock:
             self.store.data.pop("miningBrowserNavigation", None)
+            self.store.data.pop("miningBrowserPendingNavigation", None)
             self.store.save()
         try:
             wanted = int(site_id)
