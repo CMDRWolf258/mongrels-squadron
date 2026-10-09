@@ -1,4 +1,4 @@
-import { oauthConfigured, oauthError, oauthJson, CLIENT_ID, CALLBACK, SCOPE, consumeSecret, readSecret, issueTokens, verifyPkce } from '../../../../lib/scout-link-oauth.js';
+import { oauthConfigured, oauthError, oauthJson, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, consumeSecret, readSecret, issueTokens, verifyPkce } from '../../../../lib/scout-link-oauth.js';
 
 export async function onRequestPost({request,env}) {
   if (!oauthConfigured(env)) return oauthError('service_unavailable',503);
@@ -15,15 +15,15 @@ export async function onRequestPost({request,env}) {
     if (!await verifyPkce(params.get('code_verifier'),entry.challenge)) return oauthError('invalid_grant');
     const consumed = await consumeSecret(env,'code',code);
     if (!consumed) return oauthError('invalid_grant');
-    if (consumed.ownerId !== String(env.ADMIN_USER_ID) || consumed.scope !== SCOPE) return oauthError('invalid_grant');
-    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID));
+    if (consumed.ownerId !== String(env.ADMIN_USER_ID) || !scopeAllowed(consumed.scope)) return oauthError('invalid_grant');
+    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID,consumed.scope));
   }
   if (grant === 'refresh_token') {
     const existing = await readSecret(env,'refresh',params.get('refresh_token'));
-    if (!existing || existing.clientId !== CLIENT_ID || existing.ownerId !== String(env.ADMIN_USER_ID) || existing.scope !== SCOPE) return oauthError('invalid_grant');
+    if (!existing || existing.clientId !== CLIENT_ID || existing.ownerId !== String(env.ADMIN_USER_ID) || !scopeAllowed(existing.scope)) return oauthError('invalid_grant');
     const consumed = await consumeSecret(env,'refresh',params.get('refresh_token'));
     if (!consumed) return oauthError('invalid_grant');
-    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID));
+    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID,consumed.scope));
   }
   return oauthError('unsupported_grant_type');
 }
