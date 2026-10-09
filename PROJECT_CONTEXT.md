@@ -1580,3 +1580,30 @@ plugin folder or in the website's D1/KV stores.
 **Release gate:** Do not merge/deploy this draft until CI smoke/regression,
 real EDMC Windows journal replay, value calibration, and existing
 HUD overlay/controller/BGS/mining/carrier regression checks are satisfactory.
+
+### Surveyor intelligence-assisted HUD (draft expansion, not deployed)
+
+The same draft PR includes a new **opt-in-visible** Mongrel Surveyor panel in
+\`downloads/mongrel-hud/mongrel_hud.py\` plus paired iPad layout controls.
+It defaults **hidden** and honors the existing independent combat/surface
+profile assignments, text sizing and layout controls; existing panel default
+positions/profiles are unchanged. HUD reads only the local Scout snapshot.
+
+\`downloads/mongrel-scout/surveyor_intel.py\` performs read-only Spansh ID64
+and EDSM exact-name body lookups in Scout's bounded background worker, never
+the EDMC journal thread or Cloudflare. A per-Commander/system local cache has
+a success TTL and shorter empty/error TTL; recently superseded destinations
+are skipped. Other providers may still return results during a partial outage.
+External data is explicitly *not* first-discovery proof and never creates
+personal cartographic earnings. Only a system name/ID leaves the machine for
+the external data providers. The EDMC Mongrel Scout settings checkbox
+(\`MongrelScoutSurveyorCommunityIntel\`) defaults enabled but supports
+disabling network enrichment without disabling local journal recording.
+The Scout plugin ZIP packages both Surveyor modules.
+
+The initial HUD shows journal-confirmed discovery flags, body and mapping
+counts, an experimental persistent unsold estimate, per-planet scan/DSS
+estimates and gain, first-mapping status, and selected community candidates.
+Historical import, accurate current-game payout calibration, true local
+discovery confirmation, in-game Windows UI review, and full-destination
+optimization are still outstanding release gates.
