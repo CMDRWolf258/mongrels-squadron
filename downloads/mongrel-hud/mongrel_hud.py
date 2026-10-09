@@ -987,6 +987,59 @@ def short_body_name(state: dict[str, Any]) -> str:
     return body
 
 
+def local_mining_scope(state: dict[str, Any]) -> dict[str, str] | None:
+    """Identity for locally staged mining outside the 10-16 central archive.
+
+    Use Frontier's numeric system ID64 AND the *full* body name. Shortened
+    planet labels like '3a' repeat across systems and cannot identify a site.
+    Never infer an identity from the last visited system or a display label.
+    """
+    if not isinstance(state, dict):
+        return None
+    system = state.get("system") or {}
+    status = state.get("status") or {}
+    if not isinstance(system, dict) or not isinstance(status, dict):
+        return None
+    address = str(system.get("address") or "").strip()
+    name = " ".join(str(system.get("name") or "").split())
+    body = " ".join(str(status.get("bodyName") or "").split())
+    if not (re.fullmatch(r"[0-9]{1,20}", address) and name and body):
+        return None
+    # A stale Status BodyName from a previous system is not a valid target.
+    if not body.casefold().startswith((name + " ").casefold()):
+        return None
+    return {
+        "key": f"{address}:{body.casefold()}",
+        "systemAddress": address,
+        "systemName": name,
+        "bodyName": body,
+    }
+
+
+def local_mining_point(state: dict[str, Any]) -> dict[str, Any]:
+    """Require a scoped system/body and plausible current surface coordinates."""
+    scope = local_mining_scope(state)
+    if scope is None:
+        raise ValueError("surface_body_identity_unavailable")
+    status = state.get("status") or {}
+    lat, lon = status.get("latitude"), status.get("longitude")
+    if any(isinstance(value, bool) or not isinstance(value, (int, float))
+           or not math.isfinite(float(value)) for value in (lat, lon)):
+        raise ValueError("surface_position_unavailable")
+    if abs(float(lat)) > 90 or abs(float(lon)) > 180:
+        raise ValueError("surface_position_unavailable")
+    radius = status.get("planetRadius")
+    if isinstance(radius, bool) or not isinstance(radius, (int, float)) \
+            or not math.isfinite(float(radius)) or radius <= 0:
+        radius = None
+    return {
+        "scope": scope,
+        "latitude": float(lat),
+        "longitude": float(lon),
+        "planetRadius": float(radius) if radius is not None else None,
+    }
+
+
 def body_type_for_short_name(body: str) -> str:
     value = str(body or "").strip()
     if re.fullmatch(r"\d+", value):
@@ -3816,7 +3869,15 @@ class MongrelHudApp:
     def sites_for_current_body(self) -> list[dict[str, Any]]:
         state = self.scout_state()
         if not self._in_ten16(state):
-            return []
+            scope = local_mining_scope(state)
+            if scope is None:
+                return []
+            with self.store.lock:
+                return sorted(
+                    (dict(row) for row in self.store.data.get("localMiningDeposits", [])
+                     if isinstance(row, dict) and row.get("scopeKey") == scope["key"]),
+                    key=lambda row: (int(row.get("signal") or 0), int(row.get("id") or 0)),
+                )
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
@@ -3845,7 +3906,15 @@ class MongrelHudApp:
     def centers_for_current_body(self) -> list[dict[str, Any]]:
         state = self.scout_state()
         if not self._in_ten16(state):
-            return []
+            scope = local_mining_scope(state)
+            if scope is None:
+                return []
+            with self.store.lock:
+                return sorted(
+                    (dict(row) for row in self.store.data.get("localMiningCenters", [])
+                     if isinstance(row, dict) and row.get("scopeKey") == scope["key"]),
+                    key=lambda row: int(row.get("signal") or 0),
+                )
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
@@ -3876,13 +3945,51 @@ class MongrelHudApp:
             })
         return out
 
+    def _mining_selection(self) -> tuple[int, int]:
+        """Keep 10-16's legacy selection and separate other system/body picks."""
+        state = self.scout_state()
+        with self.store.lock:
+            if self._in_ten16(state):
+                row = {"signal": self.store.data.get("activeMiningLocationSignal"),
+                       "siteId": self.store.data.get("activeMiningSiteId")}
+            else:
+                scope = local_mining_scope(state)
+                selections = self.store.data.get("localMiningSelections")
+                row = (selections.get(scope["key"], {}) if scope and isinstance(selections, dict) else {})
+            try:
+                signal = int(row.get("signal") or 0)
+                site_id = int(row.get("siteId") or 0)
+            except (TypeError, ValueError):
+                return (0, 0)
+            return (signal, site_id)
+
+    def _select_mining(self, *, signal: int | None = None,
+                       site_id: int | None = None) -> None:
+        state = self.scout_state()
+        with self.store.lock:
+            if self._in_ten16(state):
+                if signal is not None:
+                    self.store.data["activeMiningLocationSignal"] = signal
+                if site_id is not None:
+                    self.store.data["activeMiningSiteId"] = site_id or None
+            else:
+                scope = local_mining_scope(state)
+                if scope is None:
+                    raise ValueError("surface_body_identity_unavailable")
+                selections = self.store.data.setdefault("localMiningSelections", {})
+                row = selections.setdefault(scope["key"], {"signal": 0, "siteId": 0})
+                if signal is not None:
+                    row["signal"] = signal
+                if site_id is not None:
+                    row["siteId"] = site_id
+            self.store.save()
+
     def active_location_signal(self) -> int | None:
         locations = self.mining_locations_for_current_body()
         if not locations:
             return None
         valid = {int(row["signal"]) for row in locations}
-        with self.store.lock:
-            raw = self.store.data.get("activeMiningLocationSignal")
+        raw, _ = self._mining_selection()
         try:
             selected = int(raw)
         except (TypeError, ValueError):
@@ -3891,9 +3998,7 @@ class MongrelHudApp:
             return selected
         if len(valid) == 1:
             selected = next(iter(valid))
-            with self.store.lock:
-                self.store.data["activeMiningLocationSignal"] = selected
-                self.store.save()
+            self._select_mining(signal=selected, site_id=0)
             return selected
         return None
 
@@ -3906,14 +4011,12 @@ class MongrelHudApp:
             if wanted < 1:
                 raise ValueError("mining_location_not_found")
             location = {"signal": wanted, "center": None, "depositCount": 0, "commodities": []}
-        with self.store.lock:
-            self.store.data["activeMiningLocationSignal"] = wanted
-            active_id = self.store.data.get("activeMiningSiteId")
-            if active_id:
-                current = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == int(active_id)), None)
-                if not current or int(current.get("signal") or 0) != wanted:
-                    self.store.data["activeMiningSiteId"] = None
-            self.store.save()
+        _, active_id = self._mining_selection()
+        current = next((row for row in self.sites_for_current_body()
+                        if int(row.get("id") or 0) == active_id), None)
+        self._select_mining(signal=wanted, site_id=(
+            active_id if current and int(current.get("signal") or 0) == wanted else 0
+        ))
         return dict(location)
 
     def active_center(self) -> dict[str, Any] | None:
@@ -3937,30 +4040,20 @@ class MongrelHudApp:
         site = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == wanted), None)
         if not site:
             raise ValueError("site_not_found")
-        with self.store.lock:
-            self.store.data["activeMiningLocationSignal"] = int(site.get("signal") or 0)
-            self.store.data["activeMiningSiteId"] = wanted
-            self.store.save()
+        self._select_mining(signal=int(site.get("signal") or 0), site_id=wanted)
         return dict(site)
 
     def active_site(self) -> dict[str, Any] | None:
         deposits = self.deposits_for_active_location()
         if not deposits:
             return None
-        with self.store.lock:
-            raw = self.store.data.get("activeMiningSiteId")
-        try:
-            wanted = int(raw)
-        except (TypeError, ValueError):
-            wanted = 0
+        _, wanted = self._mining_selection()
         site = next((row for row in deposits if int(row.get("id") or 0) == wanted), None)
         if site:
             return dict(site)
         if len(deposits) == 1:
             site = dict(deposits[0])
-            with self.store.lock:
-                self.store.data["activeMiningSiteId"] = int(site["id"])
-                self.store.save()
+            self._select_mining(site_id=int(site["id"]))
             return site
         return None
 
