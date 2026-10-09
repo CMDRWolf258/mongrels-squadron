@@ -4421,6 +4421,14 @@ class MongrelHudApp:
         if site:
             return dict(site)
         if len(deposits) == 1:
+            # Explicit center-only Navigate must not silently select a deposit.
+            with self.store.lock:
+                target = self.store.data.get("miningBrowserNavigation")
+                center_only = (isinstance(target, dict)
+                               and target.get("status") == "active"
+                               and not isinstance(target.get("deposit"), dict))
+            if center_only and self._mining_nav_on_current_body(target):
+                return None
             site = dict(deposits[0])
             self._select_mining(site_id=int(site["id"]))
             return site
