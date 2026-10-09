@@ -34,7 +34,7 @@ MODEL = "community-formula-2022-provisional"
 
 
 def _text(value: Any) -> str:
-    return str(value or "").strip()
+    return "" if value is None else str(value).strip()
 
 
 def _int(value: Any) -> int | None:
@@ -292,7 +292,9 @@ class Surveyor:
                                 body[dest] = event[src]
                         for src, dest in (("WasDiscovered", "wasDiscovered"), ("WasMapped", "wasMapped")):
                             value = _flag(event, src)
-                            if value is not None:
+                            if value is not None and body.get(dest) is None:
+                                # Preserve the original discovery/mapping condition;
+                                # repeat scans after personal mapping must not erase it.
                                 body[dest] = value
                         body["scanType"] = _text(event.get("ScanType"))
                         if body["scanType"] not in {"NavBeaconDetail", "External"}:
