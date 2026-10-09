@@ -14,7 +14,7 @@ main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:
 label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text);font-size:16px}.mining-select{width:100%;min-height:58px;padding:12px 42px 12px 14px;border:1px solid var(--line);border-radius:10px;background:#10232d;color:var(--text);font-size:18px;font-weight:750}textarea{min-height:80px}.action{width:100%;margin-top:12px;background:#12323e}.notice{color:var(--warn);min-height:24px;margin-top:8px}.notice.success{color:#67e39a;font-weight:800}.notice.review{color:var(--warn);font-weight:800}.hidden{display:none!important}
 #pair{position:fixed;inset:0;background:rgba(2,8,12,.96);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}#pair .box{max-width:360px;width:100%}.modules{font-size:.9rem}.module-group{margin-top:12px}.module-group h3{margin:0 0 5px;color:var(--accent);font-size:.78rem;letter-spacing:.08em}.module-row{display:grid;grid-template-columns:minmax(0,1fr) 4.5em 5em;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}.module-health,.module-age{text-align:right;font-variant-numeric:tabular-nums}.alert-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}.alert-item:last-child{border:0}.alert-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.alert-ack{min-height:40px;border:1px solid var(--line);border-radius:8px;background:#10232d;color:var(--text);font-weight:700;padding:6px 10px}.alert-critical strong{color:var(--warn)}.alert-red{border-left:3px solid #ff4d55;padding-left:9px}.alert-amber{border-left:3px solid #ffb229;padding-left:9px}.alert-cyan{border-left:3px solid #56d7ef;padding-left:9px}.alert-item.is-acknowledged{opacity:.72}.ack-state{font-size:.72rem;font-weight:800;color:var(--muted);white-space:nowrap}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.layout-actions{grid-template-columns:1fr}.panel-control{grid-template-columns:minmax(0,1fr) 76px}.panel-control select{width:100%}.voice-timing,.voice-role-grid{grid-template-columns:1fr}}
-.mining-lookup{position:relative}.mining-suggestions{max-height:260px;overflow:auto;border:1px solid var(--accent);border-radius:8px;background:#10232d}.mining-suggestions button{display:block;text-align:left;width:100%;min-height:48px;padding:10px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line)}.mining-suggestions button:focus{background:#174454}.mining-suggestions small,.mining-browser-item small{display:block;color:var(--muted)}.mining-browser-results{display:grid;gap:8px}.mining-browser-item{padding:11px;border:1px solid var(--line);background:#07131a;border-radius:8px}.mining-browser-item strong{color:var(--accent)}.mining-browser-item p{margin:5px 0}.mining-browser-item small{margin-top:5px}.mining-browser-local{color:var(--warn)!important}
+.mining-lookup{position:relative}.mining-suggestions{max-height:260px;overflow:auto;border:1px solid var(--accent);border-radius:8px;background:#10232d}.mining-suggestions button{display:block;text-align:left;width:100%;min-height:48px;padding:10px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line)}.mining-suggestions button:focus{background:#174454}.mining-suggestions small,.mining-browser-item small{display:block;color:var(--muted)}.mining-browser-results{display:grid;gap:8px}.mining-browser-item{padding:11px;border:1px solid var(--line);background:#07131a;border-radius:8px}.mining-browser-item strong{color:var(--accent)}.mining-browser-item summary{cursor:pointer;min-height:46px;padding:9px 0;font-weight:750;color:var(--accent)}.mining-browser-item .browser-nav-action{min-height:44px;width:100%;margin-top:8px;background:#12323e;border:1px solid var(--accent);border-radius:8px;color:var(--text);font-weight:800}.mining-browser-item p{margin:5px 0}.mining-browser-item small{margin-top:5px}.mining-browser-local{color:var(--warn)!important}
 </style>
 </head>
 <body>
@@ -257,6 +257,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
         <div><label for="browseRigs">Minimum rig count</label><select id="browseRigs" class="mining-select"><option value="0">Any size</option><option value="1">1+ rigs</option><option value="2">2+ rigs</option><option value="3">3+ rigs</option><option value="4">4+ rigs</option><option value="5">5+ rigs</option><option value="6">6+ rigs</option><option value="7">7+ rigs</option></select></div>
       </div>
       <p class="status" id="browseStatus" aria-live="polite">Open Surface Mining to load saved systems.</p>
+      <div class="notice" id="browseNavNotice" aria-live="polite"></div>
       <div id="browseResults" class="mining-browser-results"></div>
     </div>
     <div class="card"><h2>MINING LOCATIONS ON THIS BODY</h2><p class="muted">Choose the planetary signal first. Its center and deposits are separate navigation targets.</p><div class="sites" id="miningLocations"><span class="muted">No mining locations found.</span></div></div>
@@ -376,6 +377,15 @@ function render(){
   el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");
   el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");
   if(profile==="surface"&&!miningBrowser.loaded&&!miningBrowser.loading)loadMiningBrowserCatalog(false);
+  if(profile==="surface"){
+    var target=state.miningBrowserNavigation;
+    if(target&&target.systemName){
+      var label=target.commodity?target.commodity+" · ":"";
+      el("browseNavNotice").textContent=target.status==="active"
+        ?"NAVIGATING · "+label+target.body+" · Signal #"+target.signal+(target.centerAvailable?" · CENTER + DEPOSIT COMPASSES":"")
+        :"DESTINATION QUEUED · "+label+target.systemName+" · "+target.body+" · Signal #"+target.signal+" · Compass activates on arrival";
+    }
+  }
   var layout=state.layout||{},panels=layout.panels||{};
   renderLayoutControls(layout);
   var voiceStatus=state.voiceStatus||{},voiceCatalog=Array.isArray(state.voiceCatalog)?state.voiceCatalog:[],carrierContext=state.carrierVoiceContext||{};
@@ -594,17 +604,51 @@ function renderMiningBrowseResults(){
   var html=filtered.slice(0,500).map(function(row){
     var count=Number(row.rigs||0),label=count>=7?"7+":String(count||"?");
     var local=row.storage==="local_only",coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
-    return '<div class="mining-browser-item"><strong>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs</strong>'
-      +'<p>'+escapeHtml(row.body||"Unknown body")+' · Signal #'+escapeHtml(row.signal||"?")+'</p>'
-      +'<small>'+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+(local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+(row.needsReview?" · DUPLICATE NEEDS REVIEW":"")+'</small>'
-      +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')+'</div>';
+    var hasCenter=centers.some(function(center){return String(center.body||"").toLowerCase()===String(row.body||"").toLowerCase()&&Number(center.signal)===Number(row.signal)});
+    return '<details class="mining-browser-item"><summary>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs · '+escapeHtml(row.body||"Body")+'</summary>'
+      +'<p>Signal #'+escapeHtml(row.signal||"?")+'</p>'
+      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+(local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+(row.needsReview?" · DUPLICATE NEEDS REVIEW":"")+'</small>'
+      +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')
+      +'<button type="button" class="browser-nav-action" data-browse-navigate="deposit" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE'+(hasCenter?" · DEPOSIT + CENTER":" · DEPOSIT")+'</button></details>';
   }).join("");
   html+=centerOnly.slice(0,50).map(function(row){
-    return '<div class="mining-browser-item"><strong>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</strong><small>'
-      +escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
-      +'<small>'+(row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small></div>';
+    return '<details class="mining-browser-item"><summary>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</summary>'
+      +'<small>'+escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
+      +'<small>'+(row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small>'
+      +'<button type="button" class="browser-nav-action" data-browse-navigate="center" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE · CENTER</button></details>';
   }).join("");
   el("browseResults").innerHTML=html||'<p class="muted">No saved locations match these filters.</p>';
+  el("browseResults").querySelectorAll("[data-browse-navigate]").forEach(function(button){
+    button.onclick=function(){
+      var kind=button.getAttribute("data-browse-navigate"),id=button.getAttribute("data-browse-nav-id");
+      navigateMiningSearchResult(kind,id);
+    };
+  });
+}
+async function navigateMiningSearchResult(kind,id){
+  var address=miningBrowser.selected,notice=el("browseNavNotice");
+  notice.textContent="Selecting saved navigation target…";
+  try{
+    var response=await api("/api/mining-browser/navigate",{
+      systemAddress:address,kind:kind,id:String(id)
+    });
+    if(response.navigation){
+      state=state||{};
+      state.miningBrowserNavigation=response.navigation;
+      var nav=response.navigation;
+      notice.className="notice "+(nav.status==="active"?"success":"review");
+      notice.textContent=nav.status==="active"
+        ?"NAVIGATION ACTIVE · "+nav.body+" · Signal #"+nav.signal
+           +(nav.centerAvailable?" · Center and deposit compass ready":" · Deposit compass ready")
+        :"DESTINATION QUEUED · "+nav.systemName+" · "+nav.body+" · Signal #"+nav.signal
+           +" · Compass will activate when Elite confirms arrival on that body";
+    }
+    // Refresh the live status without touching browsing filters or selected system.
+    await load(true);
+  }catch(err){
+    notice.className="notice review";
+    notice.textContent="Navigation not changed: "+err.message;
+  }
 }
 function populateMiningFilters(){
   var data=miningBrowser.data||{},sites=data.deposits||[],centers=data.centers||[];
