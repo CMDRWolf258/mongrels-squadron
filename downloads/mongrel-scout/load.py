@@ -192,6 +192,7 @@ _hud_state: dict[str, Any] = {
     "lastFacility": None,
     "status": None,
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
     "lastEvent": None,
@@ -457,6 +458,8 @@ def journal_entry(
 
     trade_sale = _observe_activity_trade(cmdr, entry, state, system, station)
     activity_payload = _build_realtime_activity_payload(entry, state, system, station, trade_sale)
+    if event == "MarketSell":
+        _update_trade_activity_status(entry, trade_sale, activity_payload, bool(token))
     if activity_payload is not None and token:
         _queue_realtime_activity(activity_payload)
 
@@ -3215,6 +3218,74 @@ def _build_realtime_activity_payload(
     }
 
 
+def _update_trade_activity_status(
+    entry: Mapping[str, Any],
+    provenance: Optional[Mapping[str, Any]],
+    payload: Optional[Mapping[str, Any]],
+    has_token: bool,
+) -> None:
+    """Safe local diagnostic: no tokens, cargo inventory or purchase lots.
+
+    Trade qualification is deliberately unchanged; a rejected sale is *not*
+    converted to verified trade just to improve apparent HUD progress.
+    """
+    status, reason = "excluded", "unknown_origin"
+    if payload is not None and not has_token:
+        status, reason = "excluded", "scout_token_missing"
+    elif payload is not None:
+        status, reason = "queued", "awaiting_server"
+    elif provenance is None:
+        reason = "no_purchase_history"
+    elif not provenance.get("verified"):
+        reason = "purchase_origin_" + str(provenance.get("source") or "unknown")[:32]
+    elif str(provenance.get("stationType") or "").casefold() in {"", "fleetcarrier"}:
+        reason = "not_standard_station"
+    elif not provenance.get("stationFaction"):
+        reason = "station_faction_unresolved"
+    elif bool(entry.get("BlackMarket") or entry.get("StolenGoods")):
+        reason = "black_market_or_stolen"
+    else:
+        try:
+            count = int(entry.get("Count") or 0)
+            profit = float(entry.get("TotalSale")) - count * float(entry.get("AvgPricePaid"))
+            reason = "not_profitable_or_missing_price" if not math.isfinite(profit) or profit <= 0 else "unqualified_sale"
+        except (TypeError, ValueError, OverflowError):
+            reason = "price_fields_missing"
+    with _hud_condition:
+        _hud_state["tradeActivity"] = {
+            "status": status,
+            "reason": reason,
+            "timestamp": str(entry.get("timestamp") or ""),
+            "system": str(_last_system_name or "")[:140],
+            "station": str((provenance or {}).get("station") or "")[:140],
+        }
+        _hud_condition.notify_all()
+
+
+def _record_trade_upload_result(
+    batch: list[dict[str, Any]], status: str, reason: str,
+    server: Optional[Mapping[str, Any]] = None,
+) -> None:
+    """Update last-sale status only when the batch corresponds to that sale."""
+    sales = [row for row in batch if row.get("event") == "MarketSell"]
+    if not sales:
+        return
+    latest = max((str(row.get("timestamp") or "") for row in sales), default="")
+    with _hud_condition:
+        trade = _hud_state.get("tradeActivity")
+        if not isinstance(trade, dict) or str(trade.get("timestamp") or "") != latest:
+            return
+        trade.update({
+            "status": status,
+            "reason": reason,
+            "serverNormalized": _optional_int((server or {}).get("normalized")),
+            "serverRejected": _optional_int((server or {}).get("rejected")),
+            "serverAdded": _optional_int((server or {}).get("added")),
+            "serverUpdated": _optional_int((server or {}).get("updated")),
+        })
+        _hud_condition.notify_all()
+
+
 def _activity_fingerprint(payload: Mapping[str, Any]) -> str:
     try:
         return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -3271,6 +3342,7 @@ def _activity_flush_worker() -> None:
 
         token = (config.get_str(KEY_TOKEN) or "").strip()
         if not token:
+            _record_trade_upload_result(batch, "excluded", "scout_token_missing")
             with _activity_lock:
                 _activity_flush_scheduled = False
             return
@@ -3309,14 +3381,30 @@ def _send_activity_batch(endpoint: str, token: str, events: list[dict[str, Any]]
                 },
             )
         except Exception:
+            _record_trade_upload_result(events, "retrying", "network_error")
             return False, True
 
     if 200 <= response.status_code < 300:
+        try:
+            result = response.json()
+        except Exception:
+            result = {}
+        if not isinstance(result, Mapping):
+            result = {}
+        received = _optional_int(result.get("received"))
+        normalized = _optional_int(result.get("normalized"))
+        rejected = _optional_int(result.get("rejected"))
+        if received and rejected is not None and rejected >= received and not normalized:
+            _record_trade_upload_result(events, "excluded", "server_rejected", result)
+            return False, False
+        _record_trade_upload_result(events, "accepted", "server_processed", result)
         return True, False
     try:
         detail = str(response.json().get("error") or "")
     except Exception:
         detail = ""
+    _record_trade_upload_result(events, "retrying" if response.status_code == 429 or response.status_code >= 500 else "excluded",
+                                f"http_{response.status_code}")
     if response.status_code == 401:
         _set_status("Realtime activity token rejected")
         return False, False
