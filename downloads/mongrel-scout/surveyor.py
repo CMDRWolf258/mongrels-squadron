@@ -31,7 +31,7 @@ PLANET_K = {
     "Earthlike body": (64831, 116295),
 }
 Q = 0.56591828
-MODEL = "community-formula-2022-provisional"
+MODEL = "community-formula-odyssey-provisional-v2"
 
 
 def _text(value: Any) -> str:
@@ -104,16 +104,25 @@ def _body_view(body: dict[str, Any]) -> dict[str, Any]:
     scan = _value(body, mapped=False, efficient=False) if owned_scan else None
     efficiency = body.get("mappingEfficiency")
     is_star = bool(body.get("starType"))
-    mapped = None if is_star else _value(body, mapped=True, efficient=efficiency is not False)
+    mapped_min = None if is_star else _value(body, mapped=True, efficient=False)
+    mapped_max = None if is_star else _value(body, mapped=True, efficient=True)
+    mapped = mapped_max if efficiency is not False else mapped_min
     # No credit is projected from an externally reported body or a navigation
     # beacon record the commander has not scanned personally.
     current = mapped if owned_map else scan
     extra = max(0, mapped - scan) if owned_scan and not owned_map and mapped is not None and scan is not None else None
+    extra_min = max(0, mapped_min - scan) if owned_scan and not owned_map and mapped_min is not None and scan is not None else None
+    extra_max = max(0, mapped_max - scan) if owned_scan and not owned_map and mapped_max is not None and scan is not None else None
     result = dict(body)
     result.update({
         "currentValue": current,
         "mappedValue": mapped,
         "mappingGain": extra,
+        "mappingGainMin": extra_min,
+        "mappingGainMax": extra_max,
+        "mappedValueMin": mapped_min,
+        "mappedValueMax": mapped_max,
+        "valuationConfidence": "community_estimate_not_sale_value" if current is not None else "unvalued",
         "valueModel": MODEL,
         "estimated": True,
         "mappedValueAssumesEfficient": efficiency is None and not owned_map,
@@ -208,7 +217,7 @@ class Surveyor:
         self._save(conn, "systems", commander, address, info)
 
     def apply(self, commander: str, event: Mapping[str, Any], fallback_system: str = "",
-              fallback_address: Any = None) -> dict[str, Any] | None:
+              fallback_address: Any = None, *, historic: bool = False) -> dict[str, Any] | None:
         kind = _text(event.get("event"))
         commander = _text(commander)
         if not commander or kind not in SURVEY_EVENTS:
@@ -227,7 +236,7 @@ class Surveyor:
             active = row["active_address"] if row else ""
             # Explicit SystemAddress always outranks EDMC fallback context.
             address = _text(event.get("SystemAddress") or fallback_address or active)
-            if kind in {"FSDJump", "Location", "CarrierJump"} and address:
+            if kind in {"FSDJump", "Location", "CarrierJump"} and address and not historic:
                 conn.execute(
                     "INSERT INTO meta VALUES (?,?) ON CONFLICT(commander) DO UPDATE SET active_address=excluded.active_address",
                     (commander, address),
@@ -241,7 +250,7 @@ class Surveyor:
                 system["name"] = name
             system["address"] = address
             timestamp = _text(event.get("timestamp"))
-            if timestamp:
+            if timestamp and timestamp >= _text(system.get("lastObservedAt")):
                 system["lastObservedAt"] = timestamp
             if kind == "FSSDiscoveryScan":
                 count = _int(event.get("BodyCount"))
@@ -261,7 +270,10 @@ class Surveyor:
                         "INSERT INTO sales VALUES (?,?,?,?)",
                         (commander, digest, amount, timestamp),
                     )
-                sold_systems = event.get("Systems") if kind == "SellExplorationData" else event.get("Discovered")
+                # SellExplorationData.Systems identifies sold systems. The
+                # MultiSellExplorationData.Discovered list is *not* exhaustive;
+                # it must never clear all those systems' estimated balances.
+                sold_systems = event.get("Systems") if kind == "SellExplorationData" else None
                 for entry in sold_systems if isinstance(sold_systems, list) else []:
                     sale_name = _text(entry.get("SystemName")) if isinstance(entry, Mapping) else _text(entry)
                     if not sale_name:
@@ -269,7 +281,7 @@ class Surveyor:
                     for record in conn.execute("SELECT address,info FROM systems WHERE commander=?", (commander,)).fetchall():
                         previous = json.loads(record["info"])
                         if previous.get("name", "").casefold() == sale_name.casefold():
-                            previous["lastKnownSaleAt"] = timestamp
+                            previous["lastKnownSaleAt"] = max(timestamp, _text(previous.get("lastKnownSaleAt")))
                             previous["salesPartiallyReconciled"] = True
                             self._save(conn, "systems", commander, record["address"], previous)
                             revalue_systems.add(record["address"])
@@ -300,13 +312,13 @@ class Surveyor:
                         body["scanType"] = _text(event.get("ScanType"))
                         if body["scanType"] not in {"NavBeaconDetail", "External"}:
                             body["personallyScanned"] = True
-                            body["lastDataAcquiredAt"] = timestamp
+                            body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
                     elif kind == "SAAScanComplete":
                         body["personallyMapped"] = True
                         used, target = _int(event.get("ProbesUsed")), _int(event.get("EfficiencyTarget"))
                         if used is not None and target is not None:
                             body["mappingEfficiency"] = used <= target
-                        body["lastDataAcquiredAt"] = timestamp
+                        body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
                     else:
                         signals = event.get("Signals")
                         if isinstance(signals, list):
@@ -401,14 +413,21 @@ class Surveyor:
             "potentialFirstBodies": len(firsts),
             "currentSystemKnownEstimates": sum(known_current),
             "currentSystemValueCoverage": len(known_current),
-            "additionalMappingPotential": sum(b.get("mappingGain") or 0 for b in bodies),
+            "additionalMappingPotential": sum(b.get("mappingGainMax") or 0 for b in bodies),
+            "additionalMappingPotentialMin": sum(b.get("mappingGainMin") or 0 for b in bodies),
+            "additionalMappingPotentialMax": sum(b.get("mappingGainMax") or 0 for b in bodies),
             "confirmedSalesLifetime": sale_total,
+            "confirmedSalesBasis": "Frontier journal TotalEarnings; may include bonuses",
             "unsoldEstimate": unsold if covered else None,
             "unsoldValueCoverage": covered,
             "unsoldEstimateStatus": (
-                "partial_sale_reconciliation" if sale_total else
-                "journal_tracking_only"
+                "incomplete_sale_reconciliation" if sale_total else
+                "estimated_from_scanned_journal_bodies"
             ),
+            "cartographicEstimateExcludes": [
+                "system_completion_bonuses", "powerplay_or_station_modifiers",
+                "sale_page_effects", "unscanned_bodies",
+            ],
             "valueModel": MODEL,
             "valuesAreEstimates": True,
             "bodies": bodies[:40],
