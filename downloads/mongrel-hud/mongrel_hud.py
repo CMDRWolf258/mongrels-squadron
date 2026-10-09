@@ -4084,13 +4084,52 @@ class MongrelHudApp:
         # Backward-compatible alias for integrations that still expect one target.
         return self.deposit_nav() or self.location_nav()
 
+    def _next_local_mining_id_locked(self) -> int:
+        """Assign persistent positive local IDs, never uploading them as central IDs."""
+        current = self.store.data.get("nextLocalMiningId")
+        try:
+            counter = max(1000000000, int(current or 1000000000))
+        except (TypeError, ValueError):
+            counter = 1000000000
+        existing = {
+            int(row.get("id") or 0)
+            for key in ("localMiningCenters", "localMiningDeposits")
+            for row in self.store.data.get(key, [])
+            if isinstance(row, dict) and str(row.get("id") or "").isdigit()
+        }
+        while counter in existing:
+            counter += 1
+        self.store.data["nextLocalMiningId"] = counter + 1
+        return counter
+
     def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
         signal = int(site_number)
         if signal < 1:
             raise ValueError("invalid_signal")
         state = self.scout_state()
         if not self._in_ten16(state):
-            raise ValueError("unsupported_system")
+            point = local_mining_point(state)
+            scope = point["scope"]
+            with self.store.lock:
+                rows = self.store.data.setdefault("localMiningCenters", [])
+                existing = next((row for row in rows if isinstance(row, dict)
+                                 and row.get("scopeKey") == scope["key"]
+                                 and int(row.get("signal") or 0) == signal), None)
+                if existing is None:
+                    identifier = self._next_local_mining_id_locked()
+                    existing = {"id": identifier, "scopeKey": scope["key"],
+                                "systemName": scope["systemName"],
+                                "systemAddress": scope["systemAddress"],
+                                "body": scope["bodyName"], "signal": signal,
+                                "storage": "local_only"}
+                    rows.append(existing)
+                existing.update({"latitude": point["latitude"],
+                                 "longitude": point["longitude"],
+                                 "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
+                saved = dict(existing)
+                self.store.save()
+            self._select_mining(signal=signal, site_id=0)
+            return saved
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
@@ -4146,7 +4185,60 @@ class MongrelHudApp:
             raise ValueError("invalid_rig_count")
         state = self.scout_state()
         if not self._in_ten16(state):
-            raise ValueError("unsupported_system")
+            point = local_mining_point(state)
+            scope = point["scope"]
+            chosen_signal = int(signal or self.active_location_signal() or 0)
+            if chosen_signal < 1 or chosen_signal > 999:
+                raise ValueError("signal_required")
+            if not 1 <= int(rigs) <= 7:
+                raise ValueError("invalid_rig_count")
+            with self.store.lock:
+                rows = self.store.data.setdefault("localMiningDeposits", [])
+                duplicate = False
+                for row in rows:
+                    if not isinstance(row, dict) or row.get("scopeKey") != scope["key"]:
+                        continue
+                    if (int(row.get("signal") or 0) != chosen_signal
+                            or str(row.get("commodity") or "").casefold() != commodity.casefold()):
+                        continue
+                    if point["planetRadius"] is not None:
+                        distance = great_circle_nav(
+                            point["latitude"], point["longitude"],
+                            float(row["latitude"]), float(row["longitude"]),
+                            point["planetRadius"],
+                        )["distance"]
+                        duplicate = duplicate or distance <= 1000.0
+                    else:
+                        duplicate = duplicate or (
+                            abs(point["latitude"] - float(row["latitude"])) < 0.000001
+                            and abs(point["longitude"] - float(row["longitude"])) < 0.000001
+                        )
+                saved = {
+                    "id": self._next_local_mining_id_locked(),
+                    "scopeKey": scope["key"],
+                    "systemName": scope["systemName"],
+                    "systemAddress": scope["systemAddress"],
+                    "body": scope["bodyName"],
+                    "signal": chosen_signal,
+                    "latitude": point["latitude"],
+                    "longitude": point["longitude"],
+                    "planetRadius": point["planetRadius"],
+                    "commodity": commodity[:90],
+                    "rigs": int(rigs),
+                    "notes": notes.strip()[:1600],
+                    "storage": "local_only",
+                    "needsReview": duplicate,
+                    "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                }
+                rows.append(saved)
+                self.store.save()
+            self._select_mining(signal=chosen_signal, site_id=int(saved["id"]))
+            return {
+                "ok": True, "status": "duplicate_review_local" if duplicate else "saved_local",
+                "site": saved, "duplicate": duplicate, "latitude": saved["latitude"],
+                "longitude": saved["longitude"], "signal": chosen_signal,
+                "storage": "local_only", "message": "Saved locally on this PC; not synchronized to the squad archive.",
+            }
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
@@ -4218,10 +4310,23 @@ class MongrelHudApp:
                 and str(row.get("body") or "").strip().casefold() == body
             }
 
+        with self.store.lock:
+            local_commodities = {
+                str(row.get("commodity") or "").strip()
+                for row in self.store.data.get("localMiningDeposits", [])
+                if isinstance(row, dict) and str(row.get("commodity") or "").strip()
+            }
+        # Current-body local sites come from the same scoped row selector.
+        local_body = {
+            str(row.get("commodity") or "").strip()
+            for row in self.sites_for_current_body()
+            if row.get("storage") == "local_only" and row.get("commodity")
+        }
         all_choices = sorted(
-            set(SURFACE_MINING_COMMODITIES) | known_all,
+            set(SURFACE_MINING_COMMODITIES) | known_all | local_commodities,
             key=str.casefold,
         )
+        body_known.update(local_body)
         current_body = sorted(body_known, key=str.casefold)
         return current_body, all_choices
 
@@ -4247,6 +4352,11 @@ class MongrelHudApp:
             "depositNav": self.deposit_nav(),
             "surfaceNav": self.surface_nav(),
             "miningStatus": self.mining_status_snapshot(),
+            "miningStorage": (
+                "shared_10_16" if self._in_ten16(state)
+                else "local_only" if local_mining_scope(state)
+                else "surface_identity_unavailable"
+            ),
             "miningCommoditiesCurrentBody": current_body_commodities,
             "miningCommodities": mining_commodities,
             "bounty": self.bounty_ledger(),
@@ -4746,9 +4856,12 @@ class MongrelHudApp:
         self._draw_text(canvas, width - 8 * scale, y, self.clip_line(system.get("name") or "—", 42), scale, 8, HUD_MUTED, True, "ne")
         y += 24 * scale
 
-        if not self._in_ten16(state):
-            self._draw_text(canvas, 8 * scale, y, "CURATED MINING NAV AVAILABLE IN 10-16", scale, 10, HUD_MUTED, True)
+        if not self._in_ten16(state) and local_mining_scope(state) is None:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR VERIFIED SURFACE BODY IDENTITY", scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
+        if not self._in_ten16(state):
+            self._draw_text(canvas, 8 * scale, y, "LOCAL RECORDS · NOT SQUAD SYNCED", scale, 9, HUD_AMBER, True)
+            y += 18 * scale
 
         signal = self.active_location_signal()
         if signal is None:
@@ -4828,7 +4941,7 @@ class MongrelHudApp:
         signal = self.active_location_signal()
         sites = self.deposits_for_active_location() if signal is not None else []
         if not sites:
-            message = (f"NO DEPOSITS SAVED FOR SIGNAL #{signal}" if signal is not None else "SELECT A MINING LOCATION") if self._in_ten16(state) else "AVAILABLE IN 10-16"
+            message = (f"NO DEPOSITS SAVED FOR SIGNAL #{signal}" if signal is not None else "SELECT A MINING LOCATION")
             self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
 
