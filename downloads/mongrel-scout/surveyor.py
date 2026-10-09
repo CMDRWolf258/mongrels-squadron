@@ -334,6 +334,11 @@ class Surveyor:
             self._save(conn, "systems", commander, address, system)
             for touched in revalue_systems:
                 self._revalue_system(conn, commander, touched)
+            # Bulk historical replay must not calculate an all-system HUD
+            # snapshot on every journal line; one snapshot after import is
+            # sufficient and avoids work scaling quadratically with history.
+            if historic:
+                return {"imported": True}
             return self._snapshot(conn, commander, active or address)
 
     def cached_intelligence(self, commander: str, address: str) -> dict[str, Any] | None:
