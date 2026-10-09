@@ -3928,7 +3928,8 @@ class MongrelHudApp:
             return self.mining_browser_catalog()
         now = time.monotonic()
         with self.mining_lock:
-            fresh = now - float(getattr(self, "mining_browser_directory_checked", 0)) < 3600
+            last_check = float(getattr(self, "mining_browser_directory_checked", 0))
+            fresh = last_check > 0 and now - last_check < 3600
             if fresh and not force:
                 return self.mining_browser_catalog()
             # Reserve the next hour before I/O so simultaneous iPad calls don't
