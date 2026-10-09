@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory() as directory:
     snap = ledger.apply(name, sale)
     assert snap["confirmedSalesLifetime"] == 481002
     assert 0 < snap["unsoldEstimate"] < mapped_total
-    assert snap["unsoldEstimateStatus"] == "partial_sale_reconciliation"
+    assert snap["unsoldEstimateStatus"] == "incomplete_sale_reconciliation"
     assert ledger.apply(name, sale) is None
     assert ledger.snapshot(name)["confirmedSalesLifetime"] == 481002
 
