@@ -94,6 +94,22 @@ basic-versus-efficient DSS potential range, and recorded Frontier
 system completion and other modifiers prevent exact predictions. The estimated
 unsold figure must not be interpreted as your guaranteed future payout.
 
+## DSS mapping advisor (development build)
+
+The Surveyor HUD panel now ranks **up to eight** unmapped, personally scanned
+planetary bodies and displays its **top three** actionable DSS candidates.
+Each recommendation shows a range for *additional* mapping credits (basic versus
+efficient DSS mapping), known distance from the system's arrival star in LS
+(or "distance unknown"), and journal-grounded hints such as a potential first
+mapping or terraformability. These are **provisional estimates**, not guaranteed
+sale payouts. The ranking uses a light logarithmic distance penalty; it does
+**not** estimate supercruise time, choose a flight route, or navigate your ship.
+
+Mapping the body removes it from your remaining DSS suggestions. Replaying the
+same journal does not recreate it. Bodies seen only in EDSM/Spansh catalogs or
+NavBeaconDetails are **not** eligible for ranked personal scan recommendations.
+No additional Cloudflare requests or writes are made for the advisor.
+
 ## Surveyor community intelligence (development build)
 
 Mongrel Surveyor maintains a persistent, **local** exploration ledger of
@@ -101,9 +117,11 @@ your journal-confirmed scans, maps, possible first discoveries, and
 **estimated** unsold cartographic data. Its experimental cartographic
 estimates may differ from Frontier sales and are not guaranteed values.
 
-With the **Surveyor: enrich current systems from EDSM and Spansh** checkbox
-enabled (the default), Scout requests known system information directly from
-those two providers as you enter systems. Only the current system name/ID is
+Only if you explicitly enable the **Surveyor: enrich current systems from
+EDSM and Spansh** checkbox does Scout request known system information
+directly from those two providers as you enter systems. New installations
+start with this checkbox **off**; local exploration and DSS advice work
+without it. Only the current system name/ID is
 used in these HTTPS lookups; their servers can observe the requested systems.
 No Commander name, account token, journal contents, or estimated earnings are
 sent to EDSM or Spansh. You can uncheck the box in EDMC's Mongrel Scout
