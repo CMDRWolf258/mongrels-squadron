@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
@@ -117,6 +118,16 @@ HUD_EVENT_TYPES = {
     "Bounty": "bounty.awarded",
     "RedeemVoucher": "bounty.redeemed",
     "Died": "ship.died",
+    # Additive, local-only exploration notifications. Existing HUD clients can
+    # safely ignore these; no exploration event enters Scout's cloud activity queue.
+    "FSSDiscoveryScan": "exploration.honk",
+    "FSSAllBodiesFound": "exploration.fss_complete",
+    "Scan": "exploration.body_scan",
+    "SAAScanComplete": "exploration.mapped",
+    "FSSBodySignals": "exploration.body_signals",
+    "SAASignalsFound": "exploration.surface_signals",
+    "SellExplorationData": "exploration.sale",
+    "MultiSellExplorationData": "exploration.sale",
 }
 
 KEY_VERSION = "MongrelScoutConfigVersion"
@@ -191,6 +202,8 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
+    "exploration": None,
+    "explorationStatus": {"ok": False, "error": "not_started"},
     "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
@@ -203,6 +216,55 @@ _hud_thread: Optional[threading.Thread] = None
 _hud_error = ""
 _hud_site_feed_thread: Optional[threading.Thread] = None
 _hud_site_feed_stop = threading.Event()
+_surveyor_instance: Any = None
+_surveyor_init_lock = threading.Lock()
+
+
+def _get_surveyor() -> Any:
+    """Load the sibling module without depending on EDMC's import path rules."""
+    global _surveyor_instance
+    if _surveyor_instance is not None:
+        return _surveyor_instance
+    with _surveyor_init_lock:
+        if _surveyor_instance is None:
+            filename = Path(__file__).with_name("surveyor.py")
+            spec = importlib.util.spec_from_file_location("mongrel_surveyor", filename)
+            if spec is None or spec.loader is None:
+                raise RuntimeError("surveyor_module_unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _surveyor_instance = module.Surveyor()
+    return _surveyor_instance
+
+
+def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
+                      state: Mapping[str, Any]) -> None:
+    """Exploration errors must NEVER interrupt combat/BGS/market pipelines."""
+    kind = str(entry.get("event") or "")
+    if kind not in {
+        "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
+        "FSSAllBodiesFound", "Scan", "SAAScanComplete",
+        "FSSBodySignals", "SAASignalsFound", "SellExplorationData",
+        "MultiSellExplorationData",
+    }:
+        return
+    try:
+        fallback_address = state.get("SystemAddress") if isinstance(state, Mapping) else None
+        surveyor = _get_surveyor()
+        updated = surveyor.apply(cmdr, entry, system, fallback_address)
+        if updated is None:
+            return  # Replayed event: identical input was already applied.
+        with _hud_condition:
+            _hud_state["exploration"] = updated
+            _hud_state["explorationStatus"] = {"ok": True, "error": None}
+            _hud_condition.notify_all()
+    except Exception:
+        # Do not include journal fields, account identity or file paths in HUD status.
+        with _hud_condition:
+            _hud_state["explorationStatus"] = {
+                "ok": False, "error": "local_surveyor_unavailable"
+            }
+            _hud_condition.notify_all()
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -439,6 +501,7 @@ def journal_entry(
 
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
+    _observe_surveyor(cmdr, system, entry, state)
     if event == "MissionAccepted":
         _remember_activity_mission_origin(entry, system, station, state)
     if event in {"FSDJump", "Location", "CarrierJump"}:
@@ -1378,6 +1441,16 @@ def _normalize_hud_event(
         destination_type = str(entry.get("Type") or "").strip()
         if destination_type:
             payload["destinationType"] = destination_type
+
+    if journal_event in {
+        "Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound"
+    }:
+        body_name = str(entry.get("BodyName") or "").strip()
+        body_id = _optional_int(entry.get("BodyID"))
+        if body_name:
+            payload["bodyName"] = body_name
+        if body_id is not None:
+            payload["bodyId"] = body_id
 
     if journal_event in {"SupercruiseExit", "ApproachSettlement"}:
         body_name = str(entry.get("BodyName") or entry.get("Body") or "").strip()
