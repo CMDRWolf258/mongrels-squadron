@@ -564,12 +564,13 @@ function browserMatches(text){
   var query=String(text||"").trim().toLowerCase();
   return miningBrowser.systems.filter(function(row){
     return !query||String(row.systemName||"").toLowerCase().includes(query)||String(row.systemAddress||"").includes(query);
-  }).slice(0,12);
+  }).slice(0,30);
 }
 function showMiningSuggestions(){
   var input=el("browseSystemInput"),rows=browserMatches(input.value),list=el("browseSystemSuggestions");
   list.innerHTML=rows.map(function(row){return '<button type="button" role="option" data-browse-system="'+escapeAttr(row.systemAddress)+'">'+escapeHtml(row.systemName)+'<small>ID64 '+escapeHtml(row.systemAddress)+'</small></button>'}).join("")||'<p class="status">No saved system matches</p>';
-  list.classList.toggle("hidden",!input.value.trim()&&miningBrowser.selected!==""||!miningBrowser.systems.length);
+  // Focus with an empty field opens the dropdown of logged systems.
+  list.classList.toggle("hidden",!miningBrowser.systems.length);
   input.setAttribute("aria-expanded",list.classList.contains("hidden")?"false":"true");
   list.querySelectorAll("[data-browse-system]").forEach(function(btn){btn.onclick=function(){pickMiningSystem(btn.getAttribute("data-browse-system"))}});
 }
