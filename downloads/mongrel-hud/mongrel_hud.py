@@ -30,7 +30,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 
 try:
@@ -6322,7 +6322,7 @@ def make_handler(app: MongrelHudApp):
                     return
                 try:
                     if path.endswith("/catalog"):
-                        self.send_json(app.refresh_mining_browser_directory())
+                        self.send_json(app.refresh_mining_browser_directory(force=(parse_qs(urlparse(self.path).query).get("refresh") == ["1"])))
                     else:
                         query = parse_qs(urlparse(self.path).query)
                         addr = str((query.get("systemAddress") or [""])[0])
