@@ -218,6 +218,9 @@ _hud_site_feed_thread: Optional[threading.Thread] = None
 _hud_site_feed_stop = threading.Event()
 _surveyor_instance: Any = None
 _surveyor_init_lock = threading.Lock()
+_surveyor_intel_lock = threading.Lock()
+_surveyor_intel_pending: Optional[tuple[str, str, str]] = None
+_surveyor_intel_worker_running = False
 
 
 def _get_surveyor() -> Any:
@@ -265,6 +268,82 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
                 "ok": False, "error": "local_surveyor_unavailable"
             }
             _hud_condition.notify_all()
+
+
+def _fetch_surveyor_intelligence() -> None:
+    """One background worker; latest jump supersedes pending lookups."""
+    global _surveyor_intel_pending, _surveyor_intel_worker_running
+    try:
+        last_request_at = 0.0
+        while True:
+            with _surveyor_intel_lock:
+                work = _surveyor_intel_pending
+                _surveyor_intel_pending = None
+                if work is None:
+                    _surveyor_intel_worker_running = False
+                    return
+            commander, system_name, address = work
+            try:
+                surveyor = _get_surveyor()
+                cache = surveyor.cached_intelligence(commander, address)
+                if cache and int(cache.get("expiresAt") or 0) > time.time():
+                    continue
+                # The same worker serializes all external requests and enforces
+                # a small floor between jumps to avoid hitting third-party APIs.
+                pause = max(0.0, 3.0 - (time.monotonic() - last_request_at))
+                if pause:
+                    time.sleep(pause)
+                with _surveyor_intel_lock:
+                    if _surveyor_intel_pending is not None:
+                        continue  # skip a superseded destination
+                filename = Path(__file__).with_name("surveyor_intel.py")
+                spec = importlib.util.spec_from_file_location("mongrel_surveyor_intel", filename)
+                if spec is None or spec.loader is None:
+                    raise RuntimeError("surveyor_intelligence_module_unavailable")
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                last_request_at = time.monotonic()
+                intelligence, failed = module.query(system_name, address)
+                # Preserve previously successful details on transient failures.
+                if intelligence.get("status") == "providers_unavailable" and cache and cache.get("providers"):
+                    continue
+                snapshot = surveyor.set_intelligence(
+                    commander, address, intelligence,
+                    ttl_seconds=900 if failed else (43200 if intelligence.get("providers") else 3600),
+                )
+                with _hud_condition:
+                    current = _hud_state.get("system")
+                    if (
+                        str(_hud_state.get("commander") or "") == commander
+                        and isinstance(current, Mapping)
+                        and str(current.get("address") or "") == address
+                    ):
+                        _hud_state["exploration"] = snapshot
+                        _hud_condition.notify_all()
+            except Exception:
+                # No impact on the journal callback or existing HTTP uplink.
+                continue
+    finally:
+        with _surveyor_intel_lock:
+            _surveyor_intel_worker_running = False
+
+
+def _schedule_surveyor_intelligence(cmdr: str, system_name: str, address: Any) -> None:
+    """Never perform remote lookups on EDMC's journal callback thread."""
+    global _surveyor_intel_pending, _surveyor_intel_worker_running
+    addr = _decimal_text(address)
+    if not cmdr or not system_name or not addr:
+        return
+    with _surveyor_intel_lock:
+        _surveyor_intel_pending = (str(cmdr), str(system_name), addr)
+        if _surveyor_intel_worker_running:
+            return
+        _surveyor_intel_worker_running = True
+        threading.Thread(
+            target=_fetch_surveyor_intelligence,
+            name="MongrelSurveyorCommunityLookup",
+            daemon=True,
+        ).start()
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -502,6 +581,11 @@ def journal_entry(
     event = str(entry.get("event") or "")
     _update_hud_system_context(system, entry, state)
     _observe_surveyor(cmdr, system, entry, state)
+    if event in {"FSDJump", "Location", "CarrierJump"}:
+        _schedule_surveyor_intelligence(
+            cmdr, str(entry.get("StarSystem") or system or ""),
+            entry.get("SystemAddress") or state.get("SystemAddress"),
+        )
     if event == "MissionAccepted":
         _remember_activity_mission_origin(entry, system, station, state)
     if event in {"FSDJump", "Location", "CarrierJump"}:
