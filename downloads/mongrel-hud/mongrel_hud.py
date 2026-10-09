@@ -4108,6 +4108,8 @@ class MongrelHudApp:
             raise ValueError("invalid_signal")
         state = self.scout_state()
         if not self._in_ten16(state):
+            if signal > 999:
+                raise ValueError("invalid_signal")
             point = local_mining_point(state)
             scope = point["scope"]
             with self.store.lock:
