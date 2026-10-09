@@ -641,7 +641,7 @@ async function loadMiningBrowserCatalog(force){
     miningBrowser.loaded=true;miningBrowser.loading=false;
     var target=miningBrowser.selected&&miningBrowser.systems.some(function(x){return x.systemAddress===miningBrowser.selected})?miningBrowser.selected:catalog.selected;
     if(target)await pickMiningSystem(target);else el("browseStatus").textContent="No logged systems found.";
-  }catch(err){miningBrowser.loading=false;el("browseStatus").textContent="Unable to load system directory: "+err.message}
+  }catch(err){miningBrowser.loading=false;miningBrowser.loaded=true;el("browseStatus").textContent="Unable to load system directory: "+err.message+" · Tap REFRESH to retry"}
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function escapeAttr(v){return escapeHtml(v)}
