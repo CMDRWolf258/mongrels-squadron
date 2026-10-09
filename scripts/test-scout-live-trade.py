@@ -7,6 +7,8 @@ import re
 import threading
 from collections.abc import Mapping
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from typing import Any, Optional
 
 path = Path(__file__).resolve().parents[1] / "downloads/mongrel-scout/load.py"
@@ -18,6 +20,7 @@ want = {
     "_build_realtime_activity_payload", "_station_faction_name",
     "_cmdr_cache_key", "_commodity_key", "_commodity_display",
     "_optional_int", "_decimal_text",
+    "_recover_trade_lots_from_recent_journals", "_restore_trade_origin_for_sale",
 }
 functions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in want]
 missing = want - {n.name for n in functions}
@@ -40,6 +43,7 @@ def inventory(state):
 config = Config()
 scope = {
     "config": config, "Mapping": Mapping, "Any": Any, "Optional": Optional,
+    "Path": Path, "monitor": SimpleNamespace(currentdir=None),
     "json": json, "math": math, "re": re, "threading": threading,
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
@@ -51,6 +55,8 @@ exec(compile(ast.Module(body=functions, type_ignores=[]), str(path), "exec"), sc
 observe = scope["_observe_activity_trade"]
 build = scope["_build_realtime_activity_payload"]
 restore = scope["_restore_activity_trade_provenance"]
+recover = scope["_recover_trade_lots_from_recent_journals"]
+repair = scope["_restore_trade_origin_for_sale"]
 
 def state(qty, *, station="Niijima Station", kind="Orbis"):
     return {"SystemName": "Diaba", "StationName": station, "StationType": kind,
@@ -168,3 +174,110 @@ after_transfer = track("MarketSell", state(100), Count=100)
 assert after_transfer["verified"] is False, after_transfer
 
 print("Scout purchase-origin, restart, FIFO, mined/carrier/transfer, privacy and sale guards passed")
+
+# Historical reconstruction when Scout starts AFTER the purchase. No sales are
+# queued during replay; only the upcoming live sale is eligible for upload.
+with TemporaryDirectory() as folder:
+    scope["monitor"].currentdir = folder
+    def write_history(rows, *, filename="Journal.2026-10-08T000000.01.log"):
+        (Path(folder) / filename).write_text(
+            "\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8"
+        )
+    def e(kind, stamp, **kwargs):
+        return {"event": kind, "timestamp": stamp, **kwargs}
+    origin = [
+        e("Fileheader", "2026-10-08T01:00:00Z"),
+        e("LoadGame", "2026-10-08T01:00:01Z", Commander="Wolf258"),
+        e("Cargo", "2026-10-08T01:00:02Z", Vessel="Ship", Count=0),
+        e("Docked", "2026-10-08T01:10:00Z", StarSystem="Diaba",
+          StationName="Niijima Station", StationType="Orbis", MarketID=9876),
+        e("MarketBuy", "2026-10-08T01:10:10Z", Type="$Gold_Name;",
+          Count=200, MarketID=9876, BuyPrice=125000, TotalCost=25000000),
+        e("Undocked", "2026-10-08T01:11:00Z"),
+        e("Docked", "2026-10-08T03:10:00Z", StarSystem="Diaba",
+          StationName="Niijima Station", StationType="Orbis", MarketID=9876),
+    ]
+    current_sale = e("MarketSell", "2026-10-08T03:10:05Z",
+        Type="$Gold_Name;", Count=200, MarketID=9876,
+        TotalSale=32000000, SellPrice=160000, AvgPricePaid=125000)
+    reset()
+    write_history(origin + [current_sale])
+    assert repair("Wolf258", current_sale, state(0)) is True
+    lots = scope["_activity_trade_lots"]["wolf258"]["gold"]
+    assert lots == [{"source": "station_market", "count": 200}]
+    historical = observe("Wolf258", current_sale, state(0), "Diaba", "Niijima Station")
+    assert historical["verified"] is True, historical
+    live_payload = build(current_sale, state(0), "Diaba", "Niijima Station", historical)
+    assert live_payload is not None and live_payload["count"] == 200
+    assert live_payload["total"] - live_payload["avgPricePaid"] * live_payload["count"] == 7_000_000
+    assert scope["_activity_trade_lots"]["wolf258"].get("gold") is None, "Sale must consume recovered lots"
+
+    # The scan does NOT upload the purchase or sale and is read-only until a
+    # matching live sale explicitly uses the recovered origin.
+    reset()
+    found = recover("Wolf258", current_sale, state(0))
+    assert found == [{"source": "station_market", "count": 200}]
+    assert not scope["_activity_trade_lots"].get("wolf258")
+    # A replay callback will get the same sale identity, which the server's
+    # existing stable-event-ID logic deduplicates. Locally don't create extra
+    # purchased quantity from applying the same reconstructed history twice.
+    assert repair("Wolf258", current_sale, state(0)) is True
+    assert repair("Wolf258", current_sale, state(0)) is False
+
+    # The sale's cargo count must match an exact pre OR post-sale snapshot.
+    reset()
+    assert recover("Wolf258", current_sale, state(100)) is None
+
+    # No authoritative empty-hold checkpoint: never infer all cargo is purchased.
+    reset()
+    write_history([x for x in origin if x["event"] != "Cargo"] + [current_sale])
+    assert recover("Wolf258", current_sale, state(0)) is None
+
+    # Unknown collected cargo before a verified purchase must retain FIFO
+    # priority and must not become "purchased" due to a matching amount.
+    reset()
+    write_history(origin[:3] + [
+        e("CollectCargo", "2026-10-08T01:01:00Z", Type="$Gold_Name;", Count=200)
+    ] + origin[3:] + [current_sale])
+    assert recover("Wolf258", current_sale, state(200)) is None
+
+    # Carrier, mined, mixed lots and nonstandard purchase origins remain barred.
+    reset()
+    on_carrier = [dict(x, StationType="FleetCarrier") if x["event"]=="Docked" else x for x in origin]
+    write_history(on_carrier + [current_sale])
+    assert recover("Wolf258", current_sale, state(0)) is None
+    reset()
+    write_history(origin[:3] + [
+        e("MiningRefined", "2026-10-08T01:02:00Z", Type="$Gold_Name;", Count=1)
+    ] + origin[3:] + [current_sale])
+    assert recover("Wolf258", current_sale, state(1)) is None
+    reset()
+    write_history(origin[:3] + [
+        e("CargoTransfer", "2026-10-08T01:02:00Z",
+          Transfers=[{"Type":"$Gold_Name;","Count":5}])
+    ] + origin[3:] + [current_sale])
+    assert recover("Wolf258", current_sale, state(0)) is None
+
+    # A second identical sale anchor is ambiguous: reconstruction refuses it.
+    reset()
+    write_history(origin + [current_sale, current_sale])
+    assert recover("Wolf258", current_sale, state(0)) is None
+
+    # Never recover purchases from a different CMDR's journal.
+    reset()
+    other = [dict(x, Commander="Other CMDR") if x["event"]=="LoadGame" else x for x in origin]
+    write_history(other + [current_sale])
+    assert recover("Wolf258", current_sale, state(0)) is None
+
+    # Only an observed LIVE sale can trigger recovery, and all local purchase
+    # provenance is isolated by Commander even on a shared gaming PC.
+    reset()
+    write_history(origin + [current_sale])
+    assert repair("Other CMDR", current_sale, state(0)) is False
+    assert repair("Wolf258", current_sale, state(0)) is True
+    assert "other cmdr" not in scope["_activity_trade_lots"]
+    scope["monitor"].currentdir = None
+
+print("Scout historical purchase replay, same-CMDR guards, uniqueness, mixed cargo and FIFO safeguards passed")
+
+
