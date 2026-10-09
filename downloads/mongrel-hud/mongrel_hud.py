@@ -4585,18 +4585,33 @@ class MongrelHudApp:
         rows = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
         if rows:
             lines.append("MAPPING OPPORTUNITIES")
-        for body in rows[:5]:
-            if not isinstance(body, dict):
-                continue
-            name = self.clip_line(body.get("name") or "Body", 30)
-            extra = body.get("mappingGain")
-            if isinstance(extra, (int, float)) and extra > 0:
-                label = f"+{int(extra):,} CR"
-            elif body.get("personallyMapped"):
-                label = "Mapped"
-            else:
-                label = "Pending"
-            lines.append(f"{name}: {label}")
+        mapped_rows = [
+            body for body in rows if isinstance(body, dict) and body.get("planetClass")
+        ]
+        for body in mapped_rows[:4]:
+            name = self.clip_line(body.get("name") or "Body", 34)
+            current = body.get("currentValue")
+            mapped_value = body.get("mappedValue")
+            gain = body.get("mappingGain")
+            status = str(body.get("mappingStatus") or "unknown")
+            labels = {
+                "mapped_by_you": "MAPPED BY YOU",
+                "previously_mapped": "PREVIOUSLY MAPPED",
+                "potential_first_mapping": "POTENTIAL FIRST MAPPING",
+                "unknown": "PREVIOUS MAPPING UNKNOWN",
+            }
+            lines.append(name + "  |  " + labels.get(status, "STATUS UNKNOWN"))
+            scan_str = f"{int(current):,}" if isinstance(current, (int, float)) else "?"
+            map_str = f"{int(mapped_value):,}" if isinstance(mapped_value, (int, float)) else "?"
+            gain_str = f"+{int(gain):,}" if isinstance(gain, (int, float)) else "N/A"
+            lines.append(f"  Current {scan_str}  |  DSS {map_str}  |  Gain {gain_str} CR")
+        if intel.get("highlights"):
+            lines.append("COMMUNITY CANDIDATES (UNVERIFIED)")
+            for body in intel["highlights"][:3]:
+                if isinstance(body, dict):
+                    lines.append(self.clip_line(
+                        f"{body.get('name', 'Body')} - {body.get('class') or 'unknown'}", 50
+                    ))
         return "\n".join(lines)
 
     def panel_texts(self) -> dict[str, str]:
