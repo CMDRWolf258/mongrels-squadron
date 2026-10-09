@@ -404,7 +404,9 @@ def plugin_start3(plugin_dir: str) -> str:
         config.set(KEY_ENABLED, 1)
         config.set(KEY_ENDPOINT, DEFAULT_ENDPOINT)
     if config.get_int(KEY_VERSION) < 2:
-        config.set(KEY_SURVEY_INTEL_ENABLED, 1)
+        # External EDSM/Spansh calls require an explicit opt-in from the
+        # Commander; local Surveyor journals and DSS advice remain available.
+        config.set(KEY_SURVEY_INTEL_ENABLED, 0)
         config.set(KEY_VERSION, 2)
     _restore_owner_carrier()
     _restore_last_system_context()
