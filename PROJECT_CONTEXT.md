@@ -1597,8 +1597,9 @@ are skipped. Other providers may still return results during a partial outage.
 External data is explicitly *not* first-discovery proof and never creates
 personal cartographic earnings. Only a system name/ID leaves the machine for
 the external data providers. The EDMC Mongrel Scout settings checkbox
-(\`MongrelScoutSurveyorCommunityIntel\`) defaults enabled but supports
-disabling network enrichment without disabling local journal recording.
+(\`MongrelScoutSurveyorCommunityIntel\`) defaults **disabled** on a new
+installation and requires explicit Commander opt-in for any third-party
+EDSM/Spansh lookup. Local journal recording and DSS guidance work offline.
 The Scout plugin ZIP packages both Surveyor modules.
 
 The initial HUD shows journal-confirmed discovery flags, body and mapping
@@ -1637,3 +1638,33 @@ still draft, not a production release.
   been performed. Do not call the value model calibrated until compared
   with actual post-sale journal records. Keep Surveyor unmerged until real
   Scout/HUD overlay checks and acceptable error/CPU behavior are confirmed.
+
+
+### Surveyor milestone: DSS mapping advisor (October 9, 2026)
+
+The Surveyor draft PR #179 now contains a local, journal-grounded DSS advisor.
+It ranks only personally FSS-scanned planetary bodies that the current
+Commander has **not** already DSS-mapped. Candidate records derived solely
+from EDSM/Spansh or NavBeaconDetail are not promoted to verified priorities.
+For each candidate, the estimate includes basic-vs-efficient incremental
+DSS mapping credit gains from the current **provisional** cartographic model,
+the journal-reported distance in LS from the arrival star when available,
+mapping status, tentative first-mapping hints, and reason tags.
+
+The rank uses a mild logarithmic arrival-distance penalty; it is strictly
+a relative convenience heuristic, not a supercruise time prediction, route
+optimizer, credit/hour model, or confirmed payout. Missing or invalid distance
+is displayed as unknown rather than fabricated. Targets with insufficient
+mass/value evidence are counted as unvalued but not ranked. The current system
+snapshot includes \`mappingAdvisor\`, showing up to eight ranked targets;
+the Surveyor HUD panel shows the first three. Mapping completion removes the
+body; deduplicated journal imports do not re-add it. No website/Cloudflare
+fetches or writes are needed.
+
+Automated ranking and HUD text tests: \`scripts/test_surveyor_advisor.py\`
+and \`scripts/test_surveyor_advisor_hud.py\` in the Surveyor checks workflow.
+Third-party catalog lookups now default OFF at first Scout install (explicit
+opt-in), unlike an earlier draft. Earlier preexisting user preferences remain
+untouched. Continue to treat PR #179 as **unmerged** until actual EDMC/Elite
+journal, display-size/iPad and existing Scout/HUD regression testing on
+Serenity is satisfactory.
