@@ -1,6 +1,7 @@
 """Offline DSS-advisor ranking and journal integration regression tests."""
 from __future__ import annotations
 
+import ast
 import importlib.util
 import tempfile
 from pathlib import Path
@@ -101,5 +102,23 @@ with tempfile.TemporaryDirectory() as temp:
     reopened = mod.Surveyor(Path(temp) / "surveyor.sqlite")
     assert reopened.snapshot(who)["mappingAdvisor"]["eligibleCount"] == 0
     assert reopened.snapshot("Other CMDR")["mappingAdvisor"]["eligibleCount"] == 0
+
+# Third-party catalog lookups are disabled on a fresh Scout installation.
+# Journal/DSS guidance works locally without contacting external providers.
+load_source = ROOT / "downloads" / "mongrel-scout" / "load.py"
+load_tree = ast.parse(load_source.read_text(encoding="utf-8"))
+starts = [x for x in load_tree.body if isinstance(x, ast.FunctionDef) and x.name == "plugin_start3"]
+assert len(starts) == 1
+opt_ins = [
+    node for node in ast.walk(starts[0])
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    and node.func.attr == "set" and len(node.args) >= 2
+    and isinstance(node.args[0], ast.Name)
+    and node.args[0].id == "KEY_SURVEY_INTEL_ENABLED"
+]
+assert len(opt_ins) == 1
+assert isinstance(opt_ins[0].args[1], ast.Constant) and opt_ins[0].args[1].value == 0, (
+    "Surveyor community lookups must default to OFF"
+)
 
 print("Surveyor DSS adviser ranking, first-map hints, unknown distances, mapped exclusion and replay PASSED")
