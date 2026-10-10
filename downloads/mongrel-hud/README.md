@@ -11,6 +11,34 @@ https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
 On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.6 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
 
+## Navigation profile (proposed next HUD release)
+
+**NAVIGATION** is a third HUD profile alongside Combat and Surface Mining.
+It keeps the current profiles, windows, scales and personal panel assignments
+intact. The Navigation screen provides:
+
+- **Plot Neutron Route:** specify a destination and efficiency using the
+  current live Scout system and ship jump range. Press **Check Route Result**
+  to retrieve Spansh's completed route. Neither operation activates navigation.
+- **Route Director:** Load, review, explicitly Start/Stop. Shows the **entire**
+  saved waypoint list in a scrollable flight plan with the next and completed
+  stops highlighted. The PC clipboard is modified only after Start.
+- **Scout Network:** shows Scout job coverage and paid scouting tasks from the
+  existing Scout site feed, with a link to the full member Scout Board. No new
+  recurring cloud polling was added.
+- **Independent PC instruments:** Route Director (next target/progress),
+  Upcoming Waypoints (six next replots), Waypoint Signal (brief flashing
+  indication only on a *confirmed* neutron waypoint index advance), Fuel
+  Status (current reported fuel/range), and Scout Network (board snapshot).
+  Each can be resized, hidden, dragged and assigned to any of the three
+  profiles. The full itinerary belongs on the iPad, not in an oversized overlay.
+
+**Fuel planning is intentionally not yet active.** The Neutron Plotter does
+not calculate fuel-stop waypoints. Fuel Status never claims to know a refueling
+stop; a future fuel-aware Galaxy Plotter mode can mark verified fuel stops and
+trigger the same waypoint signal instrument. Existing normal-jump handling
+and clipboard safety are unchanged.
+
 ## Before you start
 
 You need:
