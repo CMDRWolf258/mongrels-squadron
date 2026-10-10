@@ -311,6 +311,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
         <div><label for="browseRigs">Minimum rig count</label><select id="browseRigs" class="mining-select"><option value="0">Any size</option><option value="1">1+ rigs</option><option value="2">2+ rigs</option><option value="3">3+ rigs</option><option value="4">4+ rigs</option><option value="5">5+ rigs</option><option value="6">6+ rigs</option><option value="7">7+ rigs</option></select></div>
       </div>
       <p class="status" id="browseStatus" aria-live="polite">Open Surface Mining to load saved systems.</p>
+      <div class="layout-hint">Saved off-system reports stay on Serenity until you deliberately press SHARE WITH SQUAD. An archive acknowledgement is required before a report is labeled shared.</div>
+      <div class="notice" id="browseShareNotice" aria-live="polite"></div>
       <div class="notice" id="browseNavNotice" aria-live="polite"></div>
       <div id="browseResults" class="mining-browser-results"></div>
     </div>
@@ -718,19 +720,22 @@ function renderMiningBrowseResults(){
     +(centerOnly.length?" · "+centerOnly.length+" center-only signals":"")+(data.truncated?" · Results capped":"")+(data.warning?" · "+data.warning:"");
   var html=filtered.slice(0,500).map(function(row){
     var count=Number(row.rigs||0),label=count>=7?"7+":String(count||"?");
-    var local=row.storage==="local_only",coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
+    var local=row.storage==="local_only",sharedState=String(row.sharedStatus||""),coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
+    var shareLabel=sharedState==="approved"||sharedState==="existing"?"SQUAD SHARED":sharedState==="pending"?"SUBMITTED · AWAITING REVIEW":sharedState==="duplicate_review"?"SUBMITTED · DUPLICATE REVIEW":local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED";
     var hasCenter=centers.some(function(center){return String(center.body||"").toLowerCase()===String(row.body||"").toLowerCase()&&Number(center.signal)===Number(row.signal)});
     return '<details class="mining-browser-item"><summary>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs · '+escapeHtml(row.body||"Body")+'</summary>'
       +'<p>Signal #'+escapeHtml(row.signal||"?")+'</p>'
-      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+(local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+(row.needsReview?" · DUPLICATE NEEDS REVIEW":"")+'</small>'
+      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+shareLabel+(row.needsReview&& !sharedState?" · POSSIBLE DUPLICATE":"")+'</small>'
       +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')
-      +'<button type="button" class="browser-nav-action" data-browse-navigate="deposit" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE'+(hasCenter?" · DEPOSIT + CENTER":" · DEPOSIT")+'</button></details>';
+      +'<button type="button" class="browser-nav-action" data-browse-navigate="deposit" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE'+(hasCenter?" · DEPOSIT + CENTER":" · DEPOSIT")+'</button>'
+      +(local&&!sharedState?'<button type="button" class="browser-nav-action" data-browse-share="deposit" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE DEPOSIT WITH SQUAD</button>':'')+'</details>';
   }).join("");
   html+=centerOnly.slice(0,50).map(function(row){
     return '<details class="mining-browser-item"><summary>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</summary>'
       +'<small>'+escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
-      +'<small>'+(row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small>'
-      +'<button type="button" class="browser-nav-action" data-browse-navigate="center" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE · CENTER</button></details>';
+      +'<small>'+(row.sharedStatus==="saved"?"SQUAD SHARED":row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small>'
+      +'<button type="button" class="browser-nav-action" data-browse-navigate="center" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE · CENTER</button>'
+      +(row.storage==="local_only"&&!row.sharedStatus?'<button type="button" class="browser-nav-action" data-browse-share="center" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE CENTER WITH SQUAD</button>':'')+'</details>';
   }).join("");
   el("browseResults").innerHTML=html||'<p class="muted">No saved locations match these filters.</p>';
   el("browseResults").querySelectorAll("[data-browse-navigate]").forEach(function(button){
@@ -739,6 +744,27 @@ function renderMiningBrowseResults(){
       navigateMiningSearchResult(kind,id);
     };
   });
+  el("browseResults").querySelectorAll("[data-browse-share]").forEach(function(button){
+    button.onclick=function(){
+      shareMiningSearchResult(button.getAttribute("data-browse-share"),button.getAttribute("data-browse-share-id"),button);
+    };
+  });
+}
+async function shareMiningSearchResult(kind,id,button){
+  var data=miningBrowser.data||{},rows=kind==="deposit"?data.deposits:data.centers;
+  var row=(Array.isArray(rows)?rows:[]).find(function(item){return String(item.id)===String(id)&&item.storage==="local_only"&&!item.sharedStatus});
+  var system=miningBrowser.systems.find(function(item){return item.systemAddress===miningBrowser.selected});
+  var notice=el("browseShareNotice");
+  if(!row||!system){notice.textContent="Select a locally saved, unpublished deposit or center.";return}
+  if(!confirm("Publish this saved "+kind+" to the squad mining archive?\n"+system.systemName+" · "+row.body+" · Signal #"+row.signal+"\nYour local record will remain on Serenity."))return;
+  button.disabled=true;notice.textContent="Submitting one saved "+kind+" to the shared archive…";
+  try{
+    var result=await api("/api/mining-browser/share",{kind:kind,id:String(id)});
+    notice.className="notice "+(result.shared?"success":"review");
+    notice.textContent=result.shared?"ARCHIVE CONFIRMED · "+kind+" now shared. Local copy retained.":"ARCHIVE ACCEPTED · "+String(result.status||"pending").replaceAll("_"," ")+" · local copy retained.";
+    await browseSelectedMiningSystem(miningBrowser.selected);
+  }catch(e){notice.className="notice review";notice.textContent="NOT SYNCED · "+e.message+" · Your local record is unchanged."}
+  finally{button.disabled=false}
 }
 async function navigateMiningSearchResult(kind,id){
   var address=miningBrowser.selected,notice=el("browseNavNotice");
