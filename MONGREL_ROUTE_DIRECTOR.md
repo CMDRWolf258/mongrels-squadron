@@ -42,6 +42,43 @@ commander's paste-next-neutron-stop workflow.
 - Navigation preview and result retrieval have **no** local clipboard effect;
   do not activate navigation during CI or the pre-merge review.
 
+## Paired HUD activation path (when ChatGPT blocks an action)
+
+Route activation must not depend on ChatGPT's per-action permission prompt. The
+existing paired iPad controller gains a **Route Director** card on the HUD
+Control tab, with **Load Route**, **Start Navigation**, and **Stop Navigation**.
+The crew can use its existing trusted-device pairing instead of linking another
+account. **Nothing activates on page load, preview, or route retrieval.**
+
+- Press **Load Route** to request the most recent completed route (for routes
+  completed after this release), or paste an older route ID and load that
+  specific ready job. Older jobs do not automatically populate the latest
+  pointer; this is intentional to avoid scanning KV.
+- Check the selected ship, origin, destination and navigation target count.
+  Press **Start Navigation** and affirm the explicit confirmation.
+- The HUD's authenticated local Python backend sends the request to the Scout
+  loopback bridge. Only Scout holds the existing `mscout_` bearer token.
+  The website's `/api/hud/route` endpoint requires that token to be bound to
+  `ADMIN_USER_ID` before it will read, activate or clear a route.
+  The bridge's activation POST also requires its dedicated JSON/custom header;
+  arbitrary web origins cannot use CORS to trigger it.
+- Upon a successful start/stop, Scout requests **one** on-demand refresh of
+  the existing feed (off the HTTP request thread). The usual HUD manifest
+  cadence still handles delayed KV propagation. There is **no new poll loop**.
+- On the existing Own Ship overlay, verify the active route and next system.
+  Intermediate regular hyperspace hops must not advance or copy a different
+  waypoint. **Stop Navigation** disables future automatic copying once the
+  updated route state propagates to Scout. This does not cancel in-game Galaxy
+  Map plotting or undo a clipboard copy that already occurred.
+- Route start is blocked when the selected job is not ready or the live ship
+  differs from the plotted ship or live current system is off the route.
+  The active-route record and all credentials remain owner-scoped.
+- This path is an **alternative explicit user gesture** to the ChatGPT
+  connection, not a bypass for approving arbitrary external AI actions.
+  The work must be merged, published and both Scout and MongrelHUD updated
+  before it can be tested on Serenity. Keep PR #188 draft until integration
+  and release checks pass.
+
 **Fuel-safety limitation:** A fixed-range Neutron Plotter route does not model
 all fuel usage. Spansh warns that ships in the 10–20 LY range may enter systems
 they cannot leave without sufficient boost. Especially for heavy freighters,
