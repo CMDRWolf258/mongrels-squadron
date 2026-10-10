@@ -3,7 +3,7 @@
 // This is deliberately separate from the ChatGPT MCP approval layer.
 import { json } from '../../../lib/auth.js';
 import { authenticateScoutActivity } from '../../../lib/scout-activity.js';
-import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl } from '../../../lib/scout-route.js';
+import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, getRouteJob } from '../../../lib/scout-route.js';
 
 const reply=(body,status=200)=>json(body,{status,headers:{
   'Cache-Control':'private, no-store, no-cache, must-revalidate',
@@ -52,6 +52,17 @@ export async function onRequestPost({request,env}){
   if(!body||typeof body!=='object'||Array.isArray(body))
     return reply({ok:false,error:'invalid_json'},400);
   try{
+    if(body.action==='plot'){
+      const result=await plotNeutronRoute(env,{
+        destination:body.destination,
+        efficiency:Number(body.efficiency ?? 60),
+      });
+      return reply(result,result.ok?200:409);
+    }
+    if(body.action==='check'){
+      const result=await getRouteJob(env,body.routeId);
+      return reply(result,result.ok?200:404);
+    }
     if(body.action==='stop')return reply(await clearActiveRoute(env));
     if(body.action!=='start')return reply({ok:false,error:'invalid_action'},400);
     const result=await activateRoute(env,body.routeId);
