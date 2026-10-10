@@ -106,6 +106,14 @@ expected_types = {
     "Bounty": "bounty.awarded",
     "RedeemVoucher": "bounty.redeemed",
     "Died": "ship.died",
+    "FSSDiscoveryScan": "exploration.honk",
+    "FSSAllBodiesFound": "exploration.fss_complete",
+    "Scan": "exploration.body_scan",
+    "SAAScanComplete": "exploration.mapped",
+    "FSSBodySignals": "exploration.body_signals",
+    "SAASignalsFound": "exploration.surface_signals",
+    "SellExplorationData": "exploration.sale",
+    "MultiSellExplorationData": "exploration.sale",
 }
 assert plugin.HUD_EVENT_TYPES == expected_types
 
