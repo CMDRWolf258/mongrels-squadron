@@ -14,7 +14,7 @@ function confirmHtml(id) {
     '<p>This grants ChatGPT access to your most recent opt-in Scout ship snapshot: ' +
     'ship name/type, current system, fuel/cargo quantities, jump range, and timestamps. Route tools can calculate Spansh journeys ' +
     'and, only when you explicitly request activation, send a waypoint plan to the PC for automatic clipboard copying. No ship controls or BGS writes.</p>' +
-    '<p>Only the exact Mongrels Site Admin account may authorize this connection.</p>' +
+    '<p>Only the exact Mongrels Site Admin account may authorize this connection. Click your choice once and wait for the redirect back to ChatGPT.</p>' +
     '<form method="post"><input type="hidden" name="pending" value="' + id + '">' +
     '<button name="decision" value="approve" type="submit">Allow Scout Link access</button> ' +
     '<button name="decision" value="deny" type="submit">Cancel</button></form></main></html>';
