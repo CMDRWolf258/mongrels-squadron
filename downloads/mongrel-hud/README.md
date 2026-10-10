@@ -7,9 +7,9 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
-## Route Director controls and display (HUD 0.17.6)
+## Route Director controls and display (HUD 0.17.7)
 
-On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.9 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
+On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.13.0 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
 
 ## Navigation profile (proposed next HUD release)
 
@@ -33,13 +33,29 @@ intact. The Navigation screen provides:
   Each can be resized, hidden, dragged and assigned to any of the three
   profiles. The full itinerary belongs on the iPad, not in an oversized overlay.
 
-**Fuel planning is intentionally not yet active.** The Neutron Plotter does
-not calculate fuel-stop waypoints. Fuel Status never claims to know a refueling
-stop; a future fuel-aware Galaxy Plotter mode can mark verified fuel stops and
-trigger the same waypoint signal instrument. Existing normal-jump handling
-and clipboard safety are unchanged.
+**Fuel-aware Galaxy routing (HUD 0.17.7, Scout 1.13.0)** is a separate
+optional Route Type inside Navigation. The original Neutron replot-point
+planner stays unchanged. Galaxy calls Spansh's Generic/Galaxy Plotter with
+Scout's journal-derived FSD physics, the selected destination, cargo mass
+and an explicitly confirmed full tank and installed fuel scoop. No full
+Loadout, modules list, commander identity or personal journal is uploaded.
+The private Owner Scout Link does transfer whitelisted ship physics through
+our site to Spansh when you explicitly plot a Galaxy route.
 
-## Route reliability improvements (HUD 0.17.6 / Scout 1.12.9)
+The Spansh result must contain a valid exact-jump sequence and a fuel ledger.
+The full flight plan identifies each real jump and any upstream
+`must_refuel` stars. When Scout confirms arrival at a planned fuel stop, it
+temporarily holds the next Windows clipboard destination until Elite's
+Status.json reports a newly observed, full main tank. A manual Copy Next
+cannot bypass that hold. Source-system, fuel level, scoop, cargo and FSD
+physics are rechecked at activation. These are planning aids: always verify
+available fuel and jump eligibility in Elite before flying.
+
+No new periodic cloud reads are required; planning and result checks happen
+only on deliberate iPad interaction.
+
+
+## Route reliability improvements (HUD 0.17.7 / Scout 1.13.0)
 
 The Navigation profile includes **COPY NEXT TO SERENITY** and **REPLOT FROM
 HERE**. Copy Next repeats only the current confirmed waypoint name on the
@@ -70,7 +86,7 @@ You need:
 
 The HUD runs on the Elite PC because the overlay has to appear over the game and it talks to Scout through a local connection.
 
-## Surface Mining system browser (HUD 0.17.6)
+## Surface Mining system browser (HUD 0.17.7)
 
 In the **Surface Mining** iPad HUD control profile, the new **Mining Database
 · System Browser** lets you select from saved systems or type/paste part of

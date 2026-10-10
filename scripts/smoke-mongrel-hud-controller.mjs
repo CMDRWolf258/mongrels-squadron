@@ -275,7 +275,7 @@ async function drain(h, expected) {
   const plot=h.node('routePlot').onclick();
   await tick();
   assert.equal(h.requests[0].path,'/api/route');
-  assert.deepEqual(h.requests[0].body,{action:'plot',destination:'Diaba',efficiency:60});
+  assert.deepEqual(h.requests[0].body,{action:'plot',mode:'neutron',destination:'Diaba',efficiency:60});
   h.respond(h.requests[0],null,{ok:true,id:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',status:'pending'});
   await plot;
   assert.equal(h.node('routeJobId').value,'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
@@ -290,6 +290,32 @@ async function drain(h, expected) {
   assert.equal(h.requests.length,2,'Plotting and checking must not send activation');
 }
 
+{
+  const h=harness();
+  h.node('routeMode').value='galaxy';
+  h.node('routeDestination').value='NGC 2546 Sector UZ-G d10-16';
+  h.node('routeEfficiency').value='60';
+  const pending=h.node('routePlot').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/route');
+  assert.deepEqual(h.requests[0].body,{
+    action:'plot',mode:'galaxy',destination:'NGC 2546 Sector UZ-G d10-16',efficiency:60,
+  });
+  h.respond(h.requests[0],null,{ok:true,id:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',status:'pending'});
+  await pending;
+  const check=h.node('routeCheck').onclick();
+  await tick();
+  h.respond(h.requests[1],null,{ok:true,status:'ready',id:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    routeType:'galaxy_exact_jumps',fuelStops:1,navigationTargetCount:3,
+    waypoints:[{system:'Start'},{system:'Neutron A',neutron:true,fuelInTank:99},
+      {system:'Scoop B',fuelStop:true,fuelInTank:7},{system:'End',fuelInTank:120}]});
+  await check;
+  assert.match(h.node('routePlotStatus').textContent,/1 scheduled fuel stops/);
+  h.controller.renderFlightManifest(
+    {id:'galaxy-route',routeType:'galaxy_exact_jumps',waypoints:[{system:'Start'},{system:'Scoop B',fuelStop:true},{system:'End'}]},null,{});
+  assert.match(h.node('routeManifest').innerHTML,/REFUEL/);
+  assert.equal(h.requests.length,2,'Galaxy plotting never activates a route');
+}
 {
   const h=harness();
   // Manual clipboard repeat is a single local command to Scout, not plotting.

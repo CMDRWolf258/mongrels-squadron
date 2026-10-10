@@ -121,7 +121,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.12\.9"/,
+  /PLUGIN_VERSION = "1\.13\.0"/,
   /HUD_BRIDGE_VERSION = 9/,
   /MongrelScoutCargoMissionCache/,
   /def _update_cargo_missions_from_journal/,

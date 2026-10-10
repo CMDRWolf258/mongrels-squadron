@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.6"
+APP_VERSION = "0.17.7"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -3776,7 +3776,7 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
-    def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60) -> dict[str, Any]:
+    def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60, mode: str = "neutron") -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
         if action not in {"read", "start", "stop", "plot", "check", "copy"}:
             raise ValueError("invalid_route_action")
@@ -3793,7 +3793,7 @@ class MongrelHudApp:
         else:
             request = urllib.request.Request(
                 SCOUT_ROUTE_CONTROL_URL,
-                data=json.dumps({"action": action, "routeId": route_id, "destination": str(destination or "")[:140], "efficiency": efficiency}, separators=(",", ":")).encode("utf-8"),
+                data=json.dumps({"action": action, "routeId": route_id, "destination": str(destination or "")[:140], "efficiency": efficiency, "mode": mode}, separators=(",", ":")).encode("utf-8"),
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -6043,7 +6043,7 @@ class MongrelHudApp:
                 self._draw_text(canvas, 8 * scale, y, "START A ROUTE FROM THE IPAD CONTROL", scale, 10, HUD_MUTED)
                 y += 24 * scale
             else:
-                self._draw_text(canvas, 8 * scale, y, f"NEUTRON REPLOT POINTS · {len(waypoints) - 1} TARGETS", scale, 9, HUD_MUTED, True)
+                self._draw_text(canvas, 8 * scale, y, f"{'GALAXY JUMPS' if route.get('routeType')=='galaxy_exact_jumps' else 'NEUTRON REPLOT POINTS'} · {len(waypoints) - 1} TARGETS", scale, 9, HUD_MUTED, True)
                 y += 22 * scale
                 for offset, step in enumerate(waypoints[idx + 1: idx + 7], start=idx + 1):
                     if not isinstance(step, dict):
@@ -6078,7 +6078,7 @@ class MongrelHudApp:
                 y += 25 * scale
                 self._draw_text(canvas, 8 * scale, y, "NEUTRON ARRIVAL FLASHES FOR 9 SECONDS", scale, 8, HUD_MUTED)
                 y += 20 * scale
-            self._draw_text(canvas, 8 * scale, y, "FUEL STOP CUES: FUTURE FUEL-AWARE PLANNER", scale, 8, HUD_AMBER)
+            self._draw_text(canvas, 8 * scale, y, "SCHEDULED FUEL STOP SIGNALS ENABLED" if route.get("routeType")=="galaxy_exact_jumps" else "FUEL STOP CUES REQUIRE GALAXY ROUTING", scale, 8, HUD_AMBER)
             y += 18 * scale
 
         elif panel == "navfuel":
@@ -6092,9 +6092,11 @@ class MongrelHudApp:
             rng = ship.get("currentJumpRange")
             self._draw_text(canvas, 8 * scale, y, f"CURRENT RANGE  {rng:.2f} LY" if isinstance(rng, (int, float)) else "CURRENT RANGE UNAVAILABLE", scale, 10, HUD_CYAN, True)
             y += 23 * scale
-            self._draw_text(canvas, 8 * scale, y, "NEXT FUEL STOP  NOT SCHEDULED", scale, 10, HUD_AMBER, True)
+            next_fuel=str(nav.get("nextFuelStop") or "")
+            waiting=bool(nav.get("refuelPending"))
+            self._draw_text(canvas, 8 * scale, y, "REFUEL NOW · HOLD ROUTE" if waiting else self.clip_line("NEXT FUEL STOP  "+next_fuel if next_fuel else "NEXT FUEL STOP  NOT SCHEDULED", 51), scale, 10, HUD_RED if waiting else HUD_AMBER, True)
             y += 23 * scale
-            self._draw_text(canvas, 8 * scale, y, "Neutron Plotter does not model refueling.", scale, 9, HUD_MUTED)
+            self._draw_text(canvas, 8 * scale, y, "Full tank required before the next jump." if waiting else "Fuel-stop planning requires Galaxy mode.", scale, 9, HUD_MUTED)
             y += 20 * scale
 
         elif panel == "navscout":
@@ -6798,7 +6800,7 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/route":
-                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60))
+                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]

@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.9"
+PLUGIN_VERSION = "1.13.0"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -210,7 +210,7 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
-    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "fuelReserveCapacity": None, "fuelScoopInstalled": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
@@ -449,6 +449,8 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         _update_current_jump_range_locked(ship, status)
         _hud_state["updatedAt"] = status["timestamp"] or _hud_state.get("updatedAt")
         _hud_condition.notify_all()
+    if _nav_id and bool((_hud_state.get("navigation") or {}).get("refuelPending")):
+        _refresh_route_navigation()
 
 
 def journal_entry(
@@ -646,6 +648,13 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         if not isinstance(ship, dict):
             ship = {}
             _hud_state["ship"] = ship
+        incoming_name = str(state.get("ShipName") or "").strip()
+        incoming_ident = str(state.get("ShipIdent") or "").strip()
+        if (incoming_name and ship.get("name") and incoming_name.casefold()!=str(ship.get("name")).casefold()) or (
+                incoming_ident and ship.get("ident") and incoming_ident.casefold()!=str(ship.get("ident")).casefold()):
+            # Never use the previous ship's FSD/tank/fuel scoop for a new hull.
+            for key in ("jumpModel","fuelReserveCapacity","fuelScoopInstalled","fuelCapacity"):
+                ship.pop(key,None)
         updates = {
             "name": str(state.get("ShipName") or "").strip(),
             "ident": str(state.get("ShipIdent") or "").strip(),
@@ -657,11 +666,13 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         fuel_capacity = state.get("FuelCapacity")
         if isinstance(fuel_capacity, Mapping):
             updates["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+            updates["fuelReserveCapacity"] = _optional_float(fuel_capacity.get("Reserve"))
         for key, value in updates.items():
             if value is not None and (not isinstance(value, str) or value):
                 ship[key] = value
         cached_modules = state.get("Modules")
         if isinstance(cached_modules, Mapping):
+            ship["fuelScoopInstalled"] = _fuel_scoop_installed({"Modules": cached_modules})
             jump_model = _extract_jump_model({"Modules": cached_modules})
             if jump_model:
                 ship["jumpModel"] = jump_model
@@ -804,6 +815,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             result = _hud_route_control(action, route_id,
                                         destination=str(body.get("destination") or "")[:140],
                                         efficiency=body.get("efficiency", 60),
+                                        mode=str(body.get("mode") or "neutron")[:20],
                                         system=str(body.get("system") or "")[:140],
                                         ship=str(body.get("ship") or "")[:140])
             self._write_json(result, status=_hud_proxy_status(result))
@@ -890,7 +902,7 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, system: str = "", ship: str = "") -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "") -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
@@ -919,6 +931,7 @@ def _hud_route_control(action: str, route_id: str = "", *, destination: str = ""
             if action == "plot":
                 payload["destination"] = destination
                 payload["efficiency"] = efficiency
+                payload["mode"] = mode
             if action == "complete":
                 payload.update({"system": system, "ship": ship})
             response = _session.post(endpoint, json=payload, headers=headers, timeout=20)
@@ -1104,6 +1117,7 @@ def _save_route_checkpoint(route: Mapping[str, Any], ship: str, index: int, syst
         "routeId": str(route.get("id") or ""),
         "activation": str(route.get("activatedAt") or ""),
         "ship": ship, "index": index, "waypoint": system,
+        "arrivedAt": str((_hud_state.get("lastEvent") or {}).get("timestamp") or ""),
     }, separators=(",", ":")))
 
 
@@ -1150,7 +1164,7 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
             return {"ok": False, "error": "route_not_active"} if force_copy else {"ok": True}
         route_id = str(route.get("id") or "")
         waypoints = route.get("waypoints")
-        if not route_id or not isinstance(waypoints, list) or len(waypoints) > 128 or not waypoints:
+        if not route_id or not isinstance(waypoints, list) or len(waypoints) > 512 or not waypoints:
             return {"ok": False, "error": "route_invalid"}
         if str(route.get("ship") or "").casefold() != ship.casefold() or not current:
             _hud_state["navigation"] = {"active": False, "reason": "ship_or_location_unavailable"}
@@ -1186,6 +1200,24 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
         next_system = names[_nav_index + 1] if _nav_index + 1 < len(names) else ""
         completed = not next_system and current.casefold() == names[-1].casefold()
         remaining = len(names) - _nav_index - 1
+        exact = str(route.get("routeType") or "") == "galaxy_exact_jumps"
+        fuel_stop = exact and isinstance(waypoints[_nav_index], Mapping) and waypoints[_nav_index].get("fuelStop") is True
+        current_fuel = _optional_float((_hud_state.get("status") or {}).get("fuelMain"))
+        full_fuel = _optional_float((_hud_state.get("ship") or {}).get("fuelCapacity"))
+        # A planned Spansh refuel stop assumes departure with a full tank.
+        # Don't silently copy the next jump until Status.json confirms it.
+        arrival_stamp = str(_route_checkpoint().get("arrivedAt") or "")
+        status_stamp = str((_hud_state.get("status") or {}).get("timestamp") or "")
+        # A pre-arrival Status.json can still show full fuel. Require a NEW
+        # post-arrival observation before unlocking a scheduled scoop stop.
+        # Frontier journal and Status.json use UTC ISO timestamps.
+        fresh_fuel_observation = bool(arrival_stamp and status_stamp
+            and status_stamp.replace("Z","+00:00") > arrival_stamp.replace("Z","+00:00"))
+        refuel_pending = bool(fuel_stop and (
+            current_fuel is None or full_fuel is None
+            or current_fuel < full_fuel - 0.05
+            or not fresh_fuel_observation
+        ))
         future_jumps = [
             row.get("estimatedJumpsFromPrevious") if isinstance(row, Mapping) else None
             for row in waypoints[_nav_index + 1:]
@@ -1206,6 +1238,9 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
             "previousWaypoint": names[_nav_index],
             "nextSystem": next_system,
             "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
+            "refuelPending": refuel_pending,
+            "scheduledFuelStops": sum(isinstance(w, Mapping) and w.get("fuelStop") is True for w in waypoints) if exact else None,
+            "nextFuelStop": next((str(w.get("system") or "") for w in waypoints[_nav_index + 1:] if isinstance(w, Mapping) and w.get("fuelStop") is True), "") if exact else "",
         }
         _hud_state["navigation"] = progress
         _hud_condition.notify_all()
@@ -1225,6 +1260,8 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
                     name="MongrelScoutRouteCompleted", daemon=True,
                 ).start()
             return {"ok": False, "error": "route_complete"} if force_copy else {"ok": True, "completed": True}
+        if refuel_pending:
+            return {"ok": False, "error": "refuel_before_next_jump"} if force_copy else {"ok": True, "refuelPending": True}
         marker = f"{route_id}:{_nav_index}:{next_system}"
         if force_copy:
             # A paired user's explicit press may re-copy the current waypoint.
@@ -1399,6 +1436,8 @@ def _scout_link_payload() -> Optional[dict[str, Any]]:
         "currentJumpRange": ship.get("currentJumpRange"),
         "fuel": status.get("fuelMain"),
         "fuelCapacity": ship.get("fuelCapacity"),
+        "fuelReserveCapacity": ship.get("fuelReserveCapacity"),
+        "fuelScoopInstalled": ship.get("fuelScoopInstalled"),
         "cargo": status.get("cargo"),
         "unladenMass": ship.get("unladenMass"),
         "jumpModel": {
@@ -1796,6 +1835,8 @@ def _normalize_hud_event(
         fuel_capacity = entry.get("FuelCapacity")
         if isinstance(fuel_capacity, Mapping):
             payload["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+            payload["fuelReserveCapacity"] = _optional_float(fuel_capacity.get("Reserve"))
+        payload["fuelScoopInstalled"] = _fuel_scoop_installed(entry)
         jump_model = _extract_jump_model(entry)
         if jump_model:
             payload["jumpModel"] = jump_model
@@ -1882,6 +1923,8 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
                 ("unladenMass", "unladenMass"),
                 ("cargoCapacity", "cargoCapacity"),
                 ("fuelCapacity", "fuelCapacity"),
+                ("fuelReserveCapacity", "fuelReserveCapacity"),
+                ("fuelScoopInstalled", "fuelScoopInstalled"),
             ):
                 value = event.get(source)
                 if value is not None and (not isinstance(value, str) or value):
@@ -2740,6 +2783,16 @@ def _engineering_value(module: Mapping[str, Any], label: str) -> Optional[float]
             continue
         return _optional_float(modifier.get("Value"))
     return None
+
+
+def _fuel_scoop_installed(entry: Mapping[str, Any]) -> Optional[bool]:
+    modules = entry.get("Modules")
+    if isinstance(modules, Mapping):
+        modules = list(modules.values())
+    if not isinstance(modules, list):
+        return None
+    return any(isinstance(m, Mapping) and "fuelscoop" in str(m.get("Item") or "").casefold()
+               for m in modules)
 
 
 def _extract_jump_model(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:

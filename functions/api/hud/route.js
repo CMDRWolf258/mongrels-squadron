@@ -3,7 +3,7 @@
 // This is deliberately separate from the ChatGPT MCP approval layer.
 import { json } from '../../../lib/auth.js';
 import { authenticateScoutActivity } from '../../../lib/scout-activity.js';
-import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, getRouteJob, completeRoute, readLastCompletedRoute } from '../../../lib/scout-route.js';
+import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, plotGalaxyRoute, getRouteJob, completeRoute, readLastCompletedRoute } from '../../../lib/scout-route.js';
 
 const reply=(body,status=200)=>json(body,{status,headers:{
   'Cache-Control':'private, no-store, no-cache, must-revalidate',
@@ -53,7 +53,9 @@ export async function onRequestPost({request,env}){
     return reply({ok:false,error:'invalid_json'},400);
   try{
     if(body.action==='plot'){
-      const result=await plotNeutronRoute(env,{
+      const mode=body.mode===undefined?'neutron':body.mode;
+      if(mode!=='neutron'&&mode!=='galaxy')return reply({ok:false,error:'invalid_route_mode'},400);
+      const result=await (mode==='galaxy'?plotGalaxyRoute:plotNeutronRoute)(env,{
         destination:body.destination,
         efficiency:Number(body.efficiency ?? 60),
       });

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { normalizeShipSnapshot, SCOUT_LINK_KEY_PREFIX } from '../lib/scout-link.js';
-import { plotNeutronRoute, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints, completeRoute, readLastCompletedRoute } from '../lib/scout-route.js';
+import { plotNeutronRoute, plotGalaxyRoute, normalizeSpanshGalaxyJumps, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints, completeRoute, readLastCompletedRoute } from '../lib/scout-route.js';
 import { onRequestGet as hudFeed } from '../functions/api/hud/feed.js';
 import { onRequestGet as hudManifest } from '../functions/api/hud/manifest.js';
 import { onRequestGet as routeControlGet, onRequestPost as routeControlPost } from '../functions/api/hud/route.js';
@@ -158,6 +158,66 @@ await activateRoute(env,plotted.id);
 const cleared=await clearActiveRoute(env);
 assert.equal(cleared.active,false);
 assert.equal(await readActiveRoute(env),null);
+// Galaxy Planner uses *existing whitelisted FSD physics*, not a serialized
+// full journal/loadout. It refuses missing scoop, reserve or partial main fuel.
+const galaxyEnv={...env,DAILY_ORDERS:new Kv()};
+const modelData={
+  ...base, fuel:128, fuelCapacity:128, fuelReserveCapacity:0.5,
+  fuelScoopInstalled:true,
+  galaxyModel:{
+    fuelPower:2.5025,fuelMultiplier:0.011,optimalMass:7528.04,
+    maxFuelPerJump:6.8,baseMass:1502.72,tankSize:128,
+    internalTankSize:0.5,rangeBoost:10.5,superchargeMultiplier:6,
+  },
+};
+await galaxyEnv.DAILY_ORDERS.put(SCOUT_LINK_KEY_PREFIX+'user-999',JSON.stringify({...modelData,observedAt:new Date().toISOString()}));
+const galaxyRequests=[];
+const galaxyFetch=async (url,init)=>{
+  galaxyRequests.push({url:String(url),init});
+  if(String(url).endsWith('/api/generic/route'))
+    return new Response(JSON.stringify({job:'bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee'}),{status:202});
+  if(String(url).includes('/api/results/'))
+    return new Response(JSON.stringify({result:{jumps:[
+      {system:base.system,fuel_in_tank:128,has_neutron:false,distance_jumped:0},
+      {system:'Test Neutron',fuel_in_tank:119.8,fuel_used:8.2,has_neutron:true,distance_jumped:250},
+      {system:'Test Refuel',fuel_in_tank:8.1,fuel_used:7.1,must_refuel:true,is_scoopable:true,distance_jumped:65},
+      {system:'Diaba',fuel_in_tank:115.3,fuel_used:5.3,distance_jumped:40},
+    ]}}),{status:200});
+  return new Response('not_found',{status:404});
+};
+const exact=await plotGalaxyRoute(galaxyEnv,{destination:'Diaba'},galaxyFetch);
+assert.equal(exact.status,'pending');
+assert.equal(exact.routeType,'galaxy_exact_jumps');
+const gf=new URLSearchParams(galaxyRequests[0].init.body);
+assert.equal(galaxyRequests[0].url,'https://spansh.co.uk/api/generic/route');
+assert.equal(gf.get('source'),base.system);
+assert.equal(gf.get('destination'),'Diaba');
+assert.equal(gf.get('fuel_multiplier'),'0.011');
+assert.equal(gf.get('fuel_power'),'2.5025');
+assert.equal(gf.get('tank_size'),'128');
+assert.equal(gf.get('internal_tank_size'),'0.5');
+assert.equal(gf.get('use_injections'),'0');
+assert.equal(gf.get('supercharge_multiplier'),'6');
+assert.equal(await readActiveRoute(galaxyEnv),null,'Galaxy preview is never activated');
+const exactResult=await getRouteJob(galaxyEnv,exact.id,galaxyFetch);
+assert.equal(exactResult.status,'ready');
+assert.equal(exactResult.routeType,'galaxy_exact_jumps');
+assert.equal(exactResult.estimatedTotalJumps,3);
+assert.equal(exactResult.fuelStops,1);
+assert.equal(exactResult.waypoints[2].fuelStop,true);
+assert.equal(exactResult.waypoints[2].fuelInTank,8.1);
+assert.equal(exactResult.waypoints[1].estimatedJumpsFromPrevious,1);
+assert.equal((await activateRoute(galaxyEnv,exact.id)).active,true);
+await clearActiveRoute(galaxyEnv);
+assert.equal(normalizeSpanshGalaxyJumps({jumps:[{system:'From',fuel_in_tank:128},{system:'To'}]},'From','To'),null,
+  'Unknown hop fuel ledger must not be silently treated as safe');
+await galaxyEnv.DAILY_ORDERS.put(SCOUT_LINK_KEY_PREFIX+'user-999',JSON.stringify({...modelData,fuel:12,observedAt:new Date().toISOString()}));
+assert.equal((await plotGalaxyRoute(galaxyEnv,{destination:'Diaba'},galaxyFetch)).error,'full_fuel_tank_required');
+assert.equal((await activateRoute(galaxyEnv,exact.id)).error,'full_fuel_tank_required');
+await galaxyEnv.DAILY_ORDERS.put(SCOUT_LINK_KEY_PREFIX+'user-999',JSON.stringify({...modelData,fuelScoopInstalled:false,observedAt:new Date().toISOString()}));
+assert.equal((await plotGalaxyRoute(galaxyEnv,{destination:'Diaba'},galaxyFetch)).error,'fuel_scoop_not_confirmed');
+await galaxyEnv.DAILY_ORDERS.put(SCOUT_LINK_KEY_PREFIX+'user-999',JSON.stringify({...modelData,galaxyModel:null,observedAt:new Date().toISOString()}));
+assert.equal((await plotGalaxyRoute(galaxyEnv,{destination:'Diaba'},galaxyFetch)).error,'complete_ship_fsd_loadout_required');
 const stale={...base,receivedAt:new Date(Date.now()-3600_000).toISOString(),observedAt:new Date(Date.now()-3600_000).toISOString()};
 await store.put(SCOUT_LINK_KEY_PREFIX+'user-999',JSON.stringify(stale));
 assert.equal((await plotNeutronRoute(env,{destination:'Diaba'},mockFetch)).error,'ship_telemetry_stale');
