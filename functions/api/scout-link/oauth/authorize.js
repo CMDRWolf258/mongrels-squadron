@@ -12,8 +12,9 @@ function confirmHtml(id) {
   return '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>Connect Mongrel Scout Link</title><main style="font-family:system-ui;max-width:35rem;margin:3rem auto;padding:1rem">' +
     '<h1>Connect Mongrel Scout Link to ChatGPT?</h1>' +
-    '<p>This grants ChatGPT <strong>read-only</strong> access to your most recent opt-in Scout ship snapshot: ' +
-    'ship name/type, current system, fuel/cargo quantities, jump range, and timestamps. No ship controls or website writes.</p>' +
+    '<p>This grants ChatGPT access to your most recent opt-in Scout ship snapshot: ' +
+    'ship name/type, current system, fuel/cargo quantities, jump range, and timestamps. Route tools can calculate Spansh journeys ' +
+    'and, only when you explicitly request activation, send a waypoint plan to the PC for automatic clipboard copying. No ship controls or BGS writes.</p>' +
     '<p>Only the exact Mongrels Site Admin account may authorize this connection.</p>' +
     '<form method="post"><input type="hidden" name="pending" value="' + id + '">' +
     '<button name="decision" value="approve" type="submit">Allow read-only access</button> ' +
