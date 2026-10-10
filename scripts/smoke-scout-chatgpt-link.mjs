@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { FakeD1 } from './mock-d1.mjs';
 import { createSession } from '../lib/auth.js';
 import { sha256Hex, normalizeShipSnapshot } from '../lib/scout-link.js';
 import { randomToken, verifyPkce, issueTokens, CLIENT_ID, CALLBACK } from '../lib/scout-link-oauth.js';
@@ -15,7 +16,7 @@ class Kv {
   async delete(key){this.values.delete(key);}
 }
 const kv=new Kv();
-const env={SCOUT_CHATGPT_LINK_ENABLED:'true',ADMIN_USER_ID:'admin-123',SESSION_SECRET:'test-secret-only',DAILY_ORDERS:kv};
+const env={SCOUT_CHATGPT_LINK_ENABLED:'true',ADMIN_USER_ID:'admin-123',SESSION_SECRET:'test-secret-only',DAILY_ORDERS:kv,SCOUT_AUTH_DB:new FakeD1()};
 const origin='https://mongrels-squadron.pages.dev';
 const now=()=>new Date().toISOString();
 const baseModel={kind:'mkii',optimalMass:7528.04,maxFuelPerJump:6.8,ratingConstant:11,powerConstant:2.5025,guardianBoost:10.5};
@@ -72,6 +73,8 @@ wrongResource.searchParams.set('resource',origin+'/api/not-the-scout-server');
 assert.equal((await authorizeGet({env,request:req(wrongResource,'GET',undefined,{Cookie:'mongrels_session='+owner})})).status,400);
 const presented=await authorizeGet({env,request:req(auth,'GET',undefined,{Cookie:'mongrels_session='+owner})});
 assert.equal(presented.status,200);
+assert.match(await presented.clone().text(),/scout-consent\.js/);
+assert.match(presented.headers.get('Content-Security-Policy'),/script-src 'self'/);
 const html=await presented.text();
 const pending=html.match(/name="pending" value="([^"]+)"/)?.[1];
 assert.ok(pending);
@@ -103,7 +106,10 @@ const exchange=()=>exchangeToken({env,request:req(origin+'/api/scout-link/oauth/
 const grant=await (await exchange()).json();
 assert.equal(grant.scope,'scout.read scout.route');
 assert.equal((await exchange()).status,400);
+assert.equal((await consent(pending)).status,400);
 assert.equal((await rpc({jsonrpc:'2.0',id:6,method:'tools/list'},grant.access_token)).status,200);
+const noDbEnv={...env,SCOUT_AUTH_DB:undefined};
+assert.equal((await authorizeGet({env:noDbEnv,request:req(auth,'GET',undefined,{Cookie:'mongrels_session='+owner})})).status,503);
 const wrongEnv={...env,SCOUT_CHATGPT_LINK_ENABLED:'false'};
 assert.equal((await ingest({env:wrongEnv,request:req(origin+'/api/scout-link/ingest','POST',JSON.stringify(snapshot),{Authorization:'Bearer '+secret})})).status,404);
 console.log('Scout ChatGPT Link read-only, OAuth and security smoke tests passed');

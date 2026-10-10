@@ -14,10 +14,12 @@ function confirmHtml(id) {
     '<p>This grants ChatGPT access to your most recent opt-in Scout ship snapshot: ' +
     'ship name/type, current system, fuel/cargo quantities, jump range, and timestamps. Route tools can calculate Spansh journeys ' +
     'and, only when you explicitly request activation, send a waypoint plan to the PC for automatic clipboard copying. No ship controls or BGS writes.</p>' +
-    '<p>Only the exact Mongrels Site Admin account may authorize this connection.</p>' +
+    '<p>Only the exact Mongrels Site Admin account may authorize this connection. Click your choice once and wait for the redirect back to ChatGPT.</p>' +
+    '<p id="consent-progress" hidden role="status">Connecting to ChatGPT… Please wait.</p>' +
     '<form method="post"><input type="hidden" name="pending" value="' + id + '">' +
     '<button name="decision" value="approve" type="submit">Allow Scout Link access</button> ' +
-    '<button name="decision" value="deny" type="submit">Cancel</button></form></main></html>';
+    '<button name="decision" value="deny" type="submit">Cancel</button></form>' +
+    '<script src="/assets/scout-consent.js" defer></script></main></html>';
 }
 export async function onRequestGet({request,env}) {
   if (!oauthConfigured(env)) return oauthError('service_unavailable',503);
@@ -43,7 +45,7 @@ export async function onRequestGet({request,env}) {
   await putSecret(env,'pending',pending,{ownerId:user.sub,clientId,callback,challenge,state,scope,resource,exp:now+600000},600);
   const response = new Response(confirmHtml(pending),{status:200,headers:{
     'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
-    'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
     'X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff',
   }});
   return response;
