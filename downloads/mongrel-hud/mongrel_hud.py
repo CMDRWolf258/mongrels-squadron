@@ -30,7 +30,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 try:
@@ -59,6 +59,7 @@ SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
+SCOUT_ROUTE_CONTROL_URL = "http://127.0.0.1:43857/v1/route"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
@@ -3653,6 +3654,33 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def route_control(self, action: str, route_id: str = "") -> dict[str, Any]:
+        """Paired-controller-only route command; credentials stay in Scout."""
+        if action not in {"read", "start", "stop"}:
+            raise ValueError("invalid_route_action")
+        if route_id and not re.fullmatch(r"[0-9a-fA-F-]{24,64}", route_id):
+            raise ValueError("invalid_route_id")
+        if action == "start" and not route_id:
+            raise ValueError("route_id_required")
+        if action == "read":
+            suffix = ("?routeId=" + route_id) if route_id else ""
+            request = urllib.request.Request(
+                SCOUT_ROUTE_CONTROL_URL + suffix, headers={"Accept": "application/json"},
+                method="GET",
+            )
+        else:
+            request = urllib.request.Request(
+                SCOUT_ROUTE_CONTROL_URL,
+                data=json.dumps({"action": action, "routeId": route_id}, separators=(",", ":")).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-Mongrel-HUD-Route-Action": "1",
+                },
+                method="POST",
+            )
+        return request_scout_json(request, "route_control_failed", timeout=18.0)
+
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
         for value in alert_ids[:40]:
@@ -5906,11 +5934,20 @@ def make_handler(app: MongrelHudApp):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            if path == "/api/state":
+            if path in {"/api/state", "/api/route"}:
                 if not self.authorized():
                     self.send_json({"ok": False, "error": "pair_required"}, 401)
                     return
-                self.send_json(app.controller_state())
+                if path == "/api/state":
+                    self.send_json(app.controller_state())
+                    return
+                try:
+                    route_id = str((parse_qs(urlparse(self.path).query).get("routeId") or [""])[0])
+                    self.send_json(app.route_control("read", route_id))
+                except HudRequestError as exc:
+                    self.send_json({"ok": False, "error": exc.error_code, "diagnostics": exc.diagnostics}, exc.status)
+                except ValueError as exc:
+                    self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
             self.send_json({"ok": False, "error": "not_found"}, 404)
 
@@ -5971,6 +6008,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
+                elif path == "/api/route":
+                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""))
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]
