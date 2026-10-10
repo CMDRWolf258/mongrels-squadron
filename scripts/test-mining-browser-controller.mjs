@@ -53,6 +53,10 @@ test('Combined commodity, body, minimum rig count are applied locally without an
   assert.match(all.status,/3 matching deposits/);
   assert.match(all.html,/CENTER ONLY/);
   assert.match(all.html,/LOCAL ONLY/);
+  assert.match(all.html,/SHARE DEPOSIT WITH SQUAD/);
+  assert.match(all.html,/data-browse-share="deposit"/);
+  assert.match(script,/\/api\/mining-browser\/share/);
+  assert.match(script,/Your local record will remain on Serenity/);
   assert.doesNotMatch(all.html,/<img src=x/);
   const high=run('', '', 6);
   assert.match(high.status,/1 matching deposits/);
@@ -69,6 +73,8 @@ test('result cards reveal deliberate Navigate controls for deposits and center-o
   const all=run();
   assert.match(all.html,/data-browse-navigate="deposit"/);
   assert.match(all.html,/data-browse-navigate="center"/);
+  assert.doesNotMatch(all.html,/data-browse-share="center"/,"Shared center must not be republished");
+  assert.match(script,/Publish this saved/);
   assert.match(all.html,/NAVIGATE/);
   assert.match(all.html,/<details/);
   assert.match(all.html,/<summary>/);

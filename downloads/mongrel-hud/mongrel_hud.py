@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.8"
+APP_VERSION = "0.17.9"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -69,9 +69,10 @@ MINING_SYSTEMS_URL = "http://127.0.0.1:43857/v1/mining/systems"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
-# Stays OFF until the archive's new D1 bindings, backup and PR deploy are
-# verified. Existing off-system local records work with no network requests.
-MULTI_MINING_REMOTE_READS_ENABLED = False
+# Schema health and separate production export were explicitly verified by
+# the owner. Off-system shared READS are user-initiated and cached only when the
+# browser opens; reporting stays local unless the user presses Share with Squad.
+MULTI_MINING_REMOTE_READS_ENABLED = True
 SURFACE_MINING_COMMODITIES = (
     "Alexandrite",
     "Deuterium",
@@ -4109,6 +4110,7 @@ class MongrelHudApp:
                 key: row.get(key) for key in (
                     "id", "body", "bodyType", "signal", "commodity", "rigs", "latitude",
                     "longitude", "notes", "storage", "preferred", "needsReview",
+                    "sharedStatus", "sharedId", "sharedReportId",
                 )
             }
         # Capped response for iPad memory; filter in the UI without more reads.
@@ -4569,6 +4571,90 @@ class MongrelHudApp:
             counter += 1
         self.store.data["nextLocalMiningId"] = counter + 1
         return counter
+
+    def publish_local_mining_record(self, kind: str, identifier: str) -> dict[str, Any]:
+        """Explicit, single-record archive publish; local saved data survives failures.
+
+        This is intentionally not part of Report Deposit / Set Center. The iPad
+        supplies only a local row id and kind. Coordinates, body identity and
+        signal come from the saved EDMC record, never an external POST body.
+        """
+        if kind not in {"deposit", "center"}:
+            raise ValueError("invalid_mining_share_type")
+        try:
+            wanted = int(identifier)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("mining_location_not_found") from exc
+        if wanted <= 0:
+            raise ValueError("mining_location_not_found")
+        key = "localMiningDeposits" if kind == "deposit" else "localMiningCenters"
+        with self.store.lock:
+            found = next((dict(row) for row in self.store.data.get(key, [])
+                         if isinstance(row, dict) and int(row.get("id") or 0) == wanted), None)
+        if not found:
+            raise ValueError("mining_location_not_found")
+        if found.get("sharedStatus") in {"approved", "saved", "pending", "duplicate_review", "existing"}:
+            return {"ok": True, "status": found["sharedStatus"],
+                    "message": "This record was already acknowledged by the archive."}
+        address = str(found.get("systemAddress") or "").strip()
+        system = str(found.get("systemName") or "").strip()
+        body = str(found.get("body") or "").strip()
+        signal = found.get("signal")
+        latitude, longitude = found.get("latitude"), found.get("longitude")
+        if (not re.fullmatch(r"[0-9]{1,20}", address) or address == TEN16_ID64
+                or not system or not body.casefold().startswith((system + " ").casefold())
+                or type(signal) is not int or not 1 <= signal <= 999
+                or any(type(v) not in (float, int) or not math.isfinite(v)
+                       for v in (latitude, longitude))
+                or abs(latitude) > 90 or abs(longitude) > 180):
+            raise ValueError("invalid_mining_share_identity")
+        payload = {
+            "system": system, "systemAddress": address, "body": body,
+            "signal": signal, "latitude": latitude, "longitude": longitude,
+        }
+        if kind == "deposit":
+            payload.update({
+                "commodity": str(found.get("commodity") or ""),
+                "rigs": int(found.get("rigs") or 0),
+                "notes": str(found.get("notes") or "")[:1000],
+                "planetRadius": found.get("planetRadius"),
+            })
+        endpoint = SCOUT_MINING_REPORT_URL if kind == "deposit" else SCOUT_MINING_CENTER_URL
+        request = urllib.request.Request(
+            endpoint, data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        result = request_scout_json(request, "mining_share_failed", timeout=15.0)
+        status = str(result.get("status") or "")
+        valid_statuses = {"existing", "approved", "pending", "duplicate_review"} if kind == "deposit" else {"saved"}
+        if status not in valid_statuses:
+            raise ValueError("invalid_mining_share_response")
+        record = result.get("site" if kind == "deposit" else "center")
+        if status in {"approved", "existing", "saved"}:
+            if not isinstance(record, dict) or str(record.get("systemAddress") or "") != address:
+                raise ValueError("invalid_mining_share_response")
+            if str(record.get("body") or "").casefold() != body.casefold():
+                raise ValueError("invalid_mining_share_response")
+            if int(record.get("signal") or 0) != signal:
+                raise ValueError("invalid_mining_share_response")
+        with self.store.lock:
+            row = next((row for row in self.store.data.get(key, [])
+                        if isinstance(row, dict) and int(row.get("id") or 0) == wanted), None)
+            if not row or str(row.get("systemAddress") or "") != address or str(row.get("body") or "") != body:
+                raise ValueError("mining_location_changed_while_sharing")
+            row["sharedStatus"] = status
+            row["sharedId"] = (record.get("id") if isinstance(record, dict) else None)
+            row["sharedReportId"] = result.get("reportId")
+            row["sharedAcknowledgedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            self.store.save()
+        with self.mining_lock:
+            if hasattr(self, "mining_browser_remote_cache"):
+                self.mining_browser_remote_cache.pop(address, None)
+            self.mining_browser_directory_checked = 0
+        return {"ok": True, "status": status, "kind": kind,
+                "shared": status in {"approved", "existing", "saved"},
+                "message": "Archive acknowledged the saved record; local copy retained."}
 
     def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
         signal = int(site_number)
@@ -6797,6 +6883,10 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voicePack": app.remove_voice_pack(), "voice": app.voice_settings_snapshot()}
                 elif path == "/api/mining-browser/selected":
                     result = app.select_mining_browser_system(str(body.get("systemAddress") or ""))
+                elif path == "/api/mining-browser/share":
+                    result = app.publish_local_mining_record(
+                        str(body.get("kind") or ""), str(body.get("id") or ""),
+                    )
                 elif path == "/api/mining-browser/navigate":
                     result = app.navigate_mining_browser_result(
                         str(body.get("systemAddress") or ""),

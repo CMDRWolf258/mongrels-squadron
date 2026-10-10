@@ -89,6 +89,29 @@ remains an independent release prerequisite. Off-system reports are still
 **LOCAL ONLY** until that backup is verified and remote write enablement
 is separately approved.
 
+## Shared off-system mining pilot (HUD 0.17.9)
+
+After the owner verified the `ten16-mining` D1 binding, additive multi-system
+tables, Time Travel recovery, and the 208,548-byte separate SQL backup, the
+Surface Mining **System Browser** now supports cached **read-only shared**
+off-system mining records (directory at most once per hour, selected system
+records cached ten minutes). The original 10-16 feed stays separate.
+
+**REPORT DEPOSIT** and **SET CENTER** outside 10-16 still save locally ONLY.
+To publish a particular saved off-system record, open that system in the
+browser and explicitly press **SHARE DEPOSIT WITH SQUAD** or
+**SHARE CENTER WITH SQUAD**. A confirmation shows system/body/signal.
+The HUD sends only the saved, EDMC-verified record through the existing Scout
+authenticated mining proxy and archives the server acknowledgment. Local
+records survive network errors. Published reports show SQUAD SHARED only after
+the server confirms approval; pending and duplicate reviews are labeled
+accordingly, and the existing Site Admin rules still apply to centers.
+
+This is a **manual pilot**, not automatic synchronization and not a bulk upload.
+Do a single real-record live trial before opening rollout to members. No new
+recurring Cloudflare polling and no change to Combat, Navigation or carrier
+features.
+
 ## Before you start
 
 You need:
