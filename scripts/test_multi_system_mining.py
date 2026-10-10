@@ -10,6 +10,8 @@ import re
 import threading
 import tempfile
 import time
+import urllib
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -32,6 +34,7 @@ method_names = {
     "select_site", "active_site", "_nav_to_point", "location_nav",
     "deposit_nav", "surface_nav", "_mining_selection", "_select_mining",
     "_next_local_mining_id_locked", "set_site_center", "report_deposit",
+    "publish_local_mining_record",
     "mining_commodity_choices", "mining_browser_catalog",
     "refresh_mining_browser_directory", "select_mining_browser_system",
     "browse_mining_system", "navigate_mining_browser_result",
@@ -42,7 +45,10 @@ methods = [x for x in classes[0].body if isinstance(x, ast.FunctionDef) and x.na
 assert {x.name for x in methods} == method_names
 container = ast.ClassDef(name="Harness", bases=[], keywords=[], body=methods, decorator_list=[])
 scope = {
-    "Any": Any, "math": math, "re": re, "time": time, "MULTI_MINING_REMOTE_READS_ENABLED": False,
+    "Any": Any, "math": math, "re": re, "time": time, "urllib": urllib,
+    "MULTI_MINING_REMOTE_READS_ENABLED": True,
+    "SCOUT_MINING_REPORT_URL": "http://127.0.0.1:43857/v1/mining/report",
+    "SCOUT_MINING_CENTER_URL": "http://127.0.0.1:43857/v1/mining/center",
     "threading": threading, "datetime": datetime, "timezone": timezone,
     "TEN16_ID64": "560820275507",
     "TEN16_SYSTEM": "NGC 2546 Sector UZ-G d10-16",
@@ -350,7 +356,61 @@ with tempfile.TemporaryDirectory() as temp:
 # successful central shared submission or a queued central duplicate review.
 hud_source = file.read_text(encoding="utf-8")
 scout_source = (file.parents[1] / "mongrel-scout/load.py").read_text(encoding="utf-8")
-assert "MULTI_MINING_REMOTE_READS_ENABLED = False" in hud_source
+assert "MULTI_MINING_REMOTE_READS_ENABLED = True" in hud_source
+# One explicit submission of an archived local deposit requires a central
+# acknowledgment; it never changes the saved record if the network fails.
+with tempfile.TemporaryDirectory() as temp:
+    path = Path(temp) / "hud-data.json"
+    app = make(Store(path), scene())
+    loc = app.report_deposit("Platinum", 5, "Crater", 1)
+    item = loc["site"]
+    calls = []
+    def successful_post(req, *args, **kwargs):
+        sent = json.loads(req.data.decode("utf-8"))
+        calls.append(sent)
+        assert sent["body"] == "Icy Test A 2 a"
+        assert sent["systemAddress"] == "12345678901234567"
+        assert sent["latitude"] == 12.0
+        assert sent["longitude"] == -45.0
+        return {"ok": True, "status": "approved",
+                "site": {**sent, "id": 2000000042, "body": sent["body"]}}
+    scope["request_scout_json"] = successful_post
+    assert calls == []
+    # The original local report stays on Serenity throughout.
+    status = app.publish_local_mining_record("deposit", str(item["id"]))
+    assert status["ok"] and status["shared"]
+    assert len(calls) == 1
+    saved = app.store.data["localMiningDeposits"][0]
+    assert saved["sharedStatus"] == "approved"
+    assert saved["storage"] == "local_only"
+    assert saved["sharedId"] == 2000000042
+    assert app.publish_local_mining_record("deposit", str(item["id"]))["status"] == "approved"
+    assert len(calls) == 1, "Already confirmed shared record must not post again"
+    # No report is marked shared after an exception or a bad acknowledgment.
+    second = app.report_deposit("Gold", 2, "Spire", 2)["site"]
+    def failed_post(*args, **kwargs):
+        raise RuntimeError("offline")
+    scope["request_scout_json"] = failed_post
+    try:
+        app.publish_local_mining_record("deposit", str(second["id"]))
+        raise AssertionError("Expected transport failure")
+    except RuntimeError:
+        pass
+    assert not any("sharedStatus" in row for row in app.store.data["localMiningDeposits"]
+                   if row["id"] == second["id"])
+    def wrong_identity(req, *args, **kwargs):
+        sent = json.loads(req.data.decode("utf-8"))
+        return {"ok": True, "status": "approved", "site": {**sent, "systemAddress":"999", "id": 42}}
+    scope["request_scout_json"] = wrong_identity
+    raises("invalid_mining_share_response", app.publish_local_mining_record,
+           "deposit", str(second["id"]))
+    # Publishing an off-system saved report never uses the ship's current
+    # coordinates nor changes the active mining compass or HUD profile.
+    app.current = scene(system_id="560820275507", name="NGC 2546 Sector UZ-G d10-16",
+                        body="NGC 2546 Sector UZ-G d10-16 3", lat=0, lon=0)
+    raises("invalid_mining_share_type", app.publish_local_mining_record, "unknown", str(second["id"]))
+    raises("mining_location_not_found", app.publish_local_mining_record, "deposit", "999999")
+
 assert 'self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")' in hud_source
 assert 'self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")' in hud_source
 assert 'endpoint += "?" + urlencode({"systemAddress": address})' in scout_source
