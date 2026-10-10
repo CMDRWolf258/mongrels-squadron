@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.5"
+APP_VERSION = "0.17.6"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -64,9 +64,13 @@ SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
 MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
+MINING_SYSTEMS_URL = "http://127.0.0.1:43857/v1/mining/systems"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
 MINING_REFRESH_SECONDS = 60.0
+# Stays OFF until the archive's new D1 bindings, backup and PR deploy are
+# verified. Existing off-system local records work with no network requests.
+MULTI_MINING_REMOTE_READS_ENABLED = False
 SURFACE_MINING_COMMODITIES = (
     "Alexandrite",
     "Deuterium",
@@ -741,6 +745,32 @@ def canonical_mining_center(value: Any, *, body: str | None = None, signal: int 
     return _validated_mining_center(value, body=body, signal=signal)
 
 
+def canonical_multisystem_center(value: Any, expected_address: str) -> dict[str, Any]:
+    """Validate off-system center without relaxing the legacy 10-16 validator."""
+    if not isinstance(value, dict):
+        raise ValueError("invalid_mining_center_response")
+    addr = str(value.get("systemAddress") or "").strip()
+    name = str(value.get("systemName") or "").strip()
+    body = str(value.get("body") or "").strip()
+    if not (addr == expected_address and re.fullmatch(r"[0-9]{1,20}", addr)
+            and name and body.casefold().startswith((name + " ").casefold())):
+        raise ValueError("invalid_mining_center_response")
+    try:
+        ident, signal = int(value.get("id")), int(value.get("signal"))
+        lat, lon = float(value.get("latitude")), float(value.get("longitude"))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("invalid_mining_center_response") from exc
+    if not (ident >= 2000000000 and 1 <= signal <= 999
+            and math.isfinite(lat) and abs(lat) <= 90
+            and math.isfinite(lon) and abs(lon) <= 180):
+        raise ValueError("invalid_mining_center_response")
+    return {
+        "id": ident, "signal": signal, "body": body, "bodyType": value.get("bodyType"),
+        "systemName": name, "systemAddress": addr, "latitude": lat,
+        "longitude": lon, "source": "multisystem", "updatedAt": value.get("updatedAt"),
+    }
+
+
 def cached_mining_center(value: Any) -> dict[str, Any]:
     # Older saved, measured coordinates may predate a confirmed central ID.
     # Keep them only as an explicit outage fallback, never an API/save success.
@@ -996,6 +1026,59 @@ def short_body_name(state: dict[str, Any]) -> str:
     if match:
         return f"{match.group(1)}{(match.group(2) or '').lower()}"
     return body
+
+
+def local_mining_scope(state: dict[str, Any]) -> dict[str, str] | None:
+    """Identity for locally staged mining outside the 10-16 central archive.
+
+    Use Frontier's numeric system ID64 AND the *full* body name. Shortened
+    planet labels like '3a' repeat across systems and cannot identify a site.
+    Never infer an identity from the last visited system or a display label.
+    """
+    if not isinstance(state, dict):
+        return None
+    system = state.get("system") or {}
+    status = state.get("status") or {}
+    if not isinstance(system, dict) or not isinstance(status, dict):
+        return None
+    address = str(system.get("address") or "").strip()
+    name = " ".join(str(system.get("name") or "").split())
+    body = " ".join(str(status.get("bodyName") or "").split())
+    if not (re.fullmatch(r"[0-9]{1,20}", address) and name and body):
+        return None
+    # A stale Status BodyName from a previous system is not a valid target.
+    if not body.casefold().startswith((name + " ").casefold()):
+        return None
+    return {
+        "key": f"{address}:{body.casefold()}",
+        "systemAddress": address,
+        "systemName": name,
+        "bodyName": body,
+    }
+
+
+def local_mining_point(state: dict[str, Any]) -> dict[str, Any]:
+    """Require a scoped system/body and plausible current surface coordinates."""
+    scope = local_mining_scope(state)
+    if scope is None:
+        raise ValueError("surface_body_identity_unavailable")
+    status = state.get("status") or {}
+    lat, lon = status.get("latitude"), status.get("longitude")
+    if any(isinstance(value, bool) or not isinstance(value, (int, float))
+           or not math.isfinite(float(value)) for value in (lat, lon)):
+        raise ValueError("surface_position_unavailable")
+    if abs(float(lat)) > 90 or abs(float(lon)) > 180:
+        raise ValueError("surface_position_unavailable")
+    radius = status.get("planetRadius")
+    if isinstance(radius, bool) or not isinstance(radius, (int, float)) \
+            or not math.isfinite(float(radius)) or radius <= 0:
+        radius = None
+    return {
+        "scope": scope,
+        "latitude": float(lat),
+        "longitude": float(lon),
+        "planetRadius": float(radius) if radius is not None else None,
+    }
 
 
 def body_type_for_short_name(body: str) -> str:
@@ -3767,6 +3850,9 @@ class MongrelHudApp:
         return payload
 
     def _refresh_mining_data_once(self) -> bool:
+        # The periodic 10-16 feed must never be replaced with another
+        # system's data. Other systems are fetched on demand into a separate
+        # ID64-keyed browser cache, leaving legacy compass data untouched.
         deposit_error = ""
         center_error = ""
         deposit_ok = False
@@ -3864,6 +3950,317 @@ class MongrelHudApp:
             self._refresh_mining_data_once()
             time.sleep(MINING_REFRESH_SECONDS)
 
+    def mining_browser_catalog(self) -> dict[str, Any]:
+        """System choices include saved local and central data; no scan per keystroke."""
+        with self.store.lock:
+            saved = list(self.store.data.get("localMiningDeposits") or [])
+            saved += list(self.store.data.get("localMiningCenters") or [])
+            selected = str(self.store.data.get("miningBrowserSystem") or "")
+        with self.mining_lock:
+            shared = list(self.mining_sites) + list(self.mining_centers)
+            known_remote = list(getattr(self, "mining_browser_directory", []))
+        systems: dict[str, dict[str, str]] = {
+            TEN16_ID64: {"systemName": TEN16_SYSTEM, "systemAddress": TEN16_ID64}
+        }
+        for row in saved + shared + known_remote:
+            if not isinstance(row, dict):
+                continue
+            address = str(row.get("systemAddress") or "").strip()
+            name = str(row.get("systemName") or "").strip()
+            if not re.fullmatch(r"[0-9]{1,20}", address) or not name:
+                continue
+            if address == TEN16_ID64:
+                continue
+            systems[address] = {"systemName": name[:160], "systemAddress": address}
+        current = self.scout_state().get("system") or {}
+        address = str(current.get("address") or "").strip()
+        # A system without saved mining records is not a catalog entry.
+        if selected not in systems:
+            selected = address if address in systems else TEN16_ID64
+        return {
+            "ok": True, "systems": sorted(systems.values(), key=lambda row: row["systemName"].casefold()),
+            "selected": selected,
+            "remoteDirectoryEnabled": bool(MULTI_MINING_REMOTE_READS_ENABLED),
+            "currentSystemAddress": address,
+        }
+
+    def refresh_mining_browser_directory(self, *, force: bool = False) -> dict[str, Any]:
+        """One on-demand, cached Scout request; never triggered by typing."""
+        if not MULTI_MINING_REMOTE_READS_ENABLED:
+            return self.mining_browser_catalog()
+        now = time.monotonic()
+        with self.mining_lock:
+            last_check = float(getattr(self, "mining_browser_directory_checked", 0))
+            fresh = last_check > 0 and now - last_check < 3600
+            if fresh and not force:
+                return self.mining_browser_catalog()
+            # Reserve the next hour before I/O so simultaneous iPad calls don't
+            # generate a burst of duplicate Cloudflare requests.
+            self.mining_browser_directory_checked = now
+        try:
+            with urllib.request.urlopen(MINING_SYSTEMS_URL, timeout=9) as response:
+                data = json.load(response)
+            if not isinstance(data, dict) or data.get("ok") is not True or not isinstance(data.get("systems"), list):
+                raise ValueError("invalid_mining_directory")
+            rows = []
+            for item in data["systems"][:1000]:
+                if not isinstance(item, dict):
+                    continue
+                ident, name = str(item.get("systemAddress") or ""), str(item.get("systemName") or "").strip()
+                if re.fullmatch(r"[0-9]{1,20}", ident) and name:
+                    rows.append({"systemAddress": ident, "systemName": name[:160]})
+            with self.mining_lock:
+                self.mining_browser_directory = rows
+                self.mining_browser_directory_error = ""
+        except (OSError, ValueError, TimeoutError) as exc:
+            with self.mining_lock:
+                self.mining_browser_directory_error = type(exc).__name__
+        return self.mining_browser_catalog()
+
+    def select_mining_browser_system(self, address: str) -> dict[str, Any]:
+        address = str(address or "").strip()
+        if address not in {row["systemAddress"] for row in self.mining_browser_catalog()["systems"]}:
+            raise ValueError("mining_system_not_logged")
+        with self.store.lock:
+            self.store.data["miningBrowserSystem"] = address
+            self.store.save()
+        return {"ok": True, "selected": address}
+
+    def browse_mining_system(self, address: str) -> dict[str, Any]:
+        """Read-only catalogue; cannot change live compass/body/signal."""
+        addr = str(address or "").strip()
+        catalog = self.mining_browser_catalog()
+        record = next((s for s in catalog["systems"] if s["systemAddress"] == addr), None)
+        if record is None:
+            raise ValueError("mining_system_not_logged")
+        with self.store.lock:
+            deposits = [
+                dict(row) for row in self.store.data.get("localMiningDeposits", [])
+                if isinstance(row, dict) and str(row.get("systemAddress") or "") == addr
+            ]
+            centers = [
+                dict(row) for row in self.store.data.get("localMiningCenters", [])
+                if isinstance(row, dict) and str(row.get("systemAddress") or "") == addr
+            ]
+        with self.mining_lock:
+            if addr == TEN16_ID64:
+                deposits += [
+                    {**row, "storage": "shared"}
+                    for row in self.mining_sites if str(row.get("systemAddress") or TEN16_ID64) == TEN16_ID64
+                ]
+                centers += [
+                    {**row, "storage": "shared"}
+                    for row in self.mining_centers if str(row.get("systemAddress") or TEN16_ID64) == TEN16_ID64
+                ]
+            else:
+                # Already observed central records (e.g. after visiting that
+                # system) are browsable without another server read.
+                deposits += [{**row, "storage": "shared"} for row in self.mining_sites
+                             if str(row.get("systemAddress") or "") == addr]
+                centers += [{**row, "storage": "shared"} for row in self.mining_centers
+                            if str(row.get("systemAddress") or "") == addr]
+                remote = getattr(self, "mining_browser_remote_cache", {}).get(addr)
+                if isinstance(remote, dict) and remote.get("expires", 0) > time.monotonic():
+                    known_ids = {str(row.get("id")) for row in deposits}
+                    deposits += [dict(row) for row in remote.get("deposits", [])
+                                 if str(row.get("id")) not in known_ids]
+                    known_centers = {str(row.get("id")) for row in centers}
+                    centers += [dict(row) for row in remote.get("centers", [])
+                                if str(row.get("id")) not in known_centers]
+        warning = ""
+        if addr != TEN16_ID64 and MULTI_MINING_REMOTE_READS_ENABLED:
+            cached = getattr(self, "mining_browser_remote_cache", {}).get(addr)
+            if not isinstance(cached, dict) or cached.get("expires", 0) <= time.monotonic():
+                try:
+                    if not re.fullmatch(r"[0-9]{1,20}", addr):
+                        raise ValueError("invalid_system_address")
+                    suffix = "?systemAddress=" + addr
+                    raw_sites = self._load_mining_bridge_payload(MINING_DATA_URL + suffix, "mining_browser_unavailable")
+                    raw_centers = self._load_mining_bridge_payload(MINING_CENTERS_URL + suffix, "mining_browser_unavailable")
+                    shared_sites = [
+                        {**row, "storage": "shared"}
+                        for row in raw_sites if isinstance(row, dict)
+                        and str(row.get("systemAddress") or "") == addr
+                    ]
+                    shared_centers = [
+                        {**row, "storage": "shared"}
+                        for row in raw_centers if isinstance(row, dict)
+                        and str(row.get("systemAddress") or "") == addr
+                    ]
+                    with self.mining_lock:
+                        if not hasattr(self, "mining_browser_remote_cache"):
+                            self.mining_browser_remote_cache = {}
+                        self.mining_browser_remote_cache[addr] = {
+                            "expires": time.monotonic() + 600,
+                            "deposits": shared_sites, "centers": shared_centers,
+                        }
+                    deposits += shared_sites
+                    centers += shared_centers
+                except (OSError, ValueError, HudRequestError):
+                    warning = "Shared records temporarily unavailable; displaying local records."
+        def safe_row(row: dict[str, Any]) -> dict[str, Any]:
+            return {
+                key: row.get(key) for key in (
+                    "id", "body", "bodyType", "signal", "commodity", "rigs", "latitude",
+                    "longitude", "notes", "storage", "preferred", "needsReview",
+                )
+            }
+        # Capped response for iPad memory; filter in the UI without more reads.
+        return {
+            "ok": True, "system": record,
+            "deposits": [safe_row(row) for row in deposits[:2000]],
+            "centers": [safe_row(row) for row in centers[:1000]],
+            "truncated": len(deposits) > 2000 or len(centers) > 1000,
+            "warning": warning,
+        }
+
+    def _mining_nav_on_current_body(self, target: dict[str, Any]) -> bool:
+        """Only activate a chosen target after verified system AND body match."""
+        state = self.scout_state()
+        system = state.get("system") or {}
+        status = state.get("status") or {}
+        address = str(system.get("address") or "").strip()
+        name = str(system.get("name") or "").strip()
+        body = str(status.get("bodyName") or "").strip()
+        if not address or address != str(target.get("systemAddress") or ""):
+            return False
+        if not name or name.casefold() != str(target.get("systemName") or "").casefold():
+            return False
+        if address == TEN16_ID64:
+            # The existing 10-16 mining site records have a short body label.
+            return bool(body and (
+                body.casefold() == str(target.get("body") or "").casefold()
+                or short_body_name(state).casefold() == str(target.get("body") or "").casefold()
+            ))
+        scope = local_mining_scope(state)
+        return bool(scope and scope["bodyName"].casefold() == str(target.get("body") or "").casefold())
+
+    def _mining_nav_pin_row(self, kind: str) -> dict[str, Any] | None:
+        with self.store.lock:
+            target = self.store.data.get("miningBrowserNavigation")
+            target = dict(target) if isinstance(target, dict) else {}
+        if not target or not self._mining_nav_on_current_body(target):
+            return None
+        row = target.get(kind)
+        return dict(row) if isinstance(row, dict) else None
+
+    def _activate_pending_mining_navigation(self) -> None:
+        with self.store.lock:
+            target = self.store.data.get("miningBrowserPendingNavigation")
+            target = dict(target) if isinstance(target, dict) else {}
+        if not target or not self._mining_nav_on_current_body(target):
+            return
+        # May activate in orbit before surface lat/lon is available; no false
+        # bearing is calculated until the actual surface status arrives.
+        signal = int(target["signal"])
+        selected = target.get("deposit")
+        site_id = int(selected["id"]) if isinstance(selected, dict) else 0
+        self._select_mining(signal=signal, site_id=site_id)
+        with self.store.lock:
+            current = self.store.data.get("miningBrowserPendingNavigation")
+            if isinstance(current, dict) and current == target:
+                self.store.data["miningBrowserNavigation"] = {**target, "status": "active"}
+                self.store.data.pop("miningBrowserPendingNavigation", None)
+                self.store.save()
+
+    def mining_browser_navigation_status(self) -> dict[str, Any] | None:
+        with self.store.lock:
+            pending = self.store.data.get("miningBrowserPendingNavigation")
+            active = self.store.data.get("miningBrowserNavigation")
+            target = dict(pending) if isinstance(pending, dict) else (
+                dict(active) if isinstance(active, dict) else {}
+            )
+        if not target:
+            return None
+        same_body = self._mining_nav_on_current_body(target)
+        return {
+            "status": "active" if same_body and target.get("status") == "active" else "queued",
+            "systemName": target.get("systemName"),
+            "systemAddress": target.get("systemAddress"),
+            "body": target.get("body"),
+            "signal": target.get("signal"),
+            "commodity": (target.get("deposit") or {}).get("commodity"),
+            "depositId": (target.get("deposit") or {}).get("id"),
+            "centerAvailable": isinstance(target.get("center"), dict),
+        }
+
+    def navigate_mining_browser_result(self, address: str, kind: str, identifier: str) -> dict[str, Any]:
+        """Activate a verified stored location, or queue it for arrival.
+
+        Client provides only ID64, type and row id. All coordinates/identity
+        come from the locally validated browser catalogue, never POST data.
+        """
+        if kind not in ("deposit", "center"):
+            raise ValueError("invalid_mining_navigation_type")
+        addr = str(address or "").strip()
+        try:
+            wanted = int(identifier)
+        except (ValueError, TypeError) as exc:
+            raise ValueError("mining_location_not_found") from exc
+        if wanted <= 0:
+            raise ValueError("mining_location_not_found")
+        data = self.browse_mining_system(addr)
+        key = "deposits" if kind == "deposit" else "centers"
+        rows = data[key]
+        row = next((item for item in rows if int(item.get("id") or 0) == wanted), None)
+        if row is None:
+            raise ValueError("mining_location_not_found")
+        body = str(row.get("body") or "").strip()
+        system_name = str(data["system"].get("systemName") or "").strip()
+        if not body or not system_name or not re.fullmatch(r"[0-9]{1,20}", addr):
+            raise ValueError("invalid_mining_navigation_identity")
+        if addr == TEN16_ID64:
+            if body.casefold().startswith((system_name + " ").casefold()):
+                pass
+            elif not re.fullmatch(r"[a-z]?\s*\d+(?:\s*[a-z]+)?", body, re.I):
+                raise ValueError("invalid_mining_navigation_identity")
+        elif not body.casefold().startswith((system_name + " ").casefold()):
+            raise ValueError("invalid_mining_navigation_identity")
+        try:
+            sig = int(row["signal"])
+        except (ValueError, TypeError, KeyError) as exc:
+            raise ValueError("invalid_mining_navigation_identity") from exc
+        if not 1 <= sig <= 999:
+            raise ValueError("invalid_mining_navigation_identity")
+        def valid_point(item: dict[str, Any] | None) -> dict[str, Any] | None:
+            if not isinstance(item, dict):
+                return None
+            try:
+                lat, lon = float(item["latitude"]), float(item["longitude"])
+            except (KeyError, TypeError, ValueError, OverflowError):
+                return None
+            if not (math.isfinite(lat) and math.isfinite(lon)
+                    and abs(lat) <= 90 and abs(lon) <= 180):
+                return None
+            return {**item, "latitude": lat, "longitude": lon}
+        chosen = valid_point(row)
+        if chosen is None:
+            raise ValueError("invalid_mining_navigation_coordinates")
+        candidates = [item for item in data["centers"]
+                      if str(item.get("body") or "").casefold() == body.casefold()
+                      and int(item.get("signal") or 0) == sig]
+        # Prefer the approved shared center when a commander also has a
+        # different local-only center for the same signal.
+        paired = next((item for item in candidates
+                       if item.get("storage") != "local_only"), None)
+        if paired is None and candidates:
+            paired = candidates[0]
+        center = valid_point(paired)
+        target = {
+            "systemAddress": addr, "systemName": system_name, "body": body,
+            "signal": sig, "deposit": chosen if kind == "deposit" else None,
+            "center": chosen if kind == "center" else center,
+            "status": "queued",
+        }
+        with self.store.lock:
+            # Queue independently; preserve the current saved compass target
+            # until Elite reports the selected destination body.
+            self.store.data["miningBrowserPendingNavigation"] = target
+            self.store.save()
+        self._activate_pending_mining_navigation()
+        return {"ok": True, "navigation": self.mining_browser_navigation_status(),
+                "locationNav": self.location_nav(), "depositNav": self.deposit_nav()}
+
     def mining_status_snapshot(self) -> dict[str, Any]:
         with self.mining_lock:
             return {
@@ -3883,7 +4280,27 @@ class MongrelHudApp:
     def sites_for_current_body(self) -> list[dict[str, Any]]:
         state = self.scout_state()
         if not self._in_ten16(state):
-            return []
+            scope = local_mining_scope(state)
+            if scope is None:
+                return []
+            with self.store.lock:
+                local_rows = [dict(row) for row in self.store.data.get("localMiningDeposits", [])
+                              if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
+            with self.mining_lock:
+                cache = getattr(self, "mining_browser_remote_cache", {}).get(scope["systemAddress"], {})
+                remote_rows = [
+                    {**row, "storage": "shared"} for row in cache.get("deposits", [])
+                    if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                    and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
+                    and isinstance(row.get("latitude"), (int, float))
+                    and isinstance(row.get("longitude"), (int, float))
+                ] if cache.get("expires", 0) > time.monotonic() else []
+            # Local entries remain available when remote storage is offline.
+            pinned = self._mining_nav_pin_row("deposit")
+            if pinned and str(pinned.get("id")) not in {str(r.get("id")) for r in remote_rows + local_rows}:
+                local_rows.append(pinned)
+            return sorted(remote_rows + local_rows, key=lambda row: (
+                int(row.get("signal") or 0), int(row.get("id") or 0)))
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
@@ -3898,6 +4315,9 @@ class MongrelHudApp:
                 and isinstance(row.get("latitude"), (int, float))
                 and isinstance(row.get("longitude"), (int, float))
             ]
+        pinned = self._mining_nav_pin_row("deposit")
+        if pinned and str(pinned.get("id")) not in {str(r.get("id")) for r in rows}:
+            rows.append(pinned)
         return sorted(
             rows,
             key=lambda row: (
@@ -3912,7 +4332,28 @@ class MongrelHudApp:
     def centers_for_current_body(self) -> list[dict[str, Any]]:
         state = self.scout_state()
         if not self._in_ten16(state):
-            return []
+            scope = local_mining_scope(state)
+            if scope is None:
+                return []
+            with self.store.lock:
+                local_rows = [dict(row) for row in self.store.data.get("localMiningCenters", [])
+                              if isinstance(row, dict) and row.get("scopeKey") == scope["key"]]
+            with self.mining_lock:
+                cache = getattr(self, "mining_browser_remote_cache", {}).get(scope["systemAddress"], {})
+                remote_rows = [
+                    {**row, "storage": "shared"} for row in cache.get("centers", [])
+                    if str(row.get("systemAddress") or "") == scope["systemAddress"]
+                    and str(row.get("body") or "").casefold() == scope["bodyName"].casefold()
+                ] if cache.get("expires", 0) > time.monotonic() else []
+            # Prefer remotely approved center coordinates for matching signals.
+            by_signal = {int(row["signal"]):row for row in local_rows}
+            by_signal.update({int(row["signal"]):row for row in remote_rows})
+            pinned = self._mining_nav_pin_row("center")
+            if pinned:
+                # An explicitly selected saved center wins over another
+                # center record carrying the same body/signal.
+                by_signal[int(pinned["signal"])] = pinned
+            return [by_signal[key] for key in sorted(by_signal)]
         body = short_body_name(state).casefold()
         system = state.get("system") or {}
         system_name = str(system.get("name") or "").strip().casefold()
@@ -3925,6 +4366,11 @@ class MongrelHudApp:
                 if str(row.get("systemName") or TEN16_SYSTEM).strip().casefold() == system_name
                 and str(row.get("body") or "").casefold() == body
             ]
+        pinned = self._mining_nav_pin_row("center")
+        if pinned:
+            rows = [row for row in rows
+                    if int(row.get("signal") or 0) != int(pinned["signal"])]
+            rows.append(pinned)
         return sorted(rows, key=lambda row: int(row.get("signal") or 0))
 
     def mining_locations_for_current_body(self) -> list[dict[str, Any]]:
@@ -3943,13 +4389,52 @@ class MongrelHudApp:
             })
         return out
 
+    def _mining_selection(self) -> tuple[int, int]:
+        """Keep 10-16's legacy selection and separate other system/body picks."""
+        state = self.scout_state()
+        with self.store.lock:
+            if self._in_ten16(state):
+                row = {"signal": self.store.data.get("activeMiningLocationSignal"),
+                       "siteId": self.store.data.get("activeMiningSiteId")}
+            else:
+                scope = local_mining_scope(state)
+                selections = self.store.data.get("localMiningSelections")
+                row = (selections.get(scope["key"], {}) if scope and isinstance(selections, dict) else {})
+            try:
+                signal = int(row.get("signal") or 0)
+                site_id = int(row.get("siteId") or 0)
+            except (TypeError, ValueError):
+                return (0, 0)
+            return (signal, site_id)
+
+    def _select_mining(self, *, signal: int | None = None,
+                       site_id: int | None = None) -> None:
+        state = self.scout_state()
+        with self.store.lock:
+            if self._in_ten16(state):
+                if signal is not None:
+                    self.store.data["activeMiningLocationSignal"] = signal
+                if site_id is not None:
+                    self.store.data["activeMiningSiteId"] = site_id or None
+            else:
+                scope = local_mining_scope(state)
+                if scope is None:
+                    raise ValueError("surface_body_identity_unavailable")
+                selections = self.store.data.setdefault("localMiningSelections", {})
+                row = selections.setdefault(scope["key"], {"signal": 0, "siteId": 0})
+                if signal is not None:
+                    row["signal"] = signal
+                if site_id is not None:
+                    row["siteId"] = site_id
+            self.store.save()
+
     def active_location_signal(self) -> int | None:
+        self._activate_pending_mining_navigation()
         locations = self.mining_locations_for_current_body()
         if not locations:
             return None
         valid = {int(row["signal"]) for row in locations}
-        with self.store.lock:
-            raw = self.store.data.get("activeMiningLocationSignal")
+        raw, _ = self._mining_selection()
         try:
             selected = int(raw)
         except (TypeError, ValueError):
@@ -3958,13 +4443,16 @@ class MongrelHudApp:
             return selected
         if len(valid) == 1:
             selected = next(iter(valid))
-            with self.store.lock:
-                self.store.data["activeMiningLocationSignal"] = selected
-                self.store.save()
+            self._select_mining(signal=selected, site_id=0)
             return selected
         return None
 
     def select_location(self, signal: int) -> dict[str, Any]:
+        # A manual selection cancels a previously queued browser destination.
+        with self.store.lock:
+            self.store.data.pop("miningBrowserNavigation", None)
+            self.store.data.pop("miningBrowserPendingNavigation", None)
+            self.store.save()
         wanted = int(signal)
         locations = self.mining_locations_for_current_body()
         location = next((row for row in locations if int(row.get("signal") or 0) == wanted), None)
@@ -3973,14 +4461,12 @@ class MongrelHudApp:
             if wanted < 1:
                 raise ValueError("mining_location_not_found")
             location = {"signal": wanted, "center": None, "depositCount": 0, "commodities": []}
-        with self.store.lock:
-            self.store.data["activeMiningLocationSignal"] = wanted
-            active_id = self.store.data.get("activeMiningSiteId")
-            if active_id:
-                current = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == int(active_id)), None)
-                if not current or int(current.get("signal") or 0) != wanted:
-                    self.store.data["activeMiningSiteId"] = None
-            self.store.save()
+        _, active_id = self._mining_selection()
+        current = next((row for row in self.sites_for_current_body()
+                        if int(row.get("id") or 0) == active_id), None)
+        self._select_mining(signal=wanted, site_id=(
+            active_id if current and int(current.get("signal") or 0) == wanted else 0
+        ))
         return dict(location)
 
     def active_center(self) -> dict[str, Any] | None:
@@ -3997,6 +4483,10 @@ class MongrelHudApp:
         return [row for row in self.sites_for_current_body() if int(row.get("signal") or 0) == signal]
 
     def select_site(self, site_id: str) -> dict[str, Any]:
+        with self.store.lock:
+            self.store.data.pop("miningBrowserNavigation", None)
+            self.store.data.pop("miningBrowserPendingNavigation", None)
+            self.store.save()
         try:
             wanted = int(site_id)
         except (TypeError, ValueError):
@@ -4004,30 +4494,28 @@ class MongrelHudApp:
         site = next((row for row in self.sites_for_current_body() if int(row.get("id") or 0) == wanted), None)
         if not site:
             raise ValueError("site_not_found")
-        with self.store.lock:
-            self.store.data["activeMiningLocationSignal"] = int(site.get("signal") or 0)
-            self.store.data["activeMiningSiteId"] = wanted
-            self.store.save()
+        self._select_mining(signal=int(site.get("signal") or 0), site_id=wanted)
         return dict(site)
 
     def active_site(self) -> dict[str, Any] | None:
         deposits = self.deposits_for_active_location()
         if not deposits:
             return None
-        with self.store.lock:
-            raw = self.store.data.get("activeMiningSiteId")
-        try:
-            wanted = int(raw)
-        except (TypeError, ValueError):
-            wanted = 0
+        _, wanted = self._mining_selection()
         site = next((row for row in deposits if int(row.get("id") or 0) == wanted), None)
         if site:
             return dict(site)
         if len(deposits) == 1:
-            site = dict(deposits[0])
+            # Explicit center-only Navigate must not silently select a deposit.
             with self.store.lock:
-                self.store.data["activeMiningSiteId"] = int(site["id"])
-                self.store.save()
+                target = self.store.data.get("miningBrowserNavigation")
+                center_only = (isinstance(target, dict)
+                               and target.get("status") == "active"
+                               and not isinstance(target.get("deposit"), dict))
+            if center_only and self._mining_nav_on_current_body(target):
+                return None
+            site = dict(deposits[0])
+            self._select_mining(site_id=int(site["id"]))
             return site
         return None
 
@@ -4058,13 +4546,54 @@ class MongrelHudApp:
         # Backward-compatible alias for integrations that still expect one target.
         return self.deposit_nav() or self.location_nav()
 
+    def _next_local_mining_id_locked(self) -> int:
+        """Assign persistent positive local IDs, never uploading them as central IDs."""
+        current = self.store.data.get("nextLocalMiningId")
+        try:
+            counter = max(1000000000, int(current or 1000000000))
+        except (TypeError, ValueError):
+            counter = 1000000000
+        existing = {
+            int(row.get("id") or 0)
+            for key in ("localMiningCenters", "localMiningDeposits")
+            for row in self.store.data.get(key, [])
+            if isinstance(row, dict) and str(row.get("id") or "").isdigit()
+        }
+        while counter in existing:
+            counter += 1
+        self.store.data["nextLocalMiningId"] = counter + 1
+        return counter
+
     def set_site_center(self, site_number: int, commodity: str = "") -> dict[str, Any]:
         signal = int(site_number)
         if signal < 1:
             raise ValueError("invalid_signal")
         state = self.scout_state()
         if not self._in_ten16(state):
-            raise ValueError("unsupported_system")
+            if signal > 999:
+                raise ValueError("invalid_signal")
+            point = local_mining_point(state)
+            scope = point["scope"]
+            with self.store.lock:
+                rows = self.store.data.setdefault("localMiningCenters", [])
+                existing = next((row for row in rows if isinstance(row, dict)
+                                 and row.get("scopeKey") == scope["key"]
+                                 and int(row.get("signal") or 0) == signal), None)
+                if existing is None:
+                    identifier = self._next_local_mining_id_locked()
+                    existing = {"id": identifier, "scopeKey": scope["key"],
+                                "systemName": scope["systemName"],
+                                "systemAddress": scope["systemAddress"],
+                                "body": scope["bodyName"], "signal": signal,
+                                "storage": "local_only"}
+                    rows.append(existing)
+                existing.update({"latitude": point["latitude"],
+                                 "longitude": point["longitude"],
+                                 "updatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
+                saved = dict(existing)
+                self.store.save()
+            self._select_mining(signal=signal, site_id=0)
+            return saved
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
@@ -4120,7 +4649,60 @@ class MongrelHudApp:
             raise ValueError("invalid_rig_count")
         state = self.scout_state()
         if not self._in_ten16(state):
-            raise ValueError("unsupported_system")
+            point = local_mining_point(state)
+            scope = point["scope"]
+            chosen_signal = int(signal or self.active_location_signal() or 0)
+            if chosen_signal < 1 or chosen_signal > 999:
+                raise ValueError("signal_required")
+            if not 1 <= int(rigs) <= 7:
+                raise ValueError("invalid_rig_count")
+            with self.store.lock:
+                rows = self.store.data.setdefault("localMiningDeposits", [])
+                duplicate = False
+                for row in rows:
+                    if not isinstance(row, dict) or row.get("scopeKey") != scope["key"]:
+                        continue
+                    if (int(row.get("signal") or 0) != chosen_signal
+                            or str(row.get("commodity") or "").casefold() != commodity.casefold()):
+                        continue
+                    if point["planetRadius"] is not None:
+                        distance = great_circle_nav(
+                            point["latitude"], point["longitude"],
+                            float(row["latitude"]), float(row["longitude"]),
+                            point["planetRadius"],
+                        )["distance"]
+                        duplicate = duplicate or distance <= 1000.0
+                    else:
+                        duplicate = duplicate or (
+                            abs(point["latitude"] - float(row["latitude"])) < 0.000001
+                            and abs(point["longitude"] - float(row["longitude"])) < 0.000001
+                        )
+                saved = {
+                    "id": self._next_local_mining_id_locked(),
+                    "scopeKey": scope["key"],
+                    "systemName": scope["systemName"],
+                    "systemAddress": scope["systemAddress"],
+                    "body": scope["bodyName"],
+                    "signal": chosen_signal,
+                    "latitude": point["latitude"],
+                    "longitude": point["longitude"],
+                    "planetRadius": point["planetRadius"],
+                    "commodity": commodity[:90],
+                    "rigs": int(rigs),
+                    "notes": notes.strip()[:1600],
+                    "storage": "local_only",
+                    "needsReview": duplicate,
+                    "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                }
+                rows.append(saved)
+                self.store.save()
+            self._select_mining(signal=chosen_signal, site_id=int(saved["id"]))
+            return {
+                "ok": True, "status": "duplicate_review_local" if duplicate else "saved_local",
+                "site": saved, "duplicate": duplicate, "latitude": saved["latitude"],
+                "longitude": saved["longitude"], "signal": chosen_signal,
+                "storage": "local_only", "message": "Saved locally on this PC; not synchronized to the squad archive.",
+            }
         status = state.get("status") or {}
         system = state.get("system") or {}
         lat, lon = status.get("latitude"), status.get("longitude")
@@ -4192,10 +4774,23 @@ class MongrelHudApp:
                 and str(row.get("body") or "").strip().casefold() == body
             }
 
+        with self.store.lock:
+            local_commodities = {
+                str(row.get("commodity") or "").strip()
+                for row in self.store.data.get("localMiningDeposits", [])
+                if isinstance(row, dict) and str(row.get("commodity") or "").strip()
+            }
+        # Current-body local sites come from the same scoped row selector.
+        local_body = {
+            str(row.get("commodity") or "").strip()
+            for row in self.sites_for_current_body()
+            if row.get("storage") == "local_only" and row.get("commodity")
+        }
         all_choices = sorted(
-            set(SURFACE_MINING_COMMODITIES) | known_all,
+            set(SURFACE_MINING_COMMODITIES) | known_all | local_commodities,
             key=str.casefold,
         )
+        body_known.update(local_body)
         current_body = sorted(body_known, key=str.casefold)
         return current_body, all_choices
 
@@ -4229,6 +4824,12 @@ class MongrelHudApp:
             "depositNav": self.deposit_nav(),
             "surfaceNav": self.surface_nav(),
             "miningStatus": self.mining_status_snapshot(),
+            "miningBrowserNavigation": self.mining_browser_navigation_status(),
+            "miningStorage": (
+                "shared_10_16" if self._in_ten16(state)
+                else "local_only" if local_mining_scope(state)
+                else "surface_identity_unavailable"
+            ),
             "miningCommoditiesCurrentBody": current_body_commodities,
             "miningCommodities": mining_commodities,
             "bounty": self.bounty_ledger(),
@@ -4728,9 +5329,12 @@ class MongrelHudApp:
         self._draw_text(canvas, width - 8 * scale, y, self.clip_line(system.get("name") or "—", 42), scale, 8, HUD_MUTED, True, "ne")
         y += 24 * scale
 
-        if not self._in_ten16(state):
-            self._draw_text(canvas, 8 * scale, y, "CURATED MINING NAV AVAILABLE IN 10-16", scale, 10, HUD_MUTED, True)
+        if not self._in_ten16(state) and local_mining_scope(state) is None:
+            self._draw_text(canvas, 8 * scale, y, "WAITING FOR VERIFIED SURFACE BODY IDENTITY", scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
+        if not self._in_ten16(state):
+            self._draw_text(canvas, 8 * scale, y, "LOCAL RECORDS · NOT SQUAD SYNCED", scale, 9, HUD_AMBER, True)
+            y += 18 * scale
 
         signal = self.active_location_signal()
         if signal is None:
@@ -4810,7 +5414,7 @@ class MongrelHudApp:
         signal = self.active_location_signal()
         sites = self.deposits_for_active_location() if signal is not None else []
         if not sites:
-            message = (f"NO DEPOSITS SAVED FOR SIGNAL #{signal}" if signal is not None else "SELECT A MINING LOCATION") if self._in_ten16(state) else "AVAILABLE IN 10-16"
+            message = (f"NO DEPOSITS SAVED FOR SIGNAL #{signal}" if signal is not None else "SELECT A MINING LOCATION")
             self._draw_text(canvas, 8 * scale, y, message, scale, 10, HUD_MUTED, True)
             return width, round(y + 30 * scale)
 
@@ -6112,6 +6716,20 @@ def make_handler(app: MongrelHudApp):
                 except ValueError as exc:
                     self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
+            if path in {"/api/mining-browser/catalog", "/api/mining-browser/system"}:
+                if not self.authorized():
+                    self.send_json({"ok": False, "error": "pair_required"}, 401)
+                    return
+                try:
+                    if path.endswith("/catalog"):
+                        self.send_json(app.refresh_mining_browser_directory(force=(parse_qs(urlparse(self.path).query).get("refresh") == ["1"])))
+                    else:
+                        query = parse_qs(urlparse(self.path).query)
+                        addr = str((query.get("systemAddress") or [""])[0])
+                        self.send_json(app.browse_mining_system(addr))
+                except ValueError as exc:
+                    self.send_json({"ok": False, "error": str(exc)}, 400)
+                return
             self.send_json({"ok": False, "error": "not_found"}, 404)
 
         def do_POST(self) -> None:
@@ -6167,6 +6785,14 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voicePack": app.start_voice_pack_install(repair=True)}
                 elif path == "/api/voice-pack-remove":
                     result = {"ok": True, "voicePack": app.remove_voice_pack(), "voice": app.voice_settings_snapshot()}
+                elif path == "/api/mining-browser/selected":
+                    result = app.select_mining_browser_system(str(body.get("systemAddress") or ""))
+                elif path == "/api/mining-browser/navigate":
+                    result = app.navigate_mining_browser_result(
+                        str(body.get("systemAddress") or ""),
+                        str(body.get("kind") or ""),
+                        str(body.get("id") or ""),
+                    )
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":

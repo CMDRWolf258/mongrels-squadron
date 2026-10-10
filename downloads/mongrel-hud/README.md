@@ -7,9 +7,9 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
-## Route Director controls and display (HUD 0.17.5)
+## Route Director controls and display (HUD 0.17.6)
 
-On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.8 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
+On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.9 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
 
 ## Navigation profile (proposed next HUD release)
 
@@ -39,7 +39,7 @@ stop; a future fuel-aware Galaxy Plotter mode can mark verified fuel stops and
 trigger the same waypoint signal instrument. Existing normal-jump handling
 and clipboard safety are unchanged.
 
-## Route reliability improvements (HUD 0.17.5 / Scout 1.12.8)
+## Route reliability improvements (HUD 0.17.6 / Scout 1.12.9)
 
 The Navigation profile includes **COPY NEXT TO SERENITY** and **REPLOT FROM
 HERE**. Copy Next repeats only the current confirmed waypoint name on the
@@ -69,6 +69,74 @@ You need:
 - your iPad/phone on the same home/private network if you want to use the remote controller
 
 The HUD runs on the Elite PC because the overlay has to appear over the game and it talks to Scout through a local connection.
+
+## Surface Mining system browser (HUD 0.17.6)
+
+In the **Surface Mining** iPad HUD control profile, the new **Mining Database
+· System Browser** lets you select from saved systems or type/paste part of
+a system name or ID64 to see matching saved-system suggestions. Once selected,
+it lists known mining deposits and any center-only signals; filters can be
+combined for **commodity**, **planet/moon**, and **minimum mining rig count**
+(including 7+). Results show coordinates and clearly label local-only versus
+approved/shared data. Your selected browsing system is saved on the Windows
+HUD PC and survives restarts.
+
+**Browsing itself does not change Elite's real location, the active
+deposit/center compass, or where new reports are saved.** Expand a deposit
+search result and tap **Navigate** to deliberately set the HUD's deposit
+compass. If that mining signal has a saved center, the second compass points
+to the center at the same time. Center-only signals have their own Navigate
+button; choosing one does not invent a deposit waypoint.
+
+For a result on another body or system, Navigate shows **Destination Queued**.
+The current active compass remains untouched until the Frontier journal
+confirms both the correct system ID64 and planetary body; then the new
+selection activates. The active waypoint and any pending destination persist
+in the HUD PC's local state file across restarts. If the shared archive is
+temporarily unreachable, the specifically selected, validated deposit and
+center coordinates remain locally pinned for navigation. A later manual
+signal/deposit selection cancels the browser navigation preference. The
+existing "Locations on this body", "Set center" and "Report Deposit" controls
+still follow actual Frontier position rather than the browsed system.
+
+The controller uses local filtering after retrieving the selected system's
+records: **typing triggers no Cloudflare requests**. The directory is
+requested only when opening the Surface Mining profile or explicitly tapping
+Refresh, cached for one hour. Shared system reads are user-selected and
+cached for ten minutes. Those additional archive calls remain disabled until
+the separate `ten16-archive` multi-system backend is verified, backed up
+and deployed; the development build currently browses saved local records
+and already loaded legacy 10-16 entries.
+
+## Surface mining in other systems (development preview)
+
+The multi-system mining update is currently in **draft PR #182**, not the
+downloadable HUD release. When it is tested and included in a future HUD
+build, commanders will be able to save **mining location centers and individual
+deposit coordinates in other systems** using their existing iPad controls.
+
+- In **10-16**, the original curated central mining archive and its deposit
+  review process continue to work exactly as before.
+- **Outside 10-16**, deposits are stored **on your own Windows PC only** in
+  `%LOCALAPPDATA%\MongrelHUD\state.json`. They survive normal HUD restarts
+  and app updates as long as the local state file is retained.
+- The HUD requires the Frontier **system ID64**, the exact **full body name**,
+  and measured surface latitude/longitude before saving. It never assigns
+  a deposit to a guessed system or to a generic short body label.
+- Each system/body keeps separate signal numbers, locations, selected deposit
+  and compass target. The same Signal #1 on two icy moons will not mix.
+- A report close to a previous deposit of the same commodity on the same
+  signal is **flagged for local duplicate review**, not uploaded to the
+  shared queue. Local reports display **NOT SQUAD SYNCED**.
+- You should back up your local `state.json` if you need these coordinates
+  before shared multi-system storage is available. Do not delete the file
+  during app cleanup or reinstallation.
+
+**This is not yet squad-wide mining storage.** The existing
+`ten16-archive.pages.dev` backend still needs a separately reviewed
+multi-system schema/API update, data migration and secure ID64/body-keyed
+read-write tests. We intentionally do not send other-system records to that
+legacy endpoint until it can safely store them.
 
 ## Install and start
 

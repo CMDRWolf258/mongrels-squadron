@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.8"
+PLUGIN_VERSION = "1.12.9"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -44,6 +44,7 @@ HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-cen
 HUD_ROUTE_CONTROL_PATH = "/api/hud/route"
 HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
 HUD_MINING_CENTERS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-centers"
+HUD_MINING_SYSTEMS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-systems"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
 FSD_RATING_CONSTANT = {
@@ -749,8 +750,22 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
+        if parsed.path == "/v1/mining/systems":
+            result = _fetch_hud_mining_directory(HUD_MINING_SYSTEMS_ENDPOINT)
+            self._write_json(result, status=_hud_proxy_status(result))
+            return
+
         if parsed.path in {"/v1/mining/data", "/v1/mining/centers"}:
             endpoint = HUD_MINING_DATA_ENDPOINT if parsed.path.endswith("/data") else HUD_MINING_CENTERS_ENDPOINT
+            requested = parse_qs(parsed.query).get("systemAddress", [])
+            if requested:
+                address = str(requested[0] or "").strip()
+                # Never forward arbitrary query strings or allow external URLs.
+                # Current 10-16 clients retain their unchanged URLs.
+                if not re.fullmatch(r"[0-9]{1,20}", address):
+                    self._write_json({"ok": False, "error": "invalid_system_address"}, status=400)
+                    return
+                endpoint += "?" + urlencode({"systemAddress": address})
             result = _fetch_hud_mining_resource(endpoint)
             self._write_json(result, status=_hud_proxy_status(result))
             return
@@ -1506,6 +1521,24 @@ def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
         return {**details, "ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
     except Exception as exc:
         return _hud_transport_failure(endpoint, exc)
+
+
+def _fetch_hud_mining_directory(endpoint: str) -> dict[str, Any]:
+    """Directory read only when HUD explicitly opens/refreshes mining browser."""
+    try:
+        response = _session.get(
+            endpoint,
+            headers={"Accept": "application/json", "User-Agent": "MongrelScout/mining-directory"},
+            timeout=8,
+        )
+        payload, details = _hud_response_details(response, endpoint)
+        if not 200 <= response.status_code < 300:
+            return _hud_http_failure(details, f"http_{response.status_code}")
+        if not isinstance(payload, Mapping) or payload.get("ok") is not True or not isinstance(payload.get("systems"), list):
+            return {**details, "ok": False, "error": "invalid_mining_directory"}
+        return {"ok": True, "systems": payload["systems"][:1000]}
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc, mining_read=True)
 
 
 def _fetch_hud_mining_resource(endpoint: str) -> dict[str, Any]:
