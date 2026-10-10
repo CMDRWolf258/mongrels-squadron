@@ -382,6 +382,31 @@ function renderRouteControls(){
     active && String(active.id||"")===String(route.id||"")
   );
   el("routeStop").disabled=routeControlBusy || !state.connected || !active;
+  el("routePlot").disabled=routeControlBusy || !state.connected;
+  el("routeCheck").disabled=routeControlBusy || !state.connected || !routePendingId;
+  renderFlightManifest(route,active,nav);
+  renderScoutNetwork(feed.scout);
+}
+function renderFlightManifest(route,active,nav){
+  var elList=el("routeManifest"),selected=route || ((state&&state.scout&&state.scout.siteFeed)||{}).navigationRoute;
+  var rows=selected&&Array.isArray(selected.waypoints)?selected.waypoints:[];
+  if(!rows.length){var empty='<div class="layout-hint" style="padding:12px">No route manifest loaded. Plot or load a ready route.</div>';if(elList.innerHTML!==empty)elList.innerHTML=empty;return}
+  var following=active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?nav.waypointIndex+1:-1;
+  var html=rows.map(function(w,i){
+    var system=escapeHtml(String(w&&w.system||"UNKNOWN"));
+    var kind=w&&w.fuelStop===true?"FUEL":w&&w.neutron===true?"NEUTRON":i===0?"START":i===rows.length-1?"ARRIVAL":"VIA";
+    var status=following===i?"NEXT":following>i&&following>=0?"PASSED":kind;
+    var cl=following===i?" is-next":following>i&&following>=0?" is-reached":"";
+    return '<div class="waypoint-line'+cl+'"><span class="wp-number">'+String(i).padStart(2,"0")+'</span><span class="wp-name">'+system+'</span><span class="wp-type">'+escapeHtml(status)+'</span></div>';
+  }).join("");
+  if(elList.innerHTML!==html)elList.innerHTML=html;
+}
+function renderScoutNetwork(scout){
+  var summary=scout&&scout.summary||{},jobs=scout&&Array.isArray(scout.jobs)?scout.jobs:[],status=scout?("AVAILABLE "+(summary.available||0)+" · CLAIMED "+(summary.claimed||0)+" · PRIORITY "+(summary.priority||0)):"Scout Network data unavailable";
+  setText(el("scoutNetworkStatus"),status);
+  var html=jobs.slice(0,8).map(function(job){return '<div class="network-job"><div><strong>'+escapeHtml(String(job.system||"Unknown system"))+'</strong><small> · '+escapeHtml(String(job.status||"available").replaceAll("_"," "))+'</small></div><strong>'+Number(job.rewardMillions||0).toLocaleString()+'M CR</strong></div>'}).join("");
+  if(!html)html='<div class="layout-hint">No open Scout jobs are currently listed.</div>';
+  if(el("scoutNetworkJobs").innerHTML!==html)el("scoutNetworkJobs").innerHTML=html;
 }
 function render(){
   if(!state)return;
@@ -664,6 +689,37 @@ document.querySelectorAll("[data-panel-profile]").forEach(function(select){selec
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{var r=await api("/api/target-scan",{});state=state||{};if(r.scan)state.targetScan=r.scan;render();await load(true)}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};
+el("routePlot").onclick=async function(){
+  if(routeControlBusy)return;
+  var destination=String(el("routeDestination").value||"").trim();
+  if(!destination){el("routePlotStatus").textContent="Enter a destination system.";return}
+  routeControlBusy=true;renderRouteControls();
+  try{
+    var result=await api("/api/route",{action:"plot",destination:destination,efficiency:Number(el("routeEfficiency").value||60)});
+    if(!result.ok)throw new Error(String(result.error||"plot_failed"));
+    routePendingId=String(result.id||"");
+    routePreview=null;
+    el("routeJobId").value=routePendingId;
+    el("routePlotStatus").textContent="Route submitted for "+destination+". Press CHECK ROUTE RESULT to retrieve completed waypoints.";
+  }catch(e){el("routePlotStatus").textContent="Plot failed · "+e.message}
+  finally{routeControlBusy=false;renderRouteControls()}
+};
+el("routeCheck").onclick=async function(){
+  if(routeControlBusy||!routePendingId)return;
+  routeControlBusy=true;renderRouteControls();
+  try{
+    var result=await api("/api/route",{action:"check",routeId:routePendingId});
+    if(!result.ok)throw new Error(String(result.error||"route_check_failed"));
+    if(result.status==="ready"){
+      routePreview=result;routePendingId="";
+      el("routeJobId").value=result.id;
+      el("routePlotStatus").textContent="Ready · "+String(result.navigationTargetCount||0)+" navigation targets. Review the full manifest below before starting.";
+    }else{
+      el("routePlotStatus").textContent="Spansh is still calculating. Check again shortly.";
+    }
+  }catch(e){el("routePlotStatus").textContent="Route check failed · "+e.message}
+  finally{routeControlBusy=false;renderRouteControls()}
+};
 el("routeLoad").onclick=async function(){
   if(routeControlBusy)return;
   routeControlBusy=true;renderRouteControls();
@@ -672,7 +728,7 @@ el("routeLoad").onclick=async function(){
     var data=await api("/api/route"+(id?"?routeId="+encodeURIComponent(id):""));
     routePreview=data.route||null;
     routeCloudActive=data.activeRoute||null;routeCloudLoaded=true;
-    if(routePreview)el("routeJobId").value=routePreview.id;
+    if(routePreview){el("routeJobId").value=routePreview.id;routePendingId="";}
     el("routeNotice").textContent=routePreview?"Route ready. Start Navigation copies its first waypoint on the PC after Scout receives the active route.":"No ready route found; paste the route ID from ChatGPT, then Load Route.";
   }catch(e){el("routeNotice").textContent="Route load failed · "+e.message}
   finally{routeControlBusy=false;renderRouteControls()}
