@@ -75,6 +75,12 @@ const presented=await authorizeGet({env,request:req(auth,'GET',undefined,{Cookie
 assert.equal(presented.status,200);
 assert.match(await presented.clone().text(),/scout-consent\.js/);
 assert.match(presented.headers.get('Content-Security-Policy'),/script-src 'self'/);
+const formPolicy=presented.headers.get('Content-Security-Policy');
+const expectedCallbackOrigin=new URL(CALLBACK).origin;
+assert.ok(formPolicy.includes("form-action 'self' "+expectedCallbackOrigin+";"),
+  'Authorization form must permit Chromium to follow the 303 into ChatGPT');
+assert.ok(!formPolicy.includes('form-action *') && !formPolicy.includes('form-action https:'),
+  'Only the validated ChatGPT callback origin may be added to the form-action allowlist');
 const html=await presented.text();
 const pending=html.match(/name="pending" value="([^"]+)"/)?.[1];
 assert.ok(pending);
