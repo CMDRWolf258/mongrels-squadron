@@ -306,3 +306,17 @@ An expanded group stays open during normal controller polling and resets
 when the current system, body or selected signal changes. This is a UI-only
 update; the Scout version, upload authorization, and shared database read
 cadence do not change.
+
+## Saved system browser commodity groups (HUD 0.17.11)
+
+The Surface Mining **Mining Database · System Browser** now collapses saved
+system deposits under commodity headings with counts (for example,
+**Gold · 12 deposits**), instead of showing a full flat list. Tap a commodity,
+then tap a saved deposit to reveal the existing Navigate and (where allowed)
+Share With Squad controls. Center-only locations have their own collapsed
+section. The commodity/body/min-rig filters still apply to the displayed
+records, and expanded groups and records stay open when a published record
+refreshes the current system. Switching systems resets expansion. The
+previously added **Deposits in Selected Location** grouping and prominent
+**Report Deposit** form remain unchanged. No mining uploads, cloud polling,
+or Scout behavior changes.
