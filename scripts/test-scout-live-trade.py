@@ -21,6 +21,7 @@ want = {
     "_cmdr_cache_key", "_commodity_key", "_commodity_display",
     "_optional_int", "_decimal_text",
     "_recover_trade_lots_from_recent_journals", "_restore_trade_origin_for_sale",
+    "_activity_sale_occurrence",
 }
 functions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in want]
 missing = want - {n.name for n in functions}
@@ -49,6 +50,7 @@ scope = {
     "_activity_trade_station": {}, "_activity_trade_commander": "",
     "_last_system_name": "Diaba", "_last_system_address": 12345,
     "KEY_ACTIVITY_TRADE_PROVENANCE": "test-trade-provenance",
+    "KEY_ACTIVITY_SALE_OCCURRENCES": "test-sale-occurrences",
     "_cargo_inventory_from_edmc_state": inventory,
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), str(path), "exec"), scope)
@@ -57,6 +59,7 @@ build = scope["_build_realtime_activity_payload"]
 restore = scope["_restore_activity_trade_provenance"]
 recover = scope["_recover_trade_lots_from_recent_journals"]
 repair = scope["_restore_trade_origin_for_sale"]
+ordinal = scope["_activity_sale_occurrence"]
 
 def state(qty, *, station="Niijima Station", kind="Orbis"):
     return {"SystemName": "Diaba", "StationName": station, "StationType": kind,
@@ -99,6 +102,27 @@ payload=build(sale,state(0),"Diaba","Niijima Station",result)
 assert payload is not None and payload["total"]-payload["avgPricePaid"]*payload["count"]==7_000_000,payload
 assert payload["stationFaction"]=="Regiment of Imperial Mongrels"
 assert "cmdr" not in payload and "cargo" not in payload
+
+# Repeated 300t sales from a single purchased 1,234t load must all remain
+# station-verified. EDMC may present either pre-sale or post-sale Cargo state.
+for snapshots in ([934,634,334,0], [1234,934,634,334]):
+    reset()
+    track("MarketBuy", state(1234), Count=1234)
+    for n, (qty, remaining) in enumerate(zip([300,300,300,334],snapshots), 1):
+        entry=journal("MarketSell",Count=qty,Type_Localised="Gold",
+                      TotalSale=qty*150000,SellPrice=150000,AvgPricePaid=125000)
+        occurrence=ordinal("Wolf258",entry,"Diaba","Niijima Station")
+        sale_origin=observe("Wolf258",entry,state(remaining),"Diaba","Niijima Station")
+        assert sale_origin["verified"] is True, (snapshots,n,sale_origin)
+        activity=build(entry,state(remaining),"Diaba","Niijima Station",sale_origin,occurrence)
+        assert activity is not None and activity["saleOccurrence"]==n if n<=3 else activity is not None
+    assert scope["_activity_trade_lots"]["wolf258"].get("gold") is None
+    # Local counters survive a restart so same-second batches don't reset.
+    reset()
+    example=journal("MarketSell",Count=300,TotalSale=45000000,SellPrice=150000)
+    assert ordinal("Wolf258",example,"Diaba","Niijima Station")==1
+    assert ordinal("Wolf258",example,"Diaba","Niijima Station")==2
+    assert ordinal("Wolf258",example,"Diaba","Niijima Station")==3
 
 # Unknown cargo loaded before Scout observed the buy remains unknown, FIFO.
 reset()
