@@ -2,6 +2,7 @@ import { issuer, authorizeUrl, tokenUrl, oauthJson, CLIENT_ID } from '../../lib/
 export async function onRequestGet({request}) {
   return oauthJson({
     issuer:issuer(request),
+    authorization_response_iss_parameter_supported:true,
     authorization_endpoint:authorizeUrl(request),
     token_endpoint:tokenUrl(request),
     response_types_supported:['code'],
