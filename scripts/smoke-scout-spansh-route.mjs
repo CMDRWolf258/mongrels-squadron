@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { normalizeShipSnapshot, SCOUT_LINK_KEY_PREFIX } from '../lib/scout-link.js';
-import { plotNeutronRoute, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints } from '../lib/scout-route.js';
+import { plotNeutronRoute, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints, completeRoute, readLastCompletedRoute } from '../lib/scout-route.js';
 import { onRequestGet as hudFeed } from '../functions/api/hud/feed.js';
 import { onRequestGet as hudManifest } from '../functions/api/hud/manifest.js';
 import { onRequestGet as routeControlGet, onRequestPost as routeControlPost } from '../functions/api/hud/route.js';
@@ -140,6 +140,21 @@ assert.equal(stored.waypoints[1].system,'TEST NEUTRON 1');
 assert.equal(stored.destination,'Diaba');
 assert.equal(stored.estimatedTotalJumps,11);
 assert.equal(stored.routeType,'neutron_replot_waypoints');
+// Completion requires the admin token, exact route ID, registered ship and
+// actual destination; it archives just a small receipt, then clears Active.
+const badComplete=await routeControlPost({request:req('POST',{action:'complete',routeId:plotted.id,ship:'Leaf On the Wind',system:'Not Diaba'}),env});
+assert.equal(badComplete.status,409);
+assert.equal((await readActiveRoute(env)).id,plotted.id,'Wrong destination must never clear active navigation');
+const completedByScout=await (await routeControlPost({request:req('POST',{
+  action:'complete',routeId:plotted.id,ship:'Leaf On the Wind',system:'Diaba',
+}),env})).json();
+assert.equal(completedByScout.ok,true);
+assert.equal(completedByScout.completed,true);
+assert.equal(await readActiveRoute(env),null);
+assert.equal((await readLastCompletedRoute(env)).destination,'Diaba');
+const afterCompletion=await (await routeControlGet({request:req('GET'),env})).json();
+assert.equal(afterCompletion.lastCompleted.id,plotted.id,'Completion receipt is available on demand');
+await activateRoute(env,plotted.id);
 const cleared=await clearActiveRoute(env);
 assert.equal(cleared.active,false);
 assert.equal(await readActiveRoute(env),null);
