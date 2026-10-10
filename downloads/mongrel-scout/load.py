@@ -210,7 +210,7 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
-    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "fuelReserveCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
@@ -657,6 +657,7 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         fuel_capacity = state.get("FuelCapacity")
         if isinstance(fuel_capacity, Mapping):
             updates["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+            updates["fuelReserveCapacity"] = _optional_float(fuel_capacity.get("Reserve"))
         for key, value in updates.items():
             if value is not None and (not isinstance(value, str) or value):
                 ship[key] = value
@@ -804,6 +805,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             result = _hud_route_control(action, route_id,
                                         destination=str(body.get("destination") or "")[:140],
                                         efficiency=body.get("efficiency", 60),
+                                        mode=str(body.get("mode") or "neutron")[:20],
                                         system=str(body.get("system") or "")[:140],
                                         ship=str(body.get("ship") or "")[:140])
             self._write_json(result, status=_hud_proxy_status(result))
@@ -890,7 +892,7 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, system: str = "", ship: str = "") -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "") -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
@@ -919,6 +921,7 @@ def _hud_route_control(action: str, route_id: str = "", *, destination: str = ""
             if action == "plot":
                 payload["destination"] = destination
                 payload["efficiency"] = efficiency
+                payload["mode"] = mode
             if action == "complete":
                 payload.update({"system": system, "ship": ship})
             response = _session.post(endpoint, json=payload, headers=headers, timeout=20)
@@ -1150,7 +1153,7 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
             return {"ok": False, "error": "route_not_active"} if force_copy else {"ok": True}
         route_id = str(route.get("id") or "")
         waypoints = route.get("waypoints")
-        if not route_id or not isinstance(waypoints, list) or len(waypoints) > 128 or not waypoints:
+        if not route_id or not isinstance(waypoints, list) or len(waypoints) > 512 or not waypoints:
             return {"ok": False, "error": "route_invalid"}
         if str(route.get("ship") or "").casefold() != ship.casefold() or not current:
             _hud_state["navigation"] = {"active": False, "reason": "ship_or_location_unavailable"}
@@ -1399,6 +1402,7 @@ def _scout_link_payload() -> Optional[dict[str, Any]]:
         "currentJumpRange": ship.get("currentJumpRange"),
         "fuel": status.get("fuelMain"),
         "fuelCapacity": ship.get("fuelCapacity"),
+        "fuelReserveCapacity": ship.get("fuelReserveCapacity"),
         "cargo": status.get("cargo"),
         "unladenMass": ship.get("unladenMass"),
         "jumpModel": {
@@ -1796,6 +1800,7 @@ def _normalize_hud_event(
         fuel_capacity = entry.get("FuelCapacity")
         if isinstance(fuel_capacity, Mapping):
             payload["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
+            payload["fuelReserveCapacity"] = _optional_float(fuel_capacity.get("Reserve"))
         jump_model = _extract_jump_model(entry)
         if jump_model:
             payload["jumpModel"] = jump_model
@@ -1882,6 +1887,7 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
                 ("unladenMass", "unladenMass"),
                 ("cargoCapacity", "cargoCapacity"),
                 ("fuelCapacity", "fuelCapacity"),
+                ("fuelReserveCapacity", "fuelReserveCapacity"),
             ):
                 value = event.get(source)
                 if value is not None and (not isinstance(value, str) or value):
