@@ -93,6 +93,19 @@ assert.equal(routeRead.route.id,plotted.id,'Latest route available with one on-d
 assert.equal(routeRead.activeRoute,null,'Preview remains inactive');
 const explicitRead=await (await routeControlGet({request:req('GET',null,adminToken,'?routeId='+plotted.id),env})).json();
 assert.equal(explicitRead.route.id,plotted.id);
+// The new iPad plot/check flow must remain owner-only and preview-only.
+// An invalid destination is rejected before reaching external Spansh.
+const rejectedPlot=await routeControlPost({request:req('POST',{action:'plot',destination:'?',efficiency:60}),env});
+assert.equal(rejectedPlot.status,409);
+assert.equal((await rejectedPlot.json()).error,'destination_required');
+assert.equal(await readActiveRoute(env),null,'A failed plot must not activate navigation');
+const checkedRoute=await (await routeControlPost({request:req('POST',{action:'check',routeId:plotted.id}),env})).json();
+assert.equal(checkedRoute.status,'ready');
+assert.equal(checkedRoute.waypoints.length,3,'Route check returns complete flight plan');
+assert.equal(await readActiveRoute(env),null,'Retrieving plotted route never activates navigation');
+const rejectedCheck=await routeControlPost({request:req('POST',{action:'check',routeId:'not-an-id'}),env});
+assert.equal(rejectedCheck.status,404);
+assert.equal(await readActiveRoute(env),null);
 const badRoute=await routeControlPost({request:req('POST',{action:'start',routeId:'bad'}),env});
 assert.equal(badRoute.status,400);
 const start=await (await routeControlPost({request:req('POST',{action:'start',routeId:plotted.id}),env})).json();

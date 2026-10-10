@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.17.3"
+assert hud.APP_VERSION=="0.17.4"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -29,13 +29,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.8"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.9"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.16.10"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.0"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.3"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.4"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.4"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.5"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.17.4",
+    "name":"Mongrel HUD Windows v0.17.5",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.17.4" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.17.5" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -292,7 +292,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.17.3"
+    assert hud.APP_VERSION=="0.17.4"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -300,6 +300,39 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["target"]["x"]==-120
     app.reset_layout()
     assert app.layout_snapshot()["panels"]["target"]["x"]==40
+    # Existing layouts preserve old Combat/Surface memberships. Navigation
+    # instruments appear independently with safe visible defaults.
+    navigation_panels=("navcourse","navsteps","navsignal","navfuel","navscout")
+    assert set(navigation_panels).issubset(hud.PANEL_IDS)
+    assert all(app.layout_snapshot()["panels"][name]["profiles"]==["navigation"] for name in navigation_panels)
+    assert app.layout_snapshot()["panels"]["own"]["profiles"]==["combat"]
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    assert "navigation" in hud.VALID_PROFILES
+    nav_start={"active":True,"routeId":"test-route","waypointIndex":0}
+    plan=[
+        {"system":"Starting Point","neutron":False},
+        {"system":"Neutron Arrival","neutron":True},
+        {"system":"Final Destination","neutron":False},
+    ]
+    # Merely refreshing or making an intermediate ordinary jump must not
+    # create a flashy waypoint arrival.
+    app._observe_navigation_arrival(nav_start,{
+        "navigation":dict(nav_start),
+        "siteFeed":{"navigationRoute":{"waypoints":plan}},
+    })
+    assert app._arrival_for_controller() is None
+    # Only a confirmed one-index advance produces a signal.
+    app._observe_navigation_arrival(nav_start,{
+        "navigation":{"active":True,"routeId":"test-route","waypointIndex":1},
+        "siteFeed":{"navigationRoute":{"waypoints":plan}},
+    })
+    assert app._arrival_for_controller()["kind"]=="neutron"
+    assert app._arrival_for_controller()["system"]=="Neutron Arrival"
+    assert app.set_profile("navigation")=="navigation"
+    assert app.controller_state()["profile"]=="navigation"
+    # Unrelated overlay assignments remain unchanged on profile switches.
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    app.set_profile("combat")
     # Profile switching must never rewrite user panel assignments.
     before_profiles={panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}
     app.set_panel_settings("surface",profiles=["combat","surface"])
