@@ -9,7 +9,7 @@ class Config:
     values = {}
     def get_int(self,key): return self.values.get(key,0)
     def get_bool(self,key): return bool(self.get_int(key))
-    def get_str(self,key): return ""
+    def get_str(self,key): return str(self.values.get(key, ""))
     def set(self,key,value): self.values[key] = value
 
 config = Config()
@@ -150,4 +150,72 @@ for callback in deferred.callbacks:
     callback()
 assert deferred.copies==[],deferred.copies
 
-print("Scout neutron route clipboard progression, reactivation and cancellation checks passed")
+# A full flight can survive EDMC restarting between neutron waypoints.
+# Use a fresh activation to avoid inheriting the previous test's route state.
+widget=FakeWidget()
+scout._status_label=widget
+config.set(scout.KEY_NAV_AUTO_COPY,0)
+scout._hud_state["ship"]={"name":"Leaf On the Wind"}
+restart_route={
+    **route, "id":"reliable-route", "activatedAt":"2026-10-10T05:00:00Z",
+    "waypoints":[
+        {"system":"START"},{"system":"NEUTRON 1","neutron":True},
+        {"system":"NEUTRON 2","neutron":True},{"system":"Diaba"},
+    ],
+}
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+scout._hud_state["siteFeed"]={"navigationRoute":restart_route}
+scout._hud_state["system"]={"name":"START"}
+scout._refresh_route_navigation()
+assert widget.copies==["NEUTRON 1"],widget.copies
+scout._hud_state["system"]={"name":"NEUTRON 1"}
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["waypointIndex"]==1
+assert widget.copies[-1]=="NEUTRON 2"
+checkpoint=scout._route_checkpoint()
+assert checkpoint["index"]==1 and checkpoint["waypoint"]=="NEUTRON 1"
+# One of several ordinary hops to the next listed replot target.
+scout._hud_state["system"]={"name":"ORDINARY BRIDGE SYSTEM"}
+scout._nav_id=""
+scout._nav_index=0
+scout._nav_copied=""
+scout._nav_pending=""
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["waypointIndex"]==1,scout._hud_state["navigation"]
+assert scout._hud_state["navigation"]["nextSystem"]=="NEUTRON 2"
+assert widget.copies[-1]=="NEUTRON 2",widget.copies
+# A manual button may re-copy even when automatic copying has been disabled.
+config.set(scout.KEY_NAV_AUTO_COPY,-1)
+count=len(widget.copies)
+result=scout._refresh_route_navigation(force_copy=True)
+assert result["ok"] is True and result["nextSystem"]=="NEUTRON 2",result
+assert len(widget.copies)==count+1
+assert widget.copies[-1]=="NEUTRON 2"
+config.set(scout.KEY_NAV_AUTO_COPY,0)
+# Finishing the route must not copy phantom next targets.
+scout._hud_state["system"]={"name":"NEUTRON 2"}
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["waypointIndex"]==2
+before_final=len(widget.copies)
+scout._hud_state["system"]={"name":"Diaba"}
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["completed"] is True
+assert scout._hud_state["navigation"]["remainingTargets"]==0
+assert scout._hud_state["navigation"]["estimatedRemainingJumps"] is None
+assert len(widget.copies)==before_final
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+assert scout._route_checkpoint()=={}
+assert scout._hud_state["navigation"]["completed"] is True
+
+# An old activation's checkpoint must never attach to a different route or
+# a new activation of the same job.
+scout._hud_state["siteFeed"]={"navigationRoute":restart_route}
+scout._hud_state["system"]={"name":"ORDINARY BRIDGE SYSTEM"}
+scout._nav_id=""
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["reason"]=="off_route_without_checkpoint"
+assert widget.copies[-1]=="Diaba"
+
+print("Scout neutron route clipboard progression, restart recovery, manual copy and completion checks passed")
