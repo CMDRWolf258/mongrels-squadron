@@ -218,4 +218,41 @@ scout._refresh_route_navigation()
 assert scout._hud_state["navigation"]["reason"]=="off_route_without_checkpoint"
 assert widget.copies[-1]=="Diaba"
 
-print("Scout neutron route clipboard progression, restart recovery, manual copy and completion checks passed")
+# Exact-jump Galaxy mode must hold at a confirmed Spansh refueling stop,
+# including manual Copy Next, until the main tank is genuinely refilled.
+widget=FakeWidget()
+scout._status_label=widget
+config.set(scout.KEY_NAV_AUTO_COPY,0)
+galaxy_route={
+    **restart_route, "id":"galaxy-refuel-test", "activatedAt":"2026-10-10T06:00:00Z",
+    "routeType":"galaxy_exact_jumps",
+    "waypoints":[
+        {"system":"START","fuelInTank":32},
+        {"system":"SCOOP STAR","fuelStop":True,"fuelInTank":2.1},
+        {"system":"FINISH","fuelInTank":28},
+    ],
+}
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+scout._hud_state["siteFeed"]={"navigationRoute":galaxy_route}
+scout._hud_state["ship"]={"name":"Leaf On the Wind","fuelCapacity":32}
+scout._hud_state["status"]={"fuelMain":32}
+scout._hud_state["system"]={"name":"START"}
+scout._refresh_route_navigation()
+assert widget.copies==["SCOOP STAR"],widget.copies
+scout._hud_state["system"]={"name":"SCOOP STAR"}
+scout._hud_state["status"]={"fuelMain":3.0}
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["refuelPending"] is True
+assert scout._hud_state["navigation"]["nextFuelStop"]==""
+assert widget.copies==["SCOOP STAR"]
+assert scout._refresh_route_navigation(force_copy=True)["error"]=="refuel_before_next_jump"
+assert widget.copies==["SCOOP STAR"]
+scout._hud_state["status"]={"fuelMain":32.0}
+scout._refresh_route_navigation()
+assert scout._hud_state["navigation"]["refuelPending"] is False
+assert widget.copies==["SCOOP STAR","FINISH"],widget.copies
+# A regular jump must never trigger an imaginary refuel.
+assert scout._hud_state["navigation"]["scheduledFuelStops"]==1
+
+print("Scout neutron and fuel-aware Galaxy route clipboard, checkpoint and refuel checks passed")
