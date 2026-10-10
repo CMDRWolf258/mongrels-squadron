@@ -26,7 +26,7 @@ function harness() {
     nodes.set(id, value);
     return value;
   }
-  const profileButtons = ['combat', 'surface'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
+  const profileButtons = ['combat', 'surface', 'navigation'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
   const visibilityButtons = ['own', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
   const profileSelects = ['own', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
   const requests = [];
@@ -53,7 +53,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -233,6 +233,61 @@ async function drain(h, expected) {
   h.requests[0].resolve({ ok: false, status: 401, json: async () => ({ ok: false, error: 'pair_required' }) });
   await poll;
   assert.equal(h.node('pair').classList.contains('hidden'), false, 'Restarted HUD / expired pairing cookie reveals the pairing screen');
+}
+
+
+{
+  const h=harness();
+  const nav=h.node('navigationButton').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/profile');
+  assert.equal(h.requests[0].body.profile,'navigation');
+  h.respond(h.requests[0]);
+  await nav;
+  assert.equal(h.backend.profile,'navigation');
+  const assignment=h.backend.layout.panels.own.profiles;
+  assert.deepEqual(assignment,['combat'],'Navigation profile must not rewrite Combat');
+}
+
+{
+  const h=harness();
+  const manifest=[
+    {system:'Start',neutron:false},
+    {system:'First Neutron',neutron:true},
+    {system:'Unlisted <unsafe>',neutron:true},
+    {system:'Diaba',neutron:false},
+  ];
+  h.controller.renderFlightManifest({id:'route-test',waypoints:manifest},{id:'route-test'},
+    {routeId:'route-test',waypointIndex:0});
+  assert.match(h.node('routeManifest').innerHTML,/First Neutron/);
+  assert.match(h.node('routeManifest').innerHTML,/is-next/);
+  assert.match(h.node('routeManifest').innerHTML,/&lt;unsafe&gt;/,'System names must be escaped for iPad markup');
+  assert.equal((h.node('routeManifest').innerHTML.match(/class="waypoint-line/g)||[]).length,4,'All waypoints render, not only first few');
+  h.controller.renderScoutNetwork({summary:{available:3,claimed:1,priority:2},jobs:[{system:'Miwae',rewardMillions:10,status:'available'}]});
+  assert.match(h.node('scoutNetworkJobs').innerHTML,/Miwae/);
+  assert.match(h.node('scoutNetworkStatus').textContent,/AVAILABLE 3/);
+}
+
+{
+  const h=harness();
+  h.node('routeDestination').value='Diaba';
+  h.node('routeEfficiency').value='60';
+  const plot=h.node('routePlot').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/route');
+  assert.deepEqual(h.requests[0].body,{action:'plot',destination:'Diaba',efficiency:60});
+  h.respond(h.requests[0],null,{ok:true,id:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',status:'pending'});
+  await plot;
+  assert.equal(h.node('routeJobId').value,'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+  const check=h.node('routeCheck').onclick();
+  await tick();
+  assert.equal(h.requests[1].path,'/api/route');
+  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'});
+  h.respond(h.requests[1],null,{ok:true,status:'ready',id:'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    waypoints:[{system:'Start'},{system:'Diaba'}],navigationTargetCount:1,destination:'Diaba',ship:'Leaf'});
+  await check;
+  assert.match(h.node('routePlotStatus').textContent,/Ready/);
+  assert.equal(h.requests.length,2,'Plotting and checking must not send activation');
 }
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
