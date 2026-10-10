@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { FakeD1 } from './mock-d1.mjs';
 import { createSession } from '../lib/auth.js';
 import { sha256Hex, normalizeShipSnapshot } from '../lib/scout-link.js';
 import { randomToken, verifyPkce, issueTokens, CLIENT_ID, CALLBACK } from '../lib/scout-link-oauth.js';
@@ -15,7 +16,7 @@ class Kv {
   async delete(key){this.values.delete(key);}
 }
 const kv=new Kv();
-const env={SCOUT_CHATGPT_LINK_ENABLED:'true',ADMIN_USER_ID:'admin-123',SESSION_SECRET:'test-secret-only',DAILY_ORDERS:kv};
+const env={SCOUT_CHATGPT_LINK_ENABLED:'true',ADMIN_USER_ID:'admin-123',SESSION_SECRET:'test-secret-only',DAILY_ORDERS:kv,SCOUT_AUTH_DB:new FakeD1()};
 const origin='https://mongrels-squadron.pages.dev';
 const now=()=>new Date().toISOString();
 const baseModel={kind:'mkii',optimalMass:7528.04,maxFuelPerJump:6.8,ratingConstant:11,powerConstant:2.5025,guardianBoost:10.5};
