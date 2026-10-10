@@ -7,9 +7,9 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
-## Route Director controls and display (HUD 0.17.4)
+## Route Director controls and display (HUD 0.17.5)
 
-On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.7 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
+On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.12.8 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
 
 ## Navigation profile (proposed next HUD release)
 
@@ -38,6 +38,27 @@ not calculate fuel-stop waypoints. Fuel Status never claims to know a refueling
 stop; a future fuel-aware Galaxy Plotter mode can mark verified fuel stops and
 trigger the same waypoint signal instrument. Existing normal-jump handling
 and clipboard safety are unchanged.
+
+## Route reliability improvements (HUD 0.17.5 / Scout 1.12.8)
+
+The Navigation profile includes **COPY NEXT TO SERENITY** and **REPLOT FROM
+HERE**. Copy Next repeats only the current confirmed waypoint name on the
+Windows PC clipboard, even if automatic copying is disabled. Replot uses your
+current Scout-reported system and the original destination, but creates only
+a *preview*; activating another route still requires explicit confirmation.
+
+Scout saves a small waypoint checkpoint in the local EDMC settings. After
+restarting EDMC between replots, an active route resumes from the last
+verified waypoint if the route ID, ship and activation match. On arrival at
+the final listed destination it shows **Destination Reached**, stops
+automatically copying targets and sends one owner-authorized completion
+receipt to clear the cloud-active route. A short-lived local completion
+indicator remains visible. Failed completion synchronization never
+triggers additional clipboard changes.
+
+The route readout displays estimated remaining Spansh jumps only when all
+upstream leg estimates exist; these are NOT actual hyperspace-leg guarantees.
+Neither the current planner nor these controls predict fuel stops.
 
 ## Before you start
 
