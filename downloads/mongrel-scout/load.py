@@ -449,6 +449,8 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         _update_current_jump_range_locked(ship, status)
         _hud_state["updatedAt"] = status["timestamp"] or _hud_state.get("updatedAt")
         _hud_condition.notify_all()
+    if _nav_id and bool((_hud_state.get("navigation") or {}).get("refuelPending")):
+        _refresh_route_navigation()
 
 
 def journal_entry(
@@ -1190,6 +1192,16 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
         next_system = names[_nav_index + 1] if _nav_index + 1 < len(names) else ""
         completed = not next_system and current.casefold() == names[-1].casefold()
         remaining = len(names) - _nav_index - 1
+        exact = str(route.get("routeType") or "") == "galaxy_exact_jumps"
+        fuel_stop = exact and isinstance(waypoints[_nav_index], Mapping) and waypoints[_nav_index].get("fuelStop") is True
+        current_fuel = _optional_float((_hud_state.get("status") or {}).get("fuelMain"))
+        full_fuel = _optional_float((_hud_state.get("ship") or {}).get("fuelCapacity"))
+        # A planned Spansh refuel stop assumes departure with a full tank.
+        # Don't silently copy the next jump until Status.json confirms it.
+        refuel_pending = bool(fuel_stop and (
+            current_fuel is None or full_fuel is None or
+            current_fuel < full_fuel - 0.05
+        ))
         future_jumps = [
             row.get("estimatedJumpsFromPrevious") if isinstance(row, Mapping) else None
             for row in waypoints[_nav_index + 1:]
@@ -1210,6 +1222,9 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
             "previousWaypoint": names[_nav_index],
             "nextSystem": next_system,
             "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
+            "refuelPending": refuel_pending,
+            "scheduledFuelStops": sum(isinstance(w, Mapping) and w.get("fuelStop") is True for w in waypoints) if exact else None,
+            "nextFuelStop": next((str(w.get("system") or "") for w in waypoints[_nav_index + 1:] if isinstance(w, Mapping) and w.get("fuelStop") is True), "") if exact else "",
         }
         _hud_state["navigation"] = progress
         _hud_condition.notify_all()
@@ -1229,6 +1244,8 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
                     name="MongrelScoutRouteCompleted", daemon=True,
                 ).start()
             return {"ok": False, "error": "route_complete"} if force_copy else {"ok": True, "completed": True}
+        if refuel_pending:
+            return {"ok": False, "error": "refuel_before_next_jump"} if force_copy else {"ok": True, "refuelPending": True}
         marker = f"{route_id}:{_nav_index}:{next_system}"
         if force_copy:
             # A paired user's explicit press may re-copy the current waypoint.
