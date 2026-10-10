@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.4"
+PLUGIN_VERSION = "1.12.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -129,6 +129,7 @@ KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
 KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 KEY_SCOUT_LINK_ENABLED = "MongrelScoutChatGPTLinkEnabled"
+KEY_NAV_AUTO_COPY = "MongrelScoutRouteAutoCopy"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
@@ -139,6 +140,11 @@ _enabled_var: Optional[tk.IntVar] = None
 _token_var: Optional[tk.StringVar] = None
 _endpoint_var: Optional[tk.StringVar] = None
 _scout_link_var: Optional[tk.IntVar] = None
+_nav_auto_copy_var: Optional[tk.IntVar] = None
+_nav_id = ""
+_nav_index = 0
+_nav_copied = ""
+_nav_pending = ""
 _scout_link_send_lock = threading.Lock()
 _scout_link_last_sent = 0.0
 _scout_link_last_attempt = 0.0
@@ -244,12 +250,13 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _token_var, _endpoint_var, _scout_link_var
+    global _enabled_var, _token_var, _endpoint_var, _scout_link_var, _nav_auto_copy_var
 
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
     _token_var = tk.StringVar(value=config.get_str(KEY_TOKEN) or "")
     _endpoint_var = tk.StringVar(value=config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
     _scout_link_var = tk.IntVar(value=1 if config.get_bool(KEY_SCOUT_LINK_ENABLED) else 0)
+    _nav_auto_copy_var = tk.IntVar(value=1 if config.get_int(KEY_NAV_AUTO_COPY) != -1 else 0)
 
     frame = nb.Frame(parent)
     frame.columnconfigure(1, weight=1)
@@ -266,6 +273,8 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     endpoint_entry.grid(row=3, column=1, sticky=tk.EW, padx=(8, 0), pady=(8, 0))
 
     nb.Checkbutton(frame, text="Share minimal ship status with my private ChatGPT Scout Link (opt-in)", variable=_scout_link_var).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 2))
+
+    nb.Checkbutton(frame, text="Automatically copy next system after confirmed route waypoint (default on)", variable=_nav_auto_copy_var).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=(2, 2))
 
     privacy = (
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
@@ -298,7 +307,7 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "journal, coordinates, trade activity, or mission inventory. Disable the checkbox to stop publishing."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=5, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=6, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
@@ -314,6 +323,8 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
         config.set(KEY_ENDPOINT, endpoint)
     if _scout_link_var is not None:
         config.set(KEY_SCOUT_LINK_ENABLED, int(_scout_link_var.get()))
+    if _nav_auto_copy_var is not None:
+        config.set(KEY_NAV_AUTO_COPY, 1 if _nav_auto_copy_var.get() else -1)
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -976,11 +987,102 @@ def _refresh_hud_site_feed_once() -> bool:
                 "error": "",
             }
             _hud_condition.notify_all()
+        _refresh_route_navigation()
         return True
     except Exception as exc:
         failure = _hud_transport_failure(endpoint, exc)
         _set_site_feed_status(ok=False, error=failure["error"], details=failure)
         return False
+
+
+def _refresh_route_navigation() -> None:
+    """Advance Spansh waypoints only on a confirmed visit to the next waypoint.
+
+    This runs locally on the EDMC computer. It never writes back to the game
+    or marks the cloud route progressed; the PC clipboard is the only side
+    effect, enabled only after explicit route activation and opt-in.
+    """
+    global _nav_id, _nav_index, _nav_copied, _nav_pending
+    with _hud_condition:
+        feed = _hud_state.get("siteFeed")
+        route = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
+        current = str((_hud_state.get("system") or {}).get("name") or "").strip()
+        ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
+        if not isinstance(route, Mapping) or not route.get("autoCopy"):
+            _nav_id, _nav_index, _nav_pending = "", 0, ""
+            _hud_state["navigation"] = None
+            return
+        route_id = str(route.get("id") or "")
+        waypoints = route.get("waypoints")
+        if not route_id or not isinstance(waypoints, list) or len(waypoints) > 128 or not waypoints:
+            return
+        if str(route.get("ship") or "").casefold() != ship.casefold() or not current:
+            _hud_state["navigation"] = {"active": False, "reason": "ship_or_location_unavailable"}
+            return
+        names = [str(w.get("system") or "").strip() if isinstance(w, Mapping) else "" for w in waypoints]
+        if not all(names):
+            return
+        if _nav_id != route_id:
+            start = next((i for i, name in enumerate(names) if name.casefold() == current.casefold()), -1)
+            if start < 0:
+                _hud_state["navigation"] = {"active": False, "reason": "off_route", "routeId": route_id}
+                return
+            _nav_id, _nav_index, _nav_copied, _nav_pending = route_id, start, "", ""
+        elif _nav_index + 1 < len(names) and names[_nav_index + 1].casefold() == current.casefold():
+            _nav_index += 1
+        elif current.casefold() not in {names[_nav_index].casefold(), names[_nav_index + 1].casefold() if _nav_index + 1 < len(names) else ""}:
+            # Intermediate jumps are not always on the plotted waypoint list.
+            # Keep the next waypoint, do not skip or fabricate progress.
+            pass
+        next_system = names[_nav_index + 1] if _nav_index + 1 < len(names) else ""
+        _hud_state["navigation"] = {
+            "active": bool(next_system), "routeId": route_id,
+            "destination": str(route.get("destination") or ""),
+            "waypointIndex": _nav_index, "waypointCount": len(names),
+            "nextSystem": next_system,
+            "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
+        }
+        _hud_condition.notify_all()
+        marker = f"{route_id}:{_nav_index}:{next_system}"
+        if not next_system or config.get_int(KEY_NAV_AUTO_COPY) == -1 or marker in {_nav_copied, _nav_pending}:
+            return
+        _nav_pending = marker
+
+    # EDMC supplies the Tk root; perform clipboard modifications on its UI
+    # thread so there is no background Tk access to Windows clipboard state.
+    widget = _status_label
+    if widget is None:
+        with _hud_condition:
+            if _nav_pending == marker:
+                _nav_pending = ""
+        return
+
+    def _copy() -> None:
+        global _nav_copied, _nav_pending
+        try:
+            with _hud_condition:
+                feed = _hud_state.get("siteFeed")
+                active = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
+                if not isinstance(active, Mapping) or str(active.get("id") or "") != route_id or _nav_index >= len(names) - 1:
+                    return
+            widget.clipboard_clear()
+            widget.clipboard_append(next_system)
+            widget.update_idletasks()
+            with _hud_condition:
+                _nav_copied = marker
+        except (tk.TclError, RuntimeError):
+            pass
+        finally:
+            with _hud_condition:
+                if _nav_pending == marker:
+                    _nav_pending = ""
+
+    try:
+        widget.after(0, _copy)
+    except (tk.TclError, RuntimeError):
+        with _hud_condition:
+            if _nav_pending == marker:
+                _nav_pending = ""
 
 
 def _refresh_hud_site_manifest_once() -> dict[str, Any]:
@@ -1348,6 +1450,8 @@ def _publish_hud_event(
         _hud_events.append(normalized)
         _update_hud_state_locked(normalized)
         _hud_condition.notify_all()
+    if str(entry.get("event") or "") == "FSDJump":
+        _refresh_route_navigation()
 
 
 def _normalize_hud_event(
