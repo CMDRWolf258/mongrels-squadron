@@ -168,10 +168,12 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <h2>PLOT A ROUTE</h2>
     <div class="layout-hint">Uses Leaf on the Wind's latest Scout location and current ship range. Plotting never starts navigation or changes the PC clipboard.</div>
     <div class="route-plot">
+      <div><label for="routeMode">Route type</label><select id="routeMode"><option value="neutron">Neutron · replot points</option><option value="galaxy">Galaxy · exact jumps + fuel stops</option></select></div>
       <div><label for="routeDestination">Destination system</label><input id="routeDestination" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"></div>
       <div><label for="routeEfficiency">Efficiency</label><select id="routeEfficiency"><option value="40">40%</option><option value="60" selected>60%</option><option value="80">80%</option><option value="100">100%</option></select></div>
     </div>
     <div class="route-actions"><button type="button" id="routePlot">PLOT NEUTRON ROUTE</button><button type="button" id="routeCheck" disabled>CHECK ROUTE RESULT</button></div>
+    <div class="layout-hint" id="routeModeNotice">Neutron uses range estimates. Galaxy uses confirmed FSD physics, a fuel scoop, and a full tank; it plans individual jumps and refueling stops.</div>
     <div class="layout-hint" id="routePlotStatus">Plot a new route or load a previously completed route below.</div>
   </div>
 
@@ -396,7 +398,7 @@ function renderRouteControls(){
   var feed=(scout.siteFeed)||{},observed=feed.navigationRoute||null;
   var active=routeCloudLoaded?routeCloudActive:observed;
   var route=routePreview;
-  var summary=route?("READY · "+String(route.ship||"?")+" · "+String(route.source||"?")+" → "+String(route.destination||"?")+" · "+Math.max(0,Number(route.navigationTargetCount)||0)+" navigation targets"):"No route selected. Load a ready route first.";
+  var summary=route?("READY · "+String(route.routeType==="galaxy_exact_jumps"?"GALAXY · EXACT JUMPS":"NEUTRON · REPLOT WAYPOINTS")+" · "+String(route.ship||"?")+" · "+String(route.source||"?")+" → "+String(route.destination||"?")+" · "+Math.max(0,Number(route.navigationTargetCount)||0)+" targets"+(route.routeType==="galaxy_exact_jumps"?" · "+Number(route.fuelStops||0)+" refuel stops":"")):"No route selected. Load a ready route first.";
   setText(el("routeSummary"),summary);
   var next=String(nav.nextSystem||"");
   var complete=!!nav.completed,activeNow=!!(active&&!complete),remaining=Number(nav.remainingTargets);
@@ -410,7 +412,14 @@ function renderRouteControls(){
       String(nav.completedTargets||0)+" TARGETS REACHED · "+String(Number.isFinite(remaining)?remaining:"?")+" REMAINING"+
       (Number.isInteger(nav.estimatedRemainingJumps)?" · ABOUT "+nav.estimatedRemainingJumps+" PLANNED JUMPS":" · JUMPS UNKNOWN"):
     "No active flight plan.";
+  if(nav.refuelPending) progress="REFUEL REQUIRED · FILL MAIN TANK BEFORE NEXT JUMP";
   setText(el("routeProgress"),progress);
+  var exact=el("routeMode").value==="galaxy";
+  el("routePlot").textContent=exact?"PLOT FUEL-AWARE GALAXY ROUTE":"PLOT NEUTRON ROUTE";
+  el("routeEfficiency").disabled=exact;
+  setText(el("routeModeNotice"),exact?
+    "Exact jump/fuel planning requires current Scout Loadout data, a confirmed fuel scoop and full main tank. Fuel stops hold clipboard advancement until refueled.":
+    "Neutron mode uses replot waypoints. Intermediate normal jumps are handled by Elite's Galaxy Map.");
   el("routeLoad").disabled=routeControlBusy || !state.connected;
   el("routeStart").disabled=routeControlBusy || !state.connected || !route || route.status!=="ready" || (
     active && String(active.id||"")===String(route.id||"")
@@ -430,7 +439,7 @@ function renderFlightManifest(route,active,nav){
   var following=nav.completed&&nav.routeId===selected.id?rows.length:active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?nav.waypointIndex+1:-1;
   var html=rows.map(function(w,i){
     var system=escapeHtml(String(w&&w.system||"UNKNOWN"));
-    var kind=w&&w.fuelStop===true?"FUEL":w&&w.neutron===true?"NEUTRON":i===0?"START":i===rows.length-1?"ARRIVAL":"VIA";
+    var kind=w&&w.fuelStop===true?"REFUEL":w&&w.neutron===true?"NEUTRON":i===0?"START":i===rows.length-1?"ARRIVAL":"VIA";
     var status=following===i?"NEXT":following>i&&following>=0?"PASSED":kind;
     var cl=following===i?" is-next":following>i&&following>=0?" is-reached":"";
     return '<div class="waypoint-line'+cl+'"><span class="wp-number">'+String(i).padStart(2,"0")+'</span><span class="wp-name">'+system+'</span><span class="wp-type">'+escapeHtml(status)+'</span></div>';
@@ -874,18 +883,20 @@ el("routeReplot").onclick=async function(){
   el("routeDestination").value=destination;
   await el("routePlot").onclick();
 };
+el("routeMode").onchange=function(){renderRouteControls()};
 el("routePlot").onclick=async function(){
   if(routeControlBusy)return;
   var destination=String(el("routeDestination").value||"").trim();
   if(!destination){el("routePlotStatus").textContent="Enter a destination system.";return}
+  var mode=el("routeMode").value==="galaxy"?"galaxy":"neutron";
   routeControlBusy=true;renderRouteControls();
   try{
-    var result=await api("/api/route",{action:"plot",destination:destination,efficiency:Number(el("routeEfficiency").value||60)});
+    var result=await api("/api/route",{action:"plot",mode:mode,destination:destination,efficiency:Number(el("routeEfficiency").value||60)});
     if(!result.ok)throw new Error(String(result.error||"plot_failed"));
     routePendingId=String(result.id||"");
     routePreview=null;
     el("routeJobId").value=routePendingId;
-    el("routePlotStatus").textContent="Route submitted for "+destination+". Press CHECK ROUTE RESULT to retrieve completed waypoints.";
+    el("routePlotStatus").textContent=(mode==="galaxy"?"Fuel-aware Galaxy":"Neutron")+" route submitted for "+destination+". Press CHECK ROUTE RESULT when Spansh has calculated it.";
   }catch(e){el("routePlotStatus").textContent="Plot failed · "+e.message}
   finally{routeControlBusy=false;renderRouteControls()}
 };
@@ -898,7 +909,7 @@ el("routeCheck").onclick=async function(){
     if(result.status==="ready"){
       routePreview=result;routePendingId="";
       el("routeJobId").value=result.id;
-      el("routePlotStatus").textContent="Ready · "+String(result.navigationTargetCount||0)+" navigation targets. Review the full manifest below before starting.";
+      el("routePlotStatus").textContent="Ready · "+String(result.navigationTargetCount||0)+" "+(result.routeType==="galaxy_exact_jumps"?"actual jumps · "+Number(result.fuelStops||0)+" scheduled fuel stops":"navigation replot targets")+". Review the full manifest before starting.";
     }else{
       el("routePlotStatus").textContent="Spansh is still calculating. Check again shortly.";
     }
