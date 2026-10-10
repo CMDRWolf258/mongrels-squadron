@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.2"
+PLUGIN_VERSION = "1.13.3"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -167,6 +167,7 @@ _activity_lock = threading.RLock()
 _activity_pending: list[dict[str, Any]] = []
 _activity_pending_fingerprints: set[str] = set()
 _activity_trade_sale_ordinals: dict[str, int] = {}
+_activity_exploration_sale_ordinals: dict[str, int] = {}
 _activity_flush_scheduled = False
 _activity_mission_origins: dict[str, dict[str, Any]] = {}
 _activity_trade_lots: dict[str, dict[str, list[dict[str, Any]]]] = {}
@@ -504,6 +505,8 @@ def journal_entry(
         # Assign an occurrence before queuing so identical eight-second-batch
         # sale chunks do not collapse into one pending payload.
         activity_payload["saleOrdinal"] = _next_trade_sale_ordinal(cmdr, activity_payload)
+    if event in {"SellExplorationData", "MultiSellExplorationData"} and activity_payload is not None:
+        activity_payload["saleOrdinal"] = _next_exploration_sale_ordinal(cmdr, activity_payload)
     if activity_payload is not None and token:
         _queue_realtime_activity(activity_payload)
 
@@ -3817,6 +3820,8 @@ def _build_realtime_activity_payload(
         "ColonisationContribution",
         "ColonisationConstructionDepot",
         "MarketSell",
+        "SellExplorationData",
+        "MultiSellExplorationData",
     }:
         return None
 
@@ -3845,6 +3850,30 @@ def _build_realtime_activity_payload(
         "stationType": station_type,
         "stationFaction": _station_faction_name(entry, state),
     }
+
+    if event in {"SellExplorationData", "MultiSellExplorationData"}:
+        # Sales are credited where Universal Cartographics is redeemed, not
+        # where the scans originated. Do not upload scanned systems or bodies.
+        amount = _optional_int(entry.get("TotalEarnings"))
+        if amount is None or amount <= 0 or amount > 10**13:
+            return None
+        with _activity_lock:
+            cached = dict(_activity_trade_station)
+        if cached.get("system") == system_name and cached.get("station") == station_name:
+            station_type = station_type or str(cached.get("type") or "")
+            station_faction = base["stationFaction"] or str(cached.get("faction") or "")
+        else:
+            station_faction = base["stationFaction"]
+        if not system_address or not system_name or not station_name or not station_faction or not station_type:
+            return None
+        if station_type.casefold() == "fleetcarrier" or station_faction.casefold() == "fleetcarrier":
+            return None
+        return {
+            **base,
+            "stationFaction": station_faction,
+            "stationType": station_type,
+            "amount": amount,
+        }
 
     if event == "MarketSell":
         # Only purchases traced to a standard station market can provisionally
@@ -4062,6 +4091,23 @@ def _next_trade_sale_ordinal(cmdr: str, sale: Mapping[str, Any]) -> int:
         _activity_trade_sale_ordinals[fingerprint] = ordinal
         if len(_activity_trade_sale_ordinals) > 256:
             _activity_trade_sale_ordinals.pop(next(iter(_activity_trade_sale_ordinals)))
+    return ordinal
+
+
+def _next_exploration_sale_ordinal(cmdr: str, sale: Mapping[str, Any]) -> int:
+    """Separate identical same-second Cartographics pages. Retries keep the ordinal."""
+    fingerprint = json.dumps([
+        _cmdr_cache_key(cmdr), str(sale.get("event") or ""),
+        str(sale.get("timestamp") or ""),
+        str(sale.get("systemAddress") or ""),
+        str(sale.get("station") or "").casefold(),
+        sale.get("amount"),
+    ], separators=(",", ":"), ensure_ascii=False)
+    with _activity_lock:
+        ordinal = _activity_exploration_sale_ordinals.get(fingerprint, 0) + 1
+        _activity_exploration_sale_ordinals[fingerprint] = ordinal
+        if len(_activity_exploration_sale_ordinals) > 256:
+            _activity_exploration_sale_ordinals.pop(next(iter(_activity_exploration_sale_ordinals)))
     return ordinal
 
 

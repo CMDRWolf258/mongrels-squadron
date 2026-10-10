@@ -1,3 +1,19 @@
+## Live Universal Cartographics reporting (Scout v1.13.3)
+
+Scout now uploads verified **SellExplorationData** and **MultiSellExplorationData**
+journal transactions immediately, using the TotalEarnings value and confirmed
+redemption station/faction. It uploads **only** the sale amount, journal
+timestamp, event type, system ID, station and faction, plus a sale occurrence
+number. Discovery names, scans, mapped bodies and full journals stay local.
+Unsold scans, exobiology payouts and fleet carrier sales are not counted by
+this feature.
+
+The server gives each sale exactly one event identity across Scout and the
+existing Frontier sync. Frontier confirmation replaces the provisional Scout
+version, not adds to it. Identical Cartographics pages redeemed in the same
+second remain individually countable. Existing Daily Orders exploration
+targets, faction matching and BGS rules are unchanged.
+
 ## Trade split-sale reconciliation (Scout v1.13.2)
 
 Scout now assigns per-sale occurrence ordinals to consecutive identical MarketSell journal entries, even when multiple chunks share one timestamp, commodity, quantity and price. It retains the ordinal on retry. The shared server normalizes Scout/CAPI sale identities and replaces live provisional reports with matching Frontier confirmations instead of stacking both reports. A future Frontier sync can reconcile previously merged historical duplicate IDs and confirm genuine repeated chunks. No source purchases or cargo inventory are uploaded.

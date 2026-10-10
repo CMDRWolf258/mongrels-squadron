@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { normalizeScoutActivityBatch } from '../lib/scout-activity.js';
 import { mergeEventsWithResult, parseJournal, summarizeEvents } from '../lib/frontier.js';
+import { matchVerifiedActivity } from '../lib/order-activity.js';
 
 const now=Date.parse('2026-10-08T04:00:00Z');
 const source={
@@ -118,3 +119,71 @@ assert.equal(proof.events[0].bgsTradeEligible,true);
 assert.equal(proof.events[0].provisional,undefined);
 assert.equal((await mergeEventsWithResult(f,'wolf-proof',[incomplete])).events[0].bgsTradeEligible,true);
 console.log('Trade split-chunk ordinals, normalized Scout/CAPI IDs, legacy repair, and idempotent sync passed');
+
+const explorationStamp='2026-10-10T02:15:00Z';
+const exploration={event:'MultiSellExplorationData',timestamp:explorationStamp,system:'Diaba',
+  systemAddress:'123456789',station:'Niijima Station',stationType:'Orbis',
+  stationFaction:'Regiment of Imperial Mongrels',amount:5500000,saleOrdinal:1};
+const exploreRows=(sale,token=auth)=>normalizeScoutActivityBatch({kind:'activity_batch',events:[sale]},token,
+  {now:Date.parse('2026-10-10T03:00:00Z')}).events;
+const liveExploration=exploreRows(exploration)[0];
+assert.equal(liveExploration.type,'exploration_sale');
+assert.equal(liveExploration.amount,5500000);
+assert.equal(liveExploration.provisional,true);
+assert.equal(liveExploration.stationFaction,exploration.stationFaction);
+for(const invalid of [{amount:0},{amount:-1},{amount:'invalid'},{amount:1.5},
+  {saleOrdinal:0},{saleOrdinal:129},{station:''},{stationFaction:''},
+  {stationType:''},{stationType:'FleetCarrier'},{systemAddress:''},{event:'SellOrganicData'}]){
+  assert.equal(exploreRows({...exploration,...invalid}).length,0,'Invalid Cartographics sale '+JSON.stringify(invalid));
+}
+assert.equal(exploreRows(exploration,{scope:'restricted',allowedSystems:['Miwae']}).length,0);
+assert.equal(exploreRows({...exploration,event:'SellExplorationData'}).length,1);
+const cartographicsDock={timestamp:'2026-10-10T02:00:00Z',event:'Docked',StarSystem:'Diaba',
+  SystemAddress:123456789,StationName:'Niijima Station',StationType:'Orbis',
+  StationFaction:{Name:'Regiment of Imperial Mongrels'}};
+const cartographicsSale={timestamp:explorationStamp,event:'MultiSellExplorationData',
+  TotalEarnings:5500000,BaseValue:5000000,Bonus:500000,
+  Discovered:[{SystemName:'Other Sector',NumBodies:12}]};
+const cartographicsJournal=[cartographicsDock,cartographicsSale,{...cartographicsSale},
+  {timestamp:'2026-10-10T02:15:01Z',event:'SellExplorationData',TotalEarnings:3000000,
+   BaseValue:2900000,Bonus:100000}];
+const cartographics=parseJournal(cartographicsJournal.map(JSON.stringify).join('\n'),['Diaba']);
+assert.equal(cartographics.events.length,3);
+assert.deepEqual(cartographics.events.map(e=>e.saleOrdinal),[1,2,1]);
+const archive=makeEnv();
+const liveTwo=[exploreRows({...exploration,saleOrdinal:1})[0],
+  exploreRows({...exploration,saleOrdinal:2})[0]];
+const uploaded=await mergeEventsWithResult(archive,'cartographics',liveTwo);
+assert.equal(uploaded.added,2);
+assert.equal(summarizeEvents(uploaded.events).explorationSales,11000000);
+const settled=await mergeEventsWithResult(archive,'cartographics',cartographics.events);
+assert.equal(settled.added,1,'One new sale, two Scout confirmations');
+assert.equal(settled.events.length,3);
+assert.equal(settled.events.every(e=>e.provisional!==true),true);
+assert.equal(summarizeEvents(settled.events).explorationSales,14000000);
+assert.equal((await mergeEventsWithResult(archive,'cartographics',cartographics.events)).changed,false);
+assert.equal((await mergeEventsWithResult(archive,'cartographics',liveTwo)).changed,false);
+const legacyStore=makeEnv();
+await mergeEventsWithResult(legacyStore,'test-legacy-exploration',[
+  {...liveExploration,saleOrdinal:undefined},
+  {...cartographics.events[0],saleOrdinal:undefined},
+]);
+const legacyRepaired=await mergeEventsWithResult(legacyStore,'test-legacy-exploration',[cartographics.events[0]]);
+assert.equal(legacyRepaired.events.length,1);
+const carrierCartographics=parseJournal([JSON.stringify({...cartographicsDock,StationType:'FleetCarrier'}),
+  JSON.stringify(cartographicsSale)].join('\n'),['Diaba']);
+assert.equal(carrierCartographics.events.length,0);
+assert.equal(carrierCartographics.excluded.length,1);
+const explorationOrder={orders:[{
+  id:'cartographics-order',task:'Sell exploration data',system:'Diaba',
+  faction:'Regiment of Imperial Mongrels',status:'active',
+  reporting:{type:'exploration',target:20},
+  workCycle:{cycleId:'2026-10-10-test',
+    cycleStartedAt:'2026-10-10T00:00:00Z',
+    cycleEndsAt:'2026-10-11T00:00:00Z'},
+}]};
+const progress=events=>matchVerifiedActivity(events,explorationOrder).orderTotals
+  .reduce((sum,row)=>sum+row.contribution,0);
+assert.equal(progress(uploaded.events),11,'Two live Cartographics pages contribute 11 M Cr');
+assert.equal(progress(settled.events),14,'Frontier confirmation totals 14 M Cr without duplicate credit');
+console.log('Cartographics realtime/Frontier reconciliation, exact-page sale identity and carrier exclusion passed');
