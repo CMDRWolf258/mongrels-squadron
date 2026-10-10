@@ -37,6 +37,8 @@ HUD_BRIDGE_VERSION = 9
 HUD_EVENT_LIMIT = 256
 HUD_SITE_FEED_REFRESH_SECONDS = 30.0
 HUD_SITE_FEED_SAFETY_REFRESH_SECONDS = 600.0
+SCOUT_LINK_INGEST_ENDPOINT = "https://mongrels-squadron.pages.dev/api/scout-link/ingest"
+SCOUT_LINK_MIN_INTERVAL_SECONDS = 120.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
 HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
@@ -126,6 +128,7 @@ KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
 KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
+KEY_SCOUT_LINK_ENABLED = "MongrelScoutChatGPTLinkEnabled"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
@@ -135,6 +138,11 @@ _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
 _token_var: Optional[tk.StringVar] = None
 _endpoint_var: Optional[tk.StringVar] = None
+_scout_link_var: Optional[tk.IntVar] = None
+_scout_link_send_lock = threading.Lock()
+_scout_link_last_sent = 0.0
+_scout_link_last_attempt = 0.0
+_scout_link_last_signature = ""
 _send_lock = threading.Lock()
 _status_lock = threading.Lock()
 _pending_status = ""
@@ -236,11 +244,12 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _token_var, _endpoint_var
+    global _enabled_var, _token_var, _endpoint_var, _scout_link_var
 
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
     _token_var = tk.StringVar(value=config.get_str(KEY_TOKEN) or "")
     _endpoint_var = tk.StringVar(value=config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
+    _scout_link_var = tk.IntVar(value=1 if config.get_bool(KEY_SCOUT_LINK_ENABLED) else 0)
 
     frame = nb.Frame(parent)
     frame.columnconfigure(1, weight=1)
@@ -255,6 +264,8 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     nb.Label(frame, text="Endpoint").grid(row=3, column=0, sticky=tk.W, pady=(8, 0))
     endpoint_entry = tk.Entry(frame, textvariable=_endpoint_var, width=52)
     endpoint_entry.grid(row=3, column=1, sticky=tk.EW, padx=(8, 0), pady=(8, 0))
+
+    nb.Checkbutton(frame, text="Share minimal ship status with my private ChatGPT Scout Link (opt-in)", variable=_scout_link_var).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 2))
 
     privacy = (
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
@@ -281,10 +292,13 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "For the optional local HUD, Scout also uses its bound machine token to fetch a compact read-only "
         "Mission Control / Trader / Scout Board leadership feed and to send explicit alert acknowledgements. "
         "Surface Mining can also use the token to submit explicit deposit reports to the curated 10-16 mining archive; "
-        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC."
+        "the token itself is never exposed through the local HUD bridge. Personal HUD notes stay local on the PC. "
+        "Optional ChatGPT Scout Link publishes only system, ship name/type, jump model, fuel and cargo totals, "
+        "jump range, and timestamps to a private admin-only snapshot; it does not publish your full loadout, "
+        "journal, coordinates, trade activity, or mission inventory. Disable the checkbox to stop publishing."
     )
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=5, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
@@ -298,6 +312,8 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     if _endpoint_var is not None:
         endpoint = _endpoint_var.get().strip() or DEFAULT_ENDPOINT
         config.set(KEY_ENDPOINT, endpoint)
+    if _scout_link_var is not None:
+        config.set(KEY_SCOUT_LINK_ENABLED, int(_scout_link_var.get()))
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -1053,8 +1069,105 @@ def _hud_site_feed_loop() -> None:
         elif manifest_signature:
             last_manifest_signature = manifest_signature
 
+        _schedule_optional_scout_link_upload()
+
         if _hud_site_feed_stop.wait(HUD_SITE_FEED_REFRESH_SECONDS):
             break
+
+
+def _scout_link_payload() -> Optional[dict[str, Any]]:
+    """Minimal whitelist: never serialize the local HUD state or full journal."""
+    with _hud_condition:
+        ship = dict(_hud_state.get("ship") or {})
+        status = dict(_hud_state.get("status") or {})
+        system = dict(_hud_state.get("system") or {})
+    if not ship.get("name") or not system.get("name") or not isinstance(ship.get("jumpModel"), Mapping):
+        return None
+    observed_at = str(status.get("timestamp") or ship.get("timestamp") or "").strip()
+    if not observed_at:
+        return None
+    try:
+        from datetime import datetime, timezone
+        observed = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+        if observed.tzinfo is None or abs((datetime.now(timezone.utc) - observed).total_seconds()) > 600:
+            return None
+    except (ValueError, TypeError, OverflowError):
+        return None
+    model = ship["jumpModel"]
+    return {
+        "version": 1,
+        "observedAt": observed_at,
+        "system": str(system["name"]),
+        "ship": str(ship["name"]),
+        "shipType": str(ship.get("type") or ""),
+        "currentJumpRange": ship.get("currentJumpRange"),
+        "fuel": status.get("fuelMain"),
+        "fuelCapacity": ship.get("fuelCapacity"),
+        "cargo": status.get("cargo"),
+        "unladenMass": ship.get("unladenMass"),
+        "jumpModel": {
+            "kind": model.get("kind"),
+            "optimalMass": model.get("optimalMass"),
+            "maxFuelPerJump": model.get("maxFuelPerJump"),
+            "ratingConstant": model.get("ratingConstant"),
+            "powerConstant": model.get("powerConstant"),
+            "guardianBoost": model.get("guardianBoost"),
+        },
+    }
+
+
+def _schedule_optional_scout_link_upload() -> None:
+    global _scout_link_last_sent, _scout_link_last_attempt, _scout_link_last_signature
+    if not config.get_bool(KEY_SCOUT_LINK_ENABLED):
+        return
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return
+    payload = _scout_link_payload()
+    if payload is None:
+        return
+    # Throttle separately from the existing HUD polling. No extra site reads.
+    # Retry at the next ordinary HUD loop on error; never block its refresh.
+    signature = json.dumps(
+        {key: value for key, value in payload.items() if key != "observedAt"},
+        sort_keys=True, separators=(",", ":"),
+    )
+    now = time.monotonic()
+    if not _scout_link_send_lock.acquire(blocking=False):
+        return
+    if now - _scout_link_last_attempt < 60.0:
+        _scout_link_send_lock.release()
+        return
+    _scout_link_last_attempt = now
+    if signature == _scout_link_last_signature and now - _scout_link_last_sent < SCOUT_LINK_MIN_INTERVAL_SECONDS:
+        _scout_link_send_lock.release()
+        return
+
+    def _send() -> None:
+        global _scout_link_last_sent, _scout_link_last_signature
+        try:
+            if not config.get_bool(KEY_SCOUT_LINK_ENABLED):
+                return
+            # Independent HTTP session: do not interfere with the normal HUD feed.
+            link_session = timeout_session.new_session(timeout=6)
+            response = link_session.post(
+                SCOUT_LINK_INGEST_ENDPOINT,
+                json=payload,
+                headers={**_site_feed_headers(token), "Content-Type": "application/json"},
+                timeout=6,
+            )
+            if response.ok:
+                reply = response.json()
+                if isinstance(reply, Mapping) and reply.get("ok") is True:
+                    _scout_link_last_sent = time.monotonic()
+                    _scout_link_last_signature = signature
+        except Exception:
+            # Optional telemetry must not interfere with HUD/Scout activity.
+            pass
+        finally:
+            _scout_link_send_lock.release()
+
+    threading.Thread(target=_send, name="MongrelScoutChatGPTLink", daemon=True).start()
 
 
 def _start_hud_site_feed() -> None:
