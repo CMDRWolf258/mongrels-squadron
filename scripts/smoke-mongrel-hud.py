@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.13.3"
+assert plugin.PLUGIN_VERSION == "1.13.4"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -106,6 +106,14 @@ expected_types = {
     "Bounty": "bounty.awarded",
     "RedeemVoucher": "bounty.redeemed",
     "Died": "ship.died",
+    "FSSDiscoveryScan": "exploration.honk",
+    "FSSAllBodiesFound": "exploration.fss_complete",
+    "Scan": "exploration.body_scan",
+    "SAAScanComplete": "exploration.mapped",
+    "FSSBodySignals": "exploration.body_signals",
+    "SAASignalsFound": "exploration.surface_signals",
+    "SellExplorationData": "exploration.sale",
+    "MultiSellExplorationData": "exploration.sale",
 }
 assert plugin.HUD_EVENT_TYPES == expected_types
 

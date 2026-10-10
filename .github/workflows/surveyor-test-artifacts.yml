@@ -1,0 +1,71 @@
+name: Surveyor private test builds
+
+on:
+  push:
+    branches:
+      - feature/surveyor-live-test-20261010
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate local Surveyor and live Scout compatibility
+        run: |
+          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py
+          python scripts/test_surveyor.py
+          python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_intel.py
+          python scripts/test_surveyor_advisor.py
+          python scripts/test_surveyor_advisor_hud.py
+          python scripts/test_scout_live_trade.py || python scripts/test-scout-live-trade.py
+      - name: Package isolated Scout testing ZIP
+        run: |
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+          Path('package').mkdir(exist_ok=True)
+          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.4-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py'):
+                  z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
+              z.write('downloads/mongrel-scout/README.md','README.md')
+              z.write('downloads/mongrel-scout/SURVEYOR_TESTING.md','SURVEYOR_TESTING.md')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MongrelScout-Surveyor-1.13.4-TEST
+          path: package/MongrelScout-Surveyor-1.13.4-TEST.zip
+          retention-days: 14
+
+  windows-hud:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build dependencies
+        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4" zeroconf
+      - name: Build standalone Surveyor-test HUD
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --collect-all zeroconf --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
+          Copy-Item downloads/mongrel-hud/README.md package/README.md
+          Copy-Item downloads/mongrel-scout/SURVEYOR_TESTING.md package/SURVEYOR_TESTING.md
+          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.12-TEST.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MongrelHUD-Surveyor-0.17.12-TEST
+          path: MongrelHUD-Surveyor-0.17.12-TEST.zip
+          compression-level: 0
+          retention-days: 14
