@@ -783,7 +783,9 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                 return
             action = str(body.get("action") or "")
             route_id = str(body.get("routeId") or "")[:90]
-            result = _hud_route_control(action, route_id)
+            result = _hud_route_control(action, route_id,
+                                        destination=str(body.get("destination") or "")[:140],
+                                        efficiency=body.get("efficiency", 60))
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
@@ -868,7 +870,7 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "") -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60) -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
@@ -878,11 +880,11 @@ def _hud_route_control(action: str, route_id: str = "") -> dict[str, Any]:
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
         return {"ok": False, "error": "scout_token_missing"}
-    if action not in {"read", "start", "stop"}:
+    if action not in {"read", "start", "stop", "plot", "check"}:
         return {"ok": False, "error": "invalid_action"}
-    if action in {"read", "start"} and route_id and not re.fullmatch(r"[0-9a-f-]{24,64}", route_id, re.I):
+    if action in {"read", "start", "check"} and route_id and not re.fullmatch(r"[0-9a-f-]{24,64}", route_id, re.I):
         return {"ok": False, "error": "invalid_route_id"}
-    if action == "start" and not route_id:
+    if action in {"start", "check"} and not route_id:
         return {"ok": False, "error": "route_id_required"}
     headers = _site_feed_headers(token)
     try:
@@ -890,14 +892,17 @@ def _hud_route_control(action: str, route_id: str = "") -> dict[str, Any]:
             response = _session.get(endpoint, params={"routeId": route_id} if route_id else None,
                                     headers=headers, timeout=10)
         else:
-            response = _session.post(endpoint, json={"action": action, "routeId": route_id},
-                                     headers=headers, timeout=10)
+            payload = {"action": action, "routeId": route_id}
+            if action == "plot":
+                payload["destination"] = destination
+                payload["efficiency"] = efficiency
+            response = _session.post(endpoint, json=payload, headers=headers, timeout=20)
         payload, details = _hud_response_details(response, endpoint)
         if not (200 <= response.status_code < 300):
             return _hud_http_failure(details)
         if not isinstance(payload, Mapping) or payload.get("ok") is not True:
             return _hud_http_failure(details, "invalid_route_response")
-        if action != "read":
+        if action in {"start", "stop"}:
             # One on-demand refresh, not a polling loop. Do not delay the HUD
             # acknowledgement while Cloudflare's feed is being fetched.
             # The normal manifest refresh still handles KV propagation.
