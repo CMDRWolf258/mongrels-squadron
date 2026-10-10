@@ -45,6 +45,7 @@ HUD_ROUTE_CONTROL_PATH = "/api/hud/route"
 HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
 HUD_MINING_CENTERS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-centers"
 HUD_MINING_SYSTEMS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-systems"
+HUD_MINING_HEALTH_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-multi-health"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
 FSD_POWER_CONSTANT = {2: 2.00, 3: 2.15, 4: 2.30, 5: 2.45, 6: 2.60, 7: 2.75, 8: 2.90}
 FSD_RATING_CONSTANT = {
@@ -758,6 +759,11 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
         if parsed.path == "/v1/route":
             route_id = str((parse_qs(parsed.query).get("routeId") or [""])[0])[:90]
             result = _hud_route_control("read", route_id)
+            self._write_json(result, status=_hud_proxy_status(result))
+            return
+
+        if parsed.path == "/v1/mining/health":
+            result = _fetch_hud_mining_health()
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
@@ -1558,6 +1564,32 @@ def _ack_hud_site_alerts(ids: list[str], action: str = "ack") -> dict[str, Any]:
         acknowledged = [str(value) for value in result.get("acknowledged", ids) if str(value)]
         _mark_site_alerts_acknowledged(acknowledged, str(result.get("acknowledgedAt") or ""))
         return {**details, "ok": True, "acknowledged": acknowledged, "acknowledgedAt": result.get("acknowledgedAt")}
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc)
+
+
+def _fetch_hud_mining_health() -> dict[str, Any]:
+    """One explicit owner request: no D1 writes, refresh loop or fallback data."""
+    endpoint = HUD_MINING_HEALTH_ENDPOINT
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return {"ok": False, "error": "scout_token_missing"}
+    try:
+        response = _session.get(endpoint, headers=_site_feed_headers(token), timeout=12)
+        payload, details = _hud_response_details(response, endpoint)
+        if not 200 <= response.status_code < 300:
+            return _hud_http_failure(details, str(payload.get("error") or "") if isinstance(payload, Mapping) else "")
+        if not isinstance(payload, Mapping) or payload.get("ok") is not True:
+            return {"ok": False, "error": "invalid_mining_health_response"}
+        return {
+            "ok": True,
+            "dbBound": payload.get("dbBound") is True,
+            "legacyReady": payload.get("legacyReady") is True,
+            "multiSchemaReady": payload.get("multiSchemaReady") is True,
+            "sharedOffSystemReady": payload.get("sharedOffSystemReady") is True,
+            "backupVerified": None,
+            "checkedAt": str(payload.get("checkedAt") or ""),
+        }
     except Exception as exc:
         return _hud_transport_failure(endpoint, exc)
 
