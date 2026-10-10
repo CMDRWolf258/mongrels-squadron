@@ -5399,6 +5399,116 @@ class MongrelHudApp:
             y += 17 * scale
         return width, round(y + 7 * scale)
 
+    def _render_navigation_panel(self, canvas: tk.Canvas, scale: float, panel: str, flash_on: bool) -> tuple[int, int]:
+        """Independent navigation instruments. Data comes from Scout's existing
+        local HUD snapshot; rendering never starts a cloud polling loop."""
+        state = self.scout_state()
+        nav = state.get("navigation") if isinstance(state.get("navigation"), dict) else {}
+        feed = state.get("siteFeed") if isinstance(state.get("siteFeed"), dict) else {}
+        route = feed.get("navigationRoute") if isinstance(feed.get("navigationRoute"), dict) else {}
+        waypoints = route.get("waypoints") if isinstance(route.get("waypoints"), list) else []
+        current = str((state.get("system") or {}).get("name") or "UNKNOWN SYSTEM")
+        active = bool(nav.get("active")) and bool(waypoints)
+        next_system = str(nav.get("nextSystem") or "")
+        idx = int(nav.get("waypointIndex") or 0)
+        width = round((530 if panel in {"navsteps", "navscout"} else 465) * scale)
+        title = PANEL_TITLES.get(panel, "NAVIGATION")
+        y = self._draw_title(canvas, title, scale, width)
+
+        if panel == "navcourse":
+            self._draw_text(canvas, 8 * scale, y, "ROUTE ACTIVE" if active else "NAVIGATION STANDBY", scale, 10, HUD_GREEN if active else HUD_MUTED, True)
+            y += 21 * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(next_system if active else "NO ACTIVE ROUTE", 41), scale, 15, HUD_CYAN if active else HUD_MUTED, True)
+            y += 28 * scale
+            if active:
+                self._draw_text(canvas, 8 * scale, y, self.clip_line("DEST  " + str(route.get("destination") or ""), 52), scale, 10, HUD_WHITE)
+                y += 20 * scale
+                self._draw_text(canvas, 8 * scale, y, f"WAYPOINT {min(idx + 2, len(waypoints))}/{len(waypoints)}   ·   {max(0, len(waypoints) - idx - 2)} AFTER NEXT", scale, 10, HUD_AMBER, True)
+                y += 21 * scale
+            self._draw_text(canvas, 8 * scale, y, self.clip_line("CURRENT  " + current, 56), scale, 9, HUD_MUTED)
+            y += 18 * scale
+            self._draw_text(canvas, 8 * scale, y, "GALAXY MAP: PASTE WAYPOINT; GAME PLOTS HOPS", scale, 8, HUD_MUTED)
+            y += 17 * scale
+
+        elif panel == "navsteps":
+            if not active:
+                self._draw_text(canvas, 8 * scale, y, "START A ROUTE FROM THE IPAD CONTROL", scale, 10, HUD_MUTED)
+                y += 24 * scale
+            else:
+                self._draw_text(canvas, 8 * scale, y, f"NEUTRON REPLOT POINTS · {len(waypoints) - 1} TARGETS", scale, 9, HUD_MUTED, True)
+                y += 22 * scale
+                for offset, step in enumerate(waypoints[idx + 1: idx + 7], start=idx + 1):
+                    if not isinstance(step, dict):
+                        continue
+                    star = "N" if step.get("neutron") else "F" if step.get("fuelStop") else "·"
+                    name = str(step.get("system") or "")
+                    selected = offset == idx + 1
+                    self._draw_text(canvas, 8 * scale, y, f"{offset:02d}", scale, 10, HUD_CYAN if selected else HUD_MUTED, True)
+                    self._draw_text(canvas, 47 * scale, y, self.clip_line(name, 47), scale, 10, HUD_WHITE if selected else HUD_MUTED, selected, "nw", (width - 90 * scale))
+                    self._draw_text(canvas, width - 8 * scale, y, star, scale, 10, HUD_AMBER if star == "N" else HUD_GREEN if star == "F" else HUD_MUTED, True, "ne")
+                    y += 25 * scale
+                if len(waypoints) > idx + 7:
+                    self._draw_text(canvas, 8 * scale, y, f"+ {len(waypoints) - idx - 7} MORE · FULL MANIFEST ON IPAD", scale, 9, HUD_CYAN)
+                    y += 21 * scale
+
+        elif panel == "navsignal":
+            with self.lock:
+                cue = dict(self.navigation_arrival)
+            fresh = active and cue.get("routeId") == nav.get("routeId") and time.monotonic() - float(cue.get("atMonotonic") or 0) < 9
+            if fresh:
+                kind = str(cue.get("kind") or "waypoint")
+                title_line = "NEUTRON WAYPOINT REACHED" if kind == "neutron" else "FUEL STOP REACHED" if kind == "fuel" else "WAYPOINT REACHED"
+                color = HUD_AMBER if kind == "neutron" else HUD_GREEN if kind == "fuel" else HUD_CYAN
+                self._draw_text(canvas, 8 * scale, y, title_line if flash_on else "◆ " + title_line + " ◆", scale, 16, color if flash_on else HUD_WHITE, True)
+                y += 31 * scale
+                self._draw_text(canvas, 8 * scale, y, self.clip_line(str(cue.get("system") or ""), 52), scale, 11, HUD_WHITE, True)
+                y += 24 * scale
+                self._draw_text(canvas, 8 * scale, y, "NEXT DESTINATION COPIED BY SCOUT" if next_system else "ROUTE MILESTONE CONFIRMED", scale, 9, HUD_GREEN)
+                y += 18 * scale
+            else:
+                self._draw_text(canvas, 8 * scale, y, "AWAITING NEXT ROUTE WAYPOINT" if active else "NO ACTIVE ROUTE CUES", scale, 11, HUD_MUTED, True)
+                y += 25 * scale
+                self._draw_text(canvas, 8 * scale, y, "NEUTRON ARRIVAL FLASHES FOR 9 SECONDS", scale, 8, HUD_MUTED)
+                y += 20 * scale
+            self._draw_text(canvas, 8 * scale, y, "FUEL STOP CUES: FUTURE FUEL-AWARE PLANNER", scale, 8, HUD_AMBER)
+            y += 18 * scale
+
+        elif panel == "navfuel":
+            ship = state.get("ship") or {}
+            status = state.get("status") or {}
+            main = status.get("fuelMain")
+            reserve = status.get("fuelReserve")
+            total = float(main) + (float(reserve) if isinstance(reserve, (int, float)) else 0) if isinstance(main, (int, float)) else None
+            self._draw_text(canvas, 8 * scale, y, f"FUEL ON BOARD  {total:.1f} t" if total is not None else "FUEL QUANTITY UNAVAILABLE", scale, 12, HUD_WHITE, True)
+            y += 27 * scale
+            rng = ship.get("currentJumpRange")
+            self._draw_text(canvas, 8 * scale, y, f"CURRENT RANGE  {rng:.2f} LY" if isinstance(rng, (int, float)) else "CURRENT RANGE UNAVAILABLE", scale, 10, HUD_CYAN, True)
+            y += 23 * scale
+            self._draw_text(canvas, 8 * scale, y, "NEXT FUEL STOP  NOT SCHEDULED", scale, 10, HUD_AMBER, True)
+            y += 23 * scale
+            self._draw_text(canvas, 8 * scale, y, "Neutron Plotter does not model refueling.", scale, 9, HUD_MUTED)
+            y += 20 * scale
+
+        elif panel == "navscout":
+            scout = feed.get("scout") if isinstance(feed.get("scout"), dict) else {}
+            summary = scout.get("summary") if isinstance(scout.get("summary"), dict) else {}
+            if not scout:
+                self._draw_text(canvas, 8 * scale, y, "SCOUT FEED UNAVAILABLE", scale, 10, HUD_MUTED)
+                y += 25 * scale
+            else:
+                self._draw_text(canvas, 8 * scale, y, f"OPEN {int(summary.get('available') or 0)}  ·  CLAIMED {int(summary.get('claimed') or 0)}  ·  PRIORITY {int(summary.get('priority') or 0)}", scale, 10, HUD_CYAN, True)
+                y += 24 * scale
+                for job in (scout.get("jobs") if isinstance(scout.get("jobs"), list) else [])[:4]:
+                    if not isinstance(job, dict):
+                        continue
+                    self._draw_text(canvas, 8 * scale, y, self.clip_line(str(job.get("system") or "Unknown"), 44), scale, 10, HUD_WHITE)
+                    self._draw_text(canvas, width - 8 * scale, y, f"{float(job.get('rewardMillions') or 0):g}M", scale, 10, HUD_GREEN, True, "ne")
+                    y += 22 * scale
+                self._draw_text(canvas, 8 * scale, y, "FULL BOARD / NEAREST SCOUT JOBS ON IPAD", scale, 8, HUD_MUTED)
+                y += 18 * scale
+
+        return width, round(y + 8 * scale)
+
     def _render_panel_canvas(self, panel_id: str, canvas: tk.Canvas, scale: float, flash_on: bool) -> None:
         canvas.delete("all")
         if panel_id == "own":
