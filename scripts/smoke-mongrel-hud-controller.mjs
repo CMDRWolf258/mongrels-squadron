@@ -290,4 +290,25 @@ async function drain(h, expected) {
   assert.equal(h.requests.length,2,'Plotting and checking must not send activation');
 }
 
+{
+  const h=harness();
+  // Manual clipboard repeat is a single local command to Scout, not plotting.
+  const copy=h.node('routeCopyNext').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/route');
+  assert.deepEqual(h.requests[0].body,{action:'copy'});
+  h.respond(h.requests[0],null,{ok:true,queued:true,nextSystem:'TEST NEUTRON'});
+  await copy;
+  assert.match(h.node('routeNotice').textContent,/Serenity/);
+  assert.equal(h.requests.length,1);
+}
+{
+  const h=harness();
+  h.controller.renderFlightManifest(
+    {id:'route-complete',waypoints:[{system:'Start'},{system:'Neutron'},{system:'Diaba'}]},
+    null,{routeId:'route-complete',completed:true,waypointIndex:2});
+  const marked=h.node('routeManifest').innerHTML;
+  assert.equal((marked.match(/is-reached/g)||[]).length,3,
+    'Completed manifest must retain reached indicators even after Cloudflare clears active route');
+}
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
