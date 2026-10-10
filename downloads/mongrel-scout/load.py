@@ -1009,7 +1009,8 @@ def _refresh_route_navigation() -> None:
         current = str((_hud_state.get("system") or {}).get("name") or "").strip()
         ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
         if not isinstance(route, Mapping) or not route.get("autoCopy"):
-            _nav_id, _nav_index, _nav_pending = "", 0, ""
+            # Reactivating this same route must copy its first stop again.
+            _nav_id, _nav_index, _nav_copied, _nav_pending = "", 0, "", ""
             _hud_state["navigation"] = None
             return
         route_id = str(route.get("id") or "")
@@ -1039,6 +1040,9 @@ def _refresh_route_navigation() -> None:
             "active": bool(next_system), "routeId": route_id,
             "destination": str(route.get("destination") or ""),
             "waypointIndex": _nav_index, "waypointCount": len(names),
+            "navigationTargetCount": max(0, len(names) - 1),
+            "routeType": str(route.get("routeType") or "neutron_replot_waypoints"),
+            "estimatedTotalJumps": route.get("estimatedTotalJumps"),
             "nextSystem": next_system,
             "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
         }
@@ -1063,7 +1067,17 @@ def _refresh_route_navigation() -> None:
             with _hud_condition:
                 feed = _hud_state.get("siteFeed")
                 active = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
-                if not isinstance(active, Mapping) or str(active.get("id") or "") != route_id or _nav_index >= len(names) - 1:
+                # Clipboard work is queued onto Tk's UI thread. Recheck the
+                # route, commander opt-out and ship AFTER queuing so a stale
+                # callback cannot copy a target from an inactive route.
+                current_ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
+                if (not isinstance(active, Mapping)
+                        or not active.get("autoCopy")
+                        or str(active.get("id") or "") != route_id
+                        or current_ship.casefold() != ship.casefold()
+                        or config.get_int(KEY_NAV_AUTO_COPY) == -1
+                        or _nav_index >= len(names) - 1
+                        or marker != f"{route_id}:{_nav_index}:{next_system}"):
                     return
             widget.clipboard_clear()
             widget.clipboard_append(next_system)
