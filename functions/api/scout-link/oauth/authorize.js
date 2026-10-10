@@ -1,6 +1,6 @@
 import { getCookie, cookie, readSession } from '../../../../lib/auth.js';
 import { linkAdmin } from '../../../../lib/scout-link.js';
-import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, putSecret, readSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
+import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, validResource, putSecret, readSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
 
 const CONSENT_COOKIE = '__Host-mongrel-scout-link-consent';
 const redirect = (url) => noStore(new Response(null,{status:303,headers:{Location:url}}));
@@ -27,11 +27,12 @@ export async function onRequestGet({request,env}) {
   const challenge = url.searchParams.get('code_challenge');
   const state = url.searchParams.get('state') || '';
   const scope = url.searchParams.get('scope') || SCOPE;
+  const resource = url.searchParams.get('resource');
   if (clientId !== CLIENT_ID || callback !== CALLBACK ||
       url.searchParams.get('response_type') !== 'code' ||
       url.searchParams.get('code_challenge_method') !== 'S256' ||
       !challenge || !/^[A-Za-z0-9_-]{43}$/.test(challenge) ||
-      !scopeAllowed(scope) || state.length > 1000) return oauthError('invalid_request',400);
+      !scopeAllowed(scope) || !validResource(request,resource) || state.length > 1000) return oauthError('invalid_request',400);
   const user = await adminFor(request,env);
   if (!user) {
     const returnTo = url.pathname + url.search;
@@ -39,7 +40,7 @@ export async function onRequestGet({request,env}) {
   }
   const pending = randomToken();
   const now = Date.now();
-  await putSecret(env,'pending',pending,{ownerId:user.sub,clientId,callback,challenge,state,scope,exp:now+600000},600);
+  await putSecret(env,'pending',pending,{ownerId:user.sub,clientId,callback,challenge,state,scope,resource,exp:now+600000},600);
   const response = new Response(confirmHtml(pending),{status:200,headers:{
     'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
     'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
