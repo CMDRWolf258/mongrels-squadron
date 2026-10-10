@@ -48,7 +48,10 @@ assert.equal((await rpc({jsonrpc:'2.0',id:1,method:'tools/list'},'invalid')).sta
 const init=await (await rpc({jsonrpc:'2.0',id:2,method:'initialize',params:{}})).json();
 assert.equal(init.result.serverInfo.name,'Mongrel Scout Link');
 const tools=await (await rpc({jsonrpc:'2.0',id:3,method:'tools/list'})).json();
-assert.deepEqual(tools.result.tools.map(t=>t.name),['get_current_ship']);
+assert.deepEqual(tools.result.tools.map(t=>t.name),[
+  'get_current_ship','plot_neutron_route','get_neutron_route',
+  'activate_neutron_navigation','stop_neutron_navigation','get_active_neutron_navigation',
+]);
 const result=await (await rpc({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:'get_current_ship',arguments:{}}})).json();
 assert.equal(result.result.structuredContent.ship.ship,'Leaf On the Wind');
 assert.equal((await (await rpc({jsonrpc:'2.0',id:5,method:'tools/call',params:{name:'set_ship_route'}})).json()).error.code,-32602);
@@ -73,7 +76,7 @@ const code=new URL(approved.headers.get('Location')).searchParams.get('code');
 assert.ok(code);
 const exchange=()=>exchangeToken({env,request:req(origin+'/api/scout-link/oauth/token','POST',new URLSearchParams({client_id:CLIENT_ID,grant_type:'authorization_code',code,redirect_uri:CALLBACK,code_verifier:verifier}),{'Content-Type':'application/x-www-form-urlencoded'})});
 const grant=await (await exchange()).json();
-assert.equal(grant.scope,'scout.read');
+assert.equal(grant.scope,'scout.read scout.route');
 assert.equal((await exchange()).status,400);
 assert.equal((await rpc({jsonrpc:'2.0',id:6,method:'tools/list'},grant.access_token)).status,200);
 const wrongEnv={...env,SCOUT_CHATGPT_LINK_ENABLED:'false'};
