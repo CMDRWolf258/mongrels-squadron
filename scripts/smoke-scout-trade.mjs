@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { normalizeScoutActivityBatch } from '../lib/scout-activity.js';
-import { mergeEventsWithResult } from '../lib/frontier.js';
+import { mergeEventsWithResult, parseJournal, summarizeEvents } from '../lib/frontier.js';
 
 const now=Date.parse('2026-10-08T04:00:00Z');
 const source={
@@ -52,3 +52,69 @@ assert.equal(reconciled.events[0].profitKnown,true);
 assert.equal(reconciled.events[0].tradeSourceVerified,true);
 assert.equal(reconciled.events[0].bgsTradeEligible,true);
 console.log('Scout live trade server guards, 7M calculation, deduplication and CAPI reconciliation passed');
+
+const exact={...source,systemAddress:'123456789',timestamp:'2026-10-08T03:55:00Z'};
+const ordinalRows=[rows({...exact,saleOrdinal:1})[0],rows({...exact,saleOrdinal:2})[0]];
+assert.equal(ordinalRows.length,2);
+assert.equal(rows({...exact,saleOrdinal:0}).length,0,'Do not allow invalid sale occurrence');
+assert.equal(rows({...exact,saleOrdinal:129}).length,0,'Do not allow unbounded sale occurrence');
+assert.equal(rows({...exact,saleOrdinal:'bad'}).length,0);
+const raw=[
+  {timestamp:'2026-10-08T03:50:00Z',event:'Docked',StarSystem:'Diaba',
+    SystemAddress:123456789,StationName:'Niijima Station',StationType:'Orbis',
+    StationFaction:{Name:'Regiment of Imperial Mongrels'}},
+  {timestamp:'2026-10-08T03:51:00Z',event:'MarketBuy',Type:'$Gold_Name;',
+    Count:400,BuyPrice:125000,TotalCost:50000000},
+  ...[1,2].map(()=>({timestamp:'2026-10-08T03:55:00Z',event:'MarketSell',
+    Type:'$Gold_Name;',Type_Localised:'Gold',Count:200,
+    TotalSale:32000000,SellPrice:160000,AvgPricePaid:125000})),
+];
+const frontierRows=parseJournal(raw.map(row=>JSON.stringify(row)).join('\n'),['Diaba']).events;
+assert.equal(frontierRows.length,2,'Frontier must preserve two identical same-second journal sale lines');
+assert.deepEqual(frontierRows.map(row=>row.saleOrdinal),[1,2]);
+assert.deepEqual(frontierRows.map(row=>row.profit),[7000000,7000000]);
+
+const ledger=new Map();
+const makeEnv=()=>({DAILY_ORDERS:{
+  async get(key,{type}={}){const raw=ledger.get(key);return raw===undefined?null:(type==='json'?JSON.parse(raw):raw);},
+  async put(key,value){ledger.set(key,String(value));},
+}});
+const e=makeEnv();
+const liveFirst=await mergeEventsWithResult(e,'wolf-chunks',ordinalRows);
+assert.equal(liveFirst.added,2,'Two real chunks must each receive one credit');
+assert.equal(summarizeEvents(liveFirst.events).tradeEligibleProfit,14000000);
+const confirmed=await mergeEventsWithResult(e,'wolf-chunks',frontierRows);
+assert.equal(confirmed.added,0,'Frontier must replace Scout rows rather than duplicate sales');
+assert.equal(confirmed.events.length,2,'Scout and Frontier represent the same two sales');
+assert.equal(confirmed.events.every(row=>row.provisional!==true),true);
+assert.equal(summarizeEvents(confirmed.events).tradeEligibleProfit,14000000);
+assert.equal((await mergeEventsWithResult(e,'wolf-chunks',frontierRows)).changed,false,'Re-sync cannot increase trade credit');
+assert.equal((await mergeEventsWithResult(e,'wolf-chunks',ordinalRows)).changed,false,'Scout retry cannot overwrite confirmed Frontier');
+const distinct=rows({...exact,count:199,total:31840000,saleOrdinal:1})[0];
+assert.equal((await mergeEventsWithResult(e,'wolf-chunks',[distinct])).added,1,'Distinct sale volume is a distinct credit');
+
+// Legacy Scout and CAPI records may differ solely by the timestamp format
+// or the numeric vs string SystemAddress. Re-key and reconcile them in-place.
+const legacy=[
+  {...ordinalRows[0],saleOrdinal:undefined,systemAddress:'123456789',timestamp:'2026-10-08T03:55:00.000Z'},
+  {...frontierRows[0],saleOrdinal:undefined,timestamp:'2026-10-08T03:55:00Z'},
+];
+ledger.set('frontier-bgs-events:wolf-legacy',JSON.stringify({events:legacy,version:3}));
+const repaired=await mergeEventsWithResult(e,'wolf-legacy',[frontierRows[0]]);
+assert.equal(repaired.events.length,1,'Legacy Scout/CAPI duplicate must collapse');
+assert.equal(repaired.events[0].provisional!==true,true);
+assert.equal(summarizeEvents(repaired.events).tradeProfit,7000000);
+
+// If a Frontier journal has insufficient old purchase history, later
+// verified Scout evidence can qualify the exact sale without adding one.
+const incomplete={...frontierRows[0],tradeSource:'unknown',
+  tradeSourceVerified:false,bgsTradeEligible:false,tradeEligibilityReason:'purchase_provenance_unverified'};
+const f=makeEnv();
+const unfounded=await mergeEventsWithResult(f,'wolf-proof',[incomplete]);
+assert.equal(unfounded.added,1);
+const proof=await mergeEventsWithResult(f,'wolf-proof',[ordinalRows[0]]);
+assert.equal(proof.events.length,1);
+assert.equal(proof.events[0].bgsTradeEligible,true);
+assert.equal(proof.events[0].provisional,undefined);
+assert.equal((await mergeEventsWithResult(f,'wolf-proof',[incomplete])).events[0].bgsTradeEligible,true);
+console.log('Trade split-chunk ordinals, normalized Scout/CAPI IDs, legacy repair, and idempotent sync passed');

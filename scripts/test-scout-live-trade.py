@@ -21,6 +21,7 @@ want = {
     "_cmdr_cache_key", "_commodity_key", "_commodity_display",
     "_optional_int", "_decimal_text",
     "_recover_trade_lots_from_recent_journals", "_restore_trade_origin_for_sale",
+    "_next_trade_sale_ordinal",
 }
 functions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in want]
 missing = want - {n.name for n in functions}
@@ -47,6 +48,7 @@ scope = {
     "json": json, "math": math, "re": re, "threading": threading,
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
+    "_activity_trade_sale_ordinals": {},
     "_last_system_name": "Diaba", "_last_system_address": 12345,
     "KEY_ACTIVITY_TRADE_PROVENANCE": "test-trade-provenance",
     "_cargo_inventory_from_edmc_state": inventory,
@@ -281,3 +283,14 @@ with TemporaryDirectory() as folder:
 print("Scout historical purchase replay, same-CMDR guards, uniqueness, mixed cargo and FIFO safeguards passed")
 
 
+
+# Distinct transactions with identical same-second Journal sale fields must
+# survive the pending-batch fingerprinting through an explicit ordinal.
+ordinal=scope["_next_trade_sale_ordinal"]
+sale_payload={"event":"MarketSell","timestamp":"2026-10-08T03:55:00Z",
+              "systemAddress":"12345","station":"Niijima Station",
+              "commodity":"Gold","count":200,"total":32000000,"sellPrice":160000}
+assert ordinal("Wolf258",sale_payload)==1
+assert ordinal("Wolf258",sale_payload)==2
+assert ordinal("Wolf258",{**sale_payload,"count":199})==1
+assert ordinal("Other",sale_payload)==1

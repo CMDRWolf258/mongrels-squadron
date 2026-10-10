@@ -1,3 +1,7 @@
+## Trade split-sale reconciliation (Scout v1.13.2)
+
+Scout now assigns per-sale occurrence ordinals to consecutive identical MarketSell journal entries, even when multiple chunks share one timestamp, commodity, quantity and price. It retains the ordinal on retry. The shared server normalizes Scout/CAPI sale identities and replaces live provisional reports with matching Frontier confirmations instead of stacking both reports. A future Frontier sync can reconcile previously merged historical duplicate IDs and confirm genuine repeated chunks. No source purchases or cargo inventory are uploaded.
+
 # Mongrel Scout
 
 **Short version:** install it in EDMC, paste in your Scout token, and leave it running while you play. You do **not** need to edit any files inside the plugin.
