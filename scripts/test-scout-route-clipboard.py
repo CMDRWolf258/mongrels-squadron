@@ -71,16 +71,27 @@ assert scout._hud_state["navigation"]["navigationTargetCount"]==2
 scout._refresh_route_navigation()
 assert widget.copies==["TEST NEUTRON A"],widget.copies
 
-# A regular intermediate FSD jump does not mean the next neutron waypoint was reached.
-scout._hud_state["system"]={"name":"INTERMEDIATE SYSTEM"}
-scout._refresh_route_navigation()
-assert widget.copies==["TEST NEUTRON A"],widget.copies
+# Serenity live-test finding: plotting the first neutron waypoint in Albatross
+# produced a nine-jump in-game route. Reproduce eight ordinary hops without
+# changing the next neutron target or repeatedly copying it.
+for jump in range(1, 9):
+    scout._hud_state["system"]={"name":f"ORDINARY JUMP SYSTEM {jump}"}
+    scout._refresh_route_navigation()
+    assert scout._hud_state["navigation"]["nextSystem"]=="TEST NEUTRON A",jump
+    assert scout._hud_state["navigation"]["waypointIndex"]==0,jump
+    assert widget.copies==["TEST NEUTRON A"],widget.copies
+    # Repeated site-feed updates between jumps must not advance or copy.
+    scout._refresh_route_navigation()
+    assert widget.copies==["TEST NEUTRON A"],widget.copies
 
-# Reaching the actual target copies exactly the next navigation entry.
+# Jump nine arrives at the listed neutron waypoint: advance exactly once.
 scout._hud_state["system"]={"name":"TEST NEUTRON A"}
 scout._refresh_route_navigation()
 assert widget.copies==["TEST NEUTRON A","Diaba"],widget.copies
+assert scout._hud_state["navigation"]["waypointIndex"]==1
 assert scout._hud_state["navigation"]["nextSystem"]=="Diaba"
+scout._refresh_route_navigation()
+assert widget.copies==["TEST NEUTRON A","Diaba"],widget.copies
 
 # An arbitrary jump may not skip past the next requested waypoint.
 scout._hud_state["system"]={"name":"UNPLANNED SYSTEM"}
