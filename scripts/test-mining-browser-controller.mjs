@@ -83,3 +83,33 @@ test('result cards reveal deliberate Navigate controls for deposits and center-o
   assert.doesNotMatch(pick('async function navigateMiningSearchResult','function populateMiningFilters'),/\/api\/site-select|\/api\/location-select/,
     'Browser Navigate must use the verified ID64+row-ID endpoint, not raw legacy selection');
 });
+
+test('Report Deposit is above the long saved-deposit and system-browser sections',()=>{
+  const section=html.slice(html.indexOf('<section id="surfacePanel"'),html.indexOf('</section>',html.indexOf('<section id="surfacePanel"')));
+  assert.ok(section.indexOf('<h2>REPORT DEPOSIT</h2>')<section.indexOf('<h2>DEPOSITS IN SELECTED LOCATION</h2>'));
+  assert.ok(section.indexOf('<h2>REPORT DEPOSIT</h2>')<section.indexOf('<h2>MINING DATABASE · SYSTEM BROWSER</h2>'));
+});
+
+test('Saved deposits collapse by commodity and preserve expansion across refreshes',()=>{
+  const node={innerHTML:'',querySelectorAll(){return []}};
+  const scope={el(id){return id==='sites'?node:{value:'',classList:{add(){},remove(){}}}},
+    escapeHtml,escapeAttr:escapeHtml,savedDepositScope:'',savedDepositOpen:{}};
+  vm.createContext(scope);
+  vm.runInContext(pick('function renderSavedDepositGroups','function browserMatches')+'this.renderSavedDepositGroups=renderSavedDepositGroups;',scope);
+  const rows=[
+    {id:'a',commodity:'Gold',rigs:3,latitude:12.3,longitude:42.4,signal:13},
+    {id:'b',commodity:'Gold',rigs:4,latitude:12.4,longitude:42.5,signal:13},
+    {id:'c',commodity:'Monazite & more',rigs:6,latitude:12.5,longitude:42.6,signal:13}
+  ];
+  scope.renderSavedDepositGroups(rows,13,{id:'a'},'sys|body|13');
+  assert.match(node.innerHTML,/Gold · 2 deposits/);
+  assert.match(node.innerHTML,/Monazite &amp; more · 1 deposit/);
+  assert.match(node.innerHTML,/data-site="a"/);
+  assert.match(node.innerHTML,/site-btn active/);
+  assert.doesNotMatch(node.innerHTML,/data-deposit-group="Gold" open/);
+  node.querySelectorAll=selector=>selector==='details[data-deposit-group]'?[{getAttribute:()=> 'Gold',open:true}]:[];
+  scope.renderSavedDepositGroups(rows,13,{id:'a'},'sys|body|13');
+  assert.match(node.innerHTML,/data-deposit-group="Gold" open/,'expanded Gold group should survive polling');
+  scope.renderSavedDepositGroups(rows,13,{id:'a'},'sys|other-body|13');
+  assert.doesNotMatch(node.innerHTML,/data-deposit-group="Gold" open/,'switching bodies starts collapsed');
+});
