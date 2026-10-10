@@ -63,6 +63,7 @@ export async function onRequestPost({request,env}) {
   if (!pending || pending.ownerId !== user.sub) return oauthError('consent_expired',400);
   const url = new URL(pending.callback);
   url.searchParams.set('state',pending.state);
+  url.searchParams.set('iss',new URL(request.url).origin);
   if (form.get('decision') !== 'approve') {
     url.searchParams.set('error','access_denied');
   } else {
