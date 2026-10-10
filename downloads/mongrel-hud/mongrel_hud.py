@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.4"
+APP_VERSION = "0.17.5"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1338,7 +1338,7 @@ class MongrelHudApp:
         """Detect a *confirmed* waypoint transition, not an ordinary FSD jump."""
         old = previous if isinstance(previous, dict) else {}
         nav = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
-        if not nav.get("active") or not old.get("routeId") or old.get("routeId") != nav.get("routeId"):
+        if not (nav.get("active") or nav.get("completed")) or not old.get("routeId") or old.get("routeId") != nav.get("routeId"):
             return
         old_index, new_index = old.get("waypointIndex"), nav.get("waypointIndex")
         if (type(old_index) is not int or type(new_index) is not int
@@ -3695,7 +3695,7 @@ class MongrelHudApp:
 
     def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60) -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
-        if action not in {"read", "start", "stop", "plot", "check"}:
+        if action not in {"read", "start", "stop", "plot", "check", "copy"}:
             raise ValueError("invalid_route_action")
         if route_id and not re.fullmatch(r"[0-9a-fA-F-]{24,64}", route_id):
             raise ValueError("invalid_route_id")
@@ -5416,14 +5416,18 @@ class MongrelHudApp:
         y = self._draw_title(canvas, title, scale, width)
 
         if panel == "navcourse":
-            self._draw_text(canvas, 8 * scale, y, "ROUTE ACTIVE" if active else "NAVIGATION STANDBY", scale, 10, HUD_GREEN if active else HUD_MUTED, True)
+            self._draw_text(canvas, 8 * scale, y, "DESTINATION REACHED" if nav.get("completed") else "ROUTE ACTIVE" if active else "NAVIGATION STANDBY", scale, 10, HUD_GREEN if active or nav.get("completed") else HUD_MUTED, True)
             y += 21 * scale
-            self._draw_text(canvas, 8 * scale, y, self.clip_line(next_system if active else "NO ACTIVE ROUTE", 41), scale, 15, HUD_CYAN if active else HUD_MUTED, True)
+            self._draw_text(canvas, 8 * scale, y, self.clip_line(next_system if active else str(nav.get("destination") or "NO ACTIVE ROUTE") if nav.get("completed") else "NO ACTIVE ROUTE", 41), scale, 15, HUD_CYAN if active or nav.get("completed") else HUD_MUTED, True)
             y += 28 * scale
             if active:
                 self._draw_text(canvas, 8 * scale, y, self.clip_line("DEST  " + str(route.get("destination") or ""), 52), scale, 10, HUD_WHITE)
                 y += 20 * scale
-                self._draw_text(canvas, 8 * scale, y, f"WAYPOINT {min(idx + 2, len(waypoints))}/{len(waypoints)}   ·   {max(0, len(waypoints) - idx - 2)} AFTER NEXT", scale, 10, HUD_AMBER, True)
+                estimate=nav.get("estimatedRemainingJumps")
+                counter=f"REMAINING {max(0,int(nav.get('remainingTargets') or 0))} TARGETS"
+                if type(estimate) is int:
+                    counter+=f" · ~{estimate} PLANNED JUMPS"
+                self._draw_text(canvas, 8 * scale, y, counter, scale, 10, HUD_AMBER, True)
                 y += 21 * scale
             self._draw_text(canvas, 8 * scale, y, self.clip_line("CURRENT  " + current, 56), scale, 9, HUD_MUTED)
             y += 18 * scale
@@ -5454,16 +5458,16 @@ class MongrelHudApp:
         elif panel == "navsignal":
             with self.lock:
                 cue = dict(self.navigation_arrival)
-            fresh = active and cue.get("routeId") == nav.get("routeId") and time.monotonic() - float(cue.get("atMonotonic") or 0) < 9
+            fresh = (active or nav.get("completed")) and cue.get("routeId") == nav.get("routeId") and time.monotonic() - float(cue.get("atMonotonic") or 0) < 9
             if fresh:
                 kind = str(cue.get("kind") or "waypoint")
-                title_line = "NEUTRON WAYPOINT REACHED" if kind == "neutron" else "FUEL STOP REACHED" if kind == "fuel" else "WAYPOINT REACHED"
+                title_line = "DESTINATION REACHED" if nav.get("completed") else "NEUTRON WAYPOINT REACHED" if kind == "neutron" else "FUEL STOP REACHED" if kind == "fuel" else "WAYPOINT REACHED"
                 color = HUD_AMBER if kind == "neutron" else HUD_GREEN if kind == "fuel" else HUD_CYAN
                 self._draw_text(canvas, 8 * scale, y, title_line if flash_on else "◆ " + title_line + " ◆", scale, 16, color if flash_on else HUD_WHITE, True)
                 y += 31 * scale
                 self._draw_text(canvas, 8 * scale, y, self.clip_line(str(cue.get("system") or ""), 52), scale, 11, HUD_WHITE, True)
                 y += 24 * scale
-                self._draw_text(canvas, 8 * scale, y, "NEXT DESTINATION COPIED BY SCOUT" if next_system else "ROUTE MILESTONE CONFIRMED", scale, 9, HUD_GREEN)
+                self._draw_text(canvas, 8 * scale, y, "NEXT DESTINATION COPIED BY SCOUT" if next_system else "ROUTE COMPLETED" if nav.get("completed") else "ROUTE MILESTONE CONFIRMED", scale, 9, HUD_GREEN)
                 y += 18 * scale
             else:
                 self._draw_text(canvas, 8 * scale, y, "AWAITING NEXT ROUTE WAYPOINT" if active else "NO ACTIVE ROUTE CUES", scale, 11, HUD_MUTED, True)

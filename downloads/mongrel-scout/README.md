@@ -5,13 +5,18 @@
 Full setup guide and current download:
 https://mongrels-squadron.pages.dev/member/#mongrel-scout-setup
 
-## Optional ChatGPT Scout Link (v1.12.7)
+## Optional ChatGPT Scout Link (v1.12.8)
 
 The private **Scout Link** setting is **off by default**. If enabled by the player **and** by the site's feature flags, Scout sends a small ship/system snapshot so the player's own ChatGPT plugin can read an accurate jump range. It uses a separate non-blocking upload path and does not alter existing BGS/trade/HUD pipelines.
 
 The paired HUD controller now lets the Site Admin load a ready route by ID and explicitly Start or Stop Navigation without a ChatGPT action-approval prompt. The companion **Route Director** can retrieve a Spansh neutron route from ChatGPT and, **after the player explicitly activates navigation**, automatically copy each next route waypoint into the local Windows clipboard (paste into Elite's Galaxy Map). A separate checkbox lets the player disable automatic copying. Neither feature operates the game or sends full journal files.
 
 A disabled, disconnected or stale Scout Link does not prevent ordinary Scout operations.
+
+Scout 1.12.8 additionally saves confirmed waypoint progress locally so
+restarting EDMC between neutron systems will not lose the next replot point.
+It can re-copy the current target on explicit iPad command and recognizes
+verified route completion without copying a phantom waypoint.
 
 ## What Scout does
 
