@@ -1,8 +1,7 @@
-import { getCookie, cookie, readSession } from '../../../../lib/auth.js';
+import { readSession } from '../../../../lib/auth.js';
 import { linkAdmin } from '../../../../lib/scout-link.js';
-import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, validResource, putSecret, readSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
+import { oauthConfigured, oauthError, randomToken, CLIENT_ID, CALLBACK, SCOPE, scopeAllowed, validResource, resourceUrl, putSecret, consumeSecret, noStore } from '../../../../lib/scout-link-oauth.js';
 
-const CONSENT_COOKIE = '__Host-mongrel-scout-link-consent';
 const redirect = (url) => noStore(new Response(null,{status:303,headers:{Location:url}}));
 async function adminFor(request,env) {
   const user = await readSession(request,env);
@@ -17,7 +16,7 @@ function confirmHtml(id) {
     'and, only when you explicitly request activation, send a waypoint plan to the PC for automatic clipboard copying. No ship controls or BGS writes.</p>' +
     '<p>Only the exact Mongrels Site Admin account may authorize this connection.</p>' +
     '<form method="post"><input type="hidden" name="pending" value="' + id + '">' +
-    '<button name="decision" value="approve" type="submit">Allow read-only access</button> ' +
+    '<button name="decision" value="approve" type="submit">Allow Scout Link access</button> ' +
     '<button name="decision" value="deny" type="submit">Cancel</button></form></main></html>';
 }
 export async function onRequestGet({request,env}) {
@@ -47,7 +46,6 @@ export async function onRequestGet({request,env}) {
     'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
     'X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff',
   }});
-  response.headers.set('Set-Cookie',cookie(CONSENT_COOKIE,pending,{maxAge:600,sameSite:'Lax'}));
   return response;
 }
 export async function onRequestPost({request,env}) {
@@ -58,9 +56,18 @@ export async function onRequestPost({request,env}) {
   if (Number(request.headers.get('content-length') || 0) > 1024) return oauthError('invalid_request',413);
   const form = await request.formData();
   const pendingId = String(form.get('pending') || '');
-  if (!pendingId || getCookie(request,CONSENT_COOKIE) !== pendingId) return oauthError('invalid_consent',403);
+  // The consent form's 256-bit secret is tied to the authenticated Site Admin
+  // and a short-lived request record. Do not require another browser cookie:
+  // ChatGPT can open two authorization tabs, which would overwrite it.
+  // Origin remains a strict same-origin POST check above.
+  if (!/^[A-Za-z0-9_-]{43}$/.test(pendingId)) return oauthError('invalid_consent',403);
   const pending = await consumeSecret(env,'pending',pendingId);
-  if (!pending || pending.ownerId !== user.sub) return oauthError('consent_expired',400);
+  if (!pending ||
+      pending.ownerId !== user.sub ||
+      pending.clientId !== CLIENT_ID ||
+      pending.callback !== CALLBACK ||
+      pending.resource !== resourceUrl(request) ||
+      !scopeAllowed(pending.scope)) return oauthError('consent_expired',400);
   const url = new URL(pending.callback);
   url.searchParams.set('state',pending.state);
   url.searchParams.set('iss',new URL(request.url).origin);
@@ -72,6 +79,5 @@ export async function onRequestPost({request,env}) {
     url.searchParams.set('code',code);
   }
   const response = redirect(url.toString());
-  response.headers.append('Set-Cookie',cookie(CONSENT_COOKIE,'',{maxAge:0,sameSite:'Lax'}));
   return response;
 }

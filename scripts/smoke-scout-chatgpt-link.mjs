@@ -75,9 +75,27 @@ assert.equal(presented.status,200);
 const html=await presented.text();
 const pending=html.match(/name="pending" value="([^"]+)"/)?.[1];
 assert.ok(pending);
-const cookie=presented.headers.get('Set-Cookie').split(';')[0];
-const approved=await authorizePost({env,request:req(auth,'POST',new URLSearchParams({pending,decision:'approve'}),{'Content-Type':'application/x-www-form-urlencoded',Origin:origin,Cookie:'mongrels_session='+owner+'; '+cookie})});
+// A second ChatGPT authorization tab must not invalidate the first tab's
+// consent. No additional consent cookie is required.
+const second=await authorizeGet({env,request:req(auth,'GET',undefined,{Cookie:'mongrels_session='+owner})});
+assert.equal(second.status,200);
+const secondPending=(await second.text()).match(/name="pending" value="([^"]+)"/)?.[1];
+assert.ok(secondPending && secondPending!==pending);
+assert.equal(presented.headers.get('Set-Cookie'),null);
+const consent=(pendingId,decision='approve',cookie=owner,postOrigin=origin)=>authorizePost({
+  env,request:req(auth,'POST',new URLSearchParams({pending:pendingId,decision}),{
+    'Content-Type':'application/x-www-form-urlencoded',Origin:postOrigin,Cookie:'mongrels_session='+cookie
+  })
+});
+assert.equal((await consent('', 'approve')).status,403);
+assert.equal((await consent(pending,'approve',owner,'https://other.example')).status,403);
+assert.equal((await consent(pending,'approve',nonAdmin)).status,403);
+const approved=await consent(pending);
 assert.equal(approved.status,303);
+// The other pending authorization should still be independently usable.
+const approvedSecond=await consent(secondPending,'deny');
+assert.equal(approvedSecond.status,303);
+assert.equal(new URL(approvedSecond.headers.get('Location')).searchParams.get('error'),'access_denied');
 assert.equal(new URL(approved.headers.get('Location')).searchParams.get('iss'),origin);
 const code=new URL(approved.headers.get('Location')).searchParams.get('code');
 assert.ok(code);
