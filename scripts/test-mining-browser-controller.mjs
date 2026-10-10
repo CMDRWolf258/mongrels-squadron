@@ -25,11 +25,11 @@ function el(id){
 const context={
   miningBrowser:{selected:'123',systems:[{systemAddress:'123',systemName:'Icy Test'}],
     data:{deposits:[
-      {body:'Icy Test A 2 a',commodity:'Bromellite',rigs:6,signal:1,latitude:12.3,longitude:44.2,storage:'shared'},
-      {body:'Icy Test B 2 a',commodity:'Gold',rigs:3,signal:2,latitude:10,longitude:20,storage:'local_only',notes:'<img src=x onerror=alert(1)>'},
-      {body:'Icy Test A 2 a',commodity:'Bromellite',rigs:2,signal:3,latitude:14,longitude:40,storage:'local_only'},
+      {id:'brom-6',body:'Icy Test A 2 a',commodity:'Bromellite',rigs:6,signal:1,latitude:12.3,longitude:44.2,storage:'shared'},
+      {id:'gold-3',body:'Icy Test B 2 a',commodity:'Gold',rigs:3,signal:2,latitude:10,longitude:20,storage:'local_only',notes:'<img src=x onerror=alert(1)>'},
+      {id:'brom-2',body:'Icy Test A 2 a',commodity:'Bromellite',rigs:2,signal:3,latitude:14,longitude:40,storage:'local_only'},
     ],centers:[
-      {body:'Icy Test C 1',signal:4,latitude:4,longitude:2,storage:'shared'},
+      {id:'center-4',body:'Icy Test C 1',signal:4,latitude:4,longitude:2,storage:'shared'},
     ]}},
   el,escapeHtml,escapeAttr:escapeHtml,
 };
@@ -112,4 +112,58 @@ test('Saved deposits collapse by commodity and preserve expansion across refresh
   assert.match(node.innerHTML,/data-deposit-group="Gold" open/,'expanded Gold group should survive polling');
   scope.renderSavedDepositGroups(rows,13,{id:'a'},'sys|other-body|13');
   assert.doesNotMatch(node.innerHTML,/data-deposit-group="Gold" open/,'switching bodies starts collapsed');
+});
+
+test('saved system browser collapses individual deposits into commodity groups with accurate filtered counts',()=>{
+  const all=run();
+  assert.match(all.html,/data-browse-group="commodity:Bromellite"/);
+  assert.match(all.html,/Bromellite · 2 deposits/);
+  assert.match(all.html,/data-browse-group="commodity:Gold"/);
+  assert.match(all.html,/Gold · 1 deposit/);
+  assert.match(all.html,/data-browse-group="center-only"/);
+  assert.match(all.html,/Centers without deposits · 1/);
+  assert.doesNotMatch(all.html,/data-browse-group="commodity:Gold" open/);
+  assert.match(all.html,/data-browse-item="deposit:gold-3"/);
+  assert.match(all.html,/data-browse-share-id="gold-3"/);
+  const only=run('Bromellite','',6);
+  assert.match(only.html,/Bromellite · 1 deposit/);
+  assert.doesNotMatch(only.html,/data-browse-group="commodity:Gold"/);
+  assert.doesNotMatch(only.html,/data-browse-group="center-only"/);
+  const none=run('Gold','Icy Test A 2 a',0);
+  assert.doesNotMatch(none.html,/data-browse-group="commodity:/);
+});
+
+test('browser accordion and individual row stay expanded after refresh and reset for another system',()=>{
+  const browser=el('browseResults'),query=browser.querySelectorAll;
+  try{
+    run();
+    browser.querySelectorAll=selector=>selector==='details[data-browse-group]'?[
+      {getAttribute:()=> 'commodity:Gold',open:true}
+    ]:selector==='details[data-browse-item]'?[
+      {getAttribute:()=> 'deposit:gold-3',open:true}
+    ]:[];
+    const same=run();
+    assert.match(same.html,/data-browse-group="commodity:Gold" open/);
+    assert.match(same.html,/data-browse-item="deposit:gold-3" open/);
+    context.miningBrowser.selected='888';
+    const switched=run();
+    assert.doesNotMatch(switched.html,/data-browse-group="commodity:Gold" open/);
+    assert.doesNotMatch(switched.html,/data-browse-item="deposit:gold-3" open/);
+  } finally {
+    browser.querySelectorAll=query;
+    context.miningBrowser.selected='123';
+    run();
+  }
+});
+
+test('commodity headers escape untrusted names without changing report/sharing endpoints',()=>{
+  const rows=context.miningBrowser.data.deposits;
+  rows.push({id:'untrusted',body:'Icy Test A 2 a',commodity:'Rare <img src=x onerror=alert(1)>',rigs:2,signal:7,storage:'local_only'});
+  try{
+    const all=run();
+    assert.match(all.html,/Rare &lt;img src=x onerror=alert\(1\)&gt; · 1 deposit/);
+    assert.doesNotMatch(all.html,/<img src=x/);
+    assert.match(all.html,/data-browse-share-id="untrusted"/);
+    assert.match(all.html,/data-browse-navigate="deposit"/);
+  } finally {rows.pop();run()}
 });
