@@ -63,7 +63,7 @@ const challenge=Buffer.from(bytes).toString('base64url');
 assert.ok(await verifyPkce(verifier,challenge));
 assert.equal(await verifyPkce('b'.repeat(56),challenge),false);
 const auth=new URL(origin+'/api/scout-link/oauth/authorize');
-for(const [k,v] of Object.entries({client_id:CLIENT_ID,redirect_uri:CALLBACK,response_type:'code',code_challenge:challenge,code_challenge_method:'S256',scope:'scout.read',state:'test-state'})) auth.searchParams.set(k,v);
+for(const [k,v] of Object.entries({client_id:CLIENT_ID,redirect_uri:CALLBACK,response_type:'code',code_challenge:challenge,code_challenge_method:'S256',scope:'scout.read scout.route',state:'test-state'})) auth.searchParams.set(k,v);
 const presented=await authorizeGet({env,request:req(auth,'GET',undefined,{Cookie:'mongrels_session='+owner})});
 assert.equal(presented.status,200);
 const html=await presented.text();
