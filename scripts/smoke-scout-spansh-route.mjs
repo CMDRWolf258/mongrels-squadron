@@ -26,9 +26,9 @@ const mockFetch=async (url,init)=>{
   posted.push([String(url),init]);
   if(String(url).endsWith('/api/route'))return new Response(JSON.stringify({job}),{status:202});
   if(String(url).includes('/api/results/'))return new Response(JSON.stringify({result:{jumps:[
-    {system:'NGC 2546 Sector UZ-G d10-16',has_neutron:false,is_scoopable:true},
-    {system:'TEST NEUTRON 1',has_neutron:true,is_scoopable:false},
-    {system:'Diaba',has_neutron:false,is_scoopable:true},
+    {system:'NGC 2546 Sector UZ-G d10-16',has_neutron:false,is_scoopable:true,jumps:0,distance_remaining:2800},
+    {system:'TEST NEUTRON 1',has_neutron:true,is_scoopable:false,jumps:7,distance_to_arrival:280,distance_remaining:2520},
+    {system:'Diaba',has_neutron:false,is_scoopable:true,jumps:4,distance_to_arrival:180,distance_remaining:0},
   ]}}),{status:200});
   return new Response('nope',{status:404});
 };
@@ -44,6 +44,28 @@ assert.equal(await readActiveRoute(env),null);
 const complete=await getRouteJob(env,plotted.id,mockFetch);
 assert.equal(complete.status,'ready');
 assert.equal(complete.waypoints.length,3);
+assert.equal(complete.routeType,'neutron_replot_waypoints');
+assert.equal(complete.waypointCount,3); // Includes source and destination, NOT 3 actual jumps.
+assert.equal(complete.navigationTargetCount,2); // The systems Scout may copy.
+assert.equal(complete.estimatedTotalJumps,11); // 7 + 4 upstream per-leg estimates.
+assert.equal(complete.waypoints[1].estimatedJumpsFromPrevious,7);
+assert.equal(complete.waypoints[1].distanceToArrival,280);
+assert.equal(complete.waypoints[2].distanceRemaining,0);
+assert.equal(normalizeSpanshWaypoints({jumps:[
+  {system:'Start',jumps:0},{system:'Bridge',neutron_star:'Yes',jumps:3},
+  {system:'Finish',jumps:2},
+]},'Start','Finish')[1].neutron,true);
+const missingCounts=normalizeSpanshWaypoints({jumps:[
+  {system:'Start'}, {system:'Neutron Replot',neutron_star:true},{system:'Finish',jumps:2},
+]},'Start','Finish');
+assert.equal(missingCounts[1].estimatedJumpsFromPrevious,null);
+assert.equal(missingCounts[1].distance,null);
+assert.equal(missingCounts[0].estimatedJumpsFromPrevious,null);
+assert.equal(missingCounts.at(-1).estimatedJumpsFromPrevious,2);
+const bridging=normalizeSpanshWaypoints({jumps:[{system:'Bridge',jumps:6},{system:'Finish',jumps:3}]},'Start','Finish');
+assert.equal(bridging[0].system,'Start'); // Source is a waypoint, not a jump.
+assert.equal(bridging.length,3);
+assert.equal(bridging[1].estimatedJumpsFromPrevious,6);
 assert.equal(complete.waypoints[1].neutron,true);
 assert.equal(complete.waypoints[1].scoopable,false);
 assert.equal(normalizeSpanshWaypoints({jumps:[{system:'Wrong'}]},'Anywhere','Diaba'),null);
@@ -54,6 +76,8 @@ assert.equal(active.autoCopy,true);
 const stored=await readActiveRoute(env);
 assert.equal(stored.waypoints[1].system,'TEST NEUTRON 1');
 assert.equal(stored.destination,'Diaba');
+assert.equal(stored.estimatedTotalJumps,11);
+assert.equal(stored.routeType,'neutron_replot_waypoints');
 const cleared=await clearActiveRoute(env);
 assert.equal(cleared.active,false);
 assert.equal(await readActiveRoute(env),null);
