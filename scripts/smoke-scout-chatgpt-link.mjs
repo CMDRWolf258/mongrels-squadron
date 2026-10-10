@@ -42,7 +42,7 @@ assert.equal(adminPayload.ship.ship,'Leaf On the Wind');
 assert.equal(adminPayload.ship.fresh,true);
 assert.equal(adminPayload.ship.cargo,0);
 
-const issued=await issueTokens(env,env.ADMIN_USER_ID,CLIENT_ID);
+const issued=await issueTokens(env,env.ADMIN_USER_ID,CLIENT_ID,undefined,origin+'/api/scout-link/mcp');
 const rpc=async(msg,token=issued.access_token)=>mcp({env,request:req(origin+'/api/scout-link/mcp','POST',JSON.stringify(msg),{'Content-Type':'application/json',Authorization:'Bearer '+token})});
 assert.equal((await rpc({jsonrpc:'2.0',id:1,method:'tools/list'},'invalid')).status,401);
 const init=await (await rpc({jsonrpc:'2.0',id:2,method:'initialize',params:{}})).json();
@@ -63,7 +63,7 @@ const challenge=Buffer.from(bytes).toString('base64url');
 assert.ok(await verifyPkce(verifier,challenge));
 assert.equal(await verifyPkce('b'.repeat(56),challenge),false);
 const auth=new URL(origin+'/api/scout-link/oauth/authorize');
-for(const [k,v] of Object.entries({client_id:CLIENT_ID,redirect_uri:CALLBACK,response_type:'code',code_challenge:challenge,code_challenge_method:'S256',scope:'scout.read scout.route',state:'test-state'})) auth.searchParams.set(k,v);
+for(const [k,v] of Object.entries({client_id:CLIENT_ID,redirect_uri:CALLBACK,response_type:'code',code_challenge:challenge,code_challenge_method:'S256',scope:'scout.read scout.route',resource:origin+'/api/scout-link/mcp',state:'test-state'})) auth.searchParams.set(k,v);
 const presented=await authorizeGet({env,request:req(auth,'GET',undefined,{Cookie:'mongrels_session='+owner})});
 assert.equal(presented.status,200);
 const html=await presented.text();
@@ -74,7 +74,7 @@ const approved=await authorizePost({env,request:req(auth,'POST',new URLSearchPar
 assert.equal(approved.status,303);
 const code=new URL(approved.headers.get('Location')).searchParams.get('code');
 assert.ok(code);
-const exchange=()=>exchangeToken({env,request:req(origin+'/api/scout-link/oauth/token','POST',new URLSearchParams({client_id:CLIENT_ID,grant_type:'authorization_code',code,redirect_uri:CALLBACK,code_verifier:verifier}),{'Content-Type':'application/x-www-form-urlencoded'})});
+const exchange=()=>exchangeToken({env,request:req(origin+'/api/scout-link/oauth/token','POST',new URLSearchParams({client_id:CLIENT_ID,grant_type:'authorization_code',code,redirect_uri:CALLBACK,code_verifier:verifier,resource:origin+'/api/scout-link/mcp'}),{'Content-Type':'application/x-www-form-urlencoded'})});
 const grant=await (await exchange()).json();
 assert.equal(grant.scope,'scout.read scout.route');
 assert.equal((await exchange()).status,400);
