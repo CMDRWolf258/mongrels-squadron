@@ -76,6 +76,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-mission-inf-dedupe.mjs
           node --experimental-default-type=module scripts/smoke-scout-trade.mjs
           python3 scripts/test-scout-live-trade.py
+          python3 scripts/test-scout-route-clipboard.py
           node --experimental-default-type=module scripts/smoke-hud-feed.mjs
           node --experimental-default-type=module scripts/smoke-hud-manifest.mjs
           python3 scripts/smoke-mongrel-hud.py
