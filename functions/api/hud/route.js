@@ -3,7 +3,7 @@
 // This is deliberately separate from the ChatGPT MCP approval layer.
 import { json } from '../../../lib/auth.js';
 import { authenticateScoutActivity } from '../../../lib/scout-activity.js';
-import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, getRouteJob } from '../../../lib/scout-route.js';
+import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, getRouteJob, completeRoute, readLastCompletedRoute } from '../../../lib/scout-route.js';
 
 const reply=(body,status=200)=>json(body,{status,headers:{
   'Cache-Control':'private, no-store, no-cache, must-revalidate',
@@ -25,11 +25,11 @@ export async function onRequestGet({request,env}){
   if(access.response)return access.response;
   try{
     const routeId=new URL(request.url).searchParams.get('routeId')||'';
-    const [ready,activeRoute]=await Promise.all([
-      readReadyRouteForControl(env,routeId),readActiveRoute(env),
+    const [ready,activeRoute,lastCompleted]=await Promise.all([
+      readReadyRouteForControl(env,routeId),readActiveRoute(env),readLastCompletedRoute(env),
     ]);
     if(!ready.ok)return reply(ready,ready.error==='invalid_route_id'?400:404);
-    return reply({ok:true,route:ready.route,activeRoute:activeRoute ? {
+    return reply({ok:true,route:ready.route,lastCompleted,activeRoute:activeRoute ? {
       id:activeRoute.id,ship:activeRoute.ship,source:activeRoute.source,
       destination:activeRoute.destination,activatedAt:activeRoute.activatedAt,
       waypointCount:activeRoute.waypoints?.length||0,
@@ -62,6 +62,12 @@ export async function onRequestPost({request,env}){
     if(body.action==='check'){
       const result=await getRouteJob(env,body.routeId);
       return reply(result,result.ok?200:404);
+    }
+    if(body.action==='complete'){
+      const result=await completeRoute(env,{
+        routeId:body.routeId,ship:body.ship,system:body.system,
+      });
+      return reply(result,result.ok?200:409);
     }
     if(body.action==='stop')return reply(await clearActiveRoute(env));
     if(body.action!=='start')return reply({ok:false,error:'invalid_action'},400);
