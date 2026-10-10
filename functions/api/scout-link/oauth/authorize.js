@@ -18,7 +18,8 @@ function confirmHtml(id) {
     '<p id="consent-progress" hidden role="status">Connecting to ChatGPT… Please wait.</p>' +
     '<form method="post"><input type="hidden" name="pending" value="' + id + '">' +
     '<button name="decision" value="approve" type="submit">Allow Scout Link access</button> ' +
-    '<button name="decision" value="deny" type="submit">Cancel</button></form></main></html>';
+    '<button name="decision" value="deny" type="submit">Cancel</button></form>' +
+    '<script src="/assets/scout-consent.js" defer></script></main></html>';
 }
 export async function onRequestGet({request,env}) {
   if (!oauthConfigured(env)) return oauthError('service_unavailable',503);
