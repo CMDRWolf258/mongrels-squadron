@@ -4805,6 +4805,12 @@ class MongrelHudApp:
             ("CARGO", f"{int(status.get('cargo'))} t" if isinstance(status.get("cargo"), (int, float)) else "—"),
             ("MASS", f"{own.get('currentMass'):.1f} t" if isinstance(own.get("currentMass"), (int, float)) else "—"),
         ]
+        navigation = state.get("navigation") or {}
+        if navigation.get("active"):
+            next_system = str(navigation.get("nextSystem") or "")
+            if next_system:
+                rows.append(("NAV NEXT", self.clip_line(next_system, 32)))
+                rows.append(("NAV ROUTE", f"{navigation.get('waypointIndex', 0) + 1}/{navigation.get('waypointCount', '?')}  ·  AUTO COPY"))
         for label, value in rows:
             self._draw_text(canvas, 8 * scale, y, label, scale, 9, HUD_MUTED, True)
             self._draw_text(canvas, 138 * scale, y, value, scale, 11, HUD_WHITE, True); y += 18 * scale
