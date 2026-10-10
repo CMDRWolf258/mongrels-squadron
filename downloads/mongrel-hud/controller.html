@@ -16,6 +16,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 @media(max-width:520px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.layout-actions{grid-template-columns:1fr}.panel-control{grid-template-columns:minmax(0,1fr) 76px}.panel-control select{width:100%}.voice-timing,.voice-role-grid{grid-template-columns:1fr}}
 .route-plot{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:10px;align-items:end}.route-plot select{width:100%;min-height:46px;color:var(--text);background:#07131a;border:1px solid var(--line);border-radius:8px;padding:8px}.route-manifest{max-height:380px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#07131a}.waypoint-line{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:center;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85rem}.waypoint-line:last-child{border-bottom:0}.waypoint-line .wp-number{font-variant-numeric:tabular-nums;color:var(--muted)}.waypoint-line .wp-name{overflow-wrap:anywhere;font-weight:650}.waypoint-line .wp-type{font-size:.7rem;letter-spacing:.06em;color:var(--muted)}.waypoint-line.is-next{background:#0b303c;border-left:3px solid var(--accent)}.waypoint-line.is-reached{opacity:.64}.waypoint-line.is-next .wp-type{color:var(--accent)}.network-job{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;border-bottom:1px solid rgba(255,255,255,.06);padding:9px 0}.network-job:last-child{border:0}.network-job small{color:var(--muted)}.route-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.route-actions button{min-height:46px;border:1px solid var(--line);border-radius:9px;background:#10232d;color:var(--text);font-weight:800}.route-actions button:disabled{opacity:.42}#routeStart{border-color:var(--accent)}#routeStop{border-color:#9a5055}@media(max-width:520px){.profiles button{font-size:.83rem}.route-plot{grid-template-columns:1fr}.route-actions{grid-template-columns:1fr 1fr}} 
 .mining-lookup{position:relative}.mining-suggestions{max-height:260px;overflow:auto;border:1px solid var(--accent);border-radius:8px;background:#10232d}.mining-suggestions button{display:block;text-align:left;width:100%;min-height:48px;padding:10px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line)}.mining-suggestions button:focus{background:#174454}.mining-suggestions small,.mining-browser-item small{display:block;color:var(--muted)}.mining-browser-results{display:grid;gap:8px}.mining-browser-item{padding:11px;border:1px solid var(--line);background:#07131a;border-radius:8px}.mining-browser-item strong{color:var(--accent)}.mining-browser-item summary{cursor:pointer;min-height:46px;padding:9px 0;font-weight:750;color:var(--accent)}.mining-browser-item .browser-nav-action{min-height:44px;width:100%;margin-top:8px;background:#12323e;border:1px solid var(--accent);border-radius:8px;color:var(--text);font-weight:800}.mining-browser-item p{margin:5px 0}.mining-browser-item small{margin-top:5px}.mining-browser-local{color:var(--warn)!important}
+.mining-browser-group{border:1px solid var(--line);border-radius:9px;background:#0d2530;padding:4px 10px}.mining-browser-group>summary{cursor:pointer;min-height:48px;padding:12px 4px;font-weight:800;color:var(--accent)}.mining-browser-group-items{display:grid;gap:8px;padding:4px 0 10px}.mining-browser-group .mining-browser-item{background:#07131a}
 .mining-deposit-group{width:100%;border:1px solid var(--line);border-radius:9px;background:#07131a;padding:4px 12px}.mining-deposit-group summary{cursor:pointer;min-height:46px;padding:12px 4px;color:var(--accent);font-weight:800}.mining-deposit-group .sites{padding:4px 0 12px}
 </style>
 </head>
@@ -330,7 +331,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
 var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="";
-var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0};
+var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0,groupScope:"",groupExpanded:Object.create(null),itemExpanded:Object.create(null)};
  var savedDepositScope="",savedDepositOpen=Object.create(null);
 function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
 function el(id){return document.getElementById(id)}
@@ -743,33 +744,65 @@ function renderMiningBrowseResults(){
   var system=miningBrowser.systems.find(function(row){return row.systemAddress===miningBrowser.selected});
   el("browseStatus").textContent=(system?system.systemName+" · ":"")+filtered.length+" matching deposits"
     +(centerOnly.length?" · "+centerOnly.length+" center-only signals":"")+(data.truncated?" · Results capped":"")+(data.warning?" · "+data.warning:"");
-  var html=filtered.slice(0,500).map(function(row){
+  // Keep expanded commodity and record rows open when filters change or a
+  // publish acknowledgment refreshes this system. Change system = reset.
+  var container=el("browseResults"),scope=String(miningBrowser.selected||"");
+  if(miningBrowser.groupScope!==scope){
+    miningBrowser.groupScope=scope;
+    miningBrowser.groupExpanded=Object.create(null);
+    miningBrowser.itemExpanded=Object.create(null);
+  }else{
+    container.querySelectorAll("details[data-browse-group]").forEach(function(group){
+      miningBrowser.groupExpanded[group.getAttribute("data-browse-group")]=group.open;
+    });
+    container.querySelectorAll("details[data-browse-item]").forEach(function(item){
+      miningBrowser.itemExpanded[item.getAttribute("data-browse-item")]=item.open;
+    });
+  }
+  var grouped=Object.create(null);
+  filtered.slice(0,500).forEach(function(row){
+    var name=String(row.commodity||"Other").trim()||"Other";
+    (grouped[name]||(grouped[name]=[])).push(row);
+  });
+  function renderDeposit(row){
     var count=Number(row.rigs||0),label=count>=7?"7+":String(count||"?");
     var local=row.storage==="local_only",sharedState=String(row.sharedStatus||""),coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
     var shareLabel=sharedState==="approved"||sharedState==="existing"?"SQUAD SHARED":sharedState==="pending"?"SUBMITTED · AWAITING REVIEW":sharedState==="duplicate_review"?"SUBMITTED · DUPLICATE REVIEW":local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED";
     var hasCenter=centers.some(function(center){return String(center.body||"").toLowerCase()===String(row.body||"").toLowerCase()&&Number(center.signal)===Number(row.signal)});
-    return '<details class="mining-browser-item"><summary>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs · '+escapeHtml(row.body||"Body")+'</summary>'
+    var key="deposit:"+String(row.id);
+    return '<details class="mining-browser-item" data-browse-item="'+escapeAttr(key)+'"'+(miningBrowser.itemExpanded[key]?' open':'')+'><summary>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs · '+escapeHtml(row.body||"Body")+'</summary>'
       +'<p>Signal #'+escapeHtml(row.signal||"?")+'</p>'
-      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+shareLabel+(row.needsReview&& !sharedState?" · POSSIBLE DUPLICATE":"")+'</small>'
+      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+shareLabel+(row.needsReview&&!sharedState?" · POSSIBLE DUPLICATE":"")+'</small>'
       +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')
       +'<button type="button" class="browser-nav-action" data-browse-navigate="deposit" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE'+(hasCenter?" · DEPOSIT + CENTER":" · DEPOSIT")+'</button>'
       +(local&&!sharedState?'<button type="button" class="browser-nav-action" data-browse-share="deposit" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE DEPOSIT WITH SQUAD</button>':'')+'</details>';
+  }
+  var html=Object.keys(grouped).sort(function(a,b){return a.localeCompare(b)}).map(function(name){
+    var rows=grouped[name],key="commodity:"+name;
+    return '<details class="mining-browser-group" data-browse-group="'+escapeAttr(key)+'"'+(miningBrowser.groupExpanded[key]?' open':'')+'>'
+      +'<summary>'+escapeHtml(name)+' · '+rows.length+' deposit'+(rows.length===1?'':'s')+'</summary>'
+      +'<div class="mining-browser-group-items">'+rows.map(renderDeposit).join("")+'</div></details>';
   }).join("");
-  html+=centerOnly.slice(0,50).map(function(row){
-    return '<details class="mining-browser-item"><summary>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</summary>'
-      +'<small>'+escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
-      +'<small>'+(row.sharedStatus==="saved"?"SQUAD SHARED":row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small>'
-      +'<button type="button" class="browser-nav-action" data-browse-navigate="center" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE · CENTER</button>'
-      +(row.storage==="local_only"&&!row.sharedStatus?'<button type="button" class="browser-nav-action" data-browse-share="center" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE CENTER WITH SQUAD</button>':'')+'</details>';
-  }).join("");
-  el("browseResults").innerHTML=html||'<p class="muted">No saved locations match these filters.</p>';
-  el("browseResults").querySelectorAll("[data-browse-navigate]").forEach(function(button){
+  if(centerOnly.length){
+    var centerHtml=centerOnly.slice(0,50).map(function(row){
+      var key="center:"+String(row.id);
+      return '<details class="mining-browser-item" data-browse-item="'+escapeAttr(key)+'"'+(miningBrowser.itemExpanded[key]?' open':'')+'><summary>'+escapeHtml(row.body||"Body")+' · Signal #'+escapeHtml(row.signal||"?")+' · CENTER ONLY</summary>'
+        +'<small>'+escapeHtml(typeof row.latitude==="number"?row.latitude.toFixed(6)+", "+Number(row.longitude).toFixed(6):"Unknown")+'</small>'
+        +'<small>'+(row.sharedStatus==="saved"?"SQUAD SHARED":row.storage==="local_only"?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED")+'</small>'
+        +'<button type="button" class="browser-nav-action" data-browse-navigate="center" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE · CENTER</button>'
+        +(row.storage==="local_only"&&!row.sharedStatus?'<button type="button" class="browser-nav-action" data-browse-share="center" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE CENTER WITH SQUAD</button>':'')+'</details>';
+    }).join("");
+    html+='<details class="mining-browser-group" data-browse-group="center-only"'+(miningBrowser.groupExpanded["center-only"]?' open':'')+'>'
+      +'<summary>Centers without deposits · '+centerOnly.length+'</summary><div class="mining-browser-group-items">'+centerHtml+'</div></details>';
+  }
+  container.innerHTML=html||'<p class="muted">No saved locations match these filters.</p>';
+  container.querySelectorAll("[data-browse-navigate]").forEach(function(button){
     button.onclick=function(){
       var kind=button.getAttribute("data-browse-navigate"),id=button.getAttribute("data-browse-nav-id");
       navigateMiningSearchResult(kind,id);
     };
   });
-  el("browseResults").querySelectorAll("[data-browse-share]").forEach(function(button){
+  container.querySelectorAll("[data-browse-share]").forEach(function(button){
     button.onclick=function(){
       shareMiningSearchResult(button.getAttribute("data-browse-share"),button.getAttribute("data-browse-share-id"),button);
     };
