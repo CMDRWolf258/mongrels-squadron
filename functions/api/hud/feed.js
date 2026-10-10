@@ -1,4 +1,5 @@
 import { json } from '../../../lib/auth.js';
+import { readActiveRoute } from '../../../lib/scout-route.js';
 import { buildMissionControlData } from '../../../lib/bgs-operations.js';
 import { readDailyOrderTimingControl } from '../../../lib/daily-order-cycle.js';
 import { readScoutSnapshots } from '../../../lib/scout-jobs.js';
@@ -25,7 +26,9 @@ export async function onRequestGet({request,env}){
   if(!auth)return reply({ok:false,error:'invalid_scout_token'},401);
   if(!auth.ownerId)return reply({ok:false,error:'hud_owner_not_bound'},403);
   try{
-    return reply(await buildHudFeed(request,env,auth));
+    const result=await buildHudFeed(request,env,auth);
+    if(String(auth.ownerId)===String(env.ADMIN_USER_ID||''))result.navigationRoute=await readActiveRoute(env);
+    return reply(result);
   }catch(error){
     console.error('Could not build HUD site feed',error);
     return reply({ok:false,error:'hud_feed_unavailable'},503);
