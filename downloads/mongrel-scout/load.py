@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.12.5"
+PLUGIN_VERSION = "1.12.6"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -41,6 +41,7 @@ SCOUT_LINK_INGEST_ENDPOINT = "https://mongrels-squadron.pages.dev/api/scout-link
 SCOUT_LINK_MIN_INTERVAL_SECONDS = 120.0
 HUD_MINING_REPORT_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-report"
 HUD_MINING_CENTER_ENDPOINT = "https://ten16-archive.pages.dev/api/hud/mining-center"
+HUD_ROUTE_CONTROL_PATH = "/api/hud/route"
 HUD_MINING_DATA_ENDPOINT = "https://ten16-archive.pages.dev/api/mining"
 HUD_MINING_CENTERS_ENDPOINT = "https://ten16-archive.pages.dev/api/mining-centers"
 FSD_GRADE_BY_CLASS = {1: "E", 2: "D", 3: "C", 4: "B", 5: "A"}
@@ -739,6 +740,12 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             self._write_json(payload)
             return
 
+        if parsed.path == "/v1/route":
+            route_id = str((parse_qs(parsed.query).get("routeId") or [""])[0])[:90]
+            result = _hud_route_control("read", route_id)
+            self._write_json(result, status=_hud_proxy_status(result))
+            return
+
         if parsed.path in {"/v1/mining/data", "/v1/mining/centers"}:
             endpoint = HUD_MINING_DATA_ENDPOINT if parsed.path.endswith("/data") else HUD_MINING_CENTERS_ENDPOINT
             result = _fetch_hud_mining_resource(endpoint)
@@ -749,7 +756,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/route"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -763,6 +770,21 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, Mapping):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+
+        if parsed.path == "/v1/route":
+            # A cross-origin browser cannot supply this custom header without
+            # a CORS preflight, which our loopback bridge does not permit.
+            # Only the paired HUD's local Python proxy sends this route action.
+            if (self.headers.get("X-Mongrel-HUD-Route-Action") != "1"
+                or "application/json" not in self.headers.get("Content-Type", "").lower()
+                or self.headers.get("Origin")):
+                self._write_json({"ok": False, "error": "route_local_control_required"}, status=403)
+                return
+            action = str(body.get("action") or "")
+            route_id = str(body.get("routeId") or "")[:90]
+            result = _hud_route_control(action, route_id)
+            self._write_json(result, status=_hud_proxy_status(result))
             return
 
         if parsed.path in {"/v1/mining/report", "/v1/mining/center"}:
@@ -844,6 +866,48 @@ def _hud_site_manifest_endpoint() -> str:
     if not parsed.scheme or not parsed.netloc:
         parsed = urlparse(DEFAULT_ENDPOINT)
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
+
+
+def _hud_route_control(action: str, route_id: str = "") -> dict[str, Any]:
+    """On-demand route controls via the already paired HUD and Scout token.
+
+    No new background polling. Never return the token or private site errors
+    to iPad, and never accept an arbitrary upstream HTTP origin.
+    """
+    endpoint = _hud_site_manifest_endpoint().rsplit("/", 1)[0] + "/route"
+    token = (config.get_str(KEY_TOKEN) or "").strip()
+    if not token:
+        return {"ok": False, "error": "scout_token_missing"}
+    if action not in {"read", "start", "stop"}:
+        return {"ok": False, "error": "invalid_action"}
+    if action in {"read", "start"} and route_id and not re.fullmatch(r"[0-9a-f-]{24,64}", route_id, re.I):
+        return {"ok": False, "error": "invalid_route_id"}
+    if action == "start" and not route_id:
+        return {"ok": False, "error": "route_id_required"}
+    headers = _site_feed_headers(token)
+    try:
+        if action == "read":
+            response = _session.get(endpoint, params={"routeId": route_id} if route_id else None,
+                                    headers=headers, timeout=10)
+        else:
+            response = _session.post(endpoint, json={"action": action, "routeId": route_id},
+                                     headers=headers, timeout=10)
+        payload, details = _hud_response_details(response, endpoint)
+        if not (200 <= response.status_code < 300):
+            return _hud_http_failure(details)
+        if not isinstance(payload, Mapping) or payload.get("ok") is not True:
+            return _hud_http_failure(details, "invalid_route_response")
+        if action != "read":
+            # One on-demand refresh, not a polling loop. Do not delay the HUD
+            # acknowledgement while Cloudflare's feed is being fetched.
+            # The normal manifest refresh still handles KV propagation.
+            threading.Thread(
+                target=_refresh_hud_site_feed_once,
+                name="MongrelScoutRouteRefresh", daemon=True,
+            ).start()
+        return dict(payload)
+    except Exception as exc:
+        return _hud_transport_failure(endpoint, exc)
 
 
 def _site_feed_headers(token: str) -> dict[str, str]:
@@ -1009,7 +1073,8 @@ def _refresh_route_navigation() -> None:
         current = str((_hud_state.get("system") or {}).get("name") or "").strip()
         ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
         if not isinstance(route, Mapping) or not route.get("autoCopy"):
-            _nav_id, _nav_index, _nav_pending = "", 0, ""
+            # Reactivating this same route must copy its first stop again.
+            _nav_id, _nav_index, _nav_copied, _nav_pending = "", 0, "", ""
             _hud_state["navigation"] = None
             return
         route_id = str(route.get("id") or "")
@@ -1039,6 +1104,9 @@ def _refresh_route_navigation() -> None:
             "active": bool(next_system), "routeId": route_id,
             "destination": str(route.get("destination") or ""),
             "waypointIndex": _nav_index, "waypointCount": len(names),
+            "navigationTargetCount": max(0, len(names) - 1),
+            "routeType": str(route.get("routeType") or "neutron_replot_waypoints"),
+            "estimatedTotalJumps": route.get("estimatedTotalJumps"),
             "nextSystem": next_system,
             "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
         }
@@ -1063,7 +1131,17 @@ def _refresh_route_navigation() -> None:
             with _hud_condition:
                 feed = _hud_state.get("siteFeed")
                 active = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
-                if not isinstance(active, Mapping) or str(active.get("id") or "") != route_id or _nav_index >= len(names) - 1:
+                # Clipboard work is queued onto Tk's UI thread. Recheck the
+                # route, commander opt-out and ship AFTER queuing so a stale
+                # callback cannot copy a target from an inactive route.
+                current_ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
+                if (not isinstance(active, Mapping)
+                        or not active.get("autoCopy")
+                        or str(active.get("id") or "") != route_id
+                        or current_ship.casefold() != ship.casefold()
+                        or config.get_int(KEY_NAV_AUTO_COPY) == -1
+                        or _nav_index >= len(names) - 1
+                        or marker != f"{route_id}:{_nav_index}:{next_system}"):
                     return
             widget.clipboard_clear()
             widget.clipboard_append(next_system)

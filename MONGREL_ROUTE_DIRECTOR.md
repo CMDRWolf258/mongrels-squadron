@@ -13,6 +13,85 @@
 7. At the next normal HUD manifest/feed refresh (no new polling loop), Scout receives the owner-only route, and places the first next-waypoint system name into the Windows clipboard. After an `FSDJump` to the *next waypoint* on the route, Scout advances once and replaces the clipboard with the following waypoint.
 8. The Own Ship HUD overlay shows `NAV NEXT` and route progress whenever navigation is active. You just paste the clipboard into Elite's Galaxy Map when required. Elite itself is never controlled by this integration.
 
+## Neutron waypoint contract (correction, October 9, 2026)
+
+**Waypoints are not hyperspace jumps.** Spansh Neutron Plotter returns the ordered
+systems where the pilot should replot in Elite's Galaxy Map. A route with 18
+waypoints is not an 18-jump route: Elite can calculate several ordinary jumps
+between two successive waypoints. This is intentional and well suited to the
+commander's paste-next-neutron-stop workflow.
+
+- Preserve every stop in Spansh's ordered response, including non-neutron
+  bridge/final stops. Do **not** drop stops simply because `neutron=false`.
+- Scout copies the next supplied waypoint's **system name only**, after the
+  pilot explicitly activates the route. Elite computes intermediate legs.
+- An `FSDJump` into a system not equal to the next waypoint does **not**
+  advance the route or overwrite the clipboard. Only arriving at the next
+  ordered waypoint advances one position; each target is copied once.
+- `waypointCount` includes the source and final destination when provided.
+  `navigationTargetCount` excludes the source. Neither is an actual-jump count.
+- Keep optional Spansh row fields `jumps` (normalized as
+  `estimatedJumpsFromPrevious`), `distance`, `distance_to_arrival` and
+  `distance_remaining`. Sum available per-leg jump estimates into
+  `estimatedTotalJumps` only when **every** route leg provides a valid count.
+  Unknown counts remain `null`, not zero or the waypoint count.
+- If the source is omitted from Spansh's response, prepend it only as local
+  progress context. Do not create speculative intermediate jumps.
+- A canceled route must not copy pending waypoint changes. Restarting the
+  same route must allow its initial next waypoint to be copied again.
+- Navigation preview and result retrieval have **no** local clipboard effect;
+  do not activate navigation during CI or the pre-merge review.
+
+## Paired HUD activation path (when ChatGPT blocks an action)
+
+Route activation must not depend on ChatGPT's per-action permission prompt. The
+existing paired iPad controller gains a **Route Director** card on the HUD
+Control tab, with **Load Route**, **Start Navigation**, and **Stop Navigation**.
+The crew can use its existing trusted-device pairing instead of linking another
+account. **Nothing activates on page load, preview, or route retrieval.**
+
+- Press **Load Route** to request the most recent completed route (for routes
+  completed after this release), or paste an older route ID and load that
+  specific ready job. Older jobs do not automatically populate the latest
+  pointer; this is intentional to avoid scanning KV.
+- Check the selected ship, origin, destination and navigation target count.
+  Press **Start Navigation** and affirm the explicit confirmation.
+- The HUD's authenticated local Python backend sends the request to the Scout
+  loopback bridge. Only Scout holds the existing `mscout_` bearer token.
+  The website's `/api/hud/route` endpoint requires that token to be bound to
+  `ADMIN_USER_ID` before it will read, activate or clear a route.
+  The bridge's activation POST also requires its dedicated JSON/custom header;
+  arbitrary web origins cannot use CORS to trigger it.
+- Upon a successful start/stop, Scout requests **one** on-demand refresh of
+  the existing feed (off the HTTP request thread). The usual HUD manifest
+  cadence still handles delayed KV propagation. There is **no new poll loop**.
+- On the existing Own Ship overlay, verify the active route and next system.
+  Intermediate regular hyperspace hops must not advance or copy a different
+  waypoint. **Stop Navigation** disables future automatic copying once the
+  updated route state propagates to Scout. This does not cancel in-game Galaxy
+  Map plotting or undo a clipboard copy that already occurred.
+- Route start is blocked when the selected job is not ready or the live ship
+  differs from the plotted ship or live current system is off the route.
+  The active-route record and all credentials remain owner-scoped.
+- This path is an **alternative explicit user gesture** to the ChatGPT
+  connection, not a bypass for approving arbitrary external AI actions.
+  The work must be merged, published and both Scout and MongrelHUD updated
+  before it can be tested on Serenity. Keep PR #188 draft until integration
+  and release checks pass.
+
+**Fuel-safety limitation:** A fixed-range Neutron Plotter route does not model
+all fuel usage. Spansh warns that ships in the 10–20 LY range may enter systems
+they cannot leave without sufficient boost. Especially for heavy freighters,
+verify scoop opportunities and Galaxy Map reachability before jumping.
+
+**Galaxy Plotter investigation:** Spansh's separate Galaxy Plotter computes
+exact hops, refueling, neutron boosts and FSD injection using a ship build
+(Coriolis/EDSY SLEF), cargo and fuel settings. Scout Link currently transmits
+only a *minimal ship snapshot*, not a full EDSY/Coriolis build. Integrating
+fuel-aware plots is a **future opt-in mode**, not a silent replacement of the
+current neutron waypoint copying. First design build data access, permission
+scope, fuel model validation, result limits and explicit refuel guidance.
+
 ## Sources and limits
 
 - Spansh integration format adapted from Navl's Neutron Dancer `Router/route_manager.py` and `Router/plotters.py` (https://github.com/dwomble/EDMC-NeutronDancer).
@@ -45,7 +124,7 @@
 ## Proposed live acceptance check
 
 With Elite, Scout and HUD running on Serenity and the backend activated:
-- Plot `Leaf On the Wind` from 10-16 to Diaba.
+- Plot the current opt-in ship (e.g., Albatross) from 10-16 to Diaba; check its actual loaded jump range.
 - Inspect all returned waypoints and x6 classification. Preview must NOT touch the clipboard.
 - Explicitly activate. First next-waypoint name should be in **Serenity's** clipboard.
 - Paste into Galaxy Map, fly; once reaching a registered waypoint, paste again: clipboard should contain the next waypoint, exactly once.
