@@ -131,6 +131,8 @@ KEY_LAST_SYSTEM = "MongrelScoutLastSystem"
 KEY_LAST_SYSTEM_ADDRESS = "MongrelScoutLastSystemAddress"
 KEY_SCOUT_LINK_ENABLED = "MongrelScoutChatGPTLinkEnabled"
 KEY_NAV_AUTO_COPY = "MongrelScoutRouteAutoCopy"
+KEY_NAV_CHECKPOINT = "MongrelScoutRouteCheckpoint"
+KEY_NAV_COMPLETED = "MongrelScoutRouteLastCompletion"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
@@ -146,6 +148,7 @@ _nav_id = ""
 _nav_index = 0
 _nav_copied = ""
 _nav_pending = ""
+_nav_completion_pending = ""
 _scout_link_send_lock = threading.Lock()
 _scout_link_last_sent = 0.0
 _scout_link_last_attempt = 0.0
@@ -785,7 +788,9 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             route_id = str(body.get("routeId") or "")[:90]
             result = _hud_route_control(action, route_id,
                                         destination=str(body.get("destination") or "")[:140],
-                                        efficiency=body.get("efficiency", 60))
+                                        efficiency=body.get("efficiency", 60),
+                                        system=str(body.get("system") or "")[:140],
+                                        ship=str(body.get("ship") or "")[:140])
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
@@ -870,17 +875,20 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60) -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, system: str = "", ship: str = "") -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
     to iPad, and never accept an arbitrary upstream HTTP origin.
     """
+    if action == "copy":
+        # The paired HUD explicitly requests this on Serenity. No cloud write.
+        return _refresh_route_navigation(force_copy=True)
     endpoint = _hud_site_manifest_endpoint().rsplit("/", 1)[0] + "/route"
     token = (config.get_str(KEY_TOKEN) or "").strip()
     if not token:
         return {"ok": False, "error": "scout_token_missing"}
-    if action not in {"read", "start", "stop", "plot", "check"}:
+    if action not in {"read", "start", "stop", "plot", "check", "complete"}:
         return {"ok": False, "error": "invalid_action"}
     if action in {"read", "start", "check"} and route_id and not re.fullmatch(r"[0-9a-f-]{24,64}", route_id, re.I):
         return {"ok": False, "error": "invalid_route_id"}
@@ -896,13 +904,15 @@ def _hud_route_control(action: str, route_id: str = "", *, destination: str = ""
             if action == "plot":
                 payload["destination"] = destination
                 payload["efficiency"] = efficiency
+            if action == "complete":
+                payload.update({"system": system, "ship": ship})
             response = _session.post(endpoint, json=payload, headers=headers, timeout=20)
         payload, details = _hud_response_details(response, endpoint)
         if not (200 <= response.status_code < 300):
             return _hud_http_failure(details)
         if not isinstance(payload, Mapping) or payload.get("ok") is not True:
             return _hud_http_failure(details, "invalid_route_response")
-        if action in {"start", "stop"}:
+        if action in {"start", "stop", "complete"}:
             # One on-demand refresh, not a polling loop. Do not delay the HUD
             # acknowledgement while Cloudflare's feed is being fetched.
             # The normal manifest refresh still handles KV propagation.
