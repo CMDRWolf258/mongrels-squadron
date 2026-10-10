@@ -72,6 +72,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
           node --experimental-default-type=module scripts/smoke-mongrel-scout.mjs
           node --experimental-default-type=module scripts/smoke-scout-chatgpt-link.mjs
+          node --experimental-default-type=module scripts/smoke-scout-spansh-route.mjs
           node --experimental-default-type=module scripts/smoke-mission-inf-dedupe.mjs
           node --experimental-default-type=module scripts/smoke-scout-trade.mjs
           python3 scripts/test-scout-live-trade.py
