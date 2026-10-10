@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { normalizeScoutActivityBatch } from '../lib/scout-activity.js';
-import { mergeEventsWithResult } from '../lib/frontier.js';
+import { mergeEventsWithResult, parseJournal, summarizeEvents } from '../lib/frontier.js';
 
 const now=Date.parse('2026-10-08T04:00:00Z');
 const source={
@@ -51,4 +51,51 @@ assert.equal(reconciled.events[0].provisional,undefined);
 assert.equal(reconciled.events[0].profitKnown,true);
 assert.equal(reconciled.events[0].tradeSourceVerified,true);
 assert.equal(reconciled.events[0].bgsTradeEligible,true);
-console.log('Scout live trade server guards, 7M calculation, deduplication and CAPI reconciliation passed');
+// The loaded Panther Mk II sold a single commodity in 300t chunks.
+// Several consecutive transactions can have identical prices, count and
+// journal timestamps (Frontier logs only whole seconds). They are not retries.
+const sameSecond='2026-10-08T03:56:10Z';
+const buyAndSell=[
+  {timestamp:'2026-10-08T03:40:00Z',event:'Location',StarSystem:'Diaba',
+    SystemAddress:560820275507,Docked:true,StationName:'Niijima Station',
+    StationType:'Orbis',StationFaction:{Name:'Regiment of Imperial Mongrels'}},
+  {timestamp:'2026-10-08T03:41:00Z',event:'MarketBuy',Type:'$Gold_Name;',Count:1234,
+    BuyPrice:125000,TotalCost:154250000},
+  ...[300,300,300,334].map((count,i)=>({
+    timestamp:i<3?sameSecond:'2026-10-08T03:56:12Z',
+    event:'MarketSell',Type:'$Gold_Name;',Type_Localised:'Gold',Count:count,
+    SellPrice:150000,TotalSale:count*150000,AvgPricePaid:125000,
+  })),
+];
+const journal=parseJournal(buyAndSell.map(x=>JSON.stringify(x)).join('\n'),['Diaba']);
+const capiSales=journal.events.filter(x=>x.type==='market_sell');
+assert.equal(capiSales.length,4);
+assert.deepEqual(capiSales.map(x=>x.saleOccurrence),[1,2,3,1]);
+assert.ok(capiSales.every(x=>x.bgsTradeEligible===true));
+const scoutSales=[300,300,300,334].map((count,i)=>({
+  ...source,timestamp:i<3?sameSecond:'2026-10-08T03:56:12Z',
+  count,total:count*150000,sellPrice:150000,saleOccurrence:i<3?i+1:1,
+}));
+const normalized=normalizeScoutActivityBatch({kind:'activity_batch',events:scoutSales},
+  auth,{now:Date.parse('2026-10-08T04:00:00Z')}).events;
+assert.equal(normalized.length,4);
+assert.deepEqual(normalized.map(x=>x.saleOccurrence),[1,2,3,1]);
+const lotStore=new Map();
+const lotEnv={DAILY_ORDERS:{
+  async get(k,{type}={}){const raw=lotStore.get(k);return raw===undefined?null:(type==='json'?JSON.parse(raw):raw);},
+  async put(k,v){lotStore.set(k,String(v));},
+}};
+const saved=await mergeEventsWithResult(lotEnv,'panther',[...normalized]);
+assert.equal(saved.added,4,'Same-second 300t sales must all receive unique identity');
+assert.equal(summarizeEvents(saved.events).tradeEligibleProfit,30850000);
+const confirmed=await mergeEventsWithResult(lotEnv,'panther',capiSales);
+assert.equal(confirmed.added,0,'CAPI sync must not double count provisional trade');
+assert.equal(confirmed.events.length,4);
+assert.ok(confirmed.events.every(x=>x.provisional!==true));
+assert.equal(summarizeEvents(confirmed.events).tradeEligibleProfit,30850000);
+const afterRetry=await mergeEventsWithResult(lotEnv,'panther',normalized);
+assert.equal(afterRetry.changed,false,'Late Scout retries must not overwrite confirmed CAPI sales');
+assert.equal(afterRetry.events.length,4);
+assert.equal(rows({...source,saleOccurrence:0}).length,0,'Reject invalid sale ordinal');
+assert.equal(rows({...source,saleOccurrence:129}).length,0,'Reject excessive sale ordinal');
+console.log('Scout trade duplicate 300t chunks, 30.85M profit and CAPI reconciliation passed');

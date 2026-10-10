@@ -134,6 +134,7 @@ KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
 KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
+KEY_ACTIVITY_SALE_OCCURRENCES = "MongrelScoutActivitySaleOccurrences"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -485,10 +486,13 @@ def journal_entry(
 
     # On-demand recovery only when the live ledger cannot prove the sale's origin.
     # This never uploads or queues historical journal events themselves.
+    sale_occurrence = _activity_sale_occurrence(cmdr, entry, system, station) if event == "MarketSell" else 1
     if event == "MarketSell":
         _restore_trade_origin_for_sale(cmdr, entry, state)
     trade_sale = _observe_activity_trade(cmdr, entry, state, system, station)
-    activity_payload = _build_realtime_activity_payload(entry, state, system, station, trade_sale)
+    activity_payload = _build_realtime_activity_payload(
+        entry, state, system, station, trade_sale, sale_occurrence,
+    )
     if event == "MarketSell":
         _update_trade_activity_status(entry, trade_sale, activity_payload, bool(token))
     if activity_payload is not None and token:
@@ -3501,12 +3505,46 @@ def _observe_activity_trade(
                 "system": system, "station": station}
 
 
+def _activity_sale_occurrence(
+    cmdr: str, entry: Mapping[str, Any], fallback_system: str, fallback_station: str,
+) -> int:
+    """Number indistinguishable same-second sale rows in this CMDR journal.
+
+    Frontier's journal only has second-precision timestamps. Different
+    transactions may have identical quantity, price and timestamp; the local
+    persisted counter lets our provisional events reconcile with the ordered
+    occurrence in Frontier's later journal sync. This data stays local.
+    """
+    signature = json.dumps([
+        _cmdr_cache_key(cmdr), str(entry.get("timestamp") or ""),
+        _decimal_text(entry.get("SystemAddress")),
+        str(entry.get("StationName") or fallback_station or ""),
+        str(entry.get("Type") or ""), _optional_int(entry.get("Count")) or 0,
+        str(entry.get("TotalSale") or 0), str(entry.get("SellPrice") or 0),
+    ], separators=(",", ":"), ensure_ascii=False)
+    with _activity_lock:
+        try:
+            parsed = json.loads(config.get_str(KEY_ACTIVITY_SALE_OCCURRENCES) or "{}")
+        except (TypeError, ValueError):
+            parsed = {}
+        recent = parsed if isinstance(parsed, dict) else {}
+        count = max(0, _optional_int(recent.get(signature)) or 0) + 1
+        recent.pop(signature, None)
+        recent[signature] = count
+        # Bounded local counter store, not a permanent trade history.
+        if len(recent) > 96:
+            recent = dict(list(recent.items())[-96:])
+        config.set(KEY_ACTIVITY_SALE_OCCURRENCES, json.dumps(recent, separators=(",", ":")))
+        return count
+
+
 def _build_realtime_activity_payload(
     entry: Mapping[str, Any],
     state: Mapping[str, Any],
     fallback_system: str,
     fallback_station: str,
     trade_sale: Optional[Mapping[str, Any]] = None,
+    sale_occurrence: int = 1,
 ) -> Optional[dict[str, Any]]:
     event = str(entry.get("event") or "").strip()
     if event not in {
@@ -3572,6 +3610,7 @@ def _build_realtime_activity_payload(
             "stationFaction": str(trade_sale["stationFaction"])[:120],
             "stationType": str(trade_sale["stationType"])[:80],
             "commodity": _commodity_display(entry.get("Type"), entry.get("Type_Localised")),
+            "saleOccurrence": max(1, int(sale_occurrence)),
             "count": count,
             "sellPrice": sell_price,
             "total": total,
