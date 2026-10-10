@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.1"
+PLUGIN_VERSION = "1.13.2"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -166,6 +166,7 @@ _cargo_missions: dict[str, dict[str, dict[str, Any]]] = {}
 _activity_lock = threading.RLock()
 _activity_pending: list[dict[str, Any]] = []
 _activity_pending_fingerprints: set[str] = set()
+_activity_trade_sale_ordinals: dict[str, int] = {}
 _activity_flush_scheduled = False
 _activity_mission_origins: dict[str, dict[str, Any]] = {}
 _activity_trade_lots: dict[str, dict[str, list[dict[str, Any]]]] = {}
@@ -499,6 +500,10 @@ def journal_entry(
     activity_payload = _build_realtime_activity_payload(entry, state, system, station, trade_sale)
     if event == "MarketSell":
         _update_trade_activity_status(entry, trade_sale, activity_payload, bool(token))
+    if event == "MarketSell" and activity_payload is not None:
+        # Assign an occurrence before queuing so identical eight-second-batch
+        # sale chunks do not collapse into one pending payload.
+        activity_payload["saleOrdinal"] = _next_trade_sale_ordinal(cmdr, activity_payload)
     if activity_payload is not None and token:
         _queue_realtime_activity(activity_payload)
 
@@ -4038,6 +4043,26 @@ def _record_trade_upload_result(
             "serverUpdated": _optional_int((server or {}).get("updated")),
         })
         _hud_condition.notify_all()
+
+
+def _next_trade_sale_ordinal(cmdr: str, sale: Mapping[str, Any]) -> int:
+    """Ordinal among otherwise identical real-time sales, per CMDR.
+
+    Retries re-use their original queued payload/ordinal. Bounded in memory;
+    a Frontier journal sync will authoritatively reconcile older occurrences.
+    """
+    fingerprint = json.dumps([
+        _cmdr_cache_key(cmdr), str(sale.get("timestamp") or ""),
+        str(sale.get("systemAddress") or ""), str(sale.get("station") or "").casefold(),
+        str(sale.get("commodity") or "").casefold(), sale.get("count"),
+        sale.get("total"), sale.get("sellPrice"),
+    ], separators=(",", ":"), ensure_ascii=False)
+    with _activity_lock:
+        ordinal = _activity_trade_sale_ordinals.get(fingerprint, 0) + 1
+        _activity_trade_sale_ordinals[fingerprint] = ordinal
+        if len(_activity_trade_sale_ordinals) > 256:
+            _activity_trade_sale_ordinals.pop(next(iter(_activity_trade_sale_ordinals)))
+    return ordinal
 
 
 def _activity_fingerprint(payload: Mapping[str, Any]) -> str:
