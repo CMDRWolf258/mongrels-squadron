@@ -21,7 +21,7 @@ function harness() {
         toggle(name, force) { const enabled = force === undefined ? !classes.has(name) : force; if (enabled) classes.add(name); else classes.delete(name); },
         add(name) { classes.add(name); }, remove(name) { classes.delete(name); }, contains(name) { return classes.has(name); },
       },
-      getAttribute(name) { return attrs[name]; }, addEventListener() {},
+      getAttribute(name) { return attrs[name]; }, addEventListener() {}, querySelectorAll() { return []; },
     };
     nodes.set(id, value);
     return value;
