@@ -22,6 +22,7 @@ want = {
     "_optional_int", "_decimal_text",
     "_recover_trade_lots_from_recent_journals", "_restore_trade_origin_for_sale",
     "_next_trade_sale_ordinal",
+    "_next_exploration_sale_ordinal",
 }
 functions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in want]
 missing = want - {n.name for n in functions}
@@ -49,6 +50,7 @@ scope = {
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
     "_activity_trade_sale_ordinals": {},
+    "_activity_exploration_sale_ordinals": {},
     "_last_system_name": "Diaba", "_last_system_address": 12345,
     "KEY_ACTIVITY_TRADE_PROVENANCE": "test-trade-provenance",
     "_cargo_inventory_from_edmc_state": inventory,
@@ -294,3 +296,30 @@ assert ordinal("Wolf258",sale_payload)==1
 assert ordinal("Wolf258",sale_payload)==2
 assert ordinal("Wolf258",{**sale_payload,"count":199})==1
 assert ordinal("Other",sale_payload)==1
+
+# Cartographics sales use only the current live journal transaction, never a
+# scan/discovery list. The redemption station and faction determine BGS credit.
+explore=journal("MultiSellExplorationData",Type=None,TotalEarnings=5_500_000,
+                BaseValue=5_000_000,Bonus=500_000,Discovered=[
+                    {"SystemName":"Private exploration discovery","NumBodies":23}])
+payload=build(explore,state(0),"Diaba","Niijima Station")
+assert payload is not None
+assert payload["event"]=="MultiSellExplorationData"
+assert payload["amount"]==5_500_000
+assert payload["stationFaction"]=="Regiment of Imperial Mongrels"
+assert "Discovered" not in payload and "BaseValue" not in payload
+assert "Private exploration discovery" not in json.dumps(payload)
+assert build({**explore,"event":"SellExplorationData","TotalEarnings":3_000_000},
+             state(0),"Diaba","Niijima Station")["amount"]==3_000_000
+assert build({**explore,"TotalEarnings":0},state(0),"Diaba","Niijima Station") is None
+assert build({**explore,"TotalEarnings":-1},state(0),"Diaba","Niijima Station") is None
+assert build(explore,state(0,kind="FleetCarrier"),"Diaba","Niijima Station") is None
+assert build(explore,{"SystemName":"Diaba","StationName":"Niijima Station"},
+             "Diaba","Niijima Station") is None
+assert build({**explore,"event":"SellOrganicData"},state(0),"Diaba","Niijima Station") is None
+ordinals=scope["_next_exploration_sale_ordinal"]
+assert ordinals("Wolf258",payload)==1
+assert ordinals("Wolf258",payload)==2
+assert ordinals("Wolf258",{**payload,"amount":123})==1
+assert ordinals("Other CMDR",payload)==1
+print("Scout Universal Cartographics sale payload, privacy, carrier, and same-second tests passed")
