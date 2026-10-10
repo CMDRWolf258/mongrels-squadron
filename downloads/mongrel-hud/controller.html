@@ -407,7 +407,7 @@ function renderFlightManifest(route,active,nav){
   var elList=el("routeManifest"),selected=route || ((state&&state.scout&&state.scout.siteFeed)||{}).navigationRoute;
   var rows=selected&&Array.isArray(selected.waypoints)?selected.waypoints:[];
   if(!rows.length){var empty='<div class="layout-hint" style="padding:12px">No route manifest loaded. Plot or load a ready route.</div>';if(elList.innerHTML!==empty)elList.innerHTML=empty;return}
-  var following=active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?(nav.completed?rows.length:nav.waypointIndex+1):-1;
+  var following=nav.completed&&nav.routeId===selected.id?rows.length:active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?nav.waypointIndex+1:-1;
   var html=rows.map(function(w,i){
     var system=escapeHtml(String(w&&w.system||"UNKNOWN"));
     var kind=w&&w.fuelStop===true?"FUEL":w&&w.neutron===true?"NEUTRON":i===0?"START":i===rows.length-1?"ARRIVAL":"VIA";
