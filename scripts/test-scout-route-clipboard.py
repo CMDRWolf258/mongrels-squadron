@@ -236,19 +236,20 @@ scout._hud_state["siteFeed"]={"navigationRoute":None}
 scout._refresh_route_navigation()
 scout._hud_state["siteFeed"]={"navigationRoute":galaxy_route}
 scout._hud_state["ship"]={"name":"Leaf On the Wind","fuelCapacity":32}
-scout._hud_state["status"]={"fuelMain":32}
+scout._hud_state["lastEvent"]={"timestamp":"2026-10-10T06:01:00Z"}
+scout._hud_state["status"]={"fuelMain":32,"timestamp":"2026-10-10T06:00:00Z"}
 scout._hud_state["system"]={"name":"START"}
 scout._refresh_route_navigation()
 assert widget.copies==["SCOOP STAR"],widget.copies
 scout._hud_state["system"]={"name":"SCOOP STAR"}
-scout._hud_state["status"]={"fuelMain":3.0}
+scout._hud_state["status"]={"fuelMain":3.0,"timestamp":"2026-10-10T06:01:30Z"}
 scout._refresh_route_navigation()
 assert scout._hud_state["navigation"]["refuelPending"] is True
 assert scout._hud_state["navigation"]["nextFuelStop"]==""
 assert widget.copies==["SCOOP STAR"]
 assert scout._refresh_route_navigation(force_copy=True)["error"]=="refuel_before_next_jump"
 assert widget.copies==["SCOOP STAR"]
-scout._hud_state["status"]={"fuelMain":32.0}
+scout._hud_state["status"]={"fuelMain":32.0,"timestamp":"2026-10-10T06:02:00Z"}
 scout._refresh_route_navigation()
 assert scout._hud_state["navigation"]["refuelPending"] is False
 assert widget.copies==["SCOOP STAR","FINISH"],widget.copies
