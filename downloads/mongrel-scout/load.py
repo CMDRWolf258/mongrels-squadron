@@ -1117,6 +1117,7 @@ def _save_route_checkpoint(route: Mapping[str, Any], ship: str, index: int, syst
         "routeId": str(route.get("id") or ""),
         "activation": str(route.get("activatedAt") or ""),
         "ship": ship, "index": index, "waypoint": system,
+        "arrivedAt": str((_hud_state.get("lastEvent") or {}).get("timestamp") or ""),
     }, separators=(",", ":")))
 
 
@@ -1205,9 +1206,17 @@ def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
         full_fuel = _optional_float((_hud_state.get("ship") or {}).get("fuelCapacity"))
         # A planned Spansh refuel stop assumes departure with a full tank.
         # Don't silently copy the next jump until Status.json confirms it.
+        arrival_stamp = str(_route_checkpoint().get("arrivedAt") or "")
+        status_stamp = str((_hud_state.get("status") or {}).get("timestamp") or "")
+        # A pre-arrival Status.json can still show full fuel. Require a NEW
+        # post-arrival observation before unlocking a scheduled scoop stop.
+        # Frontier journal and Status.json use UTC ISO timestamps.
+        fresh_fuel_observation = bool(arrival_stamp and status_stamp
+            and status_stamp.replace("Z","+00:00") > arrival_stamp.replace("Z","+00:00"))
         refuel_pending = bool(fuel_stop and (
-            current_fuel is None or full_fuel is None or
-            current_fuel < full_fuel - 0.05
+            current_fuel is None or full_fuel is None
+            or current_fuel < full_fuel - 0.05
+            or not fresh_fuel_observation
         ))
         future_jumps = [
             row.get("estimatedJumpsFromPrevious") if isinstance(row, Mapping) else None
