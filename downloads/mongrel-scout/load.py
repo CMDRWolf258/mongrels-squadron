@@ -648,6 +648,13 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
         if not isinstance(ship, dict):
             ship = {}
             _hud_state["ship"] = ship
+        incoming_name = str(state.get("ShipName") or "").strip()
+        incoming_ident = str(state.get("ShipIdent") or "").strip()
+        if (incoming_name and ship.get("name") and incoming_name.casefold()!=str(ship.get("name")).casefold()) or (
+                incoming_ident and ship.get("ident") and incoming_ident.casefold()!=str(ship.get("ident")).casefold()):
+            # Never use the previous ship's FSD/tank/fuel scoop for a new hull.
+            for key in ("jumpModel","fuelReserveCapacity","fuelScoopInstalled","fuelCapacity"):
+                ship.pop(key,None)
         updates = {
             "name": str(state.get("ShipName") or "").strip(),
             "ident": str(state.get("ShipIdent") or "").strip(),
