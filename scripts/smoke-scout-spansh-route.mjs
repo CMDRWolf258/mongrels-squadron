@@ -3,6 +3,9 @@ import { normalizeShipSnapshot, SCOUT_LINK_KEY_PREFIX } from '../lib/scout-link.
 import { plotNeutronRoute, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints } from '../lib/scout-route.js';
 import { onRequestGet as hudFeed } from '../functions/api/hud/feed.js';
 import { onRequestGet as hudManifest } from '../functions/api/hud/manifest.js';
+import { onRequestGet as routeControlGet, onRequestPost as routeControlPost } from '../functions/api/hud/route.js';
+import { readReadyRouteForControl } from '../lib/scout-route.js';
+import { readFileSync } from 'node:fs';
 import { sha256Hex } from '../lib/scout-link.js';
 
 class Kv {
@@ -70,6 +73,52 @@ assert.equal(complete.waypoints[1].neutron,true);
 assert.equal(complete.waypoints[1].scoopable,false);
 assert.equal(normalizeSpanshWaypoints({jumps:[{system:'Wrong'}]},'Anywhere','Diaba'),null);
 assert.equal(await readActiveRoute(env),null); // Preview may not activate.
+assert.equal((await readReadyRouteForControl(env)).route.id,plotted.id);
+assert.equal((await readReadyRouteForControl(env,plotted.id)).route.waypoints[1].system,'TEST NEUTRON 1');
+// Exercise the exact authenticated API used by the paired iPad HUD.
+const adminToken='mscout_owner_route_smoke_test';
+const hash=await sha256Hex(adminToken);
+await store.put('wolf-bgs-scout-tokens-v1',JSON.stringify({
+  tokens:{admin:{id:'admin',hash,ownerId:'user-999',ownerCommander:'Wolf258'}},
+}));
+const req=(method,body,token=adminToken,query='')=>new Request('https://site.example/api/hud/route'+query,{
+  method,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},
+  ...(body?{body:JSON.stringify(body)}:{}),
+});
+const noAccess=await routeControlPost({request:req('POST',{action:'start',routeId:plotted.id},'wrong-token'),env});
+assert.equal(noAccess.status,401,'Bad token must not enable navigation');
+assert.equal(await readActiveRoute(env),null);
+const routeRead=await (await routeControlGet({request:req('GET'),env})).json();
+assert.equal(routeRead.route.id,plotted.id,'Latest route available with one on-demand read');
+assert.equal(routeRead.activeRoute,null,'Preview remains inactive');
+const explicitRead=await (await routeControlGet({request:req('GET',null,adminToken,'?routeId='+plotted.id),env})).json();
+assert.equal(explicitRead.route.id,plotted.id);
+const badRoute=await routeControlPost({request:req('POST',{action:'start',routeId:'bad'}),env});
+assert.equal(badRoute.status,400);
+const start=await (await routeControlPost({request:req('POST',{action:'start',routeId:plotted.id}),env})).json();
+assert.equal(start.ok,true,'Deliberate admin button activates route');
+assert.equal((await readActiveRoute(env)).id,plotted.id);
+const activeRead=await (await routeControlGet({request:req('GET'),env})).json();
+assert.equal(activeRead.activeRoute.id,plotted.id);
+const stop=await (await routeControlPost({request:req('POST',{action:'stop'}),env})).json();
+assert.equal(stop.active,false);
+assert.equal(await readActiveRoute(env),null);
+const secondOwnerHash=await sha256Hex('mscout_other_commander');
+await store.put('wolf-bgs-scout-tokens-v1',JSON.stringify({tokens:{
+  admin:{id:'admin',hash,ownerId:'user-999'},
+  other:{id:'other',hash:secondOwnerHash,ownerId:'different-user'},
+}}));
+const nonAdmin=await routeControlPost({request:req('POST',{action:'start',routeId:plotted.id},'mscout_other_commander'),env});
+assert.equal(nonAdmin.status,403,'Other commander cannot activate Admin route');
+assert.equal(await readActiveRoute(env),null);
+// Existing local HUD pairing, bridge and clipboard checks are unchanged.
+const hudPython=readFileSync('downloads/mongrel-hud/mongrel_hud.py','utf8');
+const scoutPython=readFileSync('downloads/mongrel-scout/load.py','utf8');
+const controller=readFileSync('downloads/mongrel-hud/controller.html','utf8');
+for(const str of ['SCOUT_ROUTE_CONTROL_URL','def route_control(','path == "/api/route"'])assert.ok(hudPython.includes(str));
+for(const str of ['HUD_ROUTE_CONTROL_PATH','def _hud_route_control(','X-Mongrel-HUD-Route-Action'])assert.ok(scoutPython.includes(str));
+for(const str of ['id="routeStart"','id="routeStop"','id="routeLoad"','routeControlBusy'])assert.ok(controller.includes(str));
+
 const active=await activateRoute(env,plotted.id);
 assert.equal(active.ok,true);
 assert.equal(active.autoCopy,true);
