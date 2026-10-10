@@ -6,6 +6,7 @@ const TOOL = {
   title:'Get current ship from MongrelScout',
   description:'Return the Site Admin\'s latest opt-in Elite Dangerous ship/system snapshot: current and full-fuel zero-cargo jump range, fuel, cargo, timestamps and freshness. Read-only; never changes the ship, HUD or website. Data may be stale when Scout is offline.',
   inputSchema:{type:'object',properties:{},additionalProperties:false},
+  securitySchemes:[{type:'oauth2',scopes:['scout.read']}],
   annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},
 };
 const PROTOCOL_VERSION = '2025-06-18';
