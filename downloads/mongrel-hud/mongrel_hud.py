@@ -206,8 +206,8 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes")
-VALID_PROFILES = ("combat", "surface")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+VALID_PROFILES = ("combat", "surface", "navigation")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
@@ -223,6 +223,11 @@ PANEL_TITLES = {
     "alerts": "FACTION ALERTS",
     "orderalerts": "DAILY ORDER CHANGES",
     "notes": "NOTES",
+    "navcourse": "ROUTE DIRECTOR",
+    "navsteps": "ROUTE WAYPOINTS",
+    "navsignal": "WAYPOINT SIGNAL",
+    "navfuel": "FUEL STATUS",
+    "navscout": "SCOUT NETWORK",
 }
 
 
@@ -763,6 +768,11 @@ def default_layout() -> dict[str, Any]:
             "alerts": {"x": 760, "y": 560, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
             "orderalerts": {"x": 760, "y": 880, "visible": True, "scale": 1.0, "profiles": ["combat", "surface"]},
             "notes": {"x": 40, "y": 650, "visible": False, "scale": 1.0, "profiles": ["combat", "surface"]},
+            "navcourse": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["navigation"]},
+            "navsignal": {"x": 40, "y": 310, "visible": True, "scale": 1.0, "profiles": ["navigation"]},
+            "navfuel": {"x": 40, "y": 470, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
+            "navsteps": {"x": 950, "y": 70, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
+            "navscout": {"x": 950, "y": 400, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
         },
     }
 
@@ -1228,6 +1238,7 @@ class MongrelHudApp:
         self.controller_html = controller_html
         self.lock = threading.RLock()
         self.snapshot = ScoutSnapshot({})
+        self.navigation_arrival: dict[str, Any] = {}
         self.pin = f"{secrets.randbelow(1000000):06d}"
         self.overlay_visible = True
         self.root: tk.Tk | None = None
@@ -1310,6 +1321,8 @@ class MongrelHudApp:
                 with urllib.request.urlopen(SCOUT_STATE_URL, timeout=1.0) as response:
                     data = json.load(response)
                 with self.lock:
+                    previous = self.snapshot.data.get("navigation") if isinstance(self.snapshot.data, dict) else None
+                    self._observe_navigation_arrival(previous, data)
                     self.snapshot = ScoutSnapshot(data, True, "")
                 try:
                     self.poll_scout_events(data)
@@ -1320,6 +1333,32 @@ class MongrelHudApp:
                     self.snapshot.connected = False
                     self.snapshot.error = str(exc)
             time.sleep(POLL_SECONDS)
+
+    def _observe_navigation_arrival(self, previous: Any, data: dict[str, Any]) -> None:
+        """Detect a *confirmed* waypoint transition, not an ordinary FSD jump."""
+        old = previous if isinstance(previous, dict) else {}
+        nav = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
+        if not nav.get("active") or not old.get("routeId") or old.get("routeId") != nav.get("routeId"):
+            return
+        old_index, new_index = old.get("waypointIndex"), nav.get("waypointIndex")
+        if (type(old_index) is not int or type(new_index) is not int
+                or new_index != old_index + 1):
+            return
+        route = ((data.get("siteFeed") or {}).get("navigationRoute") or {})
+        waypoints = route.get("waypoints") if isinstance(route, dict) else None
+        if not isinstance(waypoints, list) or not 0 <= new_index < len(waypoints):
+            return
+        step = waypoints[new_index]
+        if not isinstance(step, dict):
+            return
+        # Fuel-stop cues require the future fuel-aware planner to explicitly
+        # mark a stop. Never interpret every scoopable star as a scheduled stop.
+        kind = "fuel" if step.get("fuelStop") is True else "neutron" if step.get("neutron") is True else "waypoint"
+        self.navigation_arrival = {
+            "routeId": nav["routeId"], "index": new_index,
+            "system": str(step.get("system") or "")[:140],
+            "kind": kind, "atMonotonic": time.monotonic(),
+        }
 
     def poll_scout_events(self, state: dict[str, Any]) -> None:
         session_id = str(state.get("sessionId") or "")
@@ -3704,7 +3743,7 @@ class MongrelHudApp:
         return result
 
     def set_profile(self, profile: str) -> str:
-        if profile not in {"combat", "surface"}:
+        if profile not in {"combat", "surface", "navigation"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
@@ -4160,6 +4199,13 @@ class MongrelHudApp:
         current_body = sorted(body_known, key=str.casefold)
         return current_body, all_choices
 
+    def _arrival_for_controller(self) -> dict[str, Any] | None:
+        with self.lock:
+            cue = dict(self.navigation_arrival)
+        if not cue or time.monotonic() - float(cue.get("atMonotonic") or 0) > 9:
+            return None
+        return {k: v for k, v in cue.items() if k != "atMonotonic"}
+
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
         with self.lock:
@@ -4173,6 +4219,7 @@ class MongrelHudApp:
             "connected": connected,
             "profile": profile,
             "scout": state,
+            "navigationArrival": self._arrival_for_controller(),
             "sites": self.sites_for_current_body(),
             "miningLocations": self.mining_locations_for_current_body(),
             "activeLocationSignal": self.active_location_signal(),
@@ -5374,6 +5421,8 @@ class MongrelHudApp:
             width, height = self._render_scoutboard_canvas(canvas, scale)
         elif panel_id == "scoutnearby":
             width, height = self._render_scoutnearby_canvas(canvas, scale)
+        elif panel_id in {"navcourse", "navsteps", "navsignal", "navfuel", "navscout"}:
+            width, height = self._render_navigation_panel(canvas, scale, panel_id, flash_on)
         elif panel_id == "alerts":
             width, height = self._render_alerts_canvas(canvas, scale, flash_on)
         elif panel_id == "orderalerts":
