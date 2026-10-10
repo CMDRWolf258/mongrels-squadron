@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { normalizeScoutActivityBatch } from '../lib/scout-activity.js';
 import { mergeEventsWithResult, parseJournal, summarizeEvents } from '../lib/frontier.js';
+import { matchVerifiedActivity } from '../lib/order-activity.js';
 
 const now=Date.parse('2026-10-08T04:00:00Z');
 const source={
@@ -173,4 +174,16 @@ const carrierCartographics=parseJournal([JSON.stringify({...cartographicsDock,St
   JSON.stringify(cartographicsSale)].join('\n'),['Diaba']);
 assert.equal(carrierCartographics.events.length,0);
 assert.equal(carrierCartographics.excluded.length,1);
+const explorationOrder={orders:[{
+  id:'cartographics-order',task:'Sell exploration data',system:'Diaba',
+  faction:'Regiment of Imperial Mongrels',status:'active',
+  reporting:{type:'exploration',target:20},
+  workCycle:{cycleId:'2026-10-10-test',
+    cycleStartedAt:'2026-10-10T00:00:00Z',
+    cycleEndsAt:'2026-10-11T00:00:00Z'},
+}]};
+const progress=events=>matchVerifiedActivity(events,explorationOrder).orderTotals
+  .reduce((sum,row)=>sum+row.contribution,0);
+assert.equal(progress(uploaded.events),11,'Two live Cartographics pages contribute 11 M Cr');
+assert.equal(progress(settled.events),14,'Frontier confirmation totals 14 M Cr without duplicate credit');
 console.log('Cartographics realtime/Frontier reconciliation, exact-page sale identity and carrier exclusion passed');
