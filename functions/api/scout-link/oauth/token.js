@@ -26,7 +26,7 @@ export async function onRequestPost({request,env}) {
     if (!existing || existing.clientId !== CLIENT_ID || existing.ownerId !== String(env.ADMIN_USER_ID) || !scopeAllowed(existing.scope) || existing.audience !== audience) return oauthError('invalid_grant');
     const consumed = await consumeSecret(env,'refresh',params.get('refresh_token'));
     if (!consumed) return oauthError('invalid_grant');
-    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID,consumed.scope));
+    return oauthJson(await issueTokens(env,consumed.ownerId,CLIENT_ID,consumed.scope,audience));
   }
   return oauthError('unsupported_grant_type');
 }
