@@ -210,7 +210,7 @@ _hud_state: dict[str, Any] = {
     "ownerCarrier": None,
     "lastFacility": None,
     "status": None,
-    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "fuelReserveCapacity": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
+    "ship": {"name": "", "ident": "", "type": "", "maxJumpRange": None, "currentJumpRange": None, "unladenMass": None, "cargoCapacity": None, "fuelCapacity": None, "fuelReserveCapacity": None, "fuelScoopInstalled": None, "jumpModel": None, "currentMass": None, "hullHealth": None, "shieldsUp": None, "timestamp": None},
     "tradeActivity": {"status": "waiting", "reason": "no_sale_observed", "timestamp": None},
     "cargo": {"vessel": "Ship", "used": 0, "capacity": None, "free": None, "limpets": 0, "items": [], "stolenItems": [], "missionNeeds": [], "updatedAt": None},
     "target": None,
@@ -663,6 +663,7 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
                 ship[key] = value
         cached_modules = state.get("Modules")
         if isinstance(cached_modules, Mapping):
+            ship["fuelScoopInstalled"] = _fuel_scoop_installed({"Modules": cached_modules})
             jump_model = _extract_jump_model({"Modules": cached_modules})
             if jump_model:
                 ship["jumpModel"] = jump_model
@@ -1403,6 +1404,7 @@ def _scout_link_payload() -> Optional[dict[str, Any]]:
         "fuel": status.get("fuelMain"),
         "fuelCapacity": ship.get("fuelCapacity"),
         "fuelReserveCapacity": ship.get("fuelReserveCapacity"),
+        "fuelScoopInstalled": ship.get("fuelScoopInstalled"),
         "cargo": status.get("cargo"),
         "unladenMass": ship.get("unladenMass"),
         "jumpModel": {
@@ -1801,6 +1803,7 @@ def _normalize_hud_event(
         if isinstance(fuel_capacity, Mapping):
             payload["fuelCapacity"] = _optional_float(fuel_capacity.get("Main"))
             payload["fuelReserveCapacity"] = _optional_float(fuel_capacity.get("Reserve"))
+        payload["fuelScoopInstalled"] = _fuel_scoop_installed(entry)
         jump_model = _extract_jump_model(entry)
         if jump_model:
             payload["jumpModel"] = jump_model
@@ -1888,6 +1891,7 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
                 ("cargoCapacity", "cargoCapacity"),
                 ("fuelCapacity", "fuelCapacity"),
                 ("fuelReserveCapacity", "fuelReserveCapacity"),
+                ("fuelScoopInstalled", "fuelScoopInstalled"),
             ):
                 value = event.get(source)
                 if value is not None and (not isinstance(value, str) or value):
@@ -2746,6 +2750,16 @@ def _engineering_value(module: Mapping[str, Any], label: str) -> Optional[float]
             continue
         return _optional_float(modifier.get("Value"))
     return None
+
+
+def _fuel_scoop_installed(entry: Mapping[str, Any]) -> Optional[bool]:
+    modules = entry.get("Modules")
+    if isinstance(modules, Mapping):
+        modules = list(modules.values())
+    if not isinstance(modules, list):
+        return None
+    return any(isinstance(m, Mapping) and "fuelscoop" in str(m.get("Item") or "").casefold()
+               for m in modules)
 
 
 def _extract_jump_model(entry: Mapping[str, Any]) -> Optional[dict[str, Any]]:
