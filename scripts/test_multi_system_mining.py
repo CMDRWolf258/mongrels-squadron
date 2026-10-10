@@ -45,7 +45,7 @@ methods = [x for x in classes[0].body if isinstance(x, ast.FunctionDef) and x.na
 assert {x.name for x in methods} == method_names
 container = ast.ClassDef(name="Harness", bases=[], keywords=[], body=methods, decorator_list=[])
 scope = {
-    "Any": Any, "math": math, "re": re, "time": time, "urllib": urllib,
+    "Any": Any, "math": math, "re": re, "time": time, "json": json, "urllib": urllib,
     "MULTI_MINING_REMOTE_READS_ENABLED": False,  # Isolate offline regression from new optional network reads
     "SCOUT_MINING_REPORT_URL": "http://127.0.0.1:43857/v1/mining/report",
     "SCOUT_MINING_CENTER_URL": "http://127.0.0.1:43857/v1/mining/center",
