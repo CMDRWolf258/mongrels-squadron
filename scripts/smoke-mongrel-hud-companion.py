@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.17.1"
+assert hud.APP_VERSION=="0.17.2"
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
@@ -291,7 +291,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.17.1"
+    assert hud.APP_VERSION=="0.17.2"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
