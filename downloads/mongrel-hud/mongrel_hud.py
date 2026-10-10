@@ -3693,13 +3693,13 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
-    def route_control(self, action: str, route_id: str = "") -> dict[str, Any]:
+    def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60) -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
-        if action not in {"read", "start", "stop"}:
+        if action not in {"read", "start", "stop", "plot", "check"}:
             raise ValueError("invalid_route_action")
         if route_id and not re.fullmatch(r"[0-9a-fA-F-]{24,64}", route_id):
             raise ValueError("invalid_route_id")
-        if action == "start" and not route_id:
+        if action in {"start", "check"} and not route_id:
             raise ValueError("route_id_required")
         if action == "read":
             suffix = ("?routeId=" + route_id) if route_id else ""
@@ -3710,7 +3710,7 @@ class MongrelHudApp:
         else:
             request = urllib.request.Request(
                 SCOUT_ROUTE_CONTROL_URL,
-                data=json.dumps({"action": action, "routeId": route_id}, separators=(",", ":")).encode("utf-8"),
+                data=json.dumps({"action": action, "routeId": route_id, "destination": str(destination or "")[:140], "efficiency": efficiency}, separators=(",", ":")).encode("utf-8"),
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -6168,7 +6168,7 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/route":
-                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""))
+                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60))
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]
