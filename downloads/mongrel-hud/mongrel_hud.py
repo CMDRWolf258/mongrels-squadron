@@ -1338,7 +1338,7 @@ class MongrelHudApp:
         """Detect a *confirmed* waypoint transition, not an ordinary FSD jump."""
         old = previous if isinstance(previous, dict) else {}
         nav = data.get("navigation") if isinstance(data.get("navigation"), dict) else {}
-        if not nav.get("active") or not old.get("routeId") or old.get("routeId") != nav.get("routeId"):
+        if not (nav.get("active") or nav.get("completed")) or not old.get("routeId") or old.get("routeId") != nav.get("routeId"):
             return
         old_index, new_index = old.get("waypointIndex"), nav.get("waypointIndex")
         if (type(old_index) is not int or type(new_index) is not int
@@ -3695,7 +3695,7 @@ class MongrelHudApp:
 
     def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60) -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
-        if action not in {"read", "start", "stop", "plot", "check"}:
+        if action not in {"read", "start", "stop", "plot", "check", "copy"}:
             raise ValueError("invalid_route_action")
         if route_id and not re.fullmatch(r"[0-9a-fA-F-]{24,64}", route_id):
             raise ValueError("invalid_route_id")
