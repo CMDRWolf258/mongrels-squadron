@@ -1074,71 +1074,158 @@ def _refresh_hud_site_feed_once() -> bool:
         return False
 
 
-def _refresh_route_navigation() -> None:
-    """Advance Spansh waypoints only on a confirmed visit to the next waypoint.
+def _route_checkpoint() -> dict[str, Any]:
+    try:
+        data = json.loads(config.get_str(KEY_NAV_CHECKPOINT) or "{}")
+        return data if isinstance(data, dict) else {}
+    except (ValueError, TypeError):
+        return {}
 
-    This runs locally on the EDMC computer. It never writes back to the game
-    or marks the cloud route progressed; the PC clipboard is the only side
-    effect, enabled only after explicit route activation and opt-in.
+
+def _save_route_checkpoint(route: Mapping[str, Any], ship: str, index: int, system: str) -> None:
+    # Persist only confirmed waypoint progress. No route geometry, journal, or
+    # location history is uploaded or written to the checkpoint.
+    config.set(KEY_NAV_CHECKPOINT, json.dumps({
+        "routeId": str(route.get("id") or ""),
+        "activation": str(route.get("activatedAt") or ""),
+        "ship": ship, "index": index, "waypoint": system,
+    }, separators=(",", ":")))
+
+
+def _last_route_completion() -> dict[str, Any] | None:
+    try:
+        completion = json.loads(config.get_str(KEY_NAV_COMPLETED) or "{}")
+        if isinstance(completion, dict) and 0 <= time.time() - float(completion.get("timestamp") or 0) < 600:
+            return completion
+    except (ValueError, TypeError, OverflowError):
+        pass
+    return None
+
+
+def _complete_route_remote(route_id: str, ship: str, system: str) -> None:
+    # One event-driven request on arrival. A failed request never affects
+    # local completion or the existing Scout clipboard behavior.
+    _hud_route_control("complete", route_id, system=system, ship=ship)
+
+
+def _refresh_route_navigation(force_copy: bool = False) -> dict[str, Any]:
+    """Advance ONLY on the next confirmed waypoint; preserve progress on EDMC
+    restart; explicitly re-copy without writing to Cloudflare.
+
+    The checkpoint is keyed by route ID + activation + ship. A copied system
+    is still a Galaxy Map target, never an instruction to operate Elite.
     """
-    global _nav_id, _nav_index, _nav_copied, _nav_pending
+    global _nav_id, _nav_index, _nav_copied, _nav_pending, _nav_completion_pending
     with _hud_condition:
         feed = _hud_state.get("siteFeed")
         route = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
         current = str((_hud_state.get("system") or {}).get("name") or "").strip()
         ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
         if not isinstance(route, Mapping) or not route.get("autoCopy"):
-            # Reactivating this same route must copy its first stop again.
-            _nav_id, _nav_index, _nav_copied, _nav_pending = "", 0, "", ""
-            _hud_state["navigation"] = None
-            return
+            # Do not erase a saved checkpoint just because the cloud feed has
+            # not loaded on startup. Clear it only after a real inactive feed.
+            if isinstance(feed, Mapping):
+                if _nav_id or _route_checkpoint():
+                    config.set(KEY_NAV_CHECKPOINT, "")
+                _nav_id, _nav_index, _nav_copied, _nav_pending = "", 0, "", ""
+                _nav_completion_pending = ""
+            completed = _last_route_completion()
+            _hud_state["navigation"] = ({"active": False, "completed": True, **completed}
+                                          if completed else None)
+            return {"ok": False, "error": "route_not_active"} if force_copy else {"ok": True}
         route_id = str(route.get("id") or "")
         waypoints = route.get("waypoints")
         if not route_id or not isinstance(waypoints, list) or len(waypoints) > 128 or not waypoints:
-            return
+            return {"ok": False, "error": "route_invalid"}
         if str(route.get("ship") or "").casefold() != ship.casefold() or not current:
             _hud_state["navigation"] = {"active": False, "reason": "ship_or_location_unavailable"}
-            return
+            return {"ok": False, "error": "ship_or_location_unavailable"}
         names = [str(w.get("system") or "").strip() if isinstance(w, Mapping) else "" for w in waypoints]
         if not all(names):
-            return
+            return {"ok": False, "error": "route_invalid"}
         if _nav_id != route_id:
-            start = next((i for i, name in enumerate(names) if name.casefold() == current.casefold()), -1)
+            saved = _route_checkpoint()
+            valid = (
+                saved.get("routeId") == route_id
+                and saved.get("activation") == str(route.get("activatedAt") or "")
+                and str(saved.get("ship") or "").casefold() == ship.casefold()
+                and type(saved.get("index")) is int
+                and 0 <= saved["index"] < len(names)
+                and saved.get("waypoint") == names[saved["index"]]
+            )
+            if valid:
+                start = saved["index"]
+            else:
+                start = next((i for i, name in enumerate(names) if name.casefold() == current.casefold()), -1)
             if start < 0:
-                _hud_state["navigation"] = {"active": False, "reason": "off_route", "routeId": route_id}
-                return
+                _hud_state["navigation"] = {
+                    "active": False, "reason": "off_route_without_checkpoint", "routeId": route_id,
+                }
+                return {"ok": False, "error": "route_off_route_replot_required"}
             _nav_id, _nav_index, _nav_copied, _nav_pending = route_id, start, "", ""
-        elif _nav_index + 1 < len(names) and names[_nav_index + 1].casefold() == current.casefold():
+            config.set(KEY_NAV_COMPLETED, "")
+            _save_route_checkpoint(route, ship, start, names[start])
+        if _nav_index + 1 < len(names) and names[_nav_index + 1].casefold() == current.casefold():
             _nav_index += 1
-        elif current.casefold() not in {names[_nav_index].casefold(), names[_nav_index + 1].casefold() if _nav_index + 1 < len(names) else ""}:
-            # Intermediate jumps are not always on the plotted waypoint list.
-            # Keep the next waypoint, do not skip or fabricate progress.
-            pass
+            _save_route_checkpoint(route, ship, _nav_index, names[_nav_index])
         next_system = names[_nav_index + 1] if _nav_index + 1 < len(names) else ""
-        _hud_state["navigation"] = {
-            "active": bool(next_system), "routeId": route_id,
-            "destination": str(route.get("destination") or ""),
+        completed = not next_system and current.casefold() == names[-1].casefold()
+        remaining = len(names) - _nav_index - 1
+        future_jumps = [
+            row.get("estimatedJumpsFromPrevious") if isinstance(row, Mapping) else None
+            for row in waypoints[_nav_index + 1:]
+        ]
+        remaining_jumps = (sum(future_jumps) if future_jumps
+                           and all(type(n) is int and n >= 0 for n in future_jumps) else None)
+        progress = {
+            "active": bool(next_system), "completed": completed,
+            "routeId": route_id, "destination": str(route.get("destination") or ""),
             "waypointIndex": _nav_index, "waypointCount": len(names),
+            "completedTargets": _nav_index,
+            "remainingTargets": remaining,
             "navigationTargetCount": max(0, len(names) - 1),
             "routeType": str(route.get("routeType") or "neutron_replot_waypoints"),
             "estimatedTotalJumps": route.get("estimatedTotalJumps"),
+            "estimatedRemainingJumps": remaining_jumps,
+            "currentSystem": current,
+            "previousWaypoint": names[_nav_index],
             "nextSystem": next_system,
             "autoCopyEnabled": config.get_int(KEY_NAV_AUTO_COPY) != -1,
         }
+        _hud_state["navigation"] = progress
         _hud_condition.notify_all()
+        if completed:
+            if _nav_completion_pending != route_id:
+                _nav_completion_pending = route_id
+                completion = {
+                    "routeId": route_id, "destination": progress["destination"],
+                    "waypointIndex": _nav_index, "waypointCount": len(names),
+                    "completedTargets": _nav_index, "remainingTargets": 0,
+                    "timestamp": time.time(),
+                }
+                config.set(KEY_NAV_COMPLETED, json.dumps(completion, separators=(",", ":")))
+                threading.Thread(
+                    target=_complete_route_remote,
+                    args=(route_id, ship, current),
+                    name="MongrelScoutRouteCompleted", daemon=True,
+                ).start()
+            return {"ok": False, "error": "route_complete"} if force_copy else {"ok": True, "completed": True}
         marker = f"{route_id}:{_nav_index}:{next_system}"
-        if not next_system or config.get_int(KEY_NAV_AUTO_COPY) == -1 or marker in {_nav_copied, _nav_pending}:
-            return
+        if force_copy:
+            # A paired user's explicit press may re-copy the current waypoint.
+            # It does not automatically change the saved route or waypoint index.
+            _nav_copied = ""
+        if ((config.get_int(KEY_NAV_AUTO_COPY) == -1 and not force_copy)
+                or marker in {_nav_copied, _nav_pending}):
+            return {"ok": False, "error": "copy_already_pending"} if force_copy else {"ok": True}
         _nav_pending = marker
 
-    # EDMC supplies the Tk root; perform clipboard modifications on its UI
-    # thread so there is no background Tk access to Windows clipboard state.
     widget = _status_label
     if widget is None:
         with _hud_condition:
             if _nav_pending == marker:
                 _nav_pending = ""
-        return
+        return {"ok": False, "error": "clipboard_unavailable"}
 
     def _copy() -> None:
         global _nav_copied, _nav_pending
@@ -1146,15 +1233,12 @@ def _refresh_route_navigation() -> None:
             with _hud_condition:
                 feed = _hud_state.get("siteFeed")
                 active = feed.get("navigationRoute") if isinstance(feed, Mapping) else None
-                # Clipboard work is queued onto Tk's UI thread. Recheck the
-                # route, commander opt-out and ship AFTER queuing so a stale
-                # callback cannot copy a target from an inactive route.
                 current_ship = str((_hud_state.get("ship") or {}).get("name") or "").strip()
                 if (not isinstance(active, Mapping)
                         or not active.get("autoCopy")
                         or str(active.get("id") or "") != route_id
                         or current_ship.casefold() != ship.casefold()
-                        or config.get_int(KEY_NAV_AUTO_COPY) == -1
+                        or (config.get_int(KEY_NAV_AUTO_COPY) == -1 and not force_copy)
                         or _nav_index >= len(names) - 1
                         or marker != f"{route_id}:{_nav_index}:{next_system}"):
                     return
@@ -1176,6 +1260,8 @@ def _refresh_route_navigation() -> None:
         with _hud_condition:
             if _nav_pending == marker:
                 _nav_pending = ""
+        return {"ok": False, "error": "clipboard_unavailable"}
+    return {"ok": True, "queued": True, "nextSystem": next_system}
 
 
 def _refresh_hud_site_manifest_once() -> dict[str, Any]:
