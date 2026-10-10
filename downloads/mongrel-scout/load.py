@@ -898,10 +898,13 @@ def _hud_route_control(action: str, route_id: str = "") -> dict[str, Any]:
         if not isinstance(payload, Mapping) or payload.get("ok") is not True:
             return _hud_http_failure(details, "invalid_route_response")
         if action != "read":
-            # Reuse existing feed fetch to propagate the update to clipboard.
-            # Cloudflare KV may briefly remain stale; the normal manifest
-            # refresh is still responsible for eventual consistency.
-            _refresh_hud_site_feed_once()
+            # One on-demand refresh, not a polling loop. Do not delay the HUD
+            # acknowledgement while Cloudflare's feed is being fetched.
+            # The normal manifest refresh still handles KV propagation.
+            threading.Thread(
+                target=_refresh_hud_site_feed_once,
+                name="MongrelScoutRouteRefresh", daemon=True,
+            ).start()
         return dict(payload)
     except Exception as exc:
         return _hud_transport_failure(endpoint, exc)
