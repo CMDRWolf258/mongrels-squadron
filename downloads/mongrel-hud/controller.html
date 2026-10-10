@@ -267,7 +267,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 (function(){
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
-var controllerTab="hud",routePreview=null,routeCloudActive=null,routeControlBusy=false;
+var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false;
 function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
@@ -339,7 +339,7 @@ async function waitForVoiceTest(requestId,label){
 function renderRouteControls(){
   var scout=(state&&state.scout)||{},nav=scout.navigation||{};
   var feed=(scout.siteFeed)||{},observed=feed.navigationRoute||null;
-  var active=routeCloudActive || observed;
+  var active=routeCloudLoaded?routeCloudActive:observed;
   var route=routePreview;
   var summary=route?("READY · "+String(route.ship||"?")+" · "+String(route.source||"?")+" → "+String(route.destination||"?")+" · "+Math.max(0,Number(route.navigationTargetCount)||0)+" navigation targets"):"No route selected. Load a ready route first.";
   setText(el("routeSummary"),summary);
@@ -642,7 +642,7 @@ el("routeLoad").onclick=async function(){
     var id=String(el("routeJobId").value||"").trim();
     var data=await api("/api/route"+(id?"?routeId="+encodeURIComponent(id):""));
     routePreview=data.route||null;
-    routeCloudActive=data.activeRoute||null;
+    routeCloudActive=data.activeRoute||null;routeCloudLoaded=true;
     if(routePreview)el("routeJobId").value=routePreview.id;
     el("routeNotice").textContent=routePreview?"Route ready. Start Navigation copies its first waypoint on the PC after Scout receives the active route.":"No ready route found; paste the route ID from ChatGPT, then Load Route.";
   }catch(e){el("routeNotice").textContent="Route load failed · "+e.message}
@@ -656,7 +656,7 @@ el("routeStart").onclick=async function(){
   try{
     var result=await api("/api/route",{action:"start",routeId:route.id});
     if(!result.ok)throw new Error(String(result.error||"activation_failed"));
-    routeCloudActive={id:route.id,ship:route.ship,destination:route.destination,source:route.source,activatedAt:new Date().toISOString()};
+    routeCloudActive={id:route.id,ship:route.ship,destination:route.destination,source:route.source,activatedAt:new Date().toISOString()};routeCloudLoaded=true;
     el("routeNotice").textContent="Navigation activated. Scout will copy the next waypoint when it receives the updated site feed. Verify the active route in the Own Ship HUD.";
   }catch(e){el("routeNotice").textContent="Start failed · "+e.message}
   finally{routeControlBusy=false;renderRouteControls()}
@@ -668,7 +668,7 @@ el("routeStop").onclick=async function(){
   try{
     var result=await api("/api/route",{action:"stop"});
     if(!result.ok)throw new Error(String(result.error||"stop_failed"));
-    routeCloudActive=null;
+    routeCloudActive=null;routeCloudLoaded=true;
     el("routeNotice").textContent="Stop requested and accepted. Cloud-to-Scout propagation may take a site-feed refresh. Route preview is preserved.";
     await load(true);
   }catch(e){el("routeNotice").textContent="Stop failed · "+e.message}
