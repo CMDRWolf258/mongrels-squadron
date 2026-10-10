@@ -184,8 +184,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <button type="button" id="routeStart" disabled>START NAVIGATION</button>
       <button type="button" id="routeStop" disabled>STOP NAVIGATION</button>
     </div>
+    <div class="route-actions"><button type="button" id="routeCopyNext" disabled>COPY NEXT TO SERENITY</button><button type="button" id="routeReplot" disabled>REPLOT FROM HERE</button></div>
     <div class="status" id="routeSummary">No route selected. Load a ready route first.</div>
     <div class="layout-hint" id="routeCurrent">Route Director inactive.</div>
+    <div class="layout-hint" id="routeProgress">No active flight plan.</div>
     <div class="notice" id="routeNotice">Starting a route requires live Scout telemetry for the matching ship and system.</div>
     <h3>FLIGHT PLAN · ALL WAYPOINTS</h3>
     <div class="route-manifest" id="routeManifest"><div class="layout-hint" style="padding:12px">Load a route to view its full waypoint sequence.</div></div>
@@ -377,10 +379,18 @@ function renderRouteControls(){
   var summary=route?("READY · "+String(route.ship||"?")+" · "+String(route.source||"?")+" → "+String(route.destination||"?")+" · "+Math.max(0,Number(route.navigationTargetCount)||0)+" navigation targets"):"No route selected. Load a ready route first.";
   setText(el("routeSummary"),summary);
   var next=String(nav.nextSystem||"");
-  setText(el("routeCurrent"),active?(
+  var complete=!!nav.completed,activeNow=!!(active&&!complete),remaining=Number(nav.remainingTargets);
+  if(complete && nav.destination) setText(el("routeCurrent"),"ARRIVED · "+String(nav.destination));
+  else setText(el("routeCurrent"),active?(
     "ACTIVE · "+String(active.ship||"?")+" → "+String(active.destination||"?")+
     (next?" · NEXT "+next+" · "+String((Number(nav.waypointIndex)||0)+1)+"/"+String(nav.waypointCount||"?"):" · awaiting Scout feed")
   ):"Route Director inactive.");
+  var progress=complete?"ROUTE COMPLETED · "+String(nav.completedTargets||"")+" / "+String(nav.navigationTargetCount||"")+" targets":
+    activeNow&&nav.routeId===active.id?
+      String(nav.completedTargets||0)+" TARGETS REACHED · "+String(Number.isFinite(remaining)?remaining:"?")+" REMAINING"+
+      (Number.isInteger(nav.estimatedRemainingJumps)?" · ABOUT "+nav.estimatedRemainingJumps+" PLANNED JUMPS":" · JUMPS UNKNOWN"):
+    "No active flight plan.";
+  setText(el("routeProgress"),progress);
   el("routeLoad").disabled=routeControlBusy || !state.connected;
   el("routeStart").disabled=routeControlBusy || !state.connected || !route || route.status!=="ready" || (
     active && String(active.id||"")===String(route.id||"")
@@ -388,6 +398,8 @@ function renderRouteControls(){
   el("routeStop").disabled=routeControlBusy || !state.connected || !active;
   el("routePlot").disabled=routeControlBusy || !state.connected;
   el("routeCheck").disabled=routeControlBusy || !state.connected || !routePendingId;
+  el("routeCopyNext").disabled=routeControlBusy || !state.connected || !activeNow || !nav.nextSystem || !nav.routeId;
+  el("routeReplot").disabled=routeControlBusy || !state.connected || !(active||route) || !(active&&active.destination||route&&route.destination);
   renderFlightManifest(route,active,nav);
   renderScoutNetwork(feed.scout);
 }
@@ -395,7 +407,7 @@ function renderFlightManifest(route,active,nav){
   var elList=el("routeManifest"),selected=route || ((state&&state.scout&&state.scout.siteFeed)||{}).navigationRoute;
   var rows=selected&&Array.isArray(selected.waypoints)?selected.waypoints:[];
   if(!rows.length){var empty='<div class="layout-hint" style="padding:12px">No route manifest loaded. Plot or load a ready route.</div>';if(elList.innerHTML!==empty)elList.innerHTML=empty;return}
-  var following=active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?nav.waypointIndex+1:-1;
+  var following=active&&active.id===selected.id&&nav.routeId===selected.id&&Number.isInteger(nav.waypointIndex)?(nav.completed?rows.length:nav.waypointIndex+1):-1;
   var html=rows.map(function(w,i){
     var system=escapeHtml(String(w&&w.system||"UNKNOWN"));
     var kind=w&&w.fuelStop===true?"FUEL":w&&w.neutron===true?"NEUTRON":i===0?"START":i===rows.length-1?"ARRIVAL":"VIA";
@@ -693,6 +705,25 @@ document.querySelectorAll("[data-panel-profile]").forEach(function(select){selec
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{var r=await api("/api/target-scan",{});state=state||{};if(r.scan)state.targetScan=r.scan;render();await load(true)}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};
+el("routeCopyNext").onclick=async function(){
+  if(routeControlBusy)return;
+  routeControlBusy=true;renderRouteControls();
+  try{
+    var r=await api("/api/route",{action:"copy"});
+    if(!r.ok)throw new Error(String(r.error||"copy_failed"));
+    el("routeNotice").textContent="Scout queued "+String(r.nextSystem||"the next waypoint")+" for Serenity's Windows clipboard.";
+  }catch(e){el("routeNotice").textContent="Copy failed · "+e.message}
+  finally{routeControlBusy=false;renderRouteControls()}
+};
+el("routeReplot").onclick=async function(){
+  if(routeControlBusy)return;
+  var active=(state&&state.scout&&state.scout.siteFeed||{}).navigationRoute||routeCloudActive||routePreview;
+  var destination=String(active&&active.destination||"").trim();
+  if(!destination)return;
+  if(!confirm("Calculate a NEW route to "+destination+" from Scout's CURRENT SYSTEM? Your existing navigation stays active until you deliberately start the new route."))return;
+  el("routeDestination").value=destination;
+  await el("routePlot").onclick();
+};
 el("routePlot").onclick=async function(){
   if(routeControlBusy)return;
   var destination=String(el("routeDestination").value||"").trim();
