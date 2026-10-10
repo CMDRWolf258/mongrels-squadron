@@ -43,9 +43,14 @@ export async function onRequestGet({request,env}) {
   const pending = randomToken();
   const now = Date.now();
   await putSecret(env,'pending',pending,{ownerId:user.sub,clientId,callback,challenge,state,scope,resource,exp:now+600000},600);
+  // Chromium also checks form-action against destinations of a form's
+  // redirects. Consent POST is same-origin, but its 303 is intentionally
+  // cross-origin to the *fixed*, prevalidated ChatGPT OAuth callback.
+  // Keep form-action restricted to the site and that callback origin.
+  const callbackOrigin = new URL(CALLBACK).origin;
   const response = new Response(confirmHtml(pending),{status:200,headers:{
     'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
-    'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; form-action 'self' " + callbackOrigin + "; base-uri 'none'; frame-ancestors 'none'",
     'X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff',
   }});
   return response;
