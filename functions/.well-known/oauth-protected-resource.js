@@ -4,7 +4,7 @@ export async function onRequestGet({request}) {
     resource:resourceUrl(request),
     authorization_servers:[issuer(request)],
     bearer_methods_supported:['header'],
-    scopes_supported:['scout.read'],
+    scopes_supported:['scout.read','scout.route'],
     resource_name:'Mongrel Scout Link',
   });
 }
