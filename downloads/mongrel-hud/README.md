@@ -7,6 +7,10 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
+## Optional Route Director display (HUD 0.17.2)
+
+When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
+
 ## Before you start
 
 You need:
