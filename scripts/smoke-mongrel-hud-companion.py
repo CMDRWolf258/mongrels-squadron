@@ -300,6 +300,39 @@ with tempfile.TemporaryDirectory() as td:
     assert app.layout_snapshot()["panels"]["target"]["x"]==-120
     app.reset_layout()
     assert app.layout_snapshot()["panels"]["target"]["x"]==40
+    # Existing layouts preserve old Combat/Surface memberships. Navigation
+    # instruments appear independently with safe visible defaults.
+    navigation_panels=("navcourse","navsteps","navsignal","navfuel","navscout")
+    assert set(navigation_panels).issubset(hud.PANEL_IDS)
+    assert all(app.layout_snapshot()["panels"][name]["profiles"]==["navigation"] for name in navigation_panels)
+    assert app.layout_snapshot()["panels"]["own"]["profiles"]==["combat"]
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    assert "navigation" in hud.VALID_PROFILES
+    nav_start={"active":True,"routeId":"test-route","waypointIndex":0}
+    plan=[
+        {"system":"Starting Point","neutron":False},
+        {"system":"Neutron Arrival","neutron":True},
+        {"system":"Final Destination","neutron":False},
+    ]
+    # Merely refreshing or making an intermediate ordinary jump must not
+    # create a flashy waypoint arrival.
+    app._observe_navigation_arrival(nav_start,{
+        "navigation":dict(nav_start),
+        "siteFeed":{"navigationRoute":{"waypoints":plan}},
+    })
+    assert app._arrival_for_controller() is None
+    # Only a confirmed one-index advance produces a signal.
+    app._observe_navigation_arrival(nav_start,{
+        "navigation":{"active":True,"routeId":"test-route","waypointIndex":1},
+        "siteFeed":{"navigationRoute":{"waypoints":plan}},
+    })
+    assert app._arrival_for_controller()["kind"]=="neutron"
+    assert app._arrival_for_controller()["system"]=="Neutron Arrival"
+    assert app.set_profile("navigation")=="navigation"
+    assert app.controller_state()["profile"]=="navigation"
+    # Unrelated overlay assignments remain unchanged on profile switches.
+    assert app.layout_snapshot()["panels"]["cargo"]["profiles"]==["combat","surface"]
+    app.set_profile("combat")
     # Profile switching must never rewrite user panel assignments.
     before_profiles={panel:list(cfg["profiles"]) for panel,cfg in app.layout_snapshot()["panels"].items()}
     app.set_panel_settings("surface",profiles=["combat","surface"])
