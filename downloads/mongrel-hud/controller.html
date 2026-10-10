@@ -303,6 +303,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
         <div id="browseSystemSuggestions" class="mining-suggestions hidden" role="listbox" aria-label="Saved mining systems"></div>
       </div>
       <button type="button" id="browseRefresh" class="action">REFRESH SAVED SYSTEMS</button>
+      <button type="button" id="browseHealth" class="action">CHECK SHARED MINING DATABASE</button>
+      <div class="layout-hint" id="browseHealthStatus" aria-live="polite">Shared database not checked. Off-system reports are local-only until the production database and backup are verified.</div>
       <div class="grid">
         <div><label for="browseCommodity">Commodity</label><select id="browseCommodity" class="mining-select"><option value="">All commodities</option></select></div>
         <div><label for="browseBody">Planet / moon</label><select id="browseBody" class="mining-select"><option value="">All bodies</option></select></div>
@@ -965,6 +967,18 @@ el("browseSystemInput").onfocus=showMiningSuggestions;
 el("browseSystemInput").onkeydown=function(event){
   if(event.key==="Escape"){el("browseSystemSuggestions").classList.add("hidden");el("browseSystemInput").setAttribute("aria-expanded","false")}
   if(event.key==="Enter"){var hits=browserMatches(el("browseSystemInput").value);if(hits.length){event.preventDefault();pickMiningSystem(hits[0].systemAddress)}}
+};
+el("browseHealth").onclick=async function(){
+  var button=el("browseHealth"),label=el("browseHealthStatus");
+  button.disabled=true;label.textContent="Checking live archive D1 binding and schema…";
+  try{
+    var status=await api("/api/mining-browser/health");
+    if(status.dbBound!==true){label.textContent="ARCHIVE DATABASE NOT CONNECTED · Shared sync remains OFF";return}
+    if(!status.legacyReady){label.textContent="LEGACY 10-16 TABLES MISSING · Do not enable shared syncing";return}
+    if(!status.multiSchemaReady){label.textContent="MULTI-SYSTEM TABLES MISSING · Database migration not verified · Shared sync OFF";return}
+    label.textContent="D1 SCHEMA READY · Legacy and multi-system tables found. Backup is NOT verified and shared off-system writes remain DISABLED.";
+  }catch(e){label.textContent="DATABASE CHECK FAILED · "+e.message+" · No shared writes enabled"}
+  finally{button.disabled=false}
 };
 el("browseRefresh").onclick=function(){return loadMiningBrowserCatalog(true)};
 ["browseCommodity","browseBody","browseRigs"].forEach(function(id){el(id).onchange=renderMiningBrowseResults});

@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.7"
+APP_VERSION = "0.17.8"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -64,6 +64,7 @@ SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
 MINING_CENTERS_URL = "http://127.0.0.1:43857/v1/mining/centers"
+MINING_HEALTH_URL = "http://127.0.0.1:43857/v1/mining/health"
 MINING_SYSTEMS_URL = "http://127.0.0.1:43857/v1/mining/systems"
 TEN16_SYSTEM = "NGC 2546 Sector UZ-G d10-16"
 TEN16_ID64 = "560820275507"
@@ -3776,6 +3777,11 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def shared_mining_health(self) -> dict[str, Any]:
+        """Admin-requested read-only archive status, never auto-refreshed."""
+        request = urllib.request.Request(MINING_HEALTH_URL, headers={"Accept": "application/json"}, method="GET")
+        return request_scout_json(request, "mining_health_unavailable", timeout=15.0)
+
     def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60, mode: str = "neutron") -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
         if action not in {"read", "start", "stop", "plot", "check", "copy"}:
@@ -6718,12 +6724,14 @@ def make_handler(app: MongrelHudApp):
                 except ValueError as exc:
                     self.send_json({"ok": False, "error": str(exc)}, 400)
                 return
-            if path in {"/api/mining-browser/catalog", "/api/mining-browser/system"}:
+            if path in {"/api/mining-browser/catalog", "/api/mining-browser/system", "/api/mining-browser/health"}:
                 if not self.authorized():
                     self.send_json({"ok": False, "error": "pair_required"}, 401)
                     return
                 try:
-                    if path.endswith("/catalog"):
+                    if path.endswith("/health"):
+                        self.send_json(app.shared_mining_health())
+                    elif path.endswith("/catalog"):
                         self.send_json(app.refresh_mining_browser_directory(force=(parse_qs(urlparse(self.path).query).get("refresh") == ["1"])))
                     else:
                         query = parse_qs(urlparse(self.path).query)

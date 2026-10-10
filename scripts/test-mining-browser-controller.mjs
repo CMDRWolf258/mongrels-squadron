@@ -7,6 +7,10 @@ const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||'';
 for(const id of ['browseSystemInput','browseSystemSuggestions','browseCommodity','browseBody','browseRigs','browseResults','browseStatus','browseRefresh','browseNavNotice']){
   assert.match(html,new RegExp('id="'+id+'"'));
 }
+assert.match(html,/id="browseHealth"/);
+assert.match(html,/id="browseHealthStatus"/);
+assert.match(script,/\/api\/mining-browser\/health/);
+assert.match(script,/Backup is NOT verified and shared off-system writes remain DISABLED/);
 assert.match(script,/miningBrowser\.selected/);
 assert.match(script,/\/api\/mining-browser\/catalog/);
 assert.match(script,/\/api\/mining-browser\/system/);
