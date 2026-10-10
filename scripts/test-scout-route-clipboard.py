@@ -49,6 +49,8 @@ route={
     "ship":"Leaf On the Wind",
     "destination":"Diaba",
     "autoCopy":True,
+    "routeType":"neutron_replot_waypoints",
+    "estimatedTotalJumps":13,
     "waypoints":[
         {"system":"NGC 2546 Sector UZ-G d10-16"},
         {"system":"TEST NEUTRON A"},
@@ -61,6 +63,9 @@ scout._hud_state["siteFeed"]={"navigationRoute":route}
 scout._refresh_route_navigation()
 assert widget.copies==["TEST NEUTRON A"],widget.copies
 assert scout._hud_state["navigation"]["nextSystem"]=="TEST NEUTRON A"
+assert scout._hud_state["navigation"]["routeType"]=="neutron_replot_waypoints"
+assert scout._hud_state["navigation"]["estimatedTotalJumps"]==13
+assert scout._hud_state["navigation"]["navigationTargetCount"]==2
 
 # Normal polling must never overwrite the clipboard with the same waypoint.
 scout._refresh_route_navigation()
@@ -87,19 +92,51 @@ scout._hud_state["siteFeed"]={"navigationRoute":None}
 scout._refresh_route_navigation()
 assert scout._hud_state["navigation"] is None
 
+# Reactivating the same route must recopy the first waypoint after cancel.
+scout._hud_state["system"]={"name":"NGC 2546 Sector UZ-G d10-16"}
+scout._hud_state["siteFeed"]={"navigationRoute":route}
+scout._refresh_route_navigation()
+assert widget.copies==["TEST NEUTRON A","Diaba","TEST NEUTRON A"],widget.copies
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+
 # A route for the wrong ship cannot take control of clipboard.
 scout._hud_state["system"]={"name":"NGC 2546 Sector UZ-G d10-16"}
 scout._hud_state["ship"]={"name":"Different Ship"}
 scout._hud_state["siteFeed"]={"navigationRoute":route}
 scout._refresh_route_navigation()
-assert widget.copies==["TEST NEUTRON A","Diaba"]
+assert widget.copies==["TEST NEUTRON A","Diaba","TEST NEUTRON A"]
 assert scout._hud_state["navigation"]["active"] is False
 
 # Commander can disable the optional clipboard behavior in EDMC preferences.
 scout._hud_state["ship"]={"name":"Leaf On the Wind"}
 config.set(scout.KEY_NAV_AUTO_COPY,-1)
 scout._refresh_route_navigation()
-assert widget.copies==["TEST NEUTRON A","Diaba"]
+assert widget.copies==["TEST NEUTRON A","Diaba","TEST NEUTRON A"]
 assert scout._hud_state["navigation"]["autoCopyEnabled"] is False
 
-print("Scout neutron route clipboard progression and opt-out regression checks passed")
+# A deferred UI copy must not fire after cancellation, even if Tk hasn't run
+# the queued callback yet. This can happen during normal site feed refreshes.
+class DeferredWidget(FakeWidget):
+    def __init__(self):
+        super().__init__()
+        self.callbacks=[]
+    def after(self,wait,fn):
+        assert wait==0
+        self.callbacks.append(fn)
+
+deferred=DeferredWidget()
+scout._status_label=deferred
+config.set(scout.KEY_NAV_AUTO_COPY,0)
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+scout._hud_state["siteFeed"]={"navigationRoute":route}
+scout._refresh_route_navigation()
+assert len(deferred.callbacks)==1
+scout._hud_state["siteFeed"]={"navigationRoute":None}
+scout._refresh_route_navigation()
+for callback in deferred.callbacks:
+    callback()
+assert deferred.copies==[],deferred.copies
+
+print("Scout neutron route clipboard progression, reactivation and cancellation checks passed")
