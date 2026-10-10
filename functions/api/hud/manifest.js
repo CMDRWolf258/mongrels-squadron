@@ -1,4 +1,5 @@
 import { resolveOrderWorkCycle } from '../../../lib/daily-order-cycle.js';
+import { readActiveRoute } from '../../../lib/scout-route.js';
 import { HUD_SIGNAL_MISSION_PROGRESS, signalKey } from '../../../lib/hud-change-signals.js';
 
 const TOKENS_KEY='wolf-bgs-scout-tokens-v1';
@@ -27,6 +28,9 @@ export async function onRequestGet(context){
 
   try{
     const shared=await sharedManifest(request,env,context);
+    // Per-owner route revision is NOT shared in the cache. One small KV read
+    // on the existing manifest cadence, and full HUD feed only if it changes.
+    const nav=String(auth.ownerId)===String(env.ADMIN_USER_ID||'') ? await readActiveRoute(env) : null;
     return reply({
       ...shared,
       viewer:{
@@ -35,6 +39,8 @@ export async function onRequestGet(context){
           spokenName:auth.ownerSpokenName,
           lastSystem:auth.lastSystem,
           lastCoords:auth.lastCoords,
+          activeRouteId:nav?.id||'',
+          activeRouteActivatedAt:nav?.activatedAt||'',
         }),
       },
     });
