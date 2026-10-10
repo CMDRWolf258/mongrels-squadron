@@ -5,7 +5,7 @@
 Full setup guide and current download:
 https://mongrels-squadron.pages.dev/member/#mongrel-scout-setup
 
-## Optional ChatGPT Scout Link (v1.12.6)
+## Optional ChatGPT Scout Link (v1.12.7)
 
 The private **Scout Link** setting is **off by default**. If enabled by the player **and** by the site's feature flags, Scout sends a small ship/system snapshot so the player's own ChatGPT plugin can read an accurate jump range. It uses a separate non-blocking upload path and does not alter existing BGS/trade/HUD pipelines.
 
