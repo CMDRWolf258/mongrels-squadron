@@ -57,7 +57,7 @@ export async function onRequestPost({request,env}) {
     const toolName=input.params?.name;
     const routeTool=ROUTE_TOOLS.find(tool=>tool.name===toolName);
     if (toolName !== TOOL.name && !routeTool) return rpcResponse(err(input.id,-32602,'Unknown tool'));
-    if (routeTool && !String(principal.scope||'').split(/\\s+/).includes('scout.route')) return rpcResponse(err(input.id,-32001,'Route scope required'));
+    if (routeTool && !String(principal.scope||'').split(/\s+/).includes('scout.route')) return rpcResponse(err(input.id,-32001,'Route scope required'));
     const args=input.params?.arguments || {};
     if (routeTool) {
       if (typeof args !== 'object' || Array.isArray(args)) return rpcResponse(err(input.id,-32602,'Invalid arguments'));
