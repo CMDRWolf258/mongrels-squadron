@@ -75,6 +75,7 @@ assert.ok(pending);
 const cookie=presented.headers.get('Set-Cookie').split(';')[0];
 const approved=await authorizePost({env,request:req(auth,'POST',new URLSearchParams({pending,decision:'approve'}),{'Content-Type':'application/x-www-form-urlencoded',Origin:origin,Cookie:'mongrels_session='+owner+'; '+cookie})});
 assert.equal(approved.status,303);
+assert.equal(new URL(approved.headers.get('Location')).searchParams.get('iss'),origin);
 const code=new URL(approved.headers.get('Location')).searchParams.get('code');
 assert.ok(code);
 const exchange=()=>exchangeToken({env,request:req(origin+'/api/scout-link/oauth/token','POST',new URLSearchParams({client_id:CLIENT_ID,grant_type:'authorization_code',code,redirect_uri:CALLBACK,code_verifier:verifier,resource:origin+'/api/scout-link/mcp'}),{'Content-Type':'application/x-www-form-urlencoded'})});
