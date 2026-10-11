@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.11"
+APP_VERSION = "0.17.13"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -4105,12 +4105,18 @@ class MongrelHudApp:
                     centers += shared_centers
                 except (OSError, ValueError, HudRequestError):
                     warning = "Shared records temporarily unavailable; displaying local records."
+        # Older 1 km flags remain for the commander to review explicitly.
+        # Supply nearest-match evidence only for flagged local rows. No reads.
+        for row in deposits:
+            if row.get("storage") == "local_only" and row.get("needsReview") is True:
+                row["nearestMatch"] = self._nearest_local_mining_deposit(row, deposits)
         def safe_row(row: dict[str, Any]) -> dict[str, Any]:
             return {
                 key: row.get(key) for key in (
                     "id", "body", "bodyType", "signal", "commodity", "rigs", "latitude",
                     "longitude", "notes", "storage", "preferred", "needsReview",
                     "sharedStatus", "sharedId", "sharedReportId",
+                    "reviewStatus", "reviewedAt", "nearestMatch",
                 )
             }
         # Capped response for iPad memory; filter in the UI without more reads.
@@ -4733,6 +4739,82 @@ class MongrelHudApp:
         # available to the compass immediately.
         return saved_center
 
+    def _nearest_local_mining_deposit(
+        self, candidate: dict[str, Any], saved: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """Closest *other* deposit of the same body, signal and commodity.
+
+        This is advisory evidence, not an automatic deletion or an archive
+        approval. Uses real surface distance if a planet radius is available.
+        """
+        closest: dict[str, Any] | None = None
+        identity = str(candidate.get("scopeKey") or "")
+        signal = int(candidate.get("signal") or 0)
+        commodity = str(candidate.get("commodity") or "").casefold()
+        if not identity or signal < 1 or not commodity:
+            return None
+        try:
+            lat1, lon1 = float(candidate["latitude"]), float(candidate["longitude"])
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return None
+        for row in saved:
+            if not isinstance(row, dict) or row is candidate or str(row.get("id")) == str(candidate.get("id")):
+                continue
+            if (str(row.get("scopeKey") or "") != identity
+                    or int(row.get("signal") or 0) != signal
+                    or str(row.get("commodity") or "").casefold() != commodity):
+                continue
+            try:
+                lat2, lon2 = float(row["latitude"]), float(row["longitude"])
+                radius = candidate.get("planetRadius") or row.get("planetRadius")
+                if radius is not None and math.isfinite(float(radius)) and float(radius) > 0:
+                    meters = great_circle_nav(lat1, lon1, lat2, lon2, float(radius))["distance"]
+                    approximate = False
+                elif abs(lat1 - lat2) < 0.000001 and abs(lon1 - lon2) < 0.000001:
+                    meters = 0.0
+                    approximate = True
+                else:
+                    continue  # Cannot measure distance safely without radius.
+            except (KeyError, TypeError, ValueError, OverflowError):
+                continue
+            if math.isfinite(meters) and (closest is None or meters < closest["distanceM"]):
+                closest = {
+                    "id": row.get("id"),
+                    "distanceM": round(meters, 1),
+                    "approximate": approximate,
+                    "coordinates": [round(lat2, 6), round(lon2, 6)],
+                }
+        return closest
+
+    def review_local_mining_deposit(self, identifier: str, decision: str) -> dict[str, Any]:
+        """Explicit local verification; neither shares nor deletes a report."""
+        if decision != "confirm_distinct":
+            raise ValueError("invalid_deposit_review_decision")
+        try:
+            wanted = int(identifier)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("mining_location_not_found") from exc
+        if wanted <= 0:
+            raise ValueError("mining_location_not_found")
+        with self.store.lock:
+            rows = self.store.data.get("localMiningDeposits") or []
+            found = next((row for row in rows if isinstance(row, dict)
+                          and int(row.get("id") or 0) == wanted), None)
+            if not found or found.get("storage") != "local_only":
+                raise ValueError("mining_location_not_found")
+            if found.get("sharedStatus"):
+                raise ValueError("shared_deposit_review_requires_archive")
+            if found.get("reviewStatus") == "confirmed_distinct":
+                return {"ok": True, "status": "confirmed_distinct", "id": wanted}
+            if found.get("needsReview") is not True:
+                raise ValueError("deposit_not_flagged_for_review")
+            found["needsReview"] = False
+            found["reviewStatus"] = "confirmed_distinct"
+            found["reviewedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            self.store.save()
+        return {"ok": True, "status": "confirmed_distinct", "id": wanted}
+
+
     def report_deposit(self, commodity: str, rigs: int, notes: str, signal: int = 0) -> dict[str, Any]:
         commodity = commodity.strip()
         if not commodity:
@@ -4750,25 +4832,6 @@ class MongrelHudApp:
                 raise ValueError("invalid_rig_count")
             with self.store.lock:
                 rows = self.store.data.setdefault("localMiningDeposits", [])
-                duplicate = False
-                for row in rows:
-                    if not isinstance(row, dict) or row.get("scopeKey") != scope["key"]:
-                        continue
-                    if (int(row.get("signal") or 0) != chosen_signal
-                            or str(row.get("commodity") or "").casefold() != commodity.casefold()):
-                        continue
-                    if point["planetRadius"] is not None:
-                        distance = great_circle_nav(
-                            point["latitude"], point["longitude"],
-                            float(row["latitude"]), float(row["longitude"]),
-                            point["planetRadius"],
-                        )["distance"]
-                        duplicate = duplicate or distance <= 1000.0
-                    else:
-                        duplicate = duplicate or (
-                            abs(point["latitude"] - float(row["latitude"])) < 0.000001
-                            and abs(point["longitude"] - float(row["longitude"])) < 0.000001
-                        )
                 saved = {
                     "id": self._next_local_mining_id_locked(),
                     "scopeKey": scope["key"],
@@ -4783,15 +4846,20 @@ class MongrelHudApp:
                     "rigs": int(rigs),
                     "notes": notes.strip()[:1600],
                     "storage": "local_only",
-                    "needsReview": duplicate,
+                    "needsReview": False,
                     "reportedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 }
+                nearest = self._nearest_local_mining_deposit(saved, rows)
+                # Warn within 500 m, but always retain the new report.
+                duplicate = bool(nearest and nearest["distanceM"] <= 500.0)
+                saved["needsReview"] = duplicate
                 rows.append(saved)
                 self.store.save()
             self._select_mining(signal=chosen_signal, site_id=int(saved["id"]))
             return {
                 "ok": True, "status": "duplicate_review_local" if duplicate else "saved_local",
-                "site": saved, "duplicate": duplicate, "latitude": saved["latitude"],
+                "site": saved, "duplicate": duplicate, "nearestMatch": nearest,
+                "latitude": saved["latitude"],
                 "longitude": saved["longitude"], "signal": chosen_signal,
                 "storage": "local_only", "message": "Saved locally on this PC; not synchronized to the squad archive.",
             }
@@ -6883,6 +6951,10 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "voicePack": app.remove_voice_pack(), "voice": app.voice_settings_snapshot()}
                 elif path == "/api/mining-browser/selected":
                     result = app.select_mining_browser_system(str(body.get("systemAddress") or ""))
+                elif path == "/api/mining-browser/review":
+                    result = app.review_local_mining_deposit(
+                        str(body.get("id") or ""), str(body.get("decision") or ""),
+                    )
                 elif path == "/api/mining-browser/share":
                     result = app.publish_local_mining_record(
                         str(body.get("kind") or ""), str(body.get("id") or ""),
