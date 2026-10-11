@@ -1,13 +1,13 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.6 and HUD 0.17.16 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.7 and HUD 0.17.16 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
 ## Install on Serenity
 
 1. Close EDMC and MongrelHUD. Make a backup of your current EDMC
-   `MongrelScout` plugin folder (Scout 1.13.5) and the current HUD
+   `MongrelScout` plugin folder (Scout 1.13.6) and the current HUD
    installation folder (HUD 0.17.15). Keep both backup copies outside
    their active program folders.
 2. Download **both** test artifacts from the *Surveyor private test builds*
