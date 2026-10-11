@@ -169,7 +169,7 @@ test('flagged local deposits show nearest distance, an explicit local-only confi
     assert.match(script,/\/api\/mining-browser\/review/);
     assert.match(script,/decision:"confirm_distinct"/);
     assert.match(script,/Nothing will be shared or deleted/);
-    assert.match(script,/id="reviewLastDeposit"/);
+    assert.match(html,/id="reviewLastDeposit"/);
     assert.match(script,/\/api\/mining-browser\/catalog"\+\(force\?"\?refresh=1":localOnly\?"\?local=1"/);
     rows[rows.length-1].needsReview=false;
     rows[rows.length-1].reviewStatus="confirmed_distinct";
