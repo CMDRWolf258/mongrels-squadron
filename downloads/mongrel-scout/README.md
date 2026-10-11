@@ -1,3 +1,14 @@
+## Scout 1.13.4 — SRV mining cargo accounting
+
+Elite Market Connector updates its shared Cargo totals for SRV CollectCargo
+and EjectCargo, even though the ship cargo hold has not changed. Scout now
+keeps a per-Commander, local-only SRV adjustment and removes those provisional
+SRV tons from the **ship-only** cargo HUD. A genuine CargoTransfer **toShip**
+increases the ship hold once, and a fresh Ship Cargo journal snapshot clears
+the adjustment. CargoJSON mission-reservation and stolen-goods metadata remain
+available; unrelated mission, mining, trade and BGS accounting is unchanged.
+No new website reads or Cloudflare writes are required.
+
 ## Live Universal Cartographics reporting (Scout v1.13.3)
 
 Scout now uploads verified **SellExplorationData** and **MultiSellExplorationData**
