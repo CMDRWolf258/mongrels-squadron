@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.4"
+PLUGIN_VERSION = "1.13.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -229,6 +229,8 @@ _hud_site_feed_stop = threading.Event()
 # EDMC increments its shared Cargo cache even when an SRV collects the ore.
 _hud_srv_cargo_ghosts: dict[str, dict[str, int]] = {}
 _hud_srv_vehicle: dict[str, bool] = {}
+# Ship inventory reconstructed from confirmed CargoTransfer events, until Ship Cargo refresh.
+_hud_ship_transfer_rows: dict[str, list[dict[str, Any]]] = {}
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -2584,6 +2586,118 @@ def _reconcile_ship_cargo_ghosts(
     return fixed
 
 
+def _hud_ship_transfer_inventory(
+    cmdr: Any, state: Mapping[str, Any], entry: Mapping[str, Any],
+) -> Optional[list[dict[str, Any]]]:
+    """Apply confirmed ship/SRV transfers immediately, even if CargoJSON is stale.
+
+    EDMC mutates state["Cargo"] on SRV pickup and transfer, but CargoJSON may
+    remain the *previous* ship inventory until the SRV is boarded. The journal
+    CargoTransfer event is the source of truth for a transfer. Keep a local
+    ship-only inventory until the next authoritative Ship Cargo event, without
+    changing the trade-activity ledger, mission requirements or remote storage.
+    """
+    commander = _cmdr_cache_key(cmdr)
+    kind = str(entry.get("event") or "")
+    if kind == "Cargo" and str(entry.get("Vessel") or "").casefold() == "ship":
+        with _hud_condition:
+            _hud_ship_transfer_rows.pop(commander, None)
+        return None
+
+    with _hud_condition:
+        pending = _hud_ship_transfer_rows.get(commander)
+        if kind != "CargoTransfer":
+            return [dict(row) for row in pending] if pending is not None else None
+        # Use the *previously displayed ship cargo* as the pre-transfer total,
+        # never the EDMC shared dictionary that can include SRV pickups.
+        displayed = _hud_state.get("cargo")
+        hud_owner = _cmdr_cache_key(_hud_state.get("commander")) if _hud_state.get("commander") else ""
+        if hud_owner and hud_owner != commander:
+            displayed = None
+        displayed = dict(displayed) if isinstance(displayed, Mapping) else None
+        cached = [dict(row) for row in pending] if pending is not None else None
+
+    if cached is not None:
+        previous = cached
+        totals: dict[str, int] = {}
+        for row in previous:
+            key = str(row.get("key") or "")
+            totals[key] = totals.get(key, 0) + max(0, int(row.get("count") or 0))
+    else:
+        vessel, original = _cargo_inventory_from_edmc_state(state)
+        previous = original if vessel.casefold() == "ship" else []
+        totals = {}
+        if displayed and (displayed.get("updatedAt") or displayed.get("capacity") is not None):
+            for row in list(displayed.get("items") or []) + list(displayed.get("stolenItems") or []):
+                if not isinstance(row, Mapping):
+                    continue
+                key = str(row.get("key") or "")
+                if key:
+                    totals[key] = totals.get(key, 0) + max(0, int(row.get("count") or 0))
+            limpets = max(0, int(displayed.get("limpets") or 0))
+            if limpets:
+                totals["drones"] = totals.get("drones", 0) + limpets
+            # Reuse any known mission-tagged/stolen rows from CargoJSON.
+            if previous:
+                previous = _reconcile_ship_cargo_ghosts(previous, totals, {})
+        else:
+            for row in previous:
+                key = str(row.get("key") or "")
+                totals[key] = totals.get(key, 0) + max(0, int(row.get("count") or 0))
+        if not previous and totals:
+            previous = _reconcile_ship_cargo_ghosts([], totals, {})
+
+    changed = False
+    localized: dict[str, str] = {}
+    for transfer in entry.get("Transfers") or []:
+        if not isinstance(transfer, Mapping):
+            continue
+        key = _commodity_key(transfer.get("Type"))
+        count = _optional_int(transfer.get("Count"))
+        direction = str(transfer.get("Direction") or "").casefold()
+        if not key or count is None or not 0 < count <= 25000:
+            continue
+        if direction == "toship":
+            totals[key] = totals.get(key, 0) + count
+            localized[key] = _commodity_display(transfer.get("Type"), transfer.get("Type_Localised"))
+        elif direction in {"tosrv", "tocarrier"}:
+            totals[key] = max(0, totals.get(key, 0) - count)
+        else:
+            continue
+        changed = True
+
+    if not changed:
+        return cached
+
+    rows = _reconcile_ship_cargo_ghosts(previous, totals, {})
+    for row in rows:
+        if row.get("key") in localized:
+            row["name"] = localized[row["key"]]
+    with _hud_condition:
+        _hud_ship_transfer_rows[commander] = [dict(row) for row in rows]
+    return rows
+
+
+def _hud_cargo_rows_as_ship_json(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    inventory = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        count = max(0, int(row.get("count") or 0))
+        if count == 0:
+            continue
+        item = {
+            "Name": str(row.get("key") or ""),
+            "Name_Localised": str(row.get("name") or ""),
+            "Count": count,
+            "Stolen": max(0, int(row.get("stolen") or 0)),
+        }
+        if row.get("missionId") is not None:
+            item["MissionID"] = row["missionId"]
+        inventory.append(item)
+    return {"Vessel": "Ship", "Inventory": inventory}
+
+
 def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None,
                              *, srv_ghosts: Optional[Mapping[str, int]] = None) -> Optional[dict[str, Any]]:
     if not isinstance(state, Mapping):
@@ -2835,9 +2949,14 @@ def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], times
                                       entry: Optional[Mapping[str, Any]] = None) -> None:
     event = entry if isinstance(entry, Mapping) else {}
     corrections = _hud_cargo_ghost_adjustments(cmdr, event)
+    transferred = _hud_ship_transfer_inventory(cmdr, state, event)
     source_state = state
-    # Full Ship Cargo events can include Inventory while EDMC CargoJSON is stale.
-    if event.get("event") == "Cargo" and str(event.get("Vessel") or "").casefold() == "ship":
+    if transferred is not None:
+        # Event-authoritative ship hold wins over stale CargoJSON and EDMC's
+        # SRV-contaminated state["Cargo"] until the next full ship snapshot.
+        source_state = {**state, "CargoJSON": _hud_cargo_rows_as_ship_json(transferred)}
+        corrections = {}
+    elif event.get("event") == "Cargo" and str(event.get("Vessel") or "").casefold() == "ship":
         if isinstance(event.get("Inventory"), list):
             source_state = {**state, "CargoJSON": {"Vessel": "Ship", "Inventory": event["Inventory"]}}
     cargo = _build_local_cargo_state(cmdr, source_state, timestamp, srv_ghosts=corrections)
