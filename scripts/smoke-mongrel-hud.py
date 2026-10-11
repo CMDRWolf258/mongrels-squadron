@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.13.5"
+assert plugin.PLUGIN_VERSION == "1.13.6"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -570,6 +570,91 @@ assert plugin._build_local_cargo_state("Wolf258",{
 assert plugin._hud_cargo_ghost_adjustments("Other",{"event":"CollectCargo","Type":"gold","Count":1})=={}
 assert plugin._hud_srv_cargo_ghosts.get("other",{})=={}
 print("✓ SRV rig pickups, transfers, ejections, ship snapshots and CMDR isolation preserve ship cargo")
+
+# Elite writes CargoTransfer when items are moved under the ship, before
+# boarding. EDMC CargoJSON can still be an older Ship snapshot or even an
+# SRV snapshot. The ship HUD must honor the confirmed transfer immediately.
+plugin._hud_ship_transfer_rows.clear()
+plugin._hud_srv_cargo_ghosts.clear()
+plugin._hud_srv_vehicle.clear()
+test_ship={
+    "CargoCapacity":289,
+    "Cargo":{"methanolmonohydratecrystals":59},
+    "CargoJSON":{"Vessel":"Ship","Inventory":[
+        {"Name":"methanolmonohydratecrystals",
+         "Name_Localised":"Methanol Monohydrate Crystals","Count":59,"Stolen":0},
+    ]},
+}
+with plugin._hud_condition:
+    plugin._hud_state["commander"]="Wolf258"
+    plugin._hud_state["status"]={"inSrv":False}
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={
+    "event":"Cargo","Vessel":"Ship","Inventory":test_ship["CargoJSON"]["Inventory"],
+})
+assert plugin._hud_state["cargo"]["used"]==59
+assert plugin._hud_state["cargo"]["capacity"]==289
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={"event":"LaunchSRV"})
+# Suppose Scout missed the SRV pickups (e.g. Scout was started mid-session):
+# EDMC state["Cargo"] contains an SRV-inflated total but its CargoJSON is stale.
+test_ship["Cargo"]["methanolmonohydratecrystals"]=193
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={
+    "event":"CargoTransfer",
+    "Transfers":[{"Type":"methanolmonohydratecrystals",
+                  "Type_Localised":"Methanol Monohydrate Crystals",
+                  "Count":67,"Direction":"toship"}],
+})
+live_cargo=plugin._hud_state["cargo"]
+assert live_cargo["used"]==126 and live_cargo["free"]==163
+assert live_cargo["items"]==[{"key":"methanolmonohydratecrystals",
+                               "name":"Methanol Monohydrate Crystals",
+                               "count":126,"missionCount":0}]
+# A later, unrelated journal event must NOT reintroduce old CargoJSON.
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={"event":"FSSDiscoveryScan"})
+assert plugin._hud_state["cargo"]["used"]==126
+test_ship["CargoJSON"]={"Vessel":"SRV","Inventory":[{"Name":"methanolmonohydratecrystals","Count":6}]}
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={"event":"Cargo","Vessel":"SRV"})
+assert plugin._hud_state["cargo"]["used"]==126
+# Reversing 6t back into the Rhino removes exactly 6t from ship cargo,
+# regardless of the stale in-SRV inventory data.
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={
+    "event":"CargoTransfer","Transfers":[
+        {"Type":"methanolmonohydratecrystals","Count":6,"Direction":"tosrv"},
+    ],
+})
+assert plugin._hud_state["cargo"]["used"]==120
+# A different commander cannot inherit another commander's transfer overlay.
+assert plugin._hud_ship_transfer_rows.get("another pilot") is None
+# When Elite supplies a full authoritative ship Cargo snapshot, clear the
+# transfer override and use the actual journal inventory without double count.
+test_ship["Cargo"]["methanolmonohydratecrystals"]=120
+plugin._update_hud_cargo_from_edmc_state("Wolf258",test_ship,entry={
+    "event":"Cargo","Vessel":"Ship","Inventory":[
+        {"Name":"methanolmonohydratecrystals",
+         "Name_Localised":"Methanol Monohydrate Crystals","Count":120},
+    ],
+})
+assert plugin._hud_state["cargo"]["used"]==120
+assert "wolf258" not in plugin._hud_ship_transfer_rows
+
+# CargoTransfer preserves pre-existing mission reservation metadata rather
+# than consuming a tagged mission stack as ordinary interchangeable cargo.
+mission_state={
+    "CargoCapacity":100,
+    "Cargo":{"gold":5},
+    "CargoJSON":{"Vessel":"Ship","Inventory":[
+        {"Name":"gold","Count":5,"Stolen":0,"MissionID":7100},
+    ]},
+}
+plugin._update_hud_cargo_from_edmc_state("Wolf258",mission_state,entry={
+    "event":"Cargo","Vessel":"Ship","Inventory":mission_state["CargoJSON"]["Inventory"],
+})
+plugin._update_hud_cargo_from_edmc_state("Wolf258",mission_state,entry={
+    "event":"CargoTransfer","Transfers":[{"Type":"gold","Count":3,"Direction":"toship"}],
+})
+assert plugin._hud_state["cargo"]["used"]==8
+assert plugin._hud_state["cargo"]["_allocation"]["missionAvailable"]["7100\u0000gold"]==5
+assert plugin._hud_state["cargo"]["_allocation"]["sharedAvailable"]["gold"]==3
+plugin._hud_ship_transfer_rows.clear()
 
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
