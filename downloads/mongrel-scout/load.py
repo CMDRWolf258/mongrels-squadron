@@ -3781,6 +3781,10 @@ def _observe_activity_trade(
     """Observe only trade origin and sale eligibility; send no cargo or purchase history."""
     global _activity_trade_commander, _activity_trade_station
     event = str(entry.get("event") or "")
+    # SRV surface pickup/drop changes EDMC's shared Cargo cache but not
+    # the ship hold. Do not rewrite known trade purchase lots from it.
+    if event in {"CollectCargo", "EjectCargo"} and _hud_srv_active(cmdr, entry):
+        return None
     commander = _cmdr_cache_key(cmdr)
     with _activity_lock:
         if _activity_trade_commander != commander:
