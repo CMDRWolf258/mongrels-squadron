@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.6 and HUD 0.17.14 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.6 and HUD 0.17.16 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -8,7 +8,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 
 1. Close EDMC and MongrelHUD. Make a backup of your current EDMC
    `MongrelScout` plugin folder (Scout 1.13.5) and the current HUD
-   installation folder (HUD 0.17.13). Keep both backup copies outside
+   installation folder (HUD 0.17.15). Keep both backup copies outside
    their active program folders.
 2. Download **both** test artifacts from the *Surveyor private test builds*
    GitHub Actions run. Each Actions artifact contains a ZIP. Extract the
@@ -56,7 +56,7 @@ but no personal scan lists/discovery records or unsold estimates enter
 Cloudflare. Community lookups are opt-in, cached and external.
 
 To roll back, close HUD and EDMC, restore your backed-up Scout 1.13.4
-plugin folder, and start your normal HUD 0.17.13 executable. No cloud
+plugin folder, and start your normal HUD 0.17.15 executable. No cloud
 schema migrations or website rollback are required.
 
 Record any anomalies with: exact Scout/HUD version, system/body, which
