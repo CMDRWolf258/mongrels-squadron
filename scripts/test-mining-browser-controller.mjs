@@ -156,6 +156,29 @@ test('browser accordion and individual row stay expanded after refresh and reset
   }
 });
 
+test('flagged local deposits show nearest distance, an explicit local-only confirmation, and no shared shortcut',()=>{
+  const rows=context.miningBrowser.data.deposits;
+  rows.push({id:'local-review',body:'Icy Test A 2 a',commodity:'Bromellite',rigs:4,
+    signal:1,latitude:12.33,longitude:44.2,storage:'local_only',needsReview:true,
+    nearestMatch:{id:'old-report',distanceM:423.4}});
+  try{
+    const all=run();
+    assert.match(all.html,/Nearest matching saved deposit #old-report · 423 m away/);
+    assert.match(all.html,/data-browse-review-id="local-review"/);
+    assert.match(all.html,/CONFIRM SEPARATE DEPOSIT · LOCAL ONLY/);
+    assert.match(script,/\/api\/mining-browser\/review/);
+    assert.match(script,/decision:"confirm_distinct"/);
+    assert.match(script,/Nothing will be shared or deleted/);
+    assert.match(html,/id="reviewLastDeposit"/);
+    assert.match(script,/\/api\/mining-browser\/catalog"\+\(force\?"\?refresh=1":localOnly\?"\?local=1"/);
+    rows[rows.length-1].needsReview=false;
+    rows[rows.length-1].reviewStatus="confirmed_distinct";
+    const reviewed=run();
+    assert.match(reviewed.html,/CONFIRMED SEPARATE · LOCAL ONLY/);
+    assert.doesNotMatch(reviewed.html,/data-browse-review-id="local-review"/);
+  }finally{rows.pop();run()}
+});
+
 test('commodity headers escape untrusted names without changing report/sharing endpoints',()=>{
   const rows=context.miningBrowser.data.deposits;
   rows.push({id:'untrusted',body:'Icy Test A 2 a',commodity:'Rare <img src=x onerror=alert(1)>',rigs:2,signal:7,storage:'local_only'});
