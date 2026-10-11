@@ -6886,7 +6886,13 @@ def make_handler(app: MongrelHudApp):
                     if path.endswith("/health"):
                         self.send_json(app.shared_mining_health())
                     elif path.endswith("/catalog"):
-                        self.send_json(app.refresh_mining_browser_directory(force=(parse_qs(urlparse(self.path).query).get("refresh") == ["1"])))
+                        args = parse_qs(urlparse(self.path).query)
+                        if args.get("local") == ["1"]:
+                            # Saved-system refresh immediately after a report is
+                            # local-only and must not create a Cloudflare read.
+                            self.send_json(app.mining_browser_catalog())
+                        else:
+                            self.send_json(app.refresh_mining_browser_directory(force=(args.get("refresh") == ["1"])))
                     else:
                         query = parse_qs(urlparse(self.path).query)
                         addr = str((query.get("systemAddress") or [""])[0])
