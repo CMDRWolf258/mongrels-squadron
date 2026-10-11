@@ -1,3 +1,10 @@
+## Scout 1.13.6 TEST — Surveyor with live SRV cargo transfers
+
+This owner-only Scout build combines Surveyor with the production Scout
+1.13.5 fix: confirmed SRV-to-ship `CargoTransfer` instantly updates the HUD
+ship hold before boarding. It retains the Surveyor ledger, DSS advisor,
+real-time exploration sales and all current production functions.
+
 ## Surveyor Scout 1.13.5 TEST — SRV ore fix included
 
 The Surveyor trial build includes the production SRV cargo correction:
