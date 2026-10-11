@@ -160,7 +160,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert reviewed["needsReview"] is False
     assert reviewed["reviewStatus"] == "confirmed_distinct"
     assert reviewed["reviewedAt"] and reviewed["storage"] == "local_only"
-    assert "sharedStatus" not in reviewed
+    assert reviewed.get("sharedStatus") is None
     assert app.review_local_mining_deposit(str(d2["site"]["id"]), "confirm_distinct")["ok"]
     raises("invalid_deposit_review_decision", app.review_local_mining_deposit, str(d2["site"]["id"]), "erase")
     raises("mining_location_not_found", app.review_local_mining_deposit, "99999999", "confirm_distinct")
