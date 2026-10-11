@@ -207,6 +207,40 @@ track("Docked",hold(0),StationType="FleetCarrier",MarketID=3700000123)
 track("CargoTransfer",hold(15),Transfers=[{"Type":"$Gold_Name;","Count":15,"Direction":"toship"}])
 assert not track("MarketSell",state(0),Count=15)["verified"]
 
+# Mixed origins remain ineligible even when the mixture visits the same
+# personal hold. Only an exactly station-bought FIFO lot can qualify.
+reset()
+track("Docked",state(0),StationName="Niijima Station",StationType="Orbis")
+track("MarketBuy",state(50),Count=50)
+track("Docked",hold(50),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("MarketBuy",hold(100),Count=50)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":100,"Direction":"tocarrier"}])
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[
+    {"source":"station_market","count":50},{"source":"carrier_market","count":50}]
+restart()
+track("Docked",hold(0),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(100),Transfers=[{"Type":"$Gold_Name;","Count":100,"Direction":"toship"}])
+mixed=track("MarketSell",state(0),Count=100)
+assert mixed["source"]=="mixed" and not mixed["verified"],mixed
+# A new Commander must never inherit existing stored purchase history.
+reset()
+track("MarketBuy",state(20),Count=20)
+track("Docked",hold(20),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"tocarrier"}])
+foreign=track("CargoTransfer",hold(20),cmdr="Other Cmdr",
+              Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"toship"}])
+assert foreign is None
+assert not track("MarketSell",state(0),cmdr="Other Cmdr",Count=20)["verified"]
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[
+    {"source":"station_market","count":20}]
+# A journal count-only Cargo event cannot overwrite correctly-traced lots
+# with stale EDMC commodity totals after the transfer.
+reset()
+track("MarketBuy",state(20),Count=20)
+track("Cargo",state(0),Count=20,Vessel="Ship")
+assert scope["_activity_trade_lots"]["wolf258"]["gold"]==[
+    {"source":"station_market","count":20}]
+
 # A missing post-purchase cargo inventory must not create verified origin.
 reset()
 unseen={"SystemName":"Diaba","StationName":"Niijima Station","StationType":"Orbis",
