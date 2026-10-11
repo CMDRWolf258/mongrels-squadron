@@ -34,6 +34,7 @@ method_names = {
     "select_site", "active_site", "_nav_to_point", "location_nav",
     "deposit_nav", "surface_nav", "_mining_selection", "_select_mining",
     "_next_local_mining_id_locked", "set_site_center", "report_deposit",
+    "_nearest_local_mining_deposit", "review_local_mining_deposit",
     "publish_local_mining_record",
     "mining_commodity_choices", "mining_browser_catalog",
     "refresh_mining_browser_directory", "select_mining_browser_system",
@@ -145,6 +146,24 @@ with tempfile.TemporaryDirectory() as temp:
     assert d2["status"] == "duplicate_review_local"
     assert d2["site"]["needsReview"] is True
     assert len(store.data["localMiningDeposits"]) == 2
+    # The browser supplies distance evidence for an older near-match warning.
+    flagged = next(row for row in app.browse_mining_system("12345678901234567")["deposits"]
+                   if row["id"] == d2["site"]["id"])
+    assert flagged["needsReview"] is True
+    assert flagged["nearestMatch"]["id"] == d["site"]["id"]
+    assert flagged["nearestMatch"]["distanceM"] < 500
+    # Commander confirmation changes only the local saved report.
+    result = app.review_local_mining_deposit(str(d2["site"]["id"]), "confirm_distinct")
+    assert result["status"] == "confirmed_distinct"
+    reviewed = next(row for row in app.browse_mining_system("12345678901234567")["deposits"]
+                    if row["id"] == d2["site"]["id"])
+    assert reviewed["needsReview"] is False
+    assert reviewed["reviewStatus"] == "confirmed_distinct"
+    assert reviewed["reviewedAt"] and reviewed["storage"] == "local_only"
+    assert reviewed.get("sharedStatus") is None
+    assert app.review_local_mining_deposit(str(d2["site"]["id"]), "confirm_distinct")["ok"]
+    raises("invalid_deposit_review_decision", app.review_local_mining_deposit, str(d2["site"]["id"]), "erase")
+    raises("mining_location_not_found", app.review_local_mining_deposit, "99999999", "confirm_distinct")
 
     # Different commodity at same spot isn't a duplicate.
     distinct = app.report_deposit("Bromellite", 2, "ice", 1)
@@ -410,6 +429,35 @@ with tempfile.TemporaryDirectory() as temp:
                         body="NGC 2546 Sector UZ-G d10-16 3", lat=0, lon=0)
     raises("invalid_mining_share_type", app.publish_local_mining_record, "unknown", str(second["id"]))
     raises("mining_location_not_found", app.publish_local_mining_record, "deposit", "999999")
+
+# 500m warning: two valid independent deposits 700m apart are saved
+# without a duplicate flag. Preexisting 1km flagged reports remain reviewable
+# until the commander confirms they are separate.
+with tempfile.TemporaryDirectory() as tmp:
+    test_store = Store(Path(tmp) / "review.json")
+    test_app = make(test_store, scene())
+    first = test_app.report_deposit("Osmium", 3, "first", 8)
+    test_app.current = scene(lat=12.04)
+    second = test_app.report_deposit("Osmium", 4, "second", 8)
+    separation = test_app._nearest_local_mining_deposit(second["site"], test_store.data["localMiningDeposits"])
+    assert 650 < separation["distanceM"] < 750, separation
+    assert second["status"] == "saved_local" and second["site"]["needsReview"] is False
+    # Simulate a saved historical report that was flagged under the 1 km rule.
+    second["site"]["needsReview"] = True
+    test_store.save()
+    old_flag = next(row for row in test_app.browse_mining_system("12345678901234567")["deposits"]
+                    if row["id"] == second["site"]["id"])
+    assert 650 < old_flag["nearestMatch"]["distanceM"] < 750
+    assert old_flag["needsReview"] is True
+    test_app.review_local_mining_deposit(str(second["site"]["id"]), "confirm_distinct")
+    assert not test_store.data["localMiningDeposits"][1]["needsReview"]
+    assert Store(Path(tmp) / "review.json").data["localMiningDeposits"][1]["reviewStatus"] == "confirmed_distinct"
+    raises("deposit_not_flagged_for_review", test_app.review_local_mining_deposit,
+           str(first["site"]["id"]), "confirm_distinct")
+    second["site"]["needsReview"] = True
+    second["site"]["sharedStatus"] = "approved"
+    raises("shared_deposit_review_requires_archive", test_app.review_local_mining_deposit,
+           str(second["site"]["id"]), "confirm_distinct")
 
 assert 'self._load_mining_bridge_payload(MINING_DATA_URL, "invalid_mining_payload")' in hud_source
 assert 'self._load_mining_bridge_payload(MINING_CENTERS_URL, "invalid_mining_centers_payload")' in hud_source
