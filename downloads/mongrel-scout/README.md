@@ -1,3 +1,14 @@
+## Scout 1.13.7 TEST — Surveyor plus verified carrier storage trade
+
+This isolated Surveyor build includes the Scout 1.13.6 production fix.
+Station purchases can remain eligible for BGS Daily Orders when their
+commodities are moved into and out of the verified commander's **own carrier
+hold** using journal cargo transfers. Tracked quantities and source are
+preserved through EDMC restarts. Direct carrier-market purchases, mined
+goods, unknown imports and unverified carrier identities remain ineligible.
+Only actual station sales generate trade-profit contributions; no private
+commodity inventory or purchase ledger is uploaded to the website.
+
 ## Scout 1.13.6 TEST — Surveyor with live SRV cargo transfers
 
 This owner-only Scout build combines Surveyor with the production Scout
