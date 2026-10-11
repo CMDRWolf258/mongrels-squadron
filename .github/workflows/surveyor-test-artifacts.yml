@@ -32,7 +32,7 @@ jobs:
           import zipfile
           from pathlib import Path
           Path('package').mkdir(exist_ok=True)
-          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.6-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
+          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.7-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
               for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py'):
                   z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
               z.write('downloads/mongrel-scout/README.md','README.md')
@@ -40,8 +40,8 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelScout-Surveyor-1.13.6-TEST
-          path: package/MongrelScout-Surveyor-1.13.6-TEST.zip
+          name: MongrelScout-Surveyor-1.13.7-TEST
+          path: package/MongrelScout-Surveyor-1.13.7-TEST.zip
           retention-days: 14
 
   windows-hud:
