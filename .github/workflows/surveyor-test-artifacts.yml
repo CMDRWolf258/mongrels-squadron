@@ -62,10 +62,10 @@ jobs:
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md
           Copy-Item downloads/mongrel-scout/SURVEYOR_TESTING.md package/SURVEYOR_TESTING.md
-          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.12-TEST.zip -Force
+          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.14-TEST.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelHUD-Surveyor-0.17.12-TEST
-          path: MongrelHUD-Surveyor-0.17.12-TEST.zip
+          name: MongrelHUD-Surveyor-0.17.14-TEST
+          path: MongrelHUD-Surveyor-0.17.14-TEST.zip
           compression-level: 0
           retention-days: 14
