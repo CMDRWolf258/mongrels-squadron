@@ -24,7 +24,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.6"
+PLUGIN_VERSION = "1.13.7"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -150,6 +150,7 @@ KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
 KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
+KEY_ACTIVITY_CARRIER_TRADE_PROVENANCE = "MongrelScoutCarrierStoredTradeProvenance"
 
 _status_label: Optional[tk.Label] = None
 _enabled_var: Optional[tk.IntVar] = None
@@ -183,6 +184,9 @@ _activity_exploration_sale_ordinals: dict[str, int] = {}
 _activity_flush_scheduled = False
 _activity_mission_origins: dict[str, dict[str, Any]] = {}
 _activity_trade_lots: dict[str, dict[str, list[dict[str, Any]]]] = {}
+# Per commander + own carrier MarketID + commodity. Persists even while cargo
+# is stored off-ship for days. Never uploaded to squad or Frontier servers.
+_activity_carrier_trade_lots: dict[str, dict[str, dict[str, list[dict[str, Any]]]]] = {}
 _activity_trade_station: dict[str, Any] = {}
 _activity_trade_commander = ""
 _dashboard_context_lock = threading.Lock()
@@ -440,6 +444,7 @@ def plugin_start3(plugin_dir: str) -> str:
     _restore_cargo_missions()
     _restore_activity_mission_origins()
     _restore_activity_trade_provenance()
+    _restore_activity_carrier_trade_provenance()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
@@ -3847,6 +3852,79 @@ def _save_activity_trade_provenance() -> None:
             pass
 
 
+def _restore_activity_carrier_trade_provenance() -> None:
+    """Restore verified personal-storage lots without trusting unbounded config."""
+    global _activity_carrier_trade_lots
+    try:
+        payload = json.loads(config.get_str(KEY_ACTIVITY_CARRIER_TRADE_PROVENANCE) or "{}")
+    except Exception:
+        payload = {}
+    restored: dict[str, dict[str, dict[str, list[dict[str, Any]]]]] = {}
+    if isinstance(payload, Mapping):
+        for commander, carriers in list(payload.items())[-6:]:
+            if not isinstance(carriers, Mapping):
+                continue
+            carrier_map: dict[str, dict[str, list[dict[str, Any]]]] = {}
+            for carrier_id, commodities in list(carriers.items())[-4:]:
+                cid = _decimal_text(carrier_id)
+                if not cid or not isinstance(commodities, Mapping):
+                    continue
+                inventory: dict[str, list[dict[str, Any]]] = {}
+                for commodity, lots in list(commodities.items())[-100:]:
+                    key = _commodity_key(commodity)
+                    if not key or not isinstance(lots, list):
+                        continue
+                    valid: list[dict[str, Any]] = []
+                    for item in lots[:64]:
+                        if not isinstance(item, Mapping):
+                            continue
+                        source = str(item.get("source") or "unknown")
+                        if source not in {"station_market", "carrier_market", "mined", "unknown"}:
+                            source = "unknown"
+                        qty = _optional_int(item.get("count")) or 0
+                        if 0 < qty <= 25000:
+                            _trade_add_lot(valid, source, qty)
+                    if valid:
+                        inventory[key] = valid
+                if inventory:
+                    carrier_map[cid] = inventory
+            if carrier_map:
+                restored[str(commander)[:120]] = carrier_map
+    with _activity_lock:
+        _activity_carrier_trade_lots = restored
+
+
+def _save_activity_carrier_trade_provenance() -> None:
+    with _activity_lock:
+        payload = {cmdr: {carrier: dict(list(rows.items())[-100:])
+                          for carrier, rows in list(carriers.items())[-4:]}
+                   for cmdr, carriers in list(_activity_carrier_trade_lots.items())[-6:]}
+        try:
+            config.set(KEY_ACTIVITY_CARRIER_TRADE_PROVENANCE, json.dumps(payload, separators=(",", ":")))
+        except Exception:
+            pass
+
+
+def _trade_move_lots(
+    source: list[dict[str, Any]], dest: list[dict[str, Any]], count: int,
+) -> None:
+    """Move FIFO provenance exactly; missing quantities become unknown."""
+    remaining = count
+    while remaining > 0 and source:
+        first = source[0]
+        qty = min(remaining, int(first.get("count") or 0))
+        if qty <= 0:
+            source.pop(0)
+            continue
+        _trade_add_lot(dest, str(first.get("source") or "unknown"), qty)
+        first["count"] -= qty
+        remaining -= qty
+        if first["count"] <= 0:
+            source.pop(0)
+    if remaining:
+        _trade_add_lot(dest, "unknown", remaining)
+
+
 def _trade_inventory_count(state: Mapping[str, Any], commodity: str) -> Optional[int]:
     # EDMC's Cargo/CargoJSON is examined only locally. It is never uploaded.
     if not isinstance(state, Mapping) or not isinstance(state.get("Cargo"), Mapping) and not isinstance(state.get("CargoJSON"), Mapping):
@@ -4138,7 +4216,9 @@ def _observe_activity_trade(
         station_type = str(entry.get("StationType") or state.get("StationType") or "").strip()
         faction = _station_faction_name(entry, state)
         if event == "Docked" or event == "Location" and entry.get("Docked") is True:
-            _activity_trade_station = {"system": system, "station": station, "type": station_type, "faction": faction}
+            _activity_trade_station = {"system": system, "station": station, "type": station_type,
+                                       "faction": faction, "market": _decimal_text(
+                                           entry.get("MarketID") or state.get("MarketID"))}
         elif event in {"Undocked", "FSDJump", "CarrierJump"} or event == "Location" and entry.get("Docked") is False:
             _activity_trade_station = {}
 
@@ -4152,33 +4232,74 @@ def _observe_activity_trade(
         ledger = _activity_trade_lots.setdefault(commander, {})
         commodity = _commodity_key(entry.get("Type"))
         if event == "Cargo":
-            # Fresh cargo snapshots can reveal imports, mining, mission cargo or
-            # other changes that were not journaled while Scout was online.
-            if not isinstance(state.get("Cargo"), Mapping) and not isinstance(state.get("CargoJSON"), Mapping):
+            # Full journal Ship inventory is authoritative. EDMC CargoJSON may
+            # still be pre-transfer during a carrier load/unload; never reset
+            # station provenance from its stale cached ship rows.
+            if str(entry.get("Vessel") or "Ship").casefold() != "ship":
                 return None
-            vessel, rows = _cargo_inventory_from_edmc_state(state)
-            if str(vessel).casefold() == "ship":
+            inventory = entry.get("Inventory")
+            if isinstance(inventory, list):
                 snapshot: dict[str, int] = {}
-                for row in rows:
-                    key = str(row.get("key") or "")
-                    snapshot[key] = snapshot.get(key, 0) + max(0, int(row.get("count") or 0))
-                for key in set(ledger).union(snapshot):
-                    lots = ledger.setdefault(key, [])
-                    _trade_reconcile_quantity(lots, snapshot.get(key, 0))
-                    if not lots:
-                        ledger.pop(key, None)
-                _save_activity_trade_provenance()
+                for row in inventory:
+                    if isinstance(row, Mapping):
+                        key = _commodity_key(row.get("Name") or row.get("Type"))
+                        qty = _optional_int(row.get("Count")) or 0
+                        if key and qty >= 0:
+                            snapshot[key] = snapshot.get(key, 0) + qty
+            elif _optional_int(entry.get("Count")) == 0:
+                snapshot = {}  # A real empty hold, not a stale EDMC cache.
+            else:
+                # A count-only journal record cannot establish commodity-level
+                # truth; keep the known lots until a real inventory snapshot.
+                return None
+            for key in set(ledger).union(snapshot):
+                lots = ledger.setdefault(key, [])
+                _trade_reconcile_quantity(lots, snapshot.get(key, 0))
+                if not lots:
+                    ledger.pop(key, None)
+            _save_activity_trade_provenance()
             return None
         if event == "CargoTransfer":
+            # Journal 'tocarrier'/'toship' is personal hold storage, *not* a
+            # MarketBuy/MarketSell. Only preserve provenance if docking at the
+            # commander's verified own carrier MarketID. Foreign/unknown carrier
+            # transfers and ship/SRV moves never mint eligible station lots.
+            owner = _hud_state.get("ownerCarrier")
+            owner_id = _decimal_text(owner.get("carrierId")) if isinstance(owner, Mapping) else ""
+            market_id = _decimal_text(entry.get("MarketID") or state.get("MarketID")
+                                      or cached.get("market"))
+            own_storage = bool(owner_id and market_id == owner_id
+                               and station_type.casefold() == "fleetcarrier")
+            carrier = _activity_carrier_trade_lots.setdefault(commander, {}).setdefault(owner_id, {}) if own_storage else {}
             for row in entry.get("Transfers") or []:
-                if isinstance(row, Mapping):
-                    key = _commodity_key(row.get("Type"))
-                    if key:
-                        qty = _trade_inventory_count(state, key)
-                        ledger[key] = [{"source": "unknown", "count": qty}] if qty else []
-                        if not ledger[key]:
-                            ledger.pop(key, None)
+                if not isinstance(row, Mapping):
+                    continue
+                key = _commodity_key(row.get("Type"))
+                qty = _optional_int(row.get("Count")) or 0
+                direction = str(row.get("Direction") or "").casefold()
+                if not key or not (0 < qty <= 25000):
+                    continue
+                if own_storage and direction in {"tocarrier", "toship"}:
+                    ship_lots = ledger.setdefault(key, [])
+                    stored_lots = carrier.setdefault(key, [])
+                    if direction == "tocarrier":
+                        _trade_move_lots(ship_lots, stored_lots, qty)
+                    else:
+                        _trade_move_lots(stored_lots, ship_lots, qty)
+                    if not ship_lots:
+                        ledger.pop(key, None)
+                    if not stored_lots:
+                        carrier.pop(key, None)
+                else:
+                    # An unverified carrier or SRV transfer cannot preserve
+                    # purchase origin safely. Do not touch other commodities.
+                    count = _trade_inventory_count(state, key)
+                    ledger[key] = [{"source": "unknown", "count": count}] if count else []
+                    if not ledger[key]:
+                        ledger.pop(key, None)
             _save_activity_trade_provenance()
+            if own_storage:
+                _save_activity_carrier_trade_provenance()
             return None
         if not commodity:
             return None
