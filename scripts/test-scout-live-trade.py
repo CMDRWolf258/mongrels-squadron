@@ -22,6 +22,7 @@ want = {
     "_optional_int", "_decimal_text",
     "_recover_trade_lots_from_recent_journals", "_restore_trade_origin_for_sale",
     "_next_trade_sale_ordinal",
+    "_hud_srv_active",
     "_next_exploration_sale_ordinal",
 }
 functions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in want]
@@ -50,6 +51,9 @@ scope = {
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
     "_activity_trade_sale_ordinals": {},
+    "_hud_condition": threading.Condition(),
+    "_hud_srv_vehicle": {},
+    "_hud_state": {"status": {"inSrv": False}},
     "_activity_exploration_sale_ordinals": {},
     "_last_system_name": "Diaba", "_last_system_address": 12345,
     "KEY_ACTIVITY_TRADE_PROVENANCE": "test-trade-provenance",
