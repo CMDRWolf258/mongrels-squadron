@@ -1,13 +1,13 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.4 and HUD 0.17.12 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.5 and HUD 0.17.12 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
 ## Install on Serenity
 
 1. Close EDMC and MongrelHUD. Make a backup of your current EDMC
-   `MongrelScout` plugin folder (Scout 1.13.3) and the current HUD
+   `MongrelScout` plugin folder (Scout 1.13.4) and the current HUD
    installation folder (HUD 0.17.11). Keep both backup copies outside
    their active program folders.
 2. Download **both** test artifacts from the *Surveyor private test builds*
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.4** and HUD **0.17.12**.
+5. Start EDMC, then test HUD. Check Scout **1.13.5** and HUD **0.17.12**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -55,7 +55,7 @@ The ledger is per-Commander. Normal Scout uploads continue to work,
 but no personal scan lists/discovery records or unsold estimates enter
 Cloudflare. Community lookups are opt-in, cached and external.
 
-To roll back, close HUD and EDMC, restore your backed-up Scout 1.13.3
+To roll back, close HUD and EDMC, restore your backed-up Scout 1.13.4
 plugin folder, and start your normal HUD 0.17.11 executable. No cloud
 schema migrations or website rollback are required.
 
