@@ -291,11 +291,21 @@ function progressCacheKey(currentCycle){
   return PROGRESS_CACHE_PREFIX+encodeURIComponent(String(currentCycle||'legacy'));
 }
 
-function orderProgressFingerprint(current){
+export function orderProgressFingerprint(current){
+  // Mission Control web requests include 14 workCycleHistory entries per order,
+  // while the HUD feed uses the current work cycle only. Historical timing is
+  // presentation/matching context, not part of the current progress snapshot.
+  // Including it causes the two clients to invalidate and overwrite each other's
+  // shared KV cache despite having identical current orders and verified totals.
+  const orders=Array.isArray(current?.orders)?current.orders.map(order=>{
+    if(!order||typeof order!=='object')return order;
+    const {workCycleHistory, ...canonical}=order;
+    return canonical;
+  }):[];
   const source=JSON.stringify({
     cycleId:cycleId(current),
     updatedAt:clean(current?.updatedAt),
-    orders:Array.isArray(current?.orders)?current.orders:[],
+    orders,
   });
   let hash=2166136261;
   for(let i=0;i<source.length;i+=1){
