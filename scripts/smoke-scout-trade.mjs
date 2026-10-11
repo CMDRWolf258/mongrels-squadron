@@ -75,6 +75,62 @@ assert.equal(frontierRows.length,2,'Frontier must preserve two identical same-se
 assert.deepEqual(frontierRows.map(row=>row.saleOrdinal),[1,2]);
 assert.deepEqual(frontierRows.map(row=>row.profit),[7000000,7000000]);
 
+// Community BGS rule: a *personal hold transfer* preserves the original
+// station buy; carrier market purchases and unverifiable imports do not.
+const transferBase=[
+  {timestamp:'2026-10-08T00:00:00Z',event:'CarrierStats',CarrierID:3700000123},
+  {timestamp:'2026-10-08T00:01:00Z',event:'Docked',StarSystem:'Diaba',
+    SystemAddress:123456789,StationName:'Saturn Ascending',StationType:'Coriolis',
+    MarketID:1280000123,StationFaction:{Name:'Regiment of Imperial Mongrels'}},
+  {timestamp:'2026-10-08T00:02:00Z',event:'MarketBuy',Type:'$Palladium_Name;',
+    Count:100,BuyPrice:100000,TotalCost:10000000},
+  {timestamp:'2026-10-08T00:03:00Z',event:'Docked',StarSystem:'Diaba',
+    SystemAddress:123456789,StationName:'Pneuma',StationType:'FleetCarrier',
+    MarketID:3700000123,StationFaction:{Name:'FleetCarrier'}},
+  {timestamp:'2026-10-08T00:04:00Z',event:'CargoTransfer',
+    Transfers:[{Type:'$Palladium_Name;',Count:100,Direction:'tocarrier'}]},
+  {timestamp:'2026-10-10T00:03:00Z',event:'CargoTransfer',
+    Transfers:[{Type:'$Palladium_Name;',Count:100,Direction:'toship'}]},
+  {timestamp:'2026-10-10T00:04:00Z',event:'Docked',StarSystem:'Diaba',
+    SystemAddress:123456789,StationName:'Eon Blue Apocalypse',StationType:'Orbis',
+    MarketID:1280000999,StationFaction:{Name:'Regiment of Imperial Mongrels'}},
+  {timestamp:'2026-10-10T00:05:00Z',event:'MarketSell',Type:'$Palladium_Name;',
+    Type_Localised:'Palladium',Count:100,SellPrice:172000,
+    TotalSale:17200000,AvgPricePaid:100000},
+];
+const carrierRows=(journal)=>parseJournal(journal.map(JSON.stringify).join('\n'),['Diaba']).events;
+const carrierSale=carrierRows(transferBase).find(row=>row.type==='market_sell');
+assert.equal(carrierSale.profit,7200000);
+assert.equal(carrierSale.tradeSource,'station_market');
+assert.equal(carrierSale.bgsTradeEligible,true,'Verified private carrier storage keeps station provenance');
+const matchOrders={orders:[{id:'palladium',task:'Sell goods for profit',system:'Diaba',
+  faction:'Regiment of Imperial Mongrels',status:'active',reporting:{type:'trade',target:20},
+  workCycle:{cycleId:'transfer-test',cycleStartedAt:'2026-10-10T00:00:00Z',
+    cycleEndsAt:'2026-10-11T00:00:00Z'}}]};
+const eligible=matchVerifiedActivity([carrierSale],matchOrders).orderTotals
+  .reduce((sum,row)=>sum+row.contribution,0);
+assert.equal(eligible,7.2,'Only the sale on the order day contributes');
+const noOwner=carrierRows(transferBase.filter(row=>row.event!=='CarrierStats'))
+  .find(row=>row.type==='market_sell');
+assert.equal(noOwner.bgsTradeEligible,false,'Carrier identity unavailable => reject');
+const foreignCarrier=carrierRows(transferBase.map(row=>
+  row.event==='CarrierStats'?{...row,CarrierID:3700000999}:row))
+  .find(row=>row.type==='market_sell');
+assert.equal(foreignCarrier.bgsTradeEligible,false,'Foreign carrier is not owned storage');
+const marketPurchase=carrierRows(transferBase.map(row=>
+  row.event==='MarketBuy'?{...row,Type:'$Unknown_Name;',Count:1}:row)
+  .map(row=>row.event==='CargoTransfer'?{...row,Transfers:[{Type:'$Palladium_Name;',Count:100,Direction:row.Transfers[0].Direction}]}:row))
+  .find(row=>row.type==='market_sell');
+assert.equal(marketPurchase.bgsTradeEligible,false,'Absent original station buy => unknown');
+const carrierBuyRows=[
+  transferBase[0],transferBase[3],
+  {...transferBase[2],timestamp:'2026-10-08T00:03:30Z'},
+  transferBase[4],transferBase[5],transferBase[6],transferBase[7]
+];
+assert.equal(carrierRows(carrierBuyRows).find(row=>row.type==='market_sell').bgsTradeEligible,false,
+  'Carrier-market buys do not become station trade by transfer');
+console.log('Carrier personal-storage trade replay, missing owner, foreign owner, carrier market and Daily Orders tests passed');
+
 const ledger=new Map();
 const makeEnv=()=>({DAILY_ORDERS:{
   async get(key,{type}={}){const raw=ledger.get(key);return raw===undefined?null:(type==='json'?JSON.parse(raw):raw);},
