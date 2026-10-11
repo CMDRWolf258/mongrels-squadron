@@ -644,7 +644,7 @@ plugin._update_hud_cargo_from_edmc_state("Wolf258",mission_state,entry={
     "event":"CargoTransfer","Transfers":[{"Type":"gold","Count":3,"Direction":"toship"}],
 })
 assert plugin._hud_state["cargo"]["used"]==8
-assert plugin._hud_state["cargo"]["_allocation"]["missionAvailable"]["7100\\u0000gold"]==5
+assert plugin._hud_state["cargo"]["_allocation"]["missionAvailable"]["7100\u0000gold"]==5
 assert plugin._hud_state["cargo"]["_allocation"]["sharedAvailable"]["gold"]==3
 plugin._hud_ship_transfer_rows.clear()
 
