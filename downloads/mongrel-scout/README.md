@@ -1,3 +1,10 @@
+## Surveyor Scout 1.13.5 TEST — SRV ore fix included
+
+The Surveyor trial build includes the production SRV cargo correction:
+mining rig pickups stay in the SRV, while genuine transfers to the ship
+increase its HUD tonnage exactly once. It preserves the exploration ledger,
+mapping advisor, and real-time Universal Cartographics reporting.
+
 ## Live Universal Cartographics reporting (Scout v1.13.3)
 
 Scout now uploads verified **SellExplorationData** and **MultiSellExplorationData**
