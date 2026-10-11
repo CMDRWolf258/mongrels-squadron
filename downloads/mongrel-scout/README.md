@@ -1,3 +1,19 @@
+## Scout 1.13.6 — Verifiable personal carrier storage in trade BGS
+
+Station-bought commodities temporarily stored in the **owner's personal
+fleet carrier hold** and transferred back to the ship retain their station
+purchase provenance. The plugin tracks those FIFO lots by Commander, verified
+owned carrier MarketID and commodity in local EDMC configuration, including
+across restarts and multiple days. The event's `tocarrier`/`toship`
+direction is required; carrier market purchases, mined stock, foreign/unknown
+carrier identity, missing amounts or unknown inventory remain ineligible.
+
+Only a profitable real station `MarketSell` creates a new eligible Daily
+Orders contribution. No stored cargo, purchase prices, journal history or
+private inventories are uploaded. Historical previously excluded sales are
+not retroactively credited without separate verification. No Cloudflare
+read/write increase, HUD/website schema migration or UI update required.
+
 ## Scout 1.13.5 — Live SRV cargo transfers
 
 Confirmed Frontier `CargoTransfer` journal events now update the **ship**

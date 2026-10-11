@@ -15,6 +15,8 @@ path = Path(__file__).resolve().parents[1] / "downloads/mongrel-scout/load.py"
 tree = ast.parse(path.read_text(encoding="utf-8"))
 want = {
     "_restore_activity_trade_provenance", "_save_activity_trade_provenance",
+    "_restore_activity_carrier_trade_provenance", "_save_activity_carrier_trade_provenance",
+    "_trade_move_lots",
     "_trade_inventory_count", "_trade_lot_total", "_trade_reconcile_quantity",
     "_trade_add_lot", "_trade_consume_lots", "_observe_activity_trade",
     "_build_realtime_activity_payload", "_station_faction_name",
@@ -49,6 +51,7 @@ scope = {
     "Path": Path, "monitor": SimpleNamespace(currentdir=None),
     "json": json, "math": math, "re": re, "threading": threading,
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
+    "_activity_carrier_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
     "_activity_trade_sale_ordinals": {},
     "_hud_condition": threading.Condition(),
@@ -57,6 +60,7 @@ scope = {
     "_activity_exploration_sale_ordinals": {},
     "_last_system_name": "Diaba", "_last_system_address": 12345,
     "KEY_ACTIVITY_TRADE_PROVENANCE": "test-trade-provenance",
+    "KEY_ACTIVITY_CARRIER_TRADE_PROVENANCE": "test-carrier-stored-provenance",
     "_cargo_inventory_from_edmc_state": inventory,
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), str(path), "exec"), scope)
@@ -84,14 +88,18 @@ def track(event, cargo, cmdr="Wolf258", **extra):
 
 def restart():
     scope["_activity_trade_lots"]={}
+    scope["_activity_carrier_trade_lots"]={}
     scope["_activity_trade_station"]={}
     scope["_activity_trade_commander"]=""
     restore()
+    scope["_restore_activity_carrier_trade_provenance"]()
 
 def reset():
     scope["_activity_trade_lots"]={}
+    scope["_activity_carrier_trade_lots"]={}
     scope["_activity_trade_station"]={}
     scope["_activity_trade_commander"]=""
+    scope["_hud_state"]["ownerCarrier"]={"carrierId":"3700000123"}
     config.values.clear()
 
 # Pure station-to-station trade, including an EDMC restart between buying and selling.
@@ -136,6 +144,102 @@ track("MarketBuy",state(100),Count=100)
 track("CargoTransfer",state(100),Transfers=[{"Type":"$Gold_Name;","Count":10}])
 transferred=track("MarketSell",state(0),Count=100)
 assert not transferred["verified"]
+
+# Personal carrier STORAGE is not a market transaction. A verified Saturn
+# Ascending station purchase survives storage, a restart/days of inactivity,
+# partial retrieval and a profitable sale at Eon Blue.
+reset()
+def hold(amount):
+    return {**state(amount,station="Pneuma",kind="FleetCarrier"),"MarketID":3700000123}
+track("Docked",state(0,station="Saturn Ascending",kind="Coriolis"),
+      StationName="Saturn Ascending",StationType="Coriolis",MarketID=1280000123)
+track("MarketBuy",state(150,station="Saturn Ascending",kind="Coriolis"),Count=150)
+track("Docked",hold(150),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(30),Transfers=[{"Type":"$Gold_Name;","Count":120,"Direction":"tocarrier"}])
+assert sum(lot["count"] for lot in scope["_activity_trade_lots"]["wolf258"]["gold"])==30
+stored=scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]
+assert stored==[{"source":"station_market","count":120}]
+assert "test-carrier-stored-provenance" in config.values
+restart()
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==stored
+track("Docked",hold(30),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(110),Transfers=[{"Type":"$Gold_Name;","Count":80,"Direction":"toship"}])
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[{"source":"station_market","count":40}]
+track("Docked",state(110,station="Eon Blue Apocalypse",kind="Orbis"),
+      StationName="Eon Blue Apocalypse",StationType="Orbis")
+returned=track("MarketSell",state(0,station="Eon Blue Apocalypse",kind="Orbis"),Count=110)
+assert returned["verified"] and returned["source"]=="station_market",returned
+assert scope["_activity_trade_lots"].get("wolf258",{}).get("gold") is None
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[{"source":"station_market","count":40}]
+# The storage lot can be unloaded in multiple batches without duplicates.
+track("Docked",hold(0),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(40),Transfers=[{"Type":"$Gold_Name;","Count":40,"Direction":"toship"}])
+assert not scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]
+track("Docked",state(40,station="Eon Blue Apocalypse",kind="Orbis"),
+      StationName="Eon Blue Apocalypse",StationType="Orbis")
+last=track("MarketSell",state(0,station="Eon Blue Apocalypse",kind="Orbis"),Count=40)
+assert last["verified"] is True
+
+# Unknown stored stock, cargo from carrier MARKET purchases, and mismatched
+# carrier identity are never treated as eligible station-market trade.
+reset()
+track("Docked",hold(0),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(20),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"toship"}])
+unknown_stored=track("MarketSell",state(0),Count=20)
+assert not unknown_stored["verified"]
+reset()
+track("Docked",state(0,station="Pneuma",kind="FleetCarrier"),StationType="FleetCarrier",MarketID=3700000123)
+track("MarketBuy",hold(20),Count=20)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"tocarrier"}])
+track("CargoTransfer",hold(20),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"toship"}])
+market_buy=track("MarketSell",state(0),Count=20)
+assert not market_buy["verified"] and market_buy["source"]=="carrier_market",market_buy
+reset()
+track("MarketBuy",state(20),Count=20)
+track("Docked",hold(20),StationType="FleetCarrier",MarketID=3700000999)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"tocarrier"}])
+assert not scope["_activity_carrier_trade_lots"].get("wolf258",{}).get("3700000999")
+assert not scope["_activity_trade_lots"].get("wolf258",{}).get("gold")
+# Never invent provenance for stock that appears on the ship without a
+# tracked corresponding station buy, even with a known carrier MarketID.
+reset()
+track("Docked",hold(0),StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(15),Transfers=[{"Type":"$Gold_Name;","Count":15,"Direction":"toship"}])
+assert not track("MarketSell",state(0),Count=15)["verified"]
+
+# Mixed origins remain ineligible even when the mixture visits the same
+# personal hold. Only an exactly station-bought FIFO lot can qualify.
+reset()
+track("Docked",state(0),StationName="Niijima Station",StationType="Orbis")
+track("MarketBuy",state(50),Count=50)
+track("Docked",hold(50),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("MarketBuy",hold(100),Count=50)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":100,"Direction":"tocarrier"}])
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[
+    {"source":"station_market","count":50},{"source":"carrier_market","count":50}]
+restart()
+track("Docked",hold(0),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(100),Transfers=[{"Type":"$Gold_Name;","Count":100,"Direction":"toship"}])
+mixed=track("MarketSell",state(0),Count=100)
+assert mixed["source"]=="mixed" and not mixed["verified"],mixed
+# A new Commander must never inherit existing stored purchase history.
+reset()
+track("MarketBuy",state(20),Count=20)
+track("Docked",hold(20),StationName="Pneuma",StationType="FleetCarrier",MarketID=3700000123)
+track("CargoTransfer",hold(0),Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"tocarrier"}])
+foreign=track("CargoTransfer",hold(20),cmdr="Other Cmdr",
+              Transfers=[{"Type":"$Gold_Name;","Count":20,"Direction":"toship"}])
+assert foreign is None
+assert not track("MarketSell",state(0),cmdr="Other Cmdr",Count=20)["verified"]
+assert scope["_activity_carrier_trade_lots"]["wolf258"]["3700000123"]["gold"]==[
+    {"source":"station_market","count":20}]
+# A journal count-only Cargo event cannot overwrite correctly-traced lots
+# with stale EDMC commodity totals after the transfer.
+reset()
+track("MarketBuy",state(20),Count=20)
+track("Cargo",state(0),Count=20,Vessel="Ship")
+assert scope["_activity_trade_lots"]["wolf258"]["gold"]==[
+    {"source":"station_market","count":20}]
 
 # A missing post-purchase cargo inventory must not create verified origin.
 reset()
