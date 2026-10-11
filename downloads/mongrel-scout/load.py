@@ -23,7 +23,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.3"
+PLUGIN_VERSION = "1.13.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -226,6 +226,9 @@ _hud_thread: Optional[threading.Thread] = None
 _hud_error = ""
 _hud_site_feed_thread: Optional[threading.Thread] = None
 _hud_site_feed_stop = threading.Event()
+# EDMC increments its shared Cargo cache even when an SRV collects the ore.
+_hud_srv_cargo_ghosts: dict[str, dict[str, int]] = {}
+_hud_srv_vehicle: dict[str, bool] = {}
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -488,7 +491,7 @@ def journal_entry(
     # update the local-only mission calculator, then publish the event.
     _update_hud_ship_from_edmc_state(state)
     _update_cargo_missions_from_journal(cmdr, entry)
-    _update_hud_cargo_from_edmc_state(cmdr, state, entry.get("timestamp"))
+    _update_hud_cargo_from_edmc_state(cmdr, state, entry.get("timestamp"), entry)
     _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
@@ -2465,7 +2468,49 @@ def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> 
         _save_cargo_missions()
 
 
-def _cargo_inventory_from_edmc_state(state: Mapping[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+def _hud_srv_active(cmdr: Any, event: Mapping[str, Any]) -> bool:
+    """Prefer journal SRV launch/dock boundaries, otherwise Status.json."""
+    key = _cmdr_cache_key(cmdr)
+    kind = str(event.get("event") or "")
+    with _hud_condition:
+        if kind == "LaunchSRV":
+            _hud_srv_vehicle[key] = True
+        elif kind == "DockSRV":
+            _hud_srv_vehicle[key] = False
+        if key in _hud_srv_vehicle:
+            return _hud_srv_vehicle[key]
+        status = _hud_state.get("status")
+        return bool(status.get("inSrv")) if isinstance(status, Mapping) else False
+
+
+def _hud_cargo_ghost_adjustments(cmdr: Any, entry: Mapping[str, Any]) -> dict[str, int]:
+    """Subtract SRV collection artefacts from EDMC's shared Cargo dictionary.
+
+    EDMC applies CollectCargo/EjectCargo to Cargo even when it is SRV cargo.
+    CargoTransfer-toShip then increments the ship count again. Keep the SRV
+    artefact separate until a full authoritative Ship Cargo event arrives.
+    """
+    commander = _cmdr_cache_key(cmdr)
+    event = str(entry.get("event") or "")
+    in_srv = _hud_srv_active(cmdr, entry)
+    with _hud_condition:
+        ghost = _hud_srv_cargo_ghosts.setdefault(commander, {})
+        if event == "Cargo" and str(entry.get("Vessel") or "").casefold() == "ship":
+            ghost.clear()
+        elif event in {"CollectCargo", "EjectCargo"} and in_srv:
+            key = _commodity_key(entry.get("Type"))
+            count = _optional_int(entry.get("Count"))
+            if count is None:
+                count = 1
+            if key and 0 < count <= 25000:
+                delta = count if event == "CollectCargo" else -count
+                ghost[key] = max(-25000, min(25000, ghost.get(key, 0) + delta))
+                if not ghost[key]:
+                    ghost.pop(key, None)
+        return dict(ghost)
+
+
+def _cargo_inventory_from_edmc_state(state: Mapping[str, Any], *, srv_ghosts: Optional[Mapping[str, int]] = None) -> tuple[str, list[dict[str, Any]]]:
     cargo_json = state.get("CargoJSON")
     if isinstance(cargo_json, Mapping):
         vessel = str(cargo_json.get("Vessel") or "Ship").strip() or "Ship"
@@ -2486,6 +2531,8 @@ def _cargo_inventory_from_edmc_state(state: Mapping[str, Any]) -> tuple[str, lis
                     "stolen": max(0, min(count, _optional_int(raw.get("Stolen")) or 0)),
                     "missionId": _optional_int(raw.get("MissionID")),
                 })
+            if vessel.casefold() == "ship" and srv_ghosts and isinstance(state.get("Cargo"), Mapping):
+                return vessel, _reconcile_ship_cargo_ghosts(rows, state["Cargo"], srv_ghosts)
             return vessel, rows
 
     raw_totals = state.get("Cargo")
@@ -2503,13 +2550,45 @@ def _cargo_inventory_from_edmc_state(state: Mapping[str, Any]) -> tuple[str, lis
                 "stolen": 0,
                 "missionId": None,
             })
+    if srv_ghosts and isinstance(raw_totals, Mapping):
+        rows = _reconcile_ship_cargo_ghosts(rows, raw_totals, srv_ghosts)
     return "Ship", rows
 
 
-def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None) -> Optional[dict[str, Any]]:
+def _reconcile_ship_cargo_ghosts(
+    prior_rows: list[dict[str, Any]], raw_totals: Mapping[str, Any],
+    srv_ghosts: Mapping[str, int],
+) -> list[dict[str, Any]]:
+    """Use EDMC current counts net of SRV pickup, retaining known mission tags."""
+    wanted: dict[str, int] = {}
+    for name, value in raw_totals.items():
+        key = _commodity_key(name)
+        count = _optional_int(value)
+        if key and count is not None:
+            wanted[key] = wanted.get(key, 0) + count
+    for key, ghost in srv_ghosts.items():
+        wanted[key] = max(0, wanted.get(key, 0) - int(ghost))
+    remaining = {key: max(0, count) for key, count in wanted.items()}
+    fixed: list[dict[str, Any]] = []
+    # Reserve mission-tagged stacks before interchangeable cargo.
+    for old in sorted(prior_rows, key=lambda row: row.get("missionId") is None):
+        key = str(old.get("key") or "")
+        count = min(int(old.get("count") or 0), remaining.get(key, 0))
+        if count > 0:
+            fixed.append({**old, "count": count, "stolen": min(count, int(old.get("stolen") or 0))})
+            remaining[key] -= count
+    for key, count in remaining.items():
+        if count > 0:
+            fixed.append({"key": key, "name": _commodity_display(key), "count": count,
+                          "stolen": 0, "missionId": None})
+    return fixed
+
+
+def _build_local_cargo_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None,
+                             *, srv_ghosts: Optional[Mapping[str, int]] = None) -> Optional[dict[str, Any]]:
     if not isinstance(state, Mapping):
         return None
-    vessel, rows = _cargo_inventory_from_edmc_state(state)
+    vessel, rows = _cargo_inventory_from_edmc_state(state, srv_ghosts=srv_ghosts)
     # The feature is specifically ship cargo. Keep the most recent ship snapshot
     # while the commander is driving an SRV instead of replacing it with SRV cargo.
     if vessel.casefold() != "ship":
@@ -2752,8 +2831,16 @@ def _set_hud_cargo_priority(value: str) -> dict[str, Any]:
         return public
 
 
-def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None) -> None:
-    cargo = _build_local_cargo_state(cmdr, state, timestamp)
+def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], timestamp: Any = None,
+                                      entry: Optional[Mapping[str, Any]] = None) -> None:
+    event = entry if isinstance(entry, Mapping) else {}
+    corrections = _hud_cargo_ghost_adjustments(cmdr, event)
+    source_state = state
+    # Full Ship Cargo events can include Inventory while EDMC CargoJSON is stale.
+    if event.get("event") == "Cargo" and str(event.get("Vessel") or "").casefold() == "ship":
+        if isinstance(event.get("Inventory"), list):
+            source_state = {**state, "CargoJSON": {"Vessel": "Ship", "Inventory": event["Inventory"]}}
+    cargo = _build_local_cargo_state(cmdr, source_state, timestamp, srv_ghosts=corrections)
     if cargo is None:
         return
     with _hud_condition:
