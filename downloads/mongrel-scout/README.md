@@ -1,3 +1,18 @@
+## Scout 1.13.5 — Live SRV cargo transfers
+
+Confirmed Frontier `CargoTransfer` journal events now update the **ship**
+cargo HUD immediately when moving ore between an SRV and the ship, even if
+EDMC's `CargoJSON` remains stale until boarding. The previously displayed
+ship inventory is used as the pre-transfer base. The correction remains local
+until Frontier reports another complete `Cargo` snapshot for Vessel Ship;
+the full snapshot is authoritative and prevents double-counting.
+
+SRV pickups still do not count as ship cargo until transferred. Mission-bound
+cargo and stolen allocations are preserved, and there are no new Cloudflare
+reads or activity uploads. If Frontier does not emit CargoTransfer on
+confirmation, live HUD updates cannot be inferred reliably without verifying
+a separate event.
+
 ## Scout 1.13.4 — SRV mining cargo accounting
 
 Elite Market Connector updates its shared Cargo totals for SRV CollectCargo
