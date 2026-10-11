@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../downloads/mongrel-hud/controller.html',import.meta.url),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||'';
-for(const id of ['browseSystemInput','browseSystemSuggestions','browseCommodity','browseBody','browseRigs','browseResults','browseStatus','browseRefresh','browseNavNotice']){
+for(const id of ['browseSystemInput','browseSystemSuggestions','browseCommodity','browseBody','browseSignal','browseRigs','browseResults','browseStatus','browseRefresh','browseNavNotice']){
   assert.match(html,new RegExp('id="'+id+'"'));
 }
 assert.match(html,/id="browseHealth"/);
@@ -41,10 +41,11 @@ assert.equal(context.browserMatches('old sys').length,1);
 assert.equal(context.browserMatches('sYsTeM').length,2);
 assert.equal(context.browserMatches('888')[0].systemName,'Old System One');
 assert.equal(context.browserMatches('UNKNOWN').length,0);
-const resultCode=pick('function renderMiningBrowseResults','function populateMiningFilters');
-vm.runInContext(resultCode+'this.renderMiningBrowseResults=renderMiningBrowseResults;',context);
-const run=(commodity='',body='',rig=0)=>{
-  el('browseCommodity').value=commodity;el('browseBody').value=body;el('browseRigs').value=String(rig);
+const resultCode=pick('function renderMiningBrowseResults','async function browseSelectedMiningSystem');
+const optionCode=pick('function browseFilterOptions','function renderMiningBrowseResults');
+vm.runInContext(optionCode+resultCode+'this.renderMiningBrowseResults=renderMiningBrowseResults;this.populateMiningSignalOptions=populateMiningSignalOptions;this.populateMiningFilters=populateMiningFilters;',context);
+const run=(commodity='',body='',rig=0,signal='')=>{
+  el('browseCommodity').value=commodity;el('browseBody').value=body;el('browseRigs').value=String(rig);el('browseSignal').value=String(signal);
   context.renderMiningBrowseResults();
   return {status:el('browseStatus').textContent,html:el('browseResults').innerHTML};
 };
@@ -67,6 +68,51 @@ test('Combined commodity, body, minimum rig count are applied locally without an
   assert.doesNotMatch(body.html,/Signal #3/);
   const none=run('Gold','Icy Test A 2 a',0);
   assert.match(none.status,/0 matching deposits/);
+});
+
+test('Signal # is an exact local filter combined with body, commodity and minimum rigs',()=>{
+  const body1=run('Bromellite','Icy Test A 2 a',0,'1');
+  assert.match(body1.status,/1 matching deposits/);
+  assert.match(body1.html,/6 rigs/);
+  assert.doesNotMatch(body1.html,/Signal #3/);
+  assert.doesNotMatch(body1.html,/Gold/);
+  const byRig=run('Bromellite','Icy Test A 2 a',6,'3');
+  assert.match(byRig.status,/0 matching deposits/);
+  const signal3=run('Bromellite','Icy Test A 2 a',2,'3');
+  assert.match(signal3.status,/1 matching deposits/);
+  assert.match(signal3.html,/Signal #3/);
+  const centerOnly=run('','','0','4');
+  assert.match(centerOnly.status,/0 matching deposits · 1 center-only signals/);
+  assert.match(centerOnly.html,/Signal #4/);
+  const hideCenter=run('','','0','1');
+  assert.doesNotMatch(hideCenter.html,/CENTER ONLY/);
+  // No fetches or navigation requests are made by these filters.
+  assert.doesNotMatch(pick('function renderMiningBrowseResults','function reviewMiningSearchResult'),/await api\(/);
+});
+
+test('Signal options are numeric, scoped to chosen body and reset when unavailable',()=>{
+  const rows=context.miningBrowser.data.deposits;
+  rows.push({id:'more-13',body:'Icy Test A 2 a',commodity:'Gold',rigs:2,signal:13,storage:'local_only'});
+  rows.push({id:'more-9',body:'Icy Test A 2 a',commodity:'Gold',rigs:2,signal:9,storage:'local_only'});
+  try{
+    el('browseBody').value='';
+    el('browseSignal').value='';
+    context.populateMiningSignalOptions();
+    assert.match(el('browseSignal').innerHTML,/<option value="1">1<\/option>/);
+    assert.ok(el('browseSignal').innerHTML.indexOf('value="9"')<el('browseSignal').innerHTML.indexOf('value="13"'));
+    el('browseBody').value='Icy Test A 2 a';
+    el('browseSignal').value='9';
+    context.populateMiningSignalOptions();
+    assert.equal(el('browseSignal').value,'9','keep a valid signal when body is unchanged');
+    assert.doesNotMatch(el('browseSignal').innerHTML,/value="2"/,'omit other-body signals');
+    el('browseBody').value='Icy Test B 2 a';
+    context.populateMiningSignalOptions();
+    assert.equal(el('browseSignal').value,'','clear an invalid signal when body changes');
+    assert.match(el('browseSignal').innerHTML,/value="2"/);
+    assert.doesNotMatch(el('browseSignal').innerHTML,/value="9"/);
+    assert.match(script,/el\("browseBody"\)\.onchange=function\(\)\{populateMiningSignalOptions\(\);renderMiningBrowseResults\(\)\}/);
+    assert.match(script,/el\("browseSignal"\)\.value=""/,'switching systems resets the filter');
+  }finally{rows.pop();rows.pop();el('browseBody').value='';el('browseSignal').value='';run()}
 });
 
 test('result cards reveal deliberate Navigate controls for deposits and center-only signals',()=>{
