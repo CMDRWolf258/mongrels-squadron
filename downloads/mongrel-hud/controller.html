@@ -299,7 +299,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 
     <div class="card"><h2>MINING LOCATIONS ON THIS BODY</h2><p class="muted">Choose the planetary signal first. Its center and deposits are separate navigation targets.</p><div class="sites" id="miningLocations"><span class="muted">No mining locations found.</span></div></div>
     <div class="card"><h2>SET MINING LOCATION CENTER</h2><div class="grid"><div><label for="centerSignal">Signal #</label><input id="centerSignal" type="number" min="1" max="999" placeholder="13"></div><div><label>Coordinates</label><div class="status">Captured automatically from Elite</div></div></div><button class="action" id="setCenter">SET / UPDATE CENTER</button><div class="notice" id="siteNotice"></div></div>
-    <div class="card"><h2>REPORT DEPOSIT</h2><div class="grid"><div><label for="depositCommodity">Commodity</label><select id="depositCommodity" class="mining-select"><option value="">Select commodity…</option><option value="__other">Other / not listed…</option></select><input id="depositCommodityOther" class="hidden" placeholder="Enter new commodity"></div><div><label for="depositSignal">Signal #</label><input id="depositSignal" type="number" min="1" max="999" placeholder="13"></div></div><div class="grid"><div><label for="rigs">Mining rigs</label><select id="rigs" class="mining-select"><option value="1" selected>1 rig</option><option value="2">2 rigs</option><option value="3">3 rigs</option><option value="4">4 rigs</option><option value="5">5 rigs</option><option value="6">6 rigs</option><option value="7">7+ rigs</option></select></div><div><label>Coordinates</label><div class="status">Captured automatically from Elite</div></div></div><label for="notes">Notes</label><textarea id="notes" placeholder="Deposit size, terrain, approach notes…"></textarea><button class="action" id="reportDeposit">REPORT DEPOSIT</button><div class="notice" id="depositNotice"></div></div>
+    <div class="card"><h2>REPORT DEPOSIT</h2><div class="grid"><div><label for="depositCommodity">Commodity</label><select id="depositCommodity" class="mining-select"><option value="">Select commodity…</option><option value="__other">Other / not listed…</option></select><input id="depositCommodityOther" class="hidden" placeholder="Enter new commodity"></div><div><label for="depositSignal">Signal #</label><input id="depositSignal" type="number" min="1" max="999" placeholder="13"></div></div><div class="grid"><div><label for="rigs">Mining rigs</label><select id="rigs" class="mining-select"><option value="1" selected>1 rig</option><option value="2">2 rigs</option><option value="3">3 rigs</option><option value="4">4 rigs</option><option value="5">5 rigs</option><option value="6">6 rigs</option><option value="7">7+ rigs</option></select></div><div><label>Coordinates</label><div class="status">Captured automatically from Elite</div></div></div><label for="notes">Notes</label><textarea id="notes" placeholder="Deposit size, terrain, approach notes…"></textarea><button class="action" id="reportDeposit">REPORT DEPOSIT</button><div class="notice" id="depositNotice"></div><button type="button" id="reviewLastDeposit" class="action hidden">REVIEW FLAGGED DEPOSIT</button></div>
     <div class="card"><h2>DEPOSITS IN SELECTED LOCATION</h2><p class="muted">Tap a deposit to make it the second HUD navigation target. The location-center compass remains active at the same time.</p><div class="sites" id="sites"><span class="muted">Select a mining location first.</span></div></div>
     <div class="card" id="miningBrowserCard">
       <h2>MINING DATABASE · SYSTEM BROWSER</h2>
@@ -332,6 +332,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
 var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="";
 var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0,groupScope:"",groupExpanded:Object.create(null),itemExpanded:Object.create(null)};
+var flaggedDepositToReview=null;
  var savedDepositScope="",savedDepositOpen=Object.create(null);
 function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
 function el(id){return document.getElementById(id)}
@@ -767,14 +768,17 @@ function renderMiningBrowseResults(){
   function renderDeposit(row){
     var count=Number(row.rigs||0),label=count>=7?"7+":String(count||"?");
     var local=row.storage==="local_only",sharedState=String(row.sharedStatus||""),coords=typeof row.latitude==="number"&&typeof row.longitude==="number"?row.latitude.toFixed(6)+", "+row.longitude.toFixed(6):"Unknown";
-    var shareLabel=sharedState==="approved"||sharedState==="existing"?"SQUAD SHARED":sharedState==="pending"?"SUBMITTED · AWAITING REVIEW":sharedState==="duplicate_review"?"SUBMITTED · DUPLICATE REVIEW":local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED";
+    var shareLabel=sharedState==="approved"||sharedState==="existing"?"SQUAD SHARED":sharedState==="pending"?"SUBMITTED · AWAITING REVIEW":sharedState==="duplicate_review"?"SUBMITTED · DUPLICATE REVIEW":row.reviewStatus==="confirmed_distinct"?"CONFIRMED SEPARATE · LOCAL ONLY":local?"LOCAL ONLY · NOT SQUAD SYNCED":"SHARED";
+    var nearby=row.needsReview&&row.nearestMatch&&typeof row.nearestMatch.distanceM==="number"?
+      '<p class="status">Nearest matching saved deposit #'+escapeHtml(row.nearestMatch.id||"?")+' · '+escapeHtml(Math.round(row.nearestMatch.distanceM))+' m away'+(row.nearestMatch.approximate?" (coordinates match; radius unknown)":"")+'</p>':"";
     var hasCenter=centers.some(function(center){return String(center.body||"").toLowerCase()===String(row.body||"").toLowerCase()&&Number(center.signal)===Number(row.signal)});
     var key="deposit:"+String(row.id);
     return '<details class="mining-browser-item" data-browse-item="'+escapeAttr(key)+'"'+(miningBrowser.itemExpanded[key]?' open':'')+'><summary>'+escapeHtml(row.commodity||"Deposit")+' · '+label+' rigs · '+escapeHtml(row.body||"Body")+'</summary>'
       +'<p>Signal #'+escapeHtml(row.signal||"?")+'</p>'
-      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+shareLabel+(row.needsReview&&!sharedState?" · POSSIBLE DUPLICATE":"")+'</small>'
+      +'<small>Coordinates '+escapeHtml(coords)+'</small><small class="'+(local?"mining-browser-local":"")+'">'+shareLabel+(row.needsReview&&!sharedState?" · POSSIBLE DUPLICATE · REVIEW BELOW":"")+'</small>'+nearby
       +(row.notes?'<p class="status">'+escapeHtml(row.notes)+'</p>':'')
       +'<button type="button" class="browser-nav-action" data-browse-navigate="deposit" data-browse-nav-id="'+escapeAttr(row.id)+'">NAVIGATE'+(hasCenter?" · DEPOSIT + CENTER":" · DEPOSIT")+'</button>'
+      +(local&&row.needsReview&&!sharedState?'<button type="button" class="browser-nav-action" data-browse-review-id="'+escapeAttr(row.id)+'">CONFIRM SEPARATE DEPOSIT · LOCAL ONLY</button>':'')
       +(local&&!sharedState?'<button type="button" class="browser-nav-action" data-browse-share="deposit" data-browse-share-id="'+escapeAttr(row.id)+'">SHARE DEPOSIT WITH SQUAD</button>':'')+'</details>';
   }
   var html=Object.keys(grouped).sort(function(a,b){return a.localeCompare(b)}).map(function(name){
@@ -802,11 +806,33 @@ function renderMiningBrowseResults(){
       navigateMiningSearchResult(kind,id);
     };
   });
+  container.querySelectorAll("[data-browse-review-id]").forEach(function(button){
+    button.onclick=function(){return reviewMiningSearchResult(button.getAttribute("data-browse-review-id"),button)};
+  });
   container.querySelectorAll("[data-browse-share]").forEach(function(button){
     button.onclick=function(){
       shareMiningSearchResult(button.getAttribute("data-browse-share"),button.getAttribute("data-browse-share-id"),button);
     };
   });
+}
+async function reviewMiningSearchResult(id,button){
+  var data=miningBrowser.data||{},rows=Array.isArray(data.deposits)?data.deposits:[];
+  var row=rows.find(function(item){return String(item.id)===String(id)&&item.storage==="local_only"&&item.needsReview&&!item.sharedStatus});
+  var notice=el("browseShareNotice");
+  if(!row){notice.textContent="Select a local deposit still marked POSSIBLE DUPLICATE.";return}
+  var nearby=row.nearestMatch&&typeof row.nearestMatch.distanceM==="number"?" Closest matching saved report is "+Math.round(row.nearestMatch.distanceM)+" m away.":"";
+  if(!confirm("Confirm this is a DISTINCT mining deposit?\n"+row.commodity+" · "+row.body+" · Signal #"+row.signal+"."+nearby+"\nThis only clears the local warning on Serenity. Nothing will be shared or deleted."))return;
+  button.disabled=true;notice.textContent="Saving local confirmation…";
+  try{
+    await api("/api/mining-browser/review",{id:String(id),decision:"confirm_distinct"});
+    notice.className="notice success";
+    notice.textContent="CONFIRMED SEPARATE · LOCAL ONLY · Report retained on Serenity; nothing uploaded.";
+    if(flaggedDepositToReview&&String(flaggedDepositToReview.id)===String(id)){
+      flaggedDepositToReview=null;el("reviewLastDeposit").classList.add("hidden");
+    }
+    await browseSelectedMiningSystem(miningBrowser.selected);
+  }catch(e){notice.className="notice review";notice.textContent="Review not saved · "+e.message}
+  finally{button.disabled=false}
 }
 async function shareMiningSearchResult(kind,id,button){
   var data=miningBrowser.data||{},rows=kind==="deposit"?data.deposits:data.centers;
@@ -876,11 +902,11 @@ async function pickMiningSystem(address){
   catch(err){el("browseStatus").textContent="Selection not saved: "+err.message;return}
   await browseSelectedMiningSystem(row.systemAddress);
 }
-async function loadMiningBrowserCatalog(force){
+async function loadMiningBrowserCatalog(force,localOnly){
   if(miningBrowser.loading)return;
   miningBrowser.loading=true;el("browseStatus").textContent="Loading saved systems…";
   try{
-    var catalog=await api("/api/mining-browser/catalog"+(force?"?refresh=1":""));
+    var catalog=await api("/api/mining-browser/catalog"+(force?"?refresh=1":localOnly?"?local=1":""));
     miningBrowser.systems=Array.isArray(catalog.systems)?catalog.systems:[];
     miningBrowser.loaded=true;miningBrowser.loading=false;
     var target=miningBrowser.selected&&miningBrowser.systems.some(function(x){return x.systemAddress===miningBrowser.selected})?miningBrowser.selected:catalog.selected;
@@ -1065,10 +1091,31 @@ el("browseHealth").onclick=async function(){
   finally{button.disabled=false}
 };
 el("browseRefresh").onclick=function(){return loadMiningBrowserCatalog(true)};
+el("reviewLastDeposit").onclick=async function(){
+  var selected=flaggedDepositToReview;
+  if(!selected)return;
+  await loadMiningBrowserCatalog(false,true);
+  if(!miningBrowser.systems.some(function(row){return row.systemAddress===selected.systemAddress})){
+    el("depositNotice").textContent="Local report not listed yet; press REFRESH SAVED SYSTEMS.";return;
+  }
+  await pickMiningSystem(selected.systemAddress);
+  miningBrowser.groupExpanded["commodity:"+selected.commodity]=true;
+  miningBrowser.itemExpanded["deposit:"+selected.id]=true;
+  renderMiningBrowseResults();
+  var browser=el("miningBrowserCard");
+  if(browser&&typeof browser.scrollIntoView==="function")browser.scrollIntoView({behavior:"smooth",block:"start"});
+};
 ["browseCommodity","browseBody","browseRigs"].forEach(function(id){el(id).onchange=renderMiningBrowseResults});
 el("setCenter").onclick=async function(){try{var signal=Number(el("centerSignal").value||0);if(!signal)throw new Error("signal_required");var r=await api("/api/site-center",{siteNumber:signal});var local=r.site&&r.site.storage==="local_only";el("siteNotice").textContent=(local?"CENTER SAVED LOCALLY · NOT SQUAD SYNCED":"Center saved")+" · Signal #"+signal+" · "+Number(r.site.latitude).toFixed(6)+", "+Number(r.site.longitude).toFixed(6);el("depositSignal").value=signal;await api("/api/location-select",{signal:signal});await load()}catch(e){el("siteNotice").textContent=e.message}};
 el("depositCommodity").onchange=function(){var other=el("depositCommodityOther"),show=el("depositCommodity").value==="__other";other.classList.toggle("hidden",!show);if(show)other.focus()};
-el("reportDeposit").onclick=async function(){var notice=el("depositNotice");try{var selected=el("depositCommodity").value,commodity=selected==="__other"?el("depositCommodityOther").value.trim():selected;if(!commodity)throw new Error("commodity_required");var signal=Number(el("depositSignal").value||0),rigs=Number(el("rigs").value||1),rigLabel=rigs>=7?"7+":String(rigs);var r=await api("/api/deposit",{commodity:commodity,signal:signal,rigs:rigs,notes:el("notes").value});var status=String(r.deposit.status||"");notice.className="notice "+(status==="duplicate_review"?"review":"success");notice.textContent=status==="duplicate_review_local"?("POSSIBLE DUPLICATE · SAVED LOCALLY FOR REVIEW · NOT SYNCED · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="saved_local"?("SAVED ON THIS PC ONLY · NOT SQUAD SYNCED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="duplicate_review"?("POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="existing"?("ALREADY RECORDED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):("SAVED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal);el("depositCommodity").value="";el("depositCommodityOther").value="";el("depositCommodityOther").classList.add("hidden");el("rigs").value="1";el("notes").value="";await load()}catch(e){notice.className="notice";notice.textContent=e.message}};
+el("reportDeposit").onclick=async function(){var notice=el("depositNotice");try{var selected=el("depositCommodity").value,commodity=selected==="__other"?el("depositCommodityOther").value.trim():selected;if(!commodity)throw new Error("commodity_required");var signal=Number(el("depositSignal").value||0),rigs=Number(el("rigs").value||1),rigLabel=rigs>=7?"7+":String(rigs);var r=await api("/api/deposit",{commodity:commodity,signal:signal,rigs:rigs,notes:el("notes").value});var status=String(r.deposit.status||"");flaggedDepositToReview=null;
+var reviewButton=el("reviewLastDeposit");reviewButton.classList.add("hidden");
+if(status==="duplicate_review_local"&&r.deposit.site&&r.deposit.site.id){
+  var sys=((state||{}).scout||{}).system||{};
+  flaggedDepositToReview={id:r.deposit.site.id,systemAddress:String(r.deposit.site.systemAddress||sys.address||""),commodity:String(r.deposit.site.commodity||commodity)};
+  reviewButton.classList.remove("hidden");
+}
+notice.className="notice "+(status.includes("duplicate_review")?"review":"success");notice.textContent=status==="duplicate_review_local"?("POSSIBLE DUPLICATE · SAVED LOCALLY · TAP REVIEW FLAGGED DEPOSIT BELOW · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="saved_local"?("SAVED ON THIS PC ONLY · NOT SQUAD SYNCED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="duplicate_review"?("POSSIBLE DUPLICATE — QUEUED FOR REVIEW ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):status==="existing"?("ALREADY RECORDED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal):("SAVED ✓ · "+commodity+" · "+rigLabel+" rigs · Signal #"+signal);el("depositCommodity").value="";el("depositCommodityOther").value="";el("depositCommodityOther").classList.add("hidden");el("rigs").value="1";el("notes").value="";await load()}catch(e){notice.className="notice";notice.textContent=e.message}};
 showControllerTab("hud");load();setInterval(load,1000);
 })();
 </script>
