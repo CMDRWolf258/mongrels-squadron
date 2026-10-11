@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.13.4"
+assert plugin.PLUGIN_VERSION == "1.13.5"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -513,6 +513,63 @@ with TemporaryDirectory() as journal_dir:
     assert recovered[7999]["count"] == 45
     assert recovered[7999]["delivered"] == 5
     plugin.monitor.currentdir = None
+
+# EDMC increments its shared Cargo dictionary when an SRV collects a mining
+# rig's ore, then increments it again when transferring toShip. Neither SRV
+# pickup nor SRV ejection may change ship tonnage; only transfer changes it.
+srv_test={
+    "CargoCapacity":64,
+    "Cargo": {"gold":10,"drones":2},
+    "CargoJSON":{"Vessel":"Ship","Inventory":[
+        {"Name":"gold","Count":10,"Stolen":0},
+        {"Name":"drones","Count":2,"Stolen":0},
+    ]},
+}
+with plugin._hud_condition:
+    plugin._hud_state["status"]={"inSrv":False}
+plugin._hud_srv_cargo_ghosts.clear()
+plugin._hud_srv_vehicle.clear()
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test)
+assert plugin._hud_state["cargo"]["used"]==12
+launch={"event":"LaunchSRV"}
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry=launch)
+srv_test["Cargo"]["gold"]=13
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry={"event":"CollectCargo","Type":"gold","Count":3})
+assert plugin._hud_state["cargo"]["used"]==12, "Collecting 3t into SRV cannot increase ship cargo"
+assert plugin._hud_state["cargo"]["free"]==52
+assert {v["key"]:v["count"] for v in plugin._hud_state["cargo"]["items"]}=={"gold":10}
+# On transfer, EDMC adds those tons again. Keep the SRV ghost correction,
+# so that only the ship's actual 2t receipt increases the displayed total.
+srv_test["Cargo"]["gold"]=15
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry={
+    "event":"CargoTransfer","Transfers":[{"Type":"gold","Count":2,"Direction":"toship"}]})
+assert plugin._hud_state["cargo"]["used"]==14
+assert {v["key"]:v["count"] for v in plugin._hud_state["cargo"]["items"]}=={"gold":12}
+# Eject the 1t left in SRV: EDMC Cargo falls but ship cargo stays unchanged.
+srv_test["Cargo"]["gold"]=14
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry={"event":"EjectCargo","Type":"gold","Count":1})
+assert plugin._hud_state["cargo"]["used"]==14
+# When the player docks the SRV, the stale Status flag must not falsely
+# classify future ship pickups as SRV activity.
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry={"event":"DockSRV"})
+# An authoritative Ship Cargo snapshot zeroes the accumulated correction,
+# even if EDMC's CargoJSON still contains the earlier 10t snapshot.
+srv_test["Cargo"]["gold"]=12
+plugin._update_hud_cargo_from_edmc_state("Wolf258",srv_test,entry={
+    "event":"Cargo","Vessel":"Ship",
+    "Inventory":[{"Name":"gold","Count":12},{"Name":"drones","Count":2}]})
+assert plugin._hud_state["cargo"]["used"]==14
+assert plugin._hud_srv_cargo_ghosts["wolf258"]=={}
+# SRV Cargo snapshot must remain excluded, even if EDMC supplies Cargo fallback.
+assert plugin._build_local_cargo_state("Wolf258",{
+    "Cargo":{"gold":500},
+    "CargoJSON":{"Vessel":"SRV","Inventory":[{"Name":"gold","Count":2}]},
+},srv_ghosts={"gold":5}) is None
+# Different commanders on the same PC must never inherit a different SRV
+# ghost correction or transient vehicle status.
+assert plugin._hud_cargo_ghost_adjustments("Other",{"event":"CollectCargo","Type":"gold","Count":1})=={}
+assert plugin._hud_srv_cargo_ghosts.get("other",{})=={}
+print("✓ SRV rig pickups, transfers, ejections, ship snapshots and CMDR isolation preserve ship cargo")
 
 # SRV Cargo.json must never overwrite the retained ship-cargo snapshot.
 assert plugin._build_local_cargo_state("Wolf258", {"CargoJSON": {"Vessel": "SRV", "Inventory": [{"Name": "gold", "Count": 2, "Stolen": 0}]}}) is None
