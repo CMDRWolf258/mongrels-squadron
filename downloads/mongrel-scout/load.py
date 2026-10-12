@@ -8,6 +8,7 @@ import threading
 import time
 import tkinter as tk
 from collections import deque
+from datetime import datetime
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping, MutableMapping, Optional
@@ -23,7 +24,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.6"
+PLUGIN_VERSION = "1.13.8"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -177,6 +178,9 @@ _activity_trade_lots: dict[str, dict[str, list[dict[str, Any]]]] = {}
 _activity_carrier_trade_lots: dict[str, dict[str, dict[str, list[dict[str, Any]]]]] = {}
 _activity_trade_station: dict[str, Any] = {}
 _activity_trade_commander = ""
+# Transient, local-only evidence for one stale EDMC cargo snapshot between rapid
+# consecutive market sales. Never persisted or uploaded.
+_activity_trade_recent_sale: dict[str, Any] = {}
 _dashboard_context_lock = threading.Lock()
 _dashboard_context: dict[str, Any] = {
     "timestamp": "",
@@ -3986,7 +3990,10 @@ def _observe_activity_trade(
     with _activity_lock:
         if _activity_trade_commander != commander:
             _activity_trade_station = {}
+            _activity_trade_recent_sale.clear()
             _activity_trade_commander = commander
+        if event in {"Docked", "Undocked", "FSDJump", "CarrierJump", "Location"}:
+            _activity_trade_recent_sale.clear()
 
         system = str(entry.get("StarSystem") or state.get("SystemName") or fallback_system or _last_system_name or "").strip()
         station = str(entry.get("StationName") or state.get("StationName") or fallback_station or "").strip()
@@ -4005,6 +4012,11 @@ def _observe_activity_trade(
             faction = faction or str(cached.get("faction") or "")
         if event not in {"MarketBuy", "MarketSell", "MiningRefined", "CollectCargo", "CargoTransfer", "EjectCargo", "Cargo"}:
             return None
+        # Any other cargo-changing event invalidates the consecutive-sale
+        # allowance. A count-only Cargo journal record is not an inventory
+        # snapshot, and must not clear it; a full Ship Inventory does.
+        if event not in {"MarketSell", "Cargo"}:
+            _activity_trade_recent_sale.clear()
 
         ledger = _activity_trade_lots.setdefault(commander, {})
         commodity = _commodity_key(entry.get("Type"))
@@ -4016,6 +4028,7 @@ def _observe_activity_trade(
                 return None
             inventory = entry.get("Inventory")
             if isinstance(inventory, list):
+                _activity_trade_recent_sale.clear()
                 snapshot: dict[str, int] = {}
                 for row in inventory:
                     if isinstance(row, Mapping):
@@ -4025,6 +4038,7 @@ def _observe_activity_trade(
                             snapshot[key] = snapshot.get(key, 0) + qty
             elif _optional_int(entry.get("Count")) == 0:
                 snapshot = {}  # A real empty hold, not a stale EDMC cache.
+                _activity_trade_recent_sale.clear()
             else:
                 # A count-only journal record cannot establish commodity-level
                 # truth; keep the known lots until a real inventory snapshot.
@@ -4123,9 +4137,33 @@ def _observe_activity_trade(
         # otherwise require the normal post-sale quantity reconciliation.
         # A mismatch stays 'unknown' rather than manufacturing profit credit.
         tracked_before = _trade_lot_total(lots)
+        # EDMC may not apply the preceding MarketSell's Cargo update before
+        # another sale arrives. In that narrow case its snapshot still equals
+        # the preceding sale's pre-sale inventory (634t), while our confirmed
+        # journal ledger already has the new balance (334t). Do NOT turn known
+        # station purchases into unknown cargo solely because of that lag.
+        try:
+            sale_time = datetime.fromisoformat(str(entry.get("timestamp") or "").replace("Z", "+00:00")).timestamp()
+        except (ValueError, OverflowError):
+            sale_time = None
+        previous = _activity_trade_recent_sale
+        prior_time = previous.get("time")
+        current_market = _decimal_text(entry.get("MarketID") or state.get("MarketID") or cached.get("market"))
+        same_market = bool(current_market and current_market == previous.get("marketId"))
+        recent_stale_snapshot = (
+            sale_time is not None and isinstance(prior_time, (int, float))
+            and 0 <= sale_time - prior_time <= 15
+            and previous.get("commander") == commander
+            and previous.get("commodity") == commodity
+            and previous.get("system") == system
+            and previous.get("station") == station
+            and same_market and tracked_before >= count
+            and previous.get("before") == actual_post
+            and previous.get("after") == tracked_before
+        )
         before = (
-            tracked_before if actual_post is not None
-            and actual_post == tracked_before and tracked_before >= count
+            tracked_before if actual_post is not None and tracked_before >= count
+            and (actual_post == tracked_before or recent_stale_snapshot)
             else actual_post + count if actual_post is not None else None
         )
         _trade_reconcile_quantity(lots, before)
@@ -4133,6 +4171,15 @@ def _observe_activity_trade(
         if not lots:
             ledger.pop(commodity, None)
         _save_activity_trade_provenance()
+        _activity_trade_recent_sale.clear()
+        if source["verified"] and before == tracked_before and sale_time is not None:
+            _activity_trade_recent_sale.update({
+                "commander": commander, "commodity": commodity, "system": system,
+                "station": station, "marketId": _decimal_text(entry.get("MarketID")
+                    or state.get("MarketID") or cached.get("market")),
+                "time": sale_time, "before": tracked_before,
+                "after": tracked_before - count,
+            })
         return {**source, "stationFaction": faction, "stationType": station_type,
                 "system": system, "station": station}
 

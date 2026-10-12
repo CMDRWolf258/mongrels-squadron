@@ -4,6 +4,7 @@ import ast
 import json
 import math
 import re
+from datetime import datetime
 import threading
 from collections.abc import Mapping
 from pathlib import Path
@@ -50,10 +51,12 @@ scope = {
     "config": config, "Mapping": Mapping, "Any": Any, "Optional": Optional,
     "Path": Path, "monitor": SimpleNamespace(currentdir=None),
     "json": json, "math": math, "re": re, "threading": threading,
+    "datetime": datetime,
     "_activity_lock": threading.RLock(), "_activity_trade_lots": {},
     "_activity_carrier_trade_lots": {},
     "_activity_trade_station": {}, "_activity_trade_commander": "",
     "_activity_trade_sale_ordinals": {},
+    "_activity_trade_recent_sale": {},
     "_hud_condition": threading.Condition(),
     "_hud_srv_vehicle": {},
     "_hud_state": {"status": {"inSrv": False}},
@@ -90,6 +93,7 @@ def restart():
     scope["_activity_trade_lots"]={}
     scope["_activity_carrier_trade_lots"]={}
     scope["_activity_trade_station"]={}
+    scope["_activity_trade_recent_sale"]={}
     scope["_activity_trade_commander"]=""
     restore()
     scope["_restore_activity_carrier_trade_provenance"]()
@@ -98,6 +102,7 @@ def reset():
     scope["_activity_trade_lots"]={}
     scope["_activity_carrier_trade_lots"]={}
     scope["_activity_trade_station"]={}
+    scope["_activity_trade_recent_sale"]={}
     scope["_activity_trade_commander"]=""
     scope["_hud_state"]["ownerCarrier"]={"carrierId":"3700000123"}
     config.values.clear()
@@ -284,6 +289,67 @@ track("MarketBuy", state(100), Count=100)
 track("CargoTransfer", state(100), Transfers=[{"Type": "$Gold_Name;", "Count": 1}])
 after_transfer = track("MarketSell", state(100), Count=100)
 assert after_transfer["verified"] is False, after_transfer
+
+# Regression: real journal batch with four Palladium sales, 300/300/300/334t.
+# The final two MarketSell events are only 3 seconds apart, with no Cargo
+# event between them. EDMC may still report the prior 634t snapshot during the
+# final sale, even though our authoritative sale ledger contains just 334t.
+# Preserve validated station-purchase origin in that narrow consecutive case.
+def rapid_state(quantity, *, origin=False):
+    return {
+        "SystemName": "NGC 2546 Sector UZ-G d10-16",
+        "StationName": "Saturn Ascending" if origin else "Eon Blue Apocalypse",
+        "StationType": "Coriolis" if origin else "Orbis",
+        "StationFaction": {"Name": "Regiment of Imperial Mongrels"},
+        "MarketID": 4374632451 if origin else 4386105091,
+        "Cargo": {"palladium": quantity} if quantity else {},
+    }
+
+rapid_purchase = {
+    "event": "MarketBuy", "timestamp": "2026-10-12T05:51:43Z",
+    "Type": "palladium", "Count": 1234, "MarketID": 4374632451,
+}
+rapid_sales = [
+    {"event": "MarketSell", "timestamp": stamp, "Type": "palladium",
+     "Count": quantity, "MarketID": 4386105091,
+     "SellPrice": 53715, "AvgPricePaid": 47841,
+     "TotalSale": quantity * 53715}
+    for stamp, quantity in (
+        ("2026-10-12T05:58:16Z", 300),
+        ("2026-10-12T05:58:25Z", 300),
+        ("2026-10-12T05:58:32Z", 300),
+        ("2026-10-12T05:58:35Z", 334),
+    )
+]
+def rapid_run(*, final_timestamp=None, authoritative_snapshot=False):
+    reset()
+    observe("Wolf258", rapid_purchase, rapid_state(1234, origin=True),
+            "NGC 2546 Sector UZ-G d10-16", "Saturn Ascending")
+    results = []
+    for i, (sale, cached_qty) in enumerate(zip(rapid_sales, [934, 634, 634, 634])):
+        if i == 3 and authoritative_snapshot:
+            # An actual Cargo Inventory update invalidates stale-snapshot
+            # leniency and reclassifies genuinely inconsistent stock.
+            observe("Wolf258", {
+                "event": "Cargo", "timestamp": "2026-10-12T05:58:34Z",
+                "Vessel": "Ship", "Inventory": [{"Name": "palladium", "Count": 634}],
+            }, rapid_state(634), "NGC 2546 Sector UZ-G d10-16", "Eon Blue Apocalypse")
+        entry = {**sale, **({"timestamp":final_timestamp} if i == 3 and final_timestamp else {})}
+        observed = observe("Wolf258", entry, rapid_state(cached_qty),
+                           "NGC 2546 Sector UZ-G d10-16", "Eon Blue Apocalypse")
+        results.append((observed, build(entry, rapid_state(cached_qty),
+                                        "NGC 2546 Sector UZ-G d10-16",
+                                        "Eon Blue Apocalypse", observed)))
+    return results
+
+rapid = rapid_run()
+assert all(provenance["verified"] and payload for provenance, payload in rapid), rapid
+assert sum(row["total"]-row["count"]*row["avgPricePaid"] for _, row in rapid) == 7_248_516
+assert rapid[3][1]["count"] == 334, "The fourth legitimate sale must survive one stale EDMC snapshot"
+assert rapid_run(final_timestamp="2026-10-12T05:59:03Z")[3][1] is None, (
+    "Stale snapshots beyond 15 seconds must not bypass inventory reconciliation")
+assert rapid_run(authoritative_snapshot=True)[3][1] is None, (
+    "A real contradictory Ship Cargo inventory must still invalidate provenance")
 
 print("Scout purchase-origin, restart, FIFO, mined/carrier/transfer, privacy and sale guards passed")
 
