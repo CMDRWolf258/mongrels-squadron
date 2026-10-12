@@ -282,8 +282,8 @@ const bountyEnv={DAILY_ORDERS:{
 }};
 const journalBountyOrders={orders:[{
   id:'redeem-bounties',task:'Redeem bounty vouchers',system:bountySystem,
-  faction:bountyFaction,metric:'bounties',target:20,workCycle:{
-    startedAt:'2026-10-12T00:00:00Z',endsAt:'2026-10-13T00:00:00Z',
+  faction:bountyFaction,reporting:{type:'bounties',target:20},workCycle:{
+    cycleStartedAt:'2026-10-12T00:00:00Z',cycleEndsAt:'2026-10-13T00:00:00Z',
   },
 }]};
 const bountyContribution=events=>matchVerifiedActivity(events,journalBountyOrders).orderTotals
@@ -295,7 +295,7 @@ const bountySynced=await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[con
 assert.equal(bountySynced.added,0,'Frontier must NOT add the Scout-reported redemption twice');
 assert.equal(bountySynced.events.length,1);
 assert.equal(bountySynced.events[0].provisional,undefined,'Authoritative Frontier event replaces Scout version');
-assert.equal(bountyContribution(bountySynced.events),3.218143,'One redeemed voucher credits one bounty contribution');
+assert.equal(bountyContribution(bountySynced.events),3.218,'One redeemed voucher credits one rounded bounty contribution');
 assert.equal((await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[confirmedBounty])).changed,false,
   'Repeated Frontier Sync must be idempotent');
 assert.equal((await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[scoutBounty])).events.length,1,
@@ -308,7 +308,7 @@ bountyStorage.set('frontier-bgs-events:bounty-legacy',JSON.stringify({
 const repairedBounties=await mergeEventsWithResult(bountyEnv,'bounty-legacy',[]);
 assert.equal(repairedBounties.events.length,1,'Existing double-counted voucher records must repair on next Sync');
 assert.equal(repairedBounties.events[0].provisional,undefined,'Repair must prefer confirmed Frontier evidence');
-assert.equal(bountyContribution(repairedBounties.events),3.218143);
+assert.equal(bountyContribution(repairedBounties.events),3.218);
 // Distinct voucher redemptions and combat bonds still remain independent.
 const distinctVoucher={...confirmedBounty,timestamp:'2026-10-12T05:52:01Z'};
 const distinctResult=await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[distinctVoucher]);
