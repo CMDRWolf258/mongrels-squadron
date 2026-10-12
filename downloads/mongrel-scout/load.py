@@ -4148,8 +4148,8 @@ def _observe_activity_trade(
             sale_time = None
         previous = _activity_trade_recent_sale
         prior_time = previous.get("time")
-        same_market = (_decimal_text(entry.get("MarketID") or state.get("MarketID") or cached.get("market"))
-                       == previous.get("marketId"))
+        current_market = _decimal_text(entry.get("MarketID") or state.get("MarketID") or cached.get("market"))
+        same_market = bool(current_market and current_market == previous.get("marketId"))
         recent_stale_snapshot = (
             sale_time is not None and isinstance(prior_time, (int, float))
             and 0 <= sale_time - prior_time <= 15
