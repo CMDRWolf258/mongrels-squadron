@@ -243,3 +243,87 @@ const progress=events=>matchVerifiedActivity(events,explorationOrder).orderTotal
 assert.equal(progress(uploaded.events),11,'Two live Cartographics pages contribute 11 M Cr');
 assert.equal(progress(settled.events),14,'Frontier confirmation totals 14 M Cr without duplicate credit');
 console.log('Cartographics realtime/Frontier reconciliation, exact-page sale identity and carrier exclusion passed');
+
+
+// RedeemVoucher uses the same journal identity whether it came from Scout's
+// realtime upload (.000Z) or a later Frontier Sync (Z). A user journal captured
+// one 3,218,143 Cr bounty redemption in 10-16; before this fix, Sync doubled it.
+const bountyStamp='2026-10-12T05:51:59Z';
+const bountySystem='NGC 2546 Sector UZ-G d10-16';
+const bountyAddress=560820275507;
+const bountyFaction='Regiment of Imperial Mongrels';
+const redemption={
+  timestamp:bountyStamp,event:'RedeemVoucher',Type:'bounty',Amount:3218143,
+  Factions:[{Faction:bountyFaction,Amount:3218143}],
+};
+const dock={
+  timestamp:'2026-10-12T05:50:18Z',event:'Docked',StarSystem:bountySystem,
+  SystemAddress:bountyAddress,StationName:'Saturn Ascending',StationType:'Coriolis',
+  StationFaction:{Name:bountyFaction},
+};
+const bountyJournal=[dock,redemption].map(JSON.stringify).join('\n');
+const confirmedBounty=parseJournal(bountyJournal,[bountySystem]).events.find(x=>x.type==='bounties_redeemed');
+assert.ok(confirmedBounty,'Frontier must parse voucher redemption');
+const scoutBounty=normalizeScoutActivityBatch({
+  kind:'activity_batch',events:[{
+    event:'RedeemVoucher',timestamp:bountyStamp,
+    system:bountySystem,systemAddress:String(bountyAddress),
+    station:'Saturn Ascending',stationType:'Coriolis',stationFaction:bountyFaction,
+    voucherType:'bounty',amount:3218143,
+    factions:[{Faction:bountyFaction,Amount:3218143}],
+  }],
+},auth,{now:Date.parse('2026-10-12T06:00:00Z')}).events[0];
+assert.equal(scoutBounty.timestamp,'2026-10-12T05:51:59.000Z');
+assert.equal(confirmedBounty.timestamp,bountyStamp);
+const bountyStorage=new Map();
+const bountyEnv={DAILY_ORDERS:{
+  async get(key,{type}={}){const value=bountyStorage.get(key);return value==null?null:(type==='json'?JSON.parse(value):value);},
+  async put(key,value){bountyStorage.set(key,String(value));},
+}};
+const journalBountyOrders={orders:[{
+  id:'redeem-bounties',task:'Redeem bounty vouchers',system:bountySystem,
+  faction:bountyFaction,reporting:{type:'bounties',target:20},workCycle:{
+    cycleStartedAt:'2026-10-12T00:00:00Z',cycleEndsAt:'2026-10-13T00:00:00Z',
+  },
+}]};
+const bountyContribution=events=>matchVerifiedActivity(events,journalBountyOrders).orderTotals
+  .reduce((sum,row)=>sum+row.contribution,0);
+const realtimeVoucher=await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[scoutBounty]);
+assert.equal(realtimeVoucher.added,1);
+assert.equal(realtimeVoucher.events.length,1);
+const bountySynced=await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[confirmedBounty]);
+assert.equal(bountySynced.added,0,'Frontier must NOT add the Scout-reported redemption twice');
+assert.equal(bountySynced.events.length,1);
+assert.equal(bountySynced.events[0].provisional,undefined,'Authoritative Frontier event replaces Scout version');
+assert.equal(bountyContribution(bountySynced.events),3.218,'One redeemed voucher credits one rounded bounty contribution');
+assert.equal((await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[confirmedBounty])).changed,false,
+  'Repeated Frontier Sync must be idempotent');
+assert.equal((await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[scoutBounty])).events.length,1,
+  'Scout retry must not recreate a second redeemed voucher');
+// Simulate the two legacy KV records created by the old, inconsistent hash.
+// The next merge must collapse the duplicate even when no new vouchers arrive.
+bountyStorage.set('frontier-bgs-events:bounty-legacy',JSON.stringify({
+  events:[{...scoutBounty,id:'old-live-hash'},{...confirmedBounty,id:'old-capi-hash'}],
+}));
+const repairedBounties=await mergeEventsWithResult(bountyEnv,'bounty-legacy',[]);
+assert.equal(repairedBounties.events.length,1,'Existing double-counted voucher records must repair on next Sync');
+assert.equal(repairedBounties.events[0].provisional,undefined,'Repair must prefer confirmed Frontier evidence');
+assert.equal(bountyContribution(repairedBounties.events),3.218);
+// Distinct voucher redemptions and combat bonds still remain independent.
+const distinctVoucher={...confirmedBounty,timestamp:'2026-10-12T05:52:01Z'};
+const distinctResult=await mergeEventsWithResult(bountyEnv,'bounty-reconcile',[distinctVoucher]);
+assert.equal(distinctResult.events.length,2);
+const combatBounty=normalizeScoutActivityBatch({
+  kind:'activity_batch',events:[{
+    event:'RedeemVoucher',timestamp:bountyStamp,system:bountySystem,systemAddress:String(bountyAddress),
+    station:'Saturn Ascending',stationType:'Coriolis',stationFaction:bountyFaction,
+    voucherType:'combatbond',amount:3218143,factions:[{Faction:bountyFaction,Amount:3218143}],
+  }],
+},auth,{now:Date.parse('2026-10-12T06:00:00Z')}).events[0];
+const combatConfirmed=parseJournal([dock,{...redemption,Type:'combatbond'}].map(JSON.stringify).join('\n'),
+  [bountySystem]).events.find(x=>x.type==='combat_bonds_redeemed');
+const combatFirst=await mergeEventsWithResult(bountyEnv,'combat-bond-reconcile',[combatBounty]);
+const combatSynced=await mergeEventsWithResult(bountyEnv,'combat-bond-reconcile',[combatConfirmed]);
+assert.equal(combatFirst.events.length,1);
+assert.equal(combatSynced.events.length,1,'Combat bond redemption must also dedupe Scout vs CAPI');
+console.log('Bounty + combat-bond Scout/CAPI redemption dedupe, legacy repair and idempotent sync passed');
