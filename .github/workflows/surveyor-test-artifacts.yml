@@ -29,6 +29,10 @@ jobs:
           python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
           node scripts/smoke-scout-trade.mjs
+          python scripts/test_multi_system_mining.py
+          node --experimental-default-type=module scripts/test-mining-browser-controller.mjs
+          python scripts/smoke-mongrel-hud-companion.py
+          node --experimental-default-type=module scripts/smoke-mongrel-hud-controller.mjs
       - name: Package isolated Scout testing ZIP
         run: |
           python - <<'PY'
