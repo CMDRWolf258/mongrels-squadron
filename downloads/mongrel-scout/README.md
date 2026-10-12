@@ -1,4 +1,14 @@
-## Scout 1.13.6 — Verifiable personal carrier storage in trade BGS
+## Scout 1.13.8 — Rapid consecutive trade-sale reconciliation
+
+When a station-market sale arrives before EDMC refreshes the Cargo count for
+its preceding sale, Scout now retains verified station-purchase origin for the
+immediately following sale only when the exact preceding pre/post inventory,
+commodity, station, market, and timestamp agree (within 15 seconds). Genuine
+unexplained cargo changes, unverified transfers, and carrier-market purchases
+remain excluded. This change does not replay earlier trades or alter the server
+reward rules.
+
+### Previous Scout 1.13.6 — Verifiable personal carrier storage in trade BGS
 
 Station-bought commodities temporarily stored in the **owner's personal
 fleet carrier hold** and transferred back to the ship retain their station
