@@ -30,4 +30,26 @@ assert.match(orders,/reporting/);
 for(const pattern of [/faction/,/kind/,/source/,/explicitTarget/,/source\.target === null/]) assert.match(orders,pattern);
 for(const pattern of [/bounties/,/trade/,/exploration/,/M\\s\*Cr/]) assert.match(orders,pattern);
 
+// Website requests include historical cycles; HUD requests intentionally omit
+// them. Both must hit the same progress snapshot without cache ping-pong.
+const baseProgressOrder={
+  id:'trade-1',system:'NGC 2546 Sector UZ-G d10-16',faction:'Regiment of Imperial Mongrels',
+  reporting:{type:'trade',target:20},
+  workCycle:{cycleId:'cycle-1',cycleStartedAt:'2026-10-10T00:00:00Z',cycleEndsAt:'2026-10-11T00:00:00Z'},
+};
+const hudOrders={cycleId:'published-1',updatedAt:'2026-10-10T04:00:00Z',orders:[baseProgressOrder]};
+const websiteOrders=structuredClone(hudOrders);
+websiteOrders.orders[0].workCycleHistory=Array.from({length:14},(_,i)=>({cycleId:'past-'+i}));
+assert.equal(api.orderProgressFingerprint(hudOrders),api.orderProgressFingerprint(websiteOrders),
+  'HUD and website must share the same progress cache fingerprint despite different history depth');
+assert.equal(websiteOrders.orders[0].workCycleHistory.length,14,'fingerprinting must not mutate historical order data');
+const revisedOrders=structuredClone(hudOrders);
+revisedOrders.orders[0].reporting.target=25;
+assert.notEqual(api.orderProgressFingerprint(hudOrders),api.orderProgressFingerprint(revisedOrders),
+  'changing an actual order target must invalidate progress');
+const nextCycle=structuredClone(hudOrders);
+nextCycle.orders[0].workCycle.cycleId='cycle-2';
+assert.notEqual(api.orderProgressFingerprint(hudOrders),api.orderProgressFingerprint(nextCycle),
+  'a new work cycle must invalidate progress');
+
 console.log('✓ Mission Control expandable system cards and structured squad reporting are wired');

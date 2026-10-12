@@ -1,27 +1,54 @@
-## Scout 1.13.7 TEST — Surveyor plus verified carrier storage trade
+## Scout 1.13.8 — Rapid consecutive trade-sale reconciliation
 
-This isolated Surveyor build includes the Scout 1.13.6 production fix.
-Station purchases can remain eligible for BGS Daily Orders when their
-commodities are moved into and out of the verified commander's **own carrier
-hold** using journal cargo transfers. Tracked quantities and source are
-preserved through EDMC restarts. Direct carrier-market purchases, mined
-goods, unknown imports and unverified carrier identities remain ineligible.
-Only actual station sales generate trade-profit contributions; no private
-commodity inventory or purchase ledger is uploaded to the website.
+When a station-market sale arrives before EDMC refreshes the Cargo count for
+its preceding sale, Scout now retains verified station-purchase origin for the
+immediately following sale only when the exact preceding pre/post inventory,
+commodity, station, market, and timestamp agree (within 15 seconds). Genuine
+unexplained cargo changes, unverified transfers, and carrier-market purchases
+remain excluded. This change does not replay earlier trades or alter the server
+reward rules.
 
-## Scout 1.13.6 TEST — Surveyor with live SRV cargo transfers
+### Previous Scout 1.13.6 — Verifiable personal carrier storage in trade BGS
 
-This owner-only Scout build combines Surveyor with the production Scout
-1.13.5 fix: confirmed SRV-to-ship `CargoTransfer` instantly updates the HUD
-ship hold before boarding. It retains the Surveyor ledger, DSS advisor,
-real-time exploration sales and all current production functions.
+Station-bought commodities temporarily stored in the **owner's personal
+fleet carrier hold** and transferred back to the ship retain their station
+purchase provenance. The plugin tracks those FIFO lots by Commander, verified
+owned carrier MarketID and commodity in local EDMC configuration, including
+across restarts and multiple days. The event's `tocarrier`/`toship`
+direction is required; carrier market purchases, mined stock, foreign/unknown
+carrier identity, missing amounts or unknown inventory remain ineligible.
 
-## Surveyor Scout 1.13.5 TEST — SRV ore fix included
+Only a profitable real station `MarketSell` creates a new eligible Daily
+Orders contribution. No stored cargo, purchase prices, journal history or
+private inventories are uploaded. Historical previously excluded sales are
+not retroactively credited without separate verification. No Cloudflare
+read/write increase, HUD/website schema migration or UI update required.
 
-The Surveyor trial build includes the production SRV cargo correction:
-mining rig pickups stay in the SRV, while genuine transfers to the ship
-increase its HUD tonnage exactly once. It preserves the exploration ledger,
-mapping advisor, and real-time Universal Cartographics reporting.
+## Scout 1.13.5 — Live SRV cargo transfers
+
+Confirmed Frontier `CargoTransfer` journal events now update the **ship**
+cargo HUD immediately when moving ore between an SRV and the ship, even if
+EDMC's `CargoJSON` remains stale until boarding. The previously displayed
+ship inventory is used as the pre-transfer base. The correction remains local
+until Frontier reports another complete `Cargo` snapshot for Vessel Ship;
+the full snapshot is authoritative and prevents double-counting.
+
+SRV pickups still do not count as ship cargo until transferred. Mission-bound
+cargo and stolen allocations are preserved, and there are no new Cloudflare
+reads or activity uploads. If Frontier does not emit CargoTransfer on
+confirmation, live HUD updates cannot be inferred reliably without verifying
+a separate event.
+
+## Scout 1.13.4 — SRV mining cargo accounting
+
+Elite Market Connector updates its shared Cargo totals for SRV CollectCargo
+and EjectCargo, even though the ship cargo hold has not changed. Scout now
+keeps a per-Commander, local-only SRV adjustment and removes those provisional
+SRV tons from the **ship-only** cargo HUD. A genuine CargoTransfer **toShip**
+increases the ship hold once, and a fresh Ship Cargo journal snapshot clears
+the adjustment. CargoJSON mission-reservation and stolen-goods metadata remain
+available; unrelated mission, mining, trade and BGS accounting is unchanged.
+No new website reads or Cloudflare writes are required.
 
 ## Live Universal Cartographics reporting (Scout v1.13.3)
 

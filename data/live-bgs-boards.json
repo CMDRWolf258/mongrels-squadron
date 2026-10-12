@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-10T05:57:13Z",
+  "generatedAt": "2026-10-12T23:02:56Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
-  "sourcePresenceGeneratedAt": "2026-10-10T05:54:56Z",
+  "sourcePresenceGeneratedAt": "2026-10-12T23:00:20Z",
   "syncOk": true,
-  "successfulSystems": 250,
-  "requestedSystems": 250,
+  "successfulSystems": 251,
+  "requestedSystems": 251,
   "conflictSyncOk": true,
   "conflictError": "",
-  "conflictRecords": 5,
+  "conflictRecords": 6,
   "systemConflictSyncOk": true,
   "systemConflictError": "",
-  "systemConflictRecords": 5,
+  "systemConflictRecords": 11,
   "errors": [],
   "systems": {
     "2MASS J21392957+5733417": {
@@ -58,8 +58,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -69,85 +69,83 @@
     "Ahmeti": {
       "name": "Ahmeti",
       "systemId": "20e6bf70-3a9a-4fa0-88f9-3d005122f0d7",
-      "updatedAt": "2026-09-24T13:49:34.219000",
+      "updatedAt": "2026-10-12T19:08:25.507000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 58.7,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
+          "influence": 58.31,
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Ahmeti as one",
-          "influence": 5.7,
+          "influence": 5.6,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Ahmeti Domain",
-          "influence": 6.29,
+          "influence": 6.49,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Ahmeti Fortune Commodities",
-          "influence": 11.21,
+          "influence": 9.34,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Chingpho Industry",
-          "influence": 6.1,
+          "influence": 6.0,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Duulngari Regulatory State",
-          "influence": 9.44,
+          "influence": 13.27,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Society of Ahmeti",
-          "influence": 2.56,
+          "influence": 0.98,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T13:49:34.219000",
+          "updatedAt": "2026-10-12T19:08:25.507000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -206,8 +204,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -217,31 +215,31 @@
     "Arietis Sector YO-A b3": {
       "name": "Arietis Sector YO-A b3",
       "systemId": "e6a176f9-c447-4767-9c69-9376dfc759e2",
-      "updatedAt": "2026-10-07T10:18:00.932000",
+      "updatedAt": "2026-10-11T08:16:32.430000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 12.7,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T08:16:32.430000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Close Encounters Corps",
+          "influence": 19.5,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T10:18:00.932000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Close Encounters Corps",
-          "influence": 19.5,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T10:18:00.932000",
+          "updatedAt": "2026-10-11T08:16:32.430000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -257,19 +255,19 @@
         {
           "name": "The Buurian Protectorate",
           "influence": 61.0,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [
             "Expansion"
           ],
-          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-02T09:29:38.156000",
+          "updatedAt": "2026-10-11T08:16:32.430000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -358,8 +356,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -452,8 +450,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -526,8 +524,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -588,8 +586,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -648,8 +646,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -708,8 +706,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -770,8 +768,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -832,8 +830,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -894,8 +892,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -956,8 +954,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1018,8 +1016,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1080,8 +1078,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1142,8 +1140,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1204,8 +1202,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1266,8 +1264,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1324,8 +1322,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1376,8 +1374,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1438,8 +1436,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1500,8 +1498,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1562,8 +1560,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1622,8 +1620,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1682,8 +1680,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1746,8 +1744,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1802,8 +1800,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1864,8 +1862,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1926,8 +1924,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1988,8 +1986,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2050,8 +2048,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2112,8 +2110,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2172,8 +2170,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2232,8 +2230,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2292,8 +2290,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2352,8 +2350,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2412,8 +2410,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2472,8 +2470,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2542,8 +2540,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2612,8 +2610,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2623,71 +2621,100 @@
     "Col 285 Sector AU-X b15-4": {
       "name": "Col 285 Sector AU-X b15-4",
       "systemId": "f6065804-e87a-482c-a8c6-479b3ee3f725",
-      "updatedAt": "2026-10-08T09:59:02.772000",
+      "updatedAt": "2026-10-11T15:12:17.513000",
       "factionCount": 5,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 19.0,
-          "state": "Expansion",
+          "influence": 20.87,
+          "state": "War",
           "activeStates": [
-            "Expansion"
+            "War"
           ],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:59:02.772000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T15:12:17.513000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Celestial Light Brigade",
-          "influence": 20.3,
-          "state": "None",
-          "activeStates": [],
+          "influence": 20.87,
+          "state": "War",
+          "activeStates": [
+            "War"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:59:02.772000",
+          "updatedAt": "2026-10-11T15:12:17.513000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 27855 Gold Boys",
-          "influence": 7.06,
+          "influence": 6.56,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:59:02.772000",
+          "updatedAt": "2026-10-11T15:12:17.513000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 11.04,
+          "influence": 12.03,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:59:02.772000",
+          "updatedAt": "2026-10-11T15:12:17.513000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Hidden Guild",
-          "influence": 42.59,
+          "influence": 39.66,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:59:02.772000",
+          "updatedAt": "2026-10-11T15:12:17.513000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
-      "conflict": null,
+      "conflict": {
+        "id": "c6ae3f2e-0be1-41fc-9011-c255f56c3a2a",
+        "type": "War",
+        "status": "Active",
+        "factionWonDays": 0,
+        "opponentWonDays": 0,
+        "opponentFaction": "Celestial Light Brigade",
+        "factionStake": "Beaumont Synthetics Enterprise",
+        "opponentStake": "Konig's Biochemicals",
+        "updatedAt": "2026-10-11T15:12:25.081000",
+        "source": "EliteHub Vault / EDDN"
+      },
       "conflictStale": false,
-      "systemConflicts": [],
+      "systemConflicts": [
+        {
+          "id": "c6ae3f2e-0be1-41fc-9011-c255f56c3a2a",
+          "type": "War",
+          "status": "Active",
+          "faction": "Regiment of Imperial Mongrels",
+          "factionWonDays": 0,
+          "opponentFaction": "Celestial Light Brigade",
+          "opponentWonDays": 0,
+          "factionStake": "Beaumont Synthetics Enterprise",
+          "opponentStake": "Konig's Biochemicals",
+          "updatedAt": "2026-10-11T15:12:25.081000",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
       "systemConflictsStale": false
     },
     "Col 285 Sector AU-X b15-5": {
@@ -2742,8 +2769,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2802,8 +2829,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2862,8 +2889,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2873,47 +2900,47 @@
     "Col 285 Sector CA-W b16-6": {
       "name": "Col 285 Sector CA-W b16-6",
       "systemId": "0e0a7e1c-a6e0-4617-92eb-c63187f95436",
-      "updatedAt": "2026-10-07T22:53:40.363000",
+      "updatedAt": "2026-10-10T17:12:15.378000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 54.85,
+          "influence": 55.05,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T22:53:40.363000",
+          "updatedAt": "2026-10-10T17:12:15.378000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Miwae Guardians of Tradition",
-          "influence": 26.47,
+          "influence": 26.37,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T22:53:40.363000",
+          "updatedAt": "2026-10-10T17:12:15.378000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Prismatic Imperium",
-          "influence": 18.68,
+          "influence": 18.58,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T22:53:40.363000",
+          "updatedAt": "2026-10-10T17:12:15.378000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2923,47 +2950,47 @@
     "Col 285 Sector CA-W b16-7": {
       "name": "Col 285 Sector CA-W b16-7",
       "systemId": "8efeedba-1dc5-474b-a03a-cea78a56eef1",
-      "updatedAt": "2026-10-05T00:11:36.231000",
+      "updatedAt": "2026-10-11T01:53:21.870000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 17.74,
+          "influence": 18.36,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T01:53:21.870000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Anum Empire Assembly",
+          "influence": 57.57,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-05T00:11:36.231000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Anum Empire Assembly",
-          "influence": 57.72,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-05T00:11:36.231000",
+          "updatedAt": "2026-10-11T01:53:21.870000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 27134 Empire League",
-          "influence": 24.55,
+          "influence": 24.07,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-05T00:11:36.231000",
+          "updatedAt": "2026-10-11T01:53:21.870000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2973,32 +3000,33 @@
     "Col 285 Sector CF-W b16-2": {
       "name": "Col 285 Sector CF-W b16-2",
       "systemId": "be45bd9c-57e4-4f14-9096-48724aa0f231",
-      "updatedAt": "2026-10-09T08:18:59.960000",
+      "updatedAt": "2026-10-12T15:25:45.995000",
       "factionCount": 5,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 15.54,
-          "state": "Expansion, War",
+          "state": "War",
           "activeStates": [
-            "Expansion",
             "War"
           ],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T08:18:59.960000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-12T15:25:45.995000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Aigalie Empire Pact",
           "influence": 31.97,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "Election",
+          "activeStates": [
             "Election"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T08:18:59.960000",
+          "updatedAt": "2026-10-10T17:18:11.821000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3026,19 +3054,19 @@
         {
           "name": "HIP 31712 Empire Pact",
           "influence": 31.97,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "Election",
+          "activeStates": [
             "Election"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T08:18:59.960000",
+          "updatedAt": "2026-10-10T17:18:11.821000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": {
         "id": "fc14fda7-c7ce-4acd-b1eb-e2767dd9cc30",
@@ -3049,7 +3077,7 @@
         "opponentFaction": "Democrats of HIP 32127",
         "factionStake": "Durrance Legacy",
         "opponentStake": "Milland Depot",
-        "updatedAt": "2026-10-09T08:18:59.994000",
+        "updatedAt": "2026-10-12T15:25:46.006000",
         "source": "EliteHub Vault / EDDN"
       },
       "conflictStale": false,
@@ -3064,7 +3092,20 @@
           "opponentWonDays": 0,
           "factionStake": "Milland Depot",
           "opponentStake": "Durrance Legacy",
-          "updatedAt": "2026-10-09T08:18:59.994000",
+          "updatedAt": "2026-10-12T15:25:46.006000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "id": "5c399e45-8910-4c2a-bb70-166706adeaea",
+          "type": "Election",
+          "status": "Active",
+          "faction": "HIP 31712 Empire Pact",
+          "factionWonDays": 0,
+          "opponentFaction": "Aigalie Empire Pact",
+          "opponentWonDays": 2,
+          "factionStake": "Maxis Paradies",
+          "opponentStake": "Lilienthal Enterprise",
+          "updatedAt": "2026-10-12T15:25:46.006000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
@@ -3132,8 +3173,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3143,19 +3184,19 @@
     "Col 285 Sector CP-X b15-4": {
       "name": "Col 285 Sector CP-X b15-4",
       "systemId": "80fbc31f-c047-48cb-8e39-c74a6ed1bbeb",
-      "updatedAt": "2026-10-07T11:39:02.722000",
+      "updatedAt": "2026-10-11T10:10:34.312000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 15.33,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T19:54:22.761000",
+          "updatedAt": "2026-10-11T10:10:34.312000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3163,9 +3204,11 @@
           "influence": 9.12,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-07-01T01:41:56.433000",
+          "updatedAt": "2026-10-11T10:10:34.312000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3192,8 +3235,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3260,8 +3303,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3271,19 +3314,19 @@
     "Col 285 Sector DA-W b16-5": {
       "name": "Col 285 Sector DA-W b16-5",
       "systemId": "be36cb1d-f696-4a28-a787-361cbefe9ca2",
-      "updatedAt": "2026-10-09T18:29:43.587000",
+      "updatedAt": "2026-10-11T19:13:47.232000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 11.76,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T18:29:43.587000",
+          "updatedAt": "2026-10-11T19:13:47.232000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3313,15 +3356,17 @@
           "influence": 40.78,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T18:29:43.587000",
+          "updatedAt": "2026-10-11T19:13:47.232000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3370,8 +3415,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3433,8 +3478,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": {
         "id": "3aa9a781-c2ea-40ce-be6b-8d661321051f",
@@ -3469,19 +3514,19 @@
     "Col 285 Sector DF-W b16-1": {
       "name": "Col 285 Sector DF-W b16-1",
       "systemId": "feeece93-008c-4964-b839-889e78f4b49b",
-      "updatedAt": "2026-10-08T00:50:12.712000",
+      "updatedAt": "2026-10-11T00:45:39.362000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 57.59,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 57.24,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T00:50:12.712000",
+          "updatedAt": "2026-10-11T00:45:39.362000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3493,33 +3538,33 @@
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T00:50:12.712000",
+          "updatedAt": "2026-10-11T00:45:39.362000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 20.91,
+          "influence": 21.38,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T00:50:12.712000",
+          "updatedAt": "2026-10-11T00:45:39.362000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 15.19,
+          "influence": 15.07,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T00:50:12.712000",
+          "updatedAt": "2026-10-11T00:45:39.362000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3529,19 +3574,19 @@
     "Col 285 Sector DF-W b16-4": {
       "name": "Col 285 Sector DF-W b16-4",
       "systemId": "29386e22-f9f6-4515-9245-cca8826aec80",
-      "updatedAt": "2026-10-06T18:37:06.709000",
+      "updatedAt": "2026-10-12T00:38:30.342000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 58.84,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-05T01:59:55.782000",
+          "updatedAt": "2026-10-12T00:38:30.342000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3578,8 +3623,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3642,8 +3687,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3702,8 +3747,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3750,8 +3795,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3798,8 +3843,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3858,8 +3903,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3869,55 +3914,57 @@
     "Col 285 Sector EF-W b16-0": {
       "name": "Col 285 Sector EF-W b16-0",
       "systemId": "e3e45c6c-35d0-4f7b-b91d-4f8dbd420eff",
-      "updatedAt": "2026-09-07T20:36:48.239000",
+      "updatedAt": "2026-10-11T16:56:34.685000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 61.54,
+          "influence": 61.98,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-01T11:52:47.158000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T16:56:34.685000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 34932 & Co",
-          "influence": 12.49,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 12.38,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-07T20:36:48.239000",
+          "updatedAt": "2026-10-11T16:56:34.685000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 6.49,
+          "influence": 6.39,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-06-01T19:49:33.354000",
+          "updatedAt": "2026-10-11T16:56:34.685000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 19.48,
+          "influence": 19.26,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-07-29T05:10:59.492000",
+          "updatedAt": "2026-10-11T16:56:34.685000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3927,19 +3974,19 @@
     "Col 285 Sector EF-W b16-6": {
       "name": "Col 285 Sector EF-W b16-6",
       "systemId": "ac4f14d0-7672-4e9d-b023-79ce279622e5",
-      "updatedAt": "2026-09-26T05:56:24.787000",
+      "updatedAt": "2026-10-11T16:15:29.727000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 57.94,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-26T05:56:24.787000",
+          "updatedAt": "2026-10-11T16:15:29.727000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3968,16 +4015,14 @@
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [
-            "Expansion"
-          ],
-          "updatedAt": "2026-09-26T05:56:24.787000",
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T16:15:29.727000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4034,8 +4079,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4045,47 +4090,47 @@
     "Col 285 Sector FA-W b16-6": {
       "name": "Col 285 Sector FA-W b16-6",
       "systemId": "74e1615c-d50d-49af-bdba-c6e32d3b3565",
-      "updatedAt": "2026-10-08T05:55:37.845000",
+      "updatedAt": "2026-10-12T04:46:16.539000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 57.82,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 55.26,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:55:37.845000",
+          "updatedAt": "2026-10-12T04:46:16.539000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 23.85,
+          "influence": 26.83,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:55:37.845000",
+          "updatedAt": "2026-10-12T04:46:16.539000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 18.34,
+          "influence": 17.92,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:55:37.845000",
+          "updatedAt": "2026-10-12T04:46:16.539000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4095,19 +4140,19 @@
     "Col 285 Sector GL-U b17-2": {
       "name": "Col 285 Sector GL-U b17-2",
       "systemId": "88c11c40-8fe6-432e-8917-d93be46f657e",
-      "updatedAt": "2026-10-06T16:23:57.607000",
+      "updatedAt": "2026-10-11T13:03:04.436000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 47.17,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T16:23:57.607000",
+          "updatedAt": "2026-10-11T13:03:04.436000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -4142,8 +4187,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4153,45 +4198,43 @@
     "Col 285 Sector GL-U b17-7": {
       "name": "Col 285 Sector GL-U b17-7",
       "systemId": "50181ac8-10ad-4a54-ba2d-803421692a81",
-      "updatedAt": "2026-10-06T16:51:38.669000",
+      "updatedAt": "2026-10-12T17:03:01.687000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 64.07,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
+          "influence": 71.1,
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T16:51:38.669000",
+          "updatedAt": "2026-10-12T17:03:01.687000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 9.08,
+          "influence": 6.6,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T16:51:38.669000",
+          "updatedAt": "2026-10-12T12:13:11.543000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Free Milky Way Cooperative",
-          "influence": 26.85,
+          "influence": 22.3,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T16:51:38.669000",
+          "updatedAt": "2026-10-12T11:09:48.872000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4250,8 +4293,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4308,8 +4351,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4368,8 +4411,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4424,8 +4467,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4486,8 +4529,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4497,7 +4540,7 @@
     "Col 285 Sector JG-U b17-6": {
       "name": "Col 285 Sector JG-U b17-6",
       "systemId": "14014b8e-ec14-44ec-ad9a-3f848295f2a7",
-      "updatedAt": "2026-09-21T23:43:09.985000",
+      "updatedAt": "2026-10-10T14:06:59.264000",
       "factionCount": 5,
       "factions": [
         {
@@ -4515,37 +4558,35 @@
         {
           "name": "HIP 27948 Empire Party",
           "influence": 9.09,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-21T23:43:09.985000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Lavigny's Legion",
-          "influence": 53.91,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-20T06:30:07.134000",
+          "updatedAt": "2026-10-10T14:06:59.264000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Lavigny's Legion",
+          "influence": 53.91,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-10T14:06:59.264000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
           "influence": 17.45,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-20T06:30:07.134000",
+          "updatedAt": "2026-10-10T14:06:59.264000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -4560,8 +4601,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4620,8 +4661,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4631,55 +4672,57 @@
     "Col 285 Sector LB-U b17-4": {
       "name": "Col 285 Sector LB-U b17-4",
       "systemId": "195294d1-3c48-42cc-8684-3388a2188590",
-      "updatedAt": "2026-09-09T18:10:11.615000",
+      "updatedAt": "2026-10-11T11:03:05.130000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 62.76,
+          "influence": 62.93,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-09T18:10:11.615000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T11:03:05.130000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Diaba Gang",
-          "influence": 6.21,
+          "influence": 6.01,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-04-16T10:17:29.383820",
+          "updatedAt": "2026-10-11T11:03:05.130000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 29444 Empire Consulate",
-          "influence": 18.82,
+          "influence": 18.84,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-04-16T10:17:29.383820",
+          "updatedAt": "2026-10-11T11:03:05.130000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 12.21,
+          "influence": 12.22,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-08-08T05:31:29.960000",
+          "updatedAt": "2026-10-11T11:03:05.130000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4689,46 +4732,47 @@
     "Col 285 Sector OC-L c8-10": {
       "name": "Col 285 Sector OC-L c8-10",
       "systemId": "46b7d0a5-b903-4acf-99d1-5df53d161dd3",
-      "updatedAt": "2026-10-08T09:25:04.735000",
+      "updatedAt": "2026-10-12T20:12:43.669000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 73.13,
-          "state": "Boom, Expansion",
+          "influence": 83.8,
+          "state": "Boom",
           "activeStates": [
-            "Boom",
-            "Expansion"
+            "Boom"
           ],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:25:04.735000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-12T20:12:43.669000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Democrats of HIP 32127",
-          "influence": 15.88,
+          "influence": 9.6,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:25:04.735000",
+          "updatedAt": "2026-10-12T20:12:43.669000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 32127 State PLC",
-          "influence": 10.99,
+          "influence": 6.6,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T09:25:04.735000",
+          "updatedAt": "2026-10-12T20:12:43.669000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4738,55 +4782,57 @@
     "Col 285 Sector OC-L c8-16": {
       "name": "Col 285 Sector OC-L c8-16",
       "systemId": "edf5685d-2dec-463c-ae92-bcfe9b58c29f",
-      "updatedAt": "2026-09-29T20:09:53.130000",
+      "updatedAt": "2026-10-11T06:41:09.485000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 56.4,
+          "influence": 55.84,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-29T20:09:53.130000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T06:41:09.485000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 31712 Empire Pact",
-          "influence": 15.2,
+          "influence": 14.99,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-29T20:09:53.130000",
+          "updatedAt": "2026-10-11T06:41:09.485000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Posse of Chingpho",
-          "influence": 10.6,
+          "influence": 11.59,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-29T20:09:53.130000",
+          "updatedAt": "2026-10-11T06:41:09.485000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 17.8,
+          "influence": 17.58,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-29T20:09:53.130000",
+          "updatedAt": "2026-10-11T06:41:09.485000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4843,8 +4889,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4903,8 +4949,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4953,8 +4999,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5003,8 +5049,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5014,19 +5060,19 @@
     "Col 285 Sector OC-L c8-9": {
       "name": "Col 285 Sector OC-L c8-9",
       "systemId": "5b24b602-3e70-4989-be66-b781229d2c9a",
-      "updatedAt": "2026-10-08T13:05:56.125000",
+      "updatedAt": "2026-10-10T19:38:13.465000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 48.37,
+          "influence": 48.27,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T13:05:56.125000",
+          "updatedAt": "2026-10-10T19:38:13.465000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5041,18 +5087,18 @@
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 33.43,
+          "influence": 33.53,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T13:05:56.125000",
+          "updatedAt": "2026-10-10T19:38:13.465000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5109,8 +5155,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5120,33 +5166,29 @@
     "Col 285 Sector RI-J c9-24": {
       "name": "Col 285 Sector RI-J c9-24",
       "systemId": "f49926bb-e6c0-40a4-8919-e137a61b0dad",
-      "updatedAt": "2026-10-09T18:00:27.837000",
+      "updatedAt": "2026-10-12T20:12:40.190000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 75.08,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [
-            "PublicHoliday"
-          ],
-          "updatedAt": "2026-10-09T18:00:27.837000",
+          "recoveringStates": [],
+          "updatedAt": "2026-10-12T20:12:40.190000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 27948 Empire Party",
           "influence": 10.71,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T18:00:27.837000",
+          "updatedAt": "2026-10-12T20:12:40.190000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5161,8 +5203,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5172,19 +5214,19 @@
     "Col 285 Sector TK-D c13-13": {
       "name": "Col 285 Sector TK-D c13-13",
       "systemId": "17e39679-93f7-4f5c-a90e-563c7b289151",
-      "updatedAt": "2026-10-09T10:21:32.325000",
+      "updatedAt": "2026-10-10T20:49:57.119000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 13.0,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-05-05T08:42:35.444306",
+          "updatedAt": "2026-10-10T20:49:57.119000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5192,9 +5234,11 @@
           "influence": 60.0,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T10:21:32.325000",
+          "updatedAt": "2026-10-10T12:49:46.190000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5219,8 +5263,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5230,19 +5274,19 @@
     "Col 285 Sector VT-R d4-112": {
       "name": "Col 285 Sector VT-R d4-112",
       "systemId": "4509c42d-e111-4db0-a032-43e6a5a7eed1",
-      "updatedAt": "2026-10-09T08:18:12.532000",
+      "updatedAt": "2026-10-11T15:27:42.300000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 49.0,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-05T21:00:59.531000",
+          "updatedAt": "2026-10-11T15:27:42.300000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5279,8 +5323,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5290,19 +5334,19 @@
     "Col 285 Sector VT-R d4-115": {
       "name": "Col 285 Sector VT-R d4-115",
       "systemId": "6c897c01-de40-463c-835b-aa32043cd26a",
-      "updatedAt": "2026-10-06T21:00:28.254000",
+      "updatedAt": "2026-10-11T14:27:05.560000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 51.8,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T21:00:28.254000",
+          "updatedAt": "2026-10-11T14:27:05.560000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5339,8 +5383,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5395,8 +5439,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5406,19 +5450,19 @@
     "Col 285 Sector VT-R d4-124": {
       "name": "Col 285 Sector VT-R d4-124",
       "systemId": "3c831a8e-977b-47c4-9845-98091766a159",
-      "updatedAt": "2026-10-09T19:41:39.016000",
+      "updatedAt": "2026-10-12T13:59:44.178000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 31.84,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T19:41:39.016000",
+          "updatedAt": "2026-10-12T13:59:44.178000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5455,8 +5499,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5525,8 +5569,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5536,19 +5580,19 @@
     "Col 285 Sector VT-R d4-78": {
       "name": "Col 285 Sector VT-R d4-78",
       "systemId": "11119d46-d14e-4f27-a1e3-6d2151037a79",
-      "updatedAt": "2026-09-21T22:24:14.282000",
+      "updatedAt": "2026-10-12T09:34:46.434000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 9.6,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-21T22:24:14.282000",
+          "updatedAt": "2026-10-12T09:34:46.434000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5583,8 +5627,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5651,8 +5695,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5662,19 +5706,19 @@
     "Col 285 Sector WN-Z b14-4": {
       "name": "Col 285 Sector WN-Z b14-4",
       "systemId": "b5522837-5012-4bef-bf1b-420edbc3f2a9",
-      "updatedAt": "2026-10-05T00:37:34.643000",
+      "updatedAt": "2026-10-11T19:35:59.144000",
       "factionCount": 6,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 8.29,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-05T00:37:34.643000",
+          "updatedAt": "2026-10-11T19:35:59.144000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5702,9 +5746,11 @@
           "influence": 9.49,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-09-24T03:38:56.569000",
+          "updatedAt": "2026-10-11T19:35:59.144000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5729,8 +5775,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5789,8 +5835,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5800,19 +5846,19 @@
     "Col 285 Sector YY-X b15-0": {
       "name": "Col 285 Sector YY-X b15-0",
       "systemId": "ac27057d-5054-404f-a10f-f2ea93210ffd",
-      "updatedAt": "2026-10-07T21:59:58.508000",
+      "updatedAt": "2026-10-12T09:09:28.370000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 11.6,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T21:59:58.508000",
+          "updatedAt": "2026-10-12T09:09:28.370000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -5847,8 +5893,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5905,8 +5951,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5957,8 +6003,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6017,8 +6063,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6092,8 +6138,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": {
         "id": "8c58e4bc-4ad0-4bc7-9ca9-6381ce419121",
@@ -6179,8 +6225,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6237,8 +6283,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6248,100 +6294,117 @@
     "Diaba": {
       "name": "Diaba",
       "systemId": "51c6a333-10a9-4c82-bf1c-e0e176ba7881",
-      "updatedAt": "2026-10-08T15:38:19.643000",
+      "updatedAt": "2026-10-11T11:33:54.383000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 45.34,
-          "state": "Boom, Expansion",
-          "activeStates": [
-            "Boom",
+          "influence": 49.11,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Anhuanga Empire Pact",
-          "influence": 16.27,
+          "influence": 12.2,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Election"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Diaba Gang",
-          "influence": 4.37,
+          "influence": 4.27,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Diaba Ltd",
           "influence": 7.94,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "War",
+          "activeStates": [
             "War"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Diaba Movement",
-          "influence": 11.71,
+          "influence": 12.2,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Election"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:48:45.573000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Dominion of Diaba",
-          "influence": 6.45,
+          "influence": 6.35,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 29444 Empire Consulate",
           "influence": 7.94,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "War",
+          "activeStates": [
             "War"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T15:38:19.643000",
+          "updatedAt": "2026-10-11T11:33:54.383000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
-      "systemConflicts": [],
+      "systemConflicts": [
+        {
+          "id": "86e5e816-475a-44b4-ab58-8c43a5cb42da",
+          "type": "War",
+          "status": "Active",
+          "faction": "HIP 29444 Empire Consulate",
+          "factionWonDays": 1,
+          "opponentFaction": "Diaba Ltd",
+          "opponentWonDays": 1,
+          "factionStake": "Cooperative Welfare Commission",
+          "opponentStake": "",
+          "updatedAt": "2026-10-11T11:33:54.396000",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
       "systemConflictsStale": false
     },
     "Duulngari": {
       "name": "Duulngari",
       "systemId": "108e8019-1d65-43c9-9f0b-563f646705a8",
-      "updatedAt": "2026-09-13T09:46:18.123000",
+      "updatedAt": "2026-10-11T11:41:13.266000",
       "factionCount": 7,
       "factions": [
         {
@@ -6350,8 +6413,10 @@
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-13T09:46:18.123000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T11:41:13.266000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -6418,8 +6483,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6429,19 +6494,19 @@
     "Flyeia Dryoae AG-X c17-0": {
       "name": "Flyeia Dryoae AG-X c17-0",
       "systemId": "4252ce86-7e85-4f39-bc69-95d620ecf5e7",
-      "updatedAt": "2026-10-08T22:51:48.791000",
+      "updatedAt": "2026-10-11T17:00:46.878000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 13.8,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T22:51:48.791000",
+          "updatedAt": "2026-10-11T17:00:46.878000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -6478,8 +6543,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6538,8 +6603,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6598,8 +6663,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6660,8 +6725,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6720,8 +6785,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6780,8 +6845,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6840,8 +6905,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6900,8 +6965,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6962,8 +7027,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7024,8 +7089,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7082,8 +7147,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7142,8 +7207,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7226,8 +7291,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": {
         "id": "e80509ec-9377-43bd-a135-b8c7513e7061",
@@ -7248,49 +7313,49 @@
     "HD 66253": {
       "name": "HD 66253",
       "systemId": "a4c2e44a-db91-4fd6-a900-7afa9229c0fb",
-      "updatedAt": "2026-10-07T17:35:32.347000",
+      "updatedAt": "2026-10-12T21:33:51.257000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 53.72,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 55.96,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T17:35:32.347000",
+          "updatedAt": "2026-10-12T21:33:51.257000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Independent Defence Agency",
-          "influence": 25.99,
+          "influence": 23.65,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-12T21:33:51.257000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "SSL Interstellar PLC",
+          "influence": 20.39,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T17:35:32.347000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "SSL Interstellar PLC",
-          "influence": 20.29,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T17:35:32.347000",
+          "updatedAt": "2026-10-12T21:33:51.257000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7341,8 +7406,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7399,8 +7464,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7494,8 +7559,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7542,8 +7607,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7553,19 +7618,19 @@
     "HIP 29783": {
       "name": "HIP 29783",
       "systemId": "b94fce9d-5434-4858-8c43-80ef44b13964",
-      "updatedAt": "2026-10-09T17:25:14.456000",
+      "updatedAt": "2026-10-11T14:53:10.375000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 57.9,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T17:25:14.456000",
+          "updatedAt": "2026-10-11T14:53:10.375000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -7600,8 +7665,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7611,94 +7676,108 @@
     "HIP 31207": {
       "name": "HIP 31207",
       "systemId": "e2087dcf-99a5-4ad4-8c20-6196e835e598",
-      "updatedAt": "2026-10-08T20:43:45.404000",
+      "updatedAt": "2026-10-12T22:36:55.429000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 12.28,
-          "state": "Expansion",
+          "state": "Election",
           "activeStates": [
-            "Expansion"
-          ],
-          "pendingStates": [
             "Election"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T20:43:45.404000",
+          "updatedAt": "2026-10-12T22:36:55.429000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Bureau of HIP 32127 Focus",
           "influence": 12.28,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "state": "Election",
+          "activeStates": [
             "Election"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T20:43:45.404000",
+          "updatedAt": "2026-10-11T00:42:37.371000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Democrats of HIP 32127",
-          "influence": 70.86,
-          "state": "PirateAttack",
-          "activeStates": [
+          "influence": 71.27,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [
+            "Boom"
+          ],
+          "recoveringStates": [
             "PirateAttack"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T20:43:45.404000",
+          "updatedAt": "2026-10-12T22:36:55.429000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 32127 State PLC",
-          "influence": 4.57,
+          "influence": 4.16,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T20:43:45.404000",
+          "updatedAt": "2026-10-12T22:36:55.429000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": {
         "id": "8a1fbbe2-360a-450d-8ace-d865fef763c2",
         "type": "Election",
-        "status": "Pending",
+        "status": "Active",
         "factionWonDays": 0,
         "opponentWonDays": 0,
         "opponentFaction": "Bureau of HIP 32127 Focus",
         "factionStake": "Romanenko's Inheritance",
         "opponentStake": "Hottot Reach",
-        "updatedAt": "2026-10-08T21:24:05.384000",
+        "updatedAt": "2026-10-12T22:36:55.437000",
         "source": "EliteHub Vault / EDDN"
       },
       "conflictStale": false,
-      "systemConflicts": [],
+      "systemConflicts": [
+        {
+          "id": "8a1fbbe2-360a-450d-8ace-d865fef763c2",
+          "type": "Election",
+          "status": "Active",
+          "faction": "Bureau of HIP 32127 Focus",
+          "factionWonDays": 0,
+          "opponentFaction": "Regiment of Imperial Mongrels",
+          "opponentWonDays": 0,
+          "factionStake": "Hottot Reach",
+          "opponentStake": "Romanenko's Inheritance",
+          "updatedAt": "2026-10-12T22:36:55.437000",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
       "systemConflictsStale": false
     },
     "HIP 32011": {
       "name": "HIP 32011",
       "systemId": "6f2bcfd6-c781-4b84-918c-93366dd018c7",
-      "updatedAt": "2026-10-09T18:10:41.387000",
+      "updatedAt": "2026-10-11T14:38:15.045000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 45.38,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T18:10:41.387000",
+          "updatedAt": "2026-10-11T14:38:15.045000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -7735,8 +7814,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7783,8 +7862,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7833,8 +7912,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7891,8 +7970,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7949,8 +8028,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8011,8 +8090,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8073,8 +8152,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8135,8 +8214,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8146,59 +8225,57 @@
     "IC 2395 Sector JH-V c2-19": {
       "name": "IC 2395 Sector JH-V c2-19",
       "systemId": "c1aca031-7412-4d39-8040-549892d2abe9",
-      "updatedAt": "2026-03-13T07:02:36.160455",
+      "updatedAt": "2026-10-11T21:39:01.858000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 13.0,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 15.0,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-03-13T07:02:36.160455",
+          "updatedAt": "2026-10-11T21:39:01.858000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Daily Routine Incorporated",
-          "influence": 20.0,
+          "influence": 24.7,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T21:39:01.858000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Perez Ring Brewery",
+          "influence": 54.0,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-03-13T07:02:36.160455",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Perez Ring Brewery",
-          "influence": 60.0,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-03-13T07:02:36.160455",
+          "updatedAt": "2026-10-11T21:39:01.858000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 7.0,
+          "influence": 6.3,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-03-13T07:02:36.160455",
+          "updatedAt": "2026-10-11T21:39:01.858000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8259,8 +8336,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8321,8 +8398,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8371,8 +8448,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8461,8 +8538,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8545,8 +8622,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8647,8 +8724,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8705,8 +8782,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8763,8 +8840,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8774,59 +8851,57 @@
     "Musca Dark Region IM-V c2-33": {
       "name": "Musca Dark Region IM-V c2-33",
       "systemId": "cff2903f-527c-4972-a8a0-22405f43aea7",
-      "updatedAt": "2026-10-04T13:37:37.780000",
+      "updatedAt": "2026-10-12T22:26:47.428000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 12.08,
+          "influence": 11.96,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-12T22:26:47.428000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Chieftains of Anarchy",
+          "influence": 5.88,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-12T22:26:47.428000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Interspecies Friendship Society",
+          "influence": 29.91,
           "state": "None",
           "activeStates": [],
           "pendingStates": [
             "Expansion"
           ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-04T13:37:37.780000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Chieftains of Anarchy",
-          "influence": 5.99,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-21T18:51:00.186000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Interspecies Friendship Society",
-          "influence": 30.44,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-21T18:51:00.186000",
+          "updatedAt": "2026-10-12T22:26:47.428000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Interstellar Order",
-          "influence": 51.5,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 52.24,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [
             "Expansion"
           ],
-          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-21T18:51:00.186000",
+          "updatedAt": "2026-10-12T22:26:47.428000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8836,7 +8911,7 @@
     "Musca Dark Region OY-Q b5-13": {
       "name": "Musca Dark Region OY-Q b5-13",
       "systemId": "ed9a1046-0ba3-42a1-9c50-fe0c140f4bd6",
-      "updatedAt": "2026-09-12T22:19:40.413000",
+      "updatedAt": "2026-10-11T00:55:20.904000",
       "factionCount": 3,
       "factions": [
         {
@@ -8845,8 +8920,10 @@
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-09-12T22:19:40.413000",
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T00:55:20.904000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -8864,15 +8941,17 @@
           "influence": 18.03,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-09-12T22:19:40.413000",
+          "updatedAt": "2026-10-11T00:55:20.904000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8917,8 +8996,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8928,57 +9007,57 @@
     "Musca Dark Region PY-Q b5-3": {
       "name": "Musca Dark Region PY-Q b5-3",
       "systemId": "782c8a22-aef8-4c90-890e-e05f5af738ee",
-      "updatedAt": "2026-09-27T17:14:11.253000",
+      "updatedAt": "2026-10-10T17:01:53.913000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 10.56,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [
+          "influence": 10.37,
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
-          "updatedAt": "2026-09-27T17:14:11.253000",
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-10T17:01:53.913000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Chieftains of Anarchy",
-          "influence": 7.7,
+          "influence": 7.6,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-27T17:14:11.253000",
+          "updatedAt": "2026-10-10T17:01:53.913000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Imperial Black Order",
-          "influence": 61.7,
+          "influence": 62.49,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-09-27T17:14:11.253000",
+          "updatedAt": "2026-10-10T17:01:53.913000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Interspecies Friendship Society",
-          "influence": 20.04,
+          "influence": 19.55,
           "state": "None",
           "activeStates": [],
           "pendingStates": [
             "Expansion"
           ],
           "recoveringStates": [],
-          "updatedAt": "2026-09-27T17:14:11.253000",
+          "updatedAt": "2026-10-10T17:01:53.913000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9037,8 +9116,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9107,8 +9186,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9169,8 +9248,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9227,8 +9306,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9238,59 +9317,59 @@
     "NGC 2546 Sector JY-P c19-2": {
       "name": "NGC 2546 Sector JY-P c19-2",
       "systemId": "8d98e837-ffcd-4673-a05b-1ea8714f6a41",
-      "updatedAt": "2026-10-07T05:32:55.525000",
+      "updatedAt": "2026-10-12T04:07:28.863000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 49.65,
+          "influence": 51.25,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T06:17:06.651000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Explorers of the Anarchy",
+          "influence": 12.14,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T01:28:31.437000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Explorers of the Anarchy",
-          "influence": 12.54,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T05:32:55.525000",
+          "updatedAt": "2026-10-12T04:07:28.863000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Perez Ring Brewery",
-          "influence": 19.56,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "influence": 18.96,
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T01:28:31.437000",
+          "updatedAt": "2026-10-11T06:17:06.651000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 18.25,
+          "influence": 17.65,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T01:28:31.437000",
+          "updatedAt": "2026-10-11T06:17:06.651000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9351,8 +9430,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9415,8 +9494,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9477,8 +9556,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9539,8 +9618,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9599,8 +9678,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9661,8 +9740,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9721,8 +9800,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9785,8 +9864,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9847,8 +9926,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9899,8 +9978,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9963,8 +10042,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9974,59 +10053,60 @@
     "NGC 2546 Sector OQ-H b38-0": {
       "name": "NGC 2546 Sector OQ-H b38-0",
       "systemId": "dc89afa9-c2c6-4088-8819-4eb313c705a6",
-      "updatedAt": "2026-10-08T05:46:43.145000",
+      "updatedAt": "2026-10-12T05:39:42.829000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 18.15,
+          "influence": 15.95,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-12T03:56:58.243000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Explorers of the Anarchy",
+          "influence": 5.58,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:23:28.355000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Explorers of the Anarchy",
-          "influence": 5.18,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:46:43.145000",
+          "updatedAt": "2026-10-12T03:56:58.243000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 5.28,
+          "influence": 4.19,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:23:28.355000",
+          "updatedAt": "2026-10-12T03:56:58.243000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Wolf 258 Dynasty",
-          "influence": 71.39,
-          "state": "Boom",
+          "influence": 74.28,
+          "state": "Boom, TerroristAttack",
           "activeStates": [
-            "Boom"
+            "Boom",
+            "TerroristAttack"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-08T05:46:43.145000",
+          "updatedAt": "2026-10-12T05:39:42.829000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10087,8 +10167,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10149,8 +10229,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10160,19 +10240,19 @@
     "NGC 2546 Sector PQ-H b38-0": {
       "name": "NGC 2546 Sector PQ-H b38-0",
       "systemId": "6729ea92-5607-45f3-aa37-28ff537f5e4a",
-      "updatedAt": "2026-10-08T06:09:13.264448",
+      "updatedAt": "2026-10-11T04:06:51.340000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 60.0,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T06:09:13.264448",
+          "updatedAt": "2026-10-11T04:06:51.340000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -10209,8 +10289,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10271,8 +10351,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10333,8 +10413,68 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
+      "stale": false,
+      "conflict": null,
+      "conflictStale": false,
+      "systemConflicts": [],
+      "systemConflictsStale": false
+    },
+    "NGC 2546 Sector RG-H b38-0": {
+      "name": "NGC 2546 Sector RG-H b38-0",
+      "systemId": "79cbd83c-2b62-449b-814c-557e3fedb06b",
+      "updatedAt": "2026-10-11T06:35:49.903973",
+      "factionCount": 4,
+      "factions": [
+        {
+          "name": "Regiment of Imperial Mongrels",
+          "influence": 60.0,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T06:35:49.903973",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Daily Routine Incorporated",
+          "influence": 13.0,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T06:35:49.903973",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Perez Ring Brewery",
+          "influence": 20.0,
+          "state": "Expansion",
+          "activeStates": [
+            "Expansion"
+          ],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T06:35:49.903973",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "The Consortium",
+          "influence": 7.0,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T06:35:49.903973",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
+      "ok": true,
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10395,8 +10535,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10457,8 +10597,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10519,8 +10659,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10577,8 +10717,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10639,8 +10779,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10701,8 +10841,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10763,8 +10903,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10825,8 +10965,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10887,8 +11027,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10945,8 +11085,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11005,8 +11145,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11069,8 +11209,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11080,59 +11220,59 @@
     "NGC 2546 Sector TR-F b39-0": {
       "name": "NGC 2546 Sector TR-F b39-0",
       "systemId": "d2af28d8-dd47-419b-8e21-6fee15844d9f",
-      "updatedAt": "2026-10-07T06:17:15.652000",
+      "updatedAt": "2026-10-11T06:05:50.789000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 56.74,
+          "influence": 56.59,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T06:05:50.789000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Explorers of the Anarchy",
+          "influence": 8.38,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T02:53:34.134000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Explorers of the Anarchy",
-          "influence": 8.79,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T06:17:15.652000",
+          "updatedAt": "2026-10-11T06:05:50.789000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Perez Ring Brewery",
-          "influence": 18.18,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "influence": 19.56,
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T02:53:34.134000",
+          "updatedAt": "2026-10-11T06:05:50.789000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 16.28,
+          "influence": 15.47,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T02:53:34.134000",
+          "updatedAt": "2026-10-11T06:05:50.789000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11195,8 +11335,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11206,47 +11346,47 @@
     "NGC 2546 Sector UA-E d12-51": {
       "name": "NGC 2546 Sector UA-E d12-51",
       "systemId": "d6f36a49-5018-4ce6-b20b-b73497516c38",
-      "updatedAt": "2026-10-07T15:34:25.243000",
+      "updatedAt": "2026-10-10T22:19:53.532000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 67.11,
+          "influence": 67.82,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-10T22:19:53.532000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Daily Routine Incorporated",
+          "influence": 19.14,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-10T12:06:03.557000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Perez Ring Brewery",
+          "influence": 13.03,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-07T15:34:25.243000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Daily Routine Incorporated",
-          "influence": 19.55,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T15:34:25.243000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Perez Ring Brewery",
-          "influence": 13.34,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-07T15:34:25.243000",
+          "updatedAt": "2026-10-10T12:06:03.557000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11307,8 +11447,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11318,19 +11458,19 @@
     "NGC 2546 Sector UZ-G d10-15": {
       "name": "NGC 2546 Sector UZ-G d10-15",
       "systemId": "69c707e3-7730-417c-8c43-38e92242d4dc",
-      "updatedAt": "2026-10-08T06:52:36.848000",
+      "updatedAt": "2026-10-11T05:49:25.723000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 47.14,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-08T06:52:36.848000",
+          "updatedAt": "2026-10-11T05:49:25.723000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -11367,8 +11507,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11378,117 +11518,132 @@
     "NGC 2546 Sector UZ-G d10-16": {
       "name": "NGC 2546 Sector UZ-G d10-16",
       "systemId": "d3968b7c-f626-44be-a4dc-a1448a78e35b",
-      "updatedAt": "2026-10-09T05:35:38.599000",
+      "updatedAt": "2026-10-12T19:10:50.715000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 65.76,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
+          "influence": 63.6,
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T05:35:38.599000",
+          "updatedAt": "2026-10-12T19:10:50.715000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Daily Routine Incorporated",
-          "influence": 9.6,
-          "state": "None",
-          "activeStates": [],
+          "influence": 9.4,
+          "state": "Election",
+          "activeStates": [
+            "Election"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T05:35:38.599000",
+          "updatedAt": "2026-10-11T05:56:26.595000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Perez Ring Brewery",
-          "influence": 8.48,
-          "state": "Expansion",
+          "influence": 9.4,
+          "state": "Expansion, Election",
           "activeStates": [
-            "Expansion"
+            "Expansion",
+            "Election"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T05:35:38.599000",
+          "updatedAt": "2026-10-11T05:56:26.595000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 16.16,
+          "influence": 17.59,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T05:35:38.599000",
+          "updatedAt": "2026-10-12T03:17:46.178000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
-      "systemConflicts": [],
+      "systemConflicts": [
+        {
+          "id": "85cb8cfb-701b-4f30-b5fe-790ae8cdc860",
+          "type": "Election",
+          "status": "Active",
+          "faction": "Perez Ring Brewery",
+          "factionWonDays": 2,
+          "opponentFaction": "Daily Routine Incorporated",
+          "opponentWonDays": 0,
+          "factionStake": "Verquerre Astrophysics Site",
+          "opponentStake": "Rivers Hub",
+          "updatedAt": "2026-10-12T22:51:57.397000",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
       "systemConflictsStale": false
     },
     "NGC 2546 Sector UZ-G d10-9": {
       "name": "NGC 2546 Sector UZ-G d10-9",
       "systemId": "f02e486e-19c9-48e3-940f-0ede55305eb9",
-      "updatedAt": "2026-10-06T03:28:31.924000",
+      "updatedAt": "2026-10-11T06:26:56.070000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 61.22,
+          "influence": 58.92,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-10-11T06:26:56.070000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Daily Routine Incorporated",
+          "influence": 12.93,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-10-11T06:26:56.070000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Perez Ring Brewery",
+          "influence": 20.64,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T03:28:31.924000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Daily Routine Incorporated",
-          "influence": 11.02,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T03:28:31.924000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Perez Ring Brewery",
-          "influence": 19.94,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T03:28:31.924000",
+          "updatedAt": "2026-10-11T06:26:56.070000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Consortium",
-          "influence": 7.82,
+          "influence": 7.51,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-08-28T21:05:53.200000",
+          "updatedAt": "2026-10-11T06:26:56.070000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11551,8 +11706,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11613,8 +11768,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11671,8 +11826,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11735,8 +11890,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11797,8 +11952,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11859,8 +12014,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11917,8 +12072,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11979,8 +12134,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12039,8 +12194,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12101,8 +12256,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12151,8 +12306,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12211,8 +12366,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12275,8 +12430,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12325,8 +12480,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12387,8 +12542,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12449,8 +12604,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12501,8 +12656,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12551,8 +12706,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12613,8 +12768,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12671,8 +12826,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12729,8 +12884,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12791,8 +12946,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12851,8 +13006,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12901,8 +13056,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12964,8 +13119,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13026,8 +13181,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13088,8 +13243,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13150,8 +13305,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13212,8 +13367,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13274,8 +13429,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13336,8 +13491,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13401,8 +13556,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13453,8 +13608,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13515,8 +13670,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13577,8 +13732,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13639,8 +13794,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13701,8 +13856,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13761,8 +13916,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13823,8 +13978,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13885,8 +14040,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13947,8 +14102,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14009,8 +14164,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14071,8 +14226,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14131,8 +14286,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14193,8 +14348,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14255,8 +14410,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14345,8 +14500,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14405,8 +14560,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14416,19 +14571,19 @@
     "Shenufo": {
       "name": "Shenufo",
       "systemId": "fd04000a-6273-4f7b-b188-79f6f82bc255",
-      "updatedAt": "2026-10-09T15:18:05.955000",
+      "updatedAt": "2026-10-11T20:05:41.318000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 9.81,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-09T15:18:05.955000",
+          "updatedAt": "2026-10-11T20:05:41.318000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -14466,11 +14621,13 @@
         {
           "name": "Shenufo Drug Empire",
           "influence": 1.0,
-          "state": "None",
-          "activeStates": [],
+          "state": "Bust",
+          "activeStates": [
+            "Bust"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-09T15:18:05.955000",
+          "updatedAt": "2026-10-11T20:05:41.318000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -14495,8 +14652,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14506,89 +14663,109 @@
     "Sui Ren": {
       "name": "Sui Ren",
       "systemId": "2ed547da-b7d5-4a6b-b74a-63c31cc1ce60",
-      "updatedAt": "2026-10-06T22:46:31.646000",
+      "updatedAt": "2026-10-11T10:31:47.368000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 32.43,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 32.2,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Heilelang Patron's Principles",
-          "influence": 17.82,
+          "influence": 17.35,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [],
+          "pendingStates": [
+            "Expansion"
+          ],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Social Sui Ren Democrats",
-          "influence": 7.51,
-          "state": "None",
-          "activeStates": [],
+          "influence": 7.22,
+          "state": "CivilWar",
+          "activeStates": [
+            "CivilWar"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 2.9,
+          "influence": 2.71,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Bureau",
-          "influence": 6.01,
-          "state": "None",
-          "activeStates": [],
+          "influence": 7.22,
+          "state": "CivilWar",
+          "activeStates": [
+            "CivilWar"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Commodities",
-          "influence": 9.21,
+          "influence": 9.03,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 24.12,
+          "influence": 24.27,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-06T22:46:31.646000",
+          "updatedAt": "2026-10-11T10:31:47.368000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
-      "systemConflicts": [],
+      "systemConflicts": [
+        {
+          "id": "77404380-db77-443f-9658-143bda858aa3",
+          "type": "CivilWar",
+          "status": "Active",
+          "faction": "Sui Ren Bureau",
+          "factionWonDays": 0,
+          "opponentFaction": "Social Sui Ren Democrats",
+          "opponentWonDays": 0,
+          "factionStake": "Bendell Vision",
+          "opponentStake": "Alvarez Industrial Facility",
+          "updatedAt": "2026-10-11T15:19:52.179000",
+          "source": "EliteHub Vault / EDDN"
+        }
+      ],
       "systemConflictsStale": false
     },
     "Synuefe AY-F d12-75": {
@@ -14643,8 +14820,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14703,8 +14880,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14761,8 +14938,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14821,8 +14998,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14881,8 +15058,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14937,8 +15114,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14997,8 +15174,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15057,8 +15234,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15131,8 +15308,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15219,8 +15396,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15283,8 +15460,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15343,8 +15520,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15403,8 +15580,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15461,8 +15638,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15521,8 +15698,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-10-10T05:57:13Z",
-      "lastAttemptAt": "2026-10-10T05:57:13Z",
+      "fetchedAt": "2026-10-12T23:02:56Z",
+      "lastAttemptAt": "2026-10-12T23:02:56Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'feature/mongrel-surveyor-*'
+      - 'feature/surveyor-live-test-*'
   pull_request:
     paths:
       - 'downloads/mongrel-scout/**'

@@ -1,13 +1,13 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.7 and HUD 0.17.16 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.9 and HUD 0.17.17 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
 ## Install on Serenity
 
-1. Close EDMC and MongrelHUD. Make a backup of your current EDMC
-   `MongrelScout` plugin folder (Scout 1.13.6) and the current HUD
+1. Close EDMC and MongrelHUD. Leave your existing production Scout/HUD downloads and auto-updater untouched. Make a backup of your current EDMC
+   `MongrelScout` plugin folder (Scout 1.13.8) and the current HUD
    installation folder (HUD 0.17.15). Keep both backup copies outside
    their active program folders.
 2. Download **both** test artifacts from the *Surveyor private test builds*
@@ -55,7 +55,7 @@ The ledger is per-Commander. Normal Scout uploads continue to work,
 but no personal scan lists/discovery records or unsold estimates enter
 Cloudflare. Community lookups are opt-in, cached and external.
 
-To roll back, close HUD and EDMC, restore your backed-up Scout 1.13.4
+To roll back, close HUD and EDMC, restore your backed-up Scout 1.13.8
 plugin folder, and start your normal HUD 0.17.15 executable. No cloud
 schema migrations or website rollback are required.
 
