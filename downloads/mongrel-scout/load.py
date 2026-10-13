@@ -263,6 +263,9 @@ _surveyor_intel_pending: Optional[tuple[str, str, str]] = None
 _surveyor_intel_worker_running = False
 _surveyor_history_lock = threading.Lock()
 _surveyor_history_started: set[str] = set()
+_surveyor_restore_guard = threading.Lock()
+_surveyor_restore_attempts = 0
+_surveyor_restore_last_attempt = 0.0
 
 
 def _surveyor_journal_directory() -> str:
@@ -279,7 +282,7 @@ def _surveyor_journal_directory() -> str:
 def _run_surveyor_startup_restore() -> None:
     """Restore this CMDR's persisted ledger before another scan or jump.
 
-    This is a one-shot background task. A live journal/status callback always
+    This is a bounded background task. A live journal/status callback always
     wins a race, and another Commander can never inherit this snapshot.
     """
     try:
@@ -317,6 +320,19 @@ def _run_surveyor_startup_restore() -> None:
 
 
 def _schedule_surveyor_startup_restore() -> None:
+    """Bounded local retries in case EDMC initializes journals after plugins."""
+    global _surveyor_restore_attempts, _surveyor_restore_last_attempt
+    with _hud_condition:
+        if _hud_state.get("exploration") is not None:
+            return
+    with _surveyor_restore_guard:
+        now = time.monotonic()
+        if _surveyor_restore_attempts >= 6:
+            return
+        if _surveyor_restore_attempts and now - _surveyor_restore_last_attempt < 10.0:
+            return
+        _surveyor_restore_attempts += 1
+        _surveyor_restore_last_attempt = now
     threading.Thread(
         target=_run_surveyor_startup_restore,
         name="MongrelSurveyorStartupRestore",
@@ -1030,6 +1046,9 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/v1/state":
+            # HUD already requests this local endpoint. Retry startup hydrate
+            # briefly if EDMC's journal directory appeared after plugin_start3.
+            _schedule_surveyor_startup_restore()
             self._write_json(_hud_state_snapshot())
             return
 
