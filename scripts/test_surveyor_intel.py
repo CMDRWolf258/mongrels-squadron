@@ -29,6 +29,10 @@ merged = intel.combine_intelligence(system_name, address, spansh, edsm)
 assert merged["providers"] == ["Spansh", "EDSM"]
 assert merged["catalogedBodies"] == 3  # Cross-provider deduplication
 assert len(merged["highlights"]) == 2
+assert len(merged["reportedBodies"]) == 3
+assert all(b["catalogStatus"] == "reported" and
+           b["firstDiscovery"] == "unverified" and
+           b["firstMapping"] == "unverified" for b in merged["reportedBodies"])
 assert merged["claimEvidence"] is False
 assert not any("commander" in str(value).lower() for value in merged.values())
 
@@ -48,6 +52,7 @@ def fake_request(url):
 result, failed = intel.query(system_name, address, fake_request)
 assert not failed and result["catalogedBodies"] == 3
 assert len(calls) == 2 and address in calls[0] and "Test%20System" in calls[1]
+assert "/api/dump/" in calls[0]
 assert all(c.startswith("https://") for c in calls)
 
 def partial_failure(url):
