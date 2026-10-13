@@ -21,7 +21,7 @@ SURVEY_EVENTS = frozenset({
     "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
     "FSSAllBodiesFound", "Scan", "SAAScanComplete", "FSSBodySignals",
     "SAASignalsFound", "SellExplorationData", "MultiSellExplorationData",
-    "ScanOrganic", "SellOrganicData", "Disembark",
+    "ScanOrganic", "SellOrganicData", "Disembark", "CodexEntry",
 })
 PLANET_K = {
     "Metal rich body": (21790, 105678),
@@ -218,6 +218,15 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
         return
     rows = body.get("bioSamples")
     rows = dict(rows) if isinstance(rows, dict) else {}
+    # The genetic sampler carries one active species. A new first sample
+    # discards any earlier unfinished species; completed organisms remain.
+    if kind == "log" and body.get("bioActiveSpeciesId") != species_id:
+        rows = {key: value for key, value in rows.items()
+                if isinstance(value, dict) and value.get("completed")}
+    if kind == "log":
+        body["bioActiveSpeciesId"] = species_id
+    if kind == "sample" and body.get("bioActiveSpeciesId") != species_id:
+        return  # no first scan of this species, do not resurrect abandoned work
     # Species token is stable across localization changes; one species/body.
     record = dict(rows.get(species_id) or {})
     if record.get("completed") and kind != "analyse":
@@ -248,6 +257,8 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
             record["samplePositions"] = positions
     rows[species_id] = record
     body["bioSamples"] = rows
+    if kind == "analyse":
+        body["bioActiveSpeciesId"] = None
 
 
 
@@ -524,6 +535,75 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _bio_species_by_genus(body: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """DSS genus roster with per-genus *partial model* payout ranges.
+
+    Species become exact only from a matching CodexEntry/ScanOrganic event.
+    Unmodeled genera are still shown, with unknown values.
+    """
+    prediction = _bio_predict(body)
+    candidates = prediction.get("candidates") or []
+    observed = body.get("biologicalGenuses") if isinstance(body.get("biologicalGenuses"), list) else []
+    roster = {_text(g.get("name")): _text(g.get("id")) for g in observed
+              if isinstance(g, Mapping) and _text(g.get("name"))}
+    if not roster:
+        roster = {str(c.get("genus")): "" for c in candidates if c.get("genus")}
+    sample_records = body.get("bioSamples") if isinstance(body.get("bioSamples"), dict) else {}
+    identified = body.get("bioIdentified") if isinstance(body.get("bioIdentified"), dict) else {}
+    for rec in sample_records.values():
+        if isinstance(rec, Mapping) and _text(rec.get("genus")):
+            roster[_text(rec.get("genus"))] = _text(rec.get("genusId"))
+    for genus in identified:
+        roster.setdefault(genus, "")
+    result = []
+    for genus in sorted(roster, key=str.casefold):
+        exact = next((dict(r) for r in sample_records.values() if isinstance(r, Mapping)
+                      and _text(r.get("genus")).casefold() == genus.casefold()), None)
+        codex = identified.get(genus)
+        if not exact and isinstance(codex, dict):
+            exact = codex
+        if exact:
+            name = _text(exact.get("species"))
+            base = BIO_REFERENCE_VALUES.get(name)
+            result.append({"genus": genus, "species": name,
+                           "exact": True, "identification": exact.get("source", "ScanOrganic"),
+                           "minBase": base, "maxBase": base,
+                           "rangeCoverage": "identified_species"})
+            continue
+        matching = [c for c in candidates if _text(c.get("genus")).casefold() == genus.casefold()]
+        values = [c["estimatedBase"] for c in matching if type(c.get("estimatedBase")) is int]
+        result.append({"genus": genus, "species": None, "exact": False,
+                       "minBase": min(values) if values else None,
+                       "maxBase": max(values) if values else None,
+                       "rangeCoverage": "partial_habitat_catalog" if matching else "unmodeled_genus",
+                       "possibleSpecies": len(matching)})
+    return result
+
+
+def _bio_record_codex(body: dict[str, Any], event: Mapping[str, Any]) -> None:
+    """CodexEntry is evidence only for known biology with an explicit BodyID.
+
+    Frontier does not promise one CodexEntry per repeat composition scan.
+    Never use a generic geological CodexEntry as biological identification.
+    """
+    category = _text(event.get("Category"))
+    if category != "$Codex_Category_Biology;":
+        return
+    name = _text(event.get("Name_Localised"))
+    if name not in BIO_REFERENCE_VALUES:
+        return
+    genus = name.split(" ", 1)[0]
+    documented = body.get("biologicalGenuses")
+    if not (isinstance(documented, list) and any(
+        _text(g.get("name")).casefold() == genus.casefold() for g in documented if isinstance(g, Mapping)
+    )) and _bio_signal_count(body) <= 0:
+        return  # no body-local biological evidence
+    identified = body.get("bioIdentified") if isinstance(body.get("bioIdentified"), dict) else {}
+    identified[genus] = {"species": name, "source": "Frontier CodexEntry",
+                         "identifiedAt": _text(event.get("timestamp"))}
+    body["bioIdentified"] = identified
+
+
 def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
     count = _bio_signal_count(body)
     samples = body.get("bioSamples") if isinstance(body.get("bioSamples"), dict) else {}
@@ -557,6 +637,8 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
         "signals": count,
         "confirmedGenuses": confirmed,
         "sampledSpecies": current,
+        "activeSpeciesId": _text(body.get("bioActiveSpeciesId")),
+        "genusOverview": _bio_species_by_genus(body),
         "identification": "dss_genuses_confirmed" if confirmed else "species_observed" if current else "signals_only",
         "hmcBiologicalOpportunity": hmc and count > 0,
         "possibleStratum": hmc and count > 0 and not confirmed,
@@ -898,6 +980,12 @@ class Surveyor:
                     details TEXT NOT NULL, timestamp TEXT NOT NULL,
                     PRIMARY KEY(commander,digest)
                 );
+                CREATE TABLE IF NOT EXISTS expedition_bio_credits (
+                    expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
+                    body_id TEXT NOT NULL, species_id TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL, base INTEGER,
+                    PRIMARY KEY(expedition_id,address,body_id,species_id)
+                );
                 CREATE TABLE IF NOT EXISTS carto_reference (
                     commander TEXT NOT NULL,
                     address TEXT NOT NULL,
@@ -1155,7 +1243,7 @@ class Surveyor:
                             revalue_systems.add(record["address"])
                             if record["address"] == address:
                                 system.update(previous)
-            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound", "ScanOrganic", "Disembark"}:
+            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound", "ScanOrganic", "Disembark", "CodexEntry"}:
                 raw_id = event.get("Body") if kind == "ScanOrganic" else event.get("BodyID")
                 body_id = _text(raw_id) if raw_id is not None else ""
                 if body_id:
@@ -1220,12 +1308,27 @@ class Surveyor:
                                 # Prior Scan said no earlier footfall, and this
                                 # Commander stepped out onto that world.
                                 body["ourFirstFootfall"] = True
+                    elif kind == "CodexEntry":
+                        _bio_record_codex(body, event)
                     elif kind == "ScanOrganic":
                         _biological_apply(body, event, None if historic else position, address, timestamp)
                         if body.get("wasFootfalled") is False and not historic:
                             body["ourFirstFootfall"] = True
                         if not historic and address == active:
                             system["lastOrganicBodyId"] = body_id
+                        session = self._active_expedition(conn, commander)
+                        if (kind == "ScanOrganic" and not historic and session is not None
+                                and timestamp > session["started_at"]
+                                and _text(event.get("ScanType")).casefold() == "analyse"):
+                            _, species_id, _, species = _biological_identity(event)
+                            if species_id:
+                                conn.execute(
+                                    "INSERT OR IGNORE INTO expedition_bio_credits "
+                                    "(expedition_id,address,body_id,species_id,occurred_at,base) "
+                                    "VALUES (?,?,?,?,?,?)",
+                                    (session["id"], address, body_id, species_id, timestamp,
+                                     BIO_REFERENCE_VALUES.get(species)),
+                                )
                     else:
                         if kind == "SAASignalsFound" and isinstance(event.get("Genuses"), list) and event["Genuses"]:
                             body["biologicalGenuses"] = _biological_genuses(event["Genuses"])
