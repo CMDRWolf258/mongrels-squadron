@@ -79,10 +79,8 @@ with tempfile.TemporaryDirectory() as folder:
         "_nav_id":None,"_refresh_route_navigation":lambda:None,
         "_get_surveyor":lambda:ledger,
     })
-    extracted(HUD, {"great_circle_nav","bio_focus_body","bio_genetic_guidance"}, {
-        **(huds:={"math":math,"datetime":datetime,"timezone":timezone,"Any":Any})
-    })
-    # functions loaded into huds
+    huds = extracted(HUD, {"great_circle_nav","bio_focus_body","bio_genetic_guidance"},
+        {"math":math,"datetime":datetime,"timezone":timezone,"Any":Any})
     assert "bio_genetic_guidance" in huds
 
     def journal(item, system=SYSTEM):
@@ -170,8 +168,10 @@ with tempfile.TemporaryDirectory() as folder:
     assert huds["bio_focus_body"](snap["exploration"],snap["status"])["bodyName"]==unseen
 
     # Out-of-system Status must not set a fictitious body or sample location.
+    # The Status fix is tagged while the HUD still believes it is elsewhere.
     state["system"]["address"]=str(ADDR+1)
     status(SYSTEM+" 4",8,22,-4,system_addr=ADDR+1)
+    assert state["status"]["systemAddress"] == str(ADDR+1)
     journal(organic("Log",-3,bodyid=4))
     out=next(b for b in bridge()["exploration"]["exobiology"]["biologicalBodies"] if b["bodyId"]=="4")
     assert not out["sampledSpecies"][0].get("samplePositions")
