@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.11 and HUD 0.17.19 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.12 and HUD 0.17.20 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.11** and HUD **0.17.19**.
+5. Start EDMC, then test HUD. Check Scout **1.13.12** and HUD **0.17.20**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -77,3 +77,21 @@ no new server polling or telemetry uploads were added.
 Live verification: Start, scan a new body, mark this system already explored, scan/map
 another body, undo, and restart EDMC/HUD. Compare figures and confirm other Scout/HUD
 functions continue normally. Estimates are not proof of unsold Cartographics data.
+
+## Exploration HUD refresh (TEST only)
+
+Select the **Exploration** profile on the paired iPad. Three independently sized
+and positioned instruments are shown: **Expedition Telemetry** (system value,
+expedition total, local scan status), **DSS Target Director** (top three journal-
+confirmed mapping recommendations plus *separately identified* community catalog
+hints), and **Body Intelligence** (Elite-selected destination, else last journal
+scan; catalog-only facts never imply personal discovery).
+
+Community charts are OFF by default. The owner can explicitly enable EDSM/Spansh
+on the paired iPad; only the current system name and ID64 are sent to those
+providers. No additional Cloudflare polling is used. The Cartographics quote
+control records observed UC quotes locally; its diagnostic comparison ratios
+**never** apply a global multiplier to Surveyor or expedition credits.
+
+Use the next TEST builds, not earlier 1.13.11/0.17.19 artifacts. This PR is
+unmerged and has no production auto-updater changes.
