@@ -82,32 +82,54 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
 # Values below are a deliberately small, individually attributable reference set,
 # NOT a complete BioInsights prediction model. Unknown values remain UNKNOWN.
 # 2025-26 community references: INARA biological survey reports and ED journal.
+# Independently published Vista Genomics base payouts, *not* first-footfall
+# bonuses or proof of unclaimed data. Do not treat partial catalog as complete.
+BIO_PRICE_SOURCE = "https://ed-dsn.net/en/vista-genomics-values/"
 BIO_REFERENCE_VALUES = {
-    "Stratum Tectonicas": 19010800,
-    "Stratum Paleas": 1362000,
+    "Aleoida Arcus": 7252500,
+    "Aleoida Coronamus": 6284600,
+    "Aleoida Gravis": 12934900,
+    "Aleoida Laminiae": 3385200,
+    "Aleoida Spica": 3385200,
     "Bacterium Acies": 1000000,
-    "Bacterium Alcyoneum": 1000000,
-    "Bacterium Bullaris": 1000000,
+    "Bacterium Alcyoneum": 1658500,
+    "Bacterium Aurasus": 1000000,
+    "Bacterium Bullaris": 1152500,
     "Bacterium Cerbrus": 1689800,
-    "Bacterium Informem": 1000000,
+    "Bacterium Informem": 8418000,
     "Bacterium Nebulus": 5289900,
     "Bacterium Vesicula": 1000000,
     "Cactoida Cortexum": 3667600,
     "Cactoida Lapis": 2483600,
     "Cactoida Peperatis": 2483600,
+    "Cactoida Pullulanta": 3667600,
     "Cactoida Vermis": 16202800,
+    "Clypeus Lacrimam": 8418000,
+    "Clypeus Margaritus": 11873200,
+    "Clypeus Speculumi": 16202800,
+    "Electricae Pluma": 6284600,
+    "Fungoida Bullarum": 3703200,
+    "Fungoida Gelata": 3330300,
+    "Fungoida Setisis": 1670100,
+    "Fungoida Stabitis": 2680300,
+    "Osseus Cornibus": 1483000,
+    "Osseus Discus": 12934900,
+    "Osseus Fractus": 4027800,
+    "Osseus Pellebantus": 9739000,
+    "Osseus Pumice": 3156300,
+    "Osseus Spiralis": 2404700,
     "Stratum Araneamus": 2448900,
     "Stratum Cucumisis": 16202800,
     "Stratum Excutitus": 2448900,
     "Stratum Frigus": 2637500,
     "Stratum Laminamus": 2788300,
     "Stratum Limaxus": 1362000,
+    "Stratum Paleas": 1362000,
+    "Stratum Tectonicas": 19010800,
     "Tubus Conifer": 2415500,
-    "Bacterium Aurasus": 1000000,
-    "Fungoida Gelata": 3330300,
-    "Cactoida Pullulanta": 3667600,
 }
-BIO_REFERENCE_MODEL = "community-reference-partial-2026-10"
+BIO_REFERENCE_MODEL = "dsn-vista-genomics-base-2026-10-partial"
+
 # Only distances independently established for these genera are exposed.
 BIO_GENETIC_DISTANCES_M = {"Stratum": 500, "Bacterium": 500, "Osseus": 800, "Electricae": 1000}
 
@@ -413,6 +435,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
             "estimatedBase": BIO_REFERENCE_VALUES.get(name),
             "geneticDistanceMeters": BIO_GENETIC_DISTANCES_M.get(genus),
             "sourceUrl": BIO_HABITAT_SOURCES[genus],
+            "baseValueSourceUrl": BIO_PRICE_SOURCE if name in BIO_REFERENCE_VALUES else None,
         })
     # Highest known-value candidates first, but UNKNOWN values never mean zero.
     candidates.sort(key=lambda row: (
@@ -1323,6 +1346,8 @@ class Surveyor:
                 "source": "frontier_journal_local",
                 "model": BIO_REFERENCE_MODEL,
                 "habitatModel": BIO_HABITAT_VERSION,
+                "baseValueSource": BIO_PRICE_SOURCE,
+                "valuedSpeciesInCatalog": len(BIO_REFERENCE_VALUES),
                 "habitatRuleCount": len(BIO_HABITAT_RULES),
                 "distanceSource": BIO_DISTANCE_SOURCE,
                 "valueCatalogComplete": False,
