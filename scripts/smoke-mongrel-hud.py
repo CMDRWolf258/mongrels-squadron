@@ -713,3 +713,85 @@ finally:
     plugin._session = original_session
 
 print("✓ Trade diagnostics preserve eligibility exclusions and distinguish server rejection from acceptance")
+
+# Surveyor restart regression: after a complete EDMC restart there can be NO
+# new journal event, but the local HUD must already display persisted scans.
+# No BGS uploads, remote reads, or other HUD pipeline changes are required.
+assert "_schedule_surveyor_startup_restore" in plugin.plugin_start3.__code__.co_names
+surveyor_spec = importlib.util.spec_from_file_location(
+    "surveyor_smoke_restart", root / "downloads" / "mongrel-scout" / "surveyor.py")
+assert surveyor_spec and surveyor_spec.loader
+surveyor_mod = importlib.util.module_from_spec(surveyor_spec)
+surveyor_spec.loader.exec_module(surveyor_mod)
+original_surveyor = plugin._get_surveyor
+original_schedule = plugin._schedule_surveyor_history
+original_monitor_dir = getattr(plugin.monitor, "currentdir", None)
+original_monitor_cmdr = getattr(plugin.monitor, "cmdr", None)
+try:
+    with TemporaryDirectory() as tmp:
+        fixture_root = Path(tmp)
+        journal_dir = fixture_root / "journals"
+        journal_dir.mkdir()
+        journal_file = journal_dir / "Journal.2026-10-12T001800.01.log"
+        journal_file.write_text(
+            "\n".join(json.dumps(row) for row in [
+                {"timestamp": "2026-10-12T00:18:00Z", "event": "Fileheader"},
+                {"timestamp": "2026-10-12T00:18:01Z", "event": "Commander", "Name": "Wolf258"},
+            ]) + "\n", encoding="utf-8")
+        saved = surveyor_mod.Surveyor(fixture_root / "surveyor.sqlite3")
+        system = "NGC 2546 Sector XR-F b39-1"
+        address = 123456789123456789
+        saved.apply("Wolf258", {"event": "FSDJump", "timestamp": "2026-10-12T00:18:02Z",
+            "StarSystem": system, "SystemAddress": address})
+        saved.apply("Wolf258", {"event": "FSSDiscoveryScan",
+            "timestamp": "2026-10-12T00:18:03Z", "BodyCount": 10})
+        for bid in range(1, 11):
+            saved.apply("Wolf258", {"event": "Scan",
+                "timestamp": f"2026-10-12T00:18:{bid+3:02d}Z",
+                "BodyID": bid, "BodyName": f"{system} {bid}",
+                "PlanetClass": "High metal content body", "MassEM": 0.3,
+                "DistanceFromArrivalLS": 300 + bid * 100,
+                "WasDiscovered": False, "WasMapped": False,
+                "ScanType": "Detailed"})
+        saved.apply("Wolf258", {"event": "SAAScanComplete",
+            "timestamp": "2026-10-12T00:18:20Z",
+            "BodyID": 1, "BodyName": f"{system} 1",
+            "ProbesUsed": 4, "EfficiencyTarget": 6})
+        plugin._get_surveyor = lambda: surveyor_mod.Surveyor(fixture_root / "surveyor.sqlite3")
+        schedule_requests = []
+        plugin._schedule_surveyor_history = lambda cmdr: schedule_requests.append(cmdr)
+        plugin.monitor.currentdir = str(journal_dir)
+        plugin.monitor.cmdr = "Wolf258"
+        plugin._hud_state["commander"] = ""
+        plugin._hud_state["exploration"] = None
+        plugin._run_surveyor_startup_restore()  # simulate EDMC restart, no events
+        restored = plugin._hud_state["exploration"]
+        assert restored["system"]["name"] == system
+        assert restored["personallyScannedBodies"] == 10
+        assert restored["personallyMappedBodies"] == 1
+        assert restored["mappingAdvisor"]["targets"][0]["bodyId"] != "1"
+        assert schedule_requests == ["Wolf258"]
+
+        # A live event for a different Commander must win the startup race.
+        plugin._hud_state["commander"] = "Other CMDR"
+        plugin._hud_state["exploration"] = None
+        plugin._run_surveyor_startup_restore()
+        assert plugin._hud_state["exploration"] is None
+
+        # Conflicting monitor and journal Commander must not show wrong data.
+        plugin._hud_state["commander"] = ""
+        plugin.monitor.cmdr = "Other CMDR"
+        plugin._run_surveyor_startup_restore()
+        assert plugin._hud_state["exploration"] is None
+finally:
+    plugin._get_surveyor = original_surveyor
+    plugin._schedule_surveyor_history = original_schedule
+    if original_monitor_dir is None:
+        plugin.monitor.__dict__.pop("currentdir", None)
+    else:
+        plugin.monitor.currentdir = original_monitor_dir
+    if original_monitor_cmdr is None:
+        plugin.monitor.__dict__.pop("cmdr", None)
+    else:
+        plugin.monitor.cmdr = original_monitor_cmdr
+print("✓ Surveyor startup restores FSS/DSS SQLite data with no journal event and rejects crossed Commander identities")
