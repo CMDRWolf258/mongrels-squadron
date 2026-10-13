@@ -59,7 +59,16 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
-### Surveyor Phase 3A — Biological HUD + iPad UI (feature PR pending CI)
+### Surveyor Phase 4 — Callback integration, 60-species model, staged paired builds
+
+- `surveyor.py` now has **60 source-attributed species across ten genera**, including all Tubus/Tussock species, with independently published Vista Genomics base prices. Model `mongrel-habitats-2026-10-stage4-v1`; source details and partial regional/starlight/volcanic coverage in `SURVEYOR_BIO_PREDICTIONS.md`.
+- Frontier `Scan.Genuses` and `SAASignalsFound.Genuses` are both accepted; empty later lists do not erase evidence. A live `ScanOrganic` may use fresh, matched same-system on-foot Status to name a previously unknown body, and saves `lastOrganicBodyId` for biological focus.
+- **GPS system-scoping correction:** Scout binds `status.systemAddress` when `Status.json` was captured and does not rewrite it on a later journal callback. HUD/iPad range checks require that original system match, plus body name, GPS freshness and radius. Never show a "ready to sample" claim solely because distance is met.
+- `scripts/test_surveyor_bio_pipeline.py` runs true Scout status/journal callback functions and real Surveyor SQLite, passes serialized state into actual HUD guidance code, and tests body identity, stale-system positions and sale isolation.
+- `.github/workflows/surveyor-test-artifacts.yml` now has owner-only on-demand paired Exobiology builds, gated on regression tests. Scout testing ZIP **must** contain `mission_sync.py` alongside five core/Surveyor .py dependencies. `EXOBIOLOGY_TESTING.md` documents installation and rollback. No production release created.
+- Before a live owner test, complete CI and owner-only GitHub Actions artifacts, then coordinate **one** Scout/HUD install on Serenity; don't ask for repeated installations after each incremental merge.
+
+### Surveyor Phase 3A — Biological HUD + iPad UI (merged PR #213)
 
 - Existing `exobiology` snapshot now emits predictions for **40 species across 8 genera**, including Bacterium/Cactoida/Fungoida, using conditionally-applied atmospheres, planet type and gravity; model `mongrel-habitats-2026-10-stage3-v1`. Unknown and volcanism-dependent possibilities remain unvalued, not rejected.
 - HUD adds independent `surveyor_bio` panel in Exploration with ordinary visibility/size/profile controls; no behavioral changes to original `surveyor`, DSS, mining or status panels.
