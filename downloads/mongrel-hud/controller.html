@@ -163,7 +163,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   </section>
 
   <section id="hudTab">
-    <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button><button id="navigationButton" data-profile="navigation">NAVIGATION</button></div>
+    <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button><button id="navigationButton" data-profile="navigation">NAVIGATION</button><button id="explorationButton" data-profile="exploration">EXPLORATION</button></div>
 
   <section id="navigationPanel" class="hidden">
   <div class="card">
@@ -216,6 +216,43 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   </div>
   </section>
 
+  <div class="card" id="surveyorExpeditionCard">
+    <h2>SURVEYOR · EXPEDITION CONTROL</h2>
+    <div class="layout-hint">Private to Serenity. Expedition earnings count only new journal-confirmed scans and DSS gains after Start Exploration. Visiting a system never counts as a scan.</div>
+    <div class="layout-hint">The separate Exploration Alerts HUD window highlights live FIRST DISCOVERY scan flags and high-metal-content planets with biological signals. HMC signals do not identify Stratum Tectonicas or prove first footfall; both alerts are local and expire when you leave the system.</div>
+    <div class="grid">
+      <div><small>CURRENT SYSTEM · OBSERVED</small><strong id="surveyorCurrentEstimate">—</strong><div class="layout-hint">May include data previously sold</div></div>
+      <div><small>EXPEDITION · SINCE START</small><strong id="surveyorExpeditionEstimate">—</strong><div class="layout-hint">New eligible work only · estimated</div></div>
+    </div>
+    <div class="layout-hint" id="surveyorExpeditionStatus">Waiting for Scout's local Surveyor ledger.</div>
+    <div class="layout-actions">
+      <button type="button" id="surveyorStart">START EXPLORATION</button>
+      <button type="button" id="surveyorEnd">END EXPEDITION</button>
+      <button type="button" id="surveyorMark">ALREADY EXPLORED</button>
+      <button type="button" id="surveyorUndo">UNDO EXCLUSION</button>
+    </div>
+    <div class="notice" id="surveyorExpeditionNotice"></div>
+    <h3>COMMUNITY CHARTS · EDSM / SPANSH</h3>
+    <div class="layout-hint">Optional. When enabled, system name and 64-bit address are shared with EDSM and Spansh. No journals, CMDR identity or earnings leave Serenity. Catalog entries do not prove first discovery.</div>
+    <div class="layout-actions"><button id="surveyorCommunityToggle" type="button">ENABLE COMMUNITY CHARTS</button><button id="surveyorCommunityRefresh" type="button">REFRESH THIS SYSTEM</button></div>
+    <div class="layout-hint" id="surveyorCommunityStatus">Community charts disabled.</div>
+    <details id="surveyorDiscoveryReport"><summary>DISCOVERY REPORT · BODY STATUS</summary>
+      <div class="layout-hint">Frontier journal flags describe discovery/mapping status when you scanned. Community-listed bodies are reported, but first claims are not verified by the catalog.</div>
+      <div id="surveyorDiscoveryRows" class="network-jobs">No body records yet.</div>
+    </details>
+    <h3>EDDISCOVERY · LOCAL HISTORICAL SCANS</h3>
+    <div class="layout-hint">Optional read-only bridge to EDDiscovery's built-in Web Server (Settings). Use the port shown in EDDiscovery. Only localhost is contacted. No Windows firewall rule for iPad/LAN is needed. Previously sold historical values never count as new expedition earnings.</div>
+    <div class="layout-actions"><label for="surveyorEDDPort">EDDiscovery web server port</label><input id="surveyorEDDPort" type="number" min="1024" max="65535" inputmode="numeric" placeholder="Enter EDD port"></div>
+    <div class="layout-actions"><button id="surveyorEDDConnect" type="button">LINK EDDISCOVERY</button><button id="surveyorEDDRefresh" type="button">REFRESH LOCAL SCANS</button><button id="surveyorEDDDisconnect" type="button">UNLINK</button></div>
+    <div class="layout-hint" id="surveyorEDDStatus">EDDiscovery not linked.</div>
+    <h3>CARTOGRAPHICS CALIBRATION</h3>
+    <div class="layout-hint">Record Universal Cartographics system quotes, including prior systems. References do not mark scans sold. Ratios stay diagnostic until discovery and completion bonuses are validated.</div>
+    <div class="grid"><div><label for="surveyorQuoteSystem">System name</label><input id="surveyorQuoteSystem" type="text" placeholder="Current or previous system"></div><div><label for="surveyorQuoteValue">Cartographics quote (CR)</label><input id="surveyorQuoteValue" type="number" min="0" step="1" inputmode="numeric" placeholder="32267"></div></div>
+    <div class="layout-actions"><button id="surveyorRecordQuote" type="button">RECORD SYSTEM QUOTE</button></div>
+    <div class="layout-hint" id="surveyorCalibrationStatus">Awaiting comparison readings.</div>
+    <div class="layout-hint">Already Explored excludes earnings recorded before you press it in the current system. Fresh scans and DSS mapping afterward still count. Undo restores the excluded expedition credits. Existing historical scans remain in Surveyor's local ledger.</div>
+  </div>
+
   <div class="card">
     <h2>OVERLAY LAYOUT</h2>
     <div class="layout-actions"><button type="button" id="overlayMaster">OVERLAY ON</button><button type="button" id="layoutLock">UNLOCK LAYOUT</button><button type="button" id="layoutReset">RESET LAYOUT</button></div>
@@ -228,6 +265,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="panel-control"><strong>Bounties</strong><button class="panel-toggle" type="button" data-panel-visible="bounties">ON</button><select data-panel-scale="bounties" aria-label="Bounties panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="bounties" aria-label="Bounties profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
       <div class="panel-control"><strong>Cargo</strong><button class="panel-toggle" type="button" data-panel-visible="cargo">OFF</button><select data-panel-scale="cargo" aria-label="Cargo panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9" selected>90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="cargo" aria-label="Cargo profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
       <div class="panel-control"><strong>Surface Navigation</strong><button class="panel-toggle" type="button" data-panel-visible="surface">ON</button><select data-panel-scale="surface" aria-label="Surface panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="surface" aria-label="Surface profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div><div class="panel-control"><strong>Mining Intel</strong><button class="panel-toggle" type="button" data-panel-visible="miningintel">ON</button><select data-panel-scale="miningintel" aria-label="Mining Intel panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="miningintel" aria-label="Mining Intel profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
+      <div class="panel-control"><strong>Expedition Telemetry</strong><button class="panel-toggle" type="button" data-panel-visible="surveyor">OFF</button><select data-panel-scale="surveyor" aria-label="Mongrel Surveyor panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="surveyor" aria-label="Mongrel Surveyor profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option></select></div>
+      <div class="panel-control"><strong>DSS Target Director</strong><button class="panel-toggle" type="button" data-panel-visible="surveyor_dss">ON</button><select data-panel-scale="surveyor_dss" aria-label="Mongrel Surveyor panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="surveyor_dss" aria-label="Mongrel Surveyor profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option></select></div>
+      <div class="panel-control"><strong>Body Intelligence</strong><button class="panel-toggle" type="button" data-panel-visible="surveyor_body">ON</button><select data-panel-scale="surveyor_body" aria-label="Mongrel Surveyor panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="surveyor_body" aria-label="Mongrel Surveyor profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option></select></div>
+      <div class="panel-control"><strong>Exploration Alerts</strong><button class="panel-toggle" type="button" data-panel-visible="surveyor_alert">ON</button><select data-panel-scale="surveyor_alert" aria-label="Mongrel Surveyor panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="surveyor_alert" aria-label="Mongrel Surveyor profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option><option value="exploration" selected>Exploration</option><option value="exploration-navigation">Exploration + Navigation</option></select></div>
       <div class="panel-control"><strong>Mission Control</strong><button class="panel-toggle" type="button" data-panel-visible="mission">ON</button><select data-panel-scale="mission" aria-label="Mission Control panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="mission" aria-label="Mission Control profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div><details class="panel-extra"><summary>Mission Control display system</summary><label for="missionSystemFilter">Show orders for</label><select id="missionSystemFilter"><option value="all">Top 5 across all Daily Order systems</option></select></details>
       <div class="panel-control"><strong>Trader's Outpost</strong><button class="panel-toggle" type="button" data-panel-visible="trade">OFF</button><select data-panel-scale="trade" aria-label="Trader's Outpost panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="trade" aria-label="Trader's Outpost profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
       <div class="panel-control"><strong>Scout Board</strong><button class="panel-toggle" type="button" data-panel-visible="scoutboard">OFF</button><select data-panel-scale="scoutboard" aria-label="Scout Board panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="scoutboard" aria-label="Scout Board profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div><div class="panel-control"><strong>Nearest Scout Jobs</strong><button class="panel-toggle" type="button" data-panel-visible="scoutnearby">OFF</button><select data-panel-scale="scoutnearby" aria-label="Nearest Scout Jobs panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="scoutnearby" aria-label="Nearest Scout Jobs profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
@@ -348,7 +389,7 @@ function renderLayoutControls(layout){
   setText(el("layoutHint"),layout.locked===false?"Unlocked: drag the labeled panel headers on the PC, adjust sizes here, then lock the layout.":"Locked: overlays are transparent and click-through.");
   document.querySelectorAll("[data-panel-visible]").forEach(function(button){var id=button.getAttribute("data-panel-visible"),cfg=panels[id]||{},text=cfg.visible===false?"OFF":"ON";setText(button,text);button.classList.toggle("active",cfg.visible!==false)});
   document.querySelectorAll("[data-panel-scale]").forEach(function(select){var id=select.getAttribute("data-panel-scale"),cfg=panels[id]||{},value=String(cfg.scale||1);if(select.value!==value)select.value=value});
-  document.querySelectorAll("[data-panel-profile]").forEach(function(select){var id=select.getAttribute("data-panel-profile"),cfg=panels[id]||{},profiles=cfg.profiles||[],value=profiles.includes("combat")&&profiles.includes("surface")&&profiles.includes("navigation")?"all":profiles.includes("combat")&&profiles.includes("navigation")?"combat-navigation":profiles.includes("surface")&&profiles.includes("navigation")?"surface-navigation":profiles.includes("combat")&&profiles.includes("surface")?"both":profiles.includes("navigation")?"navigation":profiles.includes("surface")?"surface":"combat";if(select.value!==value)select.value=value});
+  document.querySelectorAll("[data-panel-profile]").forEach(function(select){var id=select.getAttribute("data-panel-profile"),cfg=panels[id]||{},profiles=cfg.profiles||[],value=profiles.includes("exploration")&&profiles.includes("navigation")?"exploration-navigation":profiles.includes("exploration")?"exploration":profiles.includes("combat")&&profiles.includes("surface")&&profiles.includes("navigation")?"all":profiles.includes("combat")&&profiles.includes("navigation")?"combat-navigation":profiles.includes("surface")&&profiles.includes("navigation")?"surface-navigation":profiles.includes("combat")&&profiles.includes("surface")?"both":profiles.includes("navigation")?"navigation":profiles.includes("surface")?"surface":"combat";if(select.value!==value)select.value=value});
 }
 function showLayoutStatus(message,isError){var node=el("layoutStatus");node.className="notice"+(isError?"":" success");node.textContent=message||""}
 function applyLayoutResult(result,message){if(result&&result.layout){state=state||{};state.layout=result.layout;renderLayoutControls(result.layout)}showLayoutStatus(message||"Display updated",false)}
@@ -463,9 +504,129 @@ function renderScoutNetwork(scout){
   if(!html)html='<div class="layout-hint">No open Scout jobs are currently listed.</div>';
   if(el("scoutNetworkJobs").innerHTML!==html)el("scoutNetworkJobs").innerHTML=html;
 }
+function renderSurveyorDiscovery(survey){
+  var owned=Array.isArray(survey.bodies)?survey.bodies:[],intel=survey.intelligence||{};
+  var external=Array.isArray(intel.reportedBodies)?intel.reportedBodies:[],seen=new Set(),rows=[];
+  function estimateTag(value,source){
+    return typeof value==="number"&&Number.isFinite(value)&&value>=0?
+      '<strong>'+source+' '+Math.round(value).toLocaleString()+' CR</strong>':
+      '<small>'+source+' VALUE UNAVAILABLE</small>';
+  }
+  for(var body of owned.slice(0,40)){
+    if(!body||typeof body!=="object")continue;
+    var name=String(body.name||"Unnamed body"),key=name.toLowerCase();
+    seen.add(key);
+    var discovered=body.wasDiscovered===true?"DISCOVERED BEFORE SCAN":
+      body.wasDiscovered===false?"POTENTIAL FIRST DISCOVERY":"DISCOVERY UNKNOWN";
+    var mapped=body.personallyMapped===true?"DSS MAPPED BY YOU":
+      body.wasMapped===true?"PREVIOUSLY MAPPED":
+      body.wasMapped===false?"NOT PREVIOUSLY MAPPED":"MAPPING UNKNOWN";
+    var report=external.some(function(record){return record&&String(record.name||"").toLowerCase()===key;})?
+      " · COMMUNITY REPORTED":"";
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(name)+'</strong>'+
+      '<small> · JOURNAL: '+escapeHtml(discovered)+' / '+escapeHtml(mapped)+
+      escapeHtml(report)+'</small></div><div style="text-align:right">'+
+      estimateTag(body.currentValue,"JOURNAL EST.")+'</div></div>');
+  }
+  var historic=survey.eddiscoveryHistory||{};
+  var eddbodies=Array.isArray(historic.bodies)?historic.bodies:[];
+  for(var old of eddbodies.slice(0,200)){
+    if(!old||typeof old!=="object")continue;
+    var historicName=String(old.name||""),oldKey=historicName.toLowerCase();
+    if(!historicName)continue; // Keep EDD historical estimate distinct from any journal estimate.
+    seen.add(oldKey);
+    var first=old.wasDiscovered===false?"POTENTIAL FIRST DISCOVERY AT SCAN":
+      old.wasDiscovered===true?"PREVIOUSLY DISCOVERED":"DISCOVERY UNKNOWN";
+    var mapped=old.personallyMapped?"MAPPED IN EDD HISTORY":
+      old.wasMapped===true?"PREVIOUSLY MAPPED":"MAPPING UNVERIFIED";
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(historicName)+
+      '</strong><small> · EDD HISTORICAL · '+escapeHtml(first)+' / '+
+      escapeHtml(mapped)+' · MAY ALREADY BE SOLD</small></div><div style="text-align:right">'+
+      estimateTag(old.estimatedValue,"EDD HIST. EST.")+'</div></div>');
+  }
+  if(eddbodies.length){
+    var valued=eddbodies.filter(function(b){return b&&typeof b.estimatedValue==="number"&&Number.isFinite(b.estimatedValue)&&b.estimatedValue>=0;}).length;
+    rows.push('<div class="layout-hint">EDDiscovery historical estimates available: '+valued+
+      ' / '+eddbodies.length+' bodies · May already be sold · Not expedition credits</div>');
+  }
+  for(var item of external.slice(0,100)){
+    if(!item||typeof item!=="object")continue;
+    var label=String(item.name||""),lookup=label.toLowerCase();
+    if(!label||seen.has(lookup))continue;
+    seen.add(lookup);
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(label)+
+      '</strong><small> · COMMUNITY REPORTED · DISCOVERY / MAPPING UNVERIFIED</small></div></div>');
+  }
+  var extra=Number(survey.bodyCountTruncated||0)+Number(intel.reportedBodiesTruncated||0);
+  if(extra>0)rows.push('<div class="layout-hint">+'+extra+' additional recorded bodies not displayed.</div>');
+  var html=rows.join("")||'<div class="layout-hint">No personal scans or community body reports yet.</div>';
+  if(el("surveyorDiscoveryRows").innerHTML!==html)el("surveyorDiscoveryRows").innerHTML=html;
+}
+function renderSurveyorControls(){
+  var survey=(state&&state.scout&&state.scout.exploration)||{};
+  var system=survey.system||{},exp=survey.expedition||{};
+  var active=exp.active===true,excluded=exp.existingDataExcluded===true;
+  var current=survey.currentSystemEstimate;
+  setText(el("surveyorCurrentEstimate"),typeof current==="number"?current.toLocaleString()+" CR":"UNVALUED");
+  setText(el("surveyorExpeditionEstimate"),active?Number(exp.estimate||0).toLocaleString()+" CR":"NOT STARTED");
+  setText(el("surveyorExpeditionStatus"),active?("ACTIVE · "+String(system.name||"Unknown system")+(excluded?" · PRIOR DATA EXCLUDED":"")+" · "+Number(exp.countedScans||0)+" scans / "+Number(exp.countedMaps||0)+" maps counted"):("STANDBY · Start a new expedition when ready"));
+  el("surveyorStart").disabled=active;
+  el("surveyorEnd").disabled=!active;
+  el("surveyorMark").disabled=!active||excluded||!system.address;
+  el("surveyorUndo").disabled=!active||!excluded;
+  renderSurveyorDiscovery(survey);
+  var eddEnabled=state.scout&&state.scout.explorationEDDiscoveryEnabled===true;
+  var eddHistory=survey.eddiscoveryHistory||{};
+  var eddPort=Number(state.scout&&state.scout.explorationEDDiscoveryPort||0);
+  if(eddPort>0&&document.activeElement!==el("surveyorEDDPort")&&!el("surveyorEDDPort").value)
+    el("surveyorEDDPort").value=String(eddPort);
+  el("surveyorEDDConnect").disabled=eddEnabled;
+  el("surveyorEDDRefresh").disabled=!eddEnabled;
+  el("surveyorEDDDisconnect").disabled=!eddEnabled;
+  var eddConnection=String(state.scout&&state.scout.explorationEDDiscoveryStatus||"");
+  setText(el("surveyorEDDStatus"),!eddEnabled?
+    "NOT LINKED · journal scanning still functions normally":
+    eddConnection==="server_unavailable"?
+      "EDD SERVER UNAVAILABLE · confirm local Web Server is on and port matches":
+    eddConnection==="system_not_verified"?
+      "EDD HISTORY CURSOR / ID UNVERIFIED · open current system in EDDiscovery":
+    eddHistory.verifiedSystemIdentity?
+      "LINKED · "+Number(eddHistory.bodyCount||0)+" ARCHIVED BODIES · no expedition credits":
+      "LINKED · requesting EDDiscovery's local current-system scans");
+  var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
+  var intelligence=survey.intelligence||{};
+  setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
+  var intelStatus=String(intelligence.status||"pending");
+  var report=(!enabled?"COMMUNITY CHARTS OFF · LOCAL JOURNAL ONLY":
+    intelStatus==="providers_unavailable"?"PROVIDERS UNAVAILABLE · SCANS STILL TRACKED LOCALLY":
+    intelStatus==="not_in_queried_catalogs"?"NO COMMUNITY LISTING · FIRST DISCOVERY NOT CONFIRMED":
+    intelStatus==="system_cataloged_no_bodies"?"SYSTEM REPORTED · NO BODY RECORDS AVAILABLE":
+    intelStatus==="community_cataloged"?"COMMUNITY REPORTED · "+Number(intelligence.catalogedBodies||0)+
+      " bodies in "+String((intelligence.providers||[]).join(" + "))+
+      " · PREVIOUS MAPPING CLAIMS UNVERIFIED":
+    "LOOKUP QUEUED · WAIT FOR PROVIDER RESPONSE");
+  setText(el("surveyorCommunityStatus"),report);
+  el("surveyorCommunityRefresh").disabled=!enabled;
+  var comparison=survey.cartographicsComparison||{};
+  setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+
+    " distinct system quote comparisons · reference only (no blanket multiplier)");
+}
+async function surveyorAction(action){
+  holdRefresh(1200);
+  try{
+    var response=await api("/api/surveyor",{action:action});
+    if(!response.ok)throw new Error(String(response.error||"surveyor_action_failed"));
+    state=state||{};state.scout=state.scout||{};
+    if(response.exploration)state.scout.exploration=response.exploration;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),({start:"Expedition started",end:"Expedition ended",mark_existing:"Previous data excluded; future discoveries count",undo_existing:"Exclusion undone"})[action]||"Saved");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
+}
+
 function render(){
   if(!state)return;
   renderRouteControls();
+  renderSurveyorControls();
   var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
   el("connection").textContent=(state.connected?"Scout connected":"Scout waiting")+(safePanelErrors.length?" · Panel errors: "+safePanelErrors.map(function(row){return row.panel+" ("+row.errorType+")"}).join(", "):"");
   var trade=(state.scout&&state.scout.tradeActivity)||{};
@@ -952,7 +1113,7 @@ function currentVoiceCarrierKey(){return selectedVoiceCarrierKey||String((state&
 function selectedVoiceSettings(){return ((state&&state.voiceProfiles)||{})[currentVoiceCarrierKey()]||(state&&state.voice)||{}}
 async function mutateVoice(update){var key=currentVoiceCarrierKey(),change=typeof update==="function"?function(){return Object.assign({},update(),{carrierKey:key})}:Object.assign({},update,{carrierKey:key});var result=await mutate("/api/voice",change);state=state||{};state.voiceProfiles=state.voiceProfiles||{};state.voiceProfiles[key]=result.voice;state.localVoiceProfileKeys=Array.isArray(state.localVoiceProfileKeys)?state.localVoiceProfileKeys:[];if(!state.localVoiceProfileKeys.includes(key))state.localVoiceProfileKeys.push(key);return result}
 el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin").value.trim()});el("pairNotice").textContent="";await load()}catch(e){el("pairNotice").textContent="Pairing failed: "+e.message}};
-document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":profile==="navigation"?"Navigation":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
+document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":profile==="navigation"?"Navigation":profile==="exploration"?"Exploration":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
 el("hudTabButton").onclick=function(){showControllerTab("hud")};
 el("carrierTabButton").onclick=function(){showControllerTab("carrier")};
 el("voiceCarrierSelect").onchange=function(){selectedVoiceCarrierKey=String(el("voiceCarrierSelect").value||"");render();el("voiceNotice").textContent=selectedVoiceCarrierKey?"Editing "+(el("voiceCarrierSelect").selectedOptions[0]?.textContent||"selected carrier"):"Following currently detected carrier";};
@@ -986,12 +1147,67 @@ document.querySelectorAll("[data-voice-cue]").forEach(function(row){
 });
 document.addEventListener("touchstart",function(){holdRefresh(1200)},{passive:true});
 document.addEventListener("pointerdown",function(){holdRefresh(900)},{passive:true});
+el("surveyorStart").onclick=function(){surveyorAction("start")};
+el("surveyorEnd").onclick=function(){if(confirm("End this expedition? Recorded exploration data stays in the private ledger."))surveyorAction("end")};
+el("surveyorMark").onclick=function(){if(confirm("Exclude existing expedition earnings in this system? New scans and mappings will still count."))surveyorAction("mark_existing")};
+el("surveyorUndo").onclick=function(){surveyorAction("undo_existing")};
+el("surveyorCommunityToggle").onclick=async function(){
+  var enabled=state&&state.scout&&state.scout.explorationCommunityEnabled===true;
+  if(!enabled&&!confirm("Enable EDSM/Spansh lookup? Only current system name and 64-bit system address are shared."))return;
+  try{
+    var r=await api("/api/surveyor",{action:enabled?"intel_off":"intel_on"});
+    state.scout.explorationCommunityEnabled=Boolean(r.communityEnabled);renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),r.communityEnabled?"Community charts enabled":"Community charts disabled");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Community change failed · "+e.message);}
+};
+el("surveyorCommunityRefresh").onclick=async function(){
+  try{await api("/api/surveyor",{action:"intel_refresh"});setText(el("surveyorExpeditionNotice"),"Community chart refresh queued locally");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"Community refresh failed · "+e.message);}
+};
+el("surveyorEDDConnect").onclick=async function(){
+  var raw=String(el("surveyorEDDPort").value||"").trim(),port=Number(raw);
+  if(!raw||!Number.isInteger(port)||port<1024||port>65535){
+    setText(el("surveyorExpeditionNotice"),"Enter the web-server port shown in EDDiscovery Settings");return;
+  }
+  try{
+    var r=await api("/api/surveyor",{action:"edd_connect",value:port});
+    state.scout.explorationEDDiscoveryEnabled=Boolean(r.eddEnabled);
+    state.scout.explorationEDDiscoveryPort=port;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),
+      r.queued?"EDDiscovery link enabled · local scan request queued":"EDDiscovery linked · waiting for system identity");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery link failed · "+e.message);}
+};
+el("surveyorEDDRefresh").onclick=async function(){
+  try{var r=await api("/api/surveyor",{action:"edd_refresh"});
+    setText(el("surveyorExpeditionNotice"),r.queued?"EDDiscovery history refresh queued":"EDDiscovery has no verified current system");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery refresh failed · "+e.message);}
+};
+el("surveyorEDDDisconnect").onclick=async function(){
+  try{await api("/api/surveyor",{action:"edd_off"});
+    state.scout.explorationEDDiscoveryEnabled=false;renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),"EDDiscovery disconnected; stored local history retained");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery unlink failed · "+e.message);}
+};
+el("surveyorRecordQuote").onclick=async function(){
+  var raw=String(el("surveyorQuoteValue").value||"").trim(),value=Number(raw);
+  if(!raw||!Number.isSafeInteger(value)||value<0||value>2000000000){
+    setText(el("surveyorExpeditionNotice"),"Enter a valid non-negative whole-credit quote");return;
+  }
+  var system=String(el("surveyorQuoteSystem").value||"").trim();
+  try{
+    var r=await api("/api/surveyor",{action:"record_quote",value:value,system:system});
+    if(r&&r.exploration)state.scout.exploration=r.exploration;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),"Cartographics reference saved locally");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Quote not recorded · "+e.message);}
+};
 el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
 el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {locked:layout.locked===false}});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
 el("layoutReset").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout-reset",{});applyLayoutResult(r,"Layout positions reset")}catch(e){showLayoutStatus("Layout reset failed · "+e.message,true)}};
 document.querySelectorAll("[data-panel-visible]").forEach(function(button){button.onclick=async function(){holdRefresh(1200);try{var id=button.getAttribute("data-panel-visible"),r=await mutate("/api/panel",function(){var cfg=((state&&state.layout&&state.layout.panels)||{})[id]||{};return {panel:id,visible:cfg.visible===false}});applyLayoutResult(r,id+" "+(r.layout&&r.layout.panels&&r.layout.panels[id]&&r.layout.panels[id].visible!==false?"shown":"hidden"))}catch(e){showLayoutStatus("Panel toggle failed · "+e.message,true)}}});
 document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-scale"),scale:Number(select.value)});applyLayoutResult(r,"Panel size updated")}catch(e){showLayoutStatus("Panel size failed · "+e.message,true)}}});
-document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,profiles=({"both":["combat","surface"],"all":["combat","surface","navigation"],"combat-navigation":["combat","navigation"],"surface-navigation":["surface","navigation"]})[value]||[value],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
+document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,profiles=({"both":["combat","surface"],"all":["combat","surface","navigation"],"combat-navigation":["combat","navigation"],"surface-navigation":["surface","navigation"],"exploration-navigation":["exploration","navigation"]})[value]||[value],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{var r=await api("/api/target-scan",{});state=state||{};if(r.scan)state.targetScan=r.scan;render();await load(true)}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};

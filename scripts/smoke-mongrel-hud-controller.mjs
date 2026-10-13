@@ -53,7 +53,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -336,5 +336,22 @@ async function drain(h, expected) {
   const marked=h.node('routeManifest').innerHTML;
   assert.equal((marked.match(/is-reached/g)||[]).length,3,
     'Completed manifest must retain reached indicators even after Cloudflare clears active route');
+}
+{
+  // EDDiscovery archive values must be visible without inflating expedition earnings.
+  const h=harness();
+  h.controller.renderSurveyorDiscovery({
+    bodies:[{name:'TEST SYSTEM 1',currentValue:12345,personallyMapped:true,wasDiscovered:false}],
+    eddiscoveryHistory:{bodies:[
+      {name:'TEST SYSTEM 1',estimatedValue:23456,personallyMapped:true},
+      {name:'TEST SYSTEM 2',estimatedValue:null,personallyMapped:false},
+    ]},
+  });
+  const shown=h.node('surveyorDiscoveryRows').innerHTML;
+  assert.match(shown,/JOURNAL EST\.<\/strong>|JOURNAL EST\. 12,345 CR/, 'Journal estimate remains visible');
+  assert.match(shown,/EDD HIST\. EST\. 23,456 CR/, 'Matching historical body retains its EDD value');
+  assert.match(shown,/EDD HIST\. EST\. VALUE UNAVAILABLE/, 'Missing EDD values are not silently zero');
+  assert.match(shown,/1 \/ 2 bodies/, 'The report discloses history-value coverage');
+  assert.match(shown,/Not expedition credits/, 'Historical data must not be framed as new earnings');
 }
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');

@@ -54,12 +54,13 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.17.15"
+APP_VERSION = "0.17.23"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_ROUTE_CONTROL_URL = "http://127.0.0.1:43857/v1/route"
+SCOUT_SURVEYOR_CONTROL_URL = "http://127.0.0.1:43857/v1/exploration/control"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
@@ -212,8 +213,8 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
-VALID_PROFILES = ("combat", "surface", "navigation")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
@@ -222,6 +223,10 @@ PANEL_TITLES = {
     "cargo": "CARGO",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
+    "surveyor": "EXPEDITION TELEMETRY",
+    "surveyor_dss": "DSS TARGET DIRECTOR",
+    "surveyor_body": "BODY INTELLIGENCE",
+    "surveyor_alert": "EXPLORATION ALERTS",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -793,6 +798,10 @@ def default_layout() -> dict[str, Any]:
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
+            "surveyor": {"x": 40, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_dss": {"x": 610, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_body": {"x": 610, "y": 410, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_alert": {"x": 40, "y": 510, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -836,6 +845,11 @@ def normalized_layout(value: Any) -> dict[str, Any]:
         raw_profiles = raw.get("profiles")
         if isinstance(raw_profiles, list):
             profiles = [profile for profile in VALID_PROFILES if profile in raw_profiles]
+            if panel_id == "surveyor" and profiles == ["surface", "navigation"]:
+                # The old single Surveyor panel default was Surface/Navigation.
+                # Move only that exact legacy default to the new Exploration
+                # workspace. Preserve any custom profile assignments.
+                profiles = ["exploration"]
         else:
             profiles = list(base.get("profiles") or VALID_PROFILES)
         if not profiles:
@@ -3778,6 +3792,35 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
+        """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
+        if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote", "edd_connect", "edd_off", "edd_refresh"}:
+            raise ValueError("invalid_expedition_action")
+        request = urllib.request.Request(
+            SCOUT_SURVEYOR_CONTROL_URL,
+            data=json.dumps({"action": action, "value": value, "system": system[:140]}, separators=(",", ":")).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-Mongrel-HUD-Surveyor-Action": "1",
+            },
+            method="POST",
+        )
+        result = request_scout_json(request, "surveyor_control_failed")
+        observation = result.get("exploration") if isinstance(result, dict) else None
+        with self.lock:
+            if not isinstance(self.snapshot.data, dict):
+                self.snapshot.data = {}
+            if isinstance(observation, dict):
+                self.snapshot.data["exploration"] = observation
+            if "communityEnabled" in result:
+                self.snapshot.data["explorationCommunityEnabled"] = bool(result["communityEnabled"])
+            if "eddEnabled" in result:
+                self.snapshot.data["explorationEDDiscoveryEnabled"] = bool(result["eddEnabled"])
+            if "eddPort" in result:
+                self.snapshot.data["explorationEDDiscoveryPort"] = int(result["eddPort"])
+        return result
+
     def shared_mining_health(self) -> dict[str, Any]:
         """Admin-requested read-only archive status, never auto-refreshed."""
         request = urllib.request.Request(MINING_HEALTH_URL, headers={"Accept": "application/json"}, method="GET")
@@ -3833,7 +3876,7 @@ class MongrelHudApp:
         return result
 
     def set_profile(self, profile: str) -> str:
-        if profile not in {"combat", "surface", "navigation"}:
+        if profile not in {"combat", "surface", "navigation", "exploration"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
@@ -5372,9 +5415,111 @@ class MongrelHudApp:
             "alerts": "\n".join(alert_lines),
         }
 
+    def surveyor_panel_text(self) -> str:
+        """Read-only local journal summary; never consults the website from HUD."""
+        snapshot = self.scout_state()
+        survey = snapshot.get("exploration")
+        status = snapshot.get("explorationStatus")
+        if not isinstance(survey, dict):
+            if isinstance(status, dict) and status.get("error") == "local_surveyor_unavailable":
+                return "MONGREL SURVEYOR\nLocal exploration data unavailable"
+            return "MONGREL SURVEYOR\nAwaiting Scout exploration journal data"
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        lines = ["MONGREL SURVEYOR", self.clip_line(system.get("name") or "Unknown system", 42)]
+        labels = {
+            "potential_first_arrival_star": "POTENTIAL FIRST ARRIVAL STAR",
+            "previously_discovered_arrival_star": "ARRIVAL STAR PREVIOUSLY DISCOVERED",
+            "new_body_candidates": "POTENTIAL FIRST BODY DISCOVERY",
+            "unknown": "DISCOVERY STATUS UNKNOWN",
+        }
+        lines.append(labels.get(survey.get("discoveryStatus"), "DISCOVERY STATUS UNKNOWN"))
+        known, scanned, mapped = (
+            int(survey.get("knownBodies") or 0),
+            int(survey.get("personallyScannedBodies") or 0),
+            int(survey.get("personallyMappedBodies") or 0),
+        )
+        total = system.get("bodyCount")
+        lines.append(f"FSS: {scanned} observed / {total if isinstance(total, int) else '?'} bodies")
+        lines.append(f"DSS personally mapped: {mapped}  |  First candidates: {int(survey.get('potentialFirstBodies') or 0)}")
+        estimate = survey.get("unsoldEstimate")
+        lines.append(
+            f"Estimated unsold: {int(estimate):,} CR"
+            if isinstance(estimate, (int, float)) else "Estimated unsold: insufficient evidence"
+        )
+        current = survey.get("currentSystemEstimate")
+        lines.append(f"Current system: {int(current):,} CR (observed; may be sold)" if isinstance(current, (int, float)) else "Current system: unvalued")
+        expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
+        lines.append(f"Expedition since Start: {int(expedition.get('estimate') or 0):,} CR" if expedition.get("active") else "Expedition: not started")
+        lines.append("ESTIMATES ONLY · actual cartographic sales may differ")
+        history = snapshot.get("explorationImport") if isinstance(snapshot.get("explorationImport"), dict) else {}
+        if history:
+            history_state = str(history.get("status") or "not_started")
+            if history_state in {"completed", "partial"}:
+                lines.append(
+                    f"Journal recovery: {history_state.upper()} · "
+                    f"{int(history.get('processed') or 0)} new / "
+                    f"{int(history.get('duplicates') or 0)} known"
+                )
+            elif history_state == "local_replay_unavailable":
+                lines.append("Journal recovery unavailable · current scans still tracked")
+        sale_status = str(survey.get("unsoldEstimateStatus") or "")
+        if sale_status == "incomplete_sale_reconciliation":
+            lines.append("Sales recorded; UNSOLD estimate may include already-sold bodies")
+        gain_min = survey.get("additionalMappingPotentialMin")
+        gain_max = survey.get("additionalMappingPotentialMax")
+        if isinstance(gain_min, (int, float)) and isinstance(gain_max, (int, float)):
+            lines.append(f"DSS potential (basic / efficient): +{int(gain_min):,}–{int(gain_max):,} CR")
+        intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        if intel:
+            providers = intel.get("providers") if isinstance(intel.get("providers"), list) else []
+            source = ", ".join(str(x) for x in providers[:2]) or "community"
+            recorded = intel.get("catalogedBodies")
+            lines.append(
+                f"Catalog: {recorded} bodies ({source}; NOT Frontier claim evidence)"
+                if isinstance(recorded, int) else f"Community intelligence: {source}"
+            )
+        advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
+        targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+        lines.append("DSS MAPPING ADVISOR · LOCAL CONFIRMED SCANS")
+        lines.append("Ranked by provisional gain + arrival distance (NOT ETA)")
+        if not targets:
+            if int(advisor.get("unvaluedScans") or 0):
+                lines.append("Unpriced worlds found · more scan data needed")
+            else:
+                lines.append("No unmapped valued worlds yet · continue FSS scanning")
+        for target in targets[:3]:
+            if not isinstance(target, dict):
+                continue
+            name = self.clip_line(target.get("name") or "Body", 28)
+            dist = target.get("distanceLs")
+            dist_label = f"{dist:,.0f} LS" if isinstance(dist, (float, int)) else "distance ?"
+            tier = str(target.get("tier") or "unknown").upper()
+            rank = int(target.get("rank") or 0)
+            lines.append(f"#{rank} {name} · {tier} · {dist_label}")
+            min_gain, max_gain = target.get("dssGainMin"), target.get("dssGainMax")
+            if isinstance(min_gain, (int, float)) and isinstance(max_gain, (int, float)):
+                tags = target.get("reasons") if isinstance(target.get("reasons"), list) else []
+                reason = str(tags[0]) if tags else "journal estimate"
+                lines.append(
+                    f"  +{int(min_gain):,}–{int(max_gain):,} CR (DSS est.) · "
+                    + self.clip_line(reason, 28)
+                )
+        remaining = int(advisor.get("eligibleCount") or 0) - min(3, len(targets))
+        if remaining > 0:
+            lines.append(f"... {remaining} more ranked DSS targets")
+        if intel.get("highlights"):
+            lines.append("COMMUNITY CANDIDATES (UNVERIFIED)")
+            for body in intel["highlights"][:3]:
+                if isinstance(body, dict):
+                    lines.append(self.clip_line(
+                        f"{body.get('name', 'Body')} - {body.get('class') or 'unknown'}", 50
+                    ))
+        return "\n".join(lines)
+
     def panel_texts(self) -> dict[str, str]:
         panels = self.combat_panel_texts()
         panels["surface"] = "\n".join(self.surface_lines())
+        panels["surveyor"] = self.surveyor_panel_text()
         panels.update(self.site_panel_texts())
         notes = self.notes_text().strip()
         panels["notes"] = "NOTES\n" + (notes if notes else "No notes.")
@@ -6141,11 +6286,445 @@ class MongrelHudApp:
 
         return width, round(y + 7 * scale)
 
+    def _render_surveyor_alert_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        """Attention-grabbing but local-only Surveyor alerts from live journal events."""
+        width = round(540 * scale)
+        survey = self.scout_state().get("exploration")
+        survey = survey if isinstance(survey, dict) else {}
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        entries = survey.get("explorationAlerts") if isinstance(survey.get("explorationAlerts"), list) else []
+        entries = [row for row in entries if isinstance(row, dict)
+                   and row.get("kind") in {"first_discovery_system", "first_discovery_body", "hmc_bio"}]
+        if not hasattr(self, "_survey_alert_seen"):
+            self._survey_alert_seen = {}
+            self._survey_alert_system = ""
+        sysid = str(system.get("address") or "")
+        if self._survey_alert_system != sysid:
+            self._survey_alert_system = sysid
+            self._survey_alert_seen = {}
+        now = time.monotonic()
+        # Retain only event keys still present in this system's active visit.
+        active_keys = {sysid + ":" + str(row.get("id") or "") for row in entries}
+        self._survey_alert_seen = {key: when for key, when in self._survey_alert_seen.items()
+                                   if key in active_keys}
+        title_y = self._draw_title(canvas, "EXPLORATION ALERTS", scale, width, HUD_AMBER)
+        if not entries:
+            self._draw_text(canvas, 12 * scale, title_y, "NO LIVE DISCOVERY ALERTS", scale, 12, HUD_MUTED)
+            return width, round(title_y + 33 * scale)
+        indexed = list(enumerate(entries))
+        weight = {"first_discovery_system": 0, "hmc_bio": 1, "first_discovery_body": 2}
+        indexed.sort(key=lambda pair: (weight.get(pair[1]["kind"], 3), -pair[0]))
+        y = title_y + 7 * scale
+        for _, alert in indexed[:3]:
+            kind = alert["kind"]
+            key = sysid + ":" + str(alert.get("id") or "")
+            if key not in self._survey_alert_seen:
+                self._survey_alert_seen[key] = now
+            pulse = now - self._survey_alert_seen[key] < 12.0
+            color = HUD_GREEN if kind.startswith("first_discovery") else HUD_AMBER
+            bright = not pulse or flash_on
+            highlight = color if bright else HUD_DIM
+            title = ("FIRST DISCOVERY · SYSTEM" if kind == "first_discovery_system" else
+                     "FIRST DISCOVERY · BODY" if kind == "first_discovery_body" else
+                     "HMC + BIOLOGICAL SIGNALS")
+            name = self.clip_line(alert.get("name") or "UNNAMED BODY", 45)
+            canvas.create_rectangle(7 * scale, y, width - 7 * scale, y + 86 * scale,
+                                    outline=highlight, width=max(2, round(3 * scale)))
+            self._draw_text(canvas, 17 * scale, y + 8 * scale, title, scale, 18, highlight, True)
+            self._draw_text(canvas, 17 * scale, y + 35 * scale, name, scale, 12, HUD_WHITE, True)
+            if kind == "hmc_bio":
+                count = max(0, int(alert.get("biologicalSignals") or 0))
+                footer = f"{count} BIO SIGNAL(S) · SPECIES UNKNOWN · STRATUM NOT CONFIRMED"
+            else:
+                footer = "FRONTIER SCAN FLAG · CONFIRM FIRST CLAIM IN GAME"
+            self._draw_text(canvas, 17 * scale, y + 59 * scale, footer, scale, 9, HUD_CYAN, True)
+            y += 96 * scale
+        remaining = max(0, len(indexed) - 3)
+        if remaining:
+            self._draw_text(canvas, 10 * scale, y, f"+{remaining} MORE LIVE DISCOVERY ALERTS", scale, 9, HUD_MUTED)
+            y += 20 * scale
+        return width, round(y + 8 * scale)
+
+    def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float, panel: str = "surveyor") -> tuple[int, int]:
+        """Dedicated compact expedition instrument; all data is local to Scout."""
+        state = self.scout_state()
+        survey = state.get("exploration")
+        width = round(548 * scale)
+        title = ("DSS TARGET DIRECTOR" if panel == "surveyor_dss"
+                 else "BODY INTELLIGENCE" if panel == "surveyor_body"
+                 else "MONGREL SURVEYOR")
+        if panel == "surveyor_dss":
+            width = round(525 * scale)
+        elif panel == "surveyor_body":
+            width = round(505 * scale)
+        y = self._draw_title(canvas, title, scale, width)
+        if not isinstance(survey, dict):
+            self._draw_text(canvas, 10 * scale, y + 6 * scale,
+                            "AWAITING LOCAL EXPLORATION DATA", scale, 11, HUD_AMBER, True)
+            return width, round(y + 42 * scale)
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
+        if panel == "surveyor_dss":
+            self._draw_text(canvas, 9 * scale, y,
+                            self.clip_line(system.get("name") or "NO SYSTEM FIX", 43),
+                            scale, 11, HUD_WHITE, True)
+            y += 26 * scale
+            advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
+            targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+            priority = next((b for b in targets if isinstance(b, dict)
+                         and b.get("firstMappingCandidate") and int(b.get("dssGainMin") or 0) >= 50000), None)
+            if priority:
+                self._draw_text(canvas, 9 * scale, y,
+                                "VALUABLE UNMAPPED · " + self.clip_line(priority.get("name") or "WORLD", 30),
+                                scale, 10, HUD_GREEN, True)
+                y += 20 * scale
+            self._draw_text(canvas, 9 * scale, y,
+                            "SCAN CONFIRMED · GAIN / ARRIVAL DISTANCE",
+                            scale, 9, HUD_MUTED, True)
+            y += 22 * scale
+            if not targets:
+                self._draw_text(canvas, 9 * scale, y, "NO VALUED MAPPING TARGETS", scale, 12, HUD_AMBER, True)
+                y += 27 * scale
+                self._draw_text(canvas, 9 * scale, y, "COMPLETE FSS SURVEY TO ACQUIRE TARGETS",
+                                scale, 9, HUD_MUTED)
+                y += 24 * scale
+            for row in targets[:3]:
+                if not isinstance(row, dict):
+                    continue
+                rank = int(row.get("rank") or 0)
+                priority = str(row.get("tier") or "low").upper()
+                self._draw_text(canvas, 9 * scale, y, f"0{rank}" if rank < 10 else str(rank),
+                                scale, 20, HUD_CYAN, True)
+                self._draw_text(canvas, 55 * scale, y,
+                                self.clip_line(row.get("name") or "UNRESOLVED WORLD", 40),
+                                scale, 11, HUD_WHITE, True)
+                y += 24 * scale
+                dist = row.get("distanceLs")
+                distance = f"{dist:,.0f} LS" if isinstance(dist, (int, float)) else "DIST UNKNOWN"
+                low, high = row.get("dssGainMin"), row.get("dssGainMax")
+                gain = f"+{int(low):,}—{int(high):,} CR" if isinstance(low, (int, float)) and isinstance(high, (int, float)) else "UNVALUED"
+                self._draw_text(canvas, 55 * scale, y, gain, scale, 12, HUD_GREEN, True)
+                self._draw_text(canvas, width - 9 * scale, y, distance, scale, 10, HUD_CYAN, True, "ne")
+                y += 21 * scale
+                self._draw_text(canvas, 55 * scale, y, self.clip_line(row.get("planetClass") or "PLANET", 32),
+                                scale, 9, HUD_MUTED)
+                self._draw_text(canvas, width - 9 * scale, y, priority + " RETURN",
+                                scale, 9, HUD_AMBER if priority == "HIGH" else HUD_MUTED, True, "ne")
+                y += 19 * scale
+                canvas.create_line(9 * scale, y, width - 9 * scale, y, fill=HUD_DIM)
+                y += 13 * scale
+            extra = max(0, int(advisor.get("eligibleCount") or 0) - 3)
+            if extra:
+                self._draw_text(canvas, 55 * scale, y, f"{extra} FURTHER CANDIDATES", scale, 9, HUD_MUTED, True)
+                y += 23 * scale
+            intelligence = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+            highlights = intelligence.get("highlights") if isinstance(intelligence.get("highlights"), list) else []
+            if intelligence.get("providers"):
+                canvas.create_line(9 * scale, y, width - 9 * scale, y, fill=HUD_DIM)
+                y += 15 * scale
+                self._draw_text(canvas, 9 * scale, y,
+                                f"EXTERNAL CHARTS · {int(intelligence.get('catalogedBodies') or 0)} CATALOGED",
+                                scale, 9, HUD_CYAN, True)
+                y += 21 * scale
+                for hint in highlights[:2]:
+                    if not isinstance(hint, dict):
+                        continue
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(str(hint.get("name") or "UNKNOWN"), 42),
+                                    scale, 9, HUD_WHITE)
+                    y += 18 * scale
+                self._draw_text(canvas, 9 * scale, y,
+                                "CATALOG ONLY · NOT VERIFIED YOUR SCANS", scale, 8, HUD_MUTED)
+                y += 20 * scale
+            self._draw_text(canvas, 9 * scale, y, "RECOMMENDATIONS ARE PROVISIONAL · NOT ETA",
+                            scale, 8, HUD_AMBER)
+            return width, round(y + 22 * scale)
+        if panel == "surveyor_body":
+            bodies = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
+            status = state.get("status") if isinstance(state.get("status"), dict) else {}
+            destination = status.get("destination") if isinstance(status.get("destination"), dict) else {}
+            sysaddr = str(system.get("address") or "")
+            destination_valid = not destination.get("systemAddress") or str(destination.get("systemAddress")) == sysaddr
+            selected_id = destination.get("bodyId") if destination_valid else None
+            selected_name = str(destination.get("name") or "").strip().casefold() if destination_valid else ""
+            focused = None
+            selection = "DESTINATION TARGET"
+            for body in bodies:
+                if not isinstance(body, dict):
+                    continue
+                if selected_id is not None and str(body.get("bodyId") or "") == str(selected_id):
+                    focused = body
+                    break
+                if selected_name and str(body.get("name") or "").strip().casefold() == selected_name:
+                    focused = body
+                    break
+            if focused is None:
+                focus_id = system.get("lastSurveyedBodyId")
+                focused = next((b for b in bodies if isinstance(b, dict) and focus_id is not None
+                                and str(b.get("bodyId")) == str(focus_id)), None)
+                if focused is None:
+                    # A restart may restore saved scans without a current
+                    # destination. Show the latest actual journal record,
+                    # never invent a targeted body.
+                    recent = [b for b in bodies if isinstance(b, dict) and b.get("lastDataAcquiredAt")]
+                    focused = max(recent, key=lambda b: str(b.get("lastDataAcquiredAt")), default=None)
+                selection = "LAST RECORDED JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
+            if focused is None:
+                history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+                historic = history.get("bodies") if isinstance(history.get("bodies"), list) else []
+                archived = None
+                for old in historic:
+                    if not isinstance(old, dict):
+                        continue
+                    if selected_id is not None and str(old.get("bodyId") or "") == str(selected_id):
+                        archived = old
+                        break
+                    if selected_name and str(old.get("name") or "").casefold() == selected_name:
+                        archived = old
+                        break
+                if archived is None and historic:
+                    # Useful default when the selected body is unknown in
+                    # EDD: display its highest-value archived body, labelled
+                    # historical rather than pretending it's the live target.
+                    archived = max((b for b in historic if isinstance(b, dict)),
+                                   key=lambda b: int(b.get("estimatedValue") or 0), default=None)
+                if archived is not None:
+                    self._draw_text(canvas, 9 * scale, y, "EDDISCOVERY ARCHIVE · SOLD STATUS UNKNOWN",
+                                    scale, 9, HUD_AMBER, True)
+                    y += 21 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(archived.get("name") or "HISTORIC BODY", 43),
+                                    scale, 13, HUD_WHITE, True)
+                    y += 28 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(str(archived.get("bodyClass") or "UNCLASSIFIED").upper(), 43),
+                                    scale, 10, HUD_CYAN, True)
+                    y += 24 * scale
+                    archive_status = ("MAPPED IN EDD HISTORY" if archived.get("personallyMapped")
+                                      else "MAPPING NOT CONFIRMED IN EDD")
+                    self._draw_text(canvas, 9 * scale, y, archive_status, scale, 10, HUD_GREEN, True)
+                    y += 22 * scale
+                    value = archived.get("estimatedValue")
+                    self._draw_text(canvas, 9 * scale, y,
+                                    f"ARCHIVED VALUE · {int(value):,} CR" if isinstance(value, (int,float))
+                                    else "ARCHIVED VALUE UNAVAILABLE",
+                                    scale, 11, HUD_CYAN, True)
+                    y += 22 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    "HISTORICAL SCAN · NOT NEW EXPEDITION CREDIT",
+                                    scale, 8, HUD_MUTED)
+                    return width, round(y + 25 * scale)
+                intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+                hints = intel.get("reportedBodies") if isinstance(intel.get("reportedBodies"), list) else []
+                external = next(
+                    (b for b in hints if isinstance(b, dict)
+                     and selected_name and str(b.get("name") or "").strip().casefold() == selected_name),
+                    None,
+                )
+                if external:
+                    self._draw_text(canvas, 9 * scale, y, "COMMUNITY CATALOG · UNVERIFIED", scale, 9, HUD_AMBER, True)
+                    y += 21 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(external.get("name") or "CATALOG BODY", 43),
+                                    scale, 12, HUD_WHITE, True)
+                    y += 24 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(external.get("class") or "UNCLASSIFIED", 43),
+                                    scale, 10, HUD_CYAN)
+                    y += 22 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    "NO PERSONAL FSS/DSS CLAIM · NO CARTO CREDIT",
+                                    scale, 9, HUD_MUTED)
+                    return width, round(y + 25 * scale)
+                self._draw_text(canvas, 9 * scale, y, "NO BODY TARGET ACQUIRED", scale, 13, HUD_AMBER, True)
+                y += 29 * scale
+                self._draw_text(canvas, 9 * scale, y, "TARGET A BODY OR PERFORM A FSS SCAN",
+                                scale, 9, HUD_MUTED)
+                y += 23 * scale
+                self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY TELEMETRY · AWAITING BODY SIGNALS",
+                                scale, 9, HUD_MUTED)
+                return width, round(y + 25 * scale)
+            self._draw_text(canvas, 9 * scale, y, selection, scale, 9, HUD_CYAN, True)
+            y += 21 * scale
+            self._draw_text(canvas, 9 * scale, y,
+                            self.clip_line(focused.get("name") or "UNNAMED BODY", 43),
+                            scale, 13, HUD_WHITE, True)
+            y += 28 * scale
+            cls = str(focused.get("planetClass") or focused.get("starType") or "UNCLASSIFIED BODY")
+            self._draw_text(canvas, 9 * scale, y, self.clip_line(cls.upper(), 43), scale, 10, HUD_CYAN, True)
+            y += 23 * scale
+            distance = focused.get("distanceLs")
+            dist = f"{distance:,.0f} LS" if isinstance(distance, (int, float)) else "DISTANCE UNKNOWN"
+            self._draw_text(canvas, 9 * scale, y, "ARRIVAL RANGE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, width - 9 * scale, y, dist, scale, 10, HUD_WHITE, True, "ne")
+            y += 21 * scale
+            mapped = bool(focused.get("personallyMapped"))
+            self._draw_text(canvas, 9 * scale, y,
+                            "DSS SURVEY COMPLETE" if mapped else "DSS SURVEY PENDING",
+                            scale, 10, HUD_GREEN if mapped else HUD_AMBER, True)
+            y += 24 * scale
+            was_discovered, was_mapped = focused.get("wasDiscovered"), focused.get("wasMapped")
+            discovered_label = ("DISCOVERED BEFORE YOUR SCAN" if was_discovered is True
+                                else "POTENTIAL FIRST DISCOVERY" if was_discovered is False
+                                else "DISCOVERY STATUS UNKNOWN")
+            mapped_label = ("PREVIOUSLY MAPPED" if was_mapped is True
+                            else "POTENTIAL FIRST MAPPING" if was_mapped is False
+                            else "PREVIOUS MAPPING UNKNOWN")
+            self._draw_text(canvas, 9 * scale, y, discovered_label, scale, 9,
+                            HUD_GREEN if was_discovered is False else HUD_MUTED, True)
+            y += 20 * scale
+            self._draw_text(canvas, 9 * scale, y, mapped_label, scale, 9,
+                            HUD_GREEN if was_mapped is False else HUD_MUTED, True)
+            y += 22 * scale
+            value = focused.get("currentValue")
+            self._draw_text(canvas, 9 * scale, y, "CURRENT RECORDED VALUE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            f"{int(value):,} CR" if isinstance(value, (float, int)) else "UNVALUED",
+                            scale, 12, HUD_CYAN, True, "ne")
+            y += 28 * scale
+            biological = 0
+            for signal in focused.get("signals") or []:
+                if not isinstance(signal, dict):
+                    continue
+                kind = str(signal.get("type") or "").casefold()
+                if "biolog" in kind:
+                    biological += max(0, int(signal.get("count") or 0))
+            self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY · BIO SIGNALS", scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            str(biological) if biological else "UNCONFIRMED",
+                            scale, 11, HUD_GREEN if biological else HUD_MUTED, True, "ne")
+            y += 22 * scale
+            self._draw_text(canvas, 9 * scale, y, "SIGNALS ARE NOT GENETIC SAMPLES OR PAYOUT CLAIMS",
+                            scale, 8, HUD_MUTED)
+            return width, round(y + 24 * scale)
+        active = bool(expedition.get("active"))
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(system.get("name") or "UNKNOWN SYSTEM", 49),
+                        scale, 13, HUD_WHITE, True)
+        y += 25 * scale
+        label = "EXPEDITION UNDERWAY" if active else "EXPEDITION STANDBY · PREP FOR LAUNCH"
+        if expedition.get("existingDataExcluded") and active:
+            label = "PRIOR DATA EXCLUDED · NEW SCANS COUNT"
+        self._draw_text(canvas, 10 * scale, y, label, scale, 9,
+                        HUD_GREEN if active else HUD_AMBER, True)
+        y += 25 * scale
+        discovery = str(survey.get("discoveryStatus") or "")
+        catalog = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        catalog_status = str(catalog.get("status") or "")
+        if discovery == "potential_first_arrival_star":
+            survey_alert = "POTENTIAL FIRST ARRIVAL · VERIFY ON CARTOGRAPHICS"
+            survey_color = HUD_GREEN
+        elif discovery == "previously_discovered_arrival_star":
+            survey_alert = "ARRIVAL STAR PREVIOUSLY DISCOVERED"
+            survey_color = HUD_MUTED
+        elif catalog.get("catalogedBodies"):
+            survey_alert = "COMMUNITY CHART EXISTS · BODY CLAIMS UNVERIFIED"
+            survey_color = HUD_CYAN
+        elif catalog_status == "not_in_queried_catalogs":
+            survey_alert = "NO COMMUNITY BODY RECORD · FIRST DISCOVERY UNCONFIRMED"
+            survey_color = HUD_AMBER
+        elif catalog_status == "providers_unavailable":
+            survey_alert = "COMMUNITY CHARTS OFFLINE · DISCOVERY UNCONFIRMED"
+            survey_color = HUD_AMBER
+        else:
+            survey_alert = "DISCOVERY STATUS UNCONFIRMED"
+            survey_color = HUD_MUTED
+        self._draw_text(canvas, 10 * scale, y, survey_alert, scale, 9, survey_color, True)
+        y += 23 * scale
+        canvas.create_line(10 * scale, y, (width / 2) - 10 * scale, y,
+                           fill=HUD_DIM, width=max(1, round(scale)))
+        canvas.create_line((width / 2) + 8 * scale, y, width - 10 * scale, y,
+                           fill=HUD_DIM, width=max(1, round(scale)))
+        y += 9 * scale
+        half = width / 2
+        self._draw_text(canvas, 10 * scale, y, "CURRENT SYSTEM · OBSERVED", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, half + 8 * scale, y, "EXPEDITION · SINCE START", scale, 9, HUD_MUTED, True)
+        y += 18 * scale
+        current = survey.get("currentSystemEstimate")
+        history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+        using_edd = current is None and bool(history.get("verifiedSystemIdentity")) and bool(history.get("bodyCount"))
+        if using_edd:
+            current = history.get("estimatedHistoricalValue")
+        earnings = expedition.get("estimate") if active else None
+        self._draw_text(canvas, 10 * scale, y,
+                        f"{int(current):,} CR" if isinstance(current, (int, float)) else "INSUFFICIENT DATA",
+                        scale, 18 if isinstance(current, (int, float)) else 11, HUD_CYAN, True)
+        self._draw_text(canvas, half + 8 * scale, y,
+                        f"{int(earnings):,} CR" if isinstance(earnings, (int, float)) else "NOT STARTED",
+                        scale, 18 if active else 11, HUD_GREEN if active else HUD_MUTED, True)
+        y += 31 * scale
+        self._draw_text(canvas, 10 * scale, y,
+                        "HISTORICAL EDD · MAY BE SOLD" if using_edd else
+                        "May include previously sold scans", scale, 8, HUD_MUTED)
+        self._draw_text(canvas, half + 8 * scale, y,
+                        "Newly charted data · provisional" if active else "Awaiting expedition launch",
+                        scale, 8, HUD_MUTED)
+        y += 29 * scale
+        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
+        y += 12 * scale
+        scanned = max(0, int(survey.get("personallyScannedBodies") or 0))
+        total = system.get("bodyCount")
+        total = total if type(total) is int and total > 0 else 0
+        mapped = max(0, int(survey.get("personallyMappedBodies") or 0))
+        self._draw_text(canvas, 10 * scale, y, "FSS COVERAGE", scale, 10, HUD_WHITE, True)
+        count_mismatch = bool(total and scanned > total)
+        coverage = (f"{scanned} JOURNAL SCANS · {total} FSS BODIES"
+                    if count_mismatch else f"{scanned} / {total if total else '?'} BODIES")
+        self._draw_text(canvas, width - 10 * scale, y,
+                        coverage, scale, 10 if not count_mismatch else 9, HUD_AMBER if count_mismatch else HUD_CYAN, True, "ne")
+        y += 19 * scale
+        self._draw_progress(canvas, 10 * scale, y, width - 20 * scale,
+                            min(100, scanned / total * 100) if total else 0, scale)
+        y += 19 * scale
+        if count_mismatch:
+            self._draw_text(canvas, 10 * scale, y,
+                            "COUNT DISAGREEMENT · SCAN HISTORY / FSS NEED REVIEW",
+                            scale, 8, HUD_AMBER)
+            y += 16 * scale
+        self._draw_text(canvas, 10 * scale, y, f"DSS MAPPED  {mapped}", scale, 10, HUD_WHITE, True)
+        self._draw_text(canvas, width - 10 * scale, y,
+                        f"FIRST DISCOVERY CANDIDATES  {int(survey.get('potentialFirstBodies') or 0)}",
+                        scale, 9, HUD_MUTED, True, "ne")
+        y += 28 * scale
+        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
+        y += 10 * scale
+        self._draw_text(canvas, 10 * scale, y,
+                        "DSS TARGETS ACTIVE ON SEPARATE FLIGHT INSTRUMENT",
+                        scale, 8, HUD_CYAN)
+        y += 19 * scale
+        intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+        if history.get("verifiedSystemIdentity") and history.get("bodyCount"):
+            self._draw_text(canvas, 10 * scale, y,
+                            f"EDD HISTORICAL SCANS · {int(history['bodyCount'])} BODIES · NOT EXPEDITION CR",
+                            scale, 8, HUD_GREEN)
+            y += 17 * scale
+        if intel.get("providers"):
+            names = " + ".join(str(x) for x in intel.get("providers") or [])
+            count = int(intel.get("catalogedBodies") or 0)
+            self._draw_text(canvas, 10 * scale, y,
+                            f"COMMUNITY REPORTED · {names} · {count} BODY RECORDS",
+                            scale, 8, HUD_CYAN)
+            y += 17 * scale
+        elif intel.get("status") == "providers_unavailable":
+            self._draw_text(canvas, 10 * scale, y, "COMMUNITY CHARTS UNAVAILABLE · LOCAL SCANS ACTIVE",
+                            scale, 8, HUD_AMBER)
+            y += 17 * scale
+        history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
+        recovered = str(history.get("status") or "").upper()
+        self._draw_text(canvas, 10 * scale, y,
+                        f"LOCAL JOURNAL  {recovered}  ·  {int(history.get('processed') or 0)} NEW / {int(history.get('duplicates') or 0)} KNOWN",
+                        scale, 8, HUD_MUTED)
+        y += 17 * scale
+        self._draw_text(canvas, 10 * scale, y,
+                        "PROVISIONAL ESTIMATES · NOT VERIFIED UNSOLD CARTOGRAPHICS",
+                        scale, 8, HUD_AMBER)
+        return width, round(y + 22 * scale)
+
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
         title = lines[0] if lines else PANEL_TITLES.get(panel_id, panel_id.upper())
-        widths = {"bounties": 350, "trade": 500, "scoutboard": 500, "notes": 500, "surface": 480}
+        widths = {"bounties": 350, "trade": 500, "scoutboard": 500, "notes": 500, "surface": 480, "surveyor": 510}
         width = round(widths.get(panel_id, 440) * scale)
         y = self._draw_title(canvas, title, scale, width)
         for line in lines[1:]:
@@ -6293,6 +6872,10 @@ class MongrelHudApp:
             width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "miningintel":
             width, height = self._render_miningintel_canvas(canvas, scale)
+        elif panel_id in {"surveyor", "surveyor_dss", "surveyor_body"}:
+            width, height = self._render_surveyor_canvas(canvas, scale, panel_id)
+        elif panel_id == "surveyor_alert":
+            width, height = self._render_surveyor_alert_canvas(canvas, scale, flash_on)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
@@ -6347,6 +6930,13 @@ class MongrelHudApp:
                 panel_cfg = layout["panels"][panel_id]
                 active_for_profile = profile in (panel_cfg.get("profiles") or [])
                 should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
+                # No empty warning window: it appears only for live, local
+                # events and disappears when leaving the system.
+                if should_show and panel_id == "surveyor_alert":
+                    with self.lock:
+                        observation = self.snapshot.data.get("exploration") if isinstance(self.snapshot.data, dict) else None
+                        events = observation.get("explorationAlerts") if isinstance(observation, dict) else None
+                    should_show = bool(events)
                 window = info["window"]
                 if not should_show:
                     try:
@@ -6975,6 +7565,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
+                elif path == "/api/surveyor":
+                    result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
                 elif path == "/api/alert-ack":
