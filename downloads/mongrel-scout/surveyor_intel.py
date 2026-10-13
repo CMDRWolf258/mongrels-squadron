@@ -77,10 +77,16 @@ def _extract_bodies(rows: list[Any]) -> list[dict[str, Any]]:
             continue
         kind = _text(entry.get("subType") or entry.get("planetClass"))[:80]
         distance = _number(entry.get("distanceToArrival"))
+        # Provider body listings establish that a body has been reported to
+        # the community. They do NOT certify Frontier's first-discovery tag,
+        # first-mapping claim, or this CMDR's personal exploration.
         out.append({
             "name": name,
             "class": kind,
             "distanceLs": max(0.0, distance) if distance is not None else None,
+            "catalogStatus": "reported",
+            "firstDiscovery": "unverified",
+            "firstMapping": "unverified",
         })
     return out
 
@@ -115,10 +121,15 @@ def combine_intelligence(system_name: str, address: str,
         if any(part in row["class"].casefold() for part in HIGHLIGHT_CLASSES)
     ]
     highlights.sort(key=lambda x: (x.get("distanceLs") is None, x.get("distanceLs") or 0))
+    reported = sorted(all_rows.values(), key=lambda x: (x.get("distanceLs") is None, x.get("distanceLs") or 0))
     return {
-        "status": "community_cataloged" if providers else "not_in_queried_catalogs",
+        "status": ("community_cataloged" if all_rows else
+                   "system_cataloged_no_bodies" if providers else
+                   "not_in_queried_catalogs"),
         "providers": providers,
         "catalogedBodies": len(all_rows),
+        "reportedBodies": reported[:100],
+        "reportedBodiesTruncated": max(0, len(reported) - 100),
         "highlights": highlights[:8],
         "claimEvidence": False,
         "note": "Community data is incomplete and cannot establish first discovery.",
@@ -149,7 +160,7 @@ def query(system_name: str, address: str,
     responses = [None, None]
     failures = 0
     endpoints = [
-        f"https://spansh.co.uk/api/system/{addr}",
+        f"https://spansh.co.uk/api/dump/{addr}",
         "https://www.edsm.net/api-system-v1/bodies?systemName="
         + urllib.parse.quote(name, safe=""),
     ]
