@@ -71,6 +71,8 @@ jobs:
           node --experimental-default-type=module scripts/smoke-wolf-bgs-health.mjs
           node --experimental-default-type=module scripts/smoke-wolf-bgs-screenshot.mjs
           node --experimental-default-type=module scripts/smoke-mongrel-scout.mjs
+          node --experimental-default-type=module scripts/test-scout-mission-sync.mjs
+          python3 scripts/test-scout-mission-sync.py
           node --experimental-default-type=module scripts/smoke-scout-chatgpt-link.mjs
           node --experimental-default-type=module scripts/smoke-scout-spansh-route.mjs
           node --experimental-default-type=module scripts/smoke-mission-inf-dedupe.mjs
@@ -107,7 +109,7 @@ jobs:
           node --experimental-default-type=module scripts/smoke-pursuits.mjs
           node --experimental-default-type=module scripts/smoke-gallery-submissions.mjs
           node --experimental-default-type=module scripts/smoke-daily-orders-discord.mjs
-          python3 -m py_compile downloads/mongrel-scout/load.py
+          python3 -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/mission_sync.py
           python3 -m py_compile downloads/mongrel-hud/mongrel_hud.py
 
       - name: Run Orrery model and wiring checks
