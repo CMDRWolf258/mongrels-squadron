@@ -606,6 +606,17 @@ class Surveyor:
                 return {"imported": True}
             return self._snapshot(conn, commander, active or address)
 
+    def expire_intelligence(self, commander: str, address: str) -> None:
+        """Permit a deliberate user refresh without deleting prior catalog facts."""
+        with self.lock, self._connect() as conn:
+            addr = _text(address)
+            system = self._load(conn, "systems", _text(commander), addr)
+            intel = system.get("intelligence")
+            if isinstance(intel, dict):
+                intel["expiresAt"] = 0
+                system["intelligence"] = intel
+                self._save(conn, "systems", _text(commander), addr, system)
+
     def cached_intelligence(self, commander: str, address: str) -> dict[str, Any] | None:
         """Cache survives restarts; expiration never destroys a previous result."""
         with self.lock, self._connect() as conn:
