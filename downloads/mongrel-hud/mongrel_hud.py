@@ -6335,6 +6335,25 @@ class MongrelHudApp:
             if extra:
                 self._draw_text(canvas, 55 * scale, y, f"{extra} FURTHER CANDIDATES", scale, 9, HUD_MUTED, True)
                 y += 23 * scale
+            intelligence = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+            highlights = intelligence.get("highlights") if isinstance(intelligence.get("highlights"), list) else []
+            if intelligence.get("providers"):
+                canvas.create_line(9 * scale, y, width - 9 * scale, y, fill=HUD_DIM)
+                y += 15 * scale
+                self._draw_text(canvas, 9 * scale, y,
+                                f"EXTERNAL CHARTS · {int(intelligence.get('catalogedBodies') or 0)} CATALOGED",
+                                scale, 9, HUD_CYAN, True)
+                y += 21 * scale
+                for hint in highlights[:2]:
+                    if not isinstance(hint, dict):
+                        continue
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(str(hint.get("name") or "UNKNOWN"), 42),
+                                    scale, 9, HUD_WHITE)
+                    y += 18 * scale
+                self._draw_text(canvas, 9 * scale, y,
+                                "CATALOG ONLY · NOT VERIFIED YOUR SCANS", scale, 8, HUD_MUTED)
+                y += 20 * scale
             self._draw_text(canvas, 9 * scale, y, "RECOMMENDATIONS ARE PROVISIONAL · NOT ETA",
                             scale, 8, HUD_AMBER)
             return width, round(y + 22 * scale)
@@ -6365,6 +6384,28 @@ class MongrelHudApp:
                                 and str(b.get("bodyId")) == str(focus_id)), None)
                 selection = "LAST JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
             if focused is None:
+                intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+                hints = intel.get("highlights") if isinstance(intel.get("highlights"), list) else []
+                external = next(
+                    (b for b in hints if isinstance(b, dict)
+                     and selected_name and str(b.get("name") or "").strip().casefold() == selected_name),
+                    None,
+                )
+                if external:
+                    self._draw_text(canvas, 9 * scale, y, "COMMUNITY CATALOG · UNVERIFIED", scale, 9, HUD_AMBER, True)
+                    y += 21 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(external.get("name") or "CATALOG BODY", 43),
+                                    scale, 12, HUD_WHITE, True)
+                    y += 24 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(external.get("class") or "UNCLASSIFIED", 43),
+                                    scale, 10, HUD_CYAN)
+                    y += 22 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    "NO PERSONAL FSS/DSS CLAIM · NO CARTO CREDIT",
+                                    scale, 9, HUD_MUTED)
+                    return width, round(y + 25 * scale)
                 self._draw_text(canvas, 9 * scale, y, "NO BODY TARGET ACQUIRED", scale, 13, HUD_AMBER, True)
                 y += 29 * scale
                 self._draw_text(canvas, 9 * scale, y, "SELECT A KNOWN BODY OR PERFORM A FSS SCAN",
@@ -6470,6 +6511,13 @@ class MongrelHudApp:
                         "DSS TARGETS ACTIVE ON SEPARATE FLIGHT INSTRUMENT",
                         scale, 8, HUD_CYAN)
         y += 19 * scale
+        intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        if intel.get("providers"):
+            names = " + ".join(str(x) for x in intel.get("providers") or [])
+            self._draw_text(canvas, 10 * scale, y,
+                            f"EXTERNAL CHARTS · {names} · {int(intel.get('catalogedBodies') or 0)} CATALOGED",
+                            scale, 8, HUD_CYAN)
+            y += 17 * scale
         history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
         recovered = str(history.get("status") or "").upper()
         self._draw_text(canvas, 10 * scale, y,
