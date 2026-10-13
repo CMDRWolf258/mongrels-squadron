@@ -74,4 +74,81 @@ for panel,title in (("surveyor","MONGREL SURVEYOR"),
     if panel=="surveyor_body":
         assert any("POTENTIAL FIRST DISCOVERY" in line for line in p.lines)
         assert any("POTENTIAL FIRST MAPPING" in line for line in p.lines)
+
+# Live cockpit alerts use only current Frontier events. Historical replay,
+# community chart entries and EDDiscovery archives never synthesize alerts.
+with tempfile.TemporaryDirectory() as directory:
+    ledger=surveyor.Surveyor(Path(directory)/"alert.sqlite")
+    cm,sysaddr="Live Alert Tester",123456789777
+    def feed(kind,minute,bodyid=None,**kw):
+        data={"event":kind,"timestamp":f"2026-10-13T00:{minute:02d}:00Z","SystemAddress":sysaddr}
+        if bodyid is not None: data["BodyID"]=bodyid
+        data.update(kw)
+        return ledger.apply(cm,data)
+    first=feed("FSDJump",0,StarSystem="Fresh Test System")
+    assert first["explorationAlerts"]==[]
+    first=feed("Scan",1,0,BodyName="Fresh Test System",StarType="K",
+               WasDiscovered=False,ScanType="AutoScan")
+    assert len(first["explorationAlerts"])==1
+    assert first["explorationAlerts"][0]["kind"]=="first_discovery_system"
+    # Signal records may arrive BEFORE the detailed FSS Scan.
+    signals=[{"Type":"$SAA_SignalType_Biological;","Count":2}]
+    early=feed("FSSBodySignals",2,3,BodyName="Fresh Test System 3",Signals=signals)
+    assert len(early["explorationAlerts"])==1
+    hmc=feed("Scan",3,3,BodyName="Fresh Test System 3",
+             PlanetClass="High metal content body",WasDiscovered=True,WasMapped=False,
+             ScanType="Detailed")
+    assert len(hmc["explorationAlerts"])==2
+    biological=next(a for a in hmc["explorationAlerts"] if a["kind"]=="hmc_bio")
+    assert biological["biologicalSignals"]==2
+    assert not biological["speciesConfirmed"] and not biological["isFirstFootfallConfirmed"]
+    again=feed("SAASignalsFound",4,3,BodyName="Fresh Test System 3",Signals=signals)
+    assert len(again["explorationAlerts"])==2, "Repeated biology must not spam alerts"
+    # Same signal on a different planet class must not trigger HMC.
+    feed("Scan",5,4,BodyName="Fresh Test System 4",PlanetClass="Icy body",
+         WasDiscovered=True,ScanType="Detailed")
+    icy=feed("FSSBodySignals",6,4,BodyName="Fresh Test System 4",Signals=signals)
+    assert len(icy["explorationAlerts"])==2
+    # Conversely, a live signal arriving AFTER an HMC Scan must trigger.
+    feed("Scan",7,5,BodyName="Fresh Test System 5",PlanetClass="High metal content body",
+         WasDiscovered=False,ScanType="Detailed")
+    later=feed("FSSBodySignals",8,5,BodyName="Fresh Test System 5",
+               Signals=[{"Type_Localised":"Biological","Count":1}])
+    assert any(x["kind"]=="first_discovery_body" and x["bodyId"]=="5" for x in later["explorationAlerts"])
+    assert any(x["kind"]=="hmc_bio" and x["bodyId"]=="5" for x in later["explorationAlerts"])
+    assert len(later["explorationAlerts"])==4
+    assert ledger.snapshot(cm)["explorationAlerts"]==later["explorationAlerts"]
+    # Restart retains the current visit's alerts, a new arrival clears them.
+    restarted=surveyor.Surveyor(Path(directory)/"alert.sqlite")
+    assert len(restarted.snapshot(cm)["explorationAlerts"])==4
+    leave=feed("FSDJump",9,StarSystem="Another Test System",SystemAddress=123456789778)
+    assert leave["explorationAlerts"]==[]
+    # Live scan where data was already imported is not a new first-claim alert.
+    historic_cmd="Historical Replay Tester"
+    historic_ledger=surveyor.Surveyor(Path(directory)/"alert.sqlite")
+    historic_ledger.apply(historic_cmd,{"event":"FSDJump","timestamp":"2026-10-13T00:00:00Z",
+                                        "StarSystem":"Archived First","SystemAddress":123454321})
+    historic_ledger.apply(historic_cmd,{"event":"Scan","timestamp":"2026-10-12T22:01:00Z",
+                                        "SystemAddress":123454321,"BodyID":2,
+                                        "BodyName":"Archived First 2","PlanetClass":"High metal content body",
+                                        "WasDiscovered":False,"ScanType":"Detailed"},historic=True)
+    historic_ledger.apply(historic_cmd,{"event":"FSSBodySignals","timestamp":"2026-10-12T22:02:00Z",
+                                        "SystemAddress":123454321,"BodyID":2,
+                                        "Signals":signals},historic=True)
+    assert historic_ledger.snapshot(historic_cmd)["explorationAlerts"]==[]
+    assert historic_ledger.snapshot(historic_cmd)["expedition"]["active"] is False
+    # HUD's new exploration-only alert instrument is self-contained.
+    class AlertCanvas(Canvas):
+        def create_rectangle(self,*args,**kwargs): pass
+    p=Panel({"exploration":later})
+    w,h=hud.MongrelHudApp._render_surveyor_alert_canvas(p,AlertCanvas(),1.0,True)
+    assert w>400 and h>140
+    assert p.titles==["EXPLORATION ALERTS"],p.titles
+    assert any("FIRST DISCOVERY" in x for x in p.lines)
+    assert any("HMC + BIOLOGICAL SIGNALS" in x for x in p.lines)
+    assert any("SPECIES UNKNOWN" in x and "STRATUM NOT CONFIRMED" in x for x in p.lines)
+    assert any("2 BIO SIGNAL(S)" in x for x in p.lines)
+    assert "surveyor_alert" in hud.PANEL_IDS
+    assert "exploration" in hud.default_layout()["panels"]["surveyor_alert"]["profiles"]
+
 print("Surveyor feedback title, count, status and gas-giant regressions PASSED")
