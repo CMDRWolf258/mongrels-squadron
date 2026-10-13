@@ -213,7 +213,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
 VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -227,6 +227,7 @@ PANEL_TITLES = {
     "surveyor_dss": "DSS TARGET DIRECTOR",
     "surveyor_body": "BODY INTELLIGENCE",
     "surveyor_alert": "EXPLORATION ALERTS",
+    "surveyor_bio": "BIOLOGICAL INTELLIGENCE",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -802,6 +803,7 @@ def default_layout() -> dict[str, Any]:
             "surveyor_dss": {"x": 610, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_body": {"x": 610, "y": 410, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_alert": {"x": 40, "y": 510, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_bio": {"x": 1170, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -1118,6 +1120,98 @@ def great_circle_nav(lat1: float, lon1: float, lat2: float, lon2: float, radius_
     out = {"distance": max(0.0, radius_m) * central, "bearing": bearing}
     if heading is not None:
         out["relative"] = ((bearing - heading + 540.0) % 360.0) - 180.0
+    return out
+
+
+
+def bio_focus_body(survey: Any, status: Any) -> dict[str, Any] | None:
+    """Select a biological body without trusting a cross-system destination."""
+    if not isinstance(survey, dict):
+        return None
+    bio = survey.get("exobiology")
+    rows = bio.get("biologicalBodies") if isinstance(bio, dict) else None
+    if not isinstance(rows, list):
+        return None
+    bodies = [x for x in rows if isinstance(x, dict)]
+    if not bodies:
+        return None
+    active = status if isinstance(status, dict) else {}
+    system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+    # The active on-foot body is the safest live context; no persisted selection
+    # survives system changes and no community-only body can be selected.
+    current = str(active.get("bodyName") or "").strip().casefold()
+    if active.get("onFootOnPlanet") is True and current:
+        for body in bodies:
+            if str(body.get("bodyName") or "").strip().casefold() == current:
+                return body
+    last_id = system.get("lastSurveyedBodyId")
+    for body in bodies:
+        if last_id is not None and str(body.get("bodyId")) == str(last_id):
+            return body
+    # During an organic survey the latest record wins. If not sampling, prefer
+    # bodies with Frontier-confirmed genera and then compatible candidates.
+    def score(body: dict[str, Any]) -> tuple[Any, ...]:
+        samples = body.get("sampledSpecies") if isinstance(body.get("sampledSpecies"), list) else []
+        times = [str(x.get("lastScanAt") or "") for x in samples if isinstance(x, dict)]
+        prediction = body.get("prediction") if isinstance(body.get("prediction"), dict) else {}
+        top = [x for x in prediction.get("candidates") or [] if isinstance(x, dict)]
+        plausible = [x for x in top if x.get("status") == "compatible"]
+        return (bool(times), max(times, default=""),
+                bool(body.get("confirmedGenuses")),
+                max((x.get("estimatedBase") or 0 for x in plausible), default=0),
+                int(body.get("signals") or 0))
+    return max(bodies, key=score)
+
+
+def bio_genetic_guidance(survey: Any, status: Any) -> dict[str, Any]:
+    """Measured distance from latest known sample; never a predicted location.
+
+    No new polling. Uses the existing great_circle_nav primitive and Scout's
+    most recent on-foot Status.json telemetry, bounded by UTC freshness.
+    """
+    body = bio_focus_body(survey, status)
+    if body is None:
+        return {"status": "no_biological_body"}
+    specimens = body.get("sampledSpecies")
+    specimens = specimens if isinstance(specimens, list) else []
+    rows = [x for x in specimens if isinstance(x, dict) and
+            0 < int(x.get("samples") or 0) < 3 and not x.get("completed")]
+    if not rows:
+        return {"status": "no_active_sample", "bodyName": str(body.get("bodyName") or "")}
+    sample = max(rows, key=lambda x: str(x.get("lastScanAt") or ""))
+    out: dict[str, Any] = {
+        "status": "distance_unavailable", "species": str(sample.get("species") or "Unknown"),
+        "samples": int(sample.get("samples") or 0),
+        "bodyName": str(body.get("bodyName") or ""),
+        "requiredMeters": sample.get("geneticDistanceMeters"),
+    }
+    target = sample.get("samplePositions")
+    target = target[-1] if isinstance(target, list) and target and isinstance(target[-1], dict) else None
+    if not target or not isinstance(out["requiredMeters"], (int, float)):
+        return out
+    if not isinstance(status, dict) or status.get("onFootOnPlanet") is not True or status.get("hasLatLong") is not True:
+        return out
+    if str(status.get("bodyName") or "").strip().casefold() != out["bodyName"].strip().casefold():
+        return out
+    try:
+        observed = datetime.fromisoformat(str(status.get("timestamp") or "").replace("Z", "+00:00"))
+        if observed.tzinfo is None or abs((datetime.now(timezone.utc) - observed).total_seconds()) > 30:
+            return out
+        lat, lon = float(status["latitude"]), float(status["longitude"])
+        prior_lat, prior_lon = float(target["latitude"]), float(target["longitude"])
+        radius = float(target["radius"])
+        current_radius = float(status["planetRadius"])
+        if not (all(math.isfinite(x) for x in (lat, lon, prior_lat, prior_lon, radius, current_radius))
+                and abs(lat) <= 90 and abs(prior_lat) <= 90
+                and abs(lon) <= 180 and abs(prior_lon) <= 180
+                and radius > 0 and abs(radius-current_radius) / radius <= 0.01):
+            return out
+    except (TypeError, ValueError, OverflowError, KeyError):
+        return out
+    distance = great_circle_nav(prior_lat, prior_lon, lat, lon, radius).get("distance")
+    out["distanceMeters"] = round(distance, 1)
+    out["remainingMeters"] = max(0.0, round(float(out["requiredMeters"]) - distance, 1))
+    out["status"] = "genetic_distance_met" if distance >= float(out["requiredMeters"]) else "move_farther"
     return out
 
 
@@ -6286,6 +6380,111 @@ class MongrelHudApp:
 
         return width, round(y + 7 * scale)
 
+
+    def _render_exobiology_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        """Local Scout evidence tiers, candidate intelligence and sample range."""
+        width = round(530 * scale)
+        y = self._draw_title(canvas, "BIOLOGICAL INTELLIGENCE", scale, width)
+        state = self.scout_state()
+        survey = state.get("exploration") if isinstance(state.get("exploration"), dict) else {}
+        status = state.get("status") if isinstance(state.get("status"), dict) else {}
+        bio = survey.get("exobiology") if isinstance(survey.get("exobiology"), dict) else {}
+        body = bio_focus_body(survey, status)
+        if body is None:
+            self._draw_text(canvas, 10 * scale, y, "NO FRONTIER BIOLOGICAL SIGNALS YET",
+                            scale, 11, HUD_AMBER, True)
+            y += 23 * scale
+            self._draw_text(canvas, 10 * scale, y, "FSS OR DSS A BIOLOGICAL WORLD", scale, 9, HUD_MUTED)
+            return width, round(y + 26 * scale)
+        self._draw_text(canvas, 9 * scale, y,
+                        self.clip_line(body.get("bodyName") or "UNKNOWN WORLD", 42),
+                        scale, 13, HUD_WHITE, True)
+        y += 26 * scale
+        self._draw_text(canvas, 9 * scale, y,
+                        f"{int(body.get('signals') or 0)} BIO SIGNAL(S) · "
+                        + ("DSS GENUS VERIFIED" if body.get("confirmedGenuses") else "GENUS UNKNOWN"),
+                        scale, 9, HUD_CYAN, True)
+        y += 24 * scale
+        predicted = body.get("prediction") if isinstance(body.get("prediction"), dict) else {}
+        candidates = predicted.get("candidates") if isinstance(predicted.get("candidates"), list) else []
+        specimens = body.get("sampledSpecies") if isinstance(body.get("sampledSpecies"), list) else []
+        for sample in specimens[:3]:
+            if not isinstance(sample, dict):
+                continue
+            complete = bool(sample.get("completed"))
+            self._draw_text(canvas, 9 * scale, y,
+                            self.clip_line(str(sample.get("species") or "KNOWN ORGANISM"), 34),
+                            scale, 11, HUD_GREEN if complete else HUD_WHITE, True)
+            self._draw_text(canvas, width-9*scale, y,
+                            "3/3 LOGGED" if complete else f"{int(sample.get('samples') or 0)}/3 SAMPLES",
+                            scale, 10, HUD_GREEN if complete else HUD_AMBER, True, "ne")
+            y += 22 * scale
+        if candidates:
+            self._draw_text(canvas, 9 * scale, y, "HABITAT CANDIDATES · NOT CONFIRMED",
+                            scale, 9, HUD_MUTED, True)
+            y += 21 * scale
+            for candidate in candidates[:4]:
+                if not isinstance(candidate, dict):
+                    continue
+                ready = candidate.get("status") == "compatible"
+                value = candidate.get("estimatedBase")
+                self._draw_text(canvas, 9 * scale, y,
+                                self.clip_line(candidate.get("species") or "UNKNOWN", 32),
+                                scale, 10, HUD_WHITE, True)
+                price = f"~{int(value):,} CR" if isinstance(value, int) else "VALUE UNKNOWN"
+                self._draw_text(canvas, width - 9 * scale, y, price,
+                                scale, 9, HUD_CYAN if ready else HUD_MUTED, True, "ne")
+                y += 20 * scale
+                if not ready:
+                    self._draw_text(canvas, 18 * scale, y,
+                                    self.clip_line("NEEDS: "+", ".join(candidate.get("missing") or []), 60),
+                                    scale, 8, HUD_AMBER)
+                    y += 18 * scale
+            more = max(0, int(predicted.get("candidateCount") or 0) - 4)
+            if more:
+                self._draw_text(canvas, 9 * scale, y, f"+{more} MORE POSSIBLE SPECIES",
+                                scale, 9, HUD_MUTED)
+                y += 18 * scale
+        elif not specimens:
+            self._draw_text(canvas, 9 * scale, y, "NO MATCH IN PARTIAL HABITAT CATALOG",
+                            scale, 10, HUD_AMBER, True)
+            y += 22 * scale
+        guide = bio_genetic_guidance(survey, status)
+        canvas.create_line(9*scale, y+6*scale, width-9*scale, y+6*scale, fill=HUD_DIM)
+        y += 19 * scale
+        self._draw_text(canvas, 9 * scale, y, "GENETIC SAMPLE SPACING", scale, 9, HUD_CYAN, True)
+        y += 22 * scale
+        gstatus = guide.get("status")
+        if gstatus in {"move_farther", "genetic_distance_met"}:
+            remaining = float(guide.get("remainingMeters") or 0)
+            required = float(guide.get("requiredMeters") or 0)
+            measured = float(guide.get("distanceMeters") or 0)
+            phrase = ("DISTANCE MET · READY TO SAMPLE" if gstatus == "genetic_distance_met"
+                      else f"MOVE {format_distance(remaining)} FARTHER")
+            self._draw_text(canvas, 9*scale, y, phrase,
+                            scale, 12, HUD_GREEN if remaining <= 0 else HUD_AMBER, True)
+            y += 22 * scale
+            self._draw_text(canvas, 9*scale, y,
+                            f"{format_distance(measured)} FROM LAST SAMPLE · NEED {format_distance(required)}",
+                            scale, 9, HUD_MUTED)
+            y += 20 * scale
+        elif gstatus == "distance_unavailable":
+            self._draw_text(canvas, 9*scale, y,
+                            f"{self.clip_line(guide.get('species') or 'SPECIES', 28)} · "
+                            + str(guide.get("samples") or "?") + "/3",
+                            scale, 11, HUD_WHITE, True)
+            y += 22 * scale
+            self._draw_text(canvas, 9*scale, y, "RANGE UNVERIFIED · LIVE ON-FOOT GPS REQUIRED",
+                            scale, 9, HUD_AMBER)
+            y += 20 * scale
+        else:
+            self._draw_text(canvas, 9*scale, y, "NO ACTIVE GENETIC SAMPLE", scale, 9, HUD_MUTED)
+            y += 20 * scale
+        self._draw_text(canvas, 9 * scale, y,
+                        "PARTIAL COMMUNITY MODEL · FIRST-LOG BONUS UNVERIFIED",
+                        scale, 8, HUD_MUTED)
+        return width, round(y + 22 * scale)
+
     def _render_surveyor_alert_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
         """Attention-grabbing but local-only Surveyor alerts from live journal events."""
         width = round(540 * scale)
@@ -6876,6 +7075,8 @@ class MongrelHudApp:
             width, height = self._render_surveyor_canvas(canvas, scale, panel_id)
         elif panel_id == "surveyor_alert":
             width, height = self._render_surveyor_alert_canvas(canvas, scale, flash_on)
+        elif panel_id == "surveyor_bio":
+            width, height = self._render_exobiology_canvas(canvas, scale)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
