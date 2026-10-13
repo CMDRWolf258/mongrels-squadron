@@ -585,7 +585,8 @@ function renderBioSurvey(survey){
       escapeHtml(String(b.bodyName||"Unnamed world"))+'</option>'}).join("");
   if(selector.innerHTML!==options){selector.innerHTML=options;selector.value=previous;}
   var chosen=rows.find(function(b){return b&&String(b.bodyId||"")===selector.value;});
-  if(!chosen&&status.onFootOnPlanet===true&&status.bodyName)
+  if(!chosen&&status.onFootOnPlanet===true&&status.bodyName&&
+     String(status.systemAddress||"")===sys)
     chosen=rows.find(function(b){return b&&String(b.bodyName||"").toLowerCase()===String(status.bodyName).toLowerCase();});
   if(!chosen){
     var recent=rows.filter(function(b){return b&&Array.isArray(b.sampledSpecies)&&b.sampledSpecies.length;});
@@ -627,6 +628,7 @@ function renderBioSurvey(survey){
       var positions=Array.isArray(sample.samplePositions)?sample.samplePositions:[],last=positions[positions.length-1];
       var fresh=Math.abs(Date.now()-Date.parse(String(status.timestamp||"")))<30000;
       if(last&&fresh&&status.onFootOnPlanet===true&&status.hasLatLong===true&&
+         sys!==""&&String(status.systemAddress||"")===sys&&
          String(status.bodyName||"").toLowerCase()===String(chosen.bodyName||"").toLowerCase()&&
          Number.isFinite(last.radius)&&Number.isFinite(status.planetRadius)&&
          Math.abs(last.radius-status.planetRadius)/last.radius<=0.01&&Number.isFinite(sample.geneticDistanceMeters)){
@@ -635,7 +637,7 @@ function renderBioSurvey(survey){
           hav=Math.sin(dlat/2)**2+Math.cos(a1)*Math.cos(a2)*Math.sin(dlon/2)**2,
           distance=2*last.radius*Math.asin(Math.sqrt(Math.max(0,Math.min(1,hav)))),
           remain=Math.max(0,sample.geneticDistanceMeters-distance);
-        guide+=' · '+(remain<=0?"GENETIC DISTANCE MET — READY TO SAMPLE":"MOVE "+Math.ceil(remain)+" m FARTHER")+
+        guide+=' · '+(remain<=0?"GENETIC DISTANCE MET — FIND NEXT SPECIMEN":"MOVE "+Math.ceil(remain)+" m FARTHER")+
           " ("+Math.round(distance)+" / "+sample.geneticDistanceMeters+" m)";
       }else{
         guide+=' · Range unverified (matching live on-foot GPS needed)';
