@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.10 and HUD 0.17.18 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.11 and HUD 0.17.19 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.6** and HUD **0.17.12**.
+5. Start EDMC, then test HUD. Check Scout **1.13.11** and HUD **0.17.19**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -62,3 +62,18 @@ schema migrations or website rollback are required.
 Record any anomalies with: exact Scout/HUD version, system/body, which
 journal action triggered it, and a screenshot of the HUD/iPad screen.
 Do not share tokens or raw account credentials.
+
+## Expedition control acceptance (TEST only)
+
+Open **Surveyor · Expedition Control** on the paired iPad. The **Current System** figure
+is the observed scan estimate, including possibly sold historical data. **Expedition** starts
+at zero when you press **Start Exploration** and counts new eligible FSS scans and incremental
+DSS mapping gains only. **Already Explored** marks a current-system cutoff and hides any
+expedition credits recorded there before that button; future new scans/maps still count.
+**Undo Exclusion** restores the hidden credited work without removing the local scans.
+**End Expedition** closes the accounting session. All selections persist locally in SQLite;
+no new server polling or telemetry uploads were added.
+
+Live verification: Start, scan a new body, mark this system already explored, scan/map
+another body, undo, and restart EDMC/HUD. Compare figures and confirm other Scout/HUD
+functions continue normally. Estimates are not proof of unsold Cartographics data.

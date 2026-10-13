@@ -25,6 +25,7 @@ jobs:
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_advisor.py
           python scripts/test_surveyor_advisor_hud.py
+          python scripts/test_surveyor_expedition.py
           node scripts/smoke-mongrel-scout.mjs
           python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
@@ -39,7 +40,7 @@ jobs:
           import zipfile
           from pathlib import Path
           Path('package').mkdir(exist_ok=True)
-          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.10-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
+          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.11-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
               for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py'):
                   z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
               z.write('downloads/mongrel-scout/README.md','README.md')
@@ -47,8 +48,8 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelScout-Surveyor-1.13.10-TEST
-          path: package/MongrelScout-Surveyor-1.13.10-TEST.zip
+          name: MongrelScout-Surveyor-1.13.11-TEST
+          path: package/MongrelScout-Surveyor-1.13.11-TEST.zip
           retention-days: 14
 
   windows-hud:
@@ -69,10 +70,10 @@ jobs:
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md
           Copy-Item downloads/mongrel-scout/SURVEYOR_TESTING.md package/SURVEYOR_TESTING.md
-          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.18-TEST.zip -Force
+          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.19-TEST.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelHUD-Surveyor-0.17.18-TEST
-          path: MongrelHUD-Surveyor-0.17.18-TEST.zip
+          name: MongrelHUD-Surveyor-0.17.19-TEST
+          path: MongrelHUD-Surveyor-0.17.19-TEST.zip
           compression-level: 0
           retention-days: 14
