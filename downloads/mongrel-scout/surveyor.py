@@ -211,7 +211,7 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
         "hmcBiologicalOpportunity": hmc and count > 0,
         "possibleStratum": hmc and count > 0 and not confirmed,
         "confirmedStratumGenus": contains_stratum,
-        "predictionCertainty": "unresolved" if not confirmed else "genus_confirmed_species_unknown",
+        "predictionCertainty": "species_confirmed" if current else "genus_confirmed_species_unknown" if confirmed else "unresolved",
         "estimatedCompleteBase": sum(int(x.get("estimatedBaseValue") or 0) for x in current if x.get("completed")),
         "knownValueCoverage": sum(bool(x.get("completed") and x.get("estimatedBaseValue") is not None) for x in current),
     }
