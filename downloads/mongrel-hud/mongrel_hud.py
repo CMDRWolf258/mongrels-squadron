@@ -60,6 +60,7 @@ SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_ROUTE_CONTROL_URL = "http://127.0.0.1:43857/v1/route"
+SCOUT_SURVEYOR_CONTROL_URL = "http://127.0.0.1:43857/v1/exploration/control"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
@@ -3780,6 +3781,29 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def surveyor_control(self, action: str) -> dict[str, Any]:
+        """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
+        if action not in {"start", "end", "mark_existing", "undo_existing"}:
+            raise ValueError("invalid_expedition_action")
+        request = urllib.request.Request(
+            SCOUT_SURVEYOR_CONTROL_URL,
+            data=json.dumps({"action": action}, separators=(",", ":")).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-Mongrel-HUD-Surveyor-Action": "1",
+            },
+            method="POST",
+        )
+        result = request_scout_json(request, "surveyor_control_failed")
+        observation = result.get("exploration") if isinstance(result, dict) else None
+        if isinstance(observation, dict):
+            with self.lock:
+                if not isinstance(self.snapshot.data, dict):
+                    self.snapshot.data = {}
+                self.snapshot.data["exploration"] = observation
+        return result
+
     def shared_mining_health(self) -> dict[str, Any]:
         """Admin-requested read-only archive status, never auto-refreshed."""
         request = urllib.request.Request(MINING_HEALTH_URL, headers={"Accept": "application/json"}, method="GET")
@@ -5405,6 +5429,10 @@ class MongrelHudApp:
             f"Estimated unsold: {int(estimate):,} CR"
             if isinstance(estimate, (int, float)) else "Estimated unsold: insufficient evidence"
         )
+        current = survey.get("currentSystemEstimate")
+        lines.append(f"Current system: {int(current):,} CR (observed; may be sold)" if isinstance(current, (int, float)) else "Current system: unvalued")
+        expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
+        lines.append(f"Expedition since Start: {int(expedition.get('estimate') or 0):,} CR" if expedition.get("active") else "Expedition: not started")
         lines.append("ESTIMATES ONLY · actual cartographic sales may differ")
         history = snapshot.get("explorationImport") if isinstance(snapshot.get("explorationImport"), dict) else {}
         if history:
@@ -6241,6 +6269,122 @@ class MongrelHudApp:
 
         return width, round(y + 7 * scale)
 
+    def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        """Dedicated compact expedition instrument; all data is local to Scout."""
+        state = self.scout_state()
+        survey = state.get("exploration")
+        width = round(548 * scale)
+        y = self._draw_title(canvas, "MONGREL SURVEYOR", scale, width)
+        if not isinstance(survey, dict):
+            self._draw_text(canvas, 10 * scale, y + 6 * scale,
+                            "AWAITING LOCAL EXPLORATION DATA", scale, 11, HUD_AMBER, True)
+            return width, round(y + 42 * scale)
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
+        active = bool(expedition.get("active"))
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(system.get("name") or "UNKNOWN SYSTEM", 49),
+                        scale, 13, HUD_WHITE, True)
+        y += 25 * scale
+        label = "EXPEDITION ACTIVE" if active else "EXPEDITION STANDBY · START ON IPAD"
+        if expedition.get("existingDataExcluded") and active:
+            label = "PRIOR DATA EXCLUDED · NEW SCANS COUNT"
+        self._draw_text(canvas, 10 * scale, y, label, scale, 9,
+                        HUD_GREEN if active else HUD_AMBER, True)
+        y += 25 * scale
+        canvas.create_line(10 * scale, y, (width / 2) - 10 * scale, y,
+                           fill=HUD_DIM, width=max(1, round(scale)))
+        canvas.create_line((width / 2) + 8 * scale, y, width - 10 * scale, y,
+                           fill=HUD_DIM, width=max(1, round(scale)))
+        y += 9 * scale
+        half = width / 2
+        self._draw_text(canvas, 10 * scale, y, "CURRENT SYSTEM · OBSERVED", scale, 9, HUD_MUTED, True)
+        self._draw_text(canvas, half + 8 * scale, y, "EXPEDITION · SINCE START", scale, 9, HUD_MUTED, True)
+        y += 18 * scale
+        current = survey.get("currentSystemEstimate")
+        earnings = expedition.get("estimate") if active else None
+        self._draw_text(canvas, 10 * scale, y,
+                        f"{int(current):,} CR" if isinstance(current, (int, float)) else "INSUFFICIENT DATA",
+                        scale, 18 if isinstance(current, (int, float)) else 11, HUD_CYAN, True)
+        self._draw_text(canvas, half + 8 * scale, y,
+                        f"{int(earnings):,} CR" if isinstance(earnings, (int, float)) else "NOT STARTED",
+                        scale, 18 if active else 11, HUD_GREEN if active else HUD_MUTED, True)
+        y += 31 * scale
+        self._draw_text(canvas, 10 * scale, y, "May include previously sold scans", scale, 8, HUD_MUTED)
+        self._draw_text(canvas, half + 8 * scale, y,
+                        "New work only · provisional value" if active else "Start Exploration on your iPad",
+                        scale, 8, HUD_MUTED)
+        y += 29 * scale
+        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
+        y += 12 * scale
+        scanned = max(0, int(survey.get("personallyScannedBodies") or 0))
+        total = system.get("bodyCount")
+        total = total if type(total) is int and total > 0 else 0
+        mapped = max(0, int(survey.get("personallyMappedBodies") or 0))
+        self._draw_text(canvas, 10 * scale, y, "FSS COVERAGE", scale, 10, HUD_WHITE, True)
+        self._draw_text(canvas, width - 10 * scale, y,
+                        f"{scanned} / {total if total else '?'} BODIES", scale, 10, HUD_CYAN, True, "ne")
+        y += 19 * scale
+        self._draw_progress(canvas, 10 * scale, y, width - 20 * scale,
+                            (scanned / total * 100) if total else 0, scale)
+        y += 19 * scale
+        self._draw_text(canvas, 10 * scale, y, f"DSS MAPPED  {mapped}", scale, 10, HUD_WHITE, True)
+        self._draw_text(canvas, width - 10 * scale, y,
+                        f"FIRST DISCOVERY CANDIDATES  {int(survey.get('potentialFirstBodies') or 0)}",
+                        scale, 9, HUD_MUTED, True, "ne")
+        y += 28 * scale
+        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
+        y += 10 * scale
+        self._draw_text(canvas, 10 * scale, y, "DSS MAPPING ADVISOR", scale, 12, HUD_CYAN, True)
+        gain_min = survey.get("additionalMappingPotentialMin")
+        gain_max = survey.get("additionalMappingPotentialMax")
+        if isinstance(gain_min, (float, int)) and isinstance(gain_max, (float, int)):
+            self._draw_text(canvas, width - 10 * scale, y,
+                            f"REMAINING +{int(gain_min):,}–{int(gain_max):,} CR",
+                            scale, 8, HUD_MUTED, True, "ne")
+        y += 23 * scale
+        advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
+        targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+        if not targets:
+            self._draw_text(canvas, 10 * scale, y, "No valued, unmapped local scans yet", scale, 10, HUD_MUTED)
+            y += 26 * scale
+        for row in targets[:3]:
+            if not isinstance(row, dict):
+                continue
+            rank = int(row.get("rank") or 0)
+            self._draw_text(canvas, 10 * scale, y, f"{rank:02d}", scale, 17, HUD_CYAN, True)
+            self._draw_text(canvas, 48 * scale, y + 1 * scale,
+                            self.clip_line(row.get("name") or "UNKNOWN BODY", 40),
+                            scale, 10, HUD_WHITE, True)
+            d = row.get("distanceLs")
+            self._draw_text(canvas, width - 10 * scale, y + 1 * scale,
+                            f"{d:,.0f} LS" if isinstance(d, (float, int)) else "DIST ?",
+                            scale, 9, HUD_MUTED, True, "ne")
+            y += 19 * scale
+            low, high = row.get("dssGainMin"), row.get("dssGainMax")
+            self._draw_text(canvas, 48 * scale, y,
+                            f"+{int(low):,}–{int(high):,} CR" if isinstance(low, (float, int)) and isinstance(high, (float, int)) else "VALUE UNCERTAIN",
+                            scale, 9, HUD_GREEN, True)
+            self._draw_text(canvas, width - 10 * scale, y,
+                            self.clip_line(row.get("planetClass") or "SCAN CONFIRMED", 24),
+                            scale, 8, HUD_MUTED, False, "ne")
+            y += 24 * scale
+        extra = int(advisor.get("eligibleCount") or 0) - min(3, len(targets))
+        if extra > 0:
+            self._draw_text(canvas, 48 * scale, y, f"+ {extra} MORE DSS CANDIDATES", scale, 9, HUD_MUTED)
+            y += 20 * scale
+        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
+        y += 8 * scale
+        history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
+        recovered = str(history.get("status") or "").upper()
+        self._draw_text(canvas, 10 * scale, y,
+                        f"LOCAL JOURNAL  {recovered}  ·  {int(history.get('processed') or 0)} NEW / {int(history.get('duplicates') or 0)} KNOWN",
+                        scale, 8, HUD_MUTED)
+        y += 17 * scale
+        self._draw_text(canvas, 10 * scale, y,
+                        "PROVISIONAL ESTIMATES · NOT VERIFIED UNSOLD CARTOGRAPHICS",
+                        scale, 8, HUD_AMBER)
+        return width, round(y + 22 * scale)
+
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")
         lines = text.splitlines()
@@ -6393,6 +6537,8 @@ class MongrelHudApp:
             width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "miningintel":
             width, height = self._render_miningintel_canvas(canvas, scale)
+        elif panel_id == "surveyor":
+            width, height = self._render_surveyor_canvas(canvas, scale)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
@@ -7075,6 +7221,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
+                elif path == "/api/surveyor":
+                    result = app.surveyor_control(str(body.get("action") or ""))
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
                 elif path == "/api/alert-ack":
