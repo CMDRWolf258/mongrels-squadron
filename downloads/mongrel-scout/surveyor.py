@@ -1120,6 +1120,16 @@ class Surveyor:
                     body["bodyId"] = body_id
                     body["systemAddress"] = address
                     body["name"] = _text(event.get("BodyName")) or body.get("name", "")
+                    if kind == "ScanOrganic" and not body["name"] and not historic and isinstance(position, Mapping):
+                        # ScanOrganic provides Body ID but no BodyName. If Scan
+                        # history is missing, use *fresh matching* on-foot Status
+                        # rather than inventing a body label or dropping GPS.
+                        status_body = _text(position.get("bodyName"))
+                        if status_body and _biological_position(
+                            position, body_name=status_body,
+                            system_address=address, timestamp=timestamp,
+                        ):
+                            body["name"] = status_body
                     if kind == "Scan":
                         for src, dest in (
                             ("PlanetClass", "planetClass"), ("StarType", "starType"),
@@ -1138,6 +1148,11 @@ class Surveyor:
                                 # repeat scans after personal mapping must not erase it.
                                 body[dest] = value
                         body["scanType"] = _text(event.get("ScanType"))
+                        # Some versions of Scan contain verified Genuses before
+                        # SAASignalsFound. Preserve that Frontier evidence.
+                        if isinstance(event.get("Genuses"), list) and event["Genuses"]:
+                            body["biologicalGenuses"] = _biological_genuses(event["Genuses"])
+                            body["genusSource"] = "Frontier Scan"
                         if body["scanType"] not in {"NavBeaconDetail", "External"}:
                             body["personallyScanned"] = True
                             body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
@@ -1149,8 +1164,10 @@ class Surveyor:
                         body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
                     elif kind == "ScanOrganic":
                         _biological_apply(body, event, None if historic else position, address, timestamp)
+                        if not historic and address == active:
+                            system["lastOrganicBodyId"] = body_id
                     else:
-                        if kind == "SAASignalsFound" and isinstance(event.get("Genuses"), list):
+                        if kind == "SAASignalsFound" and isinstance(event.get("Genuses"), list) and event["Genuses"]:
                             body["biologicalGenuses"] = _biological_genuses(event["Genuses"])
                             body["genusSource"] = "Frontier SAASignalsFound"
                         signals = event.get("Signals")
