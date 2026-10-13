@@ -3792,7 +3792,7 @@ class MongrelHudApp:
 
     def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
-        if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote"}:
+        if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote", "edd_connect", "edd_off", "edd_refresh"}:
             raise ValueError("invalid_expedition_action")
         request = urllib.request.Request(
             SCOUT_SURVEYOR_CONTROL_URL,
@@ -3813,6 +3813,10 @@ class MongrelHudApp:
                 self.snapshot.data["exploration"] = observation
             if "communityEnabled" in result:
                 self.snapshot.data["explorationCommunityEnabled"] = bool(result["communityEnabled"])
+            if "eddEnabled" in result:
+                self.snapshot.data["explorationEDDiscoveryEnabled"] = bool(result["eddEnabled"])
+            if "eddPort" in result:
+                self.snapshot.data["explorationEDDiscoveryPort"] = int(result["eddPort"])
         return result
 
     def shared_mining_health(self) -> dict[str, Any]:
@@ -6531,6 +6535,10 @@ class MongrelHudApp:
         self._draw_text(canvas, half + 8 * scale, y, "EXPEDITION · SINCE START", scale, 9, HUD_MUTED, True)
         y += 18 * scale
         current = survey.get("currentSystemEstimate")
+        history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+        using_edd = current is None and bool(history.get("verifiedSystemIdentity")) and bool(history.get("bodyCount"))
+        if using_edd:
+            current = history.get("estimatedHistoricalValue")
         earnings = expedition.get("estimate") if active else None
         self._draw_text(canvas, 10 * scale, y,
                         f"{int(current):,} CR" if isinstance(current, (int, float)) else "INSUFFICIENT DATA",
@@ -6539,7 +6547,9 @@ class MongrelHudApp:
                         f"{int(earnings):,} CR" if isinstance(earnings, (int, float)) else "NOT STARTED",
                         scale, 18 if active else 11, HUD_GREEN if active else HUD_MUTED, True)
         y += 31 * scale
-        self._draw_text(canvas, 10 * scale, y, "May include previously sold scans", scale, 8, HUD_MUTED)
+        self._draw_text(canvas, 10 * scale, y,
+                        "HISTORICAL EDD · MAY BE SOLD" if using_edd else
+                        "May include previously sold scans", scale, 8, HUD_MUTED)
         self._draw_text(canvas, half + 8 * scale, y,
                         "Newly charted data · provisional" if active else "Awaiting expedition launch",
                         scale, 8, HUD_MUTED)
@@ -6577,6 +6587,12 @@ class MongrelHudApp:
                         scale, 8, HUD_CYAN)
         y += 19 * scale
         intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+        if history.get("verifiedSystemIdentity") and history.get("bodyCount"):
+            self._draw_text(canvas, 10 * scale, y,
+                            f"EDD HISTORICAL SCANS · {int(history['bodyCount'])} BODIES · NOT EXPEDITION CR",
+                            scale, 8, HUD_GREEN)
+            y += 17 * scale
         if intel.get("providers"):
             names = " + ".join(str(x) for x in intel.get("providers") or [])
             count = int(intel.get("catalogedBodies") or 0)
