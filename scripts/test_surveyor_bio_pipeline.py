@@ -68,6 +68,14 @@ with tempfile.TemporaryDirectory() as folder:
     ledger = module.Surveyor(Path(folder)/"surveyor.sqlite3")
     state = {"commander":"Wolf", "status":None, "system":None,
              "exploration":None,"explorationStatus":None,"ship":{}}
+    scout_tree = ast.parse((SCOUT/"load.py").read_text(encoding="utf-8"))
+    scout_constants = {}
+    for node in scout_tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in {"HUD_BRIDGE_VERSION","PLUGIN_VERSION"}:
+                    scout_constants[target.id] = ast.literal_eval(node.value)
+    assert set(scout_constants) == {"HUD_BRIDGE_VERSION","PLUGIN_VERSION"}
     callbacks = extracted(SCOUT/"load.py", {
         "_update_hud_system_context","_update_hud_status","_observe_surveyor",
     }, {
@@ -78,6 +86,7 @@ with tempfile.TemporaryDirectory() as folder:
         "_optional_float":as_float,"_update_current_jump_range_locked":lambda *_:None,
         "_nav_id":None,"_refresh_route_navigation":lambda:None,
         "_get_surveyor":lambda:ledger,
+        **scout_constants,
     })
     huds = extracted(HUD, {"great_circle_nav","bio_focus_body","bio_genetic_guidance"},
         {"math":math,"datetime":datetime,"timezone":timezone,"Any":Any})
