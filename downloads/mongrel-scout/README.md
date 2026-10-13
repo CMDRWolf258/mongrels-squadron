@@ -1,4 +1,21 @@
-## Scout 1.13.15 — Surveyor exploration integration
+## Scout 1.13.16 — Private cross-PC mission cargo synchronization
+
+Scout automatically synchronizes active cargo mission requirements and delivery
+progress between your computers, using your existing Commander-bound Scout
+token. The current Elite `Missions` list on each PC decides which mission IDs
+are eligible for restoration; terminal mission events prevent an old laptop from
+reviving completed missions. Changes are queued locally during outages and
+retried. Only mission IDs, commodity requirements, faction, destination and
+delivery progress are shared privately. Ship cargo, raw journals and trade
+purchase provenance remain local. There is no additional BGS credit.
+
+**First time on both PCs:** update Scout to 1.13.16, sign in to Elite normally
+on each computer, and allow a few moments for the active mission list to
+reconcile. A mission whose original acceptance was logged on the first
+computer is automatically transferred when that computer has connected at
+least once with the new version. HUD 0.17.23 is compatible and needs no update.
+
+### Previous Scout 1.13.15 — Surveyor exploration integration
 
 Scout 1.13.15 adds Mongrel Surveyor's local exploration records, EDDiscovery historical scan integration, the Discovery Report's estimated credit values, the DSS mapping advisor, and live first-discovery / high-metal-content biological-signal HUD alerts. Historical exploration values are identified separately and do **not** count as new expedition earnings. Biological signal counts do not identify the species or prove first footfall.
 
