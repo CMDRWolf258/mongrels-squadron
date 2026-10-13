@@ -481,12 +481,12 @@ def _surveyor_community_control(action: str) -> dict[str, Any]:
     return {"ok": True, "communityEnabled": True, "queued": bool(name and address)}
 
 
-def _surveyor_quote_control(value: Any) -> dict[str, Any]:
+def _surveyor_quote_control(value: Any, system_name: str = "") -> dict[str, Any]:
     with _hud_condition:
         commander = str(_hud_state.get("commander") or "")
     if not commander:
         raise ValueError("commander_unavailable")
-    snapshot = _get_surveyor().record_carto_reference(commander, value)
+    snapshot = _get_surveyor().record_carto_reference(commander, value, system_name)
     with _hud_condition:
         if str(_hud_state.get("commander") or "").casefold() != commander.casefold():
             raise ValueError("commander_changed")
@@ -1197,7 +1197,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                 if action in {"intel_on", "intel_off", "intel_refresh"}:
                     self._write_json(_surveyor_community_control(action))
                 elif action == "record_quote":
-                    self._write_json(_surveyor_quote_control(body.get("value")))
+                    self._write_json(_surveyor_quote_control(body.get("value"), str(body.get("system") or "")[:140]))
                 else:
                     result = _surveyor_local_control(action)
                     self._write_json({"ok": True, "exploration": result})
