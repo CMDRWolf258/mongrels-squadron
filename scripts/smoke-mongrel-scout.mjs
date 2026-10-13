@@ -1128,7 +1128,8 @@ for (const endpoint of [zipSource,apiZipSource]) {
   assert.ok(endpoint.includes("path:'licenses/Apache-2.0.txt'"));
 }
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-assert.match(scoutReadme,/Scout 1\\.13\\.15/);
+assert.ok(scoutReadme.includes('Scout 1.13.15'));
+
 for(const pattern of [/Short version:/,/Plugins → Open/,/real plugin folder/,/MongrelScout/,/Enable Mongrel Scout/,/Armed/,/Market updated: <station>/,/Facility mapped: <facility>/,/Host verified: <station> → <body>/,/Updating Scout/,/Privacy/,/member\/#mongrel-scout-setup/,/TECHNICAL_NOTES\.md/])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/127\.0\.0\.1:43857|docking\.granted|CarrierStats|galactic X\/Y\/Z coordinates/,'Member README should stay non-technical');
 const scoutTechnicalNotes=readFileSync('downloads/mongrel-scout/TECHNICAL_NOTES.md','utf8');
