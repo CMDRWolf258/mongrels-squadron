@@ -104,6 +104,7 @@ body["sampledSpecies"][0].update({
     "footfallStatus":"first_footfall_indicated",
     "estimatedBaseValue":19010800,
 })
+body["genusOverview"] = [{"genus":"Stratum","minBase":19010800,"maxBase":19010800,"exact":False}]
 hud = FakeHud({"exploration":survey, "status":dict(status,longitude=0.04)})
 dimensions = hud._render_exobiology_canvas(FakeCanvas(),1)
 text = " ".join(hud.lines)
