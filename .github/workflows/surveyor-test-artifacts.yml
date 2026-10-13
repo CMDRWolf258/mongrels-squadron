@@ -19,7 +19,7 @@ jobs:
           python-version: '3.12'
       - name: Validate local Surveyor and live Scout compatibility
         run: |
-          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py
+          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_edd_bridge.py
           python scripts/test_surveyor.py
           python scripts/test_surveyor_history.py
           python scripts/test_surveyor_intel.py
@@ -28,6 +28,7 @@ jobs:
           python scripts/test_surveyor_expedition.py
           python scripts/test_surveyor_live_feedback.py
           python scripts/test_surveyor_eddiscovery_reference.py
+          python scripts/test_surveyor_eddiscovery_bridge.py
           node scripts/smoke-mongrel-scout.mjs
           python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
@@ -43,7 +44,7 @@ jobs:
           from pathlib import Path
           Path('package').mkdir(exist_ok=True)
           with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.13-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
-              for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py'):
+              for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py','surveyor_edd_bridge.py'):
                   z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
               z.write('downloads/mongrel-scout/README.md','README.md')
               z.write('downloads/mongrel-scout/SURVEYOR_TESTING.md','SURVEYOR_TESTING.md')
