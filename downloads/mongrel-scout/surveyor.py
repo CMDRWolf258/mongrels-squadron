@@ -127,6 +127,25 @@ BIO_REFERENCE_VALUES = {
     "Stratum Paleas": 1362000,
     "Stratum Tectonicas": 19010800,
     "Tubus Conifer": 2415500,
+    "Tubus Cavas": 11873200,
+    "Tubus Compagibus": 7774700,
+    "Tubus Rosarium": 2637500,
+    "Tubus Sororibus": 5727600,
+    "Tussock Albata": 3252500,
+    "Tussock Capillum": 7025800,
+    "Tussock Caputus": 3472400,
+    "Tussock Catena": 1766600,
+    "Tussock Cultro": 1766600,
+    "Tussock Divisa": 1766600,
+    "Tussock Ignis": 1849000,
+    "Tussock Pennata": 5853800,
+    "Tussock Pennatis": 1000000,
+    "Tussock Propagito": 1000000,
+    "Tussock Serrati": 4447100,
+    "Tussock Stigmasis": 19010800,
+    "Tussock Triticum": 7774700,
+    "Tussock Ventusa": 3227700,
+    "Tussock Virgam": 14313700,
 }
 BIO_REFERENCE_MODEL = "dsn-vista-genomics-base-2026-10-partial"
 
@@ -235,7 +254,7 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
 # This is NOT copied from any GPL/AGPL predictor or its bundled database.
 # Explicit source URLs are exposed to the HUD and tests. More biological genera
 # will be added as habitat parameters are independently corroborated.
-BIO_HABITAT_VERSION = "mongrel-habitats-2026-10-stage3-v1"
+BIO_HABITAT_VERSION = "mongrel-habitats-2026-10-stage4-v1"
 BIO_HABITAT_SOURCES = {
     "Stratum": "https://ed-dsn.net/en/stratum_en/",
     "Aleoida": "https://ed-dsn.net/en/aleoida_en/",
@@ -245,6 +264,8 @@ BIO_HABITAT_SOURCES = {
     "Bacterium": "https://ed-dsn.net/en/bacterium_en/",
     "Cactoida": "https://ed-dsn.net/en/cactoida_en/",
     "Fungoida": "https://ed-dsn.net/en/fungoida_en/",
+    "Tubus": "https://ed-dsn.net/en/tubus_en/",
+    "Tussock": "https://ed-dsn.net/en/tussock_en/",
 }
 # Planet classes and atmospheres are canonicalized by _bio_atmosphere/_bio_world.
 # A "None" criterion means unknown/unrestricted, NOT an assertion of absence.
@@ -298,6 +319,28 @@ BIO_HABITAT_RULES = [
     ("Fungoida", "Gelata", "*", "CO2 H2O", None, None, 0.27, ""),
     ("Fungoida", "Setisis", "*", "NH3 CH4", None, None, 0.27, ""),
     ("Fungoida", "Stabitis", "*", "CO2 H2O", None, None, 0.27, ""),
+    # Tubus: thin atmosphere and very low gravity, source DSN Tubus.
+    ("Tubus", "Cavas", "R", "CO2", 160, 190, 0.15, ""),
+    ("Tubus", "Compagibus", "R", "CO2", 160, 190, 0.15, ""),
+    ("Tubus", "Conifer", "R", "CO2", 160, 190, 0.15, ""),
+    ("Tubus", "Rosarium", "R", "NH3", 160, None, 0.15, ""),
+    ("Tubus", "Sororibus", "H", "NH3 CO2", 160, 190, 0.15, ""),
+    # Tussock: rocky worlds only, low gravity; temperature-specific CO2 forms.
+    ("Tussock", "Albata", "R", "CO2", 175, 180, 0.27, ""),
+    ("Tussock", "Capillum", "R", "CH4 AR", None, None, 0.27, ""),
+    ("Tussock", "Caputus", "R", "CO2", 180, 190, 0.27, ""),
+    ("Tussock", "Catena", "R", "NH3", None, None, 0.27, ""),
+    ("Tussock", "Cultro", "R", "NH3", None, None, 0.27, ""),
+    ("Tussock", "Divisa", "R", "NH3", None, None, 0.27, ""),
+    ("Tussock", "Ignis", "R", "CO2", 160, 170, 0.27, ""),
+    ("Tussock", "Pennata", "R", "CO2", 145, 155, 0.27, ""),
+    ("Tussock", "Pennatis", "R", "CO2", None, 195, 0.27, ""),
+    ("Tussock", "Propagito", "R", "CO2", None, 195, 0.27, ""),
+    ("Tussock", "Serrati", "R", "CO2", 170, 175, 0.27, ""),
+    ("Tussock", "Stigmasis", "R", "SO2", None, None, 0.27, ""),
+    ("Tussock", "Triticum", "R", "CO2", 190, 195, 0.27, ""),
+    ("Tussock", "Ventusa", "R", "CO2", 155, 160, 0.27, ""),
+    ("Tussock", "Virgam", "R", "H2O", None, None, 0.27, ""),
 ]
 
 BIO_GENETIC_DISTANCES_M.update({
@@ -450,7 +493,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "candidates": candidates[:40],
         "candidateCount": len(candidates),
-        "ruleCoverage": "partial",  # eight genera; no regional, star, volcanic class model
+        "ruleCoverage": "partial",  # 10 genera, still missing region/star/volcanic rules
         "knownGenera": sorted(BIO_HABITAT_SOURCES),
         "model": BIO_HABITAT_VERSION,
         "planetEvidence": {
