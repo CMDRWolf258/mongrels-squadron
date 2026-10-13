@@ -71,3 +71,51 @@ BGS, mission-sync and website smoke tests must continue to pass.
 because this backend merge passes CI.** The next phase will wire compact
 Exobiology HUD panels and the paired iPad controls, with end-to-end mocked
 status/journal tests and then one coordinated owner gameplay test.
+
+## Phase 3A: expanded intelligence and HUD controls
+
+- `mongrel-habitats-2026-10-stage3-v1`: **40 species conditions / 8 genera**.
+  The three additional genus groups are Bacterium (8 models), Cactoida (5),
+  Fungoida (4). Individual conditions are cross-checked against:
+  - https://ed-dsn.net/en/bacterium_en/
+  - https://ed-dsn.net/en/cactoida_en/
+  - https://ed-dsn.net/en/fungoida_en/
+- Volcanism-specific bacteria (Omentum, Scopulum, Verrata, Tela) are not
+  declared compatible by a generic "volcanism present" test. They remain
+  outside this scoped catalog until precise subclass requirements and
+  geological signal data can be verified. This is a coverage gap, not a
+  claim of absence from the planet.
+- DSN's published Vista Genomics table now supplies explicit **base** values
+  for all 40 modeled species; the catalog may contain additional sold-species
+  references even if no habitat prediction is available:
+  https://ed-dsn.net/en/vista-genomics-values/
+  Bonus awards remain unknown until Frontier SaleOrganicData, and any
+  candidate value is merely the base for *one possible species*.
+- Cactoida/Fungoida require compatible thin atmosphere and (where relevant)
+  gravity <=0.27g; CO2 Fungoida Gelata/Stabitis additionally need
+  180-195 K, but water-atmosphere cases do not use those CO2 limits.
+- HUD now has a separate **Biological Intelligence** instrument in the
+  Exploration profile, using the existing panel visibility/size/profile
+  system. It lists candidate species (never labelled confirmed), observed
+  biological specimens with x/3 samples and confirmed genus evidence.
+- Genetic spacing uses existing `great_circle_nav`, latest saved Frontier
+  sample position and live on-foot Status from the **same body**. The current
+  Status timestamp must be within 30 seconds and the stored planet radius
+  must match within 1%. Bad/missing coordinates display **unverified**,
+  never "ready to sample".
+- The iPad controller includes a corresponding panel switch/size/profile
+  selector, biological planet preview, evidence display, sample-spacing
+  cue and confirmed Vista Genomics totals. Its body dropdown is a **preview
+  only** and does not secretly retarget ship navigation.
+- No new remote API, overlay polling, cloud rows, or Scout ZIP module. All
+  presentation is computed from the already-refreshed localhost Scout state.
+- Tests: `scripts/test_surveyor_bio_predictions.py`,
+  `scripts/test_surveyor_bio_hud.py`,
+  `scripts/test-surveyor-bio-controller.mjs`, plus the existing
+  website/Scout/HUD regression tests.
+
+**Not yet done:** 100%-coverage species habitat model, galaxy region and
+nearby nebula restrictions, plant-colour variants, production HUD/Scout
+packaging and owner live gameplay acceptance. Continue the bulk catalog with
+clear attribution, then package a synchronized install only after checks.
+
