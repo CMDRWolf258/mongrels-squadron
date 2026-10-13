@@ -27,6 +27,7 @@ jobs:
           python scripts/test_surveyor_advisor_hud.py
           python scripts/test_surveyor_expedition.py
           python scripts/test_surveyor_live_feedback.py
+          python scripts/test_surveyor_eddiscovery_reference.py
           node scripts/smoke-mongrel-scout.mjs
           python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
@@ -46,6 +47,8 @@ jobs:
                   z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
               z.write('downloads/mongrel-scout/README.md','README.md')
               z.write('downloads/mongrel-scout/SURVEYOR_TESTING.md','SURVEYOR_TESTING.md')
+              z.write('downloads/mongrel-scout/THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md')
+              z.write('downloads/mongrel-scout/licenses/Apache-2.0.txt','licenses/Apache-2.0.txt')
           PY
       - uses: actions/upload-artifact@v4
         with:
