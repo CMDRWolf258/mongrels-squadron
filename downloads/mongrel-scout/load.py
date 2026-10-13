@@ -436,8 +436,10 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
                 location = _hud_state.get("status")
                 current_system = _hud_state.get("system")
                 if isinstance(location, Mapping) and isinstance(current_system, Mapping):
+                    # Capture the scope when Status.json was observed. NEVER
+                    # retroactively stamp an old surface fix with a new system
+                    # address after a jump or EDMC delayed journal callback.
                     position = dict(location)
-                    position["systemAddress"] = str(current_system.get("address") or "")
         updated = surveyor.apply(cmdr, entry, system, fallback_address, position=position)
         if updated is None:
             return  # Replayed event: identical input was already applied.
@@ -947,6 +949,14 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         _hud_state["bridgeVersion"] = HUD_BRIDGE_VERSION
         _hud_state["pluginVersion"] = PLUGIN_VERSION
         _hud_state["commander"] = str(cmdr or "").strip() or _hud_state.get("commander", "")
+        # Status.json has no native SystemAddress. Bind to the system known
+        # when this particular Status was observed, not when an organic event
+        # later consumes it. A missing scope must stay missing.
+        current_system = _hud_state.get("system")
+        status["systemAddress"] = (
+            _decimal_text(current_system.get("address"))
+            if isinstance(current_system, Mapping) else ""
+        )
         _hud_state["status"] = status
         ship = _hud_state.get("ship")
         if not isinstance(ship, dict):
