@@ -72,6 +72,18 @@ with tempfile.TemporaryDirectory() as tmp:
         journal("Scan", "2026-10-08T10:01:00Z",
             BodyID=22, PlanetClass="Ammonia world", MassEM=1.2),
     ])
+    # Startup restoration reads only the newest journal's explicit Commander.
+    assert history.latest_journal_commander(files) == cmdr
+    no_identity = files / "Journal.2026-10-08T110000.01.log"
+    write(no_identity, [journal("Fileheader", "2026-10-08T11:00:00Z")])
+    assert history.latest_journal_commander(files) == "", (
+        "Never borrow an older session's identity on a shared PC")
+    no_identity.unlink()
+    write(files / "Journal.2026-10-08T100000.01.log", [
+        journal("LoadGame", "2026-10-08T10:00:00Z", Commander="Wolf258"),
+        journal("Scan", "2026-10-08T10:01:00Z",
+            BodyID=22, PlanetClass="Ammonia world", MassEM=1.2),
+    ])
     first = history.import_recent_journals(ledger, cmdr, files)
     assert first["processed"] == 5, first
     assert first["skipped"] >= 1, first
