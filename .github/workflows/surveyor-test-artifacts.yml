@@ -26,6 +26,7 @@ jobs:
           python scripts/test_surveyor_advisor.py
           python scripts/test_surveyor_advisor_hud.py
           python scripts/test_surveyor_expedition.py
+          python scripts/test_surveyor_live_feedback.py
           node scripts/smoke-mongrel-scout.mjs
           python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
