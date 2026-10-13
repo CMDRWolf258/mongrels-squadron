@@ -6409,6 +6409,50 @@ class MongrelHudApp:
                     focused = max(recent, key=lambda b: str(b.get("lastDataAcquiredAt")), default=None)
                 selection = "LAST RECORDED JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
             if focused is None:
+                history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
+                historic = history.get("bodies") if isinstance(history.get("bodies"), list) else []
+                archived = None
+                for old in historic:
+                    if not isinstance(old, dict):
+                        continue
+                    if selected_id is not None and str(old.get("bodyId") or "") == str(selected_id):
+                        archived = old
+                        break
+                    if selected_name and str(old.get("name") or "").casefold() == selected_name:
+                        archived = old
+                        break
+                if archived is None and historic:
+                    # Useful default when the selected body is unknown in
+                    # EDD: display its highest-value archived body, labelled
+                    # historical rather than pretending it's the live target.
+                    archived = max((b for b in historic if isinstance(b, dict)),
+                                   key=lambda b: int(b.get("estimatedValue") or 0), default=None)
+                if archived is not None:
+                    self._draw_text(canvas, 9 * scale, y, "EDDISCOVERY ARCHIVE · SOLD STATUS UNKNOWN",
+                                    scale, 9, HUD_AMBER, True)
+                    y += 21 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(archived.get("name") or "HISTORIC BODY", 43),
+                                    scale, 13, HUD_WHITE, True)
+                    y += 28 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    self.clip_line(str(archived.get("bodyClass") or "UNCLASSIFIED").upper(), 43),
+                                    scale, 10, HUD_CYAN, True)
+                    y += 24 * scale
+                    archive_status = ("MAPPED IN EDD HISTORY" if archived.get("personallyMapped")
+                                      else "MAPPING NOT CONFIRMED IN EDD")
+                    self._draw_text(canvas, 9 * scale, y, archive_status, scale, 10, HUD_GREEN, True)
+                    y += 22 * scale
+                    value = archived.get("estimatedValue")
+                    self._draw_text(canvas, 9 * scale, y,
+                                    f"ARCHIVED VALUE · {int(value):,} CR" if isinstance(value, (int,float))
+                                    else "ARCHIVED VALUE UNAVAILABLE",
+                                    scale, 11, HUD_CYAN, True)
+                    y += 22 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    "HISTORICAL SCAN · NOT NEW EXPEDITION CREDIT",
+                                    scale, 8, HUD_MUTED)
+                    return width, round(y + 25 * scale)
                 intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
                 hints = intel.get("reportedBodies") if isinstance(intel.get("reportedBodies"), list) else []
                 external = next(
