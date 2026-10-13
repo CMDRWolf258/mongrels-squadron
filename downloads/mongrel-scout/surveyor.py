@@ -34,6 +34,46 @@ PLANET_K = {
 Q = 0.56591828
 MODEL = "eddiscovery-core-equivalent-3.3-plus-apache2-v1"
 
+def _bio_signal_count(body: Mapping[str, Any]) -> int:
+    """Frontier FSS/DSS journal biological counts, never a species identification."""
+    result = 0
+    for signal in body.get("signals") or []:
+        if not isinstance(signal, Mapping):
+            continue
+        kind = _text(signal.get("type")).casefold()
+        if "biolog" in kind:
+            result += max(0, _int(signal.get("count")) or 0)
+    return result
+
+
+def _hmc_bio_alert(body: Mapping[str, Any]) -> bool:
+    planet = _text(body.get("planetClass")).casefold().replace("-", " ")
+    return planet in {"high metal content body", "high metal content world"} and _bio_signal_count(body) > 0
+
+
+def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[str, Any],
+                              timestamp: str) -> None:
+    """One alert per body/kind on this visit; bounded per-system local storage."""
+    body_id = _text(body.get("bodyId"))
+    if not body_id:
+        return
+    entries = system.get("explorationAlerts")
+    entries = list(entries) if isinstance(entries, list) else []
+    alert_id = kind + ":" + body_id
+    if any(isinstance(row, Mapping) and row.get("id") == alert_id for row in entries):
+        return
+    entries.append({
+        "id": alert_id,
+        "kind": kind,
+        "bodyId": body_id,
+        "name": _text(body.get("name"))[:140],
+        "biologicalSignals": _bio_signal_count(body) if kind == "hmc_bio" else 0,
+        "timestamp": timestamp,
+        "isFirstFootfallConfirmed": False,
+        "speciesConfirmed": False,
+    })
+    system["explorationAlerts"] = entries[-16:]
+
 
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip()
@@ -527,6 +567,10 @@ class Surveyor:
             if not address:
                 return self._snapshot(conn, commander, active)
             system = self._load(conn, "systems", commander, address)
+            # A new live arrival begins a fresh alert visit. Historical journal
+            # replay must not clear or synthesize a live cockpit notification.
+            if not historic and kind in {"FSDJump", "CarrierJump", "Location"}:
+                system["explorationAlerts"] = []
             name = _text(event.get("StarSystem") or event.get("SystemName") or fallback_system or system.get("name"))
             if name:
                 system["name"] = name
@@ -617,6 +661,16 @@ class Surveyor:
                                 for s in signals if isinstance(s, Mapping)
                             ]
                     self._save(conn, "bodies", commander, address, body, body_id)
+                    if not historic and address == active:
+                        # Flags in the new Scan event are stronger evidence than
+                        # old persisted flags. Don't replay previous first claims.
+                        if (kind == "Scan" and event.get("WasDiscovered") is False
+                                and body.get("personallyScanned") and not prior.get("personallyScanned")):
+                            first_kind = "first_discovery_system" if body.get("starType") and (
+                                body_id == "0" or body.get("name") == system.get("name")) else "first_discovery_body"
+                            _record_exploration_alert(system, first_kind, body, timestamp)
+                        if kind in {"Scan", "FSSBodySignals", "SAASignalsFound"} and _hmc_bio_alert(body):
+                            _record_exploration_alert(system, "hmc_bio", body, timestamp)
                     if not historic and kind in {"Scan", "SAAScanComplete"} and address == active:
                         system["lastSurveyedBodyId"] = body_id
                     revalue_systems.add(address)
@@ -830,6 +884,7 @@ class Surveyor:
             "discoveryStatus": discovery,
             "intelligence": current.get("intelligence") if current else None,
             "eddiscoveryHistory": current.get("eddiscoveryHistory") if current else None,
+            "explorationAlerts": current.get("explorationAlerts", []) if current else [],
             "knownBodies": len(bodies),
             "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in bodies),
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
