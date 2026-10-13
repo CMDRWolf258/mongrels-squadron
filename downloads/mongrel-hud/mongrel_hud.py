@@ -843,6 +843,11 @@ def normalized_layout(value: Any) -> dict[str, Any]:
         raw_profiles = raw.get("profiles")
         if isinstance(raw_profiles, list):
             profiles = [profile for profile in VALID_PROFILES if profile in raw_profiles]
+            if panel_id == "surveyor" and profiles == ["surface", "navigation"]:
+                # The old single Surveyor panel default was Surface/Navigation.
+                # Move only that exact legacy default to the new Exploration
+                # workspace. Preserve any custom profile assignments.
+                profiles = ["exploration"]
         else:
             profiles = list(base.get("profiles") or VALID_PROFILES)
         if not profiles:
