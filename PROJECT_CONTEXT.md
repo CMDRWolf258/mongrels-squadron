@@ -59,6 +59,16 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Surveyor Exobiology foundation (PR #211; staging, not released)
+
+- Frontier journal `SAASignalsFound.Genuses` provides **confirmed genera**, NOT confirmed species. `FSSBodySignals` biological counts similarly do not imply Stratum. Surveyor separately captures genus evidence, per-body `ScanOrganic` Log/Sample/Analyse progression, and `SellOrganicData.BioData` confirmed base/bonus sales.
+- `Surveyor.apply` extends the existing commander-scoped, event-deduplicated local SQLite ledger; new `bio_sales` records are distinct from Universal Cartographics sales and do not inflate existing cartographic expedition totals.
+- The organic sale event does **not** identify each sold sample's originating planet. Confirm lifetime payout, but keep outstanding estimates unresolved until reconciliation is provable; do not mark species sold by guess.
+- On-foot Status coordinates are attached to organic events only after same-system, same-body and timestamp checks; never treat historical journal scans as having known GPS positions.
+- `exobiology` is added to the existing Surveyor snapshot. Current biological price catalog is explicitly partial and does not yet supply full BioInsights species prediction; unknown values remain unknown.
+- No new Cloudflare storage, outbound journal uploads, downloadable Scout module dependencies or HUD panels added in this stage. Continue with a fully researched/permissioned species rule catalog, prediction refinement, sample compass and iPad controls before coordinating new Scout/HUD releases.
+- Offline acceptance: `scripts/test_surveyor_bio.py` in the existing Surveyor CI workflow.
+
 ### Mongrel HUD / Scout integration
 
 The local data path is Scout's EDMC HTTPS session → loopback bridge `127.0.0.1:43857` → HUD data model → paired controller `43858` → independent desktop panels. Site data originates at the authenticated `/api/hud/feed`; Scout retains the last successful feed and reports the latest refresh status separately. A failed refresh must remain visible when old data is displayed.
