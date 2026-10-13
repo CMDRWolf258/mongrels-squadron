@@ -32,7 +32,7 @@ PLANET_K = {
     "Earthlike body": (64831, 116295),
 }
 Q = 0.56591828
-MODEL = "community-formula-odyssey-provisional-v2"
+MODEL = "eddiscovery-core-equivalent-3.3-plus-apache2-v1"
 
 
 def _text(value: Any) -> str:
@@ -63,54 +63,89 @@ def _flag(event: Mapping[str, Any], field: str) -> bool | None:
 
 
 def _value(body: Mapping[str, Any], mapped: bool, efficient: bool) -> int | None:
-    """Community-derived estimate; excludes honk and full-system bonuses.
+    """EDDiscovery-equivalent modern scan estimate for a journal-observed body.
 
-    Terraformable bonus is only a *maximum approximation* and can vary
-    significantly in the game, particularly for water worlds.
+    Formula and evaluation order adapted from EDDiscovery/EliteDangerousCore
+    EliteDangerous/FrontierData/Enumerations/EstimatedValues.cs
+    Copyright 2021-2023 EDDiscovery development team, Apache-2.0.
+    https://github.com/EDDiscovery/EliteDangerousCore
+    NOT a claim that the underlying body was sold or first-credited.
+
+    EDDiscovery has version-specific historic formulas; this entry point uses
+    the 3.3+ model for current expedition display, with Odyssey mapping bonus.
+    Missing mass is treated as 1 Earth/solar mass as EDDiscovery does.
     """
-    star = body.get("starType")
-    mass = _number(body.get("stellarMass") if star else body.get("massEM"))
-    if mass is None or mass <= 0:
+    star = _text(body.get("starType"))
+    planet = _text(body.get("planetClass"))
+    if not star and not planet:
         return None
+    mass = _number(body.get("stellarMass") if star else body.get("massEM"))
+    mass = mass if mass is not None and mass > 0 else 1.0
     if star:
-        kind = _text(star).upper()
-        k = 22628 if kind in {"N", "H"} else 14057 if kind.startswith("D") else 1200
-        base = k + mass * k / 66.25
-    else:
-        planet = _text(body.get("planetClass"))
-        # Frontier journals use "Sudarsky class I/II gas giant"; many
-        # community payout tables shorten that to "Class I/II gas giant".
-        # Failing to normalize would fall through to the 300 CR class.
-        canonical = planet
-        if planet.casefold().startswith("sudarsky "):
-            canonical = planet[len("Sudarsky "):]
-        if canonical.lower().startswith("class ") and canonical.lower().endswith(" gas giant"):
-            canonical = canonical[0].upper() + canonical[1:].lower().replace(" gas giant", " gas giant")
-            # Preserve uppercase Roman numeral, as in the value table.
-            parts = canonical.split()
-            if len(parts) >= 4:
-                parts[1] = parts[1].upper()
-                canonical = " ".join(parts)
-        k, terraform_k = PLANET_K.get(canonical, (300, 93328 if canonical == "Rocky body" else 0))
-        if planet == "Earthlike body" or body.get("terraformState") == "Terraformable":
-            k += terraform_k
-        base = k * (1 + Q * mass ** 0.2)
-    first = body.get("wasDiscovered") is False
-    first_mapped = body.get("wasMapped") is False
-    if mapped:
-        if first and first_mapped:
-            base *= 3.699622554
-        elif first_mapped:
-            base *= 8.0956
+        kind = star.upper()
+        if kind.startswith("D"):
+            k = 14057.0
+        elif kind in {"N", "H"}:
+            k = 22628.0
+        elif kind in {"SUPERMASSIVEBLACKHOLE", "SUPERMASSIVE BLACK HOLE"}:
+            k = 33.5678
         else:
-            base *= 3.3333333333
-        base += max(base * 0.3, 555)
-        if efficient:
-            base *= 1.25
-    if first:
-        base *= 2.6
-    return max(500, round(base))
+            k = 1200.0
+        base = k + mass * k / 66.25
+        return int(base * 2.6) if body.get("wasDiscovered") is False else int(base)
 
+    # Frontier: "Sudarsky class I gas giant". Table: "Class I gas giant".
+    canonical = planet.casefold().removeprefix("sudarsky ").strip()
+    table = {
+        "metal rich body": (21790.0, 65631.0),
+        "metal-rich body": (21790.0, 65631.0),
+        "ammonia world": (96932.0, 0.0),
+        "class i gas giant": (1656.0, 0.0),
+        "class ii gas giant": (9654.0, 100677.0),
+        "high metal content body": (9654.0, 100677.0),
+        "high metal content world": (9654.0, 100677.0),
+        "water world": (64831.0, 116295.0),
+        "earthlike body": (181126.0, 0.0),
+        "earth-like world": (181126.0, 0.0),
+    }
+    k, terra_bonus = table.get(canonical, (300.0, 93328.0))
+    terraform = _text(body.get("terraformState")).casefold()
+    is_terraformable = terraform in {
+        "terraformable", "candidate for terraforming", "candidate for terraforming.",
+    }
+    if is_terraformable:
+        k += terra_bonus
+    base = max(k * (1.0 + Q * mass**0.2), 500.0)
+
+    if not mapped:
+        return int(base * 2.6) if body.get("wasDiscovered") is False else int(base)
+
+    # Mirrors EDDiscovery 3.3+ WasDiscovered / WasMapped evaluation, including
+    # the rare condition: WasDiscovered=false, WasMapped=true (PR31).
+    was_disc = body.get("wasDiscovered")
+    was_map = body.get("wasMapped")
+    odyssey = body.get("odysseyValueMode") is not False
+
+    def _mapped_value(multiplier: float, first_discovery: bool = False) -> int:
+        mapped_base = base * multiplier
+        if odyssey:
+            mapped_base += max(mapped_base * 0.3, 555.0)
+        if first_discovery:
+            mapped_base *= 2.6
+        if efficient:
+            mapped_base *= 1.25
+        return int(mapped_base)
+
+    if was_disc is False and was_map is True:
+        return _mapped_value(3.3333333) if mapped else int(base)
+    if was_disc is False and was_map is False:
+        return _mapped_value(3.699622554, first_discovery=True)
+    if was_map is False:
+        return _mapped_value(8.0956)
+    if was_disc is False:
+        # Earlier FD flag without confirmed prior mapping state.
+        return int(base * 2.6)
+    return _mapped_value(3.3333333)
 
 def _body_view(body: dict[str, Any]) -> dict[str, Any]:
     owned_scan = bool(body.get("personallyScanned"))
