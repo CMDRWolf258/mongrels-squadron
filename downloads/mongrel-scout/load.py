@@ -429,6 +429,25 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
             _hud_condition.notify_all()
 
 
+def _surveyor_local_control(action: str) -> dict[str, Any]:
+    """Accept deliberate expedition actions only from the local HUD proxy."""
+    if action not in {"start", "end", "mark_existing", "undo_existing"}:
+        raise ValueError("invalid_expedition_action")
+    with _hud_condition:
+        commander = str(_hud_state.get("commander") or "").strip()
+    if not commander:
+        raise ValueError("commander_unavailable")
+    result = _get_surveyor().control(commander, action)
+    with _hud_condition:
+        # Never publish one Commander's ledger into a different session.
+        if str(_hud_state.get("commander") or "").strip().casefold() != commander.casefold():
+            raise ValueError("commander_changed")
+        _hud_state["exploration"] = result
+        _hud_state["explorationStatus"] = {"ok": True, "error": None}
+        _hud_condition.notify_all()
+    return result
+
+
 def _fetch_surveyor_intelligence() -> None:
     """One background worker; latest jump supersedes pending lookups."""
     global _surveyor_intel_pending, _surveyor_intel_worker_running
@@ -1102,7 +1121,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/route"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/route", "/v1/exploration/control"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -1116,6 +1135,23 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, Mapping):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+
+        if parsed.path == "/v1/exploration/control":
+            # The iPad talks to its paired HUD, not directly to Scout. A
+            # custom local-only header blocks browser-origin POST attempts.
+            if (self.headers.get("X-Mongrel-HUD-Surveyor-Action") != "1"
+                or "application/json" not in self.headers.get("Content-Type", "").lower()
+                or self.headers.get("Origin")):
+                self._write_json({"ok": False, "error": "surveyor_local_control_required"}, status=403)
+                return
+            try:
+                result = _surveyor_local_control(str(body.get("action") or ""))
+                self._write_json({"ok": True, "exploration": result})
+            except ValueError as exc:
+                self._write_json({"ok": False, "error": str(exc)}, status=409)
+            except Exception:
+                self._write_json({"ok": False, "error": "surveyor_control_unavailable"}, status=503)
             return
 
         if parsed.path == "/v1/route":
