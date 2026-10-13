@@ -77,6 +77,8 @@ assert scope["bio_focus_body"](focused,wrong_system) is body
 class FakeCanvas:
     def create_line(self,*args,**kwargs):
         pass
+    def create_rectangle(self,*args,**kwargs):
+        pass
 
 class FakeHud:
     def __init__(self, content):
@@ -100,5 +102,5 @@ assert dimensions[0] > 450 and dimensions[1] > 100
 assert "BIOLOGICAL INTELLIGENCE" in text
 assert "GENETIC DISTANCE" in text or "DISTANCE MET" in text
 assert "NOT CONFIRMED" in text and "19,010,800" in text
-assert "FIRST-LOG BONUS UNVERIFIED" in text
+assert "FIRST FOOTFALL DOES NOT GUARANTEE FIRST-LOG BONUS" in text
 print("Biological HUD samples, source positions, uncertainty and rendering PASSED")
