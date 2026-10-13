@@ -6310,7 +6310,7 @@ class MongrelHudApp:
                          and b.get("firstMappingCandidate") and int(b.get("dssGainMin") or 0) >= 50000), None)
             if priority:
                 self._draw_text(canvas, 9 * scale, y,
-                                "VALUABLE · NOT PREVIOUSLY MAPPED AT SCAN",
+                                "VALUABLE UNMAPPED · " + self.clip_line(priority.get("name") or "WORLD", 30),
                                 scale, 10, HUD_GREEN, True)
                 y += 20 * scale
             self._draw_text(canvas, 9 * scale, y,
@@ -6397,10 +6397,16 @@ class MongrelHudApp:
                 focus_id = system.get("lastSurveyedBodyId")
                 focused = next((b for b in bodies if isinstance(b, dict) and focus_id is not None
                                 and str(b.get("bodyId")) == str(focus_id)), None)
-                selection = "LAST JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
+                if focused is None:
+                    # A restart may restore saved scans without a current
+                    # destination. Show the latest actual journal record,
+                    # never invent a targeted body.
+                    recent = [b for b in bodies if isinstance(b, dict) and b.get("lastDataAcquiredAt")]
+                    focused = max(recent, key=lambda b: str(b.get("lastDataAcquiredAt")), default=None)
+                selection = "LAST RECORDED JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
             if focused is None:
                 intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
-                hints = intel.get("highlights") if isinstance(intel.get("highlights"), list) else []
+                hints = intel.get("reportedBodies") if isinstance(intel.get("reportedBodies"), list) else []
                 external = next(
                     (b for b in hints if isinstance(b, dict)
                      and selected_name and str(b.get("name") or "").strip().casefold() == selected_name),
@@ -6423,7 +6429,7 @@ class MongrelHudApp:
                     return width, round(y + 25 * scale)
                 self._draw_text(canvas, 9 * scale, y, "NO BODY TARGET ACQUIRED", scale, 13, HUD_AMBER, True)
                 y += 29 * scale
-                self._draw_text(canvas, 9 * scale, y, "SELECT A KNOWN BODY OR PERFORM A FSS SCAN",
+                self._draw_text(canvas, 9 * scale, y, "TARGET A BODY OR PERFORM A FSS SCAN",
                                 scale, 9, HUD_MUTED)
                 y += 23 * scale
                 self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY TELEMETRY · AWAITING BODY SIGNALS",
@@ -6573,9 +6579,14 @@ class MongrelHudApp:
         intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
         if intel.get("providers"):
             names = " + ".join(str(x) for x in intel.get("providers") or [])
+            count = int(intel.get("catalogedBodies") or 0)
             self._draw_text(canvas, 10 * scale, y,
-                            f"EXTERNAL CHARTS · {names} · {int(intel.get('catalogedBodies') or 0)} CATALOGED",
+                            f"COMMUNITY REPORTED · {names} · {count} BODY RECORDS",
                             scale, 8, HUD_CYAN)
+            y += 17 * scale
+        elif intel.get("status") == "providers_unavailable":
+            self._draw_text(canvas, 10 * scale, y, "COMMUNITY CHARTS UNAVAILABLE · LOCAL SCANS ACTIVE",
+                            scale, 8, HUD_AMBER)
             y += 17 * scale
         history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
         recovered = str(history.get("status") or "").upper()
