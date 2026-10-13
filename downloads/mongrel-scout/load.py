@@ -497,7 +497,13 @@ def _surveyor_edd_control(action: str, port: Any = None) -> dict[str, Any]:
     if action not in {"edd_connect", "edd_off", "edd_refresh"}:
         raise ValueError("invalid_eddiscovery_action")
     if action == "edd_off":
+        global _surveyor_edd_latest
         config.set(KEY_SURVEY_EDD_ENABLED, 0)
+        with _surveyor_edd_lock:
+            _surveyor_edd_latest = None
+        with _hud_condition:
+            _hud_state["explorationEDDiscoveryStatus"] = "disabled"
+            _hud_condition.notify_all()
         return {"ok": True, "eddEnabled": False}
     if action == "edd_connect":
         try:
@@ -508,6 +514,9 @@ def _surveyor_edd_control(action: str, port: Any = None) -> dict[str, Any]:
             raise ValueError("invalid_eddiscovery_port")
         config.set(KEY_SURVEY_EDD_PORT, numeric)
         config.set(KEY_SURVEY_EDD_ENABLED, 1)
+        with _hud_condition:
+            _hud_state["explorationEDDiscoveryStatus"] = "connecting"
+            _hud_condition.notify_all()
     if not config.get_bool(KEY_SURVEY_EDD_ENABLED):
         raise ValueError("eddiscovery_not_enabled")
     with _hud_condition:
@@ -539,7 +548,7 @@ def _run_surveyor_edd() -> None:
             # Give EDDiscovery time to process the same Frontier jump journal.
             time.sleep(1.5)
             with _surveyor_edd_lock:
-                if _surveyor_edd_latest is not None:
+                if _surveyor_edd_latest is not None or not config.get_bool(KEY_SURVEY_EDD_ENABLED):
                     continue
             path = Path(__file__).with_name("surveyor_edd_bridge.py")
             spec = importlib.util.spec_from_file_location("mongrel_surveyor_edd_bridge", path)
@@ -557,10 +566,22 @@ def _run_surveyor_edd() -> None:
                     and isinstance(location, Mapping)
                     and str(location.get("address") or "") == address):
                     _hud_state["exploration"] = snapshot
+                    _hud_state["explorationEDDiscoveryStatus"] = "ready"
                     _hud_condition.notify_all()
-        except Exception:
-            # EDD is optional. Missing server/changed history cursor is NOT an
-            # error in Elite, EDMC, the site feed or any Scout upload pipeline.
+        except Exception as exc:
+            # No raw errors, journals, identifiers, paths or URLs leave the PC.
+            # Missing EDD never impacts the game or other Scout pipelines.
+            state = ("system_not_verified" if isinstance(exc, ValueError) else
+                     "server_unavailable")
+            with _hud_condition:
+                current = _hud_state.get("exploration") or {}
+                location = current.get("system") if isinstance(current, Mapping) else None
+                if (str(_hud_state.get("commander") or "").casefold() == commander.casefold()
+                    and isinstance(location, Mapping)
+                    and str(location.get("address") or "") == address
+                    and config.get_bool(KEY_SURVEY_EDD_ENABLED)):
+                    _hud_state["explorationEDDiscoveryStatus"] = state
+                    _hud_condition.notify_all()
             continue
 
 
@@ -2201,6 +2222,7 @@ def _hud_state_snapshot() -> dict[str, Any]:
     snapshot["explorationCommunityEnabled"] = bool(config.get_bool(KEY_SURVEY_INTEL_ENABLED))
     snapshot["explorationEDDiscoveryEnabled"] = bool(config.get_bool(KEY_SURVEY_EDD_ENABLED))
     snapshot["explorationEDDiscoveryPort"] = config.get_int(KEY_SURVEY_EDD_PORT)
+    snapshot["explorationEDDiscoveryStatus"] = str(snapshot.get("explorationEDDiscoveryStatus") or "disabled")
     cargo = snapshot.get("cargo")
     if isinstance(cargo, dict):
         cargo.pop("_allocation", None)
