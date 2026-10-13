@@ -138,6 +138,8 @@ HUD_EVENT_TYPES = {
 KEY_VERSION = "MongrelScoutConfigVersion"
 KEY_ENABLED = "MongrelScoutEnabled"
 KEY_SURVEY_INTEL_ENABLED = "MongrelScoutSurveyorCommunityIntel"
+KEY_SURVEY_EDD_ENABLED = "MongrelScoutSurveyorEDDiscoveryEnabled"
+KEY_SURVEY_EDD_PORT = "MongrelScoutSurveyorEDDiscoveryPort"
 KEY_TOKEN = "MongrelScoutToken"
 KEY_ENDPOINT = "MongrelScoutEndpoint"
 KEY_OWNER_CARRIER = "MongrelScoutOwnerCarrier"
@@ -261,6 +263,9 @@ _surveyor_init_lock = threading.Lock()
 _surveyor_intel_lock = threading.Lock()
 _surveyor_intel_pending: Optional[tuple[str, str, str]] = None
 _surveyor_intel_worker_running = False
+_surveyor_edd_lock = threading.Lock()
+_surveyor_edd_latest: Optional[tuple[str, str, str]] = None
+_surveyor_edd_worker_running = False
 _surveyor_history_lock = threading.Lock()
 _surveyor_history_started: set[str] = set()
 _surveyor_restore_guard = threading.Lock()
@@ -312,6 +317,12 @@ def _run_surveyor_startup_restore() -> None:
                 _hud_condition.notify_all()
         # Historic replay runs locally and cannot move the live system pointer.
         _schedule_surveyor_history(commander)
+        with _hud_condition:
+            local = _hud_state.get("exploration") or {}
+            system = local.get("system") if isinstance(local, Mapping) else None
+            system = system if isinstance(system, Mapping) else {}
+        _schedule_surveyor_edd(commander, str(system.get("name") or ""),
+                               _decimal_text(system.get("address")))
     except Exception:
         with _hud_condition:
             if _hud_state.get("exploration") is None:
@@ -481,6 +492,92 @@ def _surveyor_community_control(action: str) -> dict[str, Any]:
     return {"ok": True, "communityEnabled": True, "queued": bool(name and address)}
 
 
+def _surveyor_edd_control(action: str, port: Any = None) -> dict[str, Any]:
+    """Opt-in EDDiscovery's native read-only localhost scan source."""
+    if action not in {"edd_connect", "edd_off", "edd_refresh"}:
+        raise ValueError("invalid_eddiscovery_action")
+    if action == "edd_off":
+        config.set(KEY_SURVEY_EDD_ENABLED, 0)
+        return {"ok": True, "eddEnabled": False}
+    if action == "edd_connect":
+        try:
+            numeric = int(port)
+        except (ValueError, TypeError, OverflowError):
+            raise ValueError("eddiscovery_port_required")
+        if not 1024 <= numeric <= 65535:
+            raise ValueError("invalid_eddiscovery_port")
+        config.set(KEY_SURVEY_EDD_PORT, numeric)
+        config.set(KEY_SURVEY_EDD_ENABLED, 1)
+    if not config.get_bool(KEY_SURVEY_EDD_ENABLED):
+        raise ValueError("eddiscovery_not_enabled")
+    with _hud_condition:
+        commander = str(_hud_state.get("commander") or "").strip()
+        survey = _hud_state.get("exploration") or {}
+        system = survey.get("system") if isinstance(survey, Mapping) else None
+        system = system if isinstance(system, Mapping) else {}
+        name = str(system.get("name") or "").strip()
+        addr = _decimal_text(system.get("address"))
+    queued = _schedule_surveyor_edd(commander, name, addr)
+    return {"ok": True, "eddEnabled": True, "eddPort": config.get_int(KEY_SURVEY_EDD_PORT),
+            "queued": queued}
+
+
+def _run_surveyor_edd() -> None:
+    """Local-only, bounded background lookup. Latest system takes precedence."""
+    global _surveyor_edd_worker_running, _surveyor_edd_latest
+    while True:
+        with _surveyor_edd_lock:
+            work = _surveyor_edd_latest
+            _surveyor_edd_latest = None
+            if work is None:
+                _surveyor_edd_worker_running = False
+                return
+        commander, name, address = work
+        if not config.get_bool(KEY_SURVEY_EDD_ENABLED):
+            continue
+        try:
+            # Give EDDiscovery time to process the same Frontier jump journal.
+            time.sleep(1.5)
+            with _surveyor_edd_lock:
+                if _surveyor_edd_latest is not None:
+                    continue
+            path = Path(__file__).with_name("surveyor_edd_bridge.py")
+            spec = importlib.util.spec_from_file_location("mongrel_surveyor_edd_bridge", path)
+            if spec is None or spec.loader is None:
+                continue
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            reply = module.request_current_scans(config.get_int(KEY_SURVEY_EDD_PORT), timeout=4)
+            historical = module.normalize_scan_response(reply, name, address)
+            snapshot = _get_surveyor().set_eddiscovery_history(commander, name, address, historical)
+            with _hud_condition:
+                current = _hud_state.get("exploration") or {}
+                location = current.get("system") if isinstance(current, Mapping) else None
+                if (str(_hud_state.get("commander") or "").casefold() == commander.casefold()
+                    and isinstance(location, Mapping)
+                    and str(location.get("address") or "") == address):
+                    _hud_state["exploration"] = snapshot
+                    _hud_condition.notify_all()
+        except Exception:
+            # EDD is optional. Missing server/changed history cursor is NOT an
+            # error in Elite, EDMC, the site feed or any Scout upload pipeline.
+            continue
+
+
+def _schedule_surveyor_edd(commander: str, system: str, address: str) -> bool:
+    global _surveyor_edd_latest, _surveyor_edd_worker_running
+    if not config.get_bool(KEY_SURVEY_EDD_ENABLED) or not commander or not system or not address:
+        return False
+    with _surveyor_edd_lock:
+        _surveyor_edd_latest = (commander, system, address)
+        if not _surveyor_edd_worker_running:
+            _surveyor_edd_worker_running = True
+            threading.Thread(target=_run_surveyor_edd,
+                             name="MongrelSurveyorLocalEDDiscovery",
+                             daemon=True).start()
+    return True
+
+
 def _surveyor_quote_control(value: Any, system_name: str = "") -> dict[str, Any]:
     with _hud_condition:
         commander = str(_hud_state.get("commander") or "")
@@ -579,6 +676,10 @@ def plugin_start3(plugin_dir: str) -> str:
         # Opt-in intelligence starts OFF for existing and new installations.
         config.set(KEY_SURVEY_INTEL_ENABLED, 0)
         config.set(KEY_VERSION, 2)
+    if config.get_int(KEY_VERSION) < 3:
+        config.set(KEY_SURVEY_EDD_ENABLED, 0)
+        config.set(KEY_SURVEY_EDD_PORT, 0)
+        config.set(KEY_VERSION, 3)
     _restore_owner_carrier()
     _restore_last_system_context()
     _restore_cargo_missions()
@@ -842,6 +943,10 @@ def journal_entry(
         _schedule_surveyor_intelligence(
             cmdr, str(entry.get("StarSystem") or system or ""),
             entry.get("SystemAddress") or state.get("SystemAddress"),
+        )
+        _schedule_surveyor_edd(
+            cmdr, str(entry.get("StarSystem") or system or ""),
+            _decimal_text(entry.get("SystemAddress") or state.get("SystemAddress")),
         )
     if event == "MissionAccepted":
         _remember_activity_mission_origin(entry, system, station, state)
@@ -1196,6 +1301,8 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                 action = str(body.get("action") or "")
                 if action in {"intel_on", "intel_off", "intel_refresh"}:
                     self._write_json(_surveyor_community_control(action))
+                elif action in {"edd_connect", "edd_off", "edd_refresh"}:
+                    self._write_json(_surveyor_edd_control(action, body.get("value")))
                 elif action == "record_quote":
                     self._write_json(_surveyor_quote_control(body.get("value"), str(body.get("system") or "")[:140]))
                 else:
@@ -2092,6 +2199,8 @@ def _hud_state_snapshot() -> dict[str, Any]:
     with _hud_condition:
         snapshot = json.loads(json.dumps(_hud_state))
     snapshot["explorationCommunityEnabled"] = bool(config.get_bool(KEY_SURVEY_INTEL_ENABLED))
+    snapshot["explorationEDDiscoveryEnabled"] = bool(config.get_bool(KEY_SURVEY_EDD_ENABLED))
+    snapshot["explorationEDDiscoveryPort"] = config.get_int(KEY_SURVEY_EDD_PORT)
     cargo = snapshot.get("cargo")
     if isinstance(cargo, dict):
         cargo.pop("_allocation", None)
