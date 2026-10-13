@@ -235,6 +235,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="layout-hint">Optional. When enabled, system name and 64-bit address are shared with EDSM and Spansh. No journals, CMDR identity or earnings leave Serenity. Catalog entries do not prove first discovery.</div>
     <div class="layout-actions"><button id="surveyorCommunityToggle" type="button">ENABLE COMMUNITY CHARTS</button><button id="surveyorCommunityRefresh" type="button">REFRESH THIS SYSTEM</button></div>
     <div class="layout-hint" id="surveyorCommunityStatus">Community charts disabled.</div>
+    <details id="surveyorDiscoveryReport"><summary>DISCOVERY REPORT · BODY STATUS</summary>
+      <div class="layout-hint">Frontier journal flags describe discovery/mapping status when you scanned. Community-listed bodies are reported, but first claims are not verified by the catalog.</div>
+      <div id="surveyorDiscoveryRows" class="network-jobs">No body records yet.</div>
+    </details>
     <h3>CARTOGRAPHICS CALIBRATION</h3>
     <div class="layout-hint">Record Universal Cartographics system quotes, including prior systems. References do not mark scans sold. Ratios stay diagnostic until discovery and completion bonuses are validated.</div>
     <div class="grid"><div><label for="surveyorQuoteSystem">System name</label><input id="surveyorQuoteSystem" type="text" placeholder="Current or previous system"></div><div><label for="surveyorQuoteValue">Cartographics quote (CR)</label><input id="surveyorQuoteValue" type="number" min="0" step="1" inputmode="numeric" placeholder="32267"></div></div>
@@ -493,6 +497,37 @@ function renderScoutNetwork(scout){
   if(!html)html='<div class="layout-hint">No open Scout jobs are currently listed.</div>';
   if(el("scoutNetworkJobs").innerHTML!==html)el("scoutNetworkJobs").innerHTML=html;
 }
+function renderSurveyorDiscovery(survey){
+  var owned=Array.isArray(survey.bodies)?survey.bodies:[],intel=survey.intelligence||{};
+  var external=Array.isArray(intel.reportedBodies)?intel.reportedBodies:[],seen=new Set(),rows=[];
+  for(var body of owned.slice(0,40)){
+    if(!body||typeof body!=="object")continue;
+    var name=String(body.name||"Unnamed body"),key=name.toLowerCase();
+    seen.add(key);
+    var discovered=body.wasDiscovered===true?"DISCOVERED BEFORE SCAN":
+      body.wasDiscovered===false?"POTENTIAL FIRST DISCOVERY":"DISCOVERY UNKNOWN";
+    var mapped=body.personallyMapped===true?"DSS MAPPED BY YOU":
+      body.wasMapped===true?"PREVIOUSLY MAPPED":
+      body.wasMapped===false?"NOT PREVIOUSLY MAPPED":"MAPPING UNKNOWN";
+    var report=external.some(function(record){return record&&String(record.name||"").toLowerCase()===key;})?
+      " · COMMUNITY REPORTED":"";
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(name)+'</strong>'+
+      '<small> · JOURNAL: '+escapeHtml(discovered)+' / '+escapeHtml(mapped)+
+      escapeHtml(report)+'</small></div></div>');
+  }
+  for(var item of external.slice(0,100)){
+    if(!item||typeof item!=="object")continue;
+    var label=String(item.name||""),lookup=label.toLowerCase();
+    if(!label||seen.has(lookup))continue;
+    seen.add(lookup);
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(label)+
+      '</strong><small> · COMMUNITY REPORTED · DISCOVERY / MAPPING UNVERIFIED</small></div></div>');
+  }
+  var extra=Number(survey.bodyCountTruncated||0)+Number(intel.reportedBodiesTruncated||0);
+  if(extra>0)rows.push('<div class="layout-hint">+'+extra+' additional recorded bodies not displayed.</div>');
+  var html=rows.join("")||'<div class="layout-hint">No personal scans or community body reports yet.</div>';
+  if(el("surveyorDiscoveryRows").innerHTML!==html)el("surveyorDiscoveryRows").innerHTML=html;
+}
 function renderSurveyorControls(){
   var survey=(state&&state.scout&&state.scout.exploration)||{};
   var system=survey.system||{},exp=survey.expedition||{};
@@ -505,6 +540,7 @@ function renderSurveyorControls(){
   el("surveyorEnd").disabled=!active;
   el("surveyorMark").disabled=!active||excluded||!system.address;
   el("surveyorUndo").disabled=!active||!excluded;
+  renderSurveyorDiscovery(survey);
   var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
   var intelligence=survey.intelligence||{};
   setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
