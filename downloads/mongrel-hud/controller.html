@@ -505,6 +505,17 @@ function renderSurveyorControls(){
   el("surveyorEnd").disabled=!active;
   el("surveyorMark").disabled=!active||excluded||!system.address;
   el("surveyorUndo").disabled=!active||!excluded;
+  var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
+  var intelligence=survey.intelligence||{};
+  setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
+  setText(el("surveyorCommunityStatus"),enabled?
+    ("ACTIVE · "+String((intelligence.providers||[]).join(" + ")||intelligence.status||"awaiting reports")+
+      " · "+Number(intelligence.catalogedBodies||0)+" cataloged bodies"):
+    "COMMUNITY CHARTS DISABLED · LOCAL JOURNAL ONLY");
+  el("surveyorCommunityRefresh").disabled=!enabled;
+  var comparison=survey.cartographicsComparison||{};
+  setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+" distinct system comparisons · "+
+    (comparison.calibrationReady?"Median calibration active ("+Number(comparison.calibrationFactor).toFixed(2)+"x)":"Calibrates after 3 quoted systems"));
 }
 async function surveyorAction(action){
   holdRefresh(1200);
@@ -1046,6 +1057,32 @@ el("surveyorStart").onclick=function(){surveyorAction("start")};
 el("surveyorEnd").onclick=function(){if(confirm("End this expedition? Recorded exploration data stays in the private ledger."))surveyorAction("end")};
 el("surveyorMark").onclick=function(){if(confirm("Exclude existing expedition earnings in this system? New scans and mappings will still count."))surveyorAction("mark_existing")};
 el("surveyorUndo").onclick=function(){surveyorAction("undo_existing")};
+el("surveyorCommunityToggle").onclick=async function(){
+  var enabled=state&&state.scout&&state.scout.explorationCommunityEnabled===true;
+  if(!enabled&&!confirm("Enable EDSM/Spansh lookup? Only current system name and 64-bit system address are shared."))return;
+  try{
+    var r=await api("/api/surveyor",{action:enabled?"intel_off":"intel_on"});
+    state.scout.explorationCommunityEnabled=Boolean(r.communityEnabled);renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),r.communityEnabled?"Community charts enabled":"Community charts disabled");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Community change failed · "+e.message);}
+};
+el("surveyorCommunityRefresh").onclick=async function(){
+  try{await api("/api/surveyor",{action:"intel_refresh"});setText(el("surveyorExpeditionNotice"),"Community chart refresh queued locally");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"Community refresh failed · "+e.message);}
+};
+el("surveyorRecordQuote").onclick=async function(){
+  var raw=String(el("surveyorQuoteValue").value||"").trim(),value=Number(raw);
+  if(!raw||!Number.isSafeInteger(value)||value<0||value>2000000000){
+    setText(el("surveyorExpeditionNotice"),"Enter a valid non-negative whole-credit quote");return;
+  }
+  var system=String(el("surveyorQuoteSystem").value||"").trim();
+  try{
+    var r=await api("/api/surveyor",{action:"record_quote",value:value,system:system});
+    if(r&&r.exploration)state.scout.exploration=r.exploration;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),"Cartographics reference saved locally");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Quote not recorded · "+e.message);}
+};
 el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
 el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {locked:layout.locked===false}});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
 el("layoutReset").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout-reset",{});applyLayoutResult(r,"Layout positions reset")}catch(e){showLayoutStatus("Layout reset failed · "+e.message,true)}};
