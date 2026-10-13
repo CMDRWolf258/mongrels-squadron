@@ -1386,6 +1386,18 @@ class Surveyor:
             ).fetchone()
             return self._snapshot(conn, _text(commander), row["active_address"] if row else "")
 
+def _countable_fss_body(body: Mapping[str, Any]) -> bool:
+    """Asteroid-belt cluster Scan records are NOT FSS stellar-body counts."""
+    name = _text(body.get("name")).casefold()
+    star = _text(body.get("starType")).casefold()
+    klass = _text(body.get("planetClass")).casefold()
+    return not (
+        "belt cluster" in name or "asteroid cluster" in name
+        or "belt cluster" in klass or "asteroid cluster" in klass
+        or star in {"asteroidcluster", "beltcluster"}
+    )
+
+
     def _snapshot(self, conn: sqlite3.Connection, commander: str, active: str) -> dict[str, Any]:
         current = self._load(conn, "systems", commander, active) if active else {}
         bodies = []
@@ -1395,10 +1407,11 @@ class Surveyor:
                     "SELECT info FROM bodies WHERE commander=? AND address=?", (commander, active)
                 )
             ]
-        advisor = _mapping_advisor(bodies)
+        countable_bodies = [body for body in bodies if _countable_fss_body(body)]
+        advisor = _mapping_advisor(countable_bodies)
         bodies.sort(key=lambda body: (-(body.get("mappingGain") or 0), body.get("name", "")))
         known_current = [b["currentValue"] for b in bodies if b["currentValue"] is not None]
-        firsts = [b for b in bodies if b.get("personallyScanned") and b.get("wasDiscovered") is False]
+        firsts = [b for b in countable_bodies if b.get("personallyScanned") and b.get("wasDiscovered") is False]
         primary = next((b for b in bodies if b.get("starType") and
                        (b.get("bodyId") == "0" or b.get("name", "") == current.get("name"))), None)
         if primary and primary.get("wasDiscovered") is False:
@@ -1478,9 +1491,10 @@ class Surveyor:
             "intelligence": current.get("intelligence") if current else None,
             "eddiscoveryHistory": current.get("eddiscoveryHistory") if current else None,
             "explorationAlerts": current.get("explorationAlerts", []) if current else [],
-            "knownBodies": len(bodies),
-            "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in bodies),
-            "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
+            "knownBodies": len(countable_bodies),
+            "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in countable_bodies),
+            "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in countable_bodies),
+            "asteroidClusterScansExcluded": len(bodies) - len(countable_bodies),
             "potentialFirstBodies": len(firsts),
             "currentSystemKnownEstimates": sum(known_current),
             "currentSystemEstimate": estimated_quote,
