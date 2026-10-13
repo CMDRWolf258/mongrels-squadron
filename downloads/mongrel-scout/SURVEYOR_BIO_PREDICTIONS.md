@@ -160,3 +160,38 @@ clear attribution, then package a synchronized install only after checks.
 Current limitations: remaining species and location-specific planet/parent-star
 rules, variant conditions and authoritatively reconstructing Vista Genomics
 per-body sale provenance. First-footfall bonuses remain unverified until sale.
+
+## Live acceptance refinements — LX-S c17-3 B 7
+
+- Frontier's `Scan` can contain `Atmosphere`, `AtmosphereType`, and
+  `AtmosphereComposition`. The gas parser normalizes both *sulfur* and
+  *sulphur* dioxide and their compact token `SulphurDioxide`, with the
+  descriptive `thin`/ `thick` qualification kept separate. FSS/DSS genus
+  evidence alone must not cause `NEEDS atmosphere_gas` when Scan supplied
+  that gas. A partial later AutoScan must not erase rich earlier Scan values.
+- Bacterium Tela is a **volcanism-specific** candidate, valid only when
+  helium/iron/silicate/ammonia volcanic activity is supported by Frontier.
+  Its published Vista base value is **1,949,000 CR**. Existing Bacterium
+  Cerbrus can also be compatible with sulfur-dioxide thin atmospheres.
+  No volcanism match must not imply Tela.
+- After an unfootfalled `Scan`, an observed on-planet `Disembark` or
+  biological sampling gives **first footfall indicated**. The *first logged*
+  Vista bonus is still NOT guaranteed by footfall; the HUD presents
+  **base plus provisional 4× bonus = possible 5× total**, with appropriate
+  uncertainty until `SellOrganicData` supplies actual base and bonus.
+  `WasLogged` is not a reliable source of unclaimed first-logged status.
+- Six `Belt Cluster` journal entries are retained locally but excluded
+  from the primary FSS body coverage, DSS-mapped and first-discovery counts;
+  no valid stellar body is silently deleted.
+- Sample slots are three individual numbered cells that fill with confirmed
+  `ScanOrganic` Log/Sample/Analyse events. Text counts and payout estimates
+  remain. Live **same-system + same-body** GPS is enough to continue surface
+  separation calculation in ship or SRV/Nomad, not only on foot.
+  Sampling-position *capture* still requires on-foot status.
+- The primary Expedition Telemetry HUD now stops immediately after
+  **DSS MAPPED** and **FIRST DISCOVERY CANDIDATES**. Community charts,
+  journal import details, and credit diagnostics remain in underlying
+  Surveyor/controller data but not that flight panel.
+
+Test fixture: `scripts/test_surveyor_bio_live_fixes.py`, plus existing
+`test_surveyor_bio_hud.py` and `test-surveyor-bio-controller.mjs`.

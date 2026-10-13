@@ -32,6 +32,8 @@ assert.match(el("surveyorBioStatus").textContent,/DSS GENUS VERIFIED/);
 assert.match(el("surveyorBioCandidates").innerHTML,/&lt;Stratum Tectonicas&gt;/);
 assert.doesNotMatch(el("surveyorBioCandidates").innerHTML,/<Stratum Tectonicas>/);
 assert.match(el("surveyorBioCandidates").innerHTML,/NOT CONFIRMED/);
+assert.match(el("surveyorBioCandidates").innerHTML,/bio-sample-slots/);
+assert.match(el("surveyorBioCandidates").innerHTML,/bio-sample-slot filled/);
 assert.match(el("surveyorBioGenetics").textContent,/Range unverified/);
 assert.match(el("surveyorBioSales").textContent,/1,234 CR/);
 // An iPad controller may show an old Status after a system jump. Never
@@ -46,7 +48,11 @@ scope.state.scout.status={
 scope.renderBioSurvey(scan);
 assert.match(el("surveyorBioGenetics").textContent,/Range unverified/);
 scope.state.scout.status.systemAddress="999";
+scope.state.scout.status.onFootOnPlanet=false; // In ship or Nomad
+scan.exobiology.biologicalBodies[0].sampledSpecies[0].estimatedBaseValue=1949000;
+scan.exobiology.biologicalBodies[0].sampledSpecies[0].footfallStatus="first_footfall_indicated";
 scope.renderBioSurvey(scan);
+assert.match(el("surveyorBioCandidates").innerHTML,/POSSIBLE 5x TOTAL ~9,745,000 CR/);
 assert.match(el("surveyorBioGenetics").textContent,/GENETIC DISTANCE MET/);
 scope.renderBioSurvey({system:{address:"1000"},exobiology:{biologicalBodies:[]}});
 assert.match(el("surveyorBioStatus").textContent,/NO FRONTIER BIO SIGNALS/);

@@ -16,7 +16,7 @@ assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-assert len(module.BIO_HABITAT_RULES) == 60
+assert len(module.BIO_HABITAT_RULES) == 61
 assert len(module.BIO_HABITAT_SOURCES) == 10
 assert "stage4" in module.BIO_HABITAT_VERSION
 assert len({row[0] for row in module.BIO_HABITAT_RULES}) == 10
@@ -184,8 +184,11 @@ assert "Cactoida Vermis" in water and "Fungoida Gelata" in water
 ammonia={x["species"] for x in predict_body(atmosphere="thin Ammonia")}
 assert "Fungoida Setisis" in ammonia
 assert "Cactoida Lapis" in ammonia
-dense={x["species"] for x in predict_body(atmosphere="Carbon dioxide")}
-assert not dense, "A dense atmosphere must not be treated as Odyssey thin"
+dense={x["species"] for x in predict_body(atmosphere="thick Carbon dioxide atmosphere")}
+assert not dense, "Explicitly thick atmosphere must never be treated as Odyssey thin"
+unqualified=predict_body(atmosphere="Carbon dioxide")
+assert unqualified and all(row["status"]=="insufficient_data" for row in unqualified)
+assert all("thin_atmosphere" in row["missing"] for row in unqualified)
 high_g={x["species"] for x in predict_body(atmosphere="thin Argon",gravity=4)}
 assert "Fungoida Bullarum" not in high_g
 assert "Bacterium Vesicula" in high_g # no unsupported Bacterium gravity ceiling
@@ -216,5 +219,5 @@ assert "Tussock Stigmasis" in sulphur
 assert "Tussock Stigmasis" not in names("Icy body","thin Sulphur dioxide",160,1.0)
 assert module.BIO_REFERENCE_VALUES["Tussock Stigmasis"] == 19010800
 assert module.BIO_REFERENCE_VALUES["Tubus Cavas"] == 11873200
-assert len({f"{genus} {species}" for genus,species,*_ in module.BIO_HABITAT_RULES}) == 60
-print("Mongrel biological intelligence PASSED (10 genera / 60 rules; HMC, DSS, gravity, atmosphere, persistence)")
+assert len({f"{genus} {species}" for genus,species,*_ in module.BIO_HABITAT_RULES}) == 61
+print("Mongrel biological intelligence PASSED (10 genera / 61 rules; HMC, DSS, gravity, atmosphere, persistence)")

@@ -1142,7 +1142,7 @@ def bio_focus_body(survey: Any, status: Any) -> dict[str, Any] | None:
     current = str(active.get("bodyName") or "").strip().casefold()
     scoped = (bool(str(system.get("address") or ""))
               and str(active.get("systemAddress") or "") == str(system.get("address")))
-    if active.get("onFootOnPlanet") is True and current and scoped:
+    if current and scoped and active.get("hasLatLong") is True:
         for body in bodies:
             if str(body.get("bodyName") or "").strip().casefold() == current:
                 return body
@@ -1197,7 +1197,7 @@ def bio_genetic_guidance(survey: Any, status: Any) -> dict[str, Any]:
     target = target[-1] if isinstance(target, list) and target and isinstance(target[-1], dict) else None
     if not target or not isinstance(out["requiredMeters"], (int, float)):
         return out
-    if not isinstance(status, dict) or status.get("onFootOnPlanet") is not True or status.get("hasLatLong") is not True:
+    if not isinstance(status, dict) or status.get("hasLatLong") is not True:
         return out
     system = survey.get("system") if isinstance(survey, dict) else None
     if not isinstance(system, dict) or not system.get("address") or (
@@ -6425,13 +6425,52 @@ class MongrelHudApp:
             if not isinstance(sample, dict):
                 continue
             complete = bool(sample.get("completed"))
+            count = max(0, min(3, int(sample.get("samples") or 0)))
             self._draw_text(canvas, 9 * scale, y,
                             self.clip_line(str(sample.get("species") or "KNOWN ORGANISM"), 34),
-                            scale, 11, HUD_GREEN if complete else HUD_WHITE, True)
-            self._draw_text(canvas, width-9*scale, y,
-                            "3/3 LOGGED" if complete else f"{int(sample.get('samples') or 0)}/3 SAMPLES",
-                            scale, 10, HUD_GREEN if complete else HUD_AMBER, True, "ne")
-            y += 22 * scale
+                            scale, 12, HUD_GREEN if complete else HUD_WHITE, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            "COMPLETE" if complete else f"{count}/3 SAMPLES",
+                            scale, 11, HUD_GREEN if complete else HUD_AMBER, True, "ne")
+            y += 24 * scale
+            for i in range(3):
+                left = (10 + i * 68) * scale
+                filled = i < count
+                color = HUD_GREEN if complete and filled else HUD_CYAN if filled else HUD_DIM
+                canvas.create_rectangle(left, y, left + 61 * scale, y + 26 * scale,
+                                        outline=HUD_CYAN if filled else HUD_MUTED,
+                                        fill=color if filled else "",
+                                        width=max(1, round(scale)))
+                self._draw_text(canvas, left + 30 * scale, y + 6 * scale, f"0{i + 1}",
+                                scale, 9, HUD_DIM if filled else HUD_MUTED, True, "n")
+            self._draw_text(canvas, width - 9 * scale, y + 7 * scale,
+                            "GENETIC PROFILE COMPLETE" if complete else "SAMPLE SEQUENCE",
+                            scale, 9, HUD_GREEN if complete else HUD_MUTED, True, "ne")
+            y += 38 * scale
+            base = sample.get("estimatedBaseValue")
+            footfall = sample.get("footfallStatus")
+            if type(base) is int:
+                self._draw_text(canvas, 9 * scale, y, f"VISTA BASE · ~{base:,} CR",
+                                scale, 10, HUD_WHITE, True)
+                y += 21 * scale
+                if footfall == "first_footfall_indicated":
+                    self._draw_text(canvas, 9 * scale, y,
+                                    f"FIRST LOGGED IF ELIGIBLE · +~{base * 4:,} CR",
+                                    scale, 10, HUD_AMBER, True)
+                    y += 20 * scale
+                    self._draw_text(canvas, 9 * scale, y,
+                                    f"POTENTIAL TOTAL · ~{base * 5:,} CR (5x)",
+                                    scale, 11, HUD_GREEN, True)
+                    y += 21 * scale
+                else:
+                    self._draw_text(canvas, 9 * scale, y,
+                                    "FIRST-LOG BONUS UNVERIFIED · BASE ONLY",
+                                    scale, 9, HUD_AMBER)
+                    y += 21 * scale
+            else:
+                self._draw_text(canvas, 9 * scale, y, "VISTA BASE VALUE UNKNOWN",
+                                scale, 9, HUD_AMBER)
+                y += 22 * scale
         if candidates:
             self._draw_text(canvas, 9 * scale, y, "HABITAT CANDIDATES · NOT CONFIRMED",
                             scale, 9, HUD_MUTED, True)
@@ -6487,14 +6526,14 @@ class MongrelHudApp:
                             + str(guide.get("samples") or "?") + "/3",
                             scale, 11, HUD_WHITE, True)
             y += 22 * scale
-            self._draw_text(canvas, 9*scale, y, "RANGE UNVERIFIED · LIVE ON-FOOT GPS REQUIRED",
+            self._draw_text(canvas, 9*scale, y, "RANGE UNVERIFIED · LIVE SAME-BODY GPS REQUIRED",
                             scale, 9, HUD_AMBER)
             y += 20 * scale
         else:
             self._draw_text(canvas, 9*scale, y, "NO ACTIVE GENETIC SAMPLE", scale, 9, HUD_MUTED)
             y += 20 * scale
         self._draw_text(canvas, 9 * scale, y,
-                        "PARTIAL COMMUNITY MODEL · FIRST-LOG BONUS UNVERIFIED",
+                        "FIRST FOOTFALL DOES NOT GUARANTEE FIRST-LOG BONUS",
                         scale, 8, HUD_MUTED)
         return width, round(y + 22 * scale)
 
@@ -6896,41 +6935,7 @@ class MongrelHudApp:
         self._draw_text(canvas, width - 10 * scale, y,
                         f"FIRST DISCOVERY CANDIDATES  {int(survey.get('potentialFirstBodies') or 0)}",
                         scale, 9, HUD_MUTED, True, "ne")
-        y += 28 * scale
-        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
-        y += 10 * scale
-        self._draw_text(canvas, 10 * scale, y,
-                        "DSS TARGETS ACTIVE ON SEPARATE FLIGHT INSTRUMENT",
-                        scale, 8, HUD_CYAN)
-        y += 19 * scale
-        intel = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
-        history = survey.get("eddiscoveryHistory") if isinstance(survey.get("eddiscoveryHistory"), dict) else {}
-        if history.get("verifiedSystemIdentity") and history.get("bodyCount"):
-            self._draw_text(canvas, 10 * scale, y,
-                            f"EDD HISTORICAL SCANS · {int(history['bodyCount'])} BODIES · NOT EXPEDITION CR",
-                            scale, 8, HUD_GREEN)
-            y += 17 * scale
-        if intel.get("providers"):
-            names = " + ".join(str(x) for x in intel.get("providers") or [])
-            count = int(intel.get("catalogedBodies") or 0)
-            self._draw_text(canvas, 10 * scale, y,
-                            f"COMMUNITY REPORTED · {names} · {count} BODY RECORDS",
-                            scale, 8, HUD_CYAN)
-            y += 17 * scale
-        elif intel.get("status") == "providers_unavailable":
-            self._draw_text(canvas, 10 * scale, y, "COMMUNITY CHARTS UNAVAILABLE · LOCAL SCANS ACTIVE",
-                            scale, 8, HUD_AMBER)
-            y += 17 * scale
-        history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
-        recovered = str(history.get("status") or "").upper()
-        self._draw_text(canvas, 10 * scale, y,
-                        f"LOCAL JOURNAL  {recovered}  ·  {int(history.get('processed') or 0)} NEW / {int(history.get('duplicates') or 0)} KNOWN",
-                        scale, 8, HUD_MUTED)
-        y += 17 * scale
-        self._draw_text(canvas, 10 * scale, y,
-                        "PROVISIONAL ESTIMATES · NOT VERIFIED UNSOLD CARTOGRAPHICS",
-                        scale, 8, HUD_AMBER)
-        return width, round(y + 22 * scale)
+        return width, round(y + 15 * scale)
 
     def _render_generic_canvas(self, canvas: tk.Canvas, panel_id: str, scale: float) -> tuple[int, int]:
         text = self.panel_texts().get(panel_id, "")

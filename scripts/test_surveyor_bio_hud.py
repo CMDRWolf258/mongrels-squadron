@@ -42,9 +42,12 @@ assert near["status"] == "move_farther" and 150 < near["distanceMeters"] < 200,n
 assert 300 < near["remainingMeters"] < 350,near
 far = scope["bio_genetic_guidance"](survey,dict(status,longitude=0.04))
 assert far["status"] == "genetic_distance_met" and far["remainingMeters"] == 0,far
+for vehicle in (dict(status,onFootOnPlanet=False,longitude=0.04),
+                dict(status,onFootOnPlanet=False,inSrv=True,longitude=0.04)):
+    measured=scope["bio_genetic_guidance"](survey,vehicle)
+    assert measured["status"]=="genetic_distance_met", measured
 for invalid in [
     dict(status,bodyName="Different world"),
-    dict(status,onFootOnPlanet=False),
     dict(status,hasLatLong=False),
     dict(status,timestamp=old),
     dict(status,planetRadius=500000),
@@ -77,6 +80,8 @@ assert scope["bio_focus_body"](focused,wrong_system) is body
 class FakeCanvas:
     def create_line(self,*args,**kwargs):
         pass
+    def create_rectangle(self,*args,**kwargs):
+        pass
 
 class FakeHud:
     def __init__(self, content):
@@ -93,6 +98,12 @@ class FakeHud:
         return str(value)[:count]
 
 FakeHud._render_exobiology_canvas = scope["_render_exobiology_canvas"]
+body["sampledSpecies"][0].update({
+    "firstLoggedBonusEstimate":76043200,
+    "firstLoggedTotalEstimate":95054000,
+    "footfallStatus":"first_footfall_indicated",
+    "estimatedBaseValue":19010800,
+})
 hud = FakeHud({"exploration":survey, "status":dict(status,longitude=0.04)})
 dimensions = hud._render_exobiology_canvas(FakeCanvas(),1)
 text = " ".join(hud.lines)
@@ -100,5 +111,7 @@ assert dimensions[0] > 450 and dimensions[1] > 100
 assert "BIOLOGICAL INTELLIGENCE" in text
 assert "GENETIC DISTANCE" in text or "DISTANCE MET" in text
 assert "NOT CONFIRMED" in text and "19,010,800" in text
-assert "FIRST-LOG BONUS UNVERIFIED" in text
+assert "FIRST FOOTFALL DOES NOT GUARANTEE FIRST-LOG BONUS" in text
+assert "POTENTIAL TOTAL" in text and "95,054,000" in text, text
+assert "SAMPLE SEQUENCE" in text
 print("Biological HUD samples, source positions, uncertainty and rendering PASSED")
