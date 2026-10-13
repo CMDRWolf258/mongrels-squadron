@@ -106,6 +106,32 @@ with tempfile.TemporaryDirectory() as temp:
     assert undone["expedition"]["estimate"] == after_map["expedition"]["estimate"] + first_gain
     assert undone["expedition"]["existingDataExcluded"] is False
 
+    # Three different Frontier system quotes are references, never a global
+    # increase applied indiscriminately to new scans or expedition credit.
+    original_value = survey.snapshot(cmdr)["currentSystemEstimate"]
+    original_credit = survey.snapshot(cmdr)["expedition"]["estimate"]
+    first_comparison = survey.record_carto_reference(cmdr, 32267, "Old system")
+    assert first_comparison["cartographicsComparison"]["references"] == 1
+    assert first_comparison["currentSystemEstimate"] == original_value
+    for ordinal in (2, 3):
+        new_address = str(12345889987654321 + ordinal)
+        name = f"Comparison system {ordinal}"
+        survey.apply(cmdr, event("FSDJump", stamp(10 + ordinal),
+            StarSystem=name, SystemAddress=new_address))
+        survey.apply(cmdr, event("Scan", stamp(15 + ordinal), SystemAddress=new_address,
+            BodyID=1, BodyName=f"{name} 1", ScanType="Detailed",
+            PlanetClass="Icy body", MassEM=0.2, WasDiscovered=False))
+        survey.record_carto_reference(cmdr, 70000 * ordinal, name)
+    survey.apply(cmdr, event("FSDJump", stamp(30),
+        StarSystem="Old system", SystemAddress=address))
+    compared = survey.snapshot(cmdr)
+    assert compared["cartographicsComparison"]["references"] == 3
+    assert compared["cartographicsComparison"]["calibrationReady"] is False
+    assert compared["cartographicsComparison"]["diagnosticMedianRatio"] is not None
+    assert compared["currentSystemEstimate"] == original_value
+    assert compared["currentSystemBaseEstimate"] == original_value
+    assert compared["expedition"]["estimate"] >= original_credit
+
     survey.control(cmdr, "end")
     assert survey.snapshot(cmdr)["expedition"]["active"] is False
     restarted = survey.control(cmdr, "start")
