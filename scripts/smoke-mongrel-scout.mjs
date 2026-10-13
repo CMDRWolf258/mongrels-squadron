@@ -121,7 +121,7 @@ for(const pattern of [
   /Authorization/,
   /Bearer/,
   /MongrelScoutToken/,
-  /PLUGIN_VERSION = "1\.13\.15"/,
+  /PLUGIN_VERSION = "1\.13\.16"/,
   /HUD_BRIDGE_VERSION = 9/,
   /MongrelScoutCargoMissionCache/,
   /def _update_cargo_missions_from_journal/,
@@ -1118,7 +1118,7 @@ assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 // Surveyor functionality, making a valid version label misleading.
 for (const endpoint of [zipSource,apiZipSource]) {
   for (const file of ['load.py','surveyor.py','surveyor_history.py',
-                      'surveyor_intel.py','surveyor_edd_bridge.py']) {
+                      'surveyor_intel.py','surveyor_edd_bridge.py','mission_sync.py']) {
     assert.ok(endpoint.includes("source:'/downloads/mongrel-scout/"+file+"'"),
       'ZIP route missing static source '+file);
     assert.ok(endpoint.includes("path:'MongrelScout/"+file+"'"),
@@ -1128,7 +1128,7 @@ for (const endpoint of [zipSource,apiZipSource]) {
   assert.ok(endpoint.includes("path:'licenses/Apache-2.0.txt'"));
 }
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
-assert.ok(scoutReadme.includes('Scout 1.13.15'));
+assert.ok(scoutReadme.includes('Scout 1.13.16'));
 
 for(const pattern of [/Short version:/,/Plugins → Open/,/real plugin folder/,/MongrelScout/,/Enable Mongrel Scout/,/Armed/,/Market updated: <station>/,/Facility mapped: <facility>/,/Host verified: <station> → <body>/,/Updating Scout/,/Privacy/,/member\/#mongrel-scout-setup/,/TECHNICAL_NOTES\.md/])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/127\.0\.0\.1:43857|docking\.granted|CarrierStats|galactic X\/Y\/Z coordinates/,'Member README should stay non-technical');

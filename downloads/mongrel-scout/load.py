@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.13.15"
+PLUGIN_VERSION = "1.13.16"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -150,6 +150,7 @@ KEY_NAV_AUTO_COPY = "MongrelScoutRouteAutoCopy"
 KEY_NAV_CHECKPOINT = "MongrelScoutRouteCheckpoint"
 KEY_NAV_COMPLETED = "MongrelScoutRouteLastCompletion"
 KEY_CARGO_MISSIONS = "MongrelScoutCargoMissionCache"
+KEY_MISSION_SYNC_PENDING = "MongrelScoutMissionSyncPending"
 KEY_CARGO_PRIORITY = "MongrelScoutCargoPriorityFaction"
 KEY_ACTIVITY_MISSION_ORIGINS = "MongrelScoutActivityMissionOrigins"
 KEY_ACTIVITY_TRADE_PROVENANCE = "MongrelScoutActivityTradeProvenance"
@@ -179,6 +180,9 @@ _last_system_address: Any = None
 _last_star_pos: Any = None
 _cargo_missions_lock = threading.RLock()
 _cargo_missions: dict[str, dict[str, dict[str, Any]]] = {}
+_mission_sync_instance: Any = None
+_mission_sync_init_lock = threading.Lock()
+_mission_sync_cargo_source: dict[str, dict[str, Any]] = {}
 _activity_lock = threading.RLock()
 _activity_pending: list[dict[str, Any]] = []
 _activity_pending_fingerprints: set[str] = set()
@@ -710,6 +714,10 @@ def plugin_start3(plugin_dir: str) -> str:
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
+        try:
+            _get_mission_sync().start()
+        except Exception:
+            pass
         _schedule_surveyor_startup_restore()
     return PLUGIN_NAME
 
@@ -817,8 +825,14 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
+        try:
+            _get_mission_sync().start()
+        except Exception:
+            pass
     else:
         _stop_hud_site_feed()
+        if _mission_sync_instance is not None:
+            _mission_sync_instance.stop()
         _stop_hud_bridge()
     _set_status(_initial_status())
 
@@ -981,6 +995,12 @@ def journal_entry(
     _update_hud_ship_from_edmc_state(state)
     _update_cargo_missions_from_journal(cmdr, entry)
     _update_hud_cargo_from_edmc_state(cmdr, state, entry.get("timestamp"), entry)
+    if event in {"Missions", "MissionAccepted", "CargoDepot",
+                 "MissionCompleted", "MissionFailed", "MissionAbandoned"}:
+        try:
+            _get_mission_sync().observe(cmdr, entry, _cargo_mission_rows(cmdr))
+        except Exception:
+            pass  # Keep existing BGS, cargo and HUD features intact.
     _publish_hud_event(cmdr, system, station, entry)
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
@@ -1213,6 +1233,8 @@ def cmdr_data(data: Any, is_beta: bool) -> None:
 def plugin_stop() -> None:
     """Stop the local HUD services when EDMC unloads the plugin."""
     _stop_hud_site_feed()
+    if _mission_sync_instance is not None:
+        _mission_sync_instance.stop()
     _stop_hud_bridge()
 
 
@@ -2779,7 +2801,73 @@ def _normalized_cached_mission(value: Any) -> Optional[dict[str, Any]]:
         "destinationSystem": str(value.get("destinationSystem") or "").strip()[:160],
         "destinationStation": str(value.get("destinationStation") or "").strip()[:160],
         "acceptedAt": str(value.get("acceptedAt") or "").strip()[:80],
+        "updatedAt": str(value.get("updatedAt") or value.get("acceptedAt") or "").strip()[:80],
     }
+
+
+def _get_mission_sync() -> Any:
+    """Load local background sync without assuming EDMC's import path."""
+    global _mission_sync_instance
+    if _mission_sync_instance is not None:
+        return _mission_sync_instance
+    with _mission_sync_init_lock:
+        if _mission_sync_instance is None:
+            path = Path(__file__).with_name("mission_sync.py")
+            spec = importlib.util.spec_from_file_location("mongrel_mission_sync", path)
+            if spec is None or spec.loader is None:
+                raise RuntimeError("mission_sync_module_unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _mission_sync_instance = module.MissionSync(
+                token=lambda: (config.get_str(KEY_TOKEN) or "").strip(),
+                restore_pending=lambda: config.get_str(KEY_MISSION_SYNC_PENDING) or "",
+                persist_pending=lambda value: config.set(KEY_MISSION_SYNC_PENDING, value),
+                local_rows=_cargo_mission_rows,
+                apply_remote=_apply_remote_cargo_missions,
+            )
+    return _mission_sync_instance
+
+
+def _apply_remote_cargo_missions(commander: str, rows: list[dict[str, Any]],
+                                 active_ids: set[str]) -> None:
+    """Only restore a MissionID Frontier marks active on this PC."""
+    cmdr = _cmdr_cache_key(commander)
+    changed = False
+    with _cargo_missions_lock:
+        bucket = _cargo_missions.setdefault(cmdr, {})
+        for row in rows:
+            incoming = _normalized_cached_mission(row)
+            if not incoming:
+                continue
+            mid = str(incoming["missionId"])
+            if (mid not in active_ids or _mission_sync_instance is None
+                    or not _mission_sync_instance.is_active(cmdr, incoming["missionId"])):
+                continue
+            existing = bucket.get(mid)
+            new_time = str(incoming.get("updatedAt") or incoming.get("acceptedAt") or "")
+            old_time = str(existing.get("updatedAt") or existing.get("acceptedAt") or "") if existing else ""
+            if existing and (new_time < old_time or
+                             new_time == old_time and
+                             int(incoming.get("delivered") or 0) <= int(existing.get("delivered") or 0)):
+                continue
+            bucket[mid] = incoming
+            changed = True
+        if not bucket:
+            _cargo_missions.pop(cmdr, None)
+    if not changed:
+        return
+    _save_cargo_missions()
+    # Requirements from cloud; ship inventory ALWAYS from local Elite.
+    with _hud_condition:
+        raw = _mission_sync_cargo_source.get(cmdr)
+        source = dict(raw) if isinstance(raw, dict) else None
+    if source is not None:
+        cargo = _build_local_cargo_state(cmdr, source)
+        if cargo is not None:
+            with _hud_condition:
+                if _cmdr_cache_key(_hud_state.get("commander")) == cmdr:
+                    _hud_state["cargo"] = cargo
+                    _hud_condition.notify_all()
 
 
 def _restore_cargo_missions() -> None:
@@ -2847,6 +2935,7 @@ def _mission_from_accept_entry(entry: Mapping[str, Any]) -> Optional[dict[str, A
         "destinationSystem": str(entry.get("DestinationSystem") or "").strip()[:160],
         "destinationStation": str(entry.get("DestinationStation") or "").strip()[:160],
         "acceptedAt": str(entry.get("timestamp") or "").strip()[:80],
+        "updatedAt": str(entry.get("timestamp") or "").strip()[:80],
     }
 
 
@@ -2956,6 +3045,7 @@ def _update_cargo_missions_from_journal(cmdr: Any, entry: Mapping[str, Any]) -> 
                     if cargo_type and not mission.get("commodity"):
                         mission["commodity"] = _commodity_key(cargo_type)
                         mission["commodityName"] = _commodity_display(cargo_type, entry.get("CargoType_Localised"))
+                    mission["updatedAt"] = str(entry.get("timestamp") or mission.get("updatedAt") or "").strip()[:80]
                     changed = True
 
         elif event in {"MissionCompleted", "MissionFailed", "MissionAbandoned"}:
@@ -3491,7 +3581,15 @@ def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], times
     cargo = _build_local_cargo_state(cmdr, source_state, timestamp, srv_ghosts=corrections)
     if cargo is None:
         return
+    # Preserve the SAME corrected ship inventory used for the live HUD.
+    # Rehydrating remote mission requirements must never reintroduce SRV ghost
+    # cargo, stale EDMC CargoJSON, or lose MissionID reservations.
+    _, local_rows = _cargo_inventory_from_edmc_state(source_state, srv_ghosts=corrections)
     with _hud_condition:
+        _mission_sync_cargo_source[_cmdr_cache_key(cmdr)] = {
+            "CargoJSON": _hud_cargo_rows_as_ship_json(local_rows),
+            "CargoCapacity": source_state.get("CargoCapacity"),
+        }
         _hud_state["cargo"] = cargo
         _hud_condition.notify_all()
 
