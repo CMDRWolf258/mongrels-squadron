@@ -265,6 +265,65 @@ _surveyor_history_lock = threading.Lock()
 _surveyor_history_started: set[str] = set()
 
 
+def _surveyor_journal_directory() -> str:
+    """Locate EDMC's existing journal folder; do not touch cloud services."""
+    folder = getattr(monitor, "currentdir", None) if monitor is not None else None
+    if not folder:
+        try:
+            folder = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
+        except Exception:
+            folder = ""
+    return str(folder or "")
+
+
+def _run_surveyor_startup_restore() -> None:
+    """Restore this CMDR's persisted ledger before another scan or jump.
+
+    This is a one-shot background task. A live journal/status callback always
+    wins a race, and another Commander can never inherit this snapshot.
+    """
+    try:
+        folder = _surveyor_journal_directory()
+        filename = Path(__file__).with_name("surveyor_history.py")
+        spec = importlib.util.spec_from_file_location("mongrel_surveyor_history_startup", filename)
+        if spec is None or spec.loader is None:
+            return
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        journal_commander = module.latest_journal_commander(folder) if folder else ""
+        live_commander = str(getattr(monitor, "cmdr", "") or "").strip() if monitor is not None else ""
+        if live_commander and journal_commander and live_commander.casefold() != journal_commander.casefold():
+            return  # Mixed identity: wait for EDMC's next verified live callback.
+        commander = live_commander or journal_commander
+        if not commander:
+            return
+        snapshot = _get_surveyor().snapshot(commander)
+        with _hud_condition:
+            active_commander = str(_hud_state.get("commander") or "").strip()
+            if active_commander and active_commander.casefold() != commander.casefold():
+                return
+            if _hud_state.get("exploration") is None:
+                _hud_state["commander"] = commander
+                _hud_state["exploration"] = snapshot
+                _hud_state["explorationStatus"] = {"ok": True, "error": None}
+                _hud_condition.notify_all()
+        # Historic replay runs locally and cannot move the live system pointer.
+        _schedule_surveyor_history(commander)
+    except Exception:
+        with _hud_condition:
+            if _hud_state.get("exploration") is None:
+                _hud_state["explorationStatus"] = {"ok": False, "error": "local_surveyor_unavailable"}
+                _hud_condition.notify_all()
+
+
+def _schedule_surveyor_startup_restore() -> None:
+    threading.Thread(
+        target=_run_surveyor_startup_restore,
+        name="MongrelSurveyorStartupRestore",
+        daemon=True,
+    ).start()
+
+
 def _run_surveyor_history(commander: str, journal_dir: str) -> None:
     """Local bounded replay; no journal data enters Scout's upload queues."""
     try:
@@ -292,12 +351,7 @@ def _schedule_surveyor_history(commander: str) -> None:
     """At most one import per Commander per EDMC run, off the journal thread."""
     if not commander:
         return
-    journal_dir = getattr(monitor, "currentdir", None) if monitor is not None else None
-    if not journal_dir:
-        try:
-            journal_dir = config.get_str("journaldir") or getattr(config, "default_journal_dir", "")
-        except Exception:
-            journal_dir = ""
+    journal_dir = _surveyor_journal_directory()
     if not journal_dir:
         return
     with _surveyor_history_lock:
@@ -452,6 +506,7 @@ def plugin_start3(plugin_dir: str) -> str:
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
+        _schedule_surveyor_startup_restore()
     return PLUGIN_NAME
 
 
