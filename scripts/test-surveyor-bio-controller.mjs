@@ -31,7 +31,7 @@ scope.renderBioSurvey(scan);
 assert.match(el("surveyorBioStatus").textContent,/DSS GENUS VERIFIED/);
 assert.match(el("surveyorBioCandidates").innerHTML,/&lt;Stratum Tectonicas&gt;/);
 assert.doesNotMatch(el("surveyorBioCandidates").innerHTML,/<Stratum Tectonicas>/);
-assert.match(el("surveyorBioCandidates").innerHTML,/NOT CONFIRMED/);
+assert.match(el("surveyorBioCandidates").innerHTML,/ACTIVE GENETIC SAMPLE/);
 assert.match(el("surveyorBioCandidates").innerHTML,/bio-sample-slots/);
 assert.match(el("surveyorBioCandidates").innerHTML,/bio-sample-slot filled/);
 assert.match(el("surveyorBioGenetics").textContent,/Range unverified/);
