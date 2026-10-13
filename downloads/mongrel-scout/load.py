@@ -708,16 +708,16 @@ def plugin_start3(plugin_dir: str) -> str:
     _restore_owner_carrier()
     _restore_last_system_context()
     _restore_cargo_missions()
-    try:
-        _get_mission_sync().start()
-    except Exception:
-        pass  # Never prevent EDMC startup.
     _restore_activity_mission_origins()
     _restore_activity_trade_provenance()
     _restore_activity_carrier_trade_provenance()
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
+        try:
+            _get_mission_sync().start()
+        except Exception:
+            pass
         _schedule_surveyor_startup_restore()
     return PLUGIN_NAME
 
@@ -825,8 +825,14 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     if config.get_bool(KEY_ENABLED):
         _start_hud_bridge()
         _start_hud_site_feed()
+        try:
+            _get_mission_sync().start()
+        except Exception:
+            pass
     else:
         _stop_hud_site_feed()
+        if _mission_sync_instance is not None:
+            _mission_sync_instance.stop()
         _stop_hud_bridge()
     _set_status(_initial_status())
 
