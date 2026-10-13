@@ -59,6 +59,14 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Surveyor Exobiology biological intelligence (Phase 2, on feature branch)
+
+- Journal-local **23 curated species / 5 genus** compatibility rules plus **15 Odyssey genus sample distances**; source-attributed and versioned `mongrel-habitats-2026-10-stage2-v1`, details in `downloads/mongrel-scout/SURVEYOR_BIO_PREDICTIONS.md`.
+- No GPL/AGPL copy of BioScan/StratumFinder. Sources are public species habitat references; internal inference engine uses Frontier Scan class, thin atmospheric gas, Kelvin temperature, gravity, DSS genus confirmation, and sampled species.
+- All rule results distinguish *compatible* from *confirmed*. Missing condition => `insufficient_data`; mismatched condition rejects candidate. Unverified parent-star facts, first-footfall and bonus remain unknown. Partial catalog cannot yield exact planet totals.
+- Stored existing body properties feed predictions through local Surveyor snapshot; no new Scout ZIP file/module, cloud reads or new HUD panels in this phase. CI: `scripts/test_surveyor_bio_predictions.py`.
+- **Owner installation remains deferred** until Exobiology HUD presentation and companion/iPad settings are integrated and verified.
+
 ### Surveyor Exobiology foundation (PR #211; staging, not released)
 
 - Frontier journal `SAASignalsFound.Genuses` provides **confirmed genera**, NOT confirmed species. `FSSBodySignals` biological counts similarly do not imply Stratum. Surveyor separately captures genus evidence, per-body `ScanOrganic` Log/Sample/Analyse progression, and `SellOrganicData.BioData` confirmed base/bonus sales.

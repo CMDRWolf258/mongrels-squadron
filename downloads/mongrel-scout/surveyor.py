@@ -85,6 +85,12 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
 BIO_REFERENCE_VALUES = {
     "Stratum Tectonicas": 19010800,
     "Stratum Paleas": 1362000,
+    "Stratum Araneamus": 2448900,
+    "Stratum Cucumisis": 16202800,
+    "Stratum Excutitus": 2448900,
+    "Stratum Frigus": 2637500,
+    "Stratum Laminamus": 2788300,
+    "Stratum Limaxus": 1362000,
     "Tubus Conifer": 2415500,
     "Bacterium Aurasus": 1000000,
     "Fungoida Gelata": 3330300,
@@ -191,6 +197,208 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
     body["bioSamples"] = rows
 
 
+
+# Curated original interoperability rules from public species habitat references.
+# This is NOT copied from any GPL/AGPL predictor or its bundled database.
+# Explicit source URLs are exposed to the HUD and tests. More biological genera
+# will be added as habitat parameters are independently corroborated.
+BIO_HABITAT_VERSION = "mongrel-habitats-2026-10-stage2-v1"
+BIO_HABITAT_SOURCES = {
+    "Stratum": "https://ed-dsn.net/en/stratum_en/",
+    "Aleoida": "https://ed-dsn.net/en/aleoida_en/",
+    "Osseus": "https://ed-dsn.net/en/osseus_en/",
+    "Clypeus": "https://ed-dsn.net/en/clypeus_en/",
+    "Electricae": "https://ed-dsn.net/en/electricae_en/",
+}
+# Planet classes and atmospheres are canonicalized by _bio_atmosphere/_bio_world.
+# A "None" criterion means unknown/unrestricted, NOT an assertion of absence.
+# Upper bounds are inclusive as community tables commonly state "between".
+# Worlds: H=high metal content, R=rocky, RI=rocky ice, I=icy.
+# Atmos: CO2=carbon dioxide, NH3=ammonia, H2O=water,
+# SO2=sulphur dioxide, O2=oxygen, AR=argon, N2=nitrogen, CH4=methane,
+# HE=helium, NE=neon. Rich atmospheres map to the same gas family.
+BIO_HABITAT_RULES = [
+    # genus, species, worlds, atmospheres, min K, max K, max g, extra constraint
+    ("Stratum", "Tectonicas", "H", "CO2 NH3 H2O SO2 O2", 165, None, None, ""),
+    ("Stratum", "Araneamus", "R", "SO2", 165, None, None, ""),
+    ("Stratum", "Cucumisis", "R", "SO2 CO2", 190, None, None, ""),
+    ("Stratum", "Excutitus", "R", "SO2 CO2", 165, 190, None, ""),
+    ("Stratum", "Frigus", "R", "SO2 CO2", 190, None, None, ""),
+    ("Stratum", "Laminamus", "R", "NH3", 165, None, None, ""),
+    ("Stratum", "Limaxus", "R", "SO2 CO2", 165, 190, None, ""),
+    ("Stratum", "Paleas", "R", "NH3 H2O CO2", None, None, None, ""),
+    ("Aleoida", "Arcus", "R H", "CO2", 175, 180, 0.27, ""),
+    ("Aleoida", "Coronamus", "R H", "CO2", 180, 190, 0.27, ""),
+    ("Aleoida", "Gravis", "R H", "CO2", 190, 195, 0.27, ""),
+    ("Aleoida", "Laminiae", "R H", "NH3", None, None, 0.27, ""),
+    ("Aleoida", "Spica", "R H", "NH3", None, None, 0.27, ""),
+    ("Osseus", "Cornibus", "R H", "CO2", 180, 195, 0.27, ""),
+    ("Osseus", "Discus", "R H", "H2O", None, None, 0.27, ""),
+    ("Osseus", "Fractus", "R H", "CO2", 180, 190, 0.27, ""),
+    ("Osseus", "Pellebantus", "R H", "CO2", 190, 195, 0.27, ""),
+    ("Osseus", "Pumice", "R H RI", "CH4 AR N2", None, None, 0.27, ""),
+    ("Osseus", "Spiralis", "R H", "NH3", None, None, 0.27, ""),
+    ("Clypeus", "Lacrimam", "R H", "CO2 H2O", 190, None, 0.27, ""),
+    ("Clypeus", "Margaritus", "R H", "CO2 H2O", 190, None, 0.27, ""),
+    ("Clypeus", "Speculumi", "R H", "CO2 H2O", 190, None, 0.27, "parent_star_distance"),
+    ("Electricae", "Pluma", "I", "HE NE AR", None, None, 0.27, "parent_star_luminosity"),
+]
+
+BIO_GENETIC_DISTANCES_M.update({
+    "Aleoida": 150, "Cactoida": 300, "Clypeus": 150,
+    "Concha": 150, "Fonticulua": 500, "Frutexa": 150,
+    "Fumerola": 100, "Fungoida": 300, "Recepta": 150,
+    "Tubus": 800, "Tussock": 200,
+})
+BIO_DISTANCE_SOURCE = "https://github-wiki-see.page/m/njthomson/SrvSurvey/wiki/Organic-Scanning"
+
+
+def _bio_world(planet: str) -> str:
+    normalized = _text(planet).casefold().replace("-", " ")
+    return {
+        "high metal content body": "H",
+        "high metal content world": "H",
+        "rocky body": "R", "rocky world": "R",
+        "rocky ice body": "RI", "rocky ice world": "RI",
+        "rocky icy body": "RI", "icy body": "I", "icy world": "I",
+    }.get(normalized, "")
+
+
+def _bio_atmosphere(value: str) -> tuple[str, bool | None]:
+    """Normalize Frontier atmosphere names without conflating thin and dense."""
+    raw = _text(value).casefold().replace("-", " ").replace("_", " ")
+    if not raw:
+        return "", None
+    thin = raw.startswith("thin ")
+    raw = raw.removeprefix("thin ").strip()
+    if raw in {"no atmosphere", "none"}:
+        return "", False
+    if raw.endswith(" rich"):
+        raw = raw[:-5]
+    if raw in {"carbon dioxide", "carbon dioxide rich"}:
+        return "CO2", thin
+    if raw in {"ammonia"}:
+        return "NH3", thin
+    if raw in {"water"}:
+        return "H2O", thin
+    if raw in {"sulphur dioxide", "sulfur dioxide"}:
+        return "SO2", thin
+    return {
+        "oxygen": "O2", "argon": "AR", "nitrogen": "N2",
+        "methane": "CH4", "helium": "HE", "neon": "NE",
+    }.get(raw, ""), thin
+
+
+def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
+    """Pure bounded advisory; never asserts a first footfall or identified species.
+
+    Observed Frontier SAASignalsFound genera narrow the candidates, but the
+    species remain unconfirmed until a ScanOrganic observation.
+    """
+    genera = body.get("biologicalGenuses") if isinstance(body.get("biologicalGenuses"), list) else []
+    observed = {
+        _text(row.get("name")).casefold() for row in genera
+        if isinstance(row, Mapping) and _text(row.get("name"))
+    }
+    samples = body.get("bioSamples") if isinstance(body.get("bioSamples"), Mapping) else {}
+    confirmed_species = {
+        _text(row.get("genus")).casefold(): _text(row.get("species"))
+        for row in samples.values() if isinstance(row, Mapping)
+        and _text(row.get("genus")) and _text(row.get("species"))
+    }
+    count = _bio_signal_count(body)
+    # No Frontier biological evidence: do not generate speculative suggestions.
+    if count <= 0 and not observed and not confirmed_species:
+        return {"status": "no_biological_evidence", "candidates": [], "ruleCoverage": "partial"}
+
+    world, atmosphere = _bio_world(body.get("planetClass")), _bio_atmosphere(body.get("atmosphere"))
+    gas, thin = atmosphere
+    temperature = _number(body.get("surfaceTemperature"))
+    gravity_ms2 = _number(body.get("surfaceGravity"))
+    gravity_g = gravity_ms2 / 9.80665 if gravity_ms2 is not None else None
+    candidates: list[dict[str, Any]] = []
+    for genus, epithet, worlds, gases, low, high, max_gravity, extra in BIO_HABITAT_RULES:
+        if observed and genus.casefold() not in observed:
+            continue
+        if genus.casefold() in confirmed_species:
+            continue
+        missing: list[str] = []
+        if world:
+            if world not in worlds.split():
+                continue
+        else:
+            missing.append("planet_class")
+        if thin is False:
+            continue
+        if thin is None:
+            missing.append("thin_atmosphere")
+        if gas:
+            if gas not in gases.split():
+                continue
+        else:
+            missing.append("atmosphere_gas")
+        # Stratum Paleas needs >165 K under NH3/CO2, but is also recorded
+        # under water atmospheres without a confirmed minimum threshold.
+        # An unknown gas must not be promoted to an unconditional prediction.
+        effective_low = 165 if genus == "Stratum" and epithet == "Paleas" and gas in {"NH3", "CO2"} else low
+        if genus == "Stratum" and epithet == "Paleas" and not gas:
+            missing.append("atmosphere_dependent_temperature")
+        if temperature is None:
+            if effective_low is not None or high is not None:
+                missing.append("surface_temperature")
+        else:
+            if effective_low is not None and temperature < effective_low:
+                continue
+            if high is not None and temperature > high:
+                continue
+        if max_gravity is not None:
+            if gravity_g is None:
+                missing.append("surface_gravity")
+            elif gravity_g > max_gravity:
+                continue
+        if extra:
+            # Parent star conditions cannot be proven by arrival-star scan or
+            # DistanceFromArrivalLS; require verified parent information later.
+            missing.append(extra)
+        if body.get("landable") is False:
+            continue
+        if body.get("landable") is None:
+            missing.append("landability")
+        name = genus + " " + epithet
+        candidates.append({
+            "genus": genus, "species": name,
+            "status": "compatible" if not missing else "insufficient_data",
+            "missing": missing,
+            "estimatedBase": BIO_REFERENCE_VALUES.get(name),
+            "geneticDistanceMeters": BIO_GENETIC_DISTANCES_M.get(genus),
+            "sourceUrl": BIO_HABITAT_SOURCES[genus],
+        })
+    # Highest known-value candidates first, but UNKNOWN values never mean zero.
+    candidates.sort(key=lambda row: (
+        row["status"] != "compatible",
+        -(row["estimatedBase"] or 0),
+        row["species"],
+    ))
+    return {
+        "status": (
+            "observed_species" if confirmed_species else
+            "dss_genus_filtered" if observed else "signal_based"
+        ),
+        "candidates": candidates[:40],
+        "candidateCount": len(candidates),
+        "ruleCoverage": "partial",  # genus coverage limited to curated 5 groups
+        "knownGenera": sorted(BIO_HABITAT_SOURCES),
+        "model": BIO_HABITAT_VERSION,
+        "planetEvidence": {
+            "world": world or None, "atmosphereGas": gas or None,
+            "thinAtmosphere": thin, "temperatureK": temperature,
+            "gravityG": round(gravity_g, 4) if gravity_g is not None else None,
+        },
+        "valueBounds": None,   # partial species coverage => cannot safely cap earnings
+        "firstFootfallBonus": "unknown_not_claimed",
+    }
+
+
 def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
     count = _bio_signal_count(body)
     samples = body.get("bioSamples") if isinstance(body.get("bioSamples"), dict) else {}
@@ -214,6 +422,7 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
         "predictionCertainty": "species_confirmed" if current else "genus_confirmed_species_unknown" if confirmed else "unresolved",
         "estimatedCompleteBase": sum(int(x.get("estimatedBaseValue") or 0) for x in current if x.get("completed")),
         "knownValueCoverage": sum(bool(x.get("completed") and x.get("estimatedBaseValue") is not None) for x in current),
+        "prediction": _bio_predict(body),
     }
 
 
@@ -1072,6 +1281,9 @@ class Surveyor:
             "exobiology": {
                 "source": "frontier_journal_local",
                 "model": BIO_REFERENCE_MODEL,
+                "habitatModel": BIO_HABITAT_VERSION,
+                "habitatRuleCount": len(BIO_HABITAT_RULES),
+                "distanceSource": BIO_DISTANCE_SOURCE,
                 "valueCatalogComplete": False,
                 "biologicalBodies": bio_rows[:60],
                 "biologicalBodiesTruncated": max(0, len(bio_rows) - 60),

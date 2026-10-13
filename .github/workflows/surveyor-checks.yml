@@ -11,6 +11,7 @@ on:
       - 'scripts/test-scout-mission-sync.py'
       - 'scripts/test_surveyor.py'
       - 'scripts/test_surveyor_bio.py'
+      - 'scripts/test_surveyor_bio_predictions.py'
       - 'scripts/test_surveyor_history.py'
       - 'scripts/test_surveyor_expedition.py'
       - 'scripts/test_surveyor_live_feedback.py'
@@ -29,12 +30,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Python syntax and compilation
-        run: python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_edd_bridge.py downloads/mongrel-scout/mission_sync.py scripts/test-scout-mission-sync.py scripts/test_surveyor.py scripts/test_surveyor_bio.py scripts/test_surveyor_intel.py scripts/test_surveyor_history.py scripts/test_surveyor_advisor.py scripts/test_surveyor_advisor_hud.py scripts/test_surveyor_expedition.py scripts/test_surveyor_live_feedback.py scripts/test_surveyor_eddiscovery_reference.py scripts/test_surveyor_eddiscovery_bridge.py downloads/mongrel-hud/mongrel_hud.py
+        run: python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_edd_bridge.py downloads/mongrel-scout/mission_sync.py scripts/test-scout-mission-sync.py scripts/test_surveyor.py scripts/test_surveyor_bio.py scripts/test_surveyor_bio_predictions.py scripts/test_surveyor_intel.py scripts/test_surveyor_history.py scripts/test_surveyor_advisor.py scripts/test_surveyor_advisor_hud.py scripts/test_surveyor_expedition.py scripts/test_surveyor_live_feedback.py scripts/test_surveyor_eddiscovery_reference.py scripts/test_surveyor_eddiscovery_bridge.py downloads/mongrel-hud/mongrel_hud.py
       - name: Test persistent exploration ledger
         run: |
           python scripts/test-scout-mission-sync.py
           python scripts/test_surveyor.py
           python scripts/test_surveyor_bio.py
+          python scripts/test_surveyor_bio_predictions.py
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_history.py
           python scripts/test_surveyor_advisor.py
