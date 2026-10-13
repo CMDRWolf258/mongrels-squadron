@@ -1,4 +1,10 @@
-## Scout 1.13.8 — Rapid consecutive trade-sale reconciliation
+## Scout 1.13.15 — Surveyor exploration integration
+
+Scout 1.13.15 adds Mongrel Surveyor's local exploration records, EDDiscovery historical scan integration, the Discovery Report's estimated credit values, the DSS mapping advisor, and live first-discovery / high-metal-content biological-signal HUD alerts. Historical exploration values are identified separately and do **not** count as new expedition earnings. Biological signal counts do not identify the species or prove first footfall.
+
+The optional EDDiscovery connection and Surveyor display settings are available on the paired HUD controller. To use the new HUD exploration alerts, also update Mongrel HUD to a version supporting Surveyor (0.17.23 or newer). Scout continues to handle existing trade, mining, cargo, BGS, routing and carrier events.
+
+### Previous Scout 1.13.8 — Rapid consecutive trade-sale reconciliation
 
 When a station-market sale arrives before EDMC refreshes the Cargo count for
 its preceding sale, Scout now retains verified station-purchase origin for the
