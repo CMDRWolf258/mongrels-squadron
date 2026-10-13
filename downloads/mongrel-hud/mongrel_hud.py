@@ -3785,13 +3785,13 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
-    def surveyor_control(self, action: str, value: Any = None) -> dict[str, Any]:
+    def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
         if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote"}:
             raise ValueError("invalid_expedition_action")
         request = urllib.request.Request(
             SCOUT_SURVEYOR_CONTROL_URL,
-            data=json.dumps({"action": action, "value": value}, separators=(",", ":")).encode("utf-8"),
+            data=json.dumps({"action": action, "value": value, "system": system[:140]}, separators=(",", ":")).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Accept": "application/json",
@@ -7318,7 +7318,7 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/surveyor":
-                    result = app.surveyor_control(str(body.get("action") or ""), body.get("value"))
+                    result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
                 elif path == "/api/alert-ack":
