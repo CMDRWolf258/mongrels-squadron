@@ -640,7 +640,7 @@ class Surveyor:
             row = conn.execute("SELECT active_address FROM meta WHERE commander=?", (_text(commander),)).fetchone()
             return self._snapshot(conn, _text(commander), row["active_address"] if row else addr)
 
-    def record_carto_reference(self, commander: str, observed_actual: Any) -> dict[str, Any]:
+    def record_carto_reference(self, commander: str, observed_actual: Any, system_name: str = "") -> dict[str, Any]:
         """Record a manual Universal Cartographics quote as a calibration reference.
 
         Manual quotes never mark exploration data sold, affect expedition credit,
@@ -655,9 +655,21 @@ class Surveyor:
                 "SELECT active_address FROM meta WHERE commander=?", (cmdr,),
             ).fetchone()
             address = row["active_address"] if row else ""
+            if system_name:
+                matches = [
+                    row["address"] for row in conn.execute(
+                        "SELECT address,info FROM systems WHERE commander=?", (cmdr,),
+                    ) if _text(json.loads(row["info"]).get("name")).casefold() == _text(system_name).casefold()
+                ]
+                if len(matches) != 1:
+                    raise ValueError("quote_system_unavailable_or_ambiguous")
+                address = matches[0]
             if not address:
                 raise ValueError("current_system_unavailable")
-            model = self._snapshot(conn, cmdr, address).get("currentSystemEstimate")
+            # Store the uncalibrated raw model, not a prior correction.
+            with self._connect() as ref_conn:
+                system_snap = self._snapshot(ref_conn, cmdr, address)
+            model = system_snap.get("currentSystemBaseEstimate")
             if type(model) is not int or model <= 0:
                 raise ValueError("system_estimate_unavailable")
             conn.execute(
