@@ -85,6 +85,12 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
 BIO_REFERENCE_VALUES = {
     "Stratum Tectonicas": 19010800,
     "Stratum Paleas": 1362000,
+    "Stratum Araneamus": 2448900,
+    "Stratum Cucumisis": 16202800,
+    "Stratum Excutitus": 2448900,
+    "Stratum Frigus": 2637500,
+    "Stratum Laminamus": 2788300,
+    "Stratum Limaxus": 1362000,
     "Tubus Conifer": 2415500,
     "Bacterium Aurasus": 1000000,
     "Fungoida Gelata": 3330300,
@@ -331,11 +337,17 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
                 continue
         else:
             missing.append("atmosphere_gas")
+        # Stratum Paleas needs >165 K under NH3/CO2, but is also recorded
+        # under water atmospheres without a confirmed minimum threshold.
+        # An unknown gas must not be promoted to an unconditional prediction.
+        effective_low = 165 if genus == "Stratum" and epithet == "Paleas" and gas in {"NH3", "CO2"} else low
+        if genus == "Stratum" and epithet == "Paleas" and not gas:
+            missing.append("atmosphere_dependent_temperature")
         if temperature is None:
-            if low is not None or high is not None:
+            if effective_low is not None or high is not None:
                 missing.append("surface_temperature")
         else:
-            if low is not None and temperature < low:
+            if effective_low is not None and temperature < effective_low:
                 continue
             if high is not None and temperature > high:
                 continue
