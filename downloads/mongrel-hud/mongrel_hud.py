@@ -1182,8 +1182,10 @@ def bio_genetic_guidance(survey: Any, status: Any) -> dict[str, Any]:
         return {"status": "no_biological_body"}
     specimens = body.get("sampledSpecies")
     specimens = specimens if isinstance(specimens, list) else []
+    active_id = str(body.get("activeSpeciesId") or "")
     rows = [x for x in specimens if isinstance(x, dict) and
             0 < int(x.get("samples") or 0) < 3 and not x.get("completed")]
+    rows = [x for x in rows if str(x.get("speciesId") or "") == active_id] if "activeSpeciesId" in body else rows
     if not rows:
         return {"status": "no_active_sample", "bodyName": str(body.get("bodyName") or "")}
     sample = max(rows, key=lambda x: str(x.get("lastScanAt") or ""))
@@ -6418,89 +6420,96 @@ class MongrelHudApp:
                         + ("DSS GENUS VERIFIED" if body.get("confirmedGenuses") else "GENUS UNKNOWN"),
                         scale, 9, HUD_CYAN, True)
         y += 24 * scale
-        predicted = body.get("prediction") if isinstance(body.get("prediction"), dict) else {}
-        candidates = predicted.get("candidates") if isinstance(predicted.get("candidates"), list) else []
         specimens = body.get("sampledSpecies") if isinstance(body.get("sampledSpecies"), list) else []
-        for sample in specimens[:3]:
-            if not isinstance(sample, dict):
-                continue
-            complete = bool(sample.get("completed"))
+        active_id = str(body.get("activeSpeciesId") or "")
+        active_samples = [x for x in specimens if isinstance(x, dict)
+                          and not x.get("completed") and 0 < int(x.get("samples") or 0) < 3
+                          and ("activeSpeciesId" not in body or str(x.get("speciesId") or "") == active_id)]
+        active_sample = max(active_samples, key=lambda x: str(x.get("lastScanAt") or ""), default=None)
+        if active_sample:
+            sample = active_sample
             count = max(0, min(3, int(sample.get("samples") or 0)))
             self._draw_text(canvas, 9 * scale, y,
-                            self.clip_line(str(sample.get("species") or "KNOWN ORGANISM"), 34),
-                            scale, 12, HUD_GREEN if complete else HUD_WHITE, True)
-            self._draw_text(canvas, width - 9 * scale, y,
-                            "COMPLETE" if complete else f"{count}/3 SAMPLES",
-                            scale, 11, HUD_GREEN if complete else HUD_AMBER, True, "ne")
-            y += 24 * scale
+                            self.clip_line(str(sample.get("species") or "ACTIVE ORGANISM"), 32),
+                            scale, 12, HUD_WHITE, True)
+            self._draw_text(canvas, width - 9 * scale, y, f"{count}/3 SAMPLES",
+                            scale, 11, HUD_AMBER, True, "ne")
+            y += 25 * scale
             for i in range(3):
                 left = (10 + i * 68) * scale
                 filled = i < count
-                color = HUD_GREEN if complete and filled else HUD_CYAN if filled else HUD_DIM
-                canvas.create_rectangle(left, y, left + 61 * scale, y + 26 * scale,
+                canvas.create_rectangle(left, y, left + 61 * scale, y + 27 * scale,
                                         outline=HUD_CYAN if filled else HUD_MUTED,
-                                        fill=color if filled else "",
+                                        fill=HUD_CYAN if filled else "",
                                         width=max(1, round(scale)))
                 self._draw_text(canvas, left + 30 * scale, y + 6 * scale, f"0{i + 1}",
                                 scale, 9, HUD_DIM if filled else HUD_MUTED, True, "n")
-            self._draw_text(canvas, width - 9 * scale, y + 7 * scale,
-                            "GENETIC PROFILE COMPLETE" if complete else "SAMPLE SEQUENCE",
-                            scale, 9, HUD_GREEN if complete else HUD_MUTED, True, "ne")
-            y += 38 * scale
+            self._draw_text(canvas, width - 9 * scale, y + 7 * scale, "ACTIVE SPECIMEN",
+                            scale, 9, HUD_MUTED, True, "ne")
+            y += 39 * scale
             base = sample.get("estimatedBaseValue")
-            footfall = sample.get("footfallStatus")
             if type(base) is int:
-                self._draw_text(canvas, 9 * scale, y, f"VISTA BASE · ~{base:,} CR",
+                self._draw_text(canvas, 9 * scale, y, f"BASE · ~{base:,} CR",
                                 scale, 10, HUD_WHITE, True)
                 y += 21 * scale
-                if footfall == "first_footfall_indicated":
+                if sample.get("footfallStatus") == "first_footfall_indicated":
                     self._draw_text(canvas, 9 * scale, y,
-                                    f"FIRST LOGGED IF ELIGIBLE · +~{base * 4:,} CR",
-                                    scale, 10, HUD_AMBER, True)
-                    y += 20 * scale
-                    self._draw_text(canvas, 9 * scale, y,
-                                    f"POTENTIAL TOTAL · ~{base * 5:,} CR (5x)",
-                                    scale, 11, HUD_GREEN, True)
+                                    f"POSSIBLE FIRST-LOG TOTAL · ~{base * 5:,} CR",
+                                    scale, 10, HUD_GREEN, True)
                     y += 21 * scale
                 else:
-                    self._draw_text(canvas, 9 * scale, y,
-                                    "FIRST-LOG BONUS UNVERIFIED · BASE ONLY",
+                    self._draw_text(canvas, 9 * scale, y, "FIRST-LOG BONUS UNVERIFIED",
                                     scale, 9, HUD_AMBER)
-                    y += 21 * scale
+                    y += 19 * scale
             else:
-                self._draw_text(canvas, 9 * scale, y, "VISTA BASE VALUE UNKNOWN",
+                self._draw_text(canvas, 9 * scale, y, "BASE VALUE UNKNOWN",
                                 scale, 9, HUD_AMBER)
-                y += 22 * scale
-        if candidates:
-            self._draw_text(canvas, 9 * scale, y, "HABITAT CANDIDATES · NOT CONFIRMED",
-                            scale, 9, HUD_MUTED, True)
-            y += 21 * scale
-            for candidate in candidates[:4]:
-                if not isinstance(candidate, dict):
-                    continue
-                ready = candidate.get("status") == "compatible"
-                value = candidate.get("estimatedBase")
+                y += 19 * scale
+        completed = [x for x in specimens if isinstance(x, dict) and x.get("completed")]
+        if completed:
+            y += 5 * scale
+            self._draw_text(canvas, 9 * scale, y, "COMPLETED GENETIC SAMPLES", scale, 9, HUD_GREEN, True)
+            y += 23 * scale
+            for sample in sorted(completed, key=lambda x: str(x.get("lastScanAt") or ""), reverse=True):
                 self._draw_text(canvas, 9 * scale, y,
-                                self.clip_line(candidate.get("species") or "UNKNOWN", 32),
-                                scale, 10, HUD_WHITE, True)
-                price = f"~{int(value):,} CR" if isinstance(value, int) else "VALUE UNKNOWN"
-                self._draw_text(canvas, width - 9 * scale, y, price,
-                                scale, 9, HUD_CYAN if ready else HUD_MUTED, True, "ne")
-                y += 20 * scale
-                if not ready:
-                    self._draw_text(canvas, 18 * scale, y,
-                                    self.clip_line("NEEDS: "+", ".join(candidate.get("missing") or []), 60),
-                                    scale, 8, HUD_AMBER)
-                    y += 18 * scale
-            more = max(0, int(predicted.get("candidateCount") or 0) - 4)
-            if more:
-                self._draw_text(canvas, 9 * scale, y, f"+{more} MORE POSSIBLE SPECIES",
-                                scale, 9, HUD_MUTED)
-                y += 18 * scale
-        elif not specimens:
-            self._draw_text(canvas, 9 * scale, y, "NO MATCH IN PARTIAL HABITAT CATALOG",
-                            scale, 10, HUD_AMBER, True)
+                                self.clip_line(str(sample.get("species") or "BIO SAMPLE"), 31),
+                                scale, 10, HUD_GREEN, True)
+                value = sample.get("estimatedBaseValue")
+                self._draw_text(canvas, width - 9 * scale, y,
+                                f"~{int(value):,} CR" if type(value) is int else "UNKNOWN VALUE",
+                                scale, 10, HUD_CYAN if type(value) is int else HUD_AMBER, True, "ne")
+                y += 23 * scale
+        overview = body.get("genusOverview") if isinstance(body.get("genusOverview"), list) else []
+        if overview:
+            y += 8 * scale
+            verified = bool(body.get("confirmedGenuses"))
+            self._draw_text(canvas, 9 * scale, y,
+                            "DSS BIOLOGY · GENUS VALUE RANGES" if verified else "POSSIBLE GENERA · DSS UNCONFIRMED",
+                            scale, 9, HUD_MUTED, True)
             y += 22 * scale
+            for item in overview:
+                if not isinstance(item, dict):
+                    continue
+                exact = item.get("exact") is True
+                label = str(item.get("species") or item.get("genus") or "UNKNOWN GENUS")
+                low, high = item.get("minBase"), item.get("maxBase")
+                if type(low) is int and type(high) is int:
+                    amount = (f"~{low:,} CR" if low == high else f"~{low:,} - ~{high:,}")
+                else:
+                    amount = "RANGE UNKNOWN"
+                self._draw_text(canvas, 9 * scale, y, self.clip_line(label, 31),
+                                scale, 10, HUD_GREEN if exact else HUD_WHITE, True)
+                self._draw_text(canvas, width - 9 * scale, y, amount,
+                                scale, 9, HUD_CYAN if exact else HUD_MUTED, True, "ne")
+                y += 23 * scale
+                if item.get("rangeCoverage") == "unmodeled_genus":
+                    self._draw_text(canvas, 17 * scale, y, "HABITAT MODEL INCOMPLETE",
+                                    scale, 8, HUD_AMBER)
+                    y += 15 * scale
+        elif not specimens:
+            self._draw_text(canvas, 9 * scale, y, "NO DSS GENUS INTELLIGENCE YET",
+                            scale, 10, HUD_MUTED)
+            y += 20 * scale
         guide = bio_genetic_guidance(survey, status)
         canvas.create_line(9*scale, y+6*scale, width-9*scale, y+6*scale, fill=HUD_DIM)
         y += 19 * scale
@@ -6909,7 +6918,37 @@ class MongrelHudApp:
         self._draw_text(canvas, half + 8 * scale, y,
                         "Newly charted data · provisional" if active else "Awaiting expedition launch",
                         scale, 8, HUD_MUTED)
-        y += 29 * scale
+        y += 24 * scale
+        bio = expedition.get("exobiology") if isinstance(expedition.get("exobiology"), dict) else {}
+        self._draw_text(canvas, 10 * scale, y, "EXOBIOLOGY · EXPEDITION", scale, 9, HUD_CYAN, True)
+        if active:
+            self._draw_text(canvas, width - 10 * scale, y,
+                            f"{int(bio.get('completedSpecies') or 0)} COMPLETE",
+                            scale, 9, HUD_GREEN, True, "ne")
+        y += 20 * scale
+        if active:
+            self._draw_text(canvas, 10 * scale, y,
+                            f"COMPLETED BASE  ~{int(bio.get('estimatedBase') or 0):,} CR",
+                            scale, 10, HUD_WHITE, True)
+            y += 20 * scale
+            potential = int(bio.get("potentialTotal") or 0)
+            self._draw_text(canvas, 10 * scale, y,
+                            f"POSSIBLE FIRST-LOG TOTAL  ~{potential:,} CR",
+                            scale, 10, HUD_GREEN, True)
+            y += 20 * scale
+            self._draw_text(canvas, 10 * scale, y,
+                            f"VISTA SALES DURING EXPEDITION  {int(bio.get('confirmedVistaSales') or 0):,} CR",
+                            scale, 9, HUD_MUTED)
+            y += 18 * scale
+            self._draw_text(canvas, 10 * scale, y,
+                            "SALES NOT RECONCILED TO SAMPLE ORIGIN · DO NOT ADD",
+                            scale, 8, HUD_AMBER)
+            y += 18 * scale
+        else:
+            self._draw_text(canvas, 10 * scale, y, "START EXPEDITION TO TRACK BIO RETURNS",
+                            scale, 9, HUD_MUTED)
+            y += 20 * scale
+        y += 9 * scale
         canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
         y += 12 * scale
         scanned = max(0, int(survey.get("personallyScannedBodies") or 0))
