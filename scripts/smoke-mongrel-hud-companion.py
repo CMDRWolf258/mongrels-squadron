@@ -13,6 +13,13 @@ sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
 assert hud.APP_VERSION=="0.17.20"
+assert "exploration" in hud.VALID_PROFILES
+assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
+legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
+assert legacy["panels"]["surveyor"]["profiles"] == ["exploration"]
+assert legacy["panels"]["surveyor"]["visible"] is True
+custom = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["combat","navigation"]}}})
+assert custom["panels"]["surveyor"]["profiles"] == ["combat","navigation"]
 assert hud.SCOUT_STATE_URL=="http://127.0.0.1:43857/v1/state"
 assert hud.CONTROLLER_PORT==43858
 assert hud.CONTROLLER_HOSTNAME=="mongrel-hud.local"
