@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.14 and HUD 0.17.22 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.15 and HUD 0.17.23 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.14** and HUD **0.17.22**.
+5. Start EDMC, then test HUD. Check Scout **1.13.15** and HUD **0.17.23**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -96,7 +96,7 @@ control records observed UC quotes locally; its diagnostic comparison ratios
 Use the next TEST builds, not earlier 1.13.11/0.17.19 artifacts. This PR is
 unmerged and has no production auto-updater changes.
 
-## Discovery intel and payout feedback (Scout 1.13.14 / HUD 0.17.22)
+## Discovery intel and payout feedback (Scout 1.13.15 / HUD 0.17.23)
 
 The Exploration profile instruments draw only **one** title each. System telemetry
 shows Frontier journal first-arrival signals and clearly separates FSS counts
@@ -153,5 +153,30 @@ Reference:
 ## Isolated EDDiscovery link acceptance package
 
 This build uniquely identifies the optional read-only EDDiscovery localhost
-history bridge as Scout 1.13.14-TEST and HUD 0.17.22-TEST. Do not confuse it
+history bridge as Scout 1.13.15-TEST and HUD 0.17.23-TEST. Do not confuse it
 with the previous 1.13.13/0.17.21 build, which lacks the new local EDD link.
+
+## Prominent exploration alerts (Scout 1.13.15 / HUD 0.17.23 TEST)
+
+In the paired HUD controller choose **Exploration** and switch **Exploration Alerts**
+ON. The independent window stays hidden until a live Frontier journal event
+qualifies, then pulses for 12 seconds and remains visible for the current
+system visit; it clears on a new FSDJump/CarrierJump/Location. No new network
+polling, Cloudflare reads, audio changes or cartographic credit adjustments.
+
+- **FIRST DISCOVERY · SYSTEM / BODY** appears when a *new live personal Scan*
+  has `WasDiscovered=false`. It is a high-confidence journal indication, not
+  confirmed Cartographics first-claim credit. Historical scans, EDDiscovery
+  archives and community records cannot raise a live alert.
+- **HMC + BIOLOGICAL SIGNALS** appears when a journal-confirmed
+  `High metal content body` has at least one `FSSBodySignals` or
+  `SAASignalsFound` Biological signal. Either scan/event order works. Display
+  shows the signal count and makes **no claim** that it is Stratum Tectonicas,
+  first footfall, or any particular payout.
+- Each alert is deduplicated for the body on this system visit, with a
+  maximum of 16 local events retained and the 3 highest-priority shown in the
+  window. There is no artificial species estimate or auto-navigation.
+- On a fresh system, scan a genuinely new body or review a live HMC body with
+  bio signals. Verify prominence, clearing after departure, no repeat flashes
+  from identical events, and no changes to expedition credits. The default
+  overlay position can be moved after unlocking layout.
