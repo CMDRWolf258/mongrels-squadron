@@ -534,7 +534,24 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
     current = [dict(x) for x in samples.values() if isinstance(x, Mapping)]
     hmc = _text(body.get("planetClass")).casefold() in {"high metal content body", "high metal content world"}
     contains_stratum = any("stratum" in _text(g.get("name")).casefold() for g in confirmed)
+    for sample in current:
+        footfall_likely = body.get("ourFirstFootfall") is True
+        base = sample.get("estimatedBaseValue")
+        sample["footfallStatus"] = (
+            "first_footfall_indicated" if footfall_likely else
+            "previous_footfall_recorded" if body.get("wasFootfalled") is True else
+            "unverified"
+        )
+        # FIRST LOGGED (5x total) is not guaranteed by first footfall.
+        sample["firstLoggedBonusEstimate"] = base * 4 if isinstance(base, int) and footfall_likely else None
+        sample["firstLoggedTotalEstimate"] = base * 5 if isinstance(base, int) and footfall_likely else None
+        sample["bonusStatus"] = "possible_first_logged_not_guaranteed" if footfall_likely else "unverified"
     return {
+        "footfallStatus": (
+            "first_footfall_indicated" if body.get("ourFirstFootfall") is True else
+            "previous_footfall_recorded" if body.get("wasFootfalled") is True else
+            "unverified"
+        ),
         "bodyId": _text(body.get("bodyId")),
         "bodyName": _text(body.get("name")),
         "signals": count,
@@ -1126,7 +1143,7 @@ class Surveyor:
                             revalue_systems.add(record["address"])
                             if record["address"] == address:
                                 system.update(previous)
-            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound", "ScanOrganic"}:
+            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound", "ScanOrganic", "Disembark"}:
                 raw_id = event.get("Body") if kind == "ScanOrganic" else event.get("BodyID")
                 body_id = _text(raw_id) if raw_id is not None else ""
                 if body_id:
@@ -1166,6 +1183,8 @@ class Surveyor:
                                 # Preserve the original discovery/mapping condition;
                                 # repeat scans after personal mapping must not erase it.
                                 body[dest] = value
+                        if type(event.get("WasFootfalled")) is bool and body.get("wasFootfalled") is None:
+                            body["wasFootfalled"] = event["WasFootfalled"]
                         body["scanType"] = _text(event.get("ScanType"))
                         # Some versions of Scan contain verified Genuses before
                         # SAASignalsFound. Preserve that Frontier evidence.
@@ -1181,8 +1200,18 @@ class Surveyor:
                         if used is not None and target is not None:
                             body["mappingEfficiency"] = used <= target
                         body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
+                    elif kind == "Disembark":
+                        if event.get("OnPlanet") is True:
+                            if event.get("FirstFootfall") is True:
+                                body["ourFirstFootfall"] = True
+                            elif body.get("wasFootfalled") is False:
+                                # Prior Scan said no earlier footfall, and this
+                                # Commander stepped out onto that world.
+                                body["ourFirstFootfall"] = True
                     elif kind == "ScanOrganic":
                         _biological_apply(body, event, None if historic else position, address, timestamp)
+                        if body.get("wasFootfalled") is False and not historic:
+                            body["ourFirstFootfall"] = True
                         if not historic and address == active:
                             system["lastOrganicBodyId"] = body_id
                     else:
