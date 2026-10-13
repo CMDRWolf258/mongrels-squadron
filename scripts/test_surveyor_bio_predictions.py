@@ -16,7 +16,10 @@ assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-assert len(module.BIO_HABITAT_RULES) >= 20
+assert len(module.BIO_HABITAT_RULES) == 40
+assert len(module.BIO_HABITAT_SOURCES) == 8
+assert "stage3" in module.BIO_HABITAT_VERSION
+assert len({row[0] for row in module.BIO_HABITAT_RULES}) == 8
 assert len(module.BIO_GENETIC_DISTANCES_M) == 15
 assert module.BIO_GENETIC_DISTANCES_M["Aleoida"] == 150
 assert module.BIO_GENETIC_DISTANCES_M["Tubus"] == 800
@@ -151,4 +154,34 @@ with tempfile.TemporaryDirectory() as folder:
     assert again["exobiology"]["habitatRuleCount"] == len(module.BIO_HABITAT_RULES)
     assert again["exobiology"]["distanceSource"].startswith("https://")
 
-print("Mongrel biological intelligence PASSED (HMC, DSS, stars, exclusions, evidence, restart)")
+# Expansion fixtures grounded in DSN's individual species atmosphere tables.
+def predict_body(planet="Rocky body",atmosphere="thin Argon",temperature=189,gravity=1.5):
+    return module._bio_predict({
+        "planetClass":planet, "atmosphere":atmosphere,
+        "surfaceTemperature":temperature, "surfaceGravity":gravity,
+        "landable":True, "signals":[{"type":"Biological","count":1}],
+    })["candidates"]
+
+argon={x["species"] for x in predict_body()}
+assert "Bacterium Vesicula" in argon
+assert "Fungoida Bullarum" in argon
+assert "Bacterium Aurasus" not in argon
+co2={x["species"] for x in predict_body(atmosphere="thin Carbon dioxide")}
+assert "Bacterium Aurasus" in co2 and "Cactoida Cortexum" in co2
+assert "Cactoida Pullulanta" in co2 and "Fungoida Gelata" in co2
+cold_co2={x["species"] for x in predict_body(atmosphere="thin Carbon dioxide",temperature=170)}
+assert "Cactoida Cortexum" not in cold_co2
+assert "Fungoida Gelata" not in cold_co2
+water={x["species"] for x in predict_body(atmosphere="thin Water",temperature=155)}
+assert "Cactoida Vermis" in water and "Fungoida Gelata" in water
+ammonia={x["species"] for x in predict_body(atmosphere="thin Ammonia")}
+assert "Fungoida Setisis" in ammonia
+assert "Cactoida Lapis" in ammonia
+dense={x["species"] for x in predict_body(atmosphere="Carbon dioxide")}
+assert not dense, "A dense atmosphere must not be treated as Odyssey thin"
+high_g={x["species"] for x in predict_body(atmosphere="thin Argon",gravity=4)}
+assert "Fungoida Bullarum" not in high_g
+assert "Bacterium Vesicula" in high_g # no unsupported Bacterium gravity ceiling
+for x in predict_body():
+    assert x["sourceUrl"] in module.BIO_HABITAT_SOURCES.values()
+print("Mongrel biological intelligence PASSED (8 genera / 40 rules; HMC, DSS, habitat exclusions, restart)")
