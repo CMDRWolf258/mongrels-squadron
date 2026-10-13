@@ -216,6 +216,24 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   </div>
   </section>
 
+  <div class="card" id="surveyorExpeditionCard">
+    <h2>SURVEYOR · EXPEDITION CONTROL</h2>
+    <div class="layout-hint">Private to Serenity. Expedition earnings count only new journal-confirmed scans and DSS gains after Start Exploration. Visiting a system never counts as a scan.</div>
+    <div class="grid">
+      <div><small>CURRENT SYSTEM · OBSERVED</small><strong id="surveyorCurrentEstimate">—</strong><div class="layout-hint">May include data previously sold</div></div>
+      <div><small>EXPEDITION · SINCE START</small><strong id="surveyorExpeditionEstimate">—</strong><div class="layout-hint">New eligible work only · estimated</div></div>
+    </div>
+    <div class="layout-hint" id="surveyorExpeditionStatus">Waiting for Scout's local Surveyor ledger.</div>
+    <div class="layout-actions">
+      <button type="button" id="surveyorStart">START EXPLORATION</button>
+      <button type="button" id="surveyorEnd">END EXPEDITION</button>
+      <button type="button" id="surveyorMark">ALREADY EXPLORED</button>
+      <button type="button" id="surveyorUndo">UNDO EXCLUSION</button>
+    </div>
+    <div class="notice" id="surveyorExpeditionNotice"></div>
+    <div class="layout-hint">Already Explored excludes earnings recorded before you press it in the current system. Fresh scans and DSS mapping afterward still count. Undo restores the excluded expedition credits. Existing historical scans remain in Surveyor's local ledger.</div>
+  </div>
+
   <div class="card">
     <h2>OVERLAY LAYOUT</h2>
     <div class="layout-actions"><button type="button" id="overlayMaster">OVERLAY ON</button><button type="button" id="layoutLock">UNLOCK LAYOUT</button><button type="button" id="layoutReset">RESET LAYOUT</button></div>
@@ -464,9 +482,35 @@ function renderScoutNetwork(scout){
   if(!html)html='<div class="layout-hint">No open Scout jobs are currently listed.</div>';
   if(el("scoutNetworkJobs").innerHTML!==html)el("scoutNetworkJobs").innerHTML=html;
 }
+function renderSurveyorControls(){
+  var survey=(state&&state.scout&&state.scout.exploration)||{};
+  var system=survey.system||{},exp=survey.expedition||{};
+  var active=exp.active===true,excluded=exp.existingDataExcluded===true;
+  var current=survey.currentSystemEstimate;
+  setText(el("surveyorCurrentEstimate"),typeof current==="number"?current.toLocaleString()+" CR":"UNVALUED");
+  setText(el("surveyorExpeditionEstimate"),active?Number(exp.estimate||0).toLocaleString()+" CR":"NOT STARTED");
+  setText(el("surveyorExpeditionStatus"),active?("ACTIVE · "+String(system.name||"Unknown system")+(excluded?" · PRIOR DATA EXCLUDED":"")+" · "+Number(exp.countedScans||0)+" scans / "+Number(exp.countedMaps||0)+" maps counted"):("STANDBY · Start a new expedition when ready"));
+  el("surveyorStart").disabled=active;
+  el("surveyorEnd").disabled=!active;
+  el("surveyorMark").disabled=!active||excluded||!system.address;
+  el("surveyorUndo").disabled=!active||!excluded;
+}
+async function surveyorAction(action){
+  holdRefresh(1200);
+  try{
+    var response=await api("/api/surveyor",{action:action});
+    if(!response.ok)throw new Error(String(response.error||"surveyor_action_failed"));
+    state=state||{};state.scout=state.scout||{};
+    if(response.exploration)state.scout.exploration=response.exploration;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),({start:"Expedition started",end:"Expedition ended",mark_existing:"Previous data excluded; future discoveries count",undo_existing:"Exclusion undone"})[action]||"Saved");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
+}
+
 function render(){
   if(!state)return;
   renderRouteControls();
+  renderSurveyorControls();
   var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
   el("connection").textContent=(state.connected?"Scout connected":"Scout waiting")+(safePanelErrors.length?" · Panel errors: "+safePanelErrors.map(function(row){return row.panel+" ("+row.errorType+")"}).join(", "):"");
   var trade=(state.scout&&state.scout.tradeActivity)||{};
@@ -987,6 +1031,10 @@ document.querySelectorAll("[data-voice-cue]").forEach(function(row){
 });
 document.addEventListener("touchstart",function(){holdRefresh(1200)},{passive:true});
 document.addEventListener("pointerdown",function(){holdRefresh(900)},{passive:true});
+el("surveyorStart").onclick=function(){surveyorAction("start")};
+el("surveyorEnd").onclick=function(){if(confirm("End this expedition? Recorded exploration data stays in the private ledger."))surveyorAction("end")};
+el("surveyorMark").onclick=function(){if(confirm("Exclude existing expedition earnings in this system? New scans and mappings will still count."))surveyorAction("mark_existing")};
+el("surveyorUndo").onclick=function(){surveyorAction("undo_existing")};
 el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
 el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {locked:layout.locked===false}});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
 el("layoutReset").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout-reset",{});applyLayoutResult(r,"Layout positions reset")}catch(e){showLayoutStatus("Layout reset failed · "+e.message,true)}};
