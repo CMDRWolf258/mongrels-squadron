@@ -210,6 +210,26 @@ def _biological_position(position: Any, *, body_name: str, system_address: str,
     return {"latitude": lat, "longitude": lon, "radius": radius, "observedAt": _text(position.get("timestamp"))}
 
 
+def _bio_active_species_id(body: Mapping[str, Any]) -> str:
+    """Upgrade old local records without resuming abandoned specimens on new data.
+
+    Pre-feature SQLite bodies do not have bioActiveSpeciesId. Use the latest
+    incomplete record exactly once as the best supported prior active scan.
+    After any new Log/Analyse the explicit marker is authoritative.
+    """
+    if "bioActiveSpeciesId" in body:
+        return _text(body.get("bioActiveSpeciesId"))
+    rows = body.get("bioSamples")
+    if not isinstance(rows, Mapping):
+        return ""
+    partial = [(key, row) for key, row in rows.items()
+               if isinstance(row, Mapping) and not row.get("completed")
+               and 0 < int(row.get("samples") or 0) < 3]
+    if not partial:
+        return ""
+    return str(max(partial, key=lambda pair: _text(pair[1].get("lastScanAt")))[0])
+
+
 def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
                       position: Any, system_address: str, timestamp: str) -> None:
     genus_id, species_id, genus, species = _biological_identity(event)
@@ -218,6 +238,8 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
         return
     rows = body.get("bioSamples")
     rows = dict(rows) if isinstance(rows, dict) else {}
+    if "bioActiveSpeciesId" not in body:
+        body["bioActiveSpeciesId"] = _bio_active_species_id(body)
     # The genetic sampler carries one active species. A new first sample
     # discards any earlier unfinished species; completed organisms remain.
     if kind == "log" and body.get("bioActiveSpeciesId") != species_id:
@@ -637,7 +659,7 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
         "signals": count,
         "confirmedGenuses": confirmed,
         "sampledSpecies": current,
-        "activeSpeciesId": _text(body.get("bioActiveSpeciesId")),
+        "activeSpeciesId": _bio_active_species_id(body),
         "genusOverview": _bio_species_by_genus(body),
         "identification": "dss_genuses_confirmed" if confirmed else "species_observed" if current else "signals_only",
         "hmcBiologicalOpportunity": hmc and count > 0,
