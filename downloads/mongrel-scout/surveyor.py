@@ -980,6 +980,11 @@ class Surveyor:
                     details TEXT NOT NULL, timestamp TEXT NOT NULL,
                     PRIMARY KEY(commander,digest)
                 );
+                CREATE TABLE IF NOT EXISTS expedition_bio_sales (
+                    expedition_id INTEGER NOT NULL, digest TEXT NOT NULL,
+                    amount INTEGER NOT NULL, timestamp TEXT NOT NULL,
+                    PRIMARY KEY(expedition_id,digest)
+                );
                 CREATE TABLE IF NOT EXISTS expedition_bio_credits (
                     expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
                     body_id TEXT NOT NULL, species_id TEXT NOT NULL,
@@ -1168,9 +1173,8 @@ class Surveyor:
             if origin.get("ourFirstFootfall") is True:
                 bio_bonus += base * 4  # possible first-logged, NEVER guaranteed
         sold = conn.execute(
-            "SELECT COALESCE(SUM(base+bonus),0) FROM bio_sales "
-            "WHERE commander=? AND timestamp>=?",
-            (commander, session["started_at"]),
+            "SELECT COALESCE(SUM(amount),0) FROM expedition_bio_sales "
+            "WHERE expedition_id=?", (session["id"],),
         ).fetchone()[0]
         return {
             "active": True, "startedAt": session["started_at"],
@@ -1225,6 +1229,13 @@ class Surveyor:
                         (commander, digest, base, bonus,
                          json.dumps(rows, separators=(",", ":")), _text(event.get("timestamp"))),
                     )
+                    session = self._active_expedition(conn, commander)
+                    timestamp = _text(event.get("timestamp"))
+                    if session is not None and not historic and timestamp >= session["started_at"]:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO expedition_bio_sales VALUES (?,?,?,?)",
+                            (session["id"], digest, base+bonus, timestamp),
+                        )
                 # A station sale has NO originating body/system address.
                 # Record confirmed cash but do not guess which body to clear.
                 return self._snapshot(conn, commander, active)
