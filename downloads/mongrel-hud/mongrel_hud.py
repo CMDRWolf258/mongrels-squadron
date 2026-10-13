@@ -3785,13 +3785,13 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
-    def surveyor_control(self, action: str) -> dict[str, Any]:
+    def surveyor_control(self, action: str, value: Any = None) -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
-        if action not in {"start", "end", "mark_existing", "undo_existing"}:
+        if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote"}:
             raise ValueError("invalid_expedition_action")
         request = urllib.request.Request(
             SCOUT_SURVEYOR_CONTROL_URL,
-            data=json.dumps({"action": action}, separators=(",", ":")).encode("utf-8"),
+            data=json.dumps({"action": action, "value": value}, separators=(",", ":")).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
                 "Accept": "application/json",
@@ -3801,11 +3801,13 @@ class MongrelHudApp:
         )
         result = request_scout_json(request, "surveyor_control_failed")
         observation = result.get("exploration") if isinstance(result, dict) else None
-        if isinstance(observation, dict):
-            with self.lock:
-                if not isinstance(self.snapshot.data, dict):
-                    self.snapshot.data = {}
+        with self.lock:
+            if not isinstance(self.snapshot.data, dict):
+                self.snapshot.data = {}
+            if isinstance(observation, dict):
                 self.snapshot.data["exploration"] = observation
+            if "communityEnabled" in result:
+                self.snapshot.data["explorationCommunityEnabled"] = bool(result["communityEnabled"])
         return result
 
     def shared_mining_health(self) -> dict[str, Any]:
@@ -7316,7 +7318,7 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/surveyor":
-                    result = app.surveyor_control(str(body.get("action") or ""))
+                    result = app.surveyor_control(str(body.get("action") or ""), body.get("value"))
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
                 elif path == "/api/alert-ack":
