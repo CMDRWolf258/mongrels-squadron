@@ -85,6 +85,12 @@ status/journal tests and then one coordinated owner gameplay test.
   outside this scoped catalog until precise subclass requirements and
   geological signal data can be verified. This is a coverage gap, not a
   claim of absence from the planet.
+- DSN's published Vista Genomics table now supplies explicit **base** values
+  for all 40 modeled species; the catalog may contain additional sold-species
+  references even if no habitat prediction is available:
+  https://ed-dsn.net/en/vista-genomics-values/
+  Bonus awards remain unknown until Frontier SaleOrganicData, and any
+  candidate value is merely the base for *one possible species*.
 - Cactoida/Fungoida require compatible thin atmosphere and (where relevant)
   gravity <=0.27g; CO2 Fungoida Gelata/Stabitis additionally need
   180-195 K, but water-atmosphere cases do not use those CO2 limits.
