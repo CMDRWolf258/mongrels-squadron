@@ -826,6 +826,18 @@ def _mapping_advisor(bodies: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _countable_fss_body(body: Mapping[str, Any]) -> bool:
+    """Asteroid-belt cluster Scan records are NOT FSS stellar-body counts."""
+    name = _text(body.get("name")).casefold()
+    star = _text(body.get("starType")).casefold()
+    klass = _text(body.get("planetClass")).casefold()
+    return not (
+        "belt cluster" in name or "asteroid cluster" in name
+        or "belt cluster" in klass or "asteroid cluster" in klass
+        or star in {"asteroidcluster", "beltcluster"}
+    )
+
+
 class Surveyor:
     SURVEY_EVENTS = SURVEY_EVENTS
 
@@ -1385,18 +1397,6 @@ class Surveyor:
                 "SELECT active_address FROM meta WHERE commander=?", (_text(commander),)
             ).fetchone()
             return self._snapshot(conn, _text(commander), row["active_address"] if row else "")
-
-def _countable_fss_body(body: Mapping[str, Any]) -> bool:
-    """Asteroid-belt cluster Scan records are NOT FSS stellar-body counts."""
-    name = _text(body.get("name")).casefold()
-    star = _text(body.get("starType")).casefold()
-    klass = _text(body.get("planetClass")).casefold()
-    return not (
-        "belt cluster" in name or "asteroid cluster" in name
-        or "belt cluster" in klass or "asteroid cluster" in klass
-        or star in {"asteroidcluster", "beltcluster"}
-    )
-
 
     def _snapshot(self, conn: sqlite3.Connection, commander: str, active: str) -> dict[str, Any]:
         current = self._load(conn, "systems", commander, active) if active else {}
