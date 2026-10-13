@@ -21,6 +21,7 @@ SURVEY_EVENTS = frozenset({
     "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
     "FSSAllBodiesFound", "Scan", "SAAScanComplete", "FSSBodySignals",
     "SAASignalsFound", "SellExplorationData", "MultiSellExplorationData",
+    "ScanOrganic", "SellOrganicData",
 })
 PLANET_K = {
     "Metal rich body": (21790, 105678),
@@ -74,6 +75,166 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
     })
     system["explorationAlerts"] = entries[-16:]
 
+
+
+# Frontier journal schema: ScanOrganic(Log/Sample/Analyse), SAASignalsFound.Genuses,
+# SellOrganicData.BioData. Source: Frontier Journal Manual v37, Odyssey sections.
+# Values below are a deliberately small, individually attributable reference set,
+# NOT a complete BioInsights prediction model. Unknown values remain UNKNOWN.
+# 2025-26 community references: INARA biological survey reports and ED journal.
+BIO_REFERENCE_VALUES = {
+    "Stratum Tectonicas": 19010800,
+    "Stratum Paleas": 1362000,
+    "Tubus Conifer": 2415500,
+    "Bacterium Aurasus": 1000000,
+    "Fungoida Gelata": 3330300,
+    "Cactoida Pullulanta": 3667600,
+}
+BIO_REFERENCE_MODEL = "community-reference-partial-2026-10"
+# Only distances independently established for these genera are exposed.
+BIO_GENETIC_DISTANCES_M = {"Stratum": 500, "Bacterium": 500, "Osseus": 800, "Electricae": 1000}
+
+
+def _biological_name(raw: Any, local: Any = None) -> str:
+    # A Frontier $Codex_ token is an identifier, not a human-readable species.
+    name = _text(local)
+    if name:
+        return name[:120]
+    value = _text(raw)
+    return value[:120] if value and not value.startswith("$") else ""
+
+
+def _biological_identity(event: Mapping[str, Any]) -> tuple[str, str, str, str]:
+    genus_id = _text(event.get("Genus"))[:120]
+    species_id = _text(event.get("Species"))[:120]
+    genus = _biological_name(genus_id, event.get("Genus_Localised"))
+    species = _biological_name(species_id, event.get("Species_Localised"))
+    return genus_id, species_id, genus, species
+
+
+def _biological_genuses(rows: Any) -> list[dict[str, str]]:
+    found: list[dict[str, str]] = []
+    if isinstance(rows, list):
+        for item in rows[:64]:
+            if not isinstance(item, Mapping):
+                continue
+            token = _text(item.get("Genus"))[:120]
+            name = _biological_name(token, item.get("Genus_Localised"))
+            if token and not any(x["id"] == token for x in found):
+                found.append({"id": token, "name": name})
+    return found
+
+
+def _biological_position(position: Any, *, body_name: str, system_address: str,
+                         timestamp: str) -> dict[str, Any] | None:
+    """Only attach a live on-foot Status position with matching body/system/time.
+
+    Older journals do not contain authoritative scan coordinates. Unknown
+    geometry stays unknown rather than pretending it is ready for next sample.
+    """
+    if not isinstance(position, Mapping) or not body_name:
+        return None
+    if (position.get("systemAddress") != system_address or
+        _text(position.get("bodyName")).casefold() != body_name.casefold() or
+        position.get("onFootOnPlanet") is not True or position.get("hasLatLong") is not True):
+        return None
+    try:
+        t1 = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        t2 = datetime.fromisoformat(_text(position.get("timestamp")).replace("Z", "+00:00"))
+        if abs((t1 - t2).total_seconds()) > 15:
+            return None
+    except (ValueError, TypeError, OverflowError):
+        return None
+    lat, lon, radius = (_number(position.get(k)) for k in ("latitude", "longitude", "planetRadius"))
+    if lat is None or lon is None or radius is None or not (-90 <= lat <= 90 and -180 <= lon <= 180 and radius > 0):
+        return None
+    return {"latitude": lat, "longitude": lon, "radius": radius, "observedAt": _text(position.get("timestamp"))}
+
+
+def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
+                      position: Any, system_address: str, timestamp: str) -> None:
+    genus_id, species_id, genus, species = _biological_identity(event)
+    kind = _text(event.get("ScanType")).casefold()
+    if not species_id or kind not in {"log", "sample", "analyse"}:
+        return
+    rows = body.get("bioSamples")
+    rows = dict(rows) if isinstance(rows, dict) else {}
+    # Species token is stable across localization changes; one species/body.
+    record = dict(rows.get(species_id) or {})
+    if record.get("completed") and kind != "analyse":
+        return
+    progress = {"log": 1, "sample": 2, "analyse": 3}[kind]
+    existing = int(record.get("samples") or 0)
+    if kind == "sample" and existing < 1:
+        # Missing first journal sample: stage is not independently proven.
+        progress = 0
+    elif kind == "analyse":
+        progress = 3  # completion is authoritative even if earlier events missing
+    record.update({
+        "genusId": genus_id, "speciesId": species_id, "genus": genus,
+        "species": species, "variant": _biological_name(event.get("Variant"), event.get("Variant_Localised")),
+        "samples": max(existing, progress),
+        "completed": kind == "analyse" or bool(record.get("completed")),
+        "lastScanAt": timestamp,
+        "estimatedBaseValue": BIO_REFERENCE_VALUES.get(species),
+        "valuationSource": BIO_REFERENCE_MODEL if species in BIO_REFERENCE_VALUES else "unknown",
+        "geneticDistanceMeters": BIO_GENETIC_DISTANCES_M.get(genus),
+    })
+    place = _biological_position(position, body_name=_text(body.get("name")),
+                                 system_address=system_address, timestamp=timestamp)
+    if place and kind in {"log", "sample", "analyse"}:
+        positions = list(record.get("samplePositions") or [])
+        if len(positions) < 3:
+            positions.append(place)
+            record["samplePositions"] = positions
+    rows[species_id] = record
+    body["bioSamples"] = rows
+
+
+def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
+    count = _bio_signal_count(body)
+    samples = body.get("bioSamples") if isinstance(body.get("bioSamples"), dict) else {}
+    genera = body.get("biologicalGenuses") if isinstance(body.get("biologicalGenuses"), list) else []
+    if not count and not genera and not samples:
+        return None
+    confirmed = [dict(x) for x in genera if isinstance(x, Mapping)]
+    current = [dict(x) for x in samples.values() if isinstance(x, Mapping)]
+    hmc = _text(body.get("planetClass")).casefold() in {"high metal content body", "high metal content world"}
+    contains_stratum = any("stratum" in _text(g.get("name")).casefold() for g in confirmed)
+    return {
+        "bodyId": _text(body.get("bodyId")),
+        "bodyName": _text(body.get("name")),
+        "signals": count,
+        "confirmedGenuses": confirmed,
+        "sampledSpecies": current,
+        "identification": "dss_genuses_confirmed" if confirmed else "species_observed" if current else "signals_only",
+        "hmcBiologicalOpportunity": hmc and count > 0,
+        "possibleStratum": hmc and count > 0 and not confirmed,
+        "confirmedStratumGenus": contains_stratum,
+        "predictionCertainty": "species_confirmed" if current else "genus_confirmed_species_unknown" if confirmed else "unresolved",
+        "estimatedCompleteBase": sum(int(x.get("estimatedBaseValue") or 0) for x in current if x.get("completed")),
+        "knownValueCoverage": sum(bool(x.get("completed") and x.get("estimatedBaseValue") is not None) for x in current),
+    }
+
+
+def _biological_sale_rows(event: Mapping[str, Any]) -> tuple[list[dict[str, Any]], int, int]:
+    entries = event.get("BioData")
+    base = bonus = 0
+    rows: list[dict[str, Any]] = []
+    if not isinstance(entries, list):
+        return [], 0, 0
+    for item in entries[:300]:
+        if not isinstance(item, Mapping):
+            continue
+        value, extra = _int(item.get("Value")), _int(item.get("Bonus"))
+        if value is None or extra is None or min(value, extra) < 0:
+            continue
+        _gid, sid, genus, species = _biological_identity(item)
+        rows.append({"speciesId": sid, "genus": genus, "species": species,
+                     "value": value, "bonus": extra})
+        base += value
+        bonus += extra
+    return rows, base, bonus
 
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip()
@@ -368,6 +529,12 @@ class Surveyor:
                     marked_at TEXT NOT NULL, cutoff_rowid INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY(expedition_id, address)
                 );
+                CREATE TABLE IF NOT EXISTS bio_sales (
+                    commander TEXT NOT NULL, digest TEXT NOT NULL,
+                    base INTEGER NOT NULL, bonus INTEGER NOT NULL,
+                    details TEXT NOT NULL, timestamp TEXT NOT NULL,
+                    PRIMARY KEY(commander,digest)
+                );
                 CREATE TABLE IF NOT EXISTS carto_reference (
                     commander TEXT NOT NULL,
                     address TEXT NOT NULL,
@@ -539,7 +706,8 @@ class Surveyor:
         }
 
     def apply(self, commander: str, event: Mapping[str, Any], fallback_system: str = "",
-              fallback_address: Any = None, *, historic: bool = False) -> dict[str, Any] | None:
+              fallback_address: Any = None, *, historic: bool = False,
+              position: Any = None) -> dict[str, Any] | None:
         kind = _text(event.get("event"))
         commander = _text(commander)
         if not commander or kind not in SURVEY_EVENTS:
@@ -564,6 +732,17 @@ class Surveyor:
                     (commander, address),
                 )
                 active = address
+            if kind == "SellOrganicData":
+                rows, base, bonus = _biological_sale_rows(event)
+                if rows:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO bio_sales VALUES (?,?,?,?,?,?)",
+                        (commander, digest, base, bonus,
+                         json.dumps(rows, separators=(",", ":")), _text(event.get("timestamp"))),
+                    )
+                # A station sale has NO originating body/system address.
+                # Record confirmed cash but do not guess which body to clear.
+                return self._snapshot(conn, commander, active)
             if not address:
                 return self._snapshot(conn, commander, active)
             system = self._load(conn, "systems", commander, address)
@@ -613,8 +792,8 @@ class Surveyor:
                             revalue_systems.add(record["address"])
                             if record["address"] == address:
                                 system.update(previous)
-            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound"}:
-                raw_id = event.get("BodyID")
+            if kind in {"Scan", "SAAScanComplete", "FSSBodySignals", "SAASignalsFound", "ScanOrganic"}:
+                raw_id = event.get("Body") if kind == "ScanOrganic" else event.get("BodyID")
                 body_id = _text(raw_id) if raw_id is not None else ""
                 if body_id:
                     body = self._load(conn, "bodies", commander, address, body_id)
@@ -652,7 +831,12 @@ class Surveyor:
                         if used is not None and target is not None:
                             body["mappingEfficiency"] = used <= target
                         body["lastDataAcquiredAt"] = max(timestamp, _text(body.get("lastDataAcquiredAt")))
+                    elif kind == "ScanOrganic":
+                        _biological_apply(body, event, None if historic else position, address, timestamp)
                     else:
+                        if kind == "SAASignalsFound" and isinstance(event.get("Genuses"), list):
+                            body["biologicalGenuses"] = _biological_genuses(event["Genuses"])
+                            body["genusSource"] = "Frontier SAASignalsFound"
                         signals = event.get("Signals")
                         if isinstance(signals, list):
                             body["signals"] = [
@@ -874,10 +1058,33 @@ class Surveyor:
         # Powerplay and sale-context factors that vary by system.
         # Do not silently multiply unrelated worlds by a global factor.
         median_reference_ratio = ratios[len(ratios) // 2] if len(ratios) >= 3 else None
+        bio_rows = [_biological_opportunity(body) for body in bodies]
+        bio_rows = [row for row in bio_rows if row is not None]
+        # Confirmed sale accounting is independent from UC cartographics.
+        bio_sales = conn.execute(
+            "SELECT COALESCE(SUM(base),0) AS base, COALESCE(SUM(bonus),0) AS bonus, "
+            "COUNT(*) AS count FROM bio_sales WHERE commander=?", (commander,)
+        ).fetchone()
         current_raw = sum(known_current) if known_current else None
         estimated_quote = current_raw
         return {
             "schemaVersion": 1,
+            "exobiology": {
+                "source": "frontier_journal_local",
+                "model": BIO_REFERENCE_MODEL,
+                "valueCatalogComplete": False,
+                "biologicalBodies": bio_rows[:60],
+                "biologicalBodiesTruncated": max(0, len(bio_rows) - 60),
+                "confirmedSalesLifetime": bio_sales["base"] + bio_sales["bonus"],
+                "confirmedBaseLifetime": bio_sales["base"],
+                "confirmedBonusLifetime": bio_sales["bonus"],
+                "saleEvents": bio_sales["count"],
+                "outstandingEstimate": None,
+                "outstandingStatus": "not_reconciled_by_origin",
+                "currentSystemCompletedEstimate": sum(row["estimatedCompleteBase"] for row in bio_rows),
+                "currentSystemValuedCompletedCount": sum(row["knownValueCoverage"] for row in bio_rows),
+                "note": "Species not identified until organic journal observation; genus and signals are separate evidence. Sales lack body identity.",
+            },
             "source": "frontier_journal_local",
             "commander": commander,
             "system": current or None,

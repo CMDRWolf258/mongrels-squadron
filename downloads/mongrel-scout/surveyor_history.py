@@ -131,7 +131,7 @@ def import_recent_journals(surveyor: Any, commander: str, journal_dir: str | Pat
                     # SystemAddress; they need a prior explicit location.
                     event_address = event.get("SystemAddress")
                     resolved = str(event_address) if event_address is not None else address
-                    if not resolved or not resolved.isdigit():
+                    if (not resolved or not resolved.isdigit()) and kind != "SellOrganicData":
                         stats["skipped"] += 1
                         continue
                     try:
