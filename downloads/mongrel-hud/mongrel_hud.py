@@ -6285,6 +6285,132 @@ class MongrelHudApp:
             return width, round(y + 42 * scale)
         system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
         expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
+        if panel == "surveyor_dss":
+            width = round(525 * scale)
+            y = self._draw_title(canvas, "DSS TARGET DIRECTOR", scale, width)
+            self._draw_text(canvas, 9 * scale, y,
+                            self.clip_line(system.get("name") or "NO SYSTEM FIX", 43),
+                            scale, 11, HUD_WHITE, True)
+            y += 26 * scale
+            advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
+            targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+            self._draw_text(canvas, 9 * scale, y,
+                            "SCAN CONFIRMED · GAIN / ARRIVAL DISTANCE",
+                            scale, 9, HUD_MUTED, True)
+            y += 22 * scale
+            if not targets:
+                self._draw_text(canvas, 9 * scale, y, "NO VALUED MAPPING TARGETS", scale, 12, HUD_AMBER, True)
+                y += 27 * scale
+                self._draw_text(canvas, 9 * scale, y, "COMPLETE FSS SURVEY TO ACQUIRE TARGETS",
+                                scale, 9, HUD_MUTED)
+                y += 24 * scale
+            for row in targets[:3]:
+                if not isinstance(row, dict):
+                    continue
+                rank = int(row.get("rank") or 0)
+                priority = str(row.get("tier") or "low").upper()
+                self._draw_text(canvas, 9 * scale, y, f"0{rank}" if rank < 10 else str(rank),
+                                scale, 20, HUD_CYAN, True)
+                self._draw_text(canvas, 55 * scale, y,
+                                self.clip_line(row.get("name") or "UNRESOLVED WORLD", 40),
+                                scale, 11, HUD_WHITE, True)
+                y += 24 * scale
+                dist = row.get("distanceLs")
+                distance = f"{dist:,.0f} LS" if isinstance(dist, (int, float)) else "DIST UNKNOWN"
+                low, high = row.get("dssGainMin"), row.get("dssGainMax")
+                gain = f"+{int(low):,}—{int(high):,} CR" if isinstance(low, (int, float)) and isinstance(high, (int, float)) else "UNVALUED"
+                self._draw_text(canvas, 55 * scale, y, gain, scale, 12, HUD_GREEN, True)
+                self._draw_text(canvas, width - 9 * scale, y, distance, scale, 10, HUD_CYAN, True, "ne")
+                y += 21 * scale
+                self._draw_text(canvas, 55 * scale, y, self.clip_line(row.get("planetClass") or "PLANET", 32),
+                                scale, 9, HUD_MUTED)
+                self._draw_text(canvas, width - 9 * scale, y, priority + " RETURN",
+                                scale, 9, HUD_AMBER if priority == "HIGH" else HUD_MUTED, True, "ne")
+                y += 19 * scale
+                canvas.create_line(9 * scale, y, width - 9 * scale, y, fill=HUD_DIM)
+                y += 13 * scale
+            extra = max(0, int(advisor.get("eligibleCount") or 0) - 3)
+            if extra:
+                self._draw_text(canvas, 55 * scale, y, f"{extra} FURTHER CANDIDATES", scale, 9, HUD_MUTED, True)
+                y += 23 * scale
+            self._draw_text(canvas, 9 * scale, y, "RECOMMENDATIONS ARE PROVISIONAL · NOT ETA",
+                            scale, 8, HUD_AMBER)
+            return width, round(y + 22 * scale)
+        if panel == "surveyor_body":
+            width = round(505 * scale)
+            y = self._draw_title(canvas, "BODY INTELLIGENCE", scale, width)
+            bodies = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
+            status = state.get("status") if isinstance(state.get("status"), dict) else {}
+            destination = status.get("destination") if isinstance(status.get("destination"), dict) else {}
+            sysaddr = str(system.get("address") or "")
+            destination_valid = not destination.get("systemAddress") or str(destination.get("systemAddress")) == sysaddr
+            selected_id = destination.get("bodyId") if destination_valid else None
+            selected_name = str(destination.get("name") or "").strip().casefold() if destination_valid else ""
+            focused = None
+            selection = "DESTINATION TARGET"
+            for body in bodies:
+                if not isinstance(body, dict):
+                    continue
+                if selected_id is not None and str(body.get("bodyId") or "") == str(selected_id):
+                    focused = body
+                    break
+                if selected_name and str(body.get("name") or "").strip().casefold() == selected_name:
+                    focused = body
+                    break
+            if focused is None:
+                focus_id = system.get("lastSurveyedBodyId")
+                focused = next((b for b in bodies if isinstance(b, dict) and focus_id is not None
+                                and str(b.get("bodyId")) == str(focus_id)), None)
+                selection = "LAST JOURNAL SCAN" if focused else "NO TARGET ACQUIRED"
+            if focused is None:
+                self._draw_text(canvas, 9 * scale, y, "NO BODY TARGET ACQUIRED", scale, 13, HUD_AMBER, True)
+                y += 29 * scale
+                self._draw_text(canvas, 9 * scale, y, "SELECT A KNOWN BODY OR PERFORM A FSS SCAN",
+                                scale, 9, HUD_MUTED)
+                y += 23 * scale
+                self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY TELEMETRY · AWAITING BODY SIGNALS",
+                                scale, 9, HUD_MUTED)
+                return width, round(y + 25 * scale)
+            self._draw_text(canvas, 9 * scale, y, selection, scale, 9, HUD_CYAN, True)
+            y += 21 * scale
+            self._draw_text(canvas, 9 * scale, y,
+                            self.clip_line(focused.get("name") or "UNNAMED BODY", 43),
+                            scale, 13, HUD_WHITE, True)
+            y += 28 * scale
+            cls = str(focused.get("planetClass") or focused.get("starType") or "UNCLASSIFIED BODY")
+            self._draw_text(canvas, 9 * scale, y, self.clip_line(cls.upper(), 43), scale, 10, HUD_CYAN, True)
+            y += 23 * scale
+            distance = focused.get("distanceLs")
+            dist = f"{distance:,.0f} LS" if isinstance(distance, (int, float)) else "DISTANCE UNKNOWN"
+            self._draw_text(canvas, 9 * scale, y, "ARRIVAL RANGE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, width - 9 * scale, y, dist, scale, 10, HUD_WHITE, True, "ne")
+            y += 21 * scale
+            mapped = bool(focused.get("personallyMapped"))
+            self._draw_text(canvas, 9 * scale, y,
+                            "DSS SURVEY COMPLETE" if mapped else "DSS SURVEY PENDING",
+                            scale, 10, HUD_GREEN if mapped else HUD_AMBER, True)
+            y += 24 * scale
+            value = focused.get("currentValue")
+            self._draw_text(canvas, 9 * scale, y, "CURRENT RECORDED VALUE", scale, 9, HUD_MUTED, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            f"{int(value):,} CR" if isinstance(value, (float, int)) else "UNVALUED",
+                            scale, 12, HUD_CYAN, True, "ne")
+            y += 28 * scale
+            biological = 0
+            for signal in focused.get("signals") or []:
+                if not isinstance(signal, dict):
+                    continue
+                kind = str(signal.get("type") or "").casefold()
+                if "biolog" in kind:
+                    biological += max(0, int(signal.get("count") or 0))
+            self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY · BIO SIGNALS", scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            str(biological) if biological else "UNCONFIRMED",
+                            scale, 11, HUD_GREEN if biological else HUD_MUTED, True, "ne")
+            y += 22 * scale
+            self._draw_text(canvas, 9 * scale, y, "SIGNALS ARE NOT GENETIC SAMPLES OR PAYOUT CLAIMS",
+                            scale, 8, HUD_MUTED)
+            return width, round(y + 24 * scale)
         active = bool(expedition.get("active"))
         self._draw_text(canvas, 10 * scale, y, self.clip_line(system.get("name") or "UNKNOWN SYSTEM", 49),
                         scale, 13, HUD_WHITE, True)
@@ -6338,46 +6464,10 @@ class MongrelHudApp:
         y += 28 * scale
         canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
         y += 10 * scale
-        self._draw_text(canvas, 10 * scale, y, "DSS MAPPING ADVISOR", scale, 12, HUD_CYAN, True)
-        gain_min = survey.get("additionalMappingPotentialMin")
-        gain_max = survey.get("additionalMappingPotentialMax")
-        if isinstance(gain_min, (float, int)) and isinstance(gain_max, (float, int)):
-            self._draw_text(canvas, width - 10 * scale, y,
-                            f"REMAINING +{int(gain_min):,}–{int(gain_max):,} CR",
-                            scale, 8, HUD_MUTED, True, "ne")
-        y += 23 * scale
-        advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
-        targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
-        if not targets:
-            self._draw_text(canvas, 10 * scale, y, "No valued, unmapped local scans yet", scale, 10, HUD_MUTED)
-            y += 26 * scale
-        for row in targets[:3]:
-            if not isinstance(row, dict):
-                continue
-            rank = int(row.get("rank") or 0)
-            self._draw_text(canvas, 10 * scale, y, f"{rank:02d}", scale, 17, HUD_CYAN, True)
-            self._draw_text(canvas, 48 * scale, y + 1 * scale,
-                            self.clip_line(row.get("name") or "UNKNOWN BODY", 40),
-                            scale, 10, HUD_WHITE, True)
-            d = row.get("distanceLs")
-            self._draw_text(canvas, width - 10 * scale, y + 1 * scale,
-                            f"{d:,.0f} LS" if isinstance(d, (float, int)) else "DIST ?",
-                            scale, 9, HUD_MUTED, True, "ne")
-            y += 19 * scale
-            low, high = row.get("dssGainMin"), row.get("dssGainMax")
-            self._draw_text(canvas, 48 * scale, y,
-                            f"+{int(low):,}–{int(high):,} CR" if isinstance(low, (float, int)) and isinstance(high, (float, int)) else "VALUE UNCERTAIN",
-                            scale, 9, HUD_GREEN, True)
-            self._draw_text(canvas, width - 10 * scale, y,
-                            self.clip_line(row.get("planetClass") or "SCAN CONFIRMED", 24),
-                            scale, 8, HUD_MUTED, False, "ne")
-            y += 24 * scale
-        extra = int(advisor.get("eligibleCount") or 0) - min(3, len(targets))
-        if extra > 0:
-            self._draw_text(canvas, 48 * scale, y, f"+ {extra} MORE DSS CANDIDATES", scale, 9, HUD_MUTED)
-            y += 20 * scale
-        canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
-        y += 8 * scale
+        self._draw_text(canvas, 10 * scale, y,
+                        "DSS TARGETS ACTIVE ON SEPARATE FLIGHT INSTRUMENT",
+                        scale, 8, HUD_CYAN)
+        y += 19 * scale
         history = state.get("explorationImport") if isinstance(state.get("explorationImport"), dict) else {}
         recovered = str(history.get("status") or "").upper()
         self._draw_text(canvas, 10 * scale, y,
