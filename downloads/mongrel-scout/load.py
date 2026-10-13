@@ -3581,10 +3581,13 @@ def _update_hud_cargo_from_edmc_state(cmdr: Any, state: Mapping[str, Any], times
     cargo = _build_local_cargo_state(cmdr, source_state, timestamp, srv_ghosts=corrections)
     if cargo is None:
         return
+    # Preserve the SAME corrected ship inventory used for the live HUD.
+    # Rehydrating remote mission requirements must never reintroduce SRV ghost
+    # cargo, stale EDMC CargoJSON, or lose MissionID reservations.
+    _, local_rows = _cargo_inventory_from_edmc_state(source_state, srv_ghosts=corrections)
     with _hud_condition:
         _mission_sync_cargo_source[_cmdr_cache_key(cmdr)] = {
-            "Cargo": json.loads(json.dumps(source_state.get("Cargo"), default=str)),
-            "CargoJSON": json.loads(json.dumps(source_state.get("CargoJSON"), default=str)),
+            "CargoJSON": _hud_cargo_rows_as_ship_json(local_rows),
             "CargoCapacity": source_state.get("CargoCapacity"),
         }
         _hud_state["cargo"] = cargo
