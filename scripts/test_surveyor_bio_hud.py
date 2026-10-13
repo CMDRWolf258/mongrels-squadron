@@ -34,7 +34,7 @@ body = {
         "samplePositions": [{"latitude":0,"longitude":0,"radius":1000000}]}],
 }
 survey = {"system":{"address":"42"}, "exobiology":{"biologicalBodies":[body]}}
-status = {"timestamp":ts, "onFootOnPlanet":True, "hasLatLong":True,
+status = {"timestamp":ts, "onFootOnPlanet":True, "hasLatLong":True, "systemAddress":"42",
     "bodyName":"Exobiology Test 2","latitude":0,"longitude":0,"planetRadius":1000000}
 assert scope["bio_focus_body"](survey,status) is body
 near = scope["bio_genetic_guidance"](survey,dict(status,longitude=0.01))
@@ -49,6 +49,8 @@ for invalid in [
     dict(status,timestamp=old),
     dict(status,planetRadius=500000),
     dict(status,latitude=999),
+    dict(status,systemAddress="9000"),
+    dict(status,systemAddress=""),
 ]:
     unverified = scope["bio_genetic_guidance"](survey,invalid)
     assert unverified["status"] == "distance_unavailable",unverified
@@ -61,6 +63,16 @@ no_position = {"system":{"address":"42"},"exobiology":{"biologicalBodies":[
     dict(body,sampledSpecies=[dict(body["sampledSpecies"][0],samplePositions=[])])]}
 }
 assert scope["bio_genetic_guidance"](no_position,status)["status"] == "distance_unavailable"
+# Current surface context cannot override a newer Frontier organic sampling
+# focus recorded for another body in the active system.
+another=dict(body,bodyId="5",bodyName="Exobiology Test 5",
+             sampledSpecies=[dict(body["sampledSpecies"][0],species="Tubus Conifer")])
+focused={"system":{"address":"42","lastSurveyedBodyId":"5","lastOrganicBodyId":"2"},
+         "exobiology":{"biologicalBodies":[another,body]}}
+assert scope["bio_focus_body"](focused,dict(status,onFootOnPlanet=False)) is body
+# Matching body name but stale/cross-system Status is insufficient proof.
+wrong_system=dict(status,systemAddress="9000")
+assert scope["bio_focus_body"](focused,wrong_system) is body
 
 class FakeCanvas:
     def create_line(self,*args,**kwargs):

@@ -34,6 +34,20 @@ assert.doesNotMatch(el("surveyorBioCandidates").innerHTML,/<Stratum Tectonicas>/
 assert.match(el("surveyorBioCandidates").innerHTML,/NOT CONFIRMED/);
 assert.match(el("surveyorBioGenetics").textContent,/Range unverified/);
 assert.match(el("surveyorBioSales").textContent,/1,234 CR/);
+// An iPad controller may show an old Status after a system jump. Never
+// calculate genetic spacing unless Scout tagged that fix to this system.
+const sample=scan.exobiology.biologicalBodies[0].sampledSpecies[0];
+sample.samplePositions=[{latitude:0,longitude:0,radius:1000000}];
+scope.state.scout.status={
+  timestamp:new Date().toISOString(),onFootOnPlanet:true,hasLatLong:true,
+  bodyName:"<test world>",latitude:0,longitude:0.06,planetRadius:1000000,
+  systemAddress:"old-system"
+};
+scope.renderBioSurvey(scan);
+assert.match(el("surveyorBioGenetics").textContent,/Range unverified/);
+scope.state.scout.status.systemAddress="999";
+scope.renderBioSurvey(scan);
+assert.match(el("surveyorBioGenetics").textContent,/GENETIC DISTANCE MET/);
 scope.renderBioSurvey({system:{address:"1000"},exobiology:{biologicalBodies:[]}});
 assert.match(el("surveyorBioStatus").textContent,/NO FRONTIER BIO SIGNALS/);
 assert.doesNotMatch(el("surveyorBioStatus").textContent,/test world/);

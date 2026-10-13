@@ -24,9 +24,10 @@ or first-to-log bonus is assumed.
 
 ## Data coverage / deliberate exclusions
 
-Version `mongrel-habitats-2026-10-stage2-v1` covers **23 species across five
-genera** (Stratum, Aleoida, Osseus, Clypeus, Electricae). This is a deliberately
-small, auditable habitat rule set. It is *not yet* a replacement for the breadth
+The initial version `mongrel-habitats-2026-10-stage2-v1` covered **23 species
+across five genera**. The current version is `mongrel-habitats-2026-10-stage4-v1`,
+covering **60 curated species across ten genera**. These are auditable, partial
+community-reference habitat rules. It is *not yet* a replacement for the breadth
 of BioInsights/EDMC-BioScan. Out-of-model genera and variants remain unknown;
 a blank prediction never means the planet lacks life. Do not calculate a
 confident planet payout total by summing candidates, because:
@@ -119,3 +120,43 @@ nearby nebula restrictions, plant-colour variants, production HUD/Scout
 packaging and owner live gameplay acceptance. Continue the bulk catalog with
 clear attribution, then package a synchronized install only after checks.
 
+
+## Phase 4: More habitat coverage, full local callback testing, staged artifacts
+
+- Added Tubus (5 species) and Tussock (15 species) from the DSN habitat
+  records, including rocky/HMC distinctions, 0.15g or 0.27g constraints,
+  atmosphere and source-specific Kelvin windows:
+  - https://ed-dsn.net/en/tubus_en/
+  - https://ed-dsn.net/en/tussock_en/
+- All 60 modeled species now have an explicit community-published Vista
+  Genomics **base price** from https://ed-dsn.net/en/vista-genomics-values/.
+  Values remain estimates; multiple habitat candidates must not be summed
+  as if they are all real organisms.
+- Frontier `Scan.Genuses` is preserved when present, as is
+  `SAASignalsFound.Genuses`. An empty later genus list never erases
+  previously confirmed Frontier genus evidence.
+- `ScanOrganic` has a body ID but ordinarily no body name. On a previously
+  unknown body, Scout may attach the current `Status.json` body name only if
+  captured on foot, with matching system and a time difference <=15 seconds.
+  The last organic body (distinct from last mapped/scan target) takes
+  precedence in the automatic biological HUD focus.
+- `Status.json` contains no system ID, so Scout now stamps each status with
+  the current local system **at capture time**. It must never repurpose that
+  old status after a jump by stamping it with the current system later.
+  iPad and Windows genetic guidance require this bound system ID in addition
+  to matching body/radius, valid latitude/longitude and fresh observation.
+- `scripts/test_surveyor_bio_pipeline.py` executes actual Scout callbacks,
+  Frontier-style journal/Status events, the actual SQLite Surveyor model and
+  extracted real HUD GPS guidance functions. It validates first-genus
+  detection, stage progression, on-foot body fallback, stale-system rejection,
+  JSON bridge compatibility, and separation of Vista sales from UC.
+- A deliberately isolated `workflow_dispatch` workflow builds paired
+  `MongrelScout-Exobiology-TEST` and `MongrelHUD-Exobiology-TEST` artifacts
+  **only after a quality gate**. Scout packaging includes `mission_sync.py`
+  (previous private testing package omitted this necessary live module).
+  Instructions: `downloads/mongrel-scout/EXOBIOLOGY_TESTING.md`.
+  No public download, normal auto-updater or active plugin is overwritten.
+
+Current limitations: remaining species and location-specific planet/parent-star
+rules, variant conditions and authoritatively reconstructing Vista Genomics
+per-body sale provenance. First-footfall bonuses remain unverified until sale.

@@ -1140,10 +1140,18 @@ def bio_focus_body(survey: Any, status: Any) -> dict[str, Any] | None:
     # The active on-foot body is the safest live context; no persisted selection
     # survives system changes and no community-only body can be selected.
     current = str(active.get("bodyName") or "").strip().casefold()
-    if active.get("onFootOnPlanet") is True and current:
+    scoped = (bool(str(system.get("address") or ""))
+              and str(active.get("systemAddress") or "") == str(system.get("address")))
+    if active.get("onFootOnPlanet") is True and current and scoped:
         for body in bodies:
             if str(body.get("bodyName") or "").strip().casefold() == current:
                 return body
+    # A live organic scan is a stronger indication of the biology focus
+    # than the last planet's FSS/Scan cartographics body.
+    last_id = system.get("lastOrganicBodyId")
+    for body in bodies:
+        if last_id is not None and str(body.get("bodyId")) == str(last_id):
+            return body
     last_id = system.get("lastSurveyedBodyId")
     for body in bodies:
         if last_id is not None and str(body.get("bodyId")) == str(last_id):
@@ -1191,6 +1199,11 @@ def bio_genetic_guidance(survey: Any, status: Any) -> dict[str, Any]:
         return out
     if not isinstance(status, dict) or status.get("onFootOnPlanet") is not True or status.get("hasLatLong") is not True:
         return out
+    system = survey.get("system") if isinstance(survey, dict) else None
+    if not isinstance(system, dict) or not system.get("address") or (
+        str(status.get("systemAddress") or "") != str(system["address"])
+    ):
+        return out  # Never use an unscoped/stale on-foot fix from another system.
     if str(status.get("bodyName") or "").strip().casefold() != out["bodyName"].strip().casefold():
         return out
     try:
@@ -6459,7 +6472,7 @@ class MongrelHudApp:
             remaining = float(guide.get("remainingMeters") or 0)
             required = float(guide.get("requiredMeters") or 0)
             measured = float(guide.get("distanceMeters") or 0)
-            phrase = ("DISTANCE MET · READY TO SAMPLE" if gstatus == "genetic_distance_met"
+            phrase = ("DISTANCE MET · FIND NEXT SPECIMEN" if gstatus == "genetic_distance_met"
                       else f"MOVE {format_distance(remaining)} FARTHER")
             self._draw_text(canvas, 9*scale, y, phrase,
                             scale, 12, HUD_GREEN if remaining <= 0 else HUD_AMBER, True)

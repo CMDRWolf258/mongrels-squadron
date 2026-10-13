@@ -1,26 +1,28 @@
 name: Surveyor private test builds
 
 on:
-  push:
-    branches:
-      - feature/surveyor-live-test-20261010
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  scout:
+  quality-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate local Surveyor and live Scout compatibility
+      - name: Validate Scout, Surveyor, HUD and paired-controller integration
         run: |
-          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_edd_bridge.py
+          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_edd_bridge.py downloads/mongrel-scout/mission_sync.py downloads/mongrel-hud/mongrel_hud.py
+          python scripts/test-scout-mission-sync.py
           python scripts/test_surveyor.py
+          python scripts/test_surveyor_bio.py
+          python scripts/test_surveyor_bio_predictions.py
+          python scripts/test_surveyor_bio_hud.py
+          python scripts/test_surveyor_bio_pipeline.py
           python scripts/test_surveyor_history.py
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_advisor.py
@@ -29,35 +31,55 @@ jobs:
           python scripts/test_surveyor_live_feedback.py
           python scripts/test_surveyor_eddiscovery_reference.py
           python scripts/test_surveyor_eddiscovery_bridge.py
-          node scripts/smoke-mongrel-scout.mjs
-          python scripts/test-scout-live-trade.py
           python scripts/smoke-mongrel-hud.py
+          python scripts/smoke-mongrel-hud-companion.py
+          node scripts/test-surveyor-bio-controller.mjs
+          node scripts/smoke-mongrel-hud-controller.mjs
+          node scripts/smoke-mongrel-scout.mjs
           node scripts/smoke-scout-trade.mjs
           python scripts/test_multi_system_mining.py
           node --experimental-default-type=module scripts/test-mining-browser-controller.mjs
-          python scripts/smoke-mongrel-hud-companion.py
-          node --experimental-default-type=module scripts/smoke-mongrel-hud-controller.mjs
-      - name: Package isolated Scout testing ZIP
+  scout:
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Package complete current Scout plugin, including mission sync
         run: |
           python - <<'PY'
-          import zipfile
+          import re, zipfile
           from pathlib import Path
+          src = Path('downloads/mongrel-scout')
+          expected = [
+            'load.py', 'mission_sync.py', 'surveyor.py', 'surveyor_intel.py',
+            'surveyor_history.py', 'surveyor_edd_bridge.py',
+            'README.md', 'SURVEYOR_BIO_PREDICTIONS.md', 'EXOBIOLOGY_TESTING.md',
+            'THIRD_PARTY_NOTICES.md', 'licenses/Apache-2.0.txt',
+          ]
+          for name in expected:
+              assert (src/name).is_file(), name
+          version = re.search(r'^PLUGIN_VERSION\s*=\s*["\x27]([^"\x27]+)', (src/'load.py').read_text(), re.M)
+          assert version, 'Scout version unavailable'
           Path('package').mkdir(exist_ok=True)
-          with zipfile.ZipFile('package/MongrelScout-Surveyor-1.13.15-TEST.zip','w',zipfile.ZIP_DEFLATED) as z:
-              for name in ('load.py','surveyor.py','surveyor_intel.py','surveyor_history.py','surveyor_edd_bridge.py'):
-                  z.write('downloads/mongrel-scout/'+name,'MongrelScout/'+name)
-              z.write('downloads/mongrel-scout/README.md','README.md')
-              z.write('downloads/mongrel-scout/SURVEYOR_TESTING.md','SURVEYOR_TESTING.md')
-              z.write('downloads/mongrel-scout/THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md')
-              z.write('downloads/mongrel-scout/licenses/Apache-2.0.txt','licenses/Apache-2.0.txt')
+          path = Path('package/MongrelScout-Exobiology-TEST.zip')
+          with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as z:
+              for name in expected:
+                  z.write(src/name, 'MongrelScout/'+name)
+          with zipfile.ZipFile(path) as z:
+              assert set(z.namelist()) == {'MongrelScout/'+name for name in expected}
+          print('Validated Scout', version.group(1), 'with', len(expected), 'required files')
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelScout-Surveyor-1.13.15-TEST
-          path: package/MongrelScout-Surveyor-1.13.15-TEST.zip
+          name: MongrelScout-Exobiology-TEST
+          path: package/MongrelScout-Exobiology-TEST.zip
           retention-days: 14
 
   windows-hud:
+    needs: quality-gate
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
@@ -67,18 +89,18 @@ jobs:
           python-version: '3.12'
       - name: Build dependencies
         run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4" zeroconf
-      - name: Build standalone Surveyor-test HUD
+      - name: Build independent Exobiology test HUD
         shell: pwsh
         run: |
           pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --collect-all zeroconf --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md
-          Copy-Item downloads/mongrel-scout/SURVEYOR_TESTING.md package/SURVEYOR_TESTING.md
-          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Surveyor-0.17.23-TEST.zip -Force
+          Copy-Item downloads/mongrel-scout/EXOBIOLOGY_TESTING.md package/EXOBIOLOGY_TESTING.md
+          Compress-Archive -Path package/* -DestinationPath MongrelHUD-Exobiology-TEST.zip -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: MongrelHUD-Surveyor-0.17.23-TEST
-          path: MongrelHUD-Surveyor-0.17.23-TEST.zip
+          name: MongrelHUD-Exobiology-TEST
+          path: MongrelHUD-Exobiology-TEST.zip
           compression-level: 0
           retention-days: 14
