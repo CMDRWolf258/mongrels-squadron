@@ -25,7 +25,7 @@ const scan={system:{address:"999"},exobiology:{habitatRuleCount:40,confirmedSale
   signals:1,confirmedGenuses:[{name:"Stratum"}],
   prediction:{candidateCount:1,candidates:[
     {species:'<Stratum Tectonicas>',estimatedBase:19010800,status:"compatible",missing:[]}
-  ]},sampledSpecies:[{species:"Stratum Tectonicas",samples:1,completed:false,lastScanAt:"2026-10-13T00:00:00Z",geneticDistanceMeters:500,samplePositions:[]}]
+  ]},genusOverview:[{genus:"<Stratum Tectonicas>",exact:false,minBase:19010800,maxBase:19010800}],sampledSpecies:[{species:"Stratum Tectonicas",samples:1,completed:false,lastScanAt:"2026-10-13T00:00:00Z",geneticDistanceMeters:500,samplePositions:[]}]
 }]}};
 scope.renderBioSurvey(scan);
 assert.match(el("surveyorBioStatus").textContent,/DSS GENUS VERIFIED/);
