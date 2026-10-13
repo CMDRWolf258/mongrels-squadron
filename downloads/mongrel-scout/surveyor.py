@@ -688,6 +688,37 @@ class Surveyor:
             row = conn.execute("SELECT active_address FROM meta WHERE commander=?", (_text(commander),)).fetchone()
             return self._snapshot(conn, _text(commander), row["active_address"] if row else addr)
 
+    def set_eddiscovery_history(self, commander: str, system_name: str,
+                                address: str, data: Mapping[str, Any]) -> dict[str, Any]:
+        """Cache EDDiscovery's *historical* personal scan record separately.
+
+        Do not synthesize journal events, first-claim awards, or expedition
+        earnings from this optional external application's prior scans.
+        """
+        cmdr, addr = _text(commander), _text(address)
+        if not cmdr or not addr.isdecimal() or not _text(system_name):
+            raise ValueError("invalid_edd_system_identity")
+        if str(data.get("systemAddress") or "") != addr or not data.get("verifiedSystemIdentity"):
+            raise ValueError("unverified_edd_history")
+        if data.get("sourceSystem", "").casefold() != system_name.casefold():
+            raise ValueError("edd_history_system_mismatch")
+        with self.lock, self._connect() as conn:
+            system = self._load(conn, "systems", cmdr, addr)
+            if system.get("name") and _text(system["name"]).casefold() != system_name.casefold():
+                raise ValueError("edd_history_current_system_mismatch")
+            system["address"] = addr
+            system["name"] = system_name
+            # Limit local JSON size; never accept journal records or arbitrary
+            # metadata through the EDDiscovery sidecar.
+            limited = dict(data)
+            limited["bodies"] = list(data.get("bodies") or [])[:200]
+            limited["recordedAt"] = self._utc_now()
+            system["eddiscoveryHistory"] = limited
+            self._save(conn, "systems", cmdr, addr, system)
+            row = conn.execute("SELECT active_address FROM meta WHERE commander=?",
+                               (cmdr,)).fetchone()
+            return self._snapshot(conn, cmdr, row["active_address"] if row else addr)
+
     def record_carto_reference(self, commander: str, observed_actual: Any, system_name: str = "") -> dict[str, Any]:
         """Record a manual Universal Cartographics quote as a calibration reference.
 
@@ -798,6 +829,7 @@ class Surveyor:
             "system": current or None,
             "discoveryStatus": discovery,
             "intelligence": current.get("intelligence") if current else None,
+            "eddiscoveryHistory": current.get("eddiscoveryHistory") if current else None,
             "knownBodies": len(bodies),
             "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in bodies),
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
