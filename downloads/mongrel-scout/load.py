@@ -422,13 +422,23 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
         "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
         "FSSAllBodiesFound", "Scan", "SAAScanComplete",
         "FSSBodySignals", "SAASignalsFound", "SellExplorationData",
-        "MultiSellExplorationData",
+        "MultiSellExplorationData", "ScanOrganic", "SellOrganicData",
     }:
         return
     try:
         fallback_address = state.get("SystemAddress") if isinstance(state, Mapping) else None
         surveyor = _get_surveyor()
-        updated = surveyor.apply(cmdr, entry, system, fallback_address)
+        # Frontier organic scans contain a body ID, not a verified GPS fix.
+        # Position is advisory and Surveyor validates system/body/time before use.
+        position = None
+        if kind == "ScanOrganic":
+            with _hud_condition:
+                location = _hud_state.get("status")
+                current_system = _hud_state.get("system")
+                if isinstance(location, Mapping) and isinstance(current_system, Mapping):
+                    position = dict(location)
+                    position["systemAddress"] = str(current_system.get("address") or "")
+        updated = surveyor.apply(cmdr, entry, system, fallback_address, position=position)
         if updated is None:
             return  # Replayed event: identical input was already applied.
         with _hud_condition:
