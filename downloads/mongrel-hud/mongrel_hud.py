@@ -213,8 +213,8 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
-VALID_PROFILES = ("combat", "surface", "navigation")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
     "target": "TARGET",
@@ -223,7 +223,9 @@ PANEL_TITLES = {
     "cargo": "CARGO",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
-    "surveyor": "MONGREL SURVEYOR",
+    "surveyor": "EXPEDITION TELEMETRY",
+    "surveyor_dss": "DSS TARGET DIRECTOR",
+    "surveyor_body": "BODY INTELLIGENCE",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -795,7 +797,9 @@ def default_layout() -> dict[str, Any]:
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
-            "surveyor": {"x": 420, "y": 70, "visible": False, "scale": 0.9, "profiles": ["surface", "navigation"]},
+            "surveyor": {"x": 40, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_dss": {"x": 610, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_body": {"x": 610, "y": 410, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -3859,7 +3863,7 @@ class MongrelHudApp:
         return result
 
     def set_profile(self, profile: str) -> str:
-        if profile not in {"combat", "surface", "navigation"}:
+        if profile not in {"combat", "surface", "navigation", "exploration"}:
             raise ValueError("invalid_profile")
         with self.store.lock:
             self.store.data["profile"] = profile
@@ -6269,7 +6273,7 @@ class MongrelHudApp:
 
         return width, round(y + 7 * scale)
 
-    def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+    def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float, panel: str = "surveyor") -> tuple[int, int]:
         """Dedicated compact expedition instrument; all data is local to Scout."""
         state = self.scout_state()
         survey = state.get("exploration")
@@ -6285,7 +6289,7 @@ class MongrelHudApp:
         self._draw_text(canvas, 10 * scale, y, self.clip_line(system.get("name") or "UNKNOWN SYSTEM", 49),
                         scale, 13, HUD_WHITE, True)
         y += 25 * scale
-        label = "EXPEDITION ACTIVE" if active else "EXPEDITION STANDBY · START ON IPAD"
+        label = "EXPEDITION UNDERWAY" if active else "EXPEDITION STANDBY · PREP FOR LAUNCH"
         if expedition.get("existingDataExcluded") and active:
             label = "PRIOR DATA EXCLUDED · NEW SCANS COUNT"
         self._draw_text(canvas, 10 * scale, y, label, scale, 9,
@@ -6311,7 +6315,7 @@ class MongrelHudApp:
         y += 31 * scale
         self._draw_text(canvas, 10 * scale, y, "May include previously sold scans", scale, 8, HUD_MUTED)
         self._draw_text(canvas, half + 8 * scale, y,
-                        "New work only · provisional value" if active else "Start Exploration on your iPad",
+                        "Newly charted data · provisional" if active else "Awaiting expedition launch",
                         scale, 8, HUD_MUTED)
         y += 29 * scale
         canvas.create_line(10 * scale, y, width - 10 * scale, y, fill=HUD_DIM)
@@ -6537,8 +6541,8 @@ class MongrelHudApp:
             width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "miningintel":
             width, height = self._render_miningintel_canvas(canvas, scale)
-        elif panel_id == "surveyor":
-            width, height = self._render_surveyor_canvas(canvas, scale)
+        elif panel_id in {"surveyor", "surveyor_dss", "surveyor_body"}:
+            width, height = self._render_surveyor_canvas(canvas, scale, panel_id)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
