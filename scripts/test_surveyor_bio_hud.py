@@ -48,7 +48,6 @@ for vehicle in (dict(status,onFootOnPlanet=False,longitude=0.04),
     assert measured["status"]=="genetic_distance_met", measured
 for invalid in [
     dict(status,bodyName="Different world"),
-    dict(status,onFootOnPlanet=False),
     dict(status,hasLatLong=False),
     dict(status,timestamp=old),
     dict(status,planetRadius=500000),
