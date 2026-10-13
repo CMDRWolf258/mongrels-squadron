@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.12 and HUD 0.17.20 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.13 and HUD 0.17.21 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.12** and HUD **0.17.20**.
+5. Start EDMC, then test HUD. Check Scout **1.13.13** and HUD **0.17.21**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -95,3 +95,25 @@ control records observed UC quotes locally; its diagnostic comparison ratios
 
 Use the next TEST builds, not earlier 1.13.11/0.17.19 artifacts. This PR is
 unmerged and has no production auto-updater changes.
+
+## Discovery intel and payout feedback (Scout 1.13.13 / HUD 0.17.21)
+
+The Exploration profile instruments draw only **one** title each. System telemetry
+shows Frontier journal first-arrival signals and clearly separates FSS counts
+from journal body counts when those disagree. The DSS Director calls attention to
+valuable *unmapped-at-scan* targets. Body Intelligence shows the current Elite
+body target or last saved actual journal body, with previous-discovery/mapping
+flags from your Scan events.
+
+Community Charts remain opt-in. EDSM and Spansh responses show **community
+reported**, never *definitively first discovered* or *first mapped*. No listing
+means **unverified**, not undiscovered. The paired iPad includes a collapsible
+Discovery Report listing local journal body flags alongside community body
+records. If community data was enabled with an older test build, press **Refresh
+This System** once to refresh the cached report.
+
+The payout model now matches the journal names `Sudarsky class I/II gas giant`
+with the corresponding high-value categories; earlier builds incorrectly used
+the generic low-value coefficient. Changes recalculate from the existing private
+ledger. Cartographics quotes and EDDiscovery screenshots are *comparisons*, not
+proof of an exact payout. No global multiplier is applied.
