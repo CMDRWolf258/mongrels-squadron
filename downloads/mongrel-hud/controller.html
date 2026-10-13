@@ -505,6 +505,11 @@ function renderScoutNetwork(scout){
 function renderSurveyorDiscovery(survey){
   var owned=Array.isArray(survey.bodies)?survey.bodies:[],intel=survey.intelligence||{};
   var external=Array.isArray(intel.reportedBodies)?intel.reportedBodies:[],seen=new Set(),rows=[];
+  function estimateTag(value,source){
+    return typeof value==="number"&&Number.isFinite(value)&&value>=0?
+      '<strong>'+source+' '+Math.round(value).toLocaleString()+' CR</strong>':
+      '<small>'+source+' VALUE UNAVAILABLE</small>';
+  }
   for(var body of owned.slice(0,40)){
     if(!body||typeof body!=="object")continue;
     var name=String(body.name||"Unnamed body"),key=name.toLowerCase();
@@ -518,14 +523,15 @@ function renderSurveyorDiscovery(survey){
       " · COMMUNITY REPORTED":"";
     rows.push('<div class="network-job"><div><strong>'+escapeHtml(name)+'</strong>'+
       '<small> · JOURNAL: '+escapeHtml(discovered)+' / '+escapeHtml(mapped)+
-      escapeHtml(report)+'</small></div></div>');
+      escapeHtml(report)+'</small></div><div style="text-align:right">'+
+      estimateTag(body.currentValue,"JOURNAL EST.")+'</div></div>');
   }
   var historic=survey.eddiscoveryHistory||{};
   var eddbodies=Array.isArray(historic.bodies)?historic.bodies:[];
   for(var old of eddbodies.slice(0,200)){
     if(!old||typeof old!=="object")continue;
     var historicName=String(old.name||""),oldKey=historicName.toLowerCase();
-    if(!historicName||seen.has(oldKey))continue;
+    if(!historicName)continue; // Keep EDD historical estimate distinct from any journal estimate.
     seen.add(oldKey);
     var first=old.wasDiscovered===false?"POTENTIAL FIRST DISCOVERY AT SCAN":
       old.wasDiscovered===true?"PREVIOUSLY DISCOVERED":"DISCOVERY UNKNOWN";
@@ -533,7 +539,13 @@ function renderSurveyorDiscovery(survey){
       old.wasMapped===true?"PREVIOUSLY MAPPED":"MAPPING UNVERIFIED";
     rows.push('<div class="network-job"><div><strong>'+escapeHtml(historicName)+
       '</strong><small> · EDD HISTORICAL · '+escapeHtml(first)+' / '+
-      escapeHtml(mapped)+' · MAY ALREADY BE SOLD</small></div></div>');
+      escapeHtml(mapped)+' · MAY ALREADY BE SOLD</small></div><div style="text-align:right">'+
+      estimateTag(old.estimatedValue,"EDD HIST. EST.")+'</div></div>');
+  }
+  if(eddbodies.length){
+    var valued=eddbodies.filter(function(b){return b&&typeof b.estimatedValue==="number"&&Number.isFinite(b.estimatedValue)&&b.estimatedValue>=0;}).length;
+    rows.push('<div class="layout-hint">EDDiscovery historical estimates available: '+valued+
+      ' / '+eddbodies.length+' bodies · May already be sold · Not expedition credits</div>');
   }
   for(var item of external.slice(0,100)){
     if(!item||typeof item!=="object")continue;
