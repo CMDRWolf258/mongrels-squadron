@@ -59,6 +59,15 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Surveyor Phase 3A — Biological HUD + iPad UI (feature PR pending CI)
+
+- Existing `exobiology` snapshot now emits predictions for **40 species across 8 genera**, including Bacterium/Cactoida/Fungoida, using conditionally-applied atmospheres, planet type and gravity; model `mongrel-habitats-2026-10-stage3-v1`. Unknown and volcanism-dependent possibilities remain unvalued, not rejected.
+- HUD adds independent `surveyor_bio` panel in Exploration with ordinary visibility/size/profile controls; no behavioral changes to original `surveyor`, DSS, mining or status panels.
+- The existing `great_circle_nav` guides the active organic sample's minimum genetic spacing by **measured distance from last captured sample position**, only with fresh, matching on-foot Status. All missing coordinate or body context yields unverified.
+- Paired iPad controls show read-only biology previews and optional body selector, which never changes ship nav targets. Vistas sales shown separately from UC.
+- Offline tests: `test_surveyor_bio_hud.py` and `test-surveyor-bio-controller.mjs`. Expanded rules tested in `test_surveyor_bio_predictions.py`.
+- There is **no released Scout or HUD installer**, changed Cloudflare read volume, or new remote storage yet. Further verified species completeness and paired package testing should precede first owner install. See `downloads/mongrel-scout/SURVEYOR_BIO_PREDICTIONS.md`.
+
 ### Surveyor Exobiology biological intelligence (Phase 2, on feature branch)
 
 - Journal-local **23 curated species / 5 genus** compatibility rules plus **15 Odyssey genus sample distances**; source-attributed and versioned `mongrel-habitats-2026-10-stage2-v1`, details in `downloads/mongrel-scout/SURVEYOR_BIO_PREDICTIONS.md`.
