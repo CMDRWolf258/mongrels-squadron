@@ -239,6 +239,11 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div class="layout-hint">Frontier journal flags describe discovery/mapping status when you scanned. Community-listed bodies are reported, but first claims are not verified by the catalog.</div>
       <div id="surveyorDiscoveryRows" class="network-jobs">No body records yet.</div>
     </details>
+    <h3>EDDISCOVERY · LOCAL HISTORICAL SCANS</h3>
+    <div class="layout-hint">Optional read-only bridge to EDDiscovery's built-in Web Server (Settings). Use the port shown in EDDiscovery. Only localhost is contacted. No Windows firewall rule for iPad/LAN is needed. Previously sold historical values never count as new expedition earnings.</div>
+    <div class="layout-actions"><label for="surveyorEDDPort">EDDiscovery web server port</label><input id="surveyorEDDPort" type="number" min="1024" max="65535" inputmode="numeric" placeholder="Enter EDD port"></div>
+    <div class="layout-actions"><button id="surveyorEDDConnect" type="button">LINK EDDISCOVERY</button><button id="surveyorEDDRefresh" type="button">REFRESH LOCAL SCANS</button><button id="surveyorEDDDisconnect" type="button">UNLINK</button></div>
+    <div class="layout-hint" id="surveyorEDDStatus">EDDiscovery not linked.</div>
     <h3>CARTOGRAPHICS CALIBRATION</h3>
     <div class="layout-hint">Record Universal Cartographics system quotes, including prior systems. References do not mark scans sold. Ratios stay diagnostic until discovery and completion bonuses are validated.</div>
     <div class="grid"><div><label for="surveyorQuoteSystem">System name</label><input id="surveyorQuoteSystem" type="text" placeholder="Current or previous system"></div><div><label for="surveyorQuoteValue">Cartographics quote (CR)</label><input id="surveyorQuoteValue" type="number" min="0" step="1" inputmode="numeric" placeholder="32267"></div></div>
@@ -515,6 +520,21 @@ function renderSurveyorDiscovery(survey){
       '<small> · JOURNAL: '+escapeHtml(discovered)+' / '+escapeHtml(mapped)+
       escapeHtml(report)+'</small></div></div>');
   }
+  var historic=survey.eddiscoveryHistory||{};
+  var eddbodies=Array.isArray(historic.bodies)?historic.bodies:[];
+  for(var old of eddbodies.slice(0,200)){
+    if(!old||typeof old!=="object")continue;
+    var historicName=String(old.name||""),oldKey=historicName.toLowerCase();
+    if(!historicName||seen.has(oldKey))continue;
+    seen.add(oldKey);
+    var first=old.wasDiscovered===false?"POTENTIAL FIRST DISCOVERY AT SCAN":
+      old.wasDiscovered===true?"PREVIOUSLY DISCOVERED":"DISCOVERY UNKNOWN";
+    var mapped=old.personallyMapped?"MAPPED IN EDD HISTORY":
+      old.wasMapped===true?"PREVIOUSLY MAPPED":"MAPPING UNVERIFIED";
+    rows.push('<div class="network-job"><div><strong>'+escapeHtml(historicName)+
+      '</strong><small> · EDD HISTORICAL · '+escapeHtml(first)+' / '+
+      escapeHtml(mapped)+' · MAY ALREADY BE SOLD</small></div></div>');
+  }
   for(var item of external.slice(0,100)){
     if(!item||typeof item!=="object")continue;
     var label=String(item.name||""),lookup=label.toLowerCase();
@@ -541,6 +561,19 @@ function renderSurveyorControls(){
   el("surveyorMark").disabled=!active||excluded||!system.address;
   el("surveyorUndo").disabled=!active||!excluded;
   renderSurveyorDiscovery(survey);
+  var eddEnabled=state.scout&&state.scout.explorationEDDiscoveryEnabled===true;
+  var eddHistory=survey.eddiscoveryHistory||{};
+  var eddPort=Number(state.scout&&state.scout.explorationEDDiscoveryPort||0);
+  if(eddPort>0&&document.activeElement!==el("surveyorEDDPort")&&!el("surveyorEDDPort").value)
+    el("surveyorEDDPort").value=String(eddPort);
+  el("surveyorEDDConnect").disabled=eddEnabled;
+  el("surveyorEDDRefresh").disabled=!eddEnabled;
+  el("surveyorEDDDisconnect").disabled=!eddEnabled;
+  setText(el("surveyorEDDStatus"),eddEnabled?
+    (eddHistory.verifiedSystemIdentity?
+      "LINKED · "+Number(eddHistory.bodyCount||0)+" EDD HISTORICAL SCANS · never expedition credits":
+      "LINKED · awaiting verified system scans. Ensure EDD has loaded this system.") :
+    "NOT LINKED · journal scanning still functions normally");
   var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
   var intelligence=survey.intelligence||{};
   setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
@@ -1111,6 +1144,31 @@ el("surveyorCommunityToggle").onclick=async function(){
 el("surveyorCommunityRefresh").onclick=async function(){
   try{await api("/api/surveyor",{action:"intel_refresh"});setText(el("surveyorExpeditionNotice"),"Community chart refresh queued locally");}
   catch(e){setText(el("surveyorExpeditionNotice"),"Community refresh failed · "+e.message);}
+};
+el("surveyorEDDConnect").onclick=async function(){
+  var raw=String(el("surveyorEDDPort").value||"").trim(),port=Number(raw);
+  if(!raw||!Number.isInteger(port)||port<1024||port>65535){
+    setText(el("surveyorExpeditionNotice"),"Enter the web-server port shown in EDDiscovery Settings");return;
+  }
+  try{
+    var r=await api("/api/surveyor",{action:"edd_connect",value:port});
+    state.scout.explorationEDDiscoveryEnabled=Boolean(r.eddEnabled);
+    state.scout.explorationEDDiscoveryPort=port;
+    renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),
+      r.queued?"EDDiscovery link enabled · local scan request queued":"EDDiscovery linked · waiting for system identity");
+  }catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery link failed · "+e.message);}
+};
+el("surveyorEDDRefresh").onclick=async function(){
+  try{var r=await api("/api/surveyor",{action:"edd_refresh"});
+    setText(el("surveyorExpeditionNotice"),r.queued?"EDDiscovery history refresh queued":"EDDiscovery has no verified current system");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery refresh failed · "+e.message);}
+};
+el("surveyorEDDDisconnect").onclick=async function(){
+  try{await api("/api/surveyor",{action:"edd_off"});
+    state.scout.explorationEDDiscoveryEnabled=false;renderSurveyorControls();
+    setText(el("surveyorExpeditionNotice"),"EDDiscovery disconnected; stored local history retained");}
+  catch(e){setText(el("surveyorExpeditionNotice"),"EDDiscovery unlink failed · "+e.message);}
 };
 el("surveyorRecordQuote").onclick=async function(){
   var raw=String(el("surveyorQuoteValue").value||"").trim(),value=Number(raw);
