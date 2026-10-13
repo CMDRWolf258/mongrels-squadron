@@ -508,10 +508,16 @@ function renderSurveyorControls(){
   var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
   var intelligence=survey.intelligence||{};
   setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
-  setText(el("surveyorCommunityStatus"),enabled?
-    ("ACTIVE · "+String((intelligence.providers||[]).join(" + ")||intelligence.status||"awaiting reports")+
-      " · "+Number(intelligence.catalogedBodies||0)+" cataloged bodies"):
-    "COMMUNITY CHARTS DISABLED · LOCAL JOURNAL ONLY");
+  var intelStatus=String(intelligence.status||"pending");
+  var report=(!enabled?"COMMUNITY CHARTS OFF · LOCAL JOURNAL ONLY":
+    intelStatus==="providers_unavailable"?"PROVIDERS UNAVAILABLE · SCANS STILL TRACKED LOCALLY":
+    intelStatus==="not_in_queried_catalogs"?"NO COMMUNITY LISTING · FIRST DISCOVERY NOT CONFIRMED":
+    intelStatus==="system_cataloged_no_bodies"?"SYSTEM REPORTED · NO BODY RECORDS AVAILABLE":
+    intelStatus==="community_cataloged"?"COMMUNITY REPORTED · "+Number(intelligence.catalogedBodies||0)+
+      " bodies in "+String((intelligence.providers||[]).join(" + "))+
+      " · PREVIOUS MAPPING CLAIMS UNVERIFIED":
+    "LOOKUP QUEUED · WAIT FOR PROVIDER RESPONSE");
+  setText(el("surveyorCommunityStatus"),report);
   el("surveyorCommunityRefresh").disabled=!enabled;
   var comparison=survey.cartographicsComparison||{};
   setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+
