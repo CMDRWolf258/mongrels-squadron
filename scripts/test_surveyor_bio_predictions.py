@@ -16,10 +16,10 @@ assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-assert len(module.BIO_HABITAT_RULES) == 40
-assert len(module.BIO_HABITAT_SOURCES) == 8
-assert "stage3" in module.BIO_HABITAT_VERSION
-assert len({row[0] for row in module.BIO_HABITAT_RULES}) == 8
+assert len(module.BIO_HABITAT_RULES) == 60
+assert len(module.BIO_HABITAT_SOURCES) == 10
+assert "stage4" in module.BIO_HABITAT_VERSION
+assert len({row[0] for row in module.BIO_HABITAT_RULES}) == 10
 assert all(f"{genus} {species}" in module.BIO_REFERENCE_VALUES for genus,species,*_ in module.BIO_HABITAT_RULES)
 assert module.BIO_REFERENCE_VALUES["Bacterium Informem"] == 8418000
 assert module.BIO_REFERENCE_VALUES["Bacterium Alcyoneum"] == 1658500
@@ -191,4 +191,30 @@ assert "Fungoida Bullarum" not in high_g
 assert "Bacterium Vesicula" in high_g # no unsupported Bacterium gravity ceiling
 for x in predict_body():
     assert x["sourceUrl"] in module.BIO_HABITAT_SOURCES.values()
-print("Mongrel biological intelligence PASSED (8 genera / 40 rules; HMC, DSS, habitat exclusions, restart)")
+# Source-supported Tubus and Tussock habitat constraints.
+def names(world,air,temp,gravity_mps2):
+    return {row["species"] for row in module._bio_predict({
+        "signals":[{"type":"Biological","count":1}],
+        "planetClass":world,"atmosphere":air,"surfaceTemperature":temp,
+        "surfaceGravity":gravity_mps2,"landable":True,
+    })["candidates"]}
+tubus = names("Rocky body","thin Carbon dioxide",175,1.0)
+assert {"Tubus Cavas","Tubus Conifer","Tubus Compagibus"} <= tubus
+assert "Tubus Sororibus" not in tubus
+assert "Tussock Albata" in tubus
+tubus_hmc = names("High metal content body","thin Carbon dioxide",175,1.0)
+assert "Tubus Sororibus" in tubus_hmc and "Tubus Conifer" not in tubus_hmc
+high_gravity = names("Rocky body","thin Carbon dioxide",175,3.0)
+assert "Tubus Conifer" not in high_gravity
+assert "Tussock Albata" not in high_gravity
+cold = names("Rocky body","thin Carbon dioxide",150,1.0)
+assert "Tussock Pennata" in cold and "Tussock Ignis" not in cold
+ammonia_tubus = names("Rocky body","thin Ammonia",175,1.0)
+assert "Tubus Rosarium" in ammonia_tubus
+sulphur = names("Rocky body","thin Sulphur dioxide",160,1.0)
+assert "Tussock Stigmasis" in sulphur
+assert "Tussock Stigmasis" not in names("Icy body","thin Sulphur dioxide",160,1.0)
+assert module.BIO_REFERENCE_VALUES["Tussock Stigmasis"] == 19010800
+assert module.BIO_REFERENCE_VALUES["Tubus Cavas"] == 11873200
+assert len({f"{genus} {species}" for genus,species,*_ in module.BIO_HABITAT_RULES}) == 60
+print("Mongrel biological intelligence PASSED (10 genera / 60 rules; HMC, DSS, gravity, atmosphere, persistence)")
