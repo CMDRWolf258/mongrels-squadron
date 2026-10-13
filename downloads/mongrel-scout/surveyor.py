@@ -21,7 +21,7 @@ SURVEY_EVENTS = frozenset({
     "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
     "FSSAllBodiesFound", "Scan", "SAAScanComplete", "FSSBodySignals",
     "SAASignalsFound", "SellExplorationData", "MultiSellExplorationData",
-    "ScanOrganic", "SellOrganicData",
+    "ScanOrganic", "SellOrganicData", "Disembark",
 })
 PLANET_K = {
     "Metal rich body": (21790, 105678),
@@ -97,6 +97,7 @@ BIO_REFERENCE_VALUES = {
     "Bacterium Bullaris": 1152500,
     "Bacterium Cerbrus": 1689800,
     "Bacterium Informem": 8418000,
+    "Bacterium Tela": 1949000,
     "Bacterium Nebulus": 5289900,
     "Bacterium Vesicula": 1000000,
     "Cactoida Cortexum": 3667600,
@@ -308,6 +309,7 @@ BIO_HABITAT_RULES = [
     ("Bacterium", "Informem", "*", "N2", None, None, None, ""),
     ("Bacterium", "Nebulus", "*", "HE", None, None, None, ""),
     ("Bacterium", "Vesicula", "*", "AR", None, None, None, ""),
+    ("Bacterium", "Tela", "*", "*", None, None, None, "tela_volcanism"),
     # Volcanic species are deferred until sufficiently precise volcanic class
     # matching; a mere 'has volcanism' flag is not a verified match.
     ("Cactoida", "Cortexum", "R H", "CO2", 180, 195, 0.27, ""),
@@ -363,29 +365,39 @@ def _bio_world(planet: str) -> str:
     }.get(normalized, "")
 
 
-def _bio_atmosphere(value: str) -> tuple[str, bool | None]:
-    """Normalize Frontier atmosphere names without conflating thin and dense."""
-    raw = _text(value).casefold().replace("-", " ").replace("_", " ")
+def _bio_atmosphere(value: Any) -> tuple[str, bool | None]:
+    """Parse Frontier descriptive Atmosphere or compact AtmosphereType."""
+    raw = _text(value).casefold().replace("-", " ").replace("_", " ").strip()
     if not raw:
         return "", None
-    thin = raw.startswith("thin ")
-    raw = raw.removeprefix("thin ").strip()
-    if raw in {"no atmosphere", "none"}:
+    if raw in {"no atmosphere", "none", "noatmosphere"}:
         return "", False
-    if raw.endswith(" rich"):
-        raw = raw[:-5]
-    if raw in {"carbon dioxide", "carbon dioxide rich"}:
-        return "CO2", thin
-    if raw in {"ammonia"}:
-        return "NH3", thin
-    if raw in {"water"}:
-        return "H2O", thin
-    if raw in {"sulphur dioxide", "sulfur dioxide"}:
-        return "SO2", thin
+    thin = True if "thin" in raw.split() else False if "thick" in raw.split() else None
+    for token in ("atmosphere", "rich", "hot", "thin", "thick"):
+        raw = raw.replace(token, " ")
+    key = "".join(raw.split()).replace("sulfur", "sulphur")
     return {
-        "oxygen": "O2", "argon": "AR", "nitrogen": "N2",
-        "methane": "CH4", "helium": "HE", "neon": "NE",
-    }.get(raw, ""), thin
+        "carbondioxide": "CO2", "ammonia": "NH3", "water": "H2O",
+        "sulphurdioxide": "SO2", "oxygen": "O2", "argon": "AR",
+        "nitrogen": "N2", "methane": "CH4", "helium": "HE", "neon": "NE",
+    }.get(key, ""), thin
+
+
+def _bio_gas_evidence(body: Mapping[str, Any]) -> tuple[str, bool | None]:
+    # AtmosphereType names the gas but cannot prove thin/thick atmosphere.
+    gas, thin = _bio_atmosphere(body.get("atmosphere"))
+    typed, _ = _bio_atmosphere(body.get("atmosphereType"))
+    if not gas:
+        gas = typed
+    if not gas:
+        composition = body.get("atmosphereComposition")
+        if isinstance(composition, list):
+            eligible = [x for x in composition if isinstance(x, Mapping)
+                        and _number(x.get("Percent")) is not None]
+            eligible.sort(key=lambda x: _number(x.get("Percent")) or 0, reverse=True)
+            if eligible and (_number(eligible[0].get("Percent")) or 0) >= 50:
+                gas, _ = _bio_atmosphere(eligible[0].get("Name"))
+    return gas, thin
 
 
 def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
@@ -410,7 +422,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
     if count <= 0 and not observed and not confirmed_species:
         return {"status": "no_biological_evidence", "candidates": [], "ruleCoverage": "partial"}
 
-    world, atmosphere = _bio_world(body.get("planetClass")), _bio_atmosphere(body.get("atmosphere"))
+    world, atmosphere = _bio_world(body.get("planetClass")), _bio_gas_evidence(body)
     gas, thin = atmosphere
     temperature = _number(body.get("surfaceTemperature"))
     gravity_ms2 = _number(body.get("surfaceGravity"))
@@ -432,7 +444,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
         if thin is None:
             missing.append("thin_atmosphere")
         if gas:
-            if gas not in gases.split():
+            if gases != "*" and gas not in gases.split():
                 continue
         else:
             missing.append("atmosphere_gas")
@@ -462,10 +474,16 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
                 missing.append("surface_gravity")
             elif gravity_g > max_gravity:
                 continue
-        if extra:
-            # Parent star conditions cannot be proven by arrival-star scan or
-            # DistanceFromArrivalLS; require verified parent information later.
-            missing.append(extra)
+        if extra == "tela_volcanism":
+            volcanic = _text(body.get("volcanism")).casefold()
+            if not volcanic:
+                missing.append("volcanism_type")
+            elif volcanic in {"no volcanism", "none"}:
+                continue
+            elif not any(kind in volcanic for kind in ("helium", "iron", "silicate", "ammonia")):
+                continue
+        elif extra:
+            missing.append(extra)  # unverified parent-star conditions
         if body.get("landable") is False:
             continue
         if body.get("landable") is None:
@@ -1137,9 +1155,10 @@ class Surveyor:
                             ("MassEM", "massEM"), ("StellarMass", "stellarMass"),
                             ("Landable", "landable"), ("SurfaceGravity", "surfaceGravity"),
                             ("SurfaceTemperature", "surfaceTemperature"), ("Atmosphere", "atmosphere"),
+                            ("AtmosphereType", "atmosphereType"), ("AtmosphereComposition", "atmosphereComposition"),
                             ("Volcanism", "volcanism"),
                         ):
-                            if src in event:
+                            if src in event and event[src] is not None and event[src] != "":
                                 body[dest] = event[src]
                         for src, dest in (("WasDiscovered", "wasDiscovered"), ("WasMapped", "wasMapped")):
                             value = _flag(event, src)
