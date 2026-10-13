@@ -6285,7 +6285,14 @@ class MongrelHudApp:
         state = self.scout_state()
         survey = state.get("exploration")
         width = round(548 * scale)
-        y = self._draw_title(canvas, "MONGREL SURVEYOR", scale, width)
+        title = ("DSS TARGET DIRECTOR" if panel == "surveyor_dss"
+                 else "BODY INTELLIGENCE" if panel == "surveyor_body"
+                 else "MONGREL SURVEYOR")
+        if panel == "surveyor_dss":
+            width = round(525 * scale)
+        elif panel == "surveyor_body":
+            width = round(505 * scale)
+        y = self._draw_title(canvas, title, scale, width)
         if not isinstance(survey, dict):
             self._draw_text(canvas, 10 * scale, y + 6 * scale,
                             "AWAITING LOCAL EXPLORATION DATA", scale, 11, HUD_AMBER, True)
@@ -6293,14 +6300,19 @@ class MongrelHudApp:
         system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
         expedition = survey.get("expedition") if isinstance(survey.get("expedition"), dict) else {}
         if panel == "surveyor_dss":
-            width = round(525 * scale)
-            y = self._draw_title(canvas, "DSS TARGET DIRECTOR", scale, width)
             self._draw_text(canvas, 9 * scale, y,
                             self.clip_line(system.get("name") or "NO SYSTEM FIX", 43),
                             scale, 11, HUD_WHITE, True)
             y += 26 * scale
             advisor = survey.get("mappingAdvisor") if isinstance(survey.get("mappingAdvisor"), dict) else {}
             targets = advisor.get("targets") if isinstance(advisor.get("targets"), list) else []
+            priority = next((b for b in targets if isinstance(b, dict)
+                         and b.get("firstMappingCandidate") and int(b.get("dssGainMin") or 0) >= 50000), None)
+            if priority:
+                self._draw_text(canvas, 9 * scale, y,
+                                "VALUABLE · NOT PREVIOUSLY MAPPED AT SCAN",
+                                scale, 10, HUD_GREEN, True)
+                y += 20 * scale
             self._draw_text(canvas, 9 * scale, y,
                             "SCAN CONFIRMED · GAIN / ARRIVAL DISTANCE",
                             scale, 9, HUD_MUTED, True)
@@ -6363,8 +6375,6 @@ class MongrelHudApp:
                             scale, 8, HUD_AMBER)
             return width, round(y + 22 * scale)
         if panel == "surveyor_body":
-            width = round(505 * scale)
-            y = self._draw_title(canvas, "BODY INTELLIGENCE", scale, width)
             bodies = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
             status = state.get("status") if isinstance(state.get("status"), dict) else {}
             destination = status.get("destination") if isinstance(status.get("destination"), dict) else {}
@@ -6438,6 +6448,19 @@ class MongrelHudApp:
                             "DSS SURVEY COMPLETE" if mapped else "DSS SURVEY PENDING",
                             scale, 10, HUD_GREEN if mapped else HUD_AMBER, True)
             y += 24 * scale
+            was_discovered, was_mapped = focused.get("wasDiscovered"), focused.get("wasMapped")
+            discovered_label = ("DISCOVERED BEFORE YOUR SCAN" if was_discovered is True
+                                else "POTENTIAL FIRST DISCOVERY" if was_discovered is False
+                                else "DISCOVERY STATUS UNKNOWN")
+            mapped_label = ("PREVIOUSLY MAPPED" if was_mapped is True
+                            else "POTENTIAL FIRST MAPPING" if was_mapped is False
+                            else "PREVIOUS MAPPING UNKNOWN")
+            self._draw_text(canvas, 9 * scale, y, discovered_label, scale, 9,
+                            HUD_GREEN if was_discovered is False else HUD_MUTED, True)
+            y += 20 * scale
+            self._draw_text(canvas, 9 * scale, y, mapped_label, scale, 9,
+                            HUD_GREEN if was_mapped is False else HUD_MUTED, True)
+            y += 22 * scale
             value = focused.get("currentValue")
             self._draw_text(canvas, 9 * scale, y, "CURRENT RECORDED VALUE", scale, 9, HUD_MUTED, True)
             self._draw_text(canvas, width - 9 * scale, y,
@@ -6469,6 +6492,29 @@ class MongrelHudApp:
         self._draw_text(canvas, 10 * scale, y, label, scale, 9,
                         HUD_GREEN if active else HUD_AMBER, True)
         y += 25 * scale
+        discovery = str(survey.get("discoveryStatus") or "")
+        catalog = survey.get("intelligence") if isinstance(survey.get("intelligence"), dict) else {}
+        catalog_status = str(catalog.get("status") or "")
+        if discovery == "potential_first_arrival_star":
+            survey_alert = "POTENTIAL FIRST ARRIVAL · VERIFY ON CARTOGRAPHICS"
+            survey_color = HUD_GREEN
+        elif discovery == "previously_discovered_arrival_star":
+            survey_alert = "ARRIVAL STAR PREVIOUSLY DISCOVERED"
+            survey_color = HUD_MUTED
+        elif catalog.get("catalogedBodies"):
+            survey_alert = "COMMUNITY CHART EXISTS · BODY CLAIMS UNVERIFIED"
+            survey_color = HUD_CYAN
+        elif catalog_status == "not_in_queried_catalogs":
+            survey_alert = "NO COMMUNITY BODY RECORD · FIRST DISCOVERY UNCONFIRMED"
+            survey_color = HUD_AMBER
+        elif catalog_status == "providers_unavailable":
+            survey_alert = "COMMUNITY CHARTS OFFLINE · DISCOVERY UNCONFIRMED"
+            survey_color = HUD_AMBER
+        else:
+            survey_alert = "DISCOVERY STATUS UNCONFIRMED"
+            survey_color = HUD_MUTED
+        self._draw_text(canvas, 10 * scale, y, survey_alert, scale, 9, survey_color, True)
+        y += 23 * scale
         canvas.create_line(10 * scale, y, (width / 2) - 10 * scale, y,
                            fill=HUD_DIM, width=max(1, round(scale)))
         canvas.create_line((width / 2) + 8 * scale, y, width - 10 * scale, y,
@@ -6499,12 +6545,20 @@ class MongrelHudApp:
         total = total if type(total) is int and total > 0 else 0
         mapped = max(0, int(survey.get("personallyMappedBodies") or 0))
         self._draw_text(canvas, 10 * scale, y, "FSS COVERAGE", scale, 10, HUD_WHITE, True)
+        count_mismatch = bool(total and scanned > total)
+        coverage = (f"{scanned} JOURNAL SCANS · {total} FSS BODIES"
+                    if count_mismatch else f"{scanned} / {total if total else '?'} BODIES")
         self._draw_text(canvas, width - 10 * scale, y,
-                        f"{scanned} / {total if total else '?'} BODIES", scale, 10, HUD_CYAN, True, "ne")
+                        coverage, scale, 10 if not count_mismatch else 9, HUD_AMBER if count_mismatch else HUD_CYAN, True, "ne")
         y += 19 * scale
         self._draw_progress(canvas, 10 * scale, y, width - 20 * scale,
-                            (scanned / total * 100) if total else 0, scale)
+                            min(100, scanned / total * 100) if total else 0, scale)
         y += 19 * scale
+        if count_mismatch:
+            self._draw_text(canvas, 10 * scale, y,
+                            "COUNT DISAGREEMENT · SCAN HISTORY / FSS NEED REVIEW",
+                            scale, 8, HUD_AMBER)
+            y += 16 * scale
         self._draw_text(canvas, 10 * scale, y, f"DSS MAPPED  {mapped}", scale, 10, HUD_WHITE, True)
         self._draw_text(canvas, width - 10 * scale, y,
                         f"FIRST DISCOVERY CANDIDATES  {int(survey.get('potentialFirstBodies') or 0)}",
