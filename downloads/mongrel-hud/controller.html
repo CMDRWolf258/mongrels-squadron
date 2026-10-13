@@ -569,11 +569,16 @@ function renderSurveyorControls(){
   el("surveyorEDDConnect").disabled=eddEnabled;
   el("surveyorEDDRefresh").disabled=!eddEnabled;
   el("surveyorEDDDisconnect").disabled=!eddEnabled;
-  setText(el("surveyorEDDStatus"),eddEnabled?
-    (eddHistory.verifiedSystemIdentity?
-      "LINKED · "+Number(eddHistory.bodyCount||0)+" EDD HISTORICAL SCANS · never expedition credits":
-      "LINKED · awaiting verified system scans. Ensure EDD has loaded this system.") :
-    "NOT LINKED · journal scanning still functions normally");
+  var eddConnection=String(state.scout&&state.scout.explorationEDDiscoveryStatus||"");
+  setText(el("surveyorEDDStatus"),!eddEnabled?
+    "NOT LINKED · journal scanning still functions normally":
+    eddConnection==="server_unavailable"?
+      "EDD SERVER UNAVAILABLE · confirm local Web Server is on and port matches":
+    eddConnection==="system_not_verified"?
+      "EDD HISTORY CURSOR / ID UNVERIFIED · open current system in EDDiscovery":
+    eddHistory.verifiedSystemIdentity?
+      "LINKED · "+Number(eddHistory.bodyCount||0)+" ARCHIVED BODIES · no expedition credits":
+      "LINKED · requesting EDDiscovery's local current-system scans");
   var enabled=state.scout&&state.scout.explorationCommunityEnabled===true;
   var intelligence=survey.intelligence||{};
   setText(el("surveyorCommunityToggle"),enabled?"DISABLE COMMUNITY CHARTS":"ENABLE COMMUNITY CHARTS");
