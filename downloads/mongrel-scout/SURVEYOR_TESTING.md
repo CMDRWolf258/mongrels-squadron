@@ -117,3 +117,35 @@ with the corresponding high-value categories; earlier builds incorrectly used
 the generic low-value coefficient. Changes recalculate from the existing private
 ledger. Cartographics quotes and EDDiscovery screenshots are *comparisons*, not
 proof of an exact payout. No global multiplier is applied.
+
+## EDDiscovery interoperability (under automated development)
+
+Surveyor now has an **optional read-only local EDDiscovery bridge**. EDDiscovery
+19+ already supports a built-in Web Server, enabled under EDDiscovery Settings.
+On the paired HUD controller, enter that Web Server's configured port under
+**EDDiscovery · Local Historical Scans** and explicitly select **Link EDDiscovery**.
+Do not open Windows firewall access to the iPad/LAN solely for this connection;
+Scout talks to `127.0.0.1` on Serenity.
+
+The adapter makes one bounded WebSocket `EDDJSON` `scandata` request when entering
+a system, with no extra dependencies, no recurring Cloudflare reads, and no
+new uploads. It retains EDDiscovery's own estimated values and prior body
+scan/map history in a separate **historical read-only** slot, not Frontier
+journal events or expedition credits. A value for a body previously sold is
+still *historical* and never automatically counted as new earnings.
+
+EDDiscovery's local response must contain matching system identity evidence;
+if it cannot be verified, Scout does not borrow possibly unrelated body data.
+The controller shows **Server unavailable** versus **System not verified**
+instead of silently reporting an empty database. Unlink immediately disables
+future local requests. The link is fully optional for CMDRs without EDD.
+
+This is still an isolated PR #200 development feature, **not approved production**.
+The WebSocket protocol has an offline mock-server test covering framing,
+identity isolation, persisted history, and no credited earnings. We have not
+yet verified the full live connection against Serenity's EDDiscovery settings.
+
+Reference:
+- EDDiscovery Web Server: https://github.com/EDDiscovery/EDDiscovery/wiki/2.8-EDD-Web-Server-%28Roccat-Style-Grid%29
+- Native scan request: https://github.com/EDDiscovery/EDDiscovery/blob/master/EDDiscovery/WebServer/EDDWebScandata.cs
+- Apache-2.0 EDDiscovery valuation reference: `THIRD_PARTY_NOTICES.md`
