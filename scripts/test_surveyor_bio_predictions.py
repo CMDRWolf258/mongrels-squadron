@@ -184,8 +184,11 @@ assert "Cactoida Vermis" in water and "Fungoida Gelata" in water
 ammonia={x["species"] for x in predict_body(atmosphere="thin Ammonia")}
 assert "Fungoida Setisis" in ammonia
 assert "Cactoida Lapis" in ammonia
-dense={x["species"] for x in predict_body(atmosphere="Carbon dioxide")}
-assert not dense, "A dense atmosphere must not be treated as Odyssey thin"
+dense={x["species"] for x in predict_body(atmosphere="thick Carbon dioxide atmosphere")}
+assert not dense, "Explicitly thick atmosphere must never be treated as Odyssey thin"
+unqualified=predict_body(atmosphere="Carbon dioxide")
+assert unqualified and all(row["status"]=="insufficient_data" for row in unqualified)
+assert all("thin_atmosphere" in row["missing"] for row in unqualified)
 high_g={x["species"] for x in predict_body(atmosphere="thin Argon",gravity=4)}
 assert "Fungoida Bullarum" not in high_g
 assert "Bacterium Vesicula" in high_g # no unsupported Bacterium gravity ceiling
