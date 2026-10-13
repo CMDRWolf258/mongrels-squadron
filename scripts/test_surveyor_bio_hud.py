@@ -110,8 +110,8 @@ text = " ".join(hud.lines)
 assert dimensions[0] > 450 and dimensions[1] > 100
 assert "BIOLOGICAL INTELLIGENCE" in text
 assert "GENETIC DISTANCE" in text or "DISTANCE MET" in text
-assert "NOT CONFIRMED" in text and "19,010,800" in text
-assert "FIRST FOOTFALL DOES NOT GUARANTEE FIRST-LOG BONUS" in text
-assert "POTENTIAL TOTAL" in text and "95,054,000" in text, text
-assert "SAMPLE SEQUENCE" in text
+assert "19,010,800" in text
+assert "DSS BIOLOGY" in text or "POSSIBLE GENERA" in text
+assert "POSSIBLE FIRST-LOG TOTAL" in text and "95,054,000" in text, text
+assert "ACTIVE SPECIMEN" in text
 print("Biological HUD samples, source positions, uncertainty and rendering PASSED")
