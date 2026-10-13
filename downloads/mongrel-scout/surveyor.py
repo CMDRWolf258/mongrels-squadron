@@ -280,6 +280,14 @@ class Surveyor:
                     marked_at TEXT NOT NULL, cutoff_rowid INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY(expedition_id, address)
                 );
+                CREATE TABLE IF NOT EXISTS carto_reference (
+                    commander TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    observed_actual INTEGER NOT NULL,
+                    model_estimate INTEGER NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    PRIMARY KEY(commander,address)
+                );
             """)
 
     def _connect(self) -> sqlite3.Connection:
@@ -530,6 +538,9 @@ class Surveyor:
                             ("PlanetClass", "planetClass"), ("StarType", "starType"),
                             ("TerraformState", "terraformState"), ("DistanceFromArrivalLS", "distanceLs"),
                             ("MassEM", "massEM"), ("StellarMass", "stellarMass"),
+                            ("Landable", "landable"), ("SurfaceGravity", "surfaceGravity"),
+                            ("SurfaceTemperature", "surfaceTemperature"), ("Atmosphere", "atmosphere"),
+                            ("Volcanism", "volcanism"),
                         ):
                             if src in event:
                                 body[dest] = event[src]
@@ -558,6 +569,8 @@ class Surveyor:
                                 for s in signals if isinstance(s, Mapping)
                             ]
                     self._save(conn, "bodies", commander, address, body, body_id)
+                    if not historic and kind in {"Scan", "SAAScanComplete"} and address == active:
+                        system["lastSurveyedBodyId"] = body_id
                     revalue_systems.add(address)
                     session = self._active_expedition(conn, commander)
                     # Journal timestamps are Frontier UTC. Never infer earnings
@@ -616,6 +629,35 @@ class Surveyor:
             row = conn.execute("SELECT active_address FROM meta WHERE commander=?", (_text(commander),)).fetchone()
             return self._snapshot(conn, _text(commander), row["active_address"] if row else addr)
 
+    def record_carto_reference(self, commander: str, observed_actual: Any) -> dict[str, Any]:
+        """Record a manual Universal Cartographics quote as a calibration reference.
+
+        Manual quotes never mark exploration data sold, affect expedition credit,
+        or pretend to be Frontier journal payout events.
+        """
+        cmdr = _text(commander)
+        actual = _int(observed_actual)
+        if not cmdr or actual is None or not 0 <= actual <= 2_000_000_000:
+            raise ValueError("invalid_carto_quote")
+        with self.lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT active_address FROM meta WHERE commander=?", (cmdr,),
+            ).fetchone()
+            address = row["active_address"] if row else ""
+            if not address:
+                raise ValueError("current_system_unavailable")
+            model = self._snapshot(conn, cmdr, address).get("currentSystemEstimate")
+            if type(model) is not int or model <= 0:
+                raise ValueError("system_estimate_unavailable")
+            conn.execute(
+                "INSERT INTO carto_reference VALUES (?,?,?,?,?) "
+                "ON CONFLICT(commander,address) DO UPDATE SET "
+                "observed_actual=excluded.observed_actual, model_estimate=excluded.model_estimate, "
+                "recorded_at=excluded.recorded_at",
+                (cmdr, address, actual, model, self._utc_now()),
+            )
+            return self._snapshot(conn, cmdr, address)
+
     def snapshot(self, commander: str) -> dict[str, Any]:
         with self.lock, self._connect() as conn:
             row = conn.execute(
@@ -660,6 +702,21 @@ class Surveyor:
         sale_total = conn.execute(
             "SELECT COALESCE(SUM(total),0) AS total FROM sales WHERE commander=?", (commander,)
         ).fetchone()["total"]
+        comparisons = conn.execute(
+            "SELECT address,observed_actual,model_estimate FROM carto_reference WHERE commander=?",
+            (commander,),
+        ).fetchall()
+        current_ref = next((row for row in comparisons if row["address"] == active), None)
+        # Calibrate only after several distinct, manually entered systems.
+        # One example is evidence of a gap, not a universal multiplier.
+        ratios = sorted(
+            max(0.5, min(3.0, row["observed_actual"] / row["model_estimate"]))
+            for row in comparisons if row["model_estimate"] > 0 and row["observed_actual"] > 0
+        )
+        factor = ratios[len(ratios) // 2] if len(ratios) >= 3 else None
+        current_raw = sum(known_current) if known_current else None
+        estimated_quote = (round(current_raw * factor) if factor and current_raw is not None
+                           else current_raw)
         return {
             "schemaVersion": 1,
             "source": "frontier_journal_local",
@@ -672,8 +729,20 @@ class Surveyor:
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
             "potentialFirstBodies": len(firsts),
             "currentSystemKnownEstimates": sum(known_current),
-            "currentSystemEstimate": sum(known_current) if known_current else None,
-            "currentSystemEstimateMeaning": "observed_scans_may_include_previously_sold_data",
+            "currentSystemEstimate": estimated_quote,
+            "currentSystemBaseEstimate": current_raw,
+            "currentSystemEstimateMeaning": (
+                "calibrated_from_manual_system_quotes" if factor else
+                "observed_scans_excludes_unmeasured_system_completion_and_sale_modifiers"
+            ),
+            "cartographicsComparison": {
+                "actualQuote": current_ref["observed_actual"] if current_ref else None,
+                "modelAtQuote": current_ref["model_estimate"] if current_ref else None,
+                "references": len(ratios),
+                "calibrationFactor": round(factor, 4) if factor else None,
+                "calibrationReady": factor is not None,
+                "note": "Manual quotes are not proof of sold data or guaranteed future payouts",
+            },
             "expedition": self._expedition_view(conn, commander, active),
             "currentSystemValueCoverage": len(known_current),
             "additionalMappingPotential": sum(b.get("mappingGainMax") or 0 for b in bodies),
