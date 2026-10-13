@@ -236,7 +236,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="layout-actions"><button id="surveyorCommunityToggle" type="button">ENABLE COMMUNITY CHARTS</button><button id="surveyorCommunityRefresh" type="button">REFRESH THIS SYSTEM</button></div>
     <div class="layout-hint" id="surveyorCommunityStatus">Community charts disabled.</div>
     <h3>CARTOGRAPHICS CALIBRATION</h3>
-    <div class="layout-hint">Record Universal Cartographics system quotes, including prior systems. References do not mark scans sold; calibration requires at least three systems.</div>
+    <div class="layout-hint">Record Universal Cartographics system quotes, including prior systems. References do not mark scans sold. Ratios stay diagnostic until discovery and completion bonuses are validated.</div>
     <div class="grid"><div><label for="surveyorQuoteSystem">System name</label><input id="surveyorQuoteSystem" type="text" placeholder="Current or previous system"></div><div><label for="surveyorQuoteValue">Cartographics quote (CR)</label><input id="surveyorQuoteValue" type="number" min="0" step="1" inputmode="numeric" placeholder="32267"></div></div>
     <div class="layout-actions"><button id="surveyorRecordQuote" type="button">RECORD SYSTEM QUOTE</button></div>
     <div class="layout-hint" id="surveyorCalibrationStatus">Awaiting comparison readings.</div>
@@ -514,8 +514,8 @@ function renderSurveyorControls(){
     "COMMUNITY CHARTS DISABLED · LOCAL JOURNAL ONLY");
   el("surveyorCommunityRefresh").disabled=!enabled;
   var comparison=survey.cartographicsComparison||{};
-  setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+" distinct system comparisons · "+
-    (comparison.calibrationReady?"Median calibration active ("+Number(comparison.calibrationFactor).toFixed(2)+"x)":"Calibrates after 3 quoted systems"));
+  setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+
+    " distinct system quote comparisons · reference only (no blanket multiplier)");
 }
 async function surveyorAction(action){
   holdRefresh(1200);
