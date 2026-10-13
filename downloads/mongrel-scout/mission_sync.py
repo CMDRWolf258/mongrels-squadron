@@ -77,6 +77,10 @@ class MissionSync:
 
     def start(self) -> None:
         if self.worker and self.worker.is_alive():
+            # A rapid disable/re-enable can occur before the worker exits.
+            # Re-arm that thread instead of silently losing synchronization.
+            self.stop_event.clear()
+            self.wake.set()
             return
         self.stop_event.clear()
         self.worker = threading.Thread(target=self._loop, name="MongrelScoutMissionSync", daemon=True)
