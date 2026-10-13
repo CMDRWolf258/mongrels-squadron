@@ -1121,6 +1121,9 @@ class Surveyor:
                 "active": False, "startedAt": None, "estimate": 0,
                 "currentSystemGain": 0, "existingDataExcluded": False,
                 "countedScans": 0, "countedMaps": 0,
+                "exobiology": {"completedSpecies": 0, "estimatedBase": 0,
+                               "potentialFirstLoggedBonus": 0, "potentialTotal": 0,
+                               "confirmedVistaSales": 0, "uncertainValues": 0},
             }
         excluded = {
             row["address"]: (row["marked_at"], row["cutoff_rowid"])
@@ -1147,12 +1150,43 @@ class Surveyor:
                 scans += 1
             elif row["kind"] == "SAAScanComplete":
                 maps += 1
+        bio_base = bio_bonus = bio_count = unknown = 0
+        for row in conn.execute(
+            "SELECT address,body_id,species_id,occurred_at,base FROM expedition_bio_credits "
+            "WHERE expedition_id=?", (session["id"],),
+        ):
+            cutoff = excluded.get(row["address"])
+            if cutoff and row["occurred_at"] < cutoff[0]:
+                continue
+            bio_count += 1
+            if row["base"] is None:
+                unknown += 1
+                continue
+            base = max(0, int(row["base"]))
+            bio_base += base
+            origin = self._load(conn, "bodies", commander, row["address"], row["body_id"])
+            if origin.get("ourFirstFootfall") is True:
+                bio_bonus += base * 4  # possible first-logged, NEVER guaranteed
+        sold = conn.execute(
+            "SELECT COALESCE(SUM(base+bonus),0) FROM bio_sales "
+            "WHERE commander=? AND timestamp>=?",
+            (commander, session["started_at"]),
+        ).fetchone()[0]
         return {
             "active": True, "startedAt": session["started_at"],
             "estimate": total, "currentSystemGain": local,
             "existingDataExcluded": active_address in excluded,
             "currentSystemCutoff": excluded[active_address][0] if active_address in excluded else None,
             "countedScans": scans, "countedMaps": maps,
+            "exobiology": {
+                "completedSpecies": bio_count, "estimatedBase": bio_base,
+                "potentialFirstLoggedBonus": bio_bonus,
+                "potentialTotal": bio_base + bio_bonus,
+                "confirmedVistaSales": int(sold or 0), "uncertainValues": unknown,
+                "basis": "completed_since_start_not_proof_of_unsold",
+                "bonusBasis": "possible_first_logged_if_eligible",
+                "salesBasis": "sold_during_expedition_not_origin_reconciled",
+            },
             "valueMeaning": "estimated_new_scan_and_mapping_gains_not_guaranteed_unsold",
         }
 
