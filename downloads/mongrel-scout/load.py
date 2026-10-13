@@ -422,7 +422,7 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
         "FSDJump", "Location", "CarrierJump", "FSSDiscoveryScan",
         "FSSAllBodiesFound", "Scan", "SAAScanComplete",
         "FSSBodySignals", "SAASignalsFound", "SellExplorationData",
-        "MultiSellExplorationData", "ScanOrganic", "SellOrganicData", "Disembark",
+        "MultiSellExplorationData", "ScanOrganic", "SellOrganicData", "Disembark", "CodexEntry",
     }:
         return
     try:
