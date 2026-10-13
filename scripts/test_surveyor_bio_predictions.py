@@ -20,6 +20,13 @@ assert len(module.BIO_HABITAT_RULES) == 40
 assert len(module.BIO_HABITAT_SOURCES) == 8
 assert "stage3" in module.BIO_HABITAT_VERSION
 assert len({row[0] for row in module.BIO_HABITAT_RULES}) == 8
+assert all(f"{genus} {species}" in module.BIO_REFERENCE_VALUES for genus,species,*_ in module.BIO_HABITAT_RULES)
+assert module.BIO_REFERENCE_VALUES["Bacterium Informem"] == 8418000
+assert module.BIO_REFERENCE_VALUES["Bacterium Alcyoneum"] == 1658500
+assert module.BIO_REFERENCE_VALUES["Bacterium Bullaris"] == 1152500
+assert module.BIO_REFERENCE_VALUES["Stratum Tectonicas"] == 19010800
+assert module.BIO_REFERENCE_VALUES["Fungoida Bullarum"] == 3703200
+assert module.BIO_PRICE_SOURCE == "https://ed-dsn.net/en/vista-genomics-values/"
 assert len(module.BIO_GENETIC_DISTANCES_M) == 15
 assert module.BIO_GENETIC_DISTANCES_M["Aleoida"] == 150
 assert module.BIO_GENETIC_DISTANCES_M["Tubus"] == 800
