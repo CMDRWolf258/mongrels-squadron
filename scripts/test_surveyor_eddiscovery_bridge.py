@@ -111,4 +111,29 @@ with tempfile.TemporaryDirectory() as folder:
     assert again["eddiscoveryHistory"]["bodyCount"]==2
     assert again["expedition"]["estimate"]==0
     assert surveyor.Surveyor(Path(folder)/"surveyor.sqlite3").snapshot("Other CMDR")["eddiscoveryHistory"] is None
-print("EDD bridge: real frame handshake, historical scan values, scan verification, commander isolation and zero expedition credit PASSED")
+# Body Intelligence must display archived EDD data instead of a blank panel.
+import sys,types
+sys.modules.setdefault("tkinter",types.ModuleType("tkinter"))
+sys.path.insert(0,str(ROOT.parent/"mongrel-hud"))
+import mongrel_hud as hud
+class DummyCanvas:
+    def create_line(self,*args,**kwargs): pass
+class DummyPanel:
+    def __init__(self,state):
+        self.state=state
+        self.labels=[]
+        self.titles=[]
+    def scout_state(self): return self.state
+    def _draw_title(self,c,title,scale,width,color=None):
+        self.titles.append(title)
+        return 30 * scale
+    def _draw_text(self,c,x,y,value,scale,*args): self.labels.append(str(value))
+    def _draw_progress(self,*args): pass
+    def clip_line(self,text,count): return str(text or "")[:count]
+p=DummyPanel({"exploration":again,"status":{"destination":{}}})
+w,h=hud.MongrelHudApp._render_surveyor_canvas(p,DummyCanvas(),1.0,"surveyor_body")
+assert p.titles==["BODY INTELLIGENCE"]
+assert any("EDDISCOVERY ARCHIVE" in line for line in p.labels),p.labels
+assert any("4,653,384 CR" in line for line in p.labels),p.labels
+assert any("NOT NEW EXPEDITION CREDIT" in line for line in p.labels),p.labels
+print("EDD bridge: WebSocket handshake, historic mapped bodies, safe accounting, Commander isolation and HUD fallback PASSED")
