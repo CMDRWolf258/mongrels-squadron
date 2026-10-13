@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.9 and HUD 0.17.17 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.10 and HUD 0.17.18 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
