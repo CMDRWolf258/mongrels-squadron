@@ -1,6 +1,6 @@
 # Mongrel Surveyor — owner-only live acceptance build
 
-**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.13 and HUD 0.17.21 are
+**TEST BUILD, NOT A SQUAD RELEASE.** Scout 1.13.14 and HUD 0.17.22 are
 isolated GitHub Actions artifacts. They are not published by the normal
 MongrelHUD updater or the live Mongrel Tools Scout download.
 
@@ -18,7 +18,7 @@ MongrelHUD updater or the live Mongrel Tools Scout download.
 4. Extract the test HUD into its **own** folder, separate from the normal
    HUD executable. Run this test executable only after closing your
    normal HUD, so they do not compete for the local controller port.
-5. Start EDMC, then test HUD. Check Scout **1.13.13** and HUD **0.17.21**.
+5. Start EDMC, then test HUD. Check Scout **1.13.14** and HUD **0.17.22**.
    Open the existing paired iPad HUD controller, then find
    **Mongrel Surveyor** in Overlay Layout. It starts hidden; switch it
    ON and choose Surface or Navigation (or both) as desired.
@@ -96,7 +96,7 @@ control records observed UC quotes locally; its diagnostic comparison ratios
 Use the next TEST builds, not earlier 1.13.11/0.17.19 artifacts. This PR is
 unmerged and has no production auto-updater changes.
 
-## Discovery intel and payout feedback (Scout 1.13.13 / HUD 0.17.21)
+## Discovery intel and payout feedback (Scout 1.13.14 / HUD 0.17.22)
 
 The Exploration profile instruments draw only **one** title each. System telemetry
 shows Frontier journal first-arrival signals and clearly separates FSS counts
@@ -149,3 +149,9 @@ Reference:
 - EDDiscovery Web Server: https://github.com/EDDiscovery/EDDiscovery/wiki/2.8-EDD-Web-Server-%28Roccat-Style-Grid%29
 - Native scan request: https://github.com/EDDiscovery/EDDiscovery/blob/master/EDDiscovery/WebServer/EDDWebScandata.cs
 - Apache-2.0 EDDiscovery valuation reference: `THIRD_PARTY_NOTICES.md`
+
+## Isolated EDDiscovery link acceptance package
+
+This build uniquely identifies the optional read-only EDDiscovery localhost
+history bridge as Scout 1.13.14-TEST and HUD 0.17.22-TEST. Do not confuse it
+with the previous 1.13.13/0.17.21 build, which lacks the new local EDD link.
