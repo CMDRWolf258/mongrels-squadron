@@ -85,6 +85,17 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
 BIO_REFERENCE_VALUES = {
     "Stratum Tectonicas": 19010800,
     "Stratum Paleas": 1362000,
+    "Bacterium Acies": 1000000,
+    "Bacterium Alcyoneum": 1000000,
+    "Bacterium Bullaris": 1000000,
+    "Bacterium Cerbrus": 1689800,
+    "Bacterium Informem": 1000000,
+    "Bacterium Nebulus": 5289900,
+    "Bacterium Vesicula": 1000000,
+    "Cactoida Cortexum": 3667600,
+    "Cactoida Lapis": 2483600,
+    "Cactoida Peperatis": 2483600,
+    "Cactoida Vermis": 16202800,
     "Stratum Araneamus": 2448900,
     "Stratum Cucumisis": 16202800,
     "Stratum Excutitus": 2448900,
@@ -202,13 +213,16 @@ def _biological_apply(body: dict[str, Any], event: Mapping[str, Any],
 # This is NOT copied from any GPL/AGPL predictor or its bundled database.
 # Explicit source URLs are exposed to the HUD and tests. More biological genera
 # will be added as habitat parameters are independently corroborated.
-BIO_HABITAT_VERSION = "mongrel-habitats-2026-10-stage2-v1"
+BIO_HABITAT_VERSION = "mongrel-habitats-2026-10-stage3-v1"
 BIO_HABITAT_SOURCES = {
     "Stratum": "https://ed-dsn.net/en/stratum_en/",
     "Aleoida": "https://ed-dsn.net/en/aleoida_en/",
     "Osseus": "https://ed-dsn.net/en/osseus_en/",
     "Clypeus": "https://ed-dsn.net/en/clypeus_en/",
     "Electricae": "https://ed-dsn.net/en/electricae_en/",
+    "Bacterium": "https://ed-dsn.net/en/bacterium_en/",
+    "Cactoida": "https://ed-dsn.net/en/cactoida_en/",
+    "Fungoida": "https://ed-dsn.net/en/fungoida_en/",
 }
 # Planet classes and atmospheres are canonicalized by _bio_atmosphere/_bio_world.
 # A "None" criterion means unknown/unrestricted, NOT an assertion of absence.
@@ -242,6 +256,26 @@ BIO_HABITAT_RULES = [
     ("Clypeus", "Margaritus", "R H", "CO2 H2O", 190, None, 0.27, ""),
     ("Clypeus", "Speculumi", "R H", "CO2 H2O", 190, None, 0.27, "parent_star_distance"),
     ("Electricae", "Pluma", "I", "HE NE AR", None, None, 0.27, "parent_star_luminosity"),
+    # Deep Space Network individual species summaries, uncertainty-aware.
+    ("Bacterium", "Acies", "*", "NE", None, None, None, ""),
+    ("Bacterium", "Alcyoneum", "*", "NH3", None, None, None, ""),
+    ("Bacterium", "Aurasus", "*", "CO2", None, None, None, ""),
+    ("Bacterium", "Bullaris", "*", "CH4", None, None, None, ""),
+    ("Bacterium", "Cerbrus", "*", "H2O SO2", None, None, None, ""),
+    ("Bacterium", "Informem", "*", "N2", None, None, None, ""),
+    ("Bacterium", "Nebulus", "*", "HE", None, None, None, ""),
+    ("Bacterium", "Vesicula", "*", "AR", None, None, None, ""),
+    # Volcanic species are deferred until sufficiently precise volcanic class
+    # matching; a mere 'has volcanism' flag is not a verified match.
+    ("Cactoida", "Cortexum", "R H", "CO2", 180, 195, 0.27, ""),
+    ("Cactoida", "Lapis", "R H", "NH3", None, None, 0.27, ""),
+    ("Cactoida", "Peperatis", "R H", "NH3", None, None, 0.27, ""),
+    ("Cactoida", "Pullulanta", "R H", "CO2", 180, 195, 0.27, ""),
+    ("Cactoida", "Vermis", "R H", "H2O", None, None, 0.27, ""),
+    ("Fungoida", "Bullarum", "*", "AR", None, None, 0.27, ""),
+    ("Fungoida", "Gelata", "*", "CO2 H2O", None, None, 0.27, ""),
+    ("Fungoida", "Setisis", "*", "NH3 CH4", None, None, 0.27, ""),
+    ("Fungoida", "Stabitis", "*", "CO2 H2O", None, None, 0.27, ""),
 ]
 
 BIO_GENETIC_DISTANCES_M.update({
@@ -324,7 +358,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
             continue
         missing: list[str] = []
         if world:
-            if world not in worlds.split():
+            if worlds != "*" and world not in worlds.split():
                 continue
         else:
             missing.append("planet_class")
@@ -337,6 +371,13 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
                 continue
         else:
             missing.append("atmosphere_gas")
+        # Fungoida Gelata/Stabitis require 180-195 K with CO2 but not water.
+        effective_high = high
+        if genus == "Fungoida" and epithet in {"Gelata", "Stabitis"}:
+            if gas == "CO2":
+                low, effective_high = 180, 195
+            elif not gas:
+                missing.append("atmosphere_dependent_temperature")
         # Stratum Paleas needs >165 K under NH3/CO2, but is also recorded
         # under water atmospheres without a confirmed minimum threshold.
         # An unknown gas must not be promoted to an unconditional prediction.
@@ -344,12 +385,12 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
         if genus == "Stratum" and epithet == "Paleas" and not gas:
             missing.append("atmosphere_dependent_temperature")
         if temperature is None:
-            if effective_low is not None or high is not None:
+            if effective_low is not None or effective_high is not None:
                 missing.append("surface_temperature")
         else:
             if effective_low is not None and temperature < effective_low:
                 continue
-            if high is not None and temperature > high:
+            if effective_high is not None and temperature > effective_high:
                 continue
         if max_gravity is not None:
             if gravity_g is None:
@@ -386,7 +427,7 @@ def _bio_predict(body: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "candidates": candidates[:40],
         "candidateCount": len(candidates),
-        "ruleCoverage": "partial",  # genus coverage limited to curated 5 groups
+        "ruleCoverage": "partial",  # eight genera; no regional, star, volcanic class model
         "knownGenera": sorted(BIO_HABITAT_SOURCES),
         "model": BIO_HABITAT_VERSION,
         "planetEvidence": {
