@@ -213,7 +213,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
 VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -226,6 +226,7 @@ PANEL_TITLES = {
     "surveyor": "EXPEDITION TELEMETRY",
     "surveyor_dss": "DSS TARGET DIRECTOR",
     "surveyor_body": "BODY INTELLIGENCE",
+    "surveyor_alert": "EXPLORATION ALERTS",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
     "scoutboard": "SCOUT BOARD",
@@ -800,6 +801,7 @@ def default_layout() -> dict[str, Any]:
             "surveyor": {"x": 40, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_dss": {"x": 610, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_body": {"x": 610, "y": 410, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_alert": {"x": 40, "y": 510, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
             "scoutboard": {"x": 1260, "y": 540, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -6284,6 +6286,65 @@ class MongrelHudApp:
 
         return width, round(y + 7 * scale)
 
+    def _render_surveyor_alert_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        """Attention-grabbing but local-only Surveyor alerts from live journal events."""
+        width = round(540 * scale)
+        survey = self.scout_state().get("exploration")
+        survey = survey if isinstance(survey, dict) else {}
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        entries = survey.get("explorationAlerts") if isinstance(survey.get("explorationAlerts"), list) else []
+        entries = [row for row in entries if isinstance(row, dict)
+                   and row.get("kind") in {"first_discovery_system", "first_discovery_body", "hmc_bio"}]
+        if not hasattr(self, "_survey_alert_seen"):
+            self._survey_alert_seen = {}
+            self._survey_alert_system = ""
+        sysid = str(system.get("address") or "")
+        if self._survey_alert_system != sysid:
+            self._survey_alert_system = sysid
+            self._survey_alert_seen = {}
+        now = time.monotonic()
+        # Retain only event keys still present in this system's active visit.
+        active_keys = {sysid + ":" + str(row.get("id") or "") for row in entries}
+        self._survey_alert_seen = {key: when for key, when in self._survey_alert_seen.items()
+                                   if key in active_keys}
+        title_y = self._draw_title(canvas, "EXPLORATION ALERTS", scale, width, HUD_AMBER)
+        if not entries:
+            self._draw_text(canvas, 12 * scale, title_y, "NO LIVE DISCOVERY ALERTS", scale, 12, HUD_MUTED)
+            return width, round(title_y + 33 * scale)
+        indexed = list(enumerate(entries))
+        weight = {"first_discovery_system": 0, "hmc_bio": 1, "first_discovery_body": 2}
+        indexed.sort(key=lambda pair: (weight.get(pair[1]["kind"], 3), -pair[0]))
+        y = title_y + 7 * scale
+        for _, alert in indexed[:3]:
+            kind = alert["kind"]
+            key = sysid + ":" + str(alert.get("id") or "")
+            if key not in self._survey_alert_seen:
+                self._survey_alert_seen[key] = now
+            pulse = now - self._survey_alert_seen[key] < 12.0
+            color = HUD_GREEN if kind.startswith("first_discovery") else HUD_AMBER
+            bright = not pulse or flash_on
+            highlight = color if bright else HUD_DIM
+            title = ("FIRST DISCOVERY · SYSTEM" if kind == "first_discovery_system" else
+                     "FIRST DISCOVERY · BODY" if kind == "first_discovery_body" else
+                     "HMC + BIOLOGICAL SIGNALS")
+            name = self.clip_line(alert.get("name") or "UNNAMED BODY", 45)
+            canvas.create_rectangle(7 * scale, y, width - 7 * scale, y + 86 * scale,
+                                    outline=highlight, width=max(2, round(3 * scale)))
+            self._draw_text(canvas, 17 * scale, y + 8 * scale, title, scale, 18, highlight, True)
+            self._draw_text(canvas, 17 * scale, y + 35 * scale, name, scale, 12, HUD_WHITE, True)
+            if kind == "hmc_bio":
+                count = max(0, int(alert.get("biologicalSignals") or 0))
+                footer = f"{count} BIO SIGNAL(S) · SPECIES UNKNOWN · STRATUM NOT CONFIRMED"
+            else:
+                footer = "FRONTIER SCAN FLAG · CONFIRM FIRST CLAIM IN GAME"
+            self._draw_text(canvas, 17 * scale, y + 59 * scale, footer, scale, 9, HUD_CYAN, True)
+            y += 96 * scale
+        remaining = max(0, len(indexed) - 3)
+        if remaining:
+            self._draw_text(canvas, 10 * scale, y, f"+{remaining} MORE LIVE DISCOVERY ALERTS", scale, 9, HUD_MUTED)
+            y += 20 * scale
+        return width, round(y + 8 * scale)
+
     def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float, panel: str = "surveyor") -> tuple[int, int]:
         """Dedicated compact expedition instrument; all data is local to Scout."""
         state = self.scout_state()
@@ -6813,6 +6874,8 @@ class MongrelHudApp:
             width, height = self._render_miningintel_canvas(canvas, scale)
         elif panel_id in {"surveyor", "surveyor_dss", "surveyor_body"}:
             width, height = self._render_surveyor_canvas(canvas, scale, panel_id)
+        elif panel_id == "surveyor_alert":
+            width, height = self._render_surveyor_alert_canvas(canvas, scale, flash_on)
         elif panel_id == "mission":
             width, height = self._render_mission_canvas(canvas, scale)
         elif panel_id == "trade":
@@ -6867,6 +6930,13 @@ class MongrelHudApp:
                 panel_cfg = layout["panels"][panel_id]
                 active_for_profile = profile in (panel_cfg.get("profiles") or [])
                 should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
+                # No empty warning window: it appears only for live, local
+                # events and disappears when leaving the system.
+                if should_show and panel_id == "surveyor_alert":
+                    with self.lock:
+                        observation = self.snapshot.data.get("exploration") if isinstance(self.snapshot.data, dict) else None
+                        events = observation.get("explorationAlerts") if isinstance(observation, dict) else None
+                    should_show = bool(events)
                 window = info["window"]
                 if not should_show:
                     try:
