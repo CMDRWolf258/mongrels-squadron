@@ -59,6 +59,17 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Exobiology Live Acceptance fixes (PR #215, October 2026)
+
+- Approved owner findings from NGC 2546 Sector LX-S c17-3 B 7: HUD wrongly kept Bacterium genus candidates after FSS/DSS even though sulfur dioxide atmospheric type was available in Elite; only `Atmosphere` was read and gas names lacked full normalization. Scout Surveyor now retains `AtmosphereType` and `AtmosphereComposition`, normalizes sulfur/sulphur dioxide, preserves prior detailed scan fields on partial AutoScan, and recomputes predictions from combined journal evidence.
+- Adds volcanism-gated `Bacterium Tela` (base 1,949,000 CR); no claim of Tela without helium/iron/silicate/ammonia volcanism support. Existing genus/source tables and partial coverage safeguards remain.
+- `Scan.WasFootfalled` plus subsequent on-planet `Disembark` or live `ScanOrganic` makes **first footfall indicated**. That is **not guaranteed first-logged bonus**, so HUD/iPad show a conditional estimated 5x total rather than confirmed sale. First-logged cash remains confirmed only by `SellOrganicData`.
+- Three-slot graphical progress strip for organic sampling in HUD/iPad. Base, conditional bonus and potential total displayed alongside 1/3, 2/3, 3/3 labels. Same-system/body recent GPS in ship and SRV/Nomad is accepted for *distance calculation*; capturing sample source coordinates stays foot-only.
+- `Belt Cluster` records excluded from primary FSS/scanned/mapped/first-candidate body counts while retaining the journal database; example 37 journal Scan records = 31 real bodies plus six asteroid clusters.
+- **UI Option B:** original Expedition Telemetry panel stops immediately after `DSS MAPPED` + `FIRST DISCOVERY CANDIDATES`. All lines below (DSS targets elsewhere, external intel, local journal statistics, provisional banners) were removed **only from flight display**, not from the database/diagnostic controller.
+- Regression: `scripts/test_surveyor_bio_live_fixes.py` replays sulfur planet, Tela, first-footfall valuation, 31+6 counts. Updated HUD and iPad tests cover sample slots and in-vehicle navigation.
+- After merging, do **one coordinated staging Scout+HUD package**; don't disturb production auto-updater/public downloads or ask for repeated installs.
+
 ### Surveyor Phase 4 — Callback integration, 60-species model, staged paired builds
 
 - `surveyor.py` now has **60 source-attributed species across ten genera**, including all Tubus/Tussock species, with independently published Vista Genomics base prices. Model `mongrel-habitats-2026-10-stage4-v1`; source details and partial regional/starlight/volcanic coverage in `SURVEYOR_BIO_PREDICTIONS.md`.
