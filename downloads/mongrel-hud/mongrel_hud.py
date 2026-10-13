@@ -1144,6 +1144,12 @@ def bio_focus_body(survey: Any, status: Any) -> dict[str, Any] | None:
         for body in bodies:
             if str(body.get("bodyName") or "").strip().casefold() == current:
                 return body
+    # A live organic scan is a stronger indication of the biology focus
+    # than the last planet's FSS/Scan cartographics body.
+    last_id = system.get("lastOrganicBodyId")
+    for body in bodies:
+        if last_id is not None and str(body.get("bodyId")) == str(last_id):
+            return body
     last_id = system.get("lastSurveyedBodyId")
     for body in bodies:
         if last_id is not None and str(body.get("bodyId")) == str(last_id):
@@ -6459,7 +6465,7 @@ class MongrelHudApp:
             remaining = float(guide.get("remainingMeters") or 0)
             required = float(guide.get("requiredMeters") or 0)
             measured = float(guide.get("distanceMeters") or 0)
-            phrase = ("DISTANCE MET · READY TO SAMPLE" if gstatus == "genetic_distance_met"
+            phrase = ("DISTANCE MET · FIND NEXT SPECIMEN" if gstatus == "genetic_distance_met"
                       else f"MOVE {format_distance(remaining)} FARTHER")
             self._draw_text(canvas, 9*scale, y, phrase,
                             scale, 12, HUD_GREEN if remaining <= 0 else HUD_AMBER, True)
