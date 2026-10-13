@@ -448,6 +448,53 @@ def _surveyor_local_control(action: str) -> dict[str, Any]:
     return result
 
 
+def _surveyor_community_control(action: str) -> dict[str, Any]:
+    """Explicit local opt-in: only the current system name/ID reaches providers."""
+    if action not in {"intel_on", "intel_off", "intel_refresh"}:
+        raise ValueError("invalid_community_action")
+    if action == "intel_off":
+        config.set(KEY_SURVEY_INTEL_ENABLED, 0)
+        with _surveyor_intel_lock:
+            global _surveyor_intel_pending
+            _surveyor_intel_pending = None
+        return {"ok": True, "communityEnabled": False}
+    config.set(KEY_SURVEY_INTEL_ENABLED, 1)
+    with _hud_condition:
+        commander = str(_hud_state.get("commander") or "")
+        system = _hud_state.get("system")
+        current = dict(system) if isinstance(system, Mapping) else {}
+        survey = _hud_state.get("exploration")
+        if isinstance(survey, Mapping):
+            local = survey.get("system")
+            if isinstance(local, Mapping):
+                current = dict(local)
+    if not commander:
+        raise ValueError("commander_unavailable")
+    address = _decimal_text(current.get("address"))
+    name = str(current.get("name") or "").strip()
+    if name and address:
+        # Refresh explicitly invalidates only the cached response for the
+        # selected system. Background worker still enforces its rate limit.
+        if action == "intel_refresh":
+            _get_surveyor().expire_intelligence(commander, address)
+        _schedule_surveyor_intelligence(commander, name, address)
+    return {"ok": True, "communityEnabled": True, "queued": bool(name and address)}
+
+
+def _surveyor_quote_control(value: Any) -> dict[str, Any]:
+    with _hud_condition:
+        commander = str(_hud_state.get("commander") or "")
+    if not commander:
+        raise ValueError("commander_unavailable")
+    snapshot = _get_surveyor().record_carto_reference(commander, value)
+    with _hud_condition:
+        if str(_hud_state.get("commander") or "").casefold() != commander.casefold():
+            raise ValueError("commander_changed")
+        _hud_state["exploration"] = snapshot
+        _hud_condition.notify_all()
+    return {"ok": True, "exploration": snapshot}
+
+
 def _fetch_surveyor_intelligence() -> None:
     """One background worker; latest jump supersedes pending lookups."""
     global _surveyor_intel_pending, _surveyor_intel_worker_running
@@ -1146,8 +1193,14 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                 self._write_json({"ok": False, "error": "surveyor_local_control_required"}, status=403)
                 return
             try:
-                result = _surveyor_local_control(str(body.get("action") or ""))
-                self._write_json({"ok": True, "exploration": result})
+                action = str(body.get("action") or "")
+                if action in {"intel_on", "intel_off", "intel_refresh"}:
+                    self._write_json(_surveyor_community_control(action))
+                elif action == "record_quote":
+                    self._write_json(_surveyor_quote_control(body.get("value")))
+                else:
+                    result = _surveyor_local_control(action)
+                    self._write_json({"ok": True, "exploration": result})
             except ValueError as exc:
                 self._write_json({"ok": False, "error": str(exc)}, status=409)
             except Exception:
@@ -2038,6 +2091,7 @@ def _stop_hud_bridge() -> None:
 def _hud_state_snapshot() -> dict[str, Any]:
     with _hud_condition:
         snapshot = json.loads(json.dumps(_hud_state))
+    snapshot["explorationCommunityEnabled"] = bool(config.get_bool(KEY_SURVEY_INTEL_ENABLED))
     cargo = snapshot.get("cargo")
     if isinstance(cargo, dict):
         cargo.pop("_allocation", None)
