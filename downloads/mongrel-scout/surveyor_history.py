@@ -15,6 +15,44 @@ MAX_BYTES = 32 * 1024 * 1024
 MAX_LINES = 120_000
 
 
+def latest_journal_commander(journal_dir: str | Path) -> str:
+    """Identify the newest local journal's CMDR without replaying its contents.
+
+    Never use a prior journal as a fallback: on a shared PC that could show
+    another Commander's exploration before EDMC receives live identity.
+    """
+    try:
+        files = (p for p in Path(journal_dir).expanduser().glob("Journal*.log") if p.is_file())
+        newest = max(files, key=lambda p: p.name, default=None)
+        if newest is None:
+            return ""
+        commander = ""
+        with newest.open("r", encoding="utf-8", errors="replace") as stream:
+            # Commander/LoadGame occurs near the start of a Frontier session.
+            # Bounded local reads; no network, no entire-journal replay.
+            consumed = 0
+            for index, line in enumerate(stream):
+                consumed += len(line)
+                if index >= 2048 or consumed > 1024 * 1024:
+                    break
+                if '"event"' not in line or not ('Commander' in line or 'LoadGame' in line):
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(record, dict):
+                    continue
+                kind = record.get("event")
+                if kind == "Commander":
+                    commander = str(record.get("Name") or "").strip()
+                elif kind == "LoadGame":
+                    commander = str(record.get("Commander") or "").strip()
+        return commander
+    except (OSError, ValueError, TypeError):
+        return ""
+
+
 def import_recent_journals(surveyor: Any, commander: str, journal_dir: str | Path) -> dict[str, Any]:
     """Replay recent complete journal lines for exactly one CMDR.
 
