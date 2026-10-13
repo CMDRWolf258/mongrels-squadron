@@ -81,6 +81,8 @@ class MissionSync:
         self.stop_event.clear()
         self.worker = threading.Thread(target=self._loop, name="MongrelScoutMissionSync", daemon=True)
         self.worker.start()
+        if self.pending:
+            self.wake.set()  # Flush durable events after EDMC restart.
 
     def stop(self) -> None:
         self.stop_event.set()
@@ -228,6 +230,9 @@ class MissionSync:
                     self.pull_needed.discard(commander)
             except Exception:
                 successful=False
+        with self.lock:
+            if self.pending and successful:
+                self.wake.set()  # Drain additional batches without a long delay.
         return successful
 
     def _loop(self) -> None:
@@ -242,4 +247,5 @@ class MissionSync:
                 if not due:
                     self.pull_needed.update(self.active)
             if not self.sync_once():
-                self.stop_event.wait(RETRY_SECONDS)
+                if not self.stop_event.wait(RETRY_SECONDS):
+                    self.wake.set()  # Keep retrying offline edits without busy polling.
