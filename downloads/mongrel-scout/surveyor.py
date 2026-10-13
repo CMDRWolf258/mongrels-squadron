@@ -78,7 +78,20 @@ def _value(body: Mapping[str, Any], mapped: bool, efficient: bool) -> int | None
         base = k + mass * k / 66.25
     else:
         planet = _text(body.get("planetClass"))
-        k, terraform_k = PLANET_K.get(planet, (300, 93328 if planet == "Rocky body" else 0))
+        # Frontier journals use "Sudarsky class I/II gas giant"; many
+        # community payout tables shorten that to "Class I/II gas giant".
+        # Failing to normalize would fall through to the 300 CR class.
+        canonical = planet
+        if planet.casefold().startswith("sudarsky "):
+            canonical = planet[len("Sudarsky "):]
+        if canonical.lower().startswith("class ") and canonical.lower().endswith(" gas giant"):
+            canonical = canonical[0].upper() + canonical[1:].lower().replace(" gas giant", " gas giant")
+            # Preserve uppercase Roman numeral, as in the value table.
+            parts = canonical.split()
+            if len(parts) >= 4:
+                parts[1] = parts[1].upper()
+                canonical = " ".join(parts)
+        k, terraform_k = PLANET_K.get(canonical, (300, 93328 if canonical == "Rocky body" else 0))
         if planet == "Earthlike body" or body.get("terraformState") == "Terraformable":
             k += terraform_k
         base = k * (1 + Q * mass ** 0.2)
