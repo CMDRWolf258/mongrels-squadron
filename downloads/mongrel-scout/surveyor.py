@@ -13,6 +13,7 @@ import os
 import sqlite3
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -256,6 +257,29 @@ class Surveyor:
                     total INTEGER NOT NULL, timestamp TEXT NOT NULL,
                     PRIMARY KEY(commander, digest)
                 );
+                CREATE TABLE IF NOT EXISTS expeditions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    commander TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS ix_expeditions_active
+                    ON expeditions(commander, ended_at);
+                CREATE TABLE IF NOT EXISTS expedition_credits (
+                    expedition_id INTEGER NOT NULL,
+                    digest TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    body_id TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    amount INTEGER NOT NULL,
+                    PRIMARY KEY(expedition_id, digest)
+                );
+                CREATE TABLE IF NOT EXISTS expedition_exclusions (
+                    expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
+                    marked_at TEXT NOT NULL,
+                    PRIMARY KEY(expedition_id, address)
+                );
             """)
 
     def _connect(self) -> sqlite3.Connection:
@@ -308,6 +332,107 @@ class Surveyor:
         info["estimatedOutstanding"] = total
         info["valueCoverage"] = counted
         self._save(conn, "systems", commander, address, info)
+
+    @staticmethod
+    def _utc_now() -> str:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    @staticmethod
+    def _active_expedition(conn: sqlite3.Connection, commander: str) -> sqlite3.Row | None:
+        return conn.execute(
+            "SELECT id,started_at FROM expeditions WHERE commander=? AND ended_at IS NULL "
+            "ORDER BY id DESC LIMIT 1", (commander,),
+        ).fetchone()
+
+    def control(self, commander: str, action: str) -> dict[str, Any]:
+        """Local-only user choices. Never remove scans or modify sold records.
+
+        'mark_existing' acts as a *time cutoff*: previously credited values for
+        this system are excluded, while new scans/DSS gains remain eligible.
+        """
+        cmdr = _text(commander)
+        if not cmdr:
+            raise ValueError("commander_unavailable")
+        if action not in {"start", "end", "mark_existing", "undo_existing"}:
+            raise ValueError("invalid_expedition_action")
+        with self.lock, self._connect() as conn:
+            active = self._active_expedition(conn, cmdr)
+            if action == "start":
+                if active is None:
+                    conn.execute(
+                        "INSERT INTO expeditions(commander,started_at) VALUES (?,?)",
+                        (cmdr, self._utc_now()),
+                    )
+            elif active is None:
+                raise ValueError("expedition_not_active")
+            elif action == "end":
+                conn.execute(
+                    "UPDATE expeditions SET ended_at=? WHERE id=?",
+                    (self._utc_now(), active["id"]),
+                )
+            else:
+                row = conn.execute(
+                    "SELECT active_address FROM meta WHERE commander=?", (cmdr,),
+                ).fetchone()
+                address = row["active_address"] if row else ""
+                if not address:
+                    raise ValueError("current_system_unavailable")
+                if action == "mark_existing":
+                    # Preserve the earliest cutoff across repeat clicks.
+                    conn.execute(
+                        "INSERT OR IGNORE INTO expedition_exclusions VALUES (?,?,?)",
+                        (active["id"], address, self._utc_now()),
+                    )
+                else:
+                    conn.execute(
+                        "DELETE FROM expedition_exclusions WHERE expedition_id=? AND address=?",
+                        (active["id"], address),
+                    )
+            row = conn.execute(
+                "SELECT active_address FROM meta WHERE commander=?", (cmdr,),
+            ).fetchone()
+            return self._snapshot(conn, cmdr, row["active_address"] if row else "")
+
+    def _expedition_view(self, conn: sqlite3.Connection, commander: str,
+                         active_address: str) -> dict[str, Any]:
+        session = self._active_expedition(conn, commander)
+        if session is None:
+            return {
+                "active": False, "startedAt": None, "estimate": 0,
+                "currentSystemGain": 0, "existingDataExcluded": False,
+                "countedScans": 0, "countedMaps": 0,
+            }
+        excluded = {
+            row["address"]: row["marked_at"] for row in conn.execute(
+                "SELECT address,marked_at FROM expedition_exclusions WHERE expedition_id=?",
+                (session["id"],),
+            )
+        }
+        total, local, scans, maps = 0, 0, 0, 0
+        for row in conn.execute(
+            "SELECT address,occurred_at,kind,amount FROM expedition_credits WHERE expedition_id=?",
+            (session["id"],),
+        ):
+            # A system exclusion ignores *existing* credited work, not the
+            # future Scan/SAAScanComplete journal events after the button.
+            if row["occurred_at"] <= excluded.get(row["address"], ""):
+                continue
+            amount = max(0, int(row["amount"]))
+            total += amount
+            if row["address"] == active_address:
+                local += amount
+            if row["kind"] == "Scan":
+                scans += 1
+            elif row["kind"] == "SAAScanComplete":
+                maps += 1
+        return {
+            "active": True, "startedAt": session["started_at"],
+            "estimate": total, "currentSystemGain": local,
+            "existingDataExcluded": active_address in excluded,
+            "currentSystemCutoff": excluded.get(active_address),
+            "countedScans": scans, "countedMaps": maps,
+            "valueMeaning": "estimated_new_scan_and_mapping_gains_not_guaranteed_unsold",
+        }
 
     def apply(self, commander: str, event: Mapping[str, Any], fallback_system: str = "",
               fallback_address: Any = None, *, historic: bool = False) -> dict[str, Any] | None:
@@ -385,6 +510,10 @@ class Surveyor:
                 body_id = _text(raw_id) if raw_id is not None else ""
                 if body_id:
                     body = self._load(conn, "bodies", commander, address, body_id)
+                    # Determine the incremental value *before* changing this
+                    # body's personal observation state. Prior scans are never
+                    # counted a second time by re-scanning a known system.
+                    prior = _body_view(body)
                     body["bodyId"] = body_id
                     body["systemAddress"] = address
                     body["name"] = _text(event.get("BodyName")) or body.get("name", "")
@@ -422,6 +551,30 @@ class Surveyor:
                             ]
                     self._save(conn, "bodies", commander, address, body, body_id)
                     revalue_systems.add(address)
+                    session = self._active_expedition(conn, commander)
+                    # Journal timestamps are Frontier UTC. Never infer earnings
+                    # from historic scans older than the user-pressed start.
+                    if session is not None and timestamp and timestamp > session["started_at"]:
+                        after = _body_view(body)
+                        amount = 0
+                        if kind == "Scan" and not prior.get("personallyScanned") and after.get("personallyScanned"):
+                            amount = max(0, _int(after.get("currentValue")) or 0)
+                        elif kind == "SAAScanComplete" and not prior.get("personallyMapped"):
+                            # Mapping old, already-scanned data earns only the
+                            # *new DSS increment*, never the earlier scan value.
+                            full = _int(after.get("currentValue"))
+                            scan = _int(prior.get("currentValue"))
+                            if scan is None and prior.get("personallyScanned"):
+                                scan = _int(_value(prior, mapped=False, efficient=False))
+                            if full is not None and scan is not None:
+                                amount = max(0, full - scan)
+                        if amount:
+                            conn.execute(
+                                "INSERT OR IGNORE INTO expedition_credits "
+                                "(expedition_id,digest,address,body_id,occurred_at,kind,amount) "
+                                "VALUES (?,?,?,?,?,?,?)",
+                                (session["id"], digest, address, body_id, timestamp, kind, amount),
+                            )
             self._save(conn, "systems", commander, address, system)
             for touched in revalue_systems:
                 self._revalue_system(conn, commander, touched)
@@ -511,6 +664,9 @@ class Surveyor:
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in bodies),
             "potentialFirstBodies": len(firsts),
             "currentSystemKnownEstimates": sum(known_current),
+            "currentSystemEstimate": sum(known_current) if known_current else None,
+            "currentSystemEstimateMeaning": "observed_scans_may_include_previously_sold_data",
+            "expedition": self._expedition_view(conn, commander, active),
             "currentSystemValueCoverage": len(known_current),
             "additionalMappingPotential": sum(b.get("mappingGainMax") or 0 for b in bodies),
             "additionalMappingPotentialMin": sum(b.get("mappingGainMin") or 0 for b in bodies),
