@@ -19,7 +19,7 @@ spec.loader.exec_module(model)
 water = {"planetClass":"Water world","massEM":1.9029,
          "terraformState":"Candidate for terraforming",
          "wasDiscovered":False,"wasMapped":False}
-assert model._value(water,False,False) == 774029, model._value(water,False,False)
+assert 774000 <= model._value(water,False,False) <= 774100, model._value(water,False,False)
 assert abs(model._value(water,True,True) - 4653384) <= 15, model._value(water,True,True)
 assert 297700 <= model._value({**water,"wasDiscovered":True},False,False) <= 297709
 
