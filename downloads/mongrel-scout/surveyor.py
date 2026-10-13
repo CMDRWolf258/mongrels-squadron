@@ -736,10 +736,13 @@ class Surveyor:
             max(0.5, min(3.0, row["observed_actual"] / row["model_estimate"]))
             for row in comparisons if row["model_estimate"] > 0 and row["observed_actual"] > 0
         )
-        factor = ratios[len(ratios) // 2] if len(ratios) >= 3 else None
+        # Reference ratios are diagnostics, NOT a correction: observed
+        # Frontier differences can include first discovery, full-system,
+        # Powerplay and sale-context factors that vary by system.
+        # Do not silently multiply unrelated worlds by a global factor.
+        median_reference_ratio = ratios[len(ratios) // 2] if len(ratios) >= 3 else None
         current_raw = sum(known_current) if known_current else None
-        estimated_quote = (round(current_raw * factor) if factor and current_raw is not None
-                           else current_raw)
+        estimated_quote = current_raw
         return {
             "schemaVersion": 1,
             "source": "frontier_journal_local",
@@ -755,15 +758,16 @@ class Surveyor:
             "currentSystemEstimate": estimated_quote,
             "currentSystemBaseEstimate": current_raw,
             "currentSystemEstimateMeaning": (
-                "calibrated_from_manual_system_quotes" if factor else
                 "observed_scans_excludes_unmeasured_system_completion_and_sale_modifiers"
             ),
             "cartographicsComparison": {
                 "actualQuote": current_ref["observed_actual"] if current_ref else None,
                 "modelAtQuote": current_ref["model_estimate"] if current_ref else None,
                 "references": len(ratios),
-                "calibrationFactor": round(factor, 4) if factor else None,
-                "calibrationReady": factor is not None,
+                "diagnosticMedianRatio": round(median_reference_ratio, 4) if median_reference_ratio else None,
+                "calibrationFactor": None,
+                "calibrationReady": False,
+                "calibrationStatus": "reference_only_pending_bonus_model_validation",
                 "note": "Manual quotes are not proof of sold data or guaranteed future payouts",
             },
             "expedition": self._expedition_view(conn, commander, active),
