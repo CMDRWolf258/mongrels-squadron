@@ -1,6 +1,9 @@
 name: Surveyor private test builds
 
 on:
+  push:
+    branches:
+      - 'feature/surveyor-live-test-exobiology-ux-20261013'
   workflow_dispatch:
 
 permissions:
