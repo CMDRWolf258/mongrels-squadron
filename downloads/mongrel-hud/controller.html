@@ -18,6 +18,11 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 .mining-lookup{position:relative}.mining-suggestions{max-height:260px;overflow:auto;border:1px solid var(--accent);border-radius:8px;background:#10232d}.mining-suggestions button{display:block;text-align:left;width:100%;min-height:48px;padding:10px;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line)}.mining-suggestions button:focus{background:#174454}.mining-suggestions small,.mining-browser-item small{display:block;color:var(--muted)}.mining-browser-results{display:grid;gap:8px}.mining-browser-item{padding:11px;border:1px solid var(--line);background:#07131a;border-radius:8px}.mining-browser-item strong{color:var(--accent)}.mining-browser-item summary{cursor:pointer;min-height:46px;padding:9px 0;font-weight:750;color:var(--accent)}.mining-browser-item .browser-nav-action{min-height:44px;width:100%;margin-top:8px;background:#12323e;border:1px solid var(--accent);border-radius:8px;color:var(--text);font-weight:800}.mining-browser-item p{margin:5px 0}.mining-browser-item small{margin-top:5px}.mining-browser-local{color:var(--warn)!important}
 .mining-browser-group{border:1px solid var(--line);border-radius:9px;background:#0d2530;padding:4px 10px}.mining-browser-group>summary{cursor:pointer;min-height:48px;padding:12px 4px;font-weight:800;color:var(--accent)}.mining-browser-group-items{display:grid;gap:8px;padding:4px 0 10px}.mining-browser-group .mining-browser-item{background:#07131a}
 .mining-deposit-group{width:100%;border:1px solid var(--line);border-radius:9px;background:#07131a;padding:4px 12px}.mining-deposit-group summary{cursor:pointer;min-height:46px;padding:12px 4px;color:var(--accent);font-weight:800}.mining-deposit-group .sites{padding:4px 0 12px}
+  .bio-sample-slots{display:flex;gap:6px;margin:7px 0 6px}
+  .bio-sample-slot{display:inline-flex;align-items:center;justify-content:center;width:48px;height:27px;border:1px solid #536879;border-radius:3px;font:700 12px monospace;letter-spacing:1px;color:#8497a8;background:#17222c}
+  .bio-sample-slot.filled{background:#1d7185;border-color:#53d8f0;color:white}
+  .bio-sample-slot.complete{background:#236e55;border-color:#61e6b3}
+  .bio-payout{font:600 12px monospace;color:#9bd6e6;margin-top:5px}
 </style>
 </head>
 <body>
@@ -585,7 +590,7 @@ function renderBioSurvey(survey){
       escapeHtml(String(b.bodyName||"Unnamed world"))+'</option>'}).join("");
   if(selector.innerHTML!==options){selector.innerHTML=options;selector.value=previous;}
   var chosen=rows.find(function(b){return b&&String(b.bodyId||"")===selector.value;});
-  if(!chosen&&status.onFootOnPlanet===true&&status.bodyName&&
+  if(!chosen&&status.hasLatLong===true&&status.bodyName&&
      String(status.systemAddress||"")===sys)
     chosen=rows.find(function(b){return b&&String(b.bodyName||"").toLowerCase()===String(status.bodyName).toLowerCase();});
   if(!chosen){
@@ -608,9 +613,19 @@ function renderBioSurvey(survey){
     setText(el("surveyorBioStatus"),String(chosen.bodyName||"Unknown world")+" · "+Number(chosen.signals||0)+
       " BIO SIGNAL(S) · "+valid+" · "+(bio.habitatRuleCount||"PARTIAL")+" HABITAT RULES");
     var html=sampled.slice(0,8).map(function(v){
+      var n=Math.max(0,Math.min(3,Number(v.samples||0))),complete=v.completed===true;
+      var slots='<div class="bio-sample-slots">'+[1,2,3].map(function(i){
+        return '<span class="bio-sample-slot'+(n>=i?(complete?' filled complete':' filled'):'')+'">'+i+'</span>';
+      }).join('')+'</div>';
+      var base=Number.isFinite(v.estimatedBaseValue)?v.estimatedBaseValue:null;
+      var likely=v.footfallStatus==="first_footfall_indicated";
+      var price=base===null?'BASE VALUE UNKNOWN':'BASE ~'+base.toLocaleString()+' CR';
+      if(likely&&base!==null)price+=' · POSSIBLE 5x TOTAL ~'+(base*5).toLocaleString()+' CR';
+      var warning=likely?'FIRST FOOTFALL INDICATED · FIRST-LOG BONUS NOT GUARANTEED':'FIRST-LOG BONUS UNVERIFIED';
       return '<div class="network-job"><div><strong>'+escapeHtml(String(v.species||"Observed species"))+
-        '</strong><small> · FRONTIER ORGANIC SCAN</small></div><strong>'+
-        (v.completed?"COMPLETE":Number(v.samples||0)+"/3")+'</strong></div>';
+        '</strong><small> · FRONTIER ORGANIC SCAN</small>'+slots+
+        '<div class="bio-payout">'+escapeHtml(price)+'</div><small>'+escapeHtml(warning)+'</small>'+
+        '</div><strong>'+(complete?"COMPLETE":n+"/3")+'</strong></div>';
     }).join("");
     html+=candidates.slice(0,12).map(function(c){
       var value=Number.isFinite(c.estimatedBase)?'~'+c.estimatedBase.toLocaleString()+' CR':"UNVALUED";
@@ -627,7 +642,11 @@ function renderBioSurvey(survey){
       guide=String(sample.species||"Organism")+" · "+Number(sample.samples||0)+"/3 SAMPLES";
       var positions=Array.isArray(sample.samplePositions)?sample.samplePositions:[],last=positions[positions.length-1];
       var fresh=Math.abs(Date.now()-Date.parse(String(status.timestamp||"")))<30000;
-      if(last&&fresh&&status.onFootOnPlanet===true&&status.hasLatLong===true&&
+      if(last&&fresh&&status.hasLatLong===true&&
+         Number.isFinite(status.latitude)&&Number.isFinite(status.longitude)&&
+         Math.abs(status.latitude)<=90&&Math.abs(status.longitude)<=180&&
+         Number.isFinite(last.latitude)&&Number.isFinite(last.longitude)&&
+         Math.abs(last.latitude)<=90&&Math.abs(last.longitude)<=180&&last.radius>0&&
          sys!==""&&String(status.systemAddress||"")===sys&&
          String(status.bodyName||"").toLowerCase()===String(chosen.bodyName||"").toLowerCase()&&
          Number.isFinite(last.radius)&&Number.isFinite(status.planetRadius)&&
@@ -640,7 +659,7 @@ function renderBioSurvey(survey){
         guide+=' · '+(remain<=0?"GENETIC DISTANCE MET — FIND NEXT SPECIMEN":"MOVE "+Math.ceil(remain)+" m FARTHER")+
           " ("+Math.round(distance)+" / "+sample.geneticDistanceMeters+" m)";
       }else{
-        guide+=' · Range unverified (matching live on-foot GPS needed)';
+        guide+=' · Range unverified (matching local-body GPS needed)';
       }
     }
     setText(el("surveyorBioGenetics"),guide);
