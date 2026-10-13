@@ -277,7 +277,7 @@ class Surveyor:
                 );
                 CREATE TABLE IF NOT EXISTS expedition_exclusions (
                     expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
-                    marked_at TEXT NOT NULL,
+                    marked_at TEXT NOT NULL, cutoff_rowid INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY(expedition_id, address)
                 );
             """)
@@ -379,9 +379,15 @@ class Surveyor:
                     raise ValueError("current_system_unavailable")
                 if action == "mark_existing":
                     # Preserve the earliest cutoff across repeat clicks.
+                    cutoff = conn.execute(
+                        "SELECT COALESCE(MAX(rowid),0) FROM expedition_credits "
+                        "WHERE expedition_id=? AND address=?",
+                        (active["id"], address),
+                    ).fetchone()[0]
                     conn.execute(
-                        "INSERT OR IGNORE INTO expedition_exclusions VALUES (?,?,?)",
-                        (active["id"], address, self._utc_now()),
+                        "INSERT OR IGNORE INTO expedition_exclusions "
+                        "(expedition_id,address,marked_at,cutoff_rowid) VALUES (?,?,?,?)",
+                        (active["id"], address, self._utc_now(), cutoff),
                     )
                 else:
                     conn.execute(
@@ -403,19 +409,21 @@ class Surveyor:
                 "countedScans": 0, "countedMaps": 0,
             }
         excluded = {
-            row["address"]: row["marked_at"] for row in conn.execute(
-                "SELECT address,marked_at FROM expedition_exclusions WHERE expedition_id=?",
-                (session["id"],),
+            row["address"]: (row["marked_at"], row["cutoff_rowid"])
+            for row in conn.execute(
+                "SELECT address,marked_at,cutoff_rowid FROM expedition_exclusions "
+                "WHERE expedition_id=?", (session["id"],),
             )
         }
         total, local, scans, maps = 0, 0, 0, 0
         for row in conn.execute(
-            "SELECT address,occurred_at,kind,amount FROM expedition_credits WHERE expedition_id=?",
+            "SELECT rowid,address,occurred_at,kind,amount FROM expedition_credits WHERE expedition_id=?",
             (session["id"],),
         ):
             # A system exclusion ignores *existing* credited work, not the
             # future Scan/SAAScanComplete journal events after the button.
-            if row["occurred_at"] <= excluded.get(row["address"], ""):
+            cutoff = excluded.get(row["address"])
+            if cutoff and (row["rowid"] <= cutoff[1] or row["occurred_at"] < cutoff[0]):
                 continue
             amount = max(0, int(row["amount"]))
             total += amount
@@ -429,7 +437,7 @@ class Surveyor:
             "active": True, "startedAt": session["started_at"],
             "estimate": total, "currentSystemGain": local,
             "existingDataExcluded": active_address in excluded,
-            "currentSystemCutoff": excluded.get(active_address),
+            "currentSystemCutoff": excluded[active_address][0] if active_address in excluded else None,
             "countedScans": scans, "countedMaps": maps,
             "valueMeaning": "estimated_new_scan_and_mapping_gains_not_guaranteed_unsold",
         }
