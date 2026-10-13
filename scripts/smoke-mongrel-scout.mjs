@@ -1113,7 +1113,23 @@ assert.match(Buffer.from(zipBytes).toString('latin1'),/MongrelScout\/load\.py/);
 const apiZipSource=readFileSync('functions/api/downloads/mongrel-scout.js','utf8');
 assert.match(apiZipSource,/path:'README\.md'/);
 assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
+// Both the member portal and legacy download route must ship every module
+// that Surveyor imports. A load.py-only archive starts EDMC but silently loses
+// Surveyor functionality, making a valid version label misleading.
+for (const endpoint of [zipSource,apiZipSource]) {
+  for (const file of ['load.py','surveyor.py','surveyor_history.py',
+                      'surveyor_intel.py','surveyor_edd_bridge.py']) {
+    assert.ok(endpoint.includes("source:'/downloads/mongrel-scout/"+file+"'"),
+      'ZIP route missing static source '+file);
+    assert.ok(endpoint.includes("path:'MongrelScout/"+file+"'"),
+      'ZIP route missing EDMC plugin file '+file);
+  }
+  assert.ok(endpoint.includes("path:'THIRD_PARTY_NOTICES.md'"));
+  assert.ok(endpoint.includes("path:'licenses/Apache-2.0.txt'"));
+}
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
+assert.ok(scoutReadme.includes('Scout 1.13.15'));
+
 for(const pattern of [/Short version:/,/Plugins → Open/,/real plugin folder/,/MongrelScout/,/Enable Mongrel Scout/,/Armed/,/Market updated: <station>/,/Facility mapped: <facility>/,/Host verified: <station> → <body>/,/Updating Scout/,/Privacy/,/member\/#mongrel-scout-setup/,/TECHNICAL_NOTES\.md/])assert.match(scoutReadme,pattern);
 assert.doesNotMatch(scoutReadme,/127\.0\.0\.1:43857|docking\.granted|CarrierStats|galactic X\/Y\/Z coordinates/,'Member README should stay non-technical');
 const scoutTechnicalNotes=readFileSync('downloads/mongrel-scout/TECHNICAL_NOTES.md','utf8');

@@ -74,6 +74,7 @@ Mongrel HUD 0.9.0 controller QoL architecture:
 - Release publishing must upload/clobber the new Windows ZIP before changing the rolling release title to the new semantic version; this prevents clients from seeing new-version metadata while the previous asset is still live.
 - Updater live-test finding (0.10.1 → 0.11.0): the HUD could close and relaunch but return as the previous version. Treat this as a PyInstaller one-file wrapper/EXE-lock handoff failure, not successful installation. From 0.11.1 onward the PowerShell updater retries the backup/replacement operation while the executable lock clears, verifies the target EXE SHA-256 equals the staged EXE before launch, keeps rollback behavior, and writes local diagnostics to `%LOCALAPPDATA%\\MongrelHUD\\update\\apply-update.log`.
 - The HUD updater updates only Mongrel HUD. Mongrel Scout remains a separate EDMC plugin/update path.
+- **Scout 1.13.15 website ZIP contract:** `/api/downloads/mongrel-scout` and the legacy `/downloads/mongrel-scout.zip` ZIP functions must ship `MongrelScout/load.py` together with `surveyor.py`, `surveyor_history.py`, `surveyor_intel.py`, and `surveyor_edd_bridge.py`. The member README and EDDiscovery Apache-2.0 notices/license are included at the ZIP root. Releasing only `load.py` silently disables Surveyor even when the plugin version string is current; smoke tests enforce complete packaging. GitHub source merges alone do not establish Cloudflare Pages deployment.
 
 
 Mongrel HUD 0.10.0 / Scout 1.10.0 carrier-PA architecture:
