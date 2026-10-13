@@ -1,6 +1,12 @@
 const FILES = [
   { source:'/downloads/mongrel-scout/load.py', path:'MongrelScout/load.py' },
+  { source:'/downloads/mongrel-scout/surveyor.py', path:'MongrelScout/surveyor.py' },
+  { source:'/downloads/mongrel-scout/surveyor_history.py', path:'MongrelScout/surveyor_history.py' },
+  { source:'/downloads/mongrel-scout/surveyor_intel.py', path:'MongrelScout/surveyor_intel.py' },
+  { source:'/downloads/mongrel-scout/surveyor_edd_bridge.py', path:'MongrelScout/surveyor_edd_bridge.py' },
   { source:'/downloads/mongrel-scout/README.md', path:'README.md' },
+  { source:'/downloads/mongrel-scout/THIRD_PARTY_NOTICES.md', path:'THIRD_PARTY_NOTICES.md' },
+  { source:'/downloads/mongrel-scout/licenses/Apache-2.0.txt', path:'licenses/Apache-2.0.txt' },
 ];
 
 export async function onRequestGet({ request }) {
