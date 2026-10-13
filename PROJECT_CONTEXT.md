@@ -59,6 +59,15 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Exobiology specimen workflow + expedition accounting (pending PR)
+
+- Exactly one active incomplete `ScanOrganic` specimen per body. New `Log` for a different species drops former partial record and continues preserving all completed species, without inventing discarded scan credits. Old database snapshots keep a legacy-aware fallback only when no active-ID marker exists.
+- New `genusOverview` in Surveyor snapshot: full DSS-confirmed genus roster (not merely four species) with source-limited per-genus Vista base-value min/max. Once Frontier `CodexEntry` identifies a known biological species with an explicit body ID and biological evidence, or `ScanOrganic` confirms species, the genus row becomes exact. CodexEntry is NOT emitted for all previously known repeat composition scans, so never pretend unreported scan identifications are confirmed. Unknown genera remain visible with "range unknown."
+- HUD and iPad display one active 3-slot sampler, compact completed list (species/base price, no boxes), then each genus/range in DSS roster. Genetic-range navigation uses the one active sample only.
+- Shared existing expedition Start/End adds a **separate** per-species/body SQLite completion-credit ledger, active-session bio estimate (base + conditional first-logged bonus) and confirmed Vista Genomics sales received since session start. Sales cannot be reliably assigned to originating bodies; do NOT add sale credits to estimated completions as though independent, and do NOT erase completed records on sale.
+- New Surveyor dashboard bio-expedition section is under cartographic values and **above FSS coverage** so the prior owner's hard footer cut after DSS Mapped / First Discovery Candidates remains intact.
+- Tests: `scripts/test_surveyor_bio_workflow.py`, existing Surveyor expedition and bio tests, HUD/iPad tests, mission-sync/site smoke. Public update channel remains untouched until staged paired builds pass.
+
 ### Exobiology Live Acceptance fixes (PR #215, October 2026)
 
 - Approved owner findings from NGC 2546 Sector LX-S c17-3 B 7: HUD wrongly kept Bacterium genus candidates after FSS/DSS even though sulfur dioxide atmospheric type was available in Elite; only `Atmosphere` was read and gas names lacked full normalization. Scout Surveyor now retains `AtmosphereType` and `AtmosphereComposition`, normalizes sulfur/sulphur dioxide, preserves prior detailed scan fields on partial AutoScan, and recomputes predictions from combined journal evidence.
