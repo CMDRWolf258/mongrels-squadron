@@ -612,32 +612,50 @@ function renderBioSurvey(survey){
       valid=genus.length?"DSS GENUS VERIFIED":"GENUS UNCONFIRMED";
     setText(el("surveyorBioStatus"),String(chosen.bodyName||"Unknown world")+" · "+Number(chosen.signals||0)+
       " BIO SIGNAL(S) · "+valid+" · "+(bio.habitatRuleCount||"PARTIAL")+" HABITAT RULES");
-    var html=sampled.slice(0,8).map(function(v){
-      var n=Math.max(0,Math.min(3,Number(v.samples||0))),complete=v.completed===true;
+    var activeId=String(chosen.activeSpeciesId||"");
+    var unfinished=sampled.filter(function(v){return v&&!v.completed&&Number(v.samples||0)>0&&
+       Number(v.samples||0)<3&&(!Object.hasOwn(chosen,"activeSpeciesId")||String(v.speciesId||"")===activeId);});
+    unfinished.sort(function(a,b){return String(b.lastScanAt||"").localeCompare(String(a.lastScanAt||""));});
+    var active=unfinished[0]||null;
+    var completed=sampled.filter(function(v){return v&&v.completed;}).sort(function(a,b){
+      return String(b.lastScanAt||"").localeCompare(String(a.lastScanAt||""));
+    });
+    var html='';
+    if(active){
+      var n=Math.max(0,Math.min(3,Number(active.samples||0)));
       var slots='<div class="bio-sample-slots">'+[1,2,3].map(function(i){
-        return '<span class="bio-sample-slot'+(n>=i?(complete?' filled complete':' filled'):'')+'">'+i+'</span>';
+        return '<span class="bio-sample-slot'+(n>=i?' filled':'')+'">'+i+'</span>';
       }).join('')+'</div>';
-      var base=Number.isFinite(v.estimatedBaseValue)?v.estimatedBaseValue:null;
-      var likely=v.footfallStatus==="first_footfall_indicated";
-      var price=base===null?'BASE VALUE UNKNOWN':'BASE ~'+base.toLocaleString()+' CR';
-      if(likely&&base!==null)price+=' · POSSIBLE 5x TOTAL ~'+(base*5).toLocaleString()+' CR';
-      var warning=likely?'FIRST FOOTFALL INDICATED · FIRST-LOG BONUS NOT GUARANTEED':'FIRST-LOG BONUS UNVERIFIED';
-      return '<div class="network-job"><div><strong>'+escapeHtml(String(v.species||"Observed species"))+
-        '</strong><small> · FRONTIER ORGANIC SCAN</small>'+slots+
-        '<div class="bio-payout">'+escapeHtml(price)+'</div><small>'+escapeHtml(warning)+'</small>'+
-        '</div><strong>'+(complete?"COMPLETE":n+"/3")+'</strong></div>';
-    }).join("");
-    html+=candidates.slice(0,12).map(function(c){
-      var value=Number.isFinite(c.estimatedBase)?'~'+c.estimatedBase.toLocaleString()+' CR':"UNVALUED";
-      return '<div class="network-job"><div><strong>'+escapeHtml(String(c.species||"Unknown"))+
-        '</strong><small> · '+(c.status==="compatible"?"HABITAT COMPATIBLE":"MISSING: "+escapeHtml((c.missing||[]).join(", ")))+
-        ' · NOT CONFIRMED</small></div><strong>'+value+'</strong></div>';
+      var value=Number.isFinite(active.estimatedBaseValue)?active.estimatedBaseValue:null;
+      var first=active.footfallStatus==="first_footfall_indicated";
+      var price=value===null?"BASE VALUE UNKNOWN":'BASE ~'+value.toLocaleString()+' CR';
+      if(first&&value!==null)price+=' · POSSIBLE FIRST-LOG TOTAL ~'+(value*5).toLocaleString()+' CR';
+      html+='<div class="network-job"><div><strong>'+escapeHtml(String(active.species||"Active specimen"))+
+        '</strong><small> · ACTIVE GENETIC SAMPLE</small>'+slots+
+        '<div class="bio-payout">'+escapeHtml(price)+'</div></div><strong>'+n+'/3</strong></div>';
+    }
+    if(completed.length){
+      html+='<div class="layout-hint">COMPLETED GENETIC SAMPLES</div>'+
+        completed.map(function(v){
+          var price=Number.isFinite(v.estimatedBaseValue)?'~'+v.estimatedBaseValue.toLocaleString()+' CR':'VALUE UNKNOWN';
+          return '<div class="network-job"><strong>'+escapeHtml(String(v.species||"Completed sample"))+
+            '</strong><span>'+escapeHtml(price)+'</span></div>';
+        }).join('');
+    }
+    var overview=Array.isArray(chosen.genusOverview)?chosen.genusOverview:[];
+    html+='<div class="layout-hint">'+(genus.length?'DSS BIOLOGY · GENUS VALUE RANGES':'POSSIBLE GENERA · DSS NOT VERIFIED')+'</div>';
+    html+=overview.map(function(g){
+      var title=String(g.species||g.genus||"Unknown genus");
+      var low=Number.isFinite(g.minBase)?g.minBase:null,high=Number.isFinite(g.maxBase)?g.maxBase:null;
+      var price=(low===null||high===null)?"RANGE UNKNOWN":
+        (low===high?'~'+low.toLocaleString()+' CR':'~'+low.toLocaleString()+' - ~'+high.toLocaleString()+' CR');
+      return '<div class="network-job"><div><strong>'+escapeHtml(title)+'</strong>'+
+        '<small> · '+(g.exact?'SPECIES IDENTIFIED':'ESTIMATED PARTIAL MODEL')+
+        '</small></div><strong>'+escapeHtml(price)+'</strong></div>';
     }).join("");
     if(!html)html='<div class="layout-hint">No rule match in the partial catalog; this does not rule out life.</div>';
     if(el("surveyorBioCandidates").innerHTML!==html)el("surveyorBioCandidates").innerHTML=html;
-    var active=sampled.filter(function(s){return s&&!s.completed&&Number(s.samples||0)>0&&Number(s.samples||0)<3;});
-    active.sort(function(a,b){return String(b.lastScanAt||"").localeCompare(String(a.lastScanAt||""));});
-    var sample=active[0],guide="No active genetic sample.";
+    var sample=active,guide="No active genetic sample.";
     if(sample){
       guide=String(sample.species||"Organism")+" · "+Number(sample.samples||0)+"/3 SAMPLES";
       var positions=Array.isArray(sample.samplePositions)?sample.samplePositions:[],last=positions[positions.length-1];
@@ -664,8 +682,15 @@ function renderBioSurvey(survey){
     }
     setText(el("surveyorBioGenetics"),guide);
   }
-  setText(el("surveyorBioSales"),"VISTA GENOMICS · CONFIRMED "+Number(bio.confirmedSalesLifetime||0).toLocaleString()+
-    " CR TOTAL · "+Number(bio.saleEvents||0)+" SALE(S) · Unsold balance unreconciled");
+  var expedition=survey&&survey.expedition||{},earned=expedition.exobiology||{};
+  var message="VISTA LIFETIME SALES · "+Number(bio.confirmedSalesLifetime||0).toLocaleString()+" CR";
+  if(expedition.active){
+    message+=" · EXPEDITION BIO BASE ~"+Number(earned.estimatedBase||0).toLocaleString()+" CR";
+    message+=" · POSSIBLE FIRST-LOG TOTAL ~"+Number(earned.potentialTotal||0).toLocaleString()+" CR";
+    message+=" · VISTA SOLD DURING EXPEDITION "+Number(earned.confirmedVistaSales||0).toLocaleString()+" CR";
+    message+=" · SALES NOT RECONCILED TO INDIVIDUAL SAMPLES";
+  }
+  setText(el("surveyorBioSales"),message);
 }
 function renderSurveyorControls(){
   var survey=(state&&state.scout&&state.scout.exploration)||{};

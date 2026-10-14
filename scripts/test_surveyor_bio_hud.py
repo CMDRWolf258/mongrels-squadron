@@ -104,14 +104,15 @@ body["sampledSpecies"][0].update({
     "footfallStatus":"first_footfall_indicated",
     "estimatedBaseValue":19010800,
 })
+body["genusOverview"] = [{"genus":"Stratum","minBase":19010800,"maxBase":19010800,"exact":False}]
 hud = FakeHud({"exploration":survey, "status":dict(status,longitude=0.04)})
 dimensions = hud._render_exobiology_canvas(FakeCanvas(),1)
 text = " ".join(hud.lines)
 assert dimensions[0] > 450 and dimensions[1] > 100
 assert "BIOLOGICAL INTELLIGENCE" in text
 assert "GENETIC DISTANCE" in text or "DISTANCE MET" in text
-assert "NOT CONFIRMED" in text and "19,010,800" in text
-assert "FIRST FOOTFALL DOES NOT GUARANTEE FIRST-LOG BONUS" in text
-assert "POTENTIAL TOTAL" in text and "95,054,000" in text, text
-assert "SAMPLE SEQUENCE" in text
+assert "19,010,800" in text
+assert "DSS BIOLOGY" in text or "POSSIBLE GENERA" in text
+assert "POSSIBLE FIRST-LOG TOTAL" in text and "95,054,000" in text, text
+assert "ACTIVE SPECIMEN" in text
 print("Biological HUD samples, source positions, uncertainty and rendering PASSED")
