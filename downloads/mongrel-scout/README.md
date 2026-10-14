@@ -1,4 +1,37 @@
-## Scout 1.13.16 — Private cross-PC mission cargo synchronization
+## Scout 1.14.0 — Production Surveyor / Exobiology integration
+
+**Released through the normal Mongrel Scout website download.** This is the
+stable follow-up to the owner-only Exobiology test builds. Install the complete
+`MongrelScout` folder from **MongrelScout.zip** on each Elite/EDMC computer;
+the plugin folder contains its own Surveyor, EDDiscovery bridge and private
+mission-sync modules. Scout is **not** updated automatically by HUD.
+
+- **Exploration:** Frontier FSS/DSS/cartographic body records, first discovery
+  estimates, mapping advisor, local historical journal and optional EDDiscovery
+  reference. Asteroid-belt cluster scans do not inflate the system body count.
+- **Exobiology:** all DSS-confirmed genera, partial source-attributed habitat
+  predictions, **96 published Vista Genomics base values**, genus value ranges,
+  species/variant confirmation from biological Codex entries or ScanOrganic,
+  active three-part sampling, genetic distance in ship/SRV/on-foot when
+  position evidence is valid, and saved completed species.
+- **Expeditions:** separate biological completed-sample estimates, conditional
+  first-logged bonus projections and confirmed Vista sales alongside cartographic
+  data. First footfall is not proof of first-logged eligibility. Sales lack
+  guaranteed originating-body attribution.
+- **Privacy and costs:** Surveyor history and biology stay local on each PC.
+  No new Cloudflare database, journal upload or recurring site-read dependency;
+  the original cross-PC *cargo mission requirements* sync is unchanged.
+- **Compatibility:** pair with Mongrel HUD **0.18.0** or later for the unified
+  biological roster, Body Intelligence atmosphere label, and the in-flight
+  displays. Previously saved Surveyor data is preserved and revalued in place.
+
+**Upgrade:** Close EDMC; back up the existing MongrelScout folder; unzip the
+new website package and replace the entire plugin folder; restart EDMC.
+Do **not** delete `%LOCALAPPDATA%\\MongrelScout\\surveyor.sqlite3` or
+existing EDMC configuration. HUD is a separate Windows download/update.
+See the older notes below for the original mission sync design.
+
+### Previous Scout 1.13.16 — Private cross-PC mission cargo synchronization
 
 Scout automatically synchronizes active cargo mission requirements and delivery
 progress between your computers, using your existing Commander-bound Scout

@@ -1,3 +1,13 @@
+# Mongrel Exobiology — archived owner test procedure
+
+**Superseded by the normal production Scout 1.14.0 / HUD 0.18.0 downloads.**
+This file is preserved only to document how the isolated pre-release packages
+were tested. For installation now, use Mongrel Tools on the squad website,
+`downloads/mongrel-scout/README.md`, and
+`downloads/mongrel-hud/README.md`; do not use the old expiring test artifacts.
+
+## Original staging instructions (historical)
+
 # Mongrel Exobiology — coordinated owner test package
 
 **STAGING / OWNER-ONLY — NOT THE PUBLIC SCOUT/HUD RELEASE.**

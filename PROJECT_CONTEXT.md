@@ -12,6 +12,16 @@ This is an architecture/handoff guide, not a changelog. Update it after meaningf
 
 ---
 
+## Production Surveyor / Exobiology release — Scout 1.14.0 + HUD 0.18.0 (October 14, 2026)
+
+- **Wolf approved production promotion** of the existing merged Surveyor + Exobiology work. No new display or HUD-control redesign belongs to this release. Scout 1.13.16 becomes **1.14.0** and HUD 0.17.23 becomes **0.18.0**.
+- Normal Scout website ZIPs: `/api/downloads/mongrel-scout` and `/downloads/mongrel-scout.zip`. Both source lists already include `load.py`, `mission_sync.py`, `surveyor.py`, `surveyor_history.py`, `surveyor_intel.py`, `surveyor_edd_bridge.py`, README, licenses and notices. Cloudflare Pages deploys from `main`. Scout installs separately into EDMC on every Elite PC; never delete the persistent Surveyor SQLite database or EDMC configuration when upgrading.
+- Normal HUD release: `.github/workflows/build-mongrel-hud-windows.yml` builds the Windows PyInstaller ZIP and publishes to rolling GitHub release `mongrel-hud-latest`. Production update metadata is advertised **after** successful asset upload. HUD updater verifies SHA-256 and updates only HUD, not Scout; stable site link `/api/downloads/mongrel-hud` redirects to the rolling Windows release. The production build now has a Scout/HUD/Surveyor regression prerequisite.
+- Frontier Journal Scan/FSS/DSS/ScanOrganic/CodexEntry/Disembark/SellOrganicData feed Scout's local SQLite Surveyor; Scout local bridge 127.0.0.1:43857 provides HUD data; HUD controller LAN 43858. EDDiscovery WS (6502) and Spansh/EDSM reference are optional, locally requested. **No new Cloudflare reads or raw journal uploads** for Exobiology.
+- Current Exobiology functions: 96 published Vista base prices independent of partial 61-species habitat model; all DSS-confirmed genera in one color-coded roster (neutral estimated ranges, cyan exact identified including Codex variants like `Bacterium Bullaris - Gold`, green SAMPLE COMPLETE); single active 3-box sample; genetic spacing with fresh same-body GPS on foot/ship/SRV; body atmosphere, FSS excluding belt clusters; Expedition Carto + biological confirmed sales/provisional values kept separate. Main Surveyor panel stops after DSS mapped and first discovery candidates.
+- IMPORTANT uncertainty: biological habitat model incomplete, repeat composition scanner scans might not generate CodexEntry, first footfall does **not** prove first-logged Vista bonus, Genomics sales are not reliably attributed to source bodies, and current two-PC private sync only covers cargo mission requirements, not complete Surveyor journals.
+- **Next chat:** Wolf intends follow-up changes to HUD display presentation and iPad controls, plus further implementations. Ask for the specific desired changes; work on latest `main`; do not change unrelated features. Preserve the live mining, BGS, combat, cargo, voice, route, carrier and cross-PC mission pipelines. Test fixtures before merges and avoid repeated installations.
+
 ## Project identity
 
 - **Squadron:** Regiment of Imperial Mongrels

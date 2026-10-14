@@ -17,7 +17,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm Scout/HUD stable versions, complete website ZIP contents and syntax
+        run: |
+          python -m py_compile downloads/mongrel-scout/load.py downloads/mongrel-scout/mission_sync.py downloads/mongrel-scout/surveyor.py downloads/mongrel-scout/surveyor_history.py downloads/mongrel-scout/surveyor_intel.py downloads/mongrel-scout/surveyor_edd_bridge.py downloads/mongrel-hud/mongrel_hud.py
+          node scripts/smoke-mongrel-scout.mjs
+          python scripts/smoke-mongrel-hud-companion.py
+          python scripts/smoke-mongrel-hud.py
+          node scripts/smoke-mongrel-hud-controller.mjs
+      - name: Exercise Frontier journal, biology, expedition, navigation and cross-PC cargo
+        run: |
+          python scripts/test-scout-mission-sync.py
+          python scripts/test_surveyor.py
+          python scripts/test_surveyor_bio.py
+          python scripts/test_surveyor_bio_predictions.py
+          python scripts/test_surveyor_bio_hud.py
+          python scripts/test_surveyor_bio_pipeline.py
+          python scripts/test_surveyor_bio_live_fixes.py
+          python scripts/test_surveyor_bio_workflow.py
+          python scripts/test_surveyor_bio_prices.py
+          python scripts/test_surveyor_codex_variant.py
+          python scripts/test_surveyor_expedition.py
+          python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_eddiscovery_reference.py
+          python scripts/test_surveyor_eddiscovery_bridge.py
+          node scripts/test-surveyor-bio-controller.mjs
+
   build:
+    needs: release-qualification
     runs-on: windows-latest
     timeout-minutes: 20
     steps:

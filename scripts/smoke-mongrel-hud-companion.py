@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.17.23"
+assert hud.APP_VERSION=="0.18.0"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -47,13 +47,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.19"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.20"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.21"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.22"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.23"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.24"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.0"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.1"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.17.24",
+    "name":"Mongrel HUD Windows v0.18.1",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.17.24" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.1" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -310,7 +310,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.17.23"
+    assert hud.APP_VERSION=="0.18.0"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
