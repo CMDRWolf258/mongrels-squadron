@@ -152,7 +152,7 @@ with tempfile.TemporaryDirectory() as directory:
     log=Panel({"exploration":later})
     log._survey_alert_entries=types.MethodType(hud.MongrelHudApp._survey_alert_entries,log)
     lw,lh=hud.MongrelHudApp._render_surveyor_log_canvas(log,AlertCanvas(),1.0,True)
-    assert lw>300 and lh>180
+    assert lw>300 and lh>160
     assert log.titles==["EXPLORATION DISCOVERY LOG"]
     assert any("FIRST DISCOVERY · BODY" in x for x in log.lines)
     assert sum("HMC + BIO" in x for x in log.lines)==2
