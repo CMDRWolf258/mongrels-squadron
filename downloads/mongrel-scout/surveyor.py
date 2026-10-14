@@ -52,6 +52,52 @@ def _hmc_bio_alert(body: Mapping[str, Any]) -> bool:
     return planet in {"high metal content body", "high metal content world"} and _bio_signal_count(body) > 0
 
 
+def _primary_arrival_star(body: Mapping[str, Any], system_name: str) -> bool:
+    """Recognize an arrival star in both single- and multi-star journal naming.
+
+    Frontier Scan's WasDiscovered is *per body*, not a guaranteed system
+    first-discovery award. A named "System A" star can be the primary despite
+    BodyID != 0; B/C, planets, and other names must never imply system first.
+    """
+    if not _text(body.get("starType")):
+        return False
+    name = _text(body.get("name")).casefold()
+    system = _text(system_name).casefold()
+    if not name or not system:
+        return False
+    return (_text(body.get("bodyId")) == "0"
+            or name == system
+            or name == system + " a")
+
+
+def _live_exploration_alerts(system: Mapping[str, Any],
+                             bodies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Correct legacy misclassified live A-star alerts without replaying scans.
+
+    Only reclassify an existing *live visit* alert with original personal
+    Scan WasDiscovered=false evidence. Historical stored scans by themselves
+    never generate cockpit notifications.
+    """
+    rows = system.get("explorationAlerts")
+    if not isinstance(rows, list):
+        return []
+    bodies_by_id = {str(b.get("bodyId") or ""): b for b in bodies}
+    corrected = []
+    for raw in rows:
+        if not isinstance(raw, dict):
+            continue
+        row = raw
+        if raw.get("kind") == "first_discovery_body":
+            body = bodies_by_id.get(_text(raw.get("bodyId")))
+            if (body and body.get("wasDiscovered") is False
+                    and body.get("personallyScanned")
+                    and _primary_arrival_star(body, _text(system.get("name")))):
+                row = dict(raw, kind="first_discovery_system",
+                           id="first_discovery_system:" + _text(raw.get("bodyId")))
+        corrected.append(row)
+    return corrected
+
+
 def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[str, Any],
                               timestamp: str) -> None:
     """One alert per body/kind on this visit; bounded per-system local storage."""
@@ -1509,8 +1555,9 @@ class Surveyor:
                         # old persisted flags. Don't replay previous first claims.
                         if (kind == "Scan" and event.get("WasDiscovered") is False
                                 and body.get("personallyScanned") and not prior.get("personallyScanned")):
-                            first_kind = "first_discovery_system" if body.get("starType") and (
-                                body_id == "0" or body.get("name") == system.get("name")) else "first_discovery_body"
+                            first_kind = ("first_discovery_system"
+                                          if _primary_arrival_star(body, _text(system.get("name")))
+                                          else "first_discovery_body")
                             _record_exploration_alert(system, first_kind, body, timestamp)
                         if kind in {"Scan", "FSSBodySignals", "SAASignalsFound"} and _hmc_bio_alert(body):
                             _record_exploration_alert(system, "hmc_bio", body, timestamp)
@@ -1678,8 +1725,8 @@ class Surveyor:
         bodies.sort(key=lambda body: (-(body.get("mappingGain") or 0), body.get("name", "")))
         known_current = [b["currentValue"] for b in bodies if b["currentValue"] is not None]
         firsts = [b for b in countable_bodies if b.get("personallyScanned") and b.get("wasDiscovered") is False]
-        primary = next((b for b in bodies if b.get("starType") and
-                       (b.get("bodyId") == "0" or b.get("name", "") == current.get("name"))), None)
+        primary = next((b for b in bodies
+                        if _primary_arrival_star(b, _text(current.get("name")))), None)
         if primary and primary.get("wasDiscovered") is False:
             discovery = "potential_first_arrival_star"
         elif primary and primary.get("wasDiscovered") is True:
@@ -1756,7 +1803,7 @@ class Surveyor:
             "discoveryStatus": discovery,
             "intelligence": current.get("intelligence") if current else None,
             "eddiscoveryHistory": current.get("eddiscoveryHistory") if current else None,
-            "explorationAlerts": current.get("explorationAlerts", []) if current else [],
+            "explorationAlerts": _live_exploration_alerts(current, bodies) if current else [],
             "knownBodies": len(countable_bodies),
             "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in countable_bodies),
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in countable_bodies),
