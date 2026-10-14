@@ -7143,7 +7143,7 @@ class MongrelHudApp:
                             f"VISTA SALES DURING EXPEDITION  {int(bio.get('confirmedVistaSales') or 0):,} CR",
                             scale, 9, HUD_MUTED)
             y += 18 * scale
-         else:
+        else:
             self._draw_text(canvas, 10 * scale, y, "START EXPEDITION TO TRACK BIO RETURNS",
                             scale, 9, HUD_MUTED)
             y += 20 * scale
