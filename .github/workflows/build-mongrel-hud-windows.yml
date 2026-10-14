@@ -46,6 +46,7 @@ jobs:
           python scripts/test_surveyor_codex_variant.py
           python scripts/test_surveyor_expedition.py
           python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_multistar_discovery.py
           python scripts/test_surveyor_eddiscovery_reference.py
           python scripts/test_surveyor_eddiscovery_bridge.py
           node scripts/test-surveyor-bio-controller.mjs
