@@ -650,7 +650,9 @@ function renderBioSurvey(survey){
       var price=(low===null||high===null)?"RANGE UNKNOWN":
         (low===high?'~'+low.toLocaleString()+' CR':'~'+low.toLocaleString()+' - ~'+high.toLocaleString()+' CR');
       return '<div class="network-job"><div><strong>'+escapeHtml(title)+'</strong>'+
-        '<small> · '+(g.exact?'SPECIES IDENTIFIED':'ESTIMATED PARTIAL MODEL')+
+        '<small> · '+(g.exact?'SPECIES IDENTIFIED':
+          g.rangeCoverage==='unfiltered_published_genus'?'UNFILTERED GENUS PRICES · HABITAT UNKNOWN':
+          'ESTIMATED PARTIAL MODEL')+
         '</small></div><strong>'+escapeHtml(price)+'</strong></div>';
     }).join("");
     if(!html)html='<div class="layout-hint">No rule match in the partial catalog; this does not rule out life.</div>';
