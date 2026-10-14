@@ -615,16 +615,23 @@ def _bio_species_by_genus(body: Mapping[str, Any]) -> list[dict[str, Any]]:
         roster.setdefault(genus, "")
     result = []
     for genus in sorted(roster, key=str.casefold):
-        exact = next((dict(r) for r in sample_records.values() if isinstance(r, Mapping)
-                      and _text(r.get("genus")).casefold() == genus.casefold()), None)
+        records = [dict(r) for r in sample_records.values() if isinstance(r, Mapping)
+                   and _text(r.get("genus")).casefold() == genus.casefold()]
+        active = next((r for r in records if not r.get("completed") and
+                       _text(r.get("speciesId")) == _bio_active_species_id(body)), None)
+        complete = next((r for r in records if r.get("completed")), None)
         codex = identified.get(genus)
-        if not exact and isinstance(codex, dict):
-            exact = codex
+        exact = active or complete or (dict(codex) if isinstance(codex, dict) else None)
         if exact:
             name = _text(exact.get("species"))
             base = BIO_REFERENCE_VALUES.get(name)
+            sample_complete = bool(complete)
             result.append({"genus": genus, "species": name,
                            "exact": True, "identification": exact.get("source", "ScanOrganic"),
+                           "variant": _text(exact.get("variant")),
+                           "sampleComplete": sample_complete,
+                           "sampleStatus": ("completed" if sample_complete else
+                                            "sampling" if active else "identified"),
                            "minBase": base, "maxBase": base,
                            "rangeCoverage": "identified_species"})
             continue
@@ -649,27 +656,45 @@ def _bio_species_by_genus(body: Mapping[str, Any]) -> list[dict[str, Any]]:
     return result
 
 
-def _bio_record_codex(body: dict[str, Any], event: Mapping[str, Any]) -> None:
-    """CodexEntry is evidence only for known biology with an explicit BodyID.
+def _bio_codex_identity(event: Mapping[str, Any]) -> tuple[str, str] | None:
+    """Resolve localized 'Species - Variant' to known, valued species."""
+    if _text(event.get("Category")) != "$Codex_Category_Biology;":
+        return None
+    localized = _text(event.get("Name_Localised")).strip()
+    if not localized:
+        return None
+    for name in sorted(BIO_REFERENCE_VALUES, key=len, reverse=True):
+        if localized.casefold() == name.casefold():
+            return name, ""
+        for delimiter in (" - ", " – ", " — "):
+            if localized.casefold().startswith((name + delimiter).casefold()):
+                variant = localized[len(name + delimiter):].strip()
+                if variant:
+                    return name, variant
+    return None
 
-    Frontier does not promise one CodexEntry per repeat composition scan.
-    Never use a generic geological CodexEntry as biological identification.
+
+def _bio_record_codex(body: dict[str, Any], event: Mapping[str, Any]) -> None:
+    """Frontier Codex variants identify species without genetic samples.
+
+    Not all repeated composition scans generate a fresh CodexEntry.
     """
-    category = _text(event.get("Category"))
-    if category != "$Codex_Category_Biology;":
+    identity = _bio_codex_identity(event)
+    if not identity:
         return
-    name = _text(event.get("Name_Localised"))
-    if name not in BIO_REFERENCE_VALUES:
-        return
+    name, variant = identity
     genus = name.split(" ", 1)[0]
     documented = body.get("biologicalGenuses")
     if not (isinstance(documented, list) and any(
         _text(g.get("name")).casefold() == genus.casefold() for g in documented if isinstance(g, Mapping)
     )) and _bio_signal_count(body) <= 0:
-        return  # no body-local biological evidence
+        return
     identified = body.get("bioIdentified") if isinstance(body.get("bioIdentified"), dict) else {}
-    identified[genus] = {"species": name, "source": "Frontier CodexEntry",
-                         "identifiedAt": _text(event.get("timestamp"))}
+    identified[genus] = {
+        "species": name, "variant": variant,
+        "source": "Frontier CodexEntry", "identifiedAt": _text(event.get("timestamp")),
+        "entryId": event.get("EntryID"),
+    }
     body["bioIdentified"] = identified
 
 
@@ -1287,7 +1312,10 @@ class Surveyor:
                 "INSERT OR IGNORE INTO events(commander,digest) VALUES (?,?)", (commander, digest)
             ).rowcount
             if not inserted:
-                return None
+                # Reprocess historically ignored species-variant Codex events
+                # safely, without replaying scans or crediting transactions.
+                if kind != "CodexEntry" or _bio_codex_identity(event) is None:
+                    return None
             row = conn.execute(
                 "SELECT active_address FROM meta WHERE commander=?", (commander,)
             ).fetchone()
