@@ -98,6 +98,33 @@ def _live_exploration_alerts(system: Mapping[str, Any],
     return corrected
 
 
+def _exploration_alert_counts(system: Mapping[str, Any],
+                              bodies: list[dict[str, Any]]) -> dict[str, int]:
+    """Lifetime of the current live visit only; adjust a legacy primary-A cue.
+
+    Preserve the counter even when its older detail rows have rolled off the
+    local 512-entry cap. An old 32-entry visit can only count what survived.
+    """
+    kinds = ("first_discovery_system", "first_discovery_body", "hmc_bio")
+    rows = system.get("explorationAlerts")
+    rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    stored = system.get("explorationAlertCounts")
+    counts = ({kind: max(0, int(stored.get(kind) or 0)) for kind in kinds}
+              if isinstance(stored, dict)
+              else {kind: sum(row.get("kind") == kind for row in rows) for kind in kinds})
+    body_map = {_text(body.get("bodyId")): body for body in bodies}
+    for row in rows:
+        if row.get("kind") != "first_discovery_body":
+            continue
+        body = body_map.get(_text(row.get("bodyId")))
+        if (body and body.get("wasDiscovered") is False
+                and body.get("personallyScanned")
+                and _primary_arrival_star(body, _text(system.get("name")))):
+            counts["first_discovery_body"] = max(0, counts["first_discovery_body"] - 1)
+            counts["first_discovery_system"] += 1
+    return counts
+
+
 def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[str, Any],
                               timestamp: str) -> None:
     """One alert per body/kind on this visit; bounded per-system local storage."""
@@ -109,6 +136,16 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
     alert_id = kind + ":" + body_id
     if any(isinstance(row, Mapping) and row.get("id") == alert_id for row in entries):
         return
+    # Backfill counts for a live visit started by the previous Scout release.
+    # Stored counts grow independently of the bounded detail log so the
+    # number folded beneath the latest 10 stays accurate on large surveys.
+    counts = system.get("explorationAlertCounts")
+    if not isinstance(counts, dict):
+        counts = {key: sum(isinstance(entry, Mapping) and entry.get("kind") == key
+                           for entry in entries)
+                  for key in ("first_discovery_system", "first_discovery_body", "hmc_bio")}
+    counts[kind] = max(0, int(counts.get(kind) or 0)) + 1
+    system["explorationAlertCounts"] = counts
     entries.append({
         "id": alert_id,
         "kind": kind,
@@ -119,7 +156,7 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
         "isFirstFootfallConfirmed": False,
         "speciesConfirmed": False,
     })
-    system["explorationAlerts"] = entries[-32:]
+    system["explorationAlerts"] = entries[-512:]
 
 
 
@@ -1399,6 +1436,7 @@ class Surveyor:
             # replay must not clear or synthesize a live cockpit notification.
             if not historic and kind in {"FSDJump", "CarrierJump", "Location"}:
                 system["explorationAlerts"] = []
+                system["explorationAlertCounts"] = {}
             name = _text(event.get("StarSystem") or event.get("SystemName") or fallback_system or system.get("name"))
             if name:
                 system["name"] = name
@@ -1804,6 +1842,7 @@ class Surveyor:
             "intelligence": current.get("intelligence") if current else None,
             "eddiscoveryHistory": current.get("eddiscoveryHistory") if current else None,
             "explorationAlerts": _live_exploration_alerts(current, bodies) if current else [],
+            "explorationAlertCounts": _exploration_alert_counts(current, bodies) if current else {},
             "knownBodies": len(countable_bodies),
             "personallyScannedBodies": sum(bool(b.get("personallyScanned")) for b in countable_bodies),
             "personallyMappedBodies": sum(bool(b.get("personallyMapped")) for b in countable_bodies),
