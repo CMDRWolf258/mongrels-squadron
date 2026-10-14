@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.0"
+APP_VERSION = "0.18.1"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -213,7 +213,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_log", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
 VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -227,6 +227,7 @@ PANEL_TITLES = {
     "surveyor_dss": "DSS TARGET DIRECTOR",
     "surveyor_body": "BODY INTELLIGENCE",
     "surveyor_alert": "EXPLORATION ALERTS",
+    "surveyor_log": "EXPLORATION DISCOVERY LOG",
     "surveyor_bio": "BIOLOGICAL INTELLIGENCE",
     "mission": "MISSION CONTROL",
     "trade": "TRADER'S OUTPOST",
@@ -803,6 +804,7 @@ def default_layout() -> dict[str, Any]:
             "surveyor_dss": {"x": 610, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_body": {"x": 610, "y": 410, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "surveyor_alert": {"x": 40, "y": 510, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
+            "surveyor_log": {"x": 1470, "y": 310, "visible": True, "scale": 0.9, "profiles": ["exploration"]},
             "surveyor_bio": {"x": 1170, "y": 70, "visible": True, "scale": 0.95, "profiles": ["exploration"]},
             "mission": {"x": 1260, "y": 70, "visible": True, "scale": 0.9, "profiles": ["combat", "surface"]},
             "trade": {"x": 1260, "y": 315, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
@@ -3786,6 +3788,39 @@ class MongrelHudApp:
             "last": max(0, int(self.last_bounty)),
         }
 
+    def clear_unclaimed_bounties(self) -> dict[str, int]:
+        """Local HUD correction only. Frontier vouchers and BGS are untouched."""
+        with self.store.lock:
+            ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
+            ledger["unclaimed"] = 0
+            self.store.save()
+        return self.bounty_ledger()
+
+    def trade_route_selection(self) -> dict[str, Any]:
+        with self.store.lock:
+            raw = self.store.data.get("tradeRouteSelection")
+            raw = raw if isinstance(raw, dict) else {}
+            mode = "custom" if raw.get("mode") == "custom" else "all"
+            ids = raw.get("selectedIds")
+            ids = ids if isinstance(ids, list) else []
+            selected = [value for value in ids if isinstance(value, str) and 0 < len(value) <= 120][:100]
+        return {"mode": mode, "selectedIds": selected}
+
+    def set_trade_route_selection(self, mode: str, selected_ids: Any) -> dict[str, Any]:
+        if mode not in {"all", "custom"} or not isinstance(selected_ids, list):
+            raise ValueError("invalid_trade_route_selection")
+        selected = []
+        for item in selected_ids[:100]:
+            if not isinstance(item, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,120}", item):
+                raise ValueError("invalid_trade_route_id")
+            if item not in selected:
+                selected.append(item)
+        value = {"mode": mode, "selectedIds": selected}
+        with self.store.lock:
+            self.store.data["tradeRouteSelection"] = value
+            self.store.save()
+        return value
+
     def layout_snapshot(self) -> dict[str, Any]:
         with self.store.lock:
             return json.loads(json.dumps(normalized_layout(self.store.data.get("layout"))))
@@ -5148,6 +5183,7 @@ class MongrelHudApp:
             "layout": self.layout_snapshot(),
             "notes": self.notes_text(),
             "missionSystem": self.mission_system_filter(),
+            "tradeRouteSelection": self.trade_route_selection(),
             "voice": self.voice_settings_snapshot(),
             "voiceProfileOptions": self._voice_profile_options(),
             "voiceProfiles": {row["key"]:self.voice_settings_snapshot(row["key"]) for row in self._voice_profile_options()},
@@ -6137,9 +6173,15 @@ class MongrelHudApp:
             return width, round(y + 8 * scale)
 
         routes = [row for row in (trade.get("routes") if isinstance(trade.get("routes"), list) else []) if isinstance(row, dict)]
-        self._draw_text(canvas, 8 * scale, y, f"ACTIVE {int(trade.get('activeCount') or 0)}", scale, 10, HUD_WHITE, True); y += 22 * scale
+        selection = self.trade_route_selection()
+        if selection["mode"] == "custom":
+            chosen = set(selection["selectedIds"])
+            routes = [row for row in routes if str(row.get("id") or "") in chosen]
+        label = (f"SELECTED {len(routes)}" if selection["mode"] == "custom"
+                 else f"ACTIVE {int(trade.get('activeCount') or 0)}")
+        self._draw_text(canvas, 8 * scale, y, label, scale, 10, HUD_WHITE, True); y += 22 * scale
         if not routes:
-            self._draw_text(canvas, 8 * scale, y, "NO ACTIVE ROUTES", scale, 10, HUD_MUTED, True)
+            self._draw_text(canvas, 8 * scale, y, "NO ROUTES SELECTED" if selection["mode"] == "custom" else "NO ACTIVE ROUTES", scale, 10, HUD_MUTED, True)
             return width, round(y + 28 * scale)
 
         for route in routes[:4]:
@@ -6863,9 +6905,9 @@ class MongrelHudApp:
                 kind = str(signal.get("type") or "").casefold()
                 if "biolog" in kind:
                     biological += max(0, int(signal.get("count") or 0))
-            self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY · BIO SIGNALS", scale, 10, HUD_WHITE, True)
+            self._draw_text(canvas, 9 * scale, y, "EXOBIOLOGY · DETECTED BIO SIGNALS", scale, 9, HUD_WHITE, True)
             self._draw_text(canvas, width - 9 * scale, y,
-                            str(biological) if biological else "UNCONFIRMED",
+                            f"{biological} DETECTED" if biological else "NONE CONFIRMED",
                             scale, 11, HUD_GREEN if biological else HUD_MUTED, True, "ne")
             y += 22 * scale
             self._draw_text(canvas, 9 * scale, y, "SIGNALS ARE NOT GENETIC SAMPLES OR PAYOUT CLAIMS",
@@ -7146,6 +7188,8 @@ class MongrelHudApp:
             width, height = self._render_surveyor_canvas(canvas, scale, panel_id)
         elif panel_id == "surveyor_alert":
             width, height = self._render_surveyor_alert_canvas(canvas, scale, flash_on)
+        elif panel_id == "surveyor_log":
+            width, height = self._render_surveyor_log_canvas(canvas, scale, flash_on)
         elif panel_id == "surveyor_bio":
             width, height = self._render_exobiology_canvas(canvas, scale)
         elif panel_id == "mission":
@@ -7204,7 +7248,7 @@ class MongrelHudApp:
                 should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
                 # No empty warning window: it appears only for live, local
                 # events and disappears when leaving the system.
-                if should_show and panel_id == "surveyor_alert":
+                if should_show and panel_id in {"surveyor_alert", "surveyor_log"}:
                     with self.lock:
                         observation = self.snapshot.data.get("exploration") if isinstance(self.snapshot.data, dict) else None
                         events = observation.get("explorationAlerts") if isinstance(observation, dict) else None
@@ -7833,6 +7877,11 @@ def make_handler(app: MongrelHudApp):
                         str(body.get("kind") or ""),
                         str(body.get("id") or ""),
                     )
+                elif path == "/api/bounties/clear":
+                    result = {"ok": True, "bounty": app.clear_unclaimed_bounties()}
+                elif path == "/api/trade-routes":
+                    result = {"ok": True, "tradeRouteSelection": app.set_trade_route_selection(
+                        str(body.get("mode") or ""), body.get("selectedIds"))}
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
