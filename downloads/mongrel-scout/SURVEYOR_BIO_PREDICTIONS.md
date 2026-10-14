@@ -195,3 +195,33 @@ per-body sale provenance. First-footfall bonuses remain unverified until sale.
 
 Test fixture: `scripts/test_surveyor_bio_live_fixes.py`, plus existing
 `test_surveyor_bio_hud.py` and `test-surveyor-bio-controller.mjs`.
+
+## Vista Genomics price lookup — full published DSN table
+
+The value lookup is now **independent from the partial habitat-prediction
+model**. The published DSN/Canonn Vista Genomics list contains **96 priced
+biology entries** (including historical biological features); all 96 are
+available offline in `BIO_REFERENCE_VALUES` with source
+https://ed-dsn.net/en/vista-genomics-values/.
+
+- The 61 curated habitat conditions still govern **predictions**; price
+  completeness does not imply habitat coverage or that any species
+  actually exists on the scanned planet.
+- When DSS confirms an as-yet-unmodeled genus, the biological panel uses the
+  **unfiltered published genus price range**, clearly labeled as
+  non-predicted. Once ScanOrganic/CodexEntry identifies the actual species,
+  its specific base value replaces that range.
+- Example: **Fonticulua Digitos** base **1,804,100 CR**. Its broader
+  unfiltered Fonticulua genus range spans **1,000,000–20,000,000 CR**.
+  First-logged payouts are *conditional*, never guaranteed from this table.
+- Existing Scout databases are **revalued on snapshot**, even when the saved
+  completed species' `estimatedBaseValue` was previously null. Active
+  expedition species credits are similarly revalued from the latest
+  source-backed price table, without replaying events or modifying sale
+  totals. This does not count new discoveries or create retroactive
+  expedition participation.
+- Sources are attributed; the code is original structured reference data
+  rather than code bundled from GPL community clients. No cloud fetch,
+  new HUD backend endpoint or recurring Cloudflare read added.
+- Regression: `scripts/test_surveyor_bio_prices.py` validates 96 values
+  and the old Fonticulua Digitos SQLite completion/expedition backfill.

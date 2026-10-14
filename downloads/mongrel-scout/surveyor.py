@@ -147,8 +147,44 @@ BIO_REFERENCE_VALUES = {
     "Tussock Triticum": 7774700,
     "Tussock Ventusa": 3227700,
     "Tussock Virgam": 14313700,
+    # Complete published DSN/Canonn lookup; habitat prediction is a separate catalog.
+    "Amphora plant": 1628800,
+    "Anemone": 1499900,
+    "Bacterium Omentum": 4638900,
+    "Bacterium Scopulum": 4934500,
+    "Bacterium Verrata": 3897000,
+    "Bacterium Volu": 7774700,
+    "Bark Mounds": 1471900,
+    "Brain Tree": 1593700,
+    "Concha Aureolas": 7774700,
+    "Concha Biconcavis": 19010800,
+    "Concha Labiata": 2352400,
+    "Concha Renibus": 4572400,
+    "Crystalline Shards": 1628800,
+    "Electricae Radialem": 6284600,
+    "Fonticulua Campestris": 1000000,
+    "Fonticulua Digitos": 1804100,
+    "Fonticulua Fluctus": 20000000,
+    "Fonticulua Lapida": 3111000,
+    "Fonticulua Segmentatus": 19010800,
+    "Fonticulua Upupam": 5727600,
+    "Frutexa Acus": 7774700,
+    "Frutexa Collum": 1639800,
+    "Frutexa Fera": 1632500,
+    "Frutexa Flabellum": 1808900,
+    "Frutexa Flammasis": 10326000,
+    "Frutexa Metallicum": 1632500,
+    "Frutexa Sponsae": 5988000,
+    "Fumerola Aquatis": 6284600,
+    "Fumerola Carbosis": 6284600,
+    "Fumerola Extremus": 16202800,
+    "Fumerola Nitris": 7500900,
+    "Recepta Conditivus": 14313700,
+    "Recepta Deltahedronix": 16202800,
+    "Recepta Umbrux": 12934900,
+    "Sinuous Tubers": 1514500,
 }
-BIO_REFERENCE_MODEL = "dsn-vista-genomics-base-2026-10-partial"
+BIO_REFERENCE_MODEL = "dsn-vista-genomics-base-2026-10-published-table-v1"
 
 # Only distances independently established for these genera are exposed.
 BIO_GENETIC_DISTANCES_M = {"Stratum": 500, "Bacterium": 500, "Osseus": 800, "Electricae": 1000}
@@ -594,11 +630,22 @@ def _bio_species_by_genus(body: Mapping[str, Any]) -> list[dict[str, Any]]:
             continue
         matching = [c for c in candidates if _text(c.get("genus")).casefold() == genus.casefold()]
         values = [c["estimatedBase"] for c in matching if type(c.get("estimatedBase")) is int]
+        # Genus values exist independently of habitat predictions. For a
+        # currently-unmodeled genus, use the *unfiltered published* genus
+        # range, never claim those species are environmentally compatible.
+        fallback = not matching and not values
+        if fallback:
+            values = [price for species, price in BIO_REFERENCE_VALUES.items()
+                      if species.split(" ", 1)[0].casefold() == genus.casefold()]
         result.append({"genus": genus, "species": None, "exact": False,
                        "minBase": min(values) if values else None,
                        "maxBase": max(values) if values else None,
-                       "rangeCoverage": "partial_habitat_catalog" if matching else "unmodeled_genus",
-                       "possibleSpecies": len(matching)})
+                       "rangeCoverage": (
+                           "partial_habitat_catalog" if matching
+                           else "unfiltered_published_genus" if values
+                           else "unmodeled_genus"
+                       ),
+                       "possibleSpecies": len(matching) if matching else None})
     return result
 
 
@@ -637,6 +684,12 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
     hmc = _text(body.get("planetClass")).casefold() in {"high metal content body", "high metal content world"}
     contains_stratum = any("stratum" in _text(g.get("name")).casefold() for g in confirmed)
     for sample in current:
+        # Revalue historical SQLite records on read: a specimen completed
+        # before its species entered the price catalog must not stay UNKNOWN.
+        latest_base = BIO_REFERENCE_VALUES.get(_text(sample.get("species")))
+        if latest_base is not None:
+            sample["estimatedBaseValue"] = latest_base
+            sample["valuationSource"] = BIO_REFERENCE_MODEL
         footfall_likely = body.get("ourFirstFootfall") is True
         base = sample.get("estimatedBaseValue")
         sample["footfallStatus"] = (
@@ -1186,12 +1239,16 @@ class Surveyor:
             if cutoff and row["occurred_at"] < cutoff[0]:
                 continue
             bio_count += 1
-            if row["base"] is None:
+            origin = self._load(conn, "bodies", commander, row["address"], row["body_id"])
+            recorded = origin.get("bioSamples")
+            specimen = recorded.get(row["species_id"]) if isinstance(recorded, dict) else None
+            current_price = BIO_REFERENCE_VALUES.get(_text(specimen.get("species"))) if isinstance(specimen, dict) else None
+            base_value = current_price if current_price is not None else row["base"]
+            if base_value is None:
                 unknown += 1
                 continue
-            base = max(0, int(row["base"]))
+            base = max(0, int(base_value))
             bio_base += base
-            origin = self._load(conn, "bodies", commander, row["address"], row["body_id"])
             if origin.get("ourFirstFootfall") is True:
                 bio_bonus += base * 4  # possible first-logged, NEVER guaranteed
         sold = conn.execute(

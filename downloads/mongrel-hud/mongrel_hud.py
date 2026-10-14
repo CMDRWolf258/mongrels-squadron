@@ -6502,8 +6502,11 @@ class MongrelHudApp:
                 self._draw_text(canvas, width - 9 * scale, y, amount,
                                 scale, 9, HUD_CYAN if exact else HUD_MUTED, True, "ne")
                 y += 23 * scale
-                if item.get("rangeCoverage") == "unmodeled_genus":
-                    self._draw_text(canvas, 17 * scale, y, "HABITAT MODEL INCOMPLETE",
+                if item.get("rangeCoverage") in {"unmodeled_genus", "unfiltered_published_genus"}:
+                    self._draw_text(canvas, 17 * scale, y,
+                                    "UNFILTERED GENUS VALUES · NOT HABITAT PREDICTED"
+                                    if item.get("rangeCoverage") == "unfiltered_published_genus"
+                                    else "HABITAT MODEL INCOMPLETE",
                                     scale, 8, HUD_AMBER)
                     y += 15 * scale
         elif not specimens:
