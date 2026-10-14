@@ -23,6 +23,9 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   .bio-sample-slot.filled{background:#1d7185;border-color:#53d8f0;color:white}
   .bio-sample-slot.complete{background:#236e55;border-color:#61e6b3}
   .bio-payout{font:600 12px monospace;color:#9bd6e6;margin-top:5px}
+  .bio-roster-range strong{color:#d7e4eb}
+  .bio-roster-identified strong{color:#55cdec}
+  .bio-roster-complete strong{color:#77e7a5}
 </style>
 </head>
 <body>
@@ -617,9 +620,6 @@ function renderBioSurvey(survey){
        Number(v.samples||0)<3&&(!Object.hasOwn(chosen,"activeSpeciesId")||String(v.speciesId||"")===activeId);});
     unfinished.sort(function(a,b){return String(b.lastScanAt||"").localeCompare(String(a.lastScanAt||""));});
     var active=unfinished[0]||null;
-    var completed=sampled.filter(function(v){return v&&v.completed;}).sort(function(a,b){
-      return String(b.lastScanAt||"").localeCompare(String(a.lastScanAt||""));
-    });
     var html='';
     if(active){
       var n=Math.max(0,Math.min(3,Number(active.samples||0)));
@@ -634,14 +634,6 @@ function renderBioSurvey(survey){
         '</strong><small> · ACTIVE GENETIC SAMPLE</small>'+slots+
         '<div class="bio-payout">'+escapeHtml(price)+'</div></div><strong>'+n+'/3</strong></div>';
     }
-    if(completed.length){
-      html+='<div class="layout-hint">COMPLETED GENETIC SAMPLES</div>'+
-        completed.map(function(v){
-          var price=Number.isFinite(v.estimatedBaseValue)?'~'+v.estimatedBaseValue.toLocaleString()+' CR':'VALUE UNKNOWN';
-          return '<div class="network-job"><strong>'+escapeHtml(String(v.species||"Completed sample"))+
-            '</strong><span>'+escapeHtml(price)+'</span></div>';
-        }).join('');
-    }
     var overview=Array.isArray(chosen.genusOverview)?chosen.genusOverview:[];
     html+='<div class="layout-hint">'+(genus.length?'DSS BIOLOGY · GENUS VALUE RANGES':'POSSIBLE GENERA · DSS NOT VERIFIED')+'</div>';
     html+=overview.map(function(g){
@@ -649,11 +641,14 @@ function renderBioSurvey(survey){
       var low=Number.isFinite(g.minBase)?g.minBase:null,high=Number.isFinite(g.maxBase)?g.maxBase:null;
       var price=(low===null||high===null)?"RANGE UNKNOWN":
         (low===high?'~'+low.toLocaleString()+' CR':'~'+low.toLocaleString()+' - ~'+high.toLocaleString()+' CR');
-      return '<div class="network-job"><div><strong>'+escapeHtml(title)+'</strong>'+
-        '<small> · '+(g.exact?'SPECIES IDENTIFIED':
-          g.rangeCoverage==='unfiltered_published_genus'?'UNFILTERED GENUS PRICES · HABITAT UNKNOWN':
-          'ESTIMATED PARTIAL MODEL')+
-        '</small></div><strong>'+escapeHtml(price)+'</strong></div>';
+      var completed=g.sampleComplete===true;
+      var stateLabel=completed?'SAMPLE COMPLETE':
+        g.exact?'SPECIES IDENTIFIED'+(g.variant?' · '+escapeHtml(String(g.variant)):''):
+        g.rangeCoverage==='unfiltered_published_genus'?'UNFILTERED GENUS PRICES · HABITAT UNKNOWN':
+        'DSS GENUS · ESTIMATED RANGE';
+      var stateClass=completed?'bio-roster-complete':g.exact?'bio-roster-identified':'bio-roster-range';
+      return '<div class="network-job '+stateClass+'"><div><strong>'+escapeHtml(title)+'</strong>'+
+        '<small> · '+stateLabel+'</small></div><strong>'+escapeHtml(price)+'</strong></div>';
     }).join("");
     if(!html)html='<div class="layout-hint">No rule match in the partial catalog; this does not rule out life.</div>';
     if(el("surveyorBioCandidates").innerHTML!==html)el("surveyorBioCandidates").innerHTML=html;
