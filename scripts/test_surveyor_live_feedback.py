@@ -151,12 +151,14 @@ with tempfile.TemporaryDirectory() as directory:
     # The secondary window retains every existing first-body/HMC alert.
     log=Panel({"exploration":later})
     log._survey_alert_entries=types.MethodType(hud.MongrelHudApp._survey_alert_entries,log)
+    log._survey_log_body_label=hud.MongrelHudApp._survey_log_body_label
+    log.discovery_log_limit=lambda: "10"
     lw,lh=hud.MongrelHudApp._render_surveyor_log_canvas(log,AlertCanvas(),1.0,True)
     assert lw>300 and lh>160
     assert log.titles==["EXPLORATION DISCOVERY LOG"]
-    assert any("FIRST DISCOVERY · BODY" in x for x in log.lines)
-    assert sum("HMC + BIO" in x for x in log.lines)==2
-    assert any("Fresh Test System 3 · 2 BIO" in x for x in log.lines)
+    assert "FIRST BODY DISCOVERIES" in log.lines
+    assert sum("HMC + BIO SIGNALS" in x for x in log.lines)==2
+    assert "3 · 2 BIO" in log.lines
     assert {"surveyor_alert","surveyor_log"}.issubset(hud.PANEL_IDS)
     for panel_name in ("surveyor_alert","surveyor_log"):
         assert "exploration" in hud.default_layout()["panels"][panel_name]["profiles"]
