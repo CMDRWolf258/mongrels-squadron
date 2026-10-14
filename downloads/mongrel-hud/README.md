@@ -7,10 +7,10 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
-## Mongrel HUD 0.18.2 — Stable Surveyor / Biological Intelligence release
+## Mongrel HUD 0.18.3 — Stable Surveyor / Biological Intelligence release
 
-Mongrel HUD **0.18.2** is the standard downloadable Windows release. It
-integrates the local Scout **1.14.2** Surveyor and Exobiology state into
+Mongrel HUD **0.18.3** is the standard downloadable Windows release. It
+integrates the local Scout **1.14.3** Surveyor and Exobiology state into
 the existing Exploration HUD profile and paired iPad controller:
 
 - Three specimen slots for the *single currently active* organic sample;
@@ -28,7 +28,7 @@ the existing Exploration HUD profile and paired iPad controller:
 
 **Update the normal Windows HUD via the built-in update button** or the
 Mongrel Tools website link. HUD self-update does not replace EDMC Scout.
-For full Exploration and Exobiology support install Scout 1.14.2 on the
+For full Exploration and Exobiology support install Scout 1.14.3 on the
 Elite PC as a separate plugin upgrade. The old private test packages
 are no longer needed.
 
