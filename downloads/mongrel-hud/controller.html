@@ -284,6 +284,18 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="layout-hint" id="surveyorBioSales">Vista Genomics sales: awaiting confirmed journal transactions.</div>
   </div>
 
+    <div class="card" id="surveyorLogSettings">
+      <h2>EXPLORATION DISCOVERY LOG</h2>
+      <label for="surveyorLogLimit">Show recent first body discoveries</label>
+      <select id="surveyorLogLimit" class="mining-select" aria-label="Recent first body discoveries displayed">
+        <option value="5">5 latest</option>
+        <option value="10">10 latest (default)</option>
+        <option value="15">15 latest</option>
+        <option value="all">All recorded this visit</option>
+      </select>
+      <div class="layout-hint">System and HMC + BIO alerts remain pinned above these discoveries. Earlier bodies are counted but collapsed. Only changes the local HUD display.</div>
+      <div class="notice" id="surveyorLogNotice"></div>
+    </div>
   </section>
   <div class="card">
     <h2>OVERLAY LAYOUT</h2>
@@ -738,6 +750,9 @@ function renderBioSurvey(survey){
   setText(el("surveyorBioSales"),message);
 }
 function renderSurveyorControls(){
+  var logLimit=String((state&&state.discoveryLogLimit)||"10");
+  if(!["5","10","15","all"].includes(logLimit))logLimit="10";
+  if(el("surveyorLogLimit").value!==logLimit)el("surveyorLogLimit").value=logLimit;
   var survey=(state&&state.scout&&state.scout.exploration)||{};
   var system=survey.system||{},exp=survey.expedition||{};
   var active=exp.active===true,excluded=exp.existingDataExcluded===true;
@@ -1385,6 +1400,17 @@ el("surveyorRecordQuote").onclick=async function(){
     renderSurveyorControls();
     setText(el("surveyorExpeditionNotice"),"Cartographics reference saved locally");
   }catch(e){setText(el("surveyorExpeditionNotice"),"Quote not recorded · "+e.message);}
+};
+el("surveyorLogLimit").onchange=async function(){
+  var limit=el("surveyorLogLimit").value;
+  try{
+    var result=await mutate("/api/discovery-log-limit",{limit:limit});
+    state=state||{};state.discoveryLogLimit=result.discoveryLogLimit;
+    setText(el("surveyorLogNotice"),"Showing "+(limit==="all"?"all recorded":limit)+" recent body discoveries");
+  }catch(err){
+    setText(el("surveyorLogNotice"),"Unable to save log length · "+err.message);
+    renderSurveyorControls();
+  }
 };
 el("overlayMaster").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {masterVisible:layout.masterVisible===false}});applyLayoutResult(r,r.layout&&r.layout.masterVisible===false?"Overlay hidden":"Overlay shown")}catch(e){showLayoutStatus("Display control failed · "+e.message,true)}};
 el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout",function(){var layout=(state&&state.layout)||{};return {locked:layout.locked===false}});applyLayoutResult(r,r.layout&&r.layout.locked===false?"Layout unlocked":"Layout locked")}catch(e){showLayoutStatus("Layout lock failed · "+e.message,true)}};
