@@ -684,6 +684,12 @@ def _biological_opportunity(body: Mapping[str, Any]) -> dict[str, Any] | None:
     hmc = _text(body.get("planetClass")).casefold() in {"high metal content body", "high metal content world"}
     contains_stratum = any("stratum" in _text(g.get("name")).casefold() for g in confirmed)
     for sample in current:
+        # Revalue historical SQLite records on read: a specimen completed
+        # before its species entered the price catalog must not stay UNKNOWN.
+        latest_base = BIO_REFERENCE_VALUES.get(_text(sample.get("species")))
+        if latest_base is not None:
+            sample["estimatedBaseValue"] = latest_base
+            sample["valuationSource"] = BIO_REFERENCE_MODEL
         footfall_likely = body.get("ourFirstFootfall") is True
         base = sample.get("estimatedBaseValue")
         sample["footfallStatus"] = (
@@ -1233,12 +1239,16 @@ class Surveyor:
             if cutoff and row["occurred_at"] < cutoff[0]:
                 continue
             bio_count += 1
-            if row["base"] is None:
+            origin = self._load(conn, "bodies", commander, row["address"], row["body_id"])
+            recorded = origin.get("bioSamples")
+            specimen = recorded.get(row["species_id"]) if isinstance(recorded, dict) else None
+            current_price = BIO_REFERENCE_VALUES.get(_text(specimen.get("species"))) if isinstance(specimen, dict) else None
+            base_value = current_price if current_price is not None else row["base"]
+            if base_value is None:
                 unknown += 1
                 continue
-            base = max(0, int(row["base"]))
+            base = max(0, int(base_value))
             bio_base += base
-            origin = self._load(conn, "bodies", commander, row["address"], row["body_id"])
             if origin.get("ourFirstFootfall") is True:
                 bio_bonus += base * 4  # possible first-logged, NEVER guaranteed
         sold = conn.execute(
