@@ -12,6 +12,13 @@ This is an architecture/handoff guide, not a changelog. Update it after meaningf
 
 ---
 
+## Multi-star first-discovery fix (Scout 1.14.2 / HUD 0.18.2, October 14, 2026)
+- Live reproduction: NGC 2546 Sector FD-F b39-0 shows first-discovery body alerts for stars A, B, C but no **first-discovery system** alert. Frontier's primary arrival star can be named `<System> A` with a nonzero `BodyID`; the former detector only accepted ID 0 or the unsuffixed system name. This also left `discoveryStatus` incorrectly at `new_body_candidates`.
+- `surveyor.py` shares one strict primary-star classifier for journal alerts and system status. Undiscovered, personally scanned primary `<System> A` (or ID 0 / unsuffixed system name) qualifies for **first-discovery system candidate**. Secondary stars B/C and planets remain **body** alerts; missing/past events do not invent a system claim. `_snapshot` safely repairs already-recorded **live current-visit** misclassified primary-A alert rows, without journal replay, new BGS/expedition credit, or mutation of historical scan data. Alert remains a **candidate**, not a guaranteed first-credit award.
+- `mongrel_hud.py` now withdraws the large main Exploration Alerts window if only first-body discovery rows exist. The compact Discovery Log continues to show those body entries.
+- Regression `scripts/test_surveyor_multistar_discovery.py`: explicit A/B/C Frontier Scan fixtures; A with nonzero ID, late A, previous discovery A, historic no-alert, persisted current-visit migration, departure clear, secondary-star false-positive prevention, plus major-only window guard. Wired into Surveyor and HUD build release-qualification CI. No Cloudflare requests or additional persistent data storage.
+- Versions: Scout **1.14.2** and HUD **0.18.2**, intended as coordinated production bugfix after PR tests, merge, Pages deployment and Windows rolling build are verified.
+
 ## Follow-up HUD refinement — Scout 1.14.1 + HUD 0.18.1 (PR #220, October 14, 2026)
 
 - Approved owner refinements, not an Exploration architecture rewrite. Controller Exploration profile now highlights; Faction Alerts, Live Trade Profit Diagnostics, Daily Order Changes, Ship Cargo and Trader's Outpost route selection appear only within the **Combat controller section**; Surveyor/EDDiscovery/biological controls appear only under **Exploration controller**. **Existing saved HUD overlay profile assignments stay customizable and are not moved or reset.**
