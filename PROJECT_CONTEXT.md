@@ -59,6 +59,13 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Vista biological prices decoupled from predictions (full DSN published table)
+
+- Scout `surveyor.py` now carries **96 published DSN/Canonn Vista Genomics base-price entries**, while existing habitat predictions remain 61 curated conditions. New prices include Fonticulua Digitos (1,804,100 Cr), other Fonticulua, Concha, Recepta, Frutexa, Fumerola, etc.
+- DSS `genusOverview` uses *unfiltered genus-wide prices* when that genus lacks habitat rules, with conspicuous partial-confidence labeling; must not present as environmentally predicted. Exact ScanOrganic/Codex identification replaces ranges.
+- Historical completed species (old SQLite NULL price) and expedition completion ledger NULL price are **revalued read-time**, without modifying saved journaling/sale totals or faking first-logged eligibility.
+- Regression: `test_surveyor_bio_prices.py`, CI and private paired packaging quality gate. No new Cloudflare reads or public installer modifications.
+
 ### Exobiology specimen workflow + expedition accounting (pending PR)
 
 - Exactly one active incomplete `ScanOrganic` specimen per body. New `Log` for a different species drops former partial record and continues preserving all completed species, without inventing discarded scan credits. Old database snapshots keep a legacy-aware fallback only when no active-ID marker exists.
