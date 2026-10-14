@@ -73,7 +73,7 @@ def _record_exploration_alert(system: dict[str, Any], kind: str, body: Mapping[s
         "isFirstFootfallConfirmed": False,
         "speciesConfirmed": False,
     })
-    system["explorationAlerts"] = entries[-16:]
+    system["explorationAlerts"] = entries[-32:]
 
 
 
