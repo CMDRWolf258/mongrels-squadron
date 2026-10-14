@@ -12,6 +12,16 @@ This is an architecture/handoff guide, not a changelog. Update it after meaningf
 
 ---
 
+## Follow-up HUD refinement — Scout 1.14.1 + HUD 0.18.1 (PR #220, October 14, 2026)
+
+- Approved owner refinements, not an Exploration architecture rewrite. Controller Exploration profile now highlights; Faction Alerts, Live Trade Profit Diagnostics, Daily Order Changes, Ship Cargo and Trader's Outpost route selection appear only within the **Combat controller section**; Surveyor/EDDiscovery/biological controls appear only under **Exploration controller**. **Existing saved HUD overlay profile assignments stay customizable and are not moved or reset.**
+- Overlay Layout remains available from all profiles. Mission Control's system filter uses large tappable rows. Surface Mining's saved-system browser adds **CLEAR ✕** to empty the search field and immediately show the saved system list without changing the chosen mining destination.
+- Trader's Outpost local iPad route selector has **All Routes** (default) and remembered **Custom Selection**, filtering only the local HUD's displayed routes by stable ID. No new Cloudflare reads or changes to published routes. iPad Combat Bounties offers a confirmed local **clear tracked unclaimed** action; no Frontier redemption, bounty run totals or BGS records are changed.
+- Body Intelligence now labels **EXOBIOLOGY · DETECTED BIO SIGNALS** and displays an observed count or NONE CONFIRMED, not a species identification claim.
+- The primary Surveyor alert overlay presents only **first-discovery system** and **HMC + BIO** alerts, one at a time, prioritizing system discovery with 12-second flashing intervals; it holds the last cue steady when no next major event is queued. The new independent **Exploration Discovery Log** overlay shows all current-visit system/body/HMC alerts, newest first with a compact, subtle 4-second pulse. Scout's per-visit bounded local alert history increases from 16 to 32, clearing on the next live system arrival; historic replay does not synthesize alerts.
+- Source: `downloads/mongrel-hud/{mongrel_hud.py,controller.html}`, `downloads/mongrel-scout/{load.py,surveyor.py}`. Added `scripts/test_hud_refinement.py`, `scripts/test-hud-refinement-controller.mjs`, and PR-specific `.github/workflows/hud-refinement-regression.yml`; preserve original Scout/HUD/Surveryor/website CI and rolling HUD production publish gate.
+- Versions and release only become production after passing checks, merging PR #220 into `main`, and confirming the Windows GitHub Actions rolling build succeeds. Scout still installs separately per PC; HUD updater updates only HUD.
+
 ## Production Surveyor / Exobiology release — Scout 1.14.0 + HUD 0.18.0 (October 14, 2026)
 
 - **Wolf approved production promotion** of the existing merged Surveyor + Exobiology work. No new display or HUD-control redesign belongs to this release. Scout 1.13.16 becomes **1.14.0** and HUD 0.17.23 becomes **0.18.0**.

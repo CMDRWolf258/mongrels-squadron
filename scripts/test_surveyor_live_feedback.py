@@ -141,14 +141,24 @@ with tempfile.TemporaryDirectory() as directory:
     class AlertCanvas(Canvas):
         def create_rectangle(self,*args,**kwargs): pass
     p=Panel({"exploration":later})
+    p._survey_alert_entries=types.MethodType(hud.MongrelHudApp._survey_alert_entries,p)
+    p._survey_primary_alert=types.MethodType(hud.MongrelHudApp._survey_primary_alert,p)
     w,h=hud.MongrelHudApp._render_surveyor_alert_canvas(p,AlertCanvas(),1.0,True)
-    assert w>400 and h>140
+    assert w>400 and h>100
     assert p.titles==["EXPLORATION ALERTS"],p.titles
-    assert any("FIRST DISCOVERY" in x for x in p.lines)
-    assert any("HMC + BIOLOGICAL SIGNALS" in x for x in p.lines)
-    assert any("SPECIES UNKNOWN" in x and "STRATUM NOT CONFIRMED" in x for x in p.lines)
-    assert any("2 BIO SIGNAL(S)" in x for x in p.lines)
-    assert "surveyor_alert" in hud.PANEL_IDS
-    assert "exploration" in hud.default_layout()["panels"]["surveyor_alert"]["profiles"]
+    assert any("FIRST DISCOVERY · SYSTEM" in x for x in p.lines)
+    assert not any("FIRST DISCOVERY · BODY" in x for x in p.lines)
+    # The secondary window retains every existing first-body/HMC alert.
+    log=Panel({"exploration":later})
+    log._survey_alert_entries=types.MethodType(hud.MongrelHudApp._survey_alert_entries,log)
+    lw,lh=hud.MongrelHudApp._render_surveyor_log_canvas(log,AlertCanvas(),1.0,True)
+    assert lw>300 and lh>160
+    assert log.titles==["EXPLORATION DISCOVERY LOG"]
+    assert any("FIRST DISCOVERY · BODY" in x for x in log.lines)
+    assert sum("HMC + BIO" in x for x in log.lines)==2
+    assert any("Fresh Test System 3 · 2 BIO" in x for x in log.lines)
+    assert {"surveyor_alert","surveyor_log"}.issubset(hud.PANEL_IDS)
+    for panel_name in ("surveyor_alert","surveyor_log"):
+        assert "exploration" in hud.default_layout()["panels"][panel_name]["profiles"]
 
 print("Surveyor feedback title, count, status and gas-giant regressions PASSED")

@@ -1,0 +1,53 @@
+name: HUD Refinement Regression
+
+on:
+  pull_request:
+    paths:
+      - 'downloads/mongrel-hud/**'
+      - 'downloads/mongrel-scout/**'
+      - 'scripts/test_hud_refinement.py'
+      - 'scripts/test-hud-refinement-controller.mjs'
+      - 'scripts/smoke-mongrel-scout.mjs'
+      - '.github/workflows/hud-refinement-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hud-surveyor-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile HUD and Scout Python
+        run: python -m py_compile downloads/mongrel-hud/mongrel_hud.py downloads/mongrel-scout/load.py downloads/mongrel-scout/surveyor.py
+      - name: HUD and controller refinements
+        run: |
+          python scripts/test_hud_refinement.py
+          node scripts/test-hud-refinement-controller.mjs
+          node scripts/smoke-mongrel-hud-controller.mjs
+          python scripts/smoke-mongrel-hud.py
+          python scripts/test_surveyor_bio_hud.py
+          node scripts/test-surveyor-bio-controller.mjs
+      - name: Scout and Surveyor existing regression suite
+        run: |
+          node scripts/smoke-mongrel-scout.mjs
+          python scripts/test_surveyor.py
+          python scripts/test_surveyor_bio.py
+          python scripts/test_surveyor_bio_predictions.py
+          python scripts/test_surveyor_bio_pipeline.py
+          python scripts/test_surveyor_bio_live_fixes.py
+          python scripts/test_surveyor_bio_workflow.py
+          python scripts/test_surveyor_bio_prices.py
+          python scripts/test_surveyor_codex_variant.py
+          python scripts/test_surveyor_expedition.py
+          python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_eddiscovery_reference.py
+          python scripts/test_surveyor_eddiscovery_bridge.py
