@@ -24,6 +24,7 @@ on:
       - 'scripts/test_surveyor_expedition.py'
       - 'scripts/test_surveyor_live_feedback.py'
       - 'scripts/test_surveyor_multistar_discovery.py'
+      - 'scripts/test_surveyor_compact_log.py'
       - 'scripts/test_surveyor_eddiscovery_reference.py'
       - 'scripts/test_surveyor_eddiscovery_bridge.py'
       - 'scripts/test_surveyor_advisor.py'
@@ -60,6 +61,7 @@ jobs:
           python scripts/test_surveyor_expedition.py
           python scripts/test_surveyor_live_feedback.py
           python scripts/test_surveyor_multistar_discovery.py
+          python scripts/test_surveyor_compact_log.py
           python scripts/test_surveyor_eddiscovery_reference.py
           python scripts/test_surveyor_eddiscovery_bridge.py
 
