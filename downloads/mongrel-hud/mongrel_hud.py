@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.2"
+APP_VERSION = "0.18.3"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -3821,6 +3821,20 @@ class MongrelHudApp:
             self.store.save()
         return value
 
+    def discovery_log_limit(self) -> str:
+        """User's iPad setting; local HUD only, never an upstream Scout option."""
+        with self.store.lock:
+            value = str(self.store.data.get("discoveryLogLimit") or "10")
+        return value if value in {"5", "10", "15", "all"} else "10"
+
+    def set_discovery_log_limit(self, value: str) -> str:
+        if value not in {"5", "10", "15", "all"}:
+            raise ValueError("invalid_discovery_log_limit")
+        with self.store.lock:
+            self.store.data["discoveryLogLimit"] = value
+            self.store.save()
+        return value
+
     def layout_snapshot(self) -> dict[str, Any]:
         with self.store.lock:
             return json.loads(json.dumps(normalized_layout(self.store.data.get("layout"))))
@@ -5184,6 +5198,7 @@ class MongrelHudApp:
             "notes": self.notes_text(),
             "missionSystem": self.mission_system_filter(),
             "tradeRouteSelection": self.trade_route_selection(),
+            "discoveryLogLimit": self.discovery_log_limit(),
             "voice": self.voice_settings_snapshot(),
             "voiceProfileOptions": self._voice_profile_options(),
             "voiceProfiles": {row["key"]:self.voice_settings_snapshot(row["key"]) for row in self._voice_profile_options()},
@@ -6667,41 +6682,120 @@ class MongrelHudApp:
         self._draw_text(canvas, 17 * scale, y + 59 * scale, footer, scale, 9, HUD_CYAN, True)
         return width, round(y + 94 * scale)
 
+    @staticmethod
+    def _survey_log_body_label(value: Any, system_name: str) -> str:
+        """Avoid repeating system name in every log row, without guessing suffixes."""
+        full = str(value or "").strip()
+        system = str(system_name or "").strip()
+        if system and full.casefold().startswith((system + " ").casefold()):
+            return full[len(system) + 1:]
+        return full if full else "UNNAMED BODY"
+
     def _render_surveyor_log_canvas(self, canvas: tk.Canvas, scale: float,
                                     flash_on: bool) -> tuple[int, int]:
-        """Independent compact history of all current-visit discovery alerts."""
+        """Priority cues first, then the 5/10/15/all newest body discoveries."""
         width = round(455 * scale)
         system_id, entries = self._survey_alert_entries()
+        survey = self.scout_state().get("exploration")
+        survey = survey if isinstance(survey, dict) else {}
+        system = survey.get("system") if isinstance(survey.get("system"), dict) else {}
+        system_name = str(system.get("name") or "")
+        counts = survey.get("explorationAlertCounts")
+        counts = counts if isinstance(counts, dict) else {}
         if getattr(self, "_survey_log_system", None) != system_id:
             self._survey_log_system = system_id
-            self._survey_log_seen = {}
+            # On HUD startup, old visit entries are steady. Only genuinely new
+            # additions pulse briefly; polling/repainting never restarts them.
+            self._survey_log_seen = {
+                str(row.get("id") or ""): time.monotonic() - 10.0
+                for row in entries
+            }
         seen = self._survey_log_seen
         now = time.monotonic()
         active_ids = {str(row.get("id") or "") for row in entries}
         for key in list(seen):
             if key not in active_ids:
                 seen.pop(key, None)
-        y = self._draw_title(canvas, "EXPLORATION DISCOVERY LOG", scale, width, HUD_CYAN) + 6 * scale
+
+        priorities = [row for row in entries if row.get("kind") in
+                      {"first_discovery_system", "hmc_bio"}]
+        priorities.sort(key=lambda row: 0 if row.get("kind") == "first_discovery_system" else 1)
+        bodies = [row for row in reversed(entries)
+                  if row.get("kind") == "first_discovery_body"]
+        setting = self.discovery_log_limit()
+        visible = bodies if setting == "all" else bodies[:int(setting)]
+        body_count = max(len(bodies), int(counts.get("first_discovery_body") or 0))
+        priority_count = max(len(priorities),
+                             int(counts.get("first_discovery_system") or 0) +
+                             int(counts.get("hmc_bio") or 0))
+        total = body_count + priority_count
+
+        y = self._draw_title(canvas, "EXPLORATION DISCOVERY LOG", scale, width, HUD_CYAN) + 5 * scale
+        self._draw_text(canvas, width - 9 * scale, y - 23 * scale,
+                        f"{total} EVENTS", scale, 8, HUD_MUTED, True, "ne")
+        if system_name:
+            self._draw_text(canvas, 9 * scale, y, self.clip_line(system_name, 47),
+                            scale, 9, HUD_MUTED)
+            y += 20 * scale
         if not entries:
-            self._draw_text(canvas, 9 * scale, y, "NO LIVE DISCOVERY ALERTS", scale, 9, HUD_MUTED)
+            self._draw_text(canvas, 9 * scale, y, "NO LIVE DISCOVERY ALERTS",
+                            scale, 9, HUD_MUTED)
             return width, round(y + 24 * scale)
-        for row in reversed(entries):
-            key = str(row.get("id") or "")
-            started = seen.setdefault(key, now)
-            kind = row.get("kind")
-            color = HUD_GREEN if kind == "first_discovery_system" else HUD_AMBER if kind == "hmc_bio" else HUD_CYAN
-            if now - started < 4.0 and not flash_on:
-                color = HUD_DIM
-            label = ("FIRST DISCOVERY · SYSTEM" if kind == "first_discovery_system" else
-                     "HMC + BIO" if kind == "hmc_bio" else "FIRST DISCOVERY · BODY")
-            detail = self.clip_line(str(row.get("name") or "UNNAMED BODY"), 33)
-            if kind == "hmc_bio":
-                detail += f" · {max(0, int(row.get('biologicalSignals') or 0))} BIO"
-            self._draw_text(canvas, 9 * scale, y, label, scale, 9, color, True)
-            y += 15 * scale
-            self._draw_text(canvas, 15 * scale, y, detail, scale, 8, HUD_WHITE)
-            y += 18 * scale
-        return width, round(y + 8 * scale)
+
+        if priorities:
+            self._draw_text(canvas, 9 * scale, y, "PRIORITY DISCOVERIES",
+                            scale, 9, HUD_AMBER, True)
+            y += 19 * scale
+            for row in priorities:
+                key = str(row.get("id") or "")
+                started = seen.setdefault(key, now)
+                kind = row.get("kind")
+                color = HUD_GREEN if kind == "first_discovery_system" else HUD_AMBER
+                if now - started < 4.0 and not flash_on:
+                    color = HUD_DIM
+                label = ("FIRST DISCOVERY · SYSTEM CANDIDATE" if kind == "first_discovery_system"
+                         else "HMC + BIO SIGNALS")
+                suffix = self._survey_log_body_label(row.get("name"), system_name)
+                detail = self.clip_line(suffix, 35)
+                if kind == "hmc_bio":
+                    detail += f" · {max(0, int(row.get('biologicalSignals') or 0))} BIO"
+                self._draw_text(canvas, 12 * scale, y, label,
+                                scale, 10, color, True)
+                y += 18 * scale
+                self._draw_text(canvas, 19 * scale, y, detail,
+                                scale, 9, HUD_WHITE)
+                y += 21 * scale
+            canvas.create_line(9 * scale, y, width - 9 * scale, y, fill=HUD_DIM)
+            y += 14 * scale
+
+        if body_count:
+            self._draw_text(canvas, 9 * scale, y, "FIRST BODY DISCOVERIES",
+                            scale, 9, HUD_CYAN, True)
+            self._draw_text(canvas, width - 9 * scale, y,
+                            f"LATEST {len(visible)} / {body_count}", scale, 8,
+                            HUD_MUTED, True, "ne")
+            y += 20 * scale
+            for index, row in enumerate(visible, start=1):
+                key = str(row.get("id") or "")
+                started = seen.setdefault(key, now)
+                color = HUD_DIM if now - started < 4.0 and not flash_on else HUD_CYAN
+                suffix = self._survey_log_body_label(row.get("name"), system_name)
+                self._draw_text(canvas, 9 * scale, y, f"{index:02d}", scale,
+                                9, HUD_MUTED, True)
+                self._draw_text(canvas, 43 * scale, y, "FIRST DISCOVERY",
+                                scale, 9, color, True)
+                self._draw_text(canvas, width - 9 * scale, y,
+                                self.clip_line(suffix, 29), scale, 9, HUD_WHITE, True, "ne")
+                y += 19 * scale
+            hidden = max(0, body_count - len(visible))
+            if hidden:
+                label = ("OLDER BODY DISCOVERIES NOT RETAINED" if setting == "all"
+                         else "OLDER BODY DISCOVERIES · COLLAPSED")
+                y += 5 * scale
+                self._draw_text(canvas, 9 * scale, y, f"+{hidden} {label}",
+                                scale, 9, HUD_MUTED, True)
+                y += 19 * scale
+        return width, round(y + 10 * scale)
 
     def _render_surveyor_canvas(self, canvas: tk.Canvas, scale: float, panel: str = "surveyor") -> tuple[int, int]:
         """Dedicated compact expedition instrument; all data is local to Scout."""
@@ -6794,9 +6888,7 @@ class MongrelHudApp:
                 self._draw_text(canvas, 9 * scale, y,
                                 "CATALOG ONLY · NOT VERIFIED YOUR SCANS", scale, 8, HUD_MUTED)
                 y += 20 * scale
-            self._draw_text(canvas, 9 * scale, y, "RECOMMENDATIONS ARE PROVISIONAL · NOT ETA",
-                            scale, 8, HUD_AMBER)
-            return width, round(y + 22 * scale)
+            return width, round(y + 6 * scale)
         if panel == "surveyor_body":
             bodies = survey.get("bodies") if isinstance(survey.get("bodies"), list) else []
             status = state.get("status") if isinstance(state.get("status"), dict) else {}
@@ -7051,11 +7143,7 @@ class MongrelHudApp:
                             f"VISTA SALES DURING EXPEDITION  {int(bio.get('confirmedVistaSales') or 0):,} CR",
                             scale, 9, HUD_MUTED)
             y += 18 * scale
-            self._draw_text(canvas, 10 * scale, y,
-                            "SALES NOT RECONCILED TO SAMPLE ORIGIN · DO NOT ADD",
-                            scale, 8, HUD_AMBER)
-            y += 18 * scale
-        else:
+         else:
             self._draw_text(canvas, 10 * scale, y, "START EXPEDITION TO TRACK BIO RETURNS",
                             scale, 9, HUD_MUTED)
             y += 20 * scale
@@ -7947,6 +8035,9 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/trade-routes":
                     result = {"ok": True, "tradeRouteSelection": app.set_trade_route_selection(
                         str(body.get("mode") or ""), body.get("selectedIds"))}
+                elif path == "/api/discovery-log-limit":
+                    result = {"ok": True, "discoveryLogLimit": app.set_discovery_log_limit(
+                        str(body.get("limit") or ""))}
                 elif path == "/api/mission-filter":
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
