@@ -6465,20 +6465,6 @@ class MongrelHudApp:
                 self._draw_text(canvas, 9 * scale, y, "BASE VALUE UNKNOWN",
                                 scale, 9, HUD_AMBER)
                 y += 19 * scale
-        completed = [x for x in specimens if isinstance(x, dict) and x.get("completed")]
-        if completed:
-            y += 5 * scale
-            self._draw_text(canvas, 9 * scale, y, "COMPLETED GENETIC SAMPLES", scale, 9, HUD_GREEN, True)
-            y += 23 * scale
-            for sample in sorted(completed, key=lambda x: str(x.get("lastScanAt") or ""), reverse=True):
-                self._draw_text(canvas, 9 * scale, y,
-                                self.clip_line(str(sample.get("species") or "BIO SAMPLE"), 31),
-                                scale, 10, HUD_GREEN, True)
-                value = sample.get("estimatedBaseValue")
-                self._draw_text(canvas, width - 9 * scale, y,
-                                f"~{int(value):,} CR" if type(value) is int else "UNKNOWN VALUE",
-                                scale, 10, HUD_CYAN if type(value) is int else HUD_AMBER, True, "ne")
-                y += 23 * scale
         overview = body.get("genusOverview") if isinstance(body.get("genusOverview"), list) else []
         if overview:
             y += 8 * scale
@@ -6491,6 +6477,8 @@ class MongrelHudApp:
                 if not isinstance(item, dict):
                     continue
                 exact = item.get("exact") is True
+                completed = item.get("sampleComplete") is True
+                row_color = HUD_GREEN if completed else HUD_CYAN if exact else HUD_WHITE
                 label = str(item.get("species") or item.get("genus") or "UNKNOWN GENUS")
                 low, high = item.get("minBase"), item.get("maxBase")
                 if type(low) is int and type(high) is int:
@@ -6498,10 +6486,20 @@ class MongrelHudApp:
                 else:
                     amount = "RANGE UNKNOWN"
                 self._draw_text(canvas, 9 * scale, y, self.clip_line(label, 31),
-                                scale, 10, HUD_GREEN if exact else HUD_WHITE, True)
+                                scale, 10, row_color, True)
                 self._draw_text(canvas, width - 9 * scale, y, amount,
-                                scale, 9, HUD_CYAN if exact else HUD_MUTED, True, "ne")
-                y += 23 * scale
+                                scale, 9, row_color if exact else HUD_MUTED, True, "ne")
+                y += 21 * scale
+                if completed:
+                    self._draw_text(canvas, width - 9 * scale, y,
+                                    "SAMPLE COMPLETE", scale, 9, HUD_GREEN, True, "ne")
+                    y += 18 * scale
+                elif exact:
+                    variant = str(item.get("variant") or "").strip()
+                    self._draw_text(canvas, 17 * scale, y,
+                                    self.clip_line("SPECIES IDENTIFIED" + (f" · {variant.upper()}" if variant else ""), 56),
+                                    scale, 8, HUD_CYAN)
+                    y += 17 * scale
                 if item.get("rangeCoverage") in {"unmodeled_genus", "unfiltered_published_genus"}:
                     self._draw_text(canvas, 17 * scale, y,
                                     "UNFILTERED GENUS VALUES · NOT HABITAT PREDICTED"
@@ -6816,6 +6814,19 @@ class MongrelHudApp:
             cls = str(focused.get("planetClass") or focused.get("starType") or "UNCLASSIFIED BODY")
             self._draw_text(canvas, 9 * scale, y, self.clip_line(cls.upper(), 43), scale, 10, HUD_CYAN, True)
             y += 23 * scale
+            atmosphere = str(focused.get("atmosphere") or "").strip()
+            atmosphere_type = str(focused.get("atmosphereType") or "").strip()
+            if atmosphere and atmosphere.casefold() not in {"none", "no atmosphere"}:
+                atmospheric_label = re.sub(r"\s+atmosphere$", "", atmosphere, flags=re.I).upper()
+            elif atmosphere_type and atmosphere_type.casefold() not in {"none", "noatmosphere"}:
+                atmospheric_label = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", atmosphere_type).upper()
+            elif atmosphere.casefold() in {"none", "no atmosphere"} or atmosphere_type.casefold() in {"none", "noatmosphere"}:
+                atmospheric_label = "NO ATMOSPHERE"
+            else:
+                atmospheric_label = "ATMOSPHERE UNKNOWN"
+            self._draw_text(canvas, 9 * scale, y, "ATMOSPHERE · " + self.clip_line(atmospheric_label, 37),
+                            scale, 9, HUD_CYAN if atmospheric_label != "ATMOSPHERE UNKNOWN" else HUD_MUTED, True)
+            y += 21 * scale
             distance = focused.get("distanceLs")
             dist = f"{distance:,.0f} LS" if isinstance(distance, (int, float)) else "DISTANCE UNKNOWN"
             self._draw_text(canvas, 9 * scale, y, "ARRIVAL RANGE", scale, 9, HUD_MUTED, True)
