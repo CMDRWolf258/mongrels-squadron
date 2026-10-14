@@ -109,6 +109,8 @@ def _exploration_alert_counts(system: Mapping[str, Any],
     rows = system.get("explorationAlerts")
     rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
     stored = system.get("explorationAlertCounts")
+    if not rows and not stored:
+        return {}
     counts = ({kind: max(0, int(stored.get(kind) or 0)) for kind in kinds}
               if isinstance(stored, dict)
               else {kind: sum(row.get("kind") == kind for row in rows) for kind in kinds})
