@@ -109,4 +109,22 @@ with tempfile.TemporaryDirectory() as tmp:
     assert fresh["completedSpecies"]==0 and fresh["estimatedBase"]==0
     assert fresh["confirmedVistaSales"]==0
 
-print("Exobiology specimen lifecycle, DSS roster, Codex exact species, expedition ledger and sales PASSED")
+# Migration: older Scout databases hold 2/3 species without an explicit
+# active-specimen ID. Never make an in-progress sample vanish on upgrade.
+with tempfile.TemporaryDirectory() as legacy:
+    old=module.Surveyor(Path(legacy)/"old.db")
+    old.apply("Wolf",evt("FSDJump",-7,SystemAddress=ADDR,StarSystem=SYSTEM))
+    old.apply("Wolf",evt("Scan",-6,SystemAddress=ADDR,BodyID=8,BodyName=BODY,
+                         PlanetClass="Rocky body",Landable=True))
+    old.apply("Wolf",organic("Log",-5,"Osseus","Osseus Fractus","LEGACY"))
+    old.apply("Wolf",organic("Sample",-4,"Osseus","Osseus Fractus","LEGACY"))
+    with old.lock,old._connect() as conn:
+        body=old._load(conn,"bodies","Wolf",str(ADDR),"8")
+        body.pop("bioActiveSpeciesId",None)
+        old._save(conn,"bodies","Wolf",str(ADDR),body,"8")
+    view=biological(module.Surveyor(Path(legacy)/"old.db").snapshot("Wolf"))
+    assert view["activeSpeciesId"]=="$Codex_LEGACY;"
+    stage=biological(old.apply("Wolf",organic("Analyse",2,"Osseus","Osseus Fractus","LEGACY")))
+    assert stage["activeSpeciesId"]=="" and stage["sampledSpecies"][0]["completed"]
+
+print("Exobiology specimen lifecycle, DSS roster, Codex exact species, expedition ledger, sales and legacy migration PASSED")
