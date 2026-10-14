@@ -59,6 +59,14 @@ Wolf uses desktop, phone, and iPad. Member/admin tools must remain practical on 
 - The Mission Control derived snapshot has a 10-minute safety expiry and falls back to the original full authoritative calculation if the cache is absent, stale, malformed, or unavailable. Viewer-specific summaries/permissions remain calculated per request.
 - Do not optimize by removing refreshes that carry practical situational value, weakening reward/verification correctness, or bypassing Discord/HUD/BGS change pipelines.
 
+### Live SRVSurvey comparison: Codex biological variants and consolidated roster
+
+- SRVSurvey's `PlotBioStatus.onJournalEntry(CodexEntry)` uses Codex category/subcategory and EntryID reference to identify composition-scanned biology, with localized names like `Bacterium Bullaris - Gold`. Our older `_bio_record_codex` required exact `BIO_REFERENCE_VALUES` name and silently discarded that variant. New `_bio_codex_identity` uses case-insensitive **delimited** lookup against known priced species, retains the separate variant, and rejects unknown/geological names. Exact BodyID and local bio evidence are still mandatory.
+- Only **CodexEntry** replay may bypass the prior journal digest suppression to repair previously ignored Codex observations; journal/completion/sale events remain once-only. A repeated composition scan without a journal event still cannot be inferred from unrelated telemetry.
+- HUD Biological Intelligence now shows active 3-box sampler then **one unified DSS genus roster**. Rows are colored: range-only neutral, species identified cyan, sample complete green with `SAMPLE COMPLETE` alongside price. No separate repeated completed section. iPad mirrors.
+- Body Intelligence displays `Scan.Atmosphere` or `AtmosphereType` directly below body classification, including status when no atmosphere type has been observed.
+- Tests: `scripts/test_surveyor_codex_variant.py`, plus existing journal, HUD, iPad, price and expedition regressions. Owner still requires coordinated paired test package; do not overwrite normal public installers.
+
 ### Vista biological prices decoupled from predictions (full DSN published table)
 
 - Scout `surveyor.py` now carries **96 published DSN/Canonn Vista Genomics base-price entries**, while existing habitat predictions remain 61 curated conditions. New prices include Fonticulua Digitos (1,804,100 Cr), other Fonticulua, Concha, Recepta, Frutexa, Fumerola, etc.
