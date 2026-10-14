@@ -24,6 +24,7 @@ jobs:
           python scripts/test_surveyor_bio_hud.py
           python scripts/test_surveyor_bio_pipeline.py
           python scripts/test_surveyor_bio_workflow.py
+          python scripts/test_surveyor_bio_prices.py
           python scripts/test_surveyor_history.py
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_advisor.py
