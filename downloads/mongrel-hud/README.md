@@ -7,6 +7,31 @@ You do **not** install anything on the iPad.
 Current downloads:
 https://mongrels-squadron.pages.dev/member/#mongrel-tools
 
+## Mongrel HUD 0.18.0 — Stable Surveyor / Biological Intelligence release
+
+Mongrel HUD **0.18.0** is the standard downloadable Windows release. It
+integrates the local Scout **1.14.0** Surveyor and Exobiology state into
+the existing Exploration HUD profile and paired iPad controller:
+
+- Three specimen slots for the *single currently active* organic sample;
+  old abandoned partials are not misrepresented as active progress
+- One DSS biology roster: range-only genera (neutral), identified
+  species/variant (cyan), genetic sample complete (green); values from the
+  full locally published 96-entry catalog
+- Position-matched genetic distance on foot, in an SRV/Nomad or locally in
+  the ship; unsafe/missing GPS is explicitly marked unverified
+- Body Intelligence atmospheric classification next to planet type
+- Cartographics and Exobiology expedition estimates together, with
+  clearly separated confirmed Vista sale amounts
+- Updated local first-discovery, FSS coverage, journal backfill and
+  EDDiscovery historical reference surfaces, with historical source labels
+
+**Update the normal Windows HUD via the built-in update button** or the
+Mongrel Tools website link. HUD self-update does not replace EDMC Scout.
+For full Exploration and Exobiology support install Scout 1.14.0 on the
+Elite PC as a separate plugin upgrade. The old private test packages
+are no longer needed.
+
 ## Route Director controls and display (HUD 0.17.8)
 
 On the paired controller open **HUD CONTROL → ROUTE DIRECTOR**. Paste the route ID provided by ChatGPT (or leave it blank to load the most recent calculated route), click **LOAD ROUTE**, then **START NAVIGATION** and confirm. **STOP NAVIGATION** disables further clipboard changes after the next Scout refresh. Scout 1.13.1 or newer and a Site Admin-bound Scout token are required. No iPad installation is needed. When Scout receives an explicitly activated Spansh route, the existing Own Ship overlay shows **NAV NEXT** and a waypoint counter. The local EDMC Scout process performs clipboard copying when the next listed waypoint is reached; the HUD itself does not control the game's Galaxy Map. Route previews do not touch the clipboard, and all other overlays retain their current behavior.
