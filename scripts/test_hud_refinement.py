@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import re
 import threading
+import time
 import types
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,7 @@ names={"_survey_alert_entries","_survey_primary_alert","_render_surveyor_alert_c
 methods=[method for obj in tree.body if isinstance(obj,ast.ClassDef)
          for method in obj.body if isinstance(method,ast.FunctionDef) and method.name in names]
 assert {method.name for method in methods}==names
-scope={"Any":Any,"re":re,"tk":types.SimpleNamespace(Canvas=object),
+scope={"Any":Any,"re":re,"time":time,"tk":types.SimpleNamespace(Canvas=object),
        "HUD_GREEN":"green","HUD_AMBER":"amber","HUD_CYAN":"cyan",
        "HUD_DIM":"dim","HUD_WHITE":"white","HUD_MUTED":"muted"}
 exec(compile(ast.Module(body=methods,type_ignores=[]),str(path),"exec"),scope)
@@ -67,7 +68,6 @@ assert hud.clear_unclaimed_bounties()["unclaimed"]==0
 assert hud.bounty_ledger()["runEarned"]==4000000
 assert hud.bounty_ledger()["runKills"]==5
 assert hud.store.saved==2
-assert "surveyor_log" in scope if False else True  # panel registration tested separately
 
 system={"id":"first_discovery_system:0","kind":"first_discovery_system","name":"New System"}
 body={"id":"first_discovery_body:2","kind":"first_discovery_body","name":"A 2"}
