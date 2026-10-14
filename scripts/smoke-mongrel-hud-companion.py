@@ -48,7 +48,7 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.20"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.21"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.22"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.0"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.17.24"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.1"}) is True
 release=hud.update_from_release_payload({
     "name":"Mongrel HUD Windows v0.18.1",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
