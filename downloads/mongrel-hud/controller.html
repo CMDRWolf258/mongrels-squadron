@@ -26,6 +26,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   .bio-roster-range strong{color:#d7e4eb}
   .bio-roster-identified strong{color:#55cdec}
   .bio-roster-complete strong{color:#77e7a5}
+.mining-search-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:8px}
+.mining-search-row button{min-height:54px;padding:8px;background:#12323e;border:1px solid var(--accent);border-radius:9px;color:var(--accent);font-weight:800}
 </style>
 </head>
 <body>
@@ -224,6 +226,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   </div>
   </section>
 
+  <section id="explorationPanel" class="hidden">
   <div class="card" id="surveyorExpeditionCard">
     <h2>SURVEYOR · EXPEDITION CONTROL</h2>
     <div class="layout-hint">Private to Serenity. Expedition earnings count only new journal-confirmed scans and DSS gains after Start Exploration. Visiting a system never counts as a scan.</div>
@@ -272,6 +275,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="layout-hint" id="surveyorBioSales">Vista Genomics sales: awaiting confirmed journal transactions.</div>
   </div>
 
+  </section>
   <div class="card">
     <h2>OVERLAY LAYOUT</h2>
     <div class="layout-actions"><button type="button" id="overlayMaster">OVERLAY ON</button><button type="button" id="layoutLock">UNLOCK LAYOUT</button><button type="button" id="layoutReset">RESET LAYOUT</button></div>
@@ -297,6 +301,14 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     </div>
   </div>
 
+  <div class="card">
+    <h2>HUD NOTES</h2>
+    <textarea id="hudNotes" maxlength="4000" placeholder="Reminders, coordinates, targets, things to check after the tick…"></textarea>
+    <button class="action" id="saveHudNotes" type="button">SAVE NOTES TO HUD</button>
+    <div class="notice" id="notesNotice"></div>
+  </div>
+
+  <section id="combatPanel">
   <div class="card">
     <div class="top"><h2>FACTION ALERTS</h2><button class="alert-ack" id="ackFactionAlerts" type="button">ACK FACTION</button></div>
     <div class="status" id="siteFeedStatus">Waiting for Scout site feed…</div>
@@ -335,14 +347,6 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div id="cargoItems"><span class="muted">Hold empty.</span></div>
   </div>
 
-  <div class="card">
-    <h2>HUD NOTES</h2>
-    <textarea id="hudNotes" maxlength="4000" placeholder="Reminders, coordinates, targets, things to check after the tick…"></textarea>
-    <button class="action" id="saveHudNotes" type="button">SAVE NOTES TO HUD</button>
-    <div class="notice" id="notesNotice"></div>
-  </div>
-
-  <section id="combatPanel">
     <div class="card">
       <div class="top"><h2>TARGET LOADOUT SCANNER</h2><button class="action compact-action" id="scanTargetLoadout" type="button">SCAN LOADOUT</button></div>
       <div class="status" id="targetScanStatus">Scanner starting…</div>
@@ -367,7 +371,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <p class="muted">Browse logged systems without changing your current compass target or report location.</p>
       <label for="browseSystemInput">System · type, paste, or select a saved system</label>
       <div class="mining-lookup">
-        <input id="browseSystemInput" type="search" placeholder="Search saved systems…" role="combobox" aria-controls="browseSystemSuggestions" aria-autocomplete="list" aria-expanded="false" autocomplete="off">
+        <div class="mining-search-row"><input id="browseSystemInput" type="search" placeholder="Search saved systems…" role="combobox" aria-controls="browseSystemSuggestions" aria-autocomplete="list" aria-expanded="false" autocomplete="off"><button type="button" id="browseSystemClear" aria-label="Clear system search and show all systems">CLEAR ✕</button></div>
         <div id="browseSystemSuggestions" class="mining-suggestions hidden" role="listbox" aria-label="Saved mining systems"></div>
       </div>
       <button type="button" id="browseRefresh" class="action">REFRESH SAVED SYSTEMS</button>
@@ -786,8 +790,8 @@ function render(){
     el("tradeLastReason").textContent=reasons[trade.reason]||String(trade.reason||"");
   }
   var profile=state.profile||"combat";
-  el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");el("navigationButton").classList.toggle("active",profile==="navigation");
-  el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");el("navigationPanel").classList.toggle("hidden",profile!=="navigation");
+  el("combatButton").classList.toggle("active",profile==="combat");el("surfaceButton").classList.toggle("active",profile==="surface");el("navigationButton").classList.toggle("active",profile==="navigation");el("explorationButton").classList.toggle("active",profile==="exploration");
+  el("combatPanel").classList.toggle("hidden",profile!=="combat");el("surfacePanel").classList.toggle("hidden",profile!=="surface");el("navigationPanel").classList.toggle("hidden",profile!=="navigation");el("explorationPanel").classList.toggle("hidden",profile!=="exploration");
   if(profile==="surface"&&!miningBrowser.loaded&&!miningBrowser.loading)loadMiningBrowserCatalog(false);
   if(profile==="surface"){
     var target=state.miningBrowserNavigation;
@@ -1438,6 +1442,11 @@ el("ackFactionAlerts").onclick=function(){return ackAlertKind("faction")};
 el("ackOrderAlerts").onclick=function(){return ackAlertKind("orders")};
 el("browseSystemInput").oninput=function(){miningBrowser.data=null;el("browseResults").textContent="";el("browseStatus").textContent="Choose a matching saved system";showMiningSuggestions()};
 el("browseSystemInput").onfocus=showMiningSuggestions;
+el("browseSystemClear").onclick=function(){
+  el("browseSystemInput").value="";
+  showMiningSuggestions();
+  el("browseSystemInput").focus();
+};
 el("browseSystemInput").onkeydown=function(event){
   if(event.key==="Escape"){el("browseSystemSuggestions").classList.add("hidden");el("browseSystemInput").setAttribute("aria-expanded","false")}
   if(event.key==="Enter"){var hits=browserMatches(el("browseSystemInput").value);if(hits.length){event.preventDefault();pickMiningSystem(hits[0].systemAddress)}}
