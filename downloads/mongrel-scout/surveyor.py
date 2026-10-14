@@ -1461,6 +1461,17 @@ class Surveyor:
                                 # Commander stepped out onto that world.
                                 body["ourFirstFootfall"] = True
                     elif kind == "CodexEntry":
+                        if not inserted:
+                            # Already recognized Codex observations stay
+                            # idempotent; only historical previously ignored
+                            # variants are eligible for one repair.
+                            matched = _bio_codex_identity(event)
+                            known = body.get("bioIdentified") if isinstance(body.get("bioIdentified"), dict) else {}
+                            prior_codex = known.get(matched[0].split(" ", 1)[0]) if matched else None
+                            if (isinstance(prior_codex, dict) and matched
+                                    and prior_codex.get("species") == matched[0]
+                                    and _text(prior_codex.get("variant")) == matched[1]):
+                                return None
                         _bio_record_codex(body, event)
                     elif kind == "ScanOrganic":
                         _biological_apply(body, event, None if historic else position, address, timestamp)
