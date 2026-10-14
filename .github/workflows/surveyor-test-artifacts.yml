@@ -27,6 +27,7 @@ jobs:
           python scripts/test_surveyor_bio_prices.py
           python scripts/test_surveyor_codex_variant.py
           python scripts/test_surveyor_history.py
+          python scripts/test_surveyor_multistar_discovery.py
           python scripts/test_surveyor_intel.py
           python scripts/test_surveyor_advisor.py
           python scripts/test_surveyor_advisor_hud.py

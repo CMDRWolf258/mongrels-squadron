@@ -1,4 +1,4 @@
-## Scout 1.14.1 — Production Surveyor / Exobiology integration
+## Scout 1.14.2 — Production Surveyor / Exobiology integration
 
 **Released through the normal Mongrel Scout website download.** This is the
 stable follow-up to the owner-only Exobiology test builds. Install the complete
@@ -21,7 +21,7 @@ mission-sync modules. Scout is **not** updated automatically by HUD.
 - **Privacy and costs:** Surveyor history and biology stay local on each PC.
   No new Cloudflare database, journal upload or recurring site-read dependency;
   the original cross-PC *cargo mission requirements* sync is unchanged.
-- **Compatibility:** pair with Mongrel HUD **0.18.1** or later for the unified
+- **Compatibility:** pair with Mongrel HUD **0.18.2** or later for the unified
   biological roster, Body Intelligence atmosphere label, and the in-flight
   displays. Previously saved Surveyor data is preserved and revalued in place.
 
