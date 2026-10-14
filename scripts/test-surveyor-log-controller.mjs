@@ -33,7 +33,7 @@ const scope={
 vm.createContext(scope);
 vm.runInContext(inline.slice(start,end),scope);
 await nodes.surveyorLogLimit.onchange();
-assert.deepEqual(apiCalls,[{path:'/api/discovery-log-limit',body:{limit:'15'}}]);
+assert.deepEqual(JSON.parse(JSON.stringify(apiCalls)),[{path:'/api/discovery-log-limit',body:{limit:'15'}}]);
 assert.equal(scope.state.discoveryLogLimit,'15');
 assert.match(nodes.surveyorLogNotice.textContent,/Showing 15 recent body discoveries/);
 nodes.surveyorLogLimit.value='all';
