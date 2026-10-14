@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.1"
+APP_VERSION = "0.18.2"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -7307,7 +7307,17 @@ class MongrelHudApp:
                     with self.lock:
                         observation = self.snapshot.data.get("exploration") if isinstance(self.snapshot.data, dict) else None
                         events = observation.get("explorationAlerts") if isinstance(observation, dict) else None
-                    should_show = bool(events)
+                    # The prominent window is strictly major-only. Body-discovery
+                    # rows stay in the discovery log, never an empty main header.
+                    if panel_id == "surveyor_alert":
+                        should_show = bool(events and any(
+                            isinstance(row, dict) and row.get("kind") in
+                            {"first_discovery_system", "hmc_bio"} for row in events))
+                    else:
+                        should_show = bool(events and any(
+                            isinstance(row, dict) and row.get("kind") in
+                            {"first_discovery_system", "first_discovery_body", "hmc_bio"}
+                            for row in events))
                 window = info["window"]
                 if not should_show:
                     try:
