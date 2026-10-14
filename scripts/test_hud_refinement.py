@@ -11,7 +11,7 @@ from typing import Any
 path=Path(__file__).resolve().parents[1]/"downloads/mongrel-hud/mongrel_hud.py"
 tree=ast.parse(path.read_text(encoding="utf-8"))
 names={"_survey_alert_entries","_survey_primary_alert","_render_surveyor_alert_canvas",
-       "_render_surveyor_log_canvas","trade_route_selection","set_trade_route_selection",
+       "_render_surveyor_log_canvas","_survey_log_body_label","trade_route_selection","set_trade_route_selection",
        "clear_unclaimed_bounties","bounty_ledger"}
 methods=[method for obj in tree.body if isinstance(obj,ast.ClassDef)
          for method in obj.body if isinstance(method,ast.FunctionDef) and method.name in names]
@@ -19,6 +19,8 @@ assert {method.name for method in methods}==names
 scope={"Any":Any,"re":re,"time":time,"tk":types.SimpleNamespace(Canvas=object),
        "HUD_GREEN":"green","HUD_AMBER":"amber","HUD_CYAN":"cyan",
        "HUD_DIM":"dim","HUD_WHITE":"white","HUD_MUTED":"muted"}
+for method in methods:
+    method.decorator_list=[]
 exec(compile(ast.Module(body=methods,type_ignores=[]),str(path),"exec"),scope)
 
 class Store:
@@ -48,12 +50,15 @@ class FakeHUD:
         return str(value)[:width]
 
 for name in names:
-    setattr(FakeHUD,name,scope[name])
+    setattr(FakeHUD,name,staticmethod(scope[name]) if name=="_survey_log_body_label" else scope[name])
 
 class Canvas:
+    def create_line(self,*args,**kwargs):
+        pass
     def create_rectangle(self,*args,**kwargs):
         pass
 
+FakeHUD.discovery_log_limit=lambda self: "10"
 hud=FakeHUD()
 assert hud.trade_route_selection()=={"mode":"all","selectedIds":[]}
 saved=hud.set_trade_route_selection("custom",["route-a","route-b","route-a"])
@@ -94,8 +99,8 @@ assert "FIRST DISCOVERY · BODY" not in hud.lines
 assert "HMC + BIOLOGICAL SIGNALS" in hud.lines
 hud.lines=[]
 hud._render_surveyor_log_canvas(Canvas(),1,True)
-assert "FIRST DISCOVERY · BODY" in hud.lines
-assert "HMC + BIO" in hud.lines
+assert "FIRST BODY DISCOVERIES" in hud.lines
+assert "HMC + BIO SIGNALS" in hud.lines
 assert "EXPLORATION DISCOVERY LOG" in hud.lines
 
 source=path.read_text(encoding="utf-8")

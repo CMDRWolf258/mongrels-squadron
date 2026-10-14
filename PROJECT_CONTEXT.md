@@ -1,3 +1,12 @@
+## Compact Exploration Discovery Log — Scout 1.14.3 / HUD 0.18.3 (October 14, 2026)
+
+- User-approved continuation after PR #221: prioritize first-system candidate and HMC + biological alerts above the newest first-body discoveries. Compact body rows show only the relative suffix (A 1, C A B 2, etc.), not the system repeated for every row. System name appears once in the header.
+- Default shows the **latest 10** body discoveries, with older rows counted as collapsed. iPad **Exploration → Exploration Discovery Log** offers **5 / 10 / 15 / All**, persisted to local HUD settings via `/api/discovery-log-limit`; no cloud reads. High-priority rows always remain pinned and visible; new entries pulse subtly for 4 seconds, existing entries on HUD startup do not flash again.
+- Scout maintains a bounded **512-event local current-visit** history and separate `explorationAlertCounts` for body/system/HMC kinds, preserved across restarts and cleared on next live arrival. Old pre-upgrade visit logs only know counts for retained entries. `All` shows all currently retained details and labels any older missing rows, never silently claims a complete history.
+- Removed two yellow HUD-only footers: DSS Target Director `RECOMMENDATIONS ARE PROVISIONAL · NOT ETA` and Surveyor expedition `SALES NOT RECONCILED TO SAMPLE ORIGIN · DO NOT ADD`. Advisor confidence, non-ETA semantics, biology sales-origin uncertainty, credits and expedition accounting remain unchanged.
+- Release gates now exercise 40 Frontier scans, live-count dedupe, restarts, display size/pinning/order/count/controls and legacy HUD/Surveyor coverage in `scripts/test_surveyor_compact_log.py` and `scripts/test-surveyor-log-controller.mjs`. Changes are local to Scout's Surveyor and the Windows HUD/iPad controller; site integration and unrelated overlays remain unchanged.
+- Production designation applies only after PR merge plus confirmed Pages and Windows rolling publication.
+
 # Mongrels Squadron Website — Project Context
 
 _Last updated: 2026-10-04_
