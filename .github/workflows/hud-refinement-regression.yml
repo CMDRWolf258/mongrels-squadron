@@ -6,6 +6,8 @@ on:
       - 'downloads/mongrel-hud/**'
       - 'downloads/mongrel-scout/**'
       - 'scripts/test_hud_refinement.py'
+      - 'scripts/test_surveyor_compact_log.py'
+      - 'scripts/test-surveyor-log-controller.mjs'
       - 'scripts/test_surveyor_multistar_discovery.py'
       - 'scripts/test-hud-refinement-controller.mjs'
       - 'scripts/smoke-mongrel-scout.mjs'
@@ -32,6 +34,8 @@ jobs:
       - name: HUD and controller refinements
         run: |
           python scripts/test_hud_refinement.py
+          python scripts/test_surveyor_compact_log.py
+          node scripts/test-surveyor-log-controller.mjs
           python scripts/test_surveyor_multistar_discovery.py
           node scripts/test-hud-refinement-controller.mjs
           node scripts/smoke-mongrel-hud-controller.mjs
