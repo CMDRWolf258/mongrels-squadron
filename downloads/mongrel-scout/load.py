@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.3"
+PLUGIN_VERSION = "1.14.4"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1180,6 +1180,14 @@ def _restore_last_system_context() -> None:
         _hud_state["system"] = {"name": name, "address": address}
 
 
+def _hud_ship_type_label(value: Any) -> str:
+    """Prefer readable ship types, including new hull IDs EDMC may not localise yet."""
+    label = str(value or "").strip()
+    if re.sub(r"[^a-z0-9]", "", label.casefold()) == "anacondamkii":
+        return "Anaconda Mk II"
+    return label
+
+
 def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
     """Seed stable local ship identity/range facts from EDMC's current state."""
     if not isinstance(state, Mapping):
@@ -1191,15 +1199,30 @@ def _update_hud_ship_from_edmc_state(state: Mapping[str, Any]) -> None:
             _hud_state["ship"] = ship
         incoming_name = str(state.get("ShipName") or "").strip()
         incoming_ident = str(state.get("ShipIdent") or "").strip()
-        if (incoming_name and ship.get("name") and incoming_name.casefold()!=str(ship.get("name")).casefold()) or (
-                incoming_ident and ship.get("ident") and incoming_ident.casefold()!=str(ship.get("ident")).casefold()):
+        incoming_type = _hud_ship_type_label(state.get("ShipType"))
+        incoming_ship_id = _optional_int(state.get("ShipID"))
+        previous_type = _hud_ship_type_label(ship.get("type"))
+        previous_ship_id = _optional_int(ship.get("shipId"))
+        hull_changed = (
+            (incoming_ship_id is not None and previous_ship_id is not None
+             and incoming_ship_id != previous_ship_id)
+            or (incoming_type and previous_type and
+                incoming_type.casefold() != previous_type.casefold())
+        )
+        if hull_changed:
+            # An unnamed replacement must not inherit the previous hull's callsign.
+            ship.pop("name", None)
+            ship.pop("ident", None)
+        if hull_changed or (incoming_name and ship.get("name") and incoming_name.casefold() != str(ship.get("name")).casefold()) or (
+                incoming_ident and ship.get("ident") and incoming_ident.casefold() != str(ship.get("ident")).casefold()):
             # Never use the previous ship's FSD/tank/fuel scoop for a new hull.
             for key in ("jumpModel","fuelReserveCapacity","fuelScoopInstalled","fuelCapacity"):
                 ship.pop(key,None)
         updates = {
-            "name": str(state.get("ShipName") or "").strip(),
-            "ident": str(state.get("ShipIdent") or "").strip(),
-            "type": str(state.get("ShipType") or "").strip(),
+            "name": incoming_name,
+            "ident": incoming_ident,
+            "type": incoming_type,
+            "shipId": incoming_ship_id,
             "maxJumpRange": _optional_float(state.get("MaxJumpRange")),
             "unladenMass": _optional_float(state.get("UnladenMass")),
             "cargoCapacity": _optional_int(state.get("CargoCapacity")),
@@ -2434,7 +2457,8 @@ def _normalize_hud_event(
         payload["hullHealth"] = _normalize_percent(entry.get("HullHealth"), fraction=True)
         payload["shipName"] = str(entry.get("ShipName") or "").strip()
         payload["shipIdent"] = str(entry.get("ShipIdent") or "").strip()
-        payload["shipType"] = str(entry.get("Ship_Localised") or entry.get("Ship") or "").strip()
+        payload["shipId"] = _optional_int(entry.get("ShipID"))
+        payload["shipType"] = _hud_ship_type_label(entry.get("Ship_Localised") or entry.get("Ship"))
         payload["maxJumpRange"] = _optional_float(entry.get("MaxJumpRange"))
         payload["unladenMass"] = _optional_float(entry.get("UnladenMass"))
         payload["cargoCapacity"] = _optional_int(entry.get("CargoCapacity"))
@@ -2534,6 +2558,7 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
             for source, dest in (
                 ("shipName", "name"),
                 ("shipIdent", "ident"),
+                ("shipId", "shipId"),
                 ("shipType", "type"),
                 ("maxJumpRange", "maxJumpRange"),
                 ("unladenMass", "unladenMass"),
@@ -2543,7 +2568,11 @@ def _update_hud_state_locked(event: Mapping[str, Any]) -> None:
                 ("fuelScoopInstalled", "fuelScoopInstalled"),
             ):
                 value = event.get(source)
-                if value is not None and (not isinstance(value, str) or value):
+                if source in {"shipName", "shipIdent"}:
+                    # Loadout is authoritative: a blank custom name means unnamed,
+                    # not "keep the name of the previously piloted ship".
+                    ship[dest] = str(value or "").strip()
+                elif value is not None and (not isinstance(value, str) or value):
                     ship[dest] = value
             if isinstance(event.get("jumpModel"), Mapping):
                 ship["jumpModel"] = dict(event["jumpModel"])
