@@ -1,3 +1,19 @@
+## Scout 1.14.4 — Unnamed ship identity fix
+
+**Production hotfix for ship-name display; HUD itself does not need an update.**
+Scout now clears the previous ship's custom name/registration when EDMC reports
+a different ship hull, including the Anaconda Mk II, and honors an empty
+`ShipName`/`ShipIdent` on the authoritative Frontier `Loadout` event.
+If the current hull is unnamed, the existing HUD's **Your Ship** display falls
+back to its model name instead of carrying over the previously piloted ship's
+name. The Anaconda Mk II's journal identifier `AnacondaMkII` is presented as
+**Anaconda Mk II** even before EDMC adds a localized display name.
+
+Ship mass, cargo capacity, jump range, fuel and FSD calculations continue to
+come from Frontier/EDMC observations; there is no change to BGS processing,
+cloud sync, controller layout or HUD executables. Install the updated
+`MongrelScout.zip` folder on any EDMC computer that runs the HUD.
+
 ## Scout 1.14.3 — Production Surveyor / Exobiology integration
 
 **Released through the normal Mongrel Scout website download.** This is the

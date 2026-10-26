@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.3"
+assert plugin.PLUGIN_VERSION == "1.14.4"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -795,3 +795,48 @@ finally:
     else:
         plugin.monitor.cmdr = original_monitor_cmdr
 print("✓ Surveyor startup restores FSS/DSS SQLite data with no journal event and rejects crossed Commander identities")
+
+
+# An unnamed replacement ship must not display the last named hull's callsign.
+# EDMC state may learn the replacement before a complete Loadout arrives.
+with plugin._hud_condition:
+    plugin._hud_state["ship"] = {
+        "name": "Honey Badger", "ident": "MONGRL", "type": "Cutter", "shipId": 42,
+        "fuelCapacity": 64.0, "fuelScoopInstalled": True,
+        "jumpModel": {"kind": "standard"},
+    }
+plugin._update_hud_ship_from_edmc_state({
+    "ShipType": "AnacondaMkII", "ShipID": 777, "ShipName": "", "ShipIdent": "",
+    "MaxJumpRange": 38.5, "CargoCapacity": 320,
+})
+unnamed = plugin._hud_state_snapshot()["ship"]
+assert not unnamed.get("name") and not unnamed.get("ident")
+assert unnamed["type"] == "Anaconda Mk II" and unnamed["shipId"] == 777
+assert unnamed["maxJumpRange"] == 38.5 and unnamed["cargoCapacity"] == 320
+assert "jumpModel" not in unnamed and "fuelCapacity" not in unnamed
+
+# Frontier's Loadout event, not only a cached EDMC state change, must explicitly
+# clear an old custom name, and must keep the new hull's own performance data.
+plugin._publish_hud_event("Wolf258", "Diaba", "", {
+    "event": "Loadout", "timestamp": "2026-10-26T00:15:00Z",
+    "Ship": "AnacondaMkII", "ShipID": 777, "ShipName": "", "ShipIdent": "",
+    "MaxJumpRange": 38.5, "CargoCapacity": 320, "UnladenMass": 700.0,
+    "FuelCapacity": {"Main": 64.0, "Reserve": 1.0},
+})
+unnamed = plugin._hud_state_snapshot()["ship"]
+assert unnamed["name"] == "" and unnamed["ident"] == ""
+assert unnamed["type"] == "Anaconda Mk II" and unnamed["shipId"] == 777
+assert unnamed["cargoCapacity"] == 320 and unnamed["maxJumpRange"] == 38.5
+# A new custom name replaces the fallback; removing it again restores the type.
+plugin._publish_hud_event("Wolf258", "Diaba", "", {
+    "event": "Loadout", "Ship": "AnacondaMkII", "ShipID": 777,
+    "ShipName": "Second Wind", "ShipIdent": "WOLF",
+})
+assert plugin._hud_state_snapshot()["ship"]["name"] == "Second Wind"
+plugin._publish_hud_event("Wolf258", "Diaba", "", {
+    "event": "Loadout", "Ship": "AnacondaMkII", "ShipID": 777,
+    "ShipName": "", "ShipIdent": "",
+})
+assert plugin._hud_state_snapshot()["ship"]["name"] == ""
+assert plugin._hud_state_snapshot()["ship"]["type"] == "Anaconda Mk II"
+print("✓ Unnamed Anaconda Mk II falls back to ship type; old custom names are cleared")
