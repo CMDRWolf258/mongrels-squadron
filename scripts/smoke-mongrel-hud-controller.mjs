@@ -48,6 +48,7 @@ function harness() {
         return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects })[selector] || [];
       }, addEventListener() {}, activeElement: null,
     },
+    confirm(){return true},
     fetch(path, options) {
       return new Promise(resolve => requests.push({ path, body: options.body === undefined ? null : JSON.parse(options.body), resolve }));
     },
@@ -354,4 +355,54 @@ async function drain(h, expected) {
   assert.match(shown,/1 \/ 2 bodies/, 'The report discloses history-value coverage');
   assert.match(shown,/Not expedition credits/, 'Historical data must not be framed as new earnings');
 }
+
+{
+  const h=harness();
+  h.node('carrierRouteSource').value='Diaba';
+  h.node('carrierRouteDestination').value='Colonia';
+  h.node('carrierUsedCapacity').value='12500';
+  h.node('carrierTankFuel').value='1000';
+  h.node('carrierStoredTritium').value='400';
+  h.node('carrierDetermineTritium').checked=true;
+  const action=h.node('carrierPlot').onclick();
+  await tick();
+  assert.equal(h.requests.length,1);
+  assert.equal(h.requests[0].path,'/api/route');
+  assert.deepEqual(h.requests[0].body,{
+    action:'plot',mode:'carrier',source:'Diaba',destination:'Colonia',
+    usedCapacity:12500,tankFuel:1000,storedTritium:400,determineTritium:true,
+  });
+  h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',status:'pending'});
+  await action;
+  assert.equal(h.node('carrierRouteJobId').value,'cccccccc-dddd-eeee-ffff-111111111111');
+  const check=h.node('carrierCheck').onclick();
+  await tick();
+  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111'});
+  h.respond(h.requests[1],null,{
+    ok:true,routeType:'fleet_carrier',status:'ready',
+    source:'Diaba',destination:'Colonia',totalDistance:600,totalTritiumUsed:157,
+    tankFuel:1000,storedTritium:400,restockStops:1,
+    waypoints:[
+      {system:'Diaba',distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'X <danger>',distance:400,fuelUsed:94,fuelInTank:906,mustRestock:true,restockAmount:70,hasIcyRing:true},
+      {system:'Colonia',distance:200,fuelUsed:63,fuelInTank:843},
+    ],
+  });
+  await check;
+  assert.match(h.node('carrierRouteSummary').textContent,/157 t Spansh burn/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/&lt;danger&gt;/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/RESTOCK/);
+  assert.equal(h.requests.length,2,'Fleet Carrier plotting is preview-only');
+}
+{
+  const h=harness();
+  h.node('carrierRouteSource').value='Diaba';
+  h.node('carrierRouteDestination').value='Colonia';
+  h.node('carrierUsedCapacity').value='100';
+  h.node('carrierTankFuel').value='1000';
+  h.node('carrierStoredTritium').value='120';
+  await h.node('carrierPlot').onclick();
+  assert.equal(h.requests.length,0,'Invalid capacity and stock are blocked on the iPad');
+}
+
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
