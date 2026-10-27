@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.4"
+PLUGIN_VERSION = "1.14.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1501,7 +1501,7 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "") -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "", source: str = "", used_capacity: Any = None, tank_fuel: Any = None, stored_tritium: Any = None, determine_tritium: bool = True) -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
@@ -1531,6 +1531,10 @@ def _hud_route_control(action: str, route_id: str = "", *, destination: str = ""
                 payload["destination"] = destination
                 payload["efficiency"] = efficiency
                 payload["mode"] = mode
+                if mode == "carrier":
+                    payload.update({"source": source, "usedCapacity": used_capacity,
+                                    "tankFuel": tank_fuel, "storedTritium": stored_tritium,
+                                    "determineTritium": determine_tritium})
             if action == "complete":
                 payload.update({"system": system, "ship": ship})
             response = _session.post(endpoint, json=payload, headers=headers, timeout=20)
