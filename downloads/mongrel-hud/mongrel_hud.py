@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.4"
+APP_VERSION = "0.18.5"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -7866,6 +7866,61 @@ try {
         root.after(200, self.refresh_ui)
         root.mainloop()
 
+
+def _validate_clipboard_system_name(value: Any) -> str:
+    """Accept only a single plausible Elite system name, never arbitrary clipboard data."""
+    if not isinstance(value, str):
+        raise ValueError("clipboard_text_required")
+    name = value.strip()
+    if len(name) < 2 or len(name) > 140 or not re.fullmatch(r"[\w .+()'-]{2,140}", name, re.UNICODE):
+        raise ValueError("clipboard_not_system_name")
+    return name
+
+
+def _read_windows_system_clipboard() -> str:
+    """Read the local Windows text clipboard only for a paired user's explicit POST."""
+    if sys.platform != "win32":
+        raise ValueError("clipboard_windows_only")
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    user32.OpenClipboard.argtypes = [wintypes.HWND]
+    user32.OpenClipboard.restype = wintypes.BOOL
+    user32.CloseClipboard.argtypes = []
+    user32.CloseClipboard.restype = wintypes.BOOL
+    user32.IsClipboardFormatAvailable.argtypes = [wintypes.UINT]
+    user32.IsClipboardFormatAvailable.restype = wintypes.BOOL
+    user32.GetClipboardData.argtypes = [wintypes.UINT]
+    user32.GetClipboardData.restype = ctypes.c_void_p
+    kernel32.GlobalSize.argtypes = [ctypes.c_void_p]
+    kernel32.GlobalSize.restype = ctypes.c_size_t
+    kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+    kernel32.GlobalLock.restype = ctypes.c_void_p
+    kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+    kernel32.GlobalUnlock.restype = wintypes.BOOL
+    if not user32.IsClipboardFormatAvailable(13):  # CF_UNICODETEXT
+        raise ValueError("clipboard_text_required")
+    if not user32.OpenClipboard(None):
+        raise ValueError("clipboard_busy")
+    try:
+        handle = user32.GetClipboardData(13)
+        if not handle:
+            raise ValueError("clipboard_text_required")
+        char_count = min(kernel32.GlobalSize(handle) // ctypes.sizeof(ctypes.c_wchar), 142)
+        if char_count < 2:
+            raise ValueError("clipboard_text_required")
+        pointer = kernel32.GlobalLock(handle)
+        if not pointer:
+            raise ValueError("clipboard_busy")
+        try:
+            # Bound the copy: never return arbitrary/multiline text or a full clipboard.
+            value = ctypes.wstring_at(pointer, char_count).split("\x00", 1)[0]
+        finally:
+            kernel32.GlobalUnlock(handle)
+    finally:
+        user32.CloseClipboard()
+    return _validate_clipboard_system_name(value)
+
+
 def make_handler(app: MongrelHudApp):
     class Handler(BaseHTTPRequestHandler):
         server_version = "MongrelHUD/0.1"
@@ -8047,6 +8102,8 @@ def make_handler(app: MongrelHudApp):
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/surveyor":
                     result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
+                elif path == "/api/clipboard/system":
+                    result = {"ok": True, "system": _read_windows_system_clipboard()}
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""),
                         destination=str(body.get("destination") or ""),
