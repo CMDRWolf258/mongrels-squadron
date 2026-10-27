@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+.pc-system-paste{margin-top:7px;min-height:40px;width:100%;border:1px solid #497e90;border-radius:8px;background:#102b35;color:#bee9f3;font-size:.8rem;font-weight:800;letter-spacing:.03em;}
 :root{color-scheme:dark;--bg:#061018;--panel:#0c1921;--line:#244451;--text:#d8edf4;--muted:#8fa8b2;--accent:#55d7ef;--warn:#ffc857}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
 main{max-width:900px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-weight:800;letter-spacing:.12em}.status{color:var(--muted);font-size:.85rem}
@@ -185,12 +186,13 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="profiles"><button id="combatButton" data-profile="combat">COMBAT</button><button id="surfaceButton" data-profile="surface">SURFACE MINING</button><button id="navigationButton" data-profile="navigation">NAVIGATION</button><button id="explorationButton" data-profile="exploration">EXPLORATION</button></div>
 
   <section id="navigationPanel" class="hidden">
+  <p class="layout-hint">Copy a system name on your PC (Ctrl+C), then tap PASTE FROM PC beside a route field. The paired HUD reads the Windows clipboard only when tapped.</p>
   <div class="card" id="carrierRoutePlanner">
     <h2>FLEET CARRIER ROUTE PLOTTER · SPANSH</h2>
     <p class="layout-hint">Carrier location is independent of your ship. Enter the carrier's actual departure system. Planning and result checks do not schedule jumps or change the Route Director/clipboard.</p>
     <div class="route-plot">
-      <div><label for="carrierRouteSource">Carrier departure system</label><input id="carrierRouteSource" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"></div>
-      <div><label for="carrierRouteDestination">Destination system</label><input id="carrierRouteDestination" type="text" maxlength="140" placeholder="Colonia" spellcheck="false"></div>
+      <div><label for="carrierRouteSource">Carrier departure system</label><input id="carrierRouteSource" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"><button type="button" class="pc-system-paste" id="pcPasteCarrierSource" data-pc-system-target="carrierRouteSource">PASTE FROM PC</button></div>
+      <div><label for="carrierRouteDestination">Destination system</label><input id="carrierRouteDestination" type="text" maxlength="140" placeholder="Colonia" spellcheck="false"><button type="button" class="pc-system-paste" id="pcPasteCarrierDestination" data-pc-system-target="carrierRouteDestination">PASTE FROM PC</button></div>
     </div>
     <div class="route-plot">
       <div><label for="carrierUsedCapacity">Carrier used capacity (t)</label><input id="carrierUsedCapacity" type="number" min="0" max="25000" step="1" placeholder="Includes cargo + services + reserves"></div>
@@ -216,7 +218,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div class="layout-hint">Uses Leaf on the Wind's latest Scout location and current ship range. Plotting never starts navigation or changes the PC clipboard.</div>
     <div class="route-plot">
       <div><label for="routeMode">Route type</label><select id="routeMode"><option value="neutron">Neutron · replot points</option><option value="galaxy">Galaxy · exact jumps + fuel stops</option></select></div>
-      <div><label for="routeDestination">Destination system</label><input id="routeDestination" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"></div>
+      <div><label for="routeDestination">Destination system</label><input id="routeDestination" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"><button type="button" class="pc-system-paste" id="pcPasteShipDestination" data-pc-system-target="routeDestination">PASTE FROM PC</button></div>
       <div><label for="routeEfficiency">Efficiency</label><select id="routeEfficiency"><option value="40">40%</option><option value="60" selected>60%</option><option value="80">80%</option><option value="100">100%</option></select></div>
     </div>
     <div class="route-actions"><button type="button" id="routePlot">PLOT NEUTRON ROUTE</button><button type="button" id="routeCheck" disabled>CHECK ROUTE RESULT</button></div>
@@ -1505,6 +1507,21 @@ el("routeReplot").onclick=async function(){
   el("routeDestination").value=destination;
   await el("routePlot").onclick();
 };
+document.querySelectorAll("[data-pc-system-target]").forEach(function(button){
+  button.onclick=async function(){
+    var targetId=button.getAttribute("data-pc-system-target");
+    var target=el(targetId);
+    var notice=el(targetId==="routeDestination"?"routePlotStatus":"carrierPlotStatus");
+    if(!target)return;
+    try{
+      var result=await api("/api/clipboard/system",{});
+      var system=String(result.system||"").trim();
+      if(!system)throw new Error("PC clipboard contains no system name");
+      target.value=system;
+      setText(notice,"Pasted from this PC: "+system);
+    }catch(e){setText(notice,"Paste from PC failed · "+e.message)}
+  };
+});
 el("routeMode").onchange=function(){renderRouteControls()};
 el("carrierDetermineTritium").onchange=renderCarrierRoute;
 el("carrierRouteJobId").oninput=renderCarrierRoute;
