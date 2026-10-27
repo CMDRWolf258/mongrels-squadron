@@ -1,3 +1,9 @@
+## Mongrel HUD 0.18.6 — Compact overlay controls + balanced Fleet Carrier plotter
+
+The paired iPad HUD Control screen now has a **collapsed OVERLAY OPTIONS** drawer immediately below the Combat / Surface Mining / Navigation / Exploration profile selector. Expand it to manage the existing global overlay visibility, size, profile assignments, and lock/reset commands, together with the five Navigation instruments; collapse it again to reclaim vertical space. All original panel IDs and persisted layout configuration are retained. The drawer is available no matter which HUD profile is selected.
+
+Within **Navigation**, the ship Neutron/Galaxy route plotter comes first, then the **Fleet Carrier Route Plotter**, followed by Route Director. The two carrier system fields use **equal width** with their own full-width Paste from PC buttons. Carrier Used Capacity, depot Tritium and cargo Tritium use a balanced three-column responsive row, stacking gracefully on narrow screens. The ship route UI, Spansh routing math, clipboard behavior and Scout plugin remain unchanged; **Scout 1.14.5** is still compatible.
+
 ## Mongrel HUD 0.18.5 — Paste a Windows system name into the iPad route fields
 
 The Navigation controller now offers **PASTE FROM PC** beside the ship route destination and both Fleet Carrier departure/destination fields. Copy a system name with Ctrl+C on the Windows PC running HUD, then tap the matching button on the paired iPad. HUD reads the Windows CF_UNICODETEXT clipboard **only for that explicit authenticated, same-origin request**, validates a single 2–140-character Elite system-name-style string, and fills just the requested field. Invalid/multiline/URL clipboard contents return an error without exposing raw clipboard text.
