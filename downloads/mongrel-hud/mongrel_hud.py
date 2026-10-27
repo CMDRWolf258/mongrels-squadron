@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.6"
+APP_VERSION = "0.18.7"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -7921,6 +7921,37 @@ def _read_windows_system_clipboard() -> str:
     return _validate_clipboard_system_name(value)
 
 
+
+def _copy_system_to_windows_clipboard(value: Any) -> str:
+    """Explicit paired-iPad action: write one validated system name to THIS PC.
+
+    The shell reads a UTF-8 stream; the copied system never enters a shell
+    command line, and no other clipboard contents are read or exposed.
+    """
+    name = _validate_clipboard_system_name(value)
+    if sys.platform != "win32":
+        raise ValueError("clipboard_windows_only")
+    script = (
+        "[Console]::InputEncoding=[System.Text.Encoding]::UTF8;"
+        "$system=[Console]::In.ReadToEnd();"
+        "if([string]::IsNullOrWhiteSpace($system)){exit 2};"
+        "Set-Clipboard -Value $system"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+            input=name, encoding="utf-8", timeout=10,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ValueError("clipboard_write_failed") from exc
+    if result.returncode != 0:
+        raise ValueError("clipboard_write_failed")
+    return name
+
+
 def make_handler(app: MongrelHudApp):
     class Handler(BaseHTTPRequestHandler):
         server_version = "MongrelHUD/0.1"
@@ -8103,7 +8134,12 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/surveyor":
                     result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/clipboard/system":
-                    result = {"ok": True, "system": _read_windows_system_clipboard()}
+                    if body.get("action") == "copy_to_pc":
+                        result = {"ok": True, "system": _copy_system_to_windows_clipboard(body.get("system"))}
+                    elif not body:
+                        result = {"ok": True, "system": _read_windows_system_clipboard()}
+                    else:
+                        raise ValueError("invalid_clipboard_action")
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""),
                         destination=str(body.get("destination") or ""),
