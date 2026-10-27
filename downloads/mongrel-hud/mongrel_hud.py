@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.3"
+APP_VERSION = "0.18.4"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -3984,7 +3984,7 @@ class MongrelHudApp:
         request = urllib.request.Request(MINING_HEALTH_URL, headers={"Accept": "application/json"}, method="GET")
         return request_scout_json(request, "mining_health_unavailable", timeout=15.0)
 
-    def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60, mode: str = "neutron") -> dict[str, Any]:
+    def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60, mode: str = "neutron", source: str = "", used_capacity: Any = None, tank_fuel: Any = None, stored_tritium: Any = None, determine_tritium: bool = True) -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
         if action not in {"read", "start", "stop", "plot", "check", "copy"}:
             raise ValueError("invalid_route_action")
@@ -4001,7 +4001,10 @@ class MongrelHudApp:
         else:
             request = urllib.request.Request(
                 SCOUT_ROUTE_CONTROL_URL,
-                data=json.dumps({"action": action, "routeId": route_id, "destination": str(destination or "")[:140], "efficiency": efficiency, "mode": mode}, separators=(",", ":")).encode("utf-8"),
+                data=json.dumps({"action": action, "routeId": route_id, "destination": str(destination or "")[:140], "efficiency": efficiency, "mode": mode,
+                                 "source": str(source or "")[:140], "usedCapacity": used_capacity,
+                                 "tankFuel": tank_fuel, "storedTritium": stored_tritium,
+                                 "determineTritium": determine_tritium}, separators=(",", ":")).encode("utf-8"),
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -8045,7 +8048,12 @@ def make_handler(app: MongrelHudApp):
                 elif path == "/api/surveyor":
                     result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/route":
-                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""), destination=str(body.get("destination") or ""), efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"))
+                    result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""),
+                        destination=str(body.get("destination") or ""),
+                        efficiency=int(body.get("efficiency") or 60), mode=str(body.get("mode") or "neutron"),
+                        source=str(body.get("source") or ""), used_capacity=body.get("usedCapacity"),
+                        tank_fuel=body.get("tankFuel"), stored_tritium=body.get("storedTritium"),
+                        determine_tritium=body.get("determineTritium") is True)
                 elif path == "/api/alert-ack":
                     values = body.get("alertIds")
                     ids = values if isinstance(values, list) else [body.get("alertId")]

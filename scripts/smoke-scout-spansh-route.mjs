@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { normalizeShipSnapshot, SCOUT_LINK_KEY_PREFIX } from '../lib/scout-link.js';
-import { plotNeutronRoute, plotGalaxyRoute, normalizeSpanshGalaxyJumps, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints, completeRoute, readLastCompletedRoute } from '../lib/scout-route.js';
+import { plotNeutronRoute, plotGalaxyRoute, plotCarrierRoute, normalizeSpanshCarrierJumps, normalizeSpanshGalaxyJumps, getRouteJob, activateRoute, clearActiveRoute, readActiveRoute, normalizeSpanshWaypoints, completeRoute, readLastCompletedRoute } from '../lib/scout-route.js';
 import { onRequestGet as hudFeed } from '../functions/api/hud/feed.js';
 import { onRequestGet as hudManifest } from '../functions/api/hud/manifest.js';
 import { onRequestGet as routeControlGet, onRequestPost as routeControlPost } from '../functions/api/hud/route.js';
@@ -224,4 +224,108 @@ assert.equal((await plotNeutronRoute(env,{destination:'Diaba'},mockFetch)).error
 assert.equal((await activateRoute(env,plotted.id)).error,'ship_changed_or_stale');
 const disabled={...env,SCOUT_CHATGPT_ROUTE_ENABLED:'false'};
 assert.equal((await plotNeutronRoute(disabled,{destination:'Diaba'},mockFetch)).error,'route_planner_disabled');
+
+// Carrier planning MUST NOT share the ship Route Director's activation,
+// auto-copy, latest-ready pointer or live ship telemetry requirements.
+const carrierStore=new Kv();
+const carrierEnv={...env,DAILY_ORDERS:carrierStore};
+const carrierRequests=[];
+const carrierFetch=async(url,init)=>{
+  const target=String(url);
+  carrierRequests.push({url:target,init});
+  if(target.startsWith('https://www.edsm.net/api-v1/system?')){
+    const system=new URL(target).searchParams.get('systemName');
+    return new Response(JSON.stringify({
+      name:system,id64:system==='Diaba'?1234567890:9876543210,
+    }),{status:200});
+  }
+  if(target.endsWith('/api/fleetcarrier/route'))
+    return new Response(JSON.stringify({job:'cccccccc-dddd-eeee-ffff-111111111111'}),{status:202});
+  if(target.includes('/api/results/'))
+    return new Response(JSON.stringify({status:'ok',result:{jumps:[
+      {name:'Diaba',id64:1234567890,distance:0,fuel_used:0,fuel_in_tank:1000,
+       must_restock:0,restock_amount:0,distance_to_destination:600},
+      {name:'CARRIER STOP',id64:4444444444,distance:400,fuel_used:94,fuel_in_tank:906,
+       must_restock:1,restock_amount:70,has_icy_ring:true,is_system_pristine:true,distance_to_destination:200},
+      {name:'Colonia',id64:9876543210,distance:200,fuel_used:63,fuel_in_tank:843,
+       must_restock:0,restock_amount:0,distance_to_destination:0},
+    ],fuel_loaded:1000,tritium_stored:400}}),{status:200});
+  return new Response('not_found',{status:404});
+};
+const carrierJob=await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:12500,tankFuel:1000,
+  storedTritium:400,determineTritium:true,
+},carrierFetch);
+assert.equal(carrierJob.status,'pending');
+assert.equal(carrierJob.routeType,'fleet_carrier');
+const carrierWire=new URLSearchParams(carrierRequests.find(x=>x.url.endsWith('/api/fleetcarrier/route')).init.body);
+assert.equal(carrierWire.get('source_system'),'1234567890');
+assert.deepEqual(carrierWire.getAll('destination_systems'),['9876543210']);
+assert.equal(carrierWire.get('destination_systems[]'),null);
+assert.equal(carrierWire.get('capacity'),'25000');
+assert.equal(carrierWire.get('capacity_used'),'12500');
+assert.equal(carrierWire.get('current_fuel'),'1000');
+assert.equal(carrierWire.get('tritium_amount'),'0');
+assert.equal(carrierWire.get('calculate_starting_fuel'),'1');
+assert.equal(carrierWire.has('refuel_destinations'),false);
+assert.equal(await readActiveRoute(carrierEnv),null);
+const carrierResult=await getRouteJob(carrierEnv,carrierJob.id,carrierFetch);
+assert.equal(carrierResult.status,'ready');
+assert.equal(carrierResult.waypoints.length,3);
+assert.equal(carrierResult.estimatedTotalJumps,2);
+assert.equal(carrierResult.totalDistance,600);
+assert.equal(carrierResult.totalTritiumUsed,157);
+assert.equal(carrierResult.restockStops,1);
+assert.equal(carrierResult.plannedRestockTritium,70);
+assert.equal(carrierResult.waypoints[1].hasIcyRing,true);
+assert.equal(carrierResult.waypoints[1].pristine,true);
+assert.equal((await activateRoute(carrierEnv,carrierJob.id)).error,'route_not_ready');
+assert.equal(await readActiveRoute(carrierEnv),null);
+assert.equal((await readReadyRouteForControl(carrierEnv)).route,null,
+  'Fleet Carrier plotting cannot replace the ship Latest Ready pointer');
+assert.equal((await readReadyRouteForControl(carrierEnv,carrierJob.id)).error,'route_not_ready');
+assert.equal(normalizeSpanshCarrierJumps({jumps:[
+  {name:'Diaba',id64:1234567890,distance:0,fuel_used:0,fuel_in_tank:1000},
+  {name:'Colonia',id64:9876543210,distance:510,fuel_used:75,fuel_in_tank:925},
+]},'Diaba','Colonia'),null,'Spansh carrier jump over 500LY is invalid');
+const storedRequest=await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:12500,tankFuel:500,
+  storedTritium:400,determineTritium:false,
+},carrierFetch);
+assert.equal(storedRequest.status,'pending');
+const storedForm=new URLSearchParams(carrierRequests.filter(x=>x.url.endsWith('/api/fleetcarrier/route')).at(-1).init.body);
+assert.equal(storedForm.get('tritium_amount'),'400');
+assert.equal(storedForm.get('calculate_starting_fuel'),'0');
+assert.equal((await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:100,tankFuel:1000,
+  storedTritium:200,determineTritium:true,
+},carrierFetch)).error,'carrier_capacity_or_tritium_invalid');
+assert.equal((await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:100,tankFuel:1001,
+  storedTritium:0,determineTritium:true,
+},carrierFetch)).error,'carrier_capacity_or_tritium_invalid');
+assert.equal(await readActiveRoute(carrierEnv),null);
+// A distant system id64 may exceed JavaScript's safe-integer range.
+// The Spansh request must preserve the exact EDSM decimal digits.
+const big64Requests=[];
+const big64Fetch=async(url,init)=>{
+  const u=String(url);
+  if(u.startsWith('https://www.edsm.net/api-v1/system?')){
+    const name=new URL(u).searchParams.get('systemName');
+    return new Response(name==='Diaba'
+      ?'{"name":"Diaba","id64":9223372036854775807}'
+      :'{"name":"Colonia","id64":84180519395914}',{status:200});
+  }
+  big64Requests.push({url:u,init});
+  return new Response(JSON.stringify({job:'dddddddd-eeee-ffff-aaaa-222222222222'}),{status:202});
+};
+const largeIdRoute=await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:12500,tankFuel:1000,
+  storedTritium:100,determineTritium:true,
+},big64Fetch);
+assert.equal(largeIdRoute.status,'pending');
+const big64Form=new URLSearchParams(big64Requests[0].init.body);
+assert.equal(big64Form.get('source_system'),'9223372036854775807');
+
+
 console.log('Scout Spansh route plotting, preview, activation and safe-failure checks passed');

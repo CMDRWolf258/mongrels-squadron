@@ -1,3 +1,11 @@
+## Mongrel HUD 0.18.4 — Fleet Carrier route planning on Navigation
+
+The paired iPad **HUD CONTROL → NAVIGATION** page now has an independent **Fleet Carrier Route Plotter · Spansh** card. Enter the carrier's **actual departure system** (not necessarily the ship's current system), destination, Carrier Management **Used Capacity** (including installed services, reserves, stored cargo), Tritium depot tank and cargo Tritium. Enable **Determine Tritium Requirements** to ask Spansh to estimate starting fuel, or disable it to route against the entered cargo Tritium stock.
+
+**PLOT** submits a Spansh job on demand. **CHECK / LOAD RESULT** reads the exact Spansh result by ID: a full hop list, LY per leg, Tritium burned, fuel in tank, restock amounts, icy/pristine ring flags, total LY, total burn, and a basic stock comparison. All values are planning estimates, not automatic adjustments or proof that Tritium is available to buy/mine. Actual ship cargo, passenger mass and CMDR location do not replace the carrier's management capacity.
+
+**Requires Scout 1.14.5.** No carrier jumps are scheduled or controlled; carrier previews do not activate the existing ship Route Director, change its clipboard, or overwrite its latest ship-route pointer. This first version is a controller plotter/manifest, not a new desktop overlay or automatic carrier-journey tracker. On Serenity update both the HUD executable and the EDMC Scout folder. Existing overlay layouts and profiles remain intact.
+
 # Mongrel HUD
 
 **Short version:** put it on the Windows PC that runs Elite, start **MongrelHUD.exe**, then use your iPad or browser as the controller.

@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.4"
+PLUGIN_VERSION = "1.14.5"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -1416,7 +1416,12 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                                         efficiency=body.get("efficiency", 60),
                                         mode=str(body.get("mode") or "neutron")[:20],
                                         system=str(body.get("system") or "")[:140],
-                                        ship=str(body.get("ship") or "")[:140])
+                                        ship=str(body.get("ship") or "")[:140],
+                                        source=str(body.get("source") or "")[:140],
+                                        used_capacity=body.get("usedCapacity"),
+                                        tank_fuel=body.get("tankFuel"),
+                                        stored_tritium=body.get("storedTritium"),
+                                        determine_tritium=body.get("determineTritium") is True)
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
@@ -1501,7 +1506,7 @@ def _hud_site_manifest_endpoint() -> str:
     return f"{parsed.scheme}://{parsed.netloc}/api/hud/manifest"
 
 
-def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "") -> dict[str, Any]:
+def _hud_route_control(action: str, route_id: str = "", *, destination: str = "", efficiency: Any = 60, mode: str = "neutron", system: str = "", ship: str = "", source: str = "", used_capacity: Any = None, tank_fuel: Any = None, stored_tritium: Any = None, determine_tritium: bool = True) -> dict[str, Any]:
     """On-demand route controls via the already paired HUD and Scout token.
 
     No new background polling. Never return the token or private site errors
@@ -1531,6 +1536,10 @@ def _hud_route_control(action: str, route_id: str = "", *, destination: str = ""
                 payload["destination"] = destination
                 payload["efficiency"] = efficiency
                 payload["mode"] = mode
+                if mode == "carrier":
+                    payload.update({"source": source, "usedCapacity": used_capacity,
+                                    "tankFuel": tank_fuel, "storedTritium": stored_tritium,
+                                    "determineTritium": determine_tritium})
             if action == "complete":
                 payload.update({"system": system, "ship": ship})
             response = _session.post(endpoint, json=payload, headers=headers, timeout=20)

@@ -3,7 +3,7 @@
 // This is deliberately separate from the ChatGPT MCP approval layer.
 import { json } from '../../../lib/auth.js';
 import { authenticateScoutActivity } from '../../../lib/scout-activity.js';
-import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, plotGalaxyRoute, getRouteJob, completeRoute, readLastCompletedRoute } from '../../../lib/scout-route.js';
+import { activateRoute, clearActiveRoute, readActiveRoute, readReadyRouteForControl, plotNeutronRoute, plotGalaxyRoute, plotCarrierRoute, getRouteJob, completeRoute, readLastCompletedRoute } from '../../../lib/scout-route.js';
 
 const reply=(body,status=200)=>json(body,{status,headers:{
   'Cache-Control':'private, no-store, no-cache, must-revalidate',
@@ -54,10 +54,13 @@ export async function onRequestPost({request,env}){
   try{
     if(body.action==='plot'){
       const mode=body.mode===undefined?'neutron':body.mode;
-      if(mode!=='neutron'&&mode!=='galaxy')return reply({ok:false,error:'invalid_route_mode'},400);
-      const result=await (mode==='galaxy'?plotGalaxyRoute:plotNeutronRoute)(env,{
-        destination:body.destination,
-        efficiency:Number(body.efficiency ?? 60),
+      if(!['neutron','galaxy','carrier'].includes(mode))return reply({ok:false,error:'invalid_route_mode'},400);
+      const planner=mode==='carrier'?plotCarrierRoute:mode==='galaxy'?plotGalaxyRoute:plotNeutronRoute;
+      const result=await planner(env,{
+        destination:body.destination,efficiency:Number(body.efficiency ?? 60),
+        source:body.source,usedCapacity:body.usedCapacity,
+        tankFuel:body.tankFuel,storedTritium:body.storedTritium,
+        determineTritium:body.determineTritium,
       });
       return reply(result,result.ok?200:409);
     }
