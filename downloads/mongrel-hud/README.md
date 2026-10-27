@@ -1,3 +1,9 @@
+## Mongrel HUD 0.18.5 — Paste a Windows system name into the iPad route fields
+
+The Navigation controller now offers **PASTE FROM PC** beside the ship route destination and both Fleet Carrier departure/destination fields. Copy a system name with Ctrl+C on the Windows PC running HUD, then tap the matching button on the paired iPad. HUD reads the Windows CF_UNICODETEXT clipboard **only for that explicit authenticated, same-origin request**, validates a single 2–140-character Elite system-name-style string, and fills just the requested field. Invalid/multiline/URL clipboard contents return an error without exposing raw clipboard text.
+
+There is no continuous clipboard sync, cloud upload, new pairing model, new Scout version, or background polling. The iPad must be connected to the HUD instance running on the PC where the name was copied; if two PCs both advertise `mongrel-hud.local`, use that PC's numbered LAN fallback URL instead. Pairing and existing Route Director/Spansh behavior are unchanged.
+
 ## Mongrel HUD 0.18.4 — Fleet Carrier route planning on Navigation
 
 The paired iPad **HUD CONTROL → NAVIGATION** page now has an independent **Fleet Carrier Route Plotter · Spansh** card. Enter the carrier's **actual departure system** (not necessarily the ship's current system), destination, Carrier Management **Used Capacity** (including installed services, reserves, stored cargo), Tritium depot tank and cargo Tritium. Enable **Determine Tritium Requirements** to ask Spansh to estimate starting fuel, or disable it to route against the entered cargo Tritium stock.
