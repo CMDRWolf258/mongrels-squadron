@@ -1416,7 +1416,12 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                                         efficiency=body.get("efficiency", 60),
                                         mode=str(body.get("mode") or "neutron")[:20],
                                         system=str(body.get("system") or "")[:140],
-                                        ship=str(body.get("ship") or "")[:140])
+                                        ship=str(body.get("ship") or "")[:140],
+                                        source=str(body.get("source") or "")[:140],
+                                        used_capacity=body.get("usedCapacity"),
+                                        tank_fuel=body.get("tankFuel"),
+                                        stored_tritium=body.get("storedTritium"),
+                                        determine_tritium=body.get("determineTritium") is True)
             self._write_json(result, status=_hud_proxy_status(result))
             return
 
