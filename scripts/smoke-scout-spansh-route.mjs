@@ -305,5 +305,27 @@ assert.equal((await plotCarrierRoute(carrierEnv,{
   storedTritium:0,determineTritium:true,
 },carrierFetch)).error,'carrier_capacity_or_tritium_invalid');
 assert.equal(await readActiveRoute(carrierEnv),null);
+// A distant system id64 may exceed JavaScript's safe-integer range.
+// The Spansh request must preserve the exact EDSM decimal digits.
+const big64Requests=[];
+const big64Fetch=async(url,init)=>{
+  const u=String(url);
+  if(u.startsWith('https://www.edsm.net/api-v1/system?')){
+    const name=new URL(u).searchParams.get('systemName');
+    return new Response(name==='Diaba'
+      ?'{"name":"Diaba","id64":9223372036854775807}'
+      :'{"name":"Colonia","id64":84180519395914}',{status:200});
+  }
+  big64Requests.push({url:u,init});
+  return new Response(JSON.stringify({job:'dddddddd-eeee-ffff-aaaa-222222222222'}),{status:202});
+};
+const largeIdRoute=await plotCarrierRoute(carrierEnv,{
+  source:'Diaba',destination:'Colonia',usedCapacity:12500,tankFuel:1000,
+  storedTritium:100,determineTritium:true,
+},big64Fetch);
+assert.equal(largeIdRoute.status,'pending');
+const big64Form=new URLSearchParams(big64Requests[0].init.body);
+assert.equal(big64Form.get('source_system'),'9223372036854775807');
+
 
 console.log('Scout Spansh route plotting, preview, activation and safe-failure checks passed');
