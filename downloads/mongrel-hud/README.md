@@ -1,3 +1,11 @@
+## Mongrel HUD 0.18.7 — Navigation layout and per-stop Carrier clipboard copy
+
+The paired iPad Navigation profile now groups the **Neutron/Galaxy ship plotter and Route Director together**, with the independent **Fleet Carrier Route Plotter · Spansh** beneath. The ship plotter uses balanced Route Type / Efficiency fields and a full-width Destination + Paste from PC field rather than the inherited 100px column. Existing route calculations are unchanged.
+
+Fleet Carrier plotting now explicitly prompts **CHECK / LOAD RESULT** after a successful submission; it does not imply that the screen is automatically waiting for a background load. On load, a clearer **Route Summary · Fuel Estimates** shows total jumps, distance and estimated Tritium consumption as three large metrics, followed by restock/inventory notes. Jump lines show departure/arrival, leg distance and estimated fuel usage.
+
+Each carrier stop has a **COPY TO PC** button that writes exactly that stop's system name to the Windows clipboard on the PC running the paired HUD. You can paste it into Elite with Ctrl+V. The write occurs only after an explicit tap, uses the existing paired/same-origin LAN control, validates the system name and does not send clipboard data to the website or Scout. It does **not** schedule jumps or activate Route Director. When using both laptop and Serenity, open the numbered LAN address of the PC whose clipboard you want to control. No Scout upgrade needed beyond 1.14.5.
+
 ## Mongrel HUD 0.18.6 — Compact overlay controls + balanced Fleet Carrier plotter
 
 The paired iPad HUD Control screen now has a **collapsed OVERLAY OPTIONS** drawer immediately below the Combat / Surface Mining / Navigation / Exploration profile selector. Expand it to manage the existing global overlay visibility, size, profile assignments, and lock/reset commands, together with the five Navigation instruments; collapse it again to reclaim vertical space. All original panel IDs and persisted layout configuration are retained. The drawer is available no matter which HUD profile is selected.
