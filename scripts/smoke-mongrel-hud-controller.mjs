@@ -28,6 +28,11 @@ function harness() {
   }
   const profileButtons = ['combat', 'surface', 'navigation'].map(profile => node(profile + 'Button', { 'data-profile': profile }));
   const visibilityButtons = ['own', 'surface', 'mission'].map(panel => node(panel + 'Visible', { 'data-panel-visible': panel }));
+  const pcSystemPasteButtons = [
+    node('pcPasteCarrierSource', {'data-pc-system-target': 'carrierRouteSource'}),
+    node('pcPasteCarrierDestination', {'data-pc-system-target': 'carrierRouteDestination'}),
+    node('pcPasteShipDestination', {'data-pc-system-target': 'routeDestination'}),
+  ];
   const profileSelects = ['own', 'surface', 'mission'].map(panel => node(panel + 'Profiles', { 'data-panel-profile': panel }));
   const requests = [];
   const backend = {
@@ -45,7 +50,7 @@ function harness() {
     document: {
       getElementById: node,
       querySelectorAll(selector) {
-        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects })[selector] || [];
+        return ({ '[data-profile]': profileButtons, '[data-panel-visible]': visibilityButtons, '[data-panel-profile]': profileSelects, '[data-pc-system-target]': pcSystemPasteButtons })[selector] || [];
       }, addEventListener() {}, activeElement: null,
     },
     confirm(){return true},
@@ -403,6 +408,28 @@ async function drain(h, expected) {
   h.node('carrierStoredTritium').value='120';
   await h.node('carrierPlot').onclick();
   assert.equal(h.requests.length,0,'Invalid capacity and stock are blocked on the iPad');
+}
+
+
+{
+  const h=harness();
+  const clipboardActions=[
+    ['pcPasteCarrierSource','carrierRouteSource','Diaba'],
+    ['pcPasteCarrierDestination','carrierRouteDestination','Colonia'],
+    ['pcPasteShipDestination','routeDestination','NGC 2546 Sector UZ-G d10-16'],
+  ];
+  for(const [buttonId,inputId,system] of clipboardActions){
+    const action=h.node(buttonId).onclick();
+    await tick();
+    const request=h.requests.at(-1);
+    assert.equal(request.path,'/api/clipboard/system');
+    assert.deepEqual(request.body,{});
+    h.respond(request,null,{ok:true,system});
+    await action;
+    assert.equal(h.node(inputId).value,system);
+  }
+  assert.equal(h.requests.length,3,'Each paste is one manual request, never background polling');
+  assert.match(h.node('routePlotStatus').textContent,/Pasted from this PC/);
 }
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
