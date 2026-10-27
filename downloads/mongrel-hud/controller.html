@@ -569,6 +569,8 @@ function renderCarrierRoute(){
     Math.round(Number(carrierRoute.totalDistance||0)).toLocaleString()+" LY · "+
     Math.round(total).toLocaleString()+" t Spansh burn · "+
     Number(carrierRoute.restockStops||0)+" marked restocks · "+
+    (Number(carrierRoute.departureRestockTritium||0)>0?
+      Number(carrierRoute.departureRestockTritium).toLocaleString()+" t Spansh departure restock · ":"")+
     (shortfall>0?Math.ceil(shortfall).toLocaleString()+" t more than entered inventory":
       "entered inventory covers estimated burn (restock timing not verified)"));
   var html=rows.map(function(w,i){
