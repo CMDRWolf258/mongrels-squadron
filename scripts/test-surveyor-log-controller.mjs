@@ -8,7 +8,7 @@ const inline=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(inline);
 new vm.Script(inline);
 const section=html.slice(html.indexOf('<section id="explorationPanel"'),
-                         html.indexOf('<h2>OVERLAY LAYOUT</h2>'));
+                         html.indexOf('<h2>HUD NOTES</h2>'));
 assert.match(section,/id="surveyorLogSettings"/);
 assert.match(section,/id="surveyorLogLimit"/);
 for(const value of ['5','10','15','all'])
