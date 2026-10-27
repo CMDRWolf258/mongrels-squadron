@@ -1,3 +1,9 @@
+## Scout 1.14.5 — Spansh Fleet Carrier routing bridge
+
+Adds a separate on-demand authenticated carrier planner to the existing local HUD bridge. The iPad sends carrier departure system, destination, used capacity, tank Tritium and stored Tritium via the paired Windows HUD. Scout forwards them to the Site Admin-protected Route Director endpoint, which resolves exact system id64s and requests **Spansh /api/fleetcarrier/route** using the required repeated-key encoding. Spansh results preserve its per-hop fuel/restock information.
+
+No automatic carrier movement, no background polling, no extra Cloudflare feeds, and no changes to ship navigation checkpoints or mission/trade history. Carrier routing requires **Mongrel HUD 0.18.4** and Scout 1.14.5, both installed on the Elite PC running the controller. The User must confirm their Carrier Management Used Capacity and Tritium values each time.
+
 ## Scout 1.14.4 — Unnamed ship identity fix
 
 **Production hotfix for ship-name display; HUD itself does not need an update.**
