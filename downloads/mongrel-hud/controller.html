@@ -5,6 +5,33 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+/* Independent responsive ship plotting: never inherit the old 100px column. */
+.ship-route-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.ship-route-settings>div{min-width:0}
+.ship-route-settings select{width:100%;min-height:50px;padding:9px;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text)}
+.ship-route-destination{margin:12px 0 16px}
+.ship-route-destination .pc-system-paste{margin-top:8px}
+.carrier-summary{margin:14px 0 18px;color:var(--text)}
+.carrier-summary-route{margin-bottom:12px;color:#b7eaf5;font-weight:800;overflow-wrap:anywhere}
+.carrier-summary-label{font-size:.74rem;letter-spacing:.1em;color:var(--muted);font-weight:800;margin:0 0 8px}
+.carrier-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.carrier-summary-stat{border:1px solid #2d5562;border-radius:10px;background:#071b25;padding:13px;min-width:0}
+.carrier-summary-stat strong{display:block;font-size:clamp(1.2rem,2.5vw,1.65rem);line-height:1.25;color:#d6f3fa}
+.carrier-summary-stat small{display:block;margin-top:4px;color:var(--muted);font-size:.76rem;line-height:1.35}
+.carrier-summary-notes{margin:10px 0 0;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;display:grid;gap:5px;color:var(--muted);font-size:.83rem}
+.carrier-summary-notes strong{color:#bddde6}
+.carrier-waypoint{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:.86rem}
+.carrier-waypoint:last-child{border-bottom:0}
+.carrier-waypoint .wp-number{color:var(--muted);font-variant-numeric:tabular-nums}
+.carrier-waypoint .wp-name{min-width:0;overflow-wrap:anywhere}
+.carrier-waypoint .wp-name strong{display:block;color:var(--text)}
+.carrier-waypoint .wp-type{display:block;margin-top:3px;font-size:.7rem;color:var(--accent);letter-spacing:.06em;font-weight:750}
+.carrier-waypoint .wp-detail{display:block;margin-top:4px;color:var(--muted);font-size:.79rem;line-height:1.4}
+.carrier-copy{min-height:42px;min-width:114px;max-width:142px;padding:8px 10px;border:1px solid #387b90;border-radius:8px;background:#102b35;color:#bfe8f2;font-size:.75rem;font-weight:800;letter-spacing:.025em;cursor:pointer}
+.carrier-copy:disabled{opacity:.55;cursor:wait}
+.carrier-copy-notice{min-height:22px;color:#bfe8f2;font-size:.83rem;margin:8px 0}
+@media(max-width:520px){.ship-route-settings{grid-template-columns:1fr}.carrier-summary-grid{grid-template-columns:1fr 1fr}.carrier-waypoint{grid-template-columns:26px minmax(0,1fr)}.carrier-copy{grid-column:2;justify-self:start}}
+
 /* Carrier-specific responsive columns: keep ship Route Director sizing unchanged. */
 .carrier-route-locations,.carrier-route-metrics{display:grid;gap:12px;align-items:start}
 .carrier-route-locations{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -255,16 +282,37 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   <div class="card">
     <h2>PLOT A ROUTE</h2>
     <div class="layout-hint">Uses Leaf on the Wind's latest Scout location and current ship range. Plotting never starts navigation or changes the PC clipboard.</div>
-    <div class="route-plot">
+    <div class="ship-route-settings">
       <div><label for="routeMode">Route type</label><select id="routeMode"><option value="neutron">Neutron · replot points</option><option value="galaxy">Galaxy · exact jumps + fuel stops</option></select></div>
-      <div><label for="routeDestination">Destination system</label><input id="routeDestination" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"><button type="button" class="pc-system-paste" id="pcPasteShipDestination" data-pc-system-target="routeDestination">PASTE FROM PC</button></div>
       <div><label for="routeEfficiency">Efficiency</label><select id="routeEfficiency"><option value="40">40%</option><option value="60" selected>60%</option><option value="80">80%</option><option value="100">100%</option></select></div>
+    </div>
+    <div class="ship-route-destination">
+      <label for="routeDestination">Destination system</label><input id="routeDestination" type="text" maxlength="140" placeholder="Diaba" spellcheck="false"><button type="button" class="pc-system-paste" id="pcPasteShipDestination" data-pc-system-target="routeDestination">PASTE FROM PC</button>
     </div>
     <div class="route-actions"><button type="button" id="routePlot">PLOT NEUTRON ROUTE</button><button type="button" id="routeCheck" disabled>CHECK ROUTE RESULT</button></div>
     <div class="layout-hint" id="routeModeNotice">Neutron uses range estimates. Galaxy uses confirmed FSD physics, a fuel scoop, and a full tank; it plans individual jumps and refueling stops.</div>
     <div class="layout-hint" id="routePlotStatus">Plot a new route or load a previously completed route below.</div>
   </div>
 
+  <div class="card" id="routeDirectorCard">
+    <h2>ROUTE DIRECTOR</h2>
+    <p class="layout-hint">Admin only · select a calculated neutron route, then deliberately start or stop automatic next-waypoint copying on Serenity. Elite still plots normal jumps between waypoints.</p>
+    <label for="routeJobId">Route ID (leave blank to load latest calculated route)</label>
+    <input id="routeJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Paste route ID or load latest">
+    <div class="layout-actions">
+      <button type="button" id="routeLoad">LOAD ROUTE</button>
+      <button type="button" id="routeStart" disabled>START NAVIGATION</button>
+      <button type="button" id="routeStop" disabled>STOP NAVIGATION</button>
+    </div>
+    <div class="route-actions"><button type="button" id="routeCopyNext" disabled>COPY NEXT TO SERENITY</button><button type="button" id="routeReplot" disabled>REPLOT FROM HERE</button></div>
+    <div class="status" id="routeSummary">No route selected. Load a ready route first.</div>
+    <div class="layout-hint" id="routeCurrent">Route Director inactive.</div>
+    <div class="layout-hint" id="routeProgress">No active flight plan.</div>
+    <div class="notice" id="routeNotice">Starting a route requires live Scout telemetry for the matching ship and system.</div>
+    <h3>FLIGHT PLAN · ALL WAYPOINTS</h3>
+    <div class="route-manifest" id="routeManifest"><div class="layout-hint" style="padding:12px">Load a route to view its full waypoint sequence.</div></div>
+    <div class="layout-hint">N = neutron system · F = scheduled fuel stop (future fuel-aware plotting) · Intervening ordinary jumps do not advance this list.</div>
+  </div>
   <div class="card" id="carrierRoutePlanner">
     <h2>FLEET CARRIER ROUTE PLOTTER · SPANSH</h2>
     <p class="layout-hint">Carrier location is independent of your ship. Enter the carrier's actual departure system. Planning and result checks do not schedule jumps or change the Route Director/clipboard.</p>
@@ -286,29 +334,11 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <label for="carrierRouteJobId">Route ID (saved for this session; paste an earlier route ID to reload)</label>
     <input id="carrierRouteJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Filled after plotting">
     <div class="layout-hint" id="carrierPlotStatus">No fleet carrier route plotted yet.</div>
-    <div class="status" id="carrierRouteSummary"></div>
-    <h3>FLEET CARRIER HOPS · TRITIUM LEDGER</h3>
-    <div class="route-manifest" id="carrierRouteManifest"><div class="layout-hint" style="padding:12px">Plot or load a carrier route to view the Spansh results.</div></div>
-    <p class="layout-hint">Spansh's refuel points and market/mining flags are planning data, not verified live supply. Confirm in-game fuel, capacity and jump availability before each carrier jump. No automated carrier controls.</p>
-  </div>
-  <div class="card" id="routeDirectorCard">
-    <h2>ROUTE DIRECTOR</h2>
-    <p class="layout-hint">Admin only · select a calculated neutron route, then deliberately start or stop automatic next-waypoint copying on Serenity. Elite still plots normal jumps between waypoints.</p>
-    <label for="routeJobId">Route ID (leave blank to load latest calculated route)</label>
-    <input id="routeJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Paste route ID or load latest">
-    <div class="layout-actions">
-      <button type="button" id="routeLoad">LOAD ROUTE</button>
-      <button type="button" id="routeStart" disabled>START NAVIGATION</button>
-      <button type="button" id="routeStop" disabled>STOP NAVIGATION</button>
-    </div>
-    <div class="route-actions"><button type="button" id="routeCopyNext" disabled>COPY NEXT TO SERENITY</button><button type="button" id="routeReplot" disabled>REPLOT FROM HERE</button></div>
-    <div class="status" id="routeSummary">No route selected. Load a ready route first.</div>
-    <div class="layout-hint" id="routeCurrent">Route Director inactive.</div>
-    <div class="layout-hint" id="routeProgress">No active flight plan.</div>
-    <div class="notice" id="routeNotice">Starting a route requires live Scout telemetry for the matching ship and system.</div>
-    <h3>FLIGHT PLAN · ALL WAYPOINTS</h3>
-    <div class="route-manifest" id="routeManifest"><div class="layout-hint" style="padding:12px">Load a route to view its full waypoint sequence.</div></div>
-    <div class="layout-hint">N = neutron system · F = scheduled fuel stop (future fuel-aware plotting) · Intervening ordinary jumps do not advance this list.</div>
+    <div class="carrier-summary" id="carrierRouteSummary" aria-live="polite"></div>
+    <h3>CARRIER JUMP PLAN · TRITIUM ESTIMATES</h3>
+    <div class="carrier-copy-notice" id="carrierCopyNotice" aria-live="polite">Tap COPY TO PC beside a stop to paste that system into Elite on Serenity.</div>
+    <div class="route-manifest" id="carrierRouteManifest"><div class="layout-hint" style="padding:12px">Plot a carrier route, then select CHECK / LOAD RESULT to display its jumps.</div></div>
+    <p class="layout-hint">Fuel, restock and mining information are estimates, not verified live supply. Confirm your in-game fuel and carrier jump availability. Carrier jumps are never scheduled automatically.</p>
   </div>
   <div class="card">
     <div class="top"><h2>SCOUT NETWORK</h2><a href="https://mongrels-squadron.pages.dev/scout-jobs/" target="_blank" rel="noopener noreferrer">Open full Scout Board ↗</a></div>
@@ -588,35 +618,44 @@ function renderCarrierRoute(){
   el("carrierCheck").disabled=carrierRouteBusy || !(state&&state.connected) || !String(el("carrierRouteJobId").value||"").trim();
   var checked=el("carrierDetermineTritium").checked;
   setText(el("carrierFuelModeNotice"),checked?
-    "Spansh estimates starting requirements. Cargo Tritium input is used for comparison only, not passed as available stock to the solver.":
-    "Spansh plans against your entered cargo Tritium stock, depot fuel and used capacity.");
+    "Estimate starting fuel requirements. Entered cargo Tritium is compared with the result, but not supplied to the route calculation.":
+    "Plan against entered cargo Tritium, tank fuel and used capacity.");
   if(!ready){
-    setText(el("carrierRouteSummary"),"No completed carrier route selected.");
+    if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
     return;
   }
-  var total=Number(carrierRoute.totalTritiumUsed||0), available=Number(carrierRoute.tankFuel||0)+Number(carrierRoute.storedTritium||0);
-  var shortfall=Math.max(0,total-available), hops=Math.max(0,rows.length-1);
-  setText(el("carrierRouteSummary"),
-    carrierRoute.source+" → "+carrierRoute.destination+" · "+hops+" carrier jumps · "+
-    Math.round(Number(carrierRoute.totalDistance||0)).toLocaleString()+" LY · "+
-    Math.round(total).toLocaleString()+" t Spansh burn · "+
-    Number(carrierRoute.restockStops||0)+" marked restocks · "+
-    (Number(carrierRoute.departureRestockTritium||0)>0?
-      Number(carrierRoute.departureRestockTritium).toLocaleString()+" t Spansh departure restock · ":"")+
-    (shortfall>0?Math.ceil(shortfall).toLocaleString()+" t more than entered inventory":
-      "entered inventory covers estimated burn (restock timing not verified)"));
+  var total=Number(carrierRoute.totalTritiumUsed||0),available=Number(carrierRoute.tankFuel||0)+Number(carrierRoute.storedTritium||0);
+  var shortfall=Math.max(0,total-available),hops=Math.max(0,rows.length-1),departure=Number(carrierRoute.departureRestockTritium||0);
+  var stock=shortfall>0?
+    "Estimated burn exceeds entered tank + cargo stock by "+Math.ceil(shortfall).toLocaleString()+" t.":
+    "Entered tank + cargo stock covers estimated burn; verify where refueling is required.";
+  var summaryHtml='<div class="carrier-summary-label">ROUTE SUMMARY · FUEL ESTIMATES</div>'+
+    '<div class="carrier-summary-route">'+escapeHtml(String(carrierRoute.source||""))+' → '+
+        escapeHtml(String(carrierRoute.destination||""))+'</div>'+
+    '<div class="carrier-summary-grid">'+
+      '<div class="carrier-summary-stat"><strong>'+hops.toLocaleString()+'</strong><small>Carrier jumps</small></div>'+
+      '<div class="carrier-summary-stat"><strong>'+Math.round(Number(carrierRoute.totalDistance||0)).toLocaleString()+' LY</strong><small>Total distance</small></div>'+
+      '<div class="carrier-summary-stat"><strong>'+Math.round(total).toLocaleString()+' t</strong><small>Estimated Tritium burn</small></div>'+
+    '</div><div class="carrier-summary-notes">'+
+      '<div><strong>'+Number(carrierRoute.restockStops||0)+' marked restock point(s)</strong>'+
+        (departure>0?' · '+Math.round(departure).toLocaleString()+' t estimated at departure':'')+'</div>'+
+      '<div>'+escapeHtml(stock)+'</div>'+
+    '</div>';
+  if(el("carrierRouteSummary").innerHTML!==summaryHtml)el("carrierRouteSummary").innerHTML=summaryHtml;
   var html=rows.map(function(w,i){
     var note=i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
     if(w.mustRestock)note+=" · RESTOCK";
-    var detail=(i?" · "+Number(w.distance||0).toFixed(1)+" LY":"")+" · "+
-      Number(w.fuelUsed||0).toLocaleString()+" t burned · "+
+    var detail=(i?Number(w.distance||0).toFixed(1)+" LY · ":"")+
+      Number(w.fuelUsed||0).toLocaleString()+" t estimated burn · "+
       Number(w.fuelInTank||0).toLocaleString()+" t tank"+
-      (w.mustRestock?" · "+Number(w.restockAmount||0).toLocaleString()+" t restock":"")+
+      (w.mustRestock?" · "+Number(w.restockAmount||0).toLocaleString()+" t estimated restock":"")+
       (w.hasIcyRing?" · icy ring"+(w.pristine?" / pristine":""):"");
-    return '<div class="waypoint-line"><span class="wp-number">'+String(i).padStart(2,"0")+
-      '</span><span class="wp-name">'+escapeHtml(w.system)+
-      '<small class="muted" style="display:block;font-weight:400">'+escapeHtml(detail)+'</small></span>'+
-      '<span class="wp-type">'+escapeHtml(note)+'</span></div>';
+    return '<div class="carrier-waypoint"><span class="wp-number">'+String(i).padStart(2,"0")+'</span>'+
+      '<span class="wp-name"><strong>'+escapeHtml(String(w.system||"UNKNOWN"))+'</strong>'+
+      '<small class="wp-type">'+escapeHtml(note)+'</small>'+
+      '<small class="wp-detail">'+escapeHtml(detail)+'</small></span>'+
+      '<button type="button" class="carrier-copy" data-carrier-copy-index="'+i+
+      '" aria-label="Copy '+escapeAttr(String(w.system||"UNKNOWN"))+' to this PC clipboard">COPY TO PC</button></div>';
   }).join("");
   if(el("carrierRouteManifest").innerHTML!==html)el("carrierRouteManifest").innerHTML=html;
 }
@@ -1555,6 +1594,25 @@ document.querySelectorAll("[data-pc-system-target]").forEach(function(button){
 el("routeMode").onchange=function(){renderRouteControls()};
 el("carrierDetermineTritium").onchange=renderCarrierRoute;
 el("carrierRouteJobId").oninput=renderCarrierRoute;
+
+el("carrierRouteManifest").onclick=async function(event){
+  var button=event.target&&event.target.closest&&event.target.closest("[data-carrier-copy-index]");
+  if(!button || button.disabled || !carrierRoute || carrierRoute.status!=="ready")return;
+  var index=Number(button.getAttribute("data-carrier-copy-index"));
+  var waypoints=carrierRoute.waypoints;
+  if(!Number.isSafeInteger(index)||index<0||!Array.isArray(waypoints)||index>=waypoints.length)return;
+  var system=String(waypoints[index]&&waypoints[index].system||"");
+  if(!system)return;
+  button.disabled=true;
+  setText(el("carrierCopyNotice"),"Copying "+system+" to this PC…");
+  try{
+    var result=await api("/api/clipboard/system",{action:"copy_to_pc",system:system});
+    if(!result.ok)throw new Error(String(result.error||"clipboard_write_failed"));
+    setText(el("carrierCopyNotice"),"Copied "+system+" to this PC · Ctrl+V in Elite's Galaxy Map.");
+  }catch(e){setText(el("carrierCopyNotice"),"Copy to PC failed · "+e.message)}
+  finally{button.disabled=false}
+};
+
 el("carrierPlot").onclick=async function(){
   if(carrierRouteBusy)return;
   var source=String(el("carrierRouteSource").value||"").trim(),
@@ -1575,8 +1633,9 @@ el("carrierPlot").onclick=async function(){
       usedCapacity:usedCapacity,tankFuel:tankFuel,storedTritium:storedTritium,determineTritium:determineTritium});
     if(!result.ok)throw new Error(String(result.error||"carrier_plot_failed"));
     carrierRoute=null;el("carrierRouteJobId").value=String(result.id||"");
-    setText(el("carrierPlotStatus"),"Spansh calculating · "+source+" → "+destination+". Tap CHECK / LOAD RESULT when ready.");
-    el("carrierRouteManifest").textContent="Waiting for Spansh carrier route.";
+    setText(el("carrierPlotStatus"),"Route submitted · "+source+" → "+destination+". Select CHECK / LOAD RESULT to retrieve the plan.");
+    el("carrierRouteManifest").textContent="Waiting for CHECK / LOAD RESULT selection. Tap the button above to fetch your route.";
+    setText(el("carrierCopyNotice"),"Tap COPY TO PC beside any stop once the jump plan is loaded.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier plot failed · "+e.message)}
   finally{carrierRouteBusy=false;renderRouteControls()}
 };
@@ -1591,8 +1650,9 @@ el("carrierCheck").onclick=async function(){
     if(result.routeType!=="fleet_carrier")throw new Error("This is a ship route, not a carrier route.");
     if(result.status==="ready"){
       carrierRoute=result;
-      setText(el("carrierPlotStatus"),"Spansh carrier route ready. Review every hop and Tritium restock before departing.");
-    }else setText(el("carrierPlotStatus"),"Spansh still calculating · tap CHECK / LOAD RESULT again.");
+      setText(el("carrierPlotStatus"),"Carrier route loaded. Review each jump and estimated Tritium restock before departing.");
+      setText(el("carrierCopyNotice"),"Tap COPY TO PC to place any stop in this PC's Windows clipboard.");
+    }else setText(el("carrierPlotStatus"),"Route calculation in progress · select CHECK / LOAD RESULT again to refresh.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier result unavailable · "+e.message)}
   finally{carrierRouteBusy=false;renderRouteControls()}
 };
