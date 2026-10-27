@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.6"
+assert hud.APP_VERSION=="0.18.7"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -34,6 +34,34 @@ for unsafe in ("", "password\nsecond line", "https://example.com", "a"*141, "a;b
         raise AssertionError("Unexpected clipboard text accepted")
     except ValueError as exc:
         assert str(exc)=="clipboard_not_system_name"
+
+
+# Clipboard writes go ONLY to the paired Windows HUD, never an upstream
+# Cloudflare endpoint. Reject arbitrary/multiline text before invoking tools.
+from unittest import mock
+with mock.patch.object(hud.sys,"platform","win32"), mock.patch.object(
+    hud.subprocess,"run",return_value=types.SimpleNamespace(returncode=0)
+) as run:
+    assert hud._copy_system_to_windows_clipboard(" NGC 2546 Sector UZ-G d10-16 ")=="NGC 2546 Sector UZ-G d10-16"
+    assert run.call_count==1
+    args,kwargs=run.call_args
+    assert args[0][0]=="powershell.exe"
+    assert kwargs["input"]=="NGC 2546 Sector UZ-G d10-16"
+    assert "NGC 2546" not in " ".join(args[0]),"System name must not enter shell command arguments"
+    try:
+        hud._copy_system_to_windows_clipboard("http://wrong-site.example")
+        raise AssertionError("Invalid clipboard input reached shell")
+    except ValueError as exc:
+        assert str(exc)=="clipboard_not_system_name"
+    assert run.call_count==1
+with mock.patch.object(hud.sys,"platform","win32"), mock.patch.object(
+    hud.subprocess,"run",return_value=types.SimpleNamespace(returncode=1)
+):
+    try:
+        hud._copy_system_to_windows_clipboard("Diaba")
+        raise AssertionError("Failed clipboard write accepted")
+    except ValueError as exc:
+        assert str(exc)=="clipboard_write_failed"
 
 assert hud.PAIRING_COOKIE_MAX_AGE>=60*60*24*180
 assert hud.version_tuple("0.16.0")==(0,16,0)
@@ -64,12 +92,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.3"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.4"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.5"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.6"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.7",
+    "name":"Mongrel HUD Windows v0.18.8",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.7" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.8" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -326,7 +355,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.6"
+    assert hud.APP_VERSION=="0.18.7"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
