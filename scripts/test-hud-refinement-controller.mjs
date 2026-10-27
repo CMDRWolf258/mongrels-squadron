@@ -39,15 +39,27 @@ for (const id of ['panelControls','overlayMaster','navcourse','carrierRouteSourc
  const marker=id==='navcourse'?'data-panel-visible="navcourse"':'id="'+id+'"';
  assert.equal((html.split(marker).length-1),1,id+' remains unique');
 }
-// Ship plotter first, Fleet Carrier plotter second, Route Director third.
+// Keep ship plotting and Route Director together, followed by Fleet Carrier plotting.
 const shipPlotIndex=html.indexOf('<h2>PLOT A ROUTE</h2>');
 const carrierPlotIndex=html.indexOf('id="carrierRoutePlanner"');
 const directorIndex=html.indexOf('id="routeDirectorCard"');
-assert.ok(navIndex<shipPlotIndex&&shipPlotIndex<carrierPlotIndex&&carrierPlotIndex<directorIndex,
-  'Fleet Carrier plotting must follow neutron / galaxy plotting');
-const carrierFields=html.slice(carrierPlotIndex,directorIndex);
+assert.ok(navIndex<shipPlotIndex&&shipPlotIndex<directorIndex&&directorIndex<carrierPlotIndex,
+  'Route Director stays with ship plotting, and Fleet Carrier follows both');
+const carrierFields=html.slice(carrierPlotIndex,html.indexOf('<h2>SCOUT NETWORK</h2>',carrierPlotIndex));
 assert.match(carrierFields,/class="carrier-route-locations"/);
 assert.match(carrierFields,/class="carrier-route-metrics"/);
+
+const shipFields=html.slice(shipPlotIndex,directorIndex);
+assert.match(shipFields,/class="ship-route-settings"/);
+assert.match(shipFields,/class="ship-route-destination"/);
+assert.doesNotMatch(shipFields,/class="route-plot"/,
+  'Ship route form no longer inherits the narrow 100px grid');
+assert.match(html,/\.ship-route-settings\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+assert.match(carrierFields,/id="carrierCopyNotice"/);
+assert.match(script,/data-carrier-copy-index/);
+assert.match(script,/action:"copy_to_pc",system:system/);
+assert.match(carrierFields,/CARRIER JUMP PLAN · TRITIUM ESTIMATES/);
+
 assert.doesNotMatch(carrierFields,/class="route-plot"/,
   'Fleet Carrier must never inherit the ship plotter narrow 100px column');
 assert.match(html,/\.carrier-route-locations\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);

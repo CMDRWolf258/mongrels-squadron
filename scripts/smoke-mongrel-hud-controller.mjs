@@ -380,6 +380,8 @@ async function drain(h, expected) {
   h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',status:'pending'});
   await action;
   assert.equal(h.node('carrierRouteJobId').value,'cccccccc-dddd-eeee-ffff-111111111111');
+  assert.match(h.node('carrierRouteManifest').textContent,/Waiting for CHECK \/ LOAD RESULT selection/);
+  assert.match(h.node('carrierPlotStatus').textContent,/Select CHECK \/ LOAD RESULT/);
   const check=h.node('carrierCheck').onclick();
   await tick();
   assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111'});
@@ -394,10 +396,34 @@ async function drain(h, expected) {
     ],
   });
   await check;
-  assert.match(h.node('carrierRouteSummary').textContent,/157 t Spansh burn/);
+  assert.match(h.node('carrierRouteSummary').innerHTML,/157 t/);
+  assert.match(h.node('carrierRouteSummary').innerHTML,/Estimated Tritium burn/);
+  assert.match(h.node('carrierRouteSummary').innerHTML,/Carrier jumps/);
+  assert.match(h.node('carrierRouteSummary').innerHTML,/Total distance/);
+  assert.match(h.node('carrierRouteSummary').innerHTML,/ROUTE SUMMARY/);
+  assert.doesNotMatch(h.node('carrierRouteSummary').innerHTML,/Spansh burn/);
   assert.match(h.node('carrierRouteManifest').innerHTML,/&lt;danger&gt;/);
   assert.match(h.node('carrierRouteManifest').innerHTML,/RESTOCK/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/COPY TO PC/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/data-carrier-copy-index="1"/);
   assert.equal(h.requests.length,2,'Fleet Carrier plotting is preview-only');
+  const copyButton={
+    disabled:false,
+    getAttribute(key){return key==='data-carrier-copy-index'?'1':null},
+  };
+  const copy=h.node('carrierRouteManifest').onclick({
+    target:{closest(selector){return selector==='[data-carrier-copy-index]'?copyButton:null}},
+  });
+  await tick();
+  assert.equal(h.requests[2].path,'/api/clipboard/system');
+  assert.deepEqual(h.requests[2].body,{action:'copy_to_pc',system:'X <danger>'});
+  assert.equal(copyButton.disabled,true,'Copy button disables while sending');
+  h.respond(h.requests[2],null,{ok:true,system:'X <danger>'});
+  await copy;
+  assert.equal(copyButton.disabled,false);
+  assert.match(h.node('carrierCopyNotice').textContent,/Copied X <danger> to this PC/);
+  assert.equal(h.requests.length,3,'One explicit copy command per button tap');
+
 }
 {
   const h=harness();
