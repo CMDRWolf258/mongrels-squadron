@@ -644,49 +644,77 @@ async function waitForVoiceTest(requestId,label){
   return false;
 }
 function renderCarrierRoute(){
-  var ready=carrierRoute&&carrierRoute.status==="ready",rows=ready&&Array.isArray(carrierRoute.waypoints)?carrierRoute.waypoints:[];
+  var journey=(state&&state.carrierJourney)||null;
+  var tracking=!!(journey&&journey.status!=="ended");
+  var display=tracking?Object.assign({},journey,{status:"ready"}):carrierRoute;
+  var ready=display&&display.status==="ready",rows=ready&&Array.isArray(display.waypoints)?display.waypoints:[];
   el("carrierPlot").disabled=carrierRouteBusy || !(state&&state.connected);
   el("carrierCheck").disabled=carrierRouteBusy || !(state&&state.connected) || !String(el("carrierRouteJobId").value||"").trim();
   var checked=el("carrierDetermineTritium").checked;
   setText(el("carrierFuelModeNotice"),checked?
     "Estimate starting fuel requirements. Entered cargo Tritium is compared with the result, but not supplied to the route calculation.":
     "Plan against entered cargo Tritium, tank fuel and used capacity.");
+  el("carrierJourneyStart").disabled=carrierRouteBusy||!carrierRoute||carrierRoute.status!=="ready"||(tracking&&journey.status==="active"&&journey.id!==carrierRoute.id);
+  el("carrierJourneyPause").disabled=!tracking||journey.status!=="active"||journey.paused;
+  el("carrierJourneyResume").disabled=!tracking||journey.status!=="active"||!journey.paused;
+  el("carrierJourneyEnd").disabled=!tracking||journey.status==="completed";
   if(!ready){
     if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
+    setText(el("carrierJourneyStatus"),"No active carrier journey. Load a route and select START ROUTE.");
     return;
   }
-  var total=Number(carrierRoute.totalTritiumUsed||0),available=Number(carrierRoute.tankFuel||0)+Number(carrierRoute.storedTritium||0);
-  var shortfall=Math.max(0,total-available),hops=Math.max(0,rows.length-1),departure=Number(carrierRoute.departureRestockTritium||0);
+  var total=Number(display.totalTritiumUsed||0),available=Number(display.tankFuel||0)+Number(display.storedTritium||0);
+  var shortfall=Math.max(0,total-available),hops=Math.max(0,rows.length-1),departure=Number(display.departureRestockTritium||0);
   var stock=shortfall>0?
     "Estimated burn exceeds entered tank + cargo stock by "+Math.ceil(shortfall).toLocaleString()+" t.":
     "Entered tank + cargo stock covers estimated burn; verify where refueling is required.";
-  var summaryHtml='<div class="carrier-summary-label">ROUTE SUMMARY · FUEL ESTIMATES</div>'+
-    '<div class="carrier-summary-route">'+escapeHtml(String(carrierRoute.source||""))+' → '+
-        escapeHtml(String(carrierRoute.destination||""))+'</div>'+
+  var summaryHtml='<div class="carrier-summary-label">'+(tracking?"ACTIVE JOURNEY · FUEL ESTIMATES":"ROUTE SUMMARY · FUEL ESTIMATES")+'</div>'+
+    '<div class="carrier-summary-route">'+escapeHtml(String(display.source||""))+' → '+
+        escapeHtml(String(display.destination||""))+'</div>'+
     '<div class="carrier-summary-grid">'+
       '<div class="carrier-summary-stat"><strong>'+hops.toLocaleString()+'</strong><small>Carrier jumps</small></div>'+
-      '<div class="carrier-summary-stat"><strong>'+Math.round(Number(carrierRoute.totalDistance||0)).toLocaleString()+' LY</strong><small>Total distance</small></div>'+
+      '<div class="carrier-summary-stat"><strong>'+Math.round(Number(display.totalDistance||0)).toLocaleString()+' LY</strong><small>Total distance</small></div>'+
       '<div class="carrier-summary-stat"><strong>'+Math.round(total).toLocaleString()+' t</strong><small>Estimated Tritium burn</small></div>'+
     '</div><div class="carrier-summary-notes">'+
-      '<div><strong>'+Number(carrierRoute.restockStops||0)+' marked restock point(s)</strong>'+
+      '<div><strong>'+Number(display.restockStops||0)+' marked restock point(s)</strong>'+
         (departure>0?' · '+Math.round(departure).toLocaleString()+' t estimated at departure':'')+'</div>'+
-      '<div>'+escapeHtml(stock)+'</div>'+
+      (tracking?'<div><strong>'+journey.completedJumps+' / '+journey.totalJumps+' jumps complete</strong> · '+journey.remainingJumps+' remaining · ~'+Math.round(Number(journey.estimatedTritiumRemaining||0)).toLocaleString()+' t estimated to finish</div>':'<div>'+escapeHtml(stock)+'</div>')+
     '</div>';
   if(el("carrierRouteSummary").innerHTML!==summaryHtml)el("carrierRouteSummary").innerHTML=summaryHtml;
+  var completed=tracking?Number(journey.completedIndex||0):-1;
+  var percent=tracking?Math.max(0,Math.min(100,100*Number(journey.completedJumps||0)/Math.max(1,Number(journey.totalJumps||1)))):0;
+  var fill='<span style="width:'+percent.toFixed(1)+'%"></span>';
+  if(el("carrierJourneyProgress").innerHTML!==fill)el("carrierJourneyProgress").innerHTML=fill;
+  setText(el("carrierJourneyStatus"),tracking?(journey.status==="completed"?"ARRIVED · All carrier jumps complete":(journey.paused?"PAUSED · ":"ACTIVE · ")+journey.completedJumps+" / "+journey.totalJumps+" jumps · Next: "+journey.nextSystem):"Not tracking · Select START ROUTE to activate this jump plan.");
+  var cd=tracking?journey.cooldown||{}:{},coolText="Cooldown begins after your first confirmed jump.";
+  if(tracking&&completed>0){
+    if(cd.status==="cooldown"){var sec=Number(cd.remainingSeconds||0);coolText="CARRIER COOLDOWN · "+String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")+" until available";}
+    else if(cd.status==="ready")coolText="COOLDOWN COMPLETE · READY TO JUMP";
+    else coolText="Cooldown timing unavailable";
+    if(journey.completedVia==="manual")coolText+=" · Approximate (manual confirmation time)";
+  }
+  var cdNode=el("carrierJourneyCooldown");setText(cdNode,coolText);
+  cdNode.classList.toggle("ready",cd.status==="ready");
+  cdNode.classList.toggle("flash",cd.status==="ready"&&cd.flashReady===true);
   var html=rows.map(function(w,i){
-    var note=i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
+    var done=tracking&&i<=completed,next=tracking&&i===completed+1;
+    var note=done?"COMPLETE":i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
     if(w.mustRestock)note+=" · RESTOCK";
     var detail=(i?Number(w.distance||0).toFixed(1)+" LY · ":"")+
       Number(w.fuelUsed||0).toLocaleString()+" t estimated burn · "+
       Number(w.fuelInTank||0).toLocaleString()+" t tank"+
       (w.mustRestock?" · "+Number(w.restockAmount||0).toLocaleString()+" t estimated restock":"")+
       (w.hasIcyRing?" · icy ring"+(w.pristine?" / pristine":""):"");
-    return '<div class="carrier-waypoint"><span class="wp-number">'+String(i).padStart(2,"0")+'</span>'+
+    var check=tracking?'<label class="carrier-confirm"><input type="checkbox" data-carrier-complete-index="'+i+'"'+
+      (done?' checked':'')+(!next||journey.paused||journey.status!=="active"?' disabled':'')+
+      ' aria-label="Confirm arrival at '+escapeAttr(String(w.system||"UNKNOWN"))+'">'+
+      (done?'Completed':next?'MARK ARRIVED':'Not reached')+'</label>':'';
+    return '<div class="carrier-waypoint'+(done?' is-done':next?' is-next':'')+'"><span class="wp-number">'+(done?'✓':String(i).padStart(2,"0"))+'</span>'+
       '<span class="wp-name"><strong>'+escapeHtml(String(w.system||"UNKNOWN"))+'</strong>'+
       '<small class="wp-type">'+escapeHtml(note)+'</small>'+
       '<small class="wp-detail">'+escapeHtml(detail)+'</small></span>'+
-      '<button type="button" class="carrier-copy" data-carrier-copy-index="'+i+
-      '" aria-label="Copy '+escapeAttr(String(w.system||"UNKNOWN"))+' to this PC clipboard">COPY TO PC</button></div>';
+      '<span class="carrier-waypoint-actions">'+check+'<button type="button" class="carrier-copy" data-carrier-copy-index="'+i+
+      '" aria-label="Copy '+escapeAttr(String(w.system||"UNKNOWN"))+' to this PC clipboard">COPY TO PC</button></span></div>';
   }).join("");
   if(el("carrierRouteManifest").innerHTML!==html)el("carrierRouteManifest").innerHTML=html;
 }
