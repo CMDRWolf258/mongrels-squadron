@@ -7615,22 +7615,43 @@ class MongrelHudApp:
         self._draw_text(canvas, 10 * scale, y, f"TRITIUM  ~{journey['estimatedTritiumRemaining']:,.0f} t REQUIRED (EST.)", scale, 10, HUD_MUTED)
         y += 23 * scale
         cooldown = journey.get("cooldown") or {}
-        if completed == 0:
-            label, color = "READY TO PLAN FIRST JUMP · CHECK CARRIER", HUD_MUTED
-        elif cooldown.get("status") == "cooldown":
+        status = cooldown.get("status")
+        if status in {"scheduled", "jump_expected", "estimated_cooldown"}:
+            remaining = int(cooldown.get("remainingSeconds") or 0)
+            hours, remainder = divmod(remaining, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            countdown = f"{hours:02d}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes:02d}:{seconds:02d}"
+            title = {
+                "scheduled": "DEPARTURE SCHEDULED",
+                "jump_expected": "JUMP IN PROGRESS (EST.)",
+                "estimated_cooldown": "COOLDOWN (EST.)",
+            }[status]
+            label, color = f"{title} · {countdown}", HUD_AMBER
+        elif status == "estimated_ready":
+            label, color = "ESTIMATED READY · CHECK CARRIER", HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
+        elif status == "unverified":
+            label, color = "CARRIER ARRIVAL NOT VERIFIED", HUD_AMBER
+        elif status == "cooldown":
             mins, secs = divmod(int(cooldown["remainingSeconds"]), 60)
             label, color = f"COOLDOWN  {mins:02d}:{secs:02d}  ·  NEXT JUMP LOCKED", HUD_AMBER
-        elif cooldown.get("status") == "ready":
+        elif status == "ready":
             label, color = "COOLDOWN COMPLETE · READY TO JUMP", HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
+        elif completed == 0:
+            label, color = "READY TO PLAN FIRST JUMP · CHECK CARRIER", HUD_MUTED
         else:
             label, color = "COOLDOWN TIME UNKNOWN", HUD_MUTED
         self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 59), scale, 11, color, True)
         y += 22 * scale
-        if journey.get("completedVia") == "manual" and completed:
-            self._draw_text(canvas, 10 * scale, y, "COOLDOWN ESTIMATED FROM MANUAL CONFIRM TIME", scale, 8, HUD_AMBER)
-            y += 15 * scale
+        if cooldown.get("estimated"):
+            note, color = "ESTIMATED FROM JOURNAL PLAN · NOT ARRIVAL PROOF", HUD_AMBER
+        elif journey.get("completedVia") == "manual" and completed:
+            note, color = "COOLDOWN ESTIMATED FROM MANUAL CONFIRM TIME", HUD_AMBER
         elif completed:
-            self._draw_text(canvas, 10 * scale, y, "COOLDOWN FROM CONFIRMED CARRIER JUMP", scale, 8, HUD_MUTED)
+            note, color = "COOLDOWN FROM CONFIRMED CARRIER JUMP", HUD_MUTED
+        else:
+            note, color = "", HUD_MUTED
+        if note:
+            self._draw_text(canvas, 10 * scale, y, note, scale, 8, color)
             y += 15 * scale
         return width, round(y + 9 * scale)
 
