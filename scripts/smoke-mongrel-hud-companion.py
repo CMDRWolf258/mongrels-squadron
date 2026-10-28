@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.7"
+assert hud.APP_VERSION=="0.18.8"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -93,12 +93,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.4"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.5"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.6"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.8",
+    "name":"Mongrel HUD Windows v0.18.9",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.8" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.9" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -110,6 +111,89 @@ try:
     raise AssertionError("Release without SHA-256 digest was accepted")
 except ValueError as exc:
     assert str(exc)=="release_digest_missing"
+
+
+# Minute-aligned carrier cooldown: 10:34:15 completes at exactly 10:38:00.
+from datetime import datetime, timezone
+import threading
+cooldown=hud._carrier_cooldown("2026-10-27T10:34:15Z",
+    now=datetime(2026,10,27,10,34,15,tzinfo=timezone.utc))
+assert cooldown["readyAt"]=="2026-10-27T10:38:00Z"
+assert cooldown["remainingSeconds"]==225
+assert cooldown["status"]=="cooldown"
+assert hud._carrier_cooldown("2026-10-27T10:34:15Z",
+    now=datetime(2026,10,27,10,38,4,tzinfo=timezone.utc))["flashReady"] is True
+assert hud._carrier_cooldown("2026-10-27T10:34:15Z",
+    now=datetime(2026,10,27,10,38,15,tzinfo=timezone.utc))["flashReady"] is False
+assert hud._carrier_cooldown("")["status"]=="unknown"
+
+route={
+    "id":"12345678-1234-1234-1234-123456789012","routeType":"fleet_carrier",
+    "status":"ready","source":"Diaba","destination":"Colonia",
+    "waypoints":[
+        {"system":"Diaba","distance":0,"fuelUsed":0,"fuelInTank":1000},
+        {"system":"Test Carrier Stop","distance":400,"fuelUsed":94,"fuelInTank":906},
+        {"system":"Colonia","distance":400,"fuelUsed":90,"fuelInTank":816},
+    ],
+}
+saved=types.SimpleNamespace(lock=threading.RLock(),data={},save=lambda:None)
+tracker=object.__new__(hud.MongrelHudApp)
+tracker.store=saved
+tracker.lock=threading.RLock()
+tracker.snapshot=hud.ScoutSnapshot({"ownerCarrier":{"carrierId":"3700005632"}},True,"")
+started=tracker.carrier_journey_control("start",route=route)["carrierJourney"]
+assert started["completedIndex"]==0 and started["completedJumps"]==0
+assert started["waypoints"][0]["system"]=="Diaba"
+assert started["remainingJumps"]==2 and started["nextSystem"]=="Test Carrier Stop"
+assert saved.data["carrierJourney"]["completedIndex"]==0
+assert hud.default_layout()["panels"]["navcarrier"]["profiles"]==["navigation"]
+assert "navcarrier" in hud.PANEL_IDS
+
+# Ordinary Caspian travel, wrong carriers, requests/cancellations and out-of-order
+# hops must not manufacture carrier arrivals.
+for sample in [
+    {"type":"travel.fsd_jump","system":"Test Carrier Stop"},
+    {"type":"carrier.jump_request","system":"Test Carrier Stop","marketId":"3700005632"},
+    {"type":"carrier.jump","system":"Test Carrier Stop","marketId":"3700001111"},
+    {"type":"carrier.jump","system":"Colonia","marketId":"3700005632"},
+]:
+    sample["timestamp"]=datetime.now(timezone.utc).isoformat()
+    tracker._observe_carrier_journey_event(sample)
+    assert tracker.carrier_journey_snapshot()["completedIndex"]==0
+
+verified={"type":"carrier.jump","system":"Test Carrier Stop","marketId":"3700005632",
+          "timestamp":datetime.now(timezone.utc).isoformat()}
+tracker._observe_carrier_journey_event(verified)
+observed=tracker.carrier_journey_snapshot()
+assert observed["completedIndex"]==1 and observed["completedVia"]=="journal"
+assert observed["estimatedTritiumRemaining"]==90
+tracker._observe_carrier_journey_event(verified)
+assert tracker.carrier_journey_snapshot()["completedIndex"]==1
+try:
+    tracker.carrier_journey_control("start",route=route)
+    raise AssertionError("Starting same route must not erase progress")
+except ValueError as exc:
+    assert str(exc)=="carrier_journey_already_active"
+tracker.carrier_journey_control("pause")
+tracker._observe_carrier_journey_event({"type":"carrier.jump","system":"Colonia",
+    "marketId":"3700005632","timestamp":datetime.now(timezone.utc).isoformat()})
+assert tracker.carrier_journey_snapshot()["completedIndex"]==1
+tracker.carrier_journey_control("resume")
+# Reopen HUD and finish manually while flying elsewhere/offline:
+reopened=object.__new__(hud.MongrelHudApp)
+reopened.store=saved
+reopened.lock=threading.RLock()
+reopened.snapshot=tracker.snapshot
+assert reopened.carrier_journey_snapshot()["completedIndex"]==1
+try:
+    reopened.carrier_journey_control("confirm",index=1)
+    raise AssertionError("A completed arrival was confirmed twice")
+except ValueError as exc:
+    assert str(exc)=="carrier_journey_confirm_next_only"
+arrived=reopened.carrier_journey_control("confirm",index=2)["carrierJourney"]
+assert arrived["status"]=="completed" and arrived["completedIndex"]==2
+assert arrived["completedVia"]=="manual" and arrived["remainingJumps"]==0
+
 
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
@@ -355,7 +439,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.7"
+    assert hud.APP_VERSION=="0.18.8"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
