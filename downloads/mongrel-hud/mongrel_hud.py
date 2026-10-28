@@ -1827,11 +1827,20 @@ class MongrelHudApp:
                 return
             carrier_id = str(journey.get("carrierId") or "")
             event_id = str(event.get("carrierId") or "") if kind != "carrier.jump" else str(event.get("marketId") or "")
-            if not carrier_id or event_id != carrier_id:
-                return
             rows = journey.get("waypoints") or []
             index = int(journey.get("completedIndex") or 0) + 1
             if index >= len(rows):
+                return
+            if not carrier_id and kind == "carrier.jump_request":
+                # A CarrierJumpRequest comes from managing the commander's own
+                # carrier. Bind that explicit ID only for the next route stop,
+                # even if CarrierStats has not yet populated ownerCarrier.
+                target = str(event.get("destinationSystem") or "").strip()
+                if (re.fullmatch(r"\d{4,24}", event_id)
+                        and target.casefold() == str(rows[index].get("system") or "").casefold()):
+                    journey["carrierId"] = event_id
+                    carrier_id = event_id
+            if not carrier_id or event_id != carrier_id:
                 return
             try:
                 started = datetime.fromisoformat(str(journey.get("startedAt") or "").replace("Z", "+00:00"))
