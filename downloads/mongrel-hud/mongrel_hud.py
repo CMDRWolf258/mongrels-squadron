@@ -1438,8 +1438,9 @@ def _carrier_scheduled_timing(departure_at: str, *, now: datetime | None = None)
         return {"status": "unknown", "remainingSeconds": None, "readyAt": None,
                 "flashReady": False, "estimated": True}
     arrival = departure + timedelta(seconds=75)
-    # 75s transit + 4-minute next-minute-aligned cooldown = departure + 5m.
-    ready = departure + timedelta(minutes=5)
+    # Reuse the *same minute-aligned rule* as a verified arrival. Departure
+    # may have nonzero seconds during load spikes.
+    ready = arrival.replace(second=0, microsecond=0) + timedelta(minutes=4)
     current = now or datetime.now(timezone.utc)
     if current < departure:
         status, until = "scheduled", departure
@@ -2677,7 +2678,10 @@ class MongrelHudApp:
             departure = self._parse_voice_time(event.get("departureTime"))
             if departure is None:
                 return
-            fire_at = departure + timedelta(minutes=5)
+            estimate = _carrier_scheduled_timing(departure.isoformat())
+            fire_at = self._parse_voice_time(estimate.get("readyAt"))
+            if fire_at is None:
+                return
         else:
             completed = str(event.get("timestamp") or "")
             verified = _carrier_cooldown(completed)
