@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderCarrierRoute,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -526,5 +526,71 @@ async function drain(h, expected) {
   assert.equal(h.requests.length,3,'Each paste is one manual request, never background polling');
   assert.match(h.node('routePlotStatus').textContent,/Pasted from this PC/);
 }
+
+
+// A ready plan survives a HUD executable upgrade/reload without the cloud job.
+{
+  const h=harness();
+  const restoration=h.controller.restoreSavedCarrierPlan();
+  await tick();
+  assert.equal(h.requests.length,1);
+  assert.equal(h.requests[0].path,'/api/carrier-saved-route');
+  assert.equal(h.requests[0].body,null,'Saved routes are read locally, not written or replotted');
+  h.respond(h.requests[0],null,{ok:true,route:{
+    ok:true,id:'aaaaaaaa-bbbb-cccc-dddd-111111111111',status:'ready',
+    routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',
+    usedCapacity:12000,tankFuel:1000,storedTritium:440,determineTritium:true,
+    totalDistance:800,totalTritiumUsed:210,restockStops:0,
+    waypoints:[
+      {system:'Diaba',distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'Midway',distance:400,fuelUsed:108,fuelInTank:892},
+      {system:'Colonia',distance:400,fuelUsed:102,fuelInTank:790},
+    ],
+  },pending:null});
+  await restoration;
+  assert.equal(h.node('carrierRouteJobId').value,'aaaaaaaa-bbbb-cccc-dddd-111111111111');
+  assert.equal(h.node('carrierRouteSource').value,'Diaba');
+  assert.equal(h.node('carrierRouteDestination').value,'Colonia');
+  assert.equal(h.node('carrierUsedCapacity').value,'12000');
+  assert.equal(h.node('carrierStoredTritium').value,'440');
+  assert.match(h.node('carrierRouteSummary').innerHTML,/Colonia/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/Midway/);
+  assert.match(h.node('carrierPlotStatus').textContent,/saved carrier route restored/i);
+  await h.controller.restoreSavedCarrierPlan();
+  assert.equal(h.requests.length,1,'Full manifest is retrieved once, not every state poll');
+
+  // Restored plan is usable immediately to START; Spansh is not called again.
+  const start=h.node('carrierJourneyStart').onclick();
+  await tick();
+  assert.equal(h.requests[1].path,'/api/carrier-journey');
+  assert.equal(h.requests[1].body.action,'start');
+  assert.equal(h.requests[1].body.route.waypoints[1].system,'Midway');
+  h.respond(h.requests[1],null,{ok:true,carrierJourney:{
+    id:'aaaaaaaa-bbbb-cccc-dddd-111111111111',status:'active',
+    routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',
+    completedIndex:0,completedJumps:0,totalJumps:2,remainingJumps:2,
+    nextSystem:'Midway',totalDistance:800,totalTritiumUsed:210,estimatedTritiumRemaining:210,
+    waypoints:[
+      {system:'Diaba',distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'Midway',distance:400,fuelUsed:108,fuelInTank:892},
+      {system:'Colonia',distance:400,fuelUsed:102,fuelInTank:790},
+    ],cooldown:{status:'unknown'},
+  }});
+  await start;
+  assert.match(h.node('carrierRouteManifest').innerHTML,/is-done/);
+}
+
+// A pending ID can also be restored without erasing the last ready plan.
+{
+  const h=harness(), restore=h.controller.restoreSavedCarrierPlan();
+  await tick();
+  h.respond(h.requests[0],null,{ok:true,route:null,
+    pending:{id:'aaaaaaaa-bbbb-cccc-dddd-222222222222',source:'Diaba',destination:'Colonia'}});
+  await restore;
+  assert.equal(h.node('carrierRouteJobId').value,'aaaaaaaa-bbbb-cccc-dddd-222222222222');
+  assert.match(h.node('carrierPlotStatus').textContent,/CHECK \/ LOAD RESULT/);
+  assert.equal(h.requests.length,1,'No background cloud fetch is required to restore pending ID');
+}
+
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
