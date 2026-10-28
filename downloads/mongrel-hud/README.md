@@ -1,3 +1,13 @@
+## Mongrel HUD 0.18.8 — Fleet Carrier Director, progress and cooldown overlay
+
+New **START ROUTE / PAUSE / RESUME / END ROUTE** controls on the Navigation Fleet Carrier plotter. Starting a loaded Spansh route marks the departure system complete. The entire route and its completed index are saved in the current Windows HUD's local store, beyond the one-day Spansh job lifetime; reloads and HUD restarts preserve progress. The iPad Jump Plan shows a green completed row/check, the highlighted next stop, remaining jumps/LY/estimated Tritium and a large **MARK ARRIVED** checkbox for only the next stop. Prior stops cannot be re-completed or skipped by accidental taps.
+
+The existing Scout event stream feeds verified **CarrierJump** arrivals when the commander is **aboard the same registered owner carrier** and its system matches the next planned hop. Regular FSDJump (e.g. the Caspian Explorer), jump *requests*, unrelated carriers, duplicates or out-of-order arrivals never advance the route. This journal event normally is **not generated when the commander is away from the carrier**; in that case manually confirm arrival. Online monitoring does not invent progress from a scheduled departure time. A manually confirmed stop uses the time of the tap for its **approximate** cooldown, explicitly labeled approximate; late/offline confirmations can be inaccurate.
+
+The cooldown uses the game's minute-aligned 4-minute rule: completion at **10:34:15 → ready 10:38:00**. Both the iPad status and a new independently movable **Fleet Carrier Director** overlay show a live countdown, then green **COOLDOWN COMPLETE · READY TO JUMP**, briefly flashing green on transition before remaining steady. The overlay defaults visible in Navigation but is assignable to Combat, Surface Mining, Exploration or all four profiles through the collapsed Overlay Options selector, just like existing windows. The overlay makes no carrier jump requests; it also shows next system, remaining jumps/LY and estimated Tritium.
+
+This initial persistent journey is **per Windows HUD installation**, not cloud-synchronized between Serenity and the travel laptop. Carrier fuel from Spansh is estimated; the tracker does not claim to know the actual tank/cargo inventory. Scout **1.14.5** is sufficient; HUD **0.18.8** is required.
+
 ## Mongrel HUD 0.18.7 — Navigation layout and per-stop Carrier clipboard copy
 
 The paired iPad Navigation profile now groups the **Neutron/Galaxy ship plotter and Route Director together**, with the independent **Fleet Carrier Route Plotter · Spansh** beneath. The ship plotter uses balanced Route Type / Efficiency fields and a full-width Destination + Paste from PC field rather than the inherited 100px column. Existing route calculations are unchanged.

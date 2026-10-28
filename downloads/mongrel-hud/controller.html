@@ -5,6 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+.carrier-journey-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.carrier-journey-actions button{min-height:50px;border:1px solid #3d6876;border-radius:9px;background:#102b35;color:var(--text);font-size:.79rem;font-weight:800;padding:8px}
+.carrier-journey-actions button:disabled{opacity:.43}
+.carrier-journey-actions #carrierJourneyStart{border-color:var(--accent)}
+.carrier-journey-status{color:#bcdbe4;font-size:.87rem;margin:10px 0}
+.carrier-journey-progress{height:9px;background:#17343e;border-radius:10px;overflow:hidden;margin:10px 0}
+.carrier-journey-progress>span{display:block;background:#55d7ef;height:100%;transition:width .3s}
+.carrier-journey-cooldown{padding:10px 12px;border:1px solid #315a69;border-radius:9px;background:#0b2430;color:var(--muted);font-size:.84rem;margin:10px 0}
+.carrier-journey-cooldown.ready{color:#75e2a1;border-color:#347958}
+.carrier-journey-cooldown.flash{animation:carrier-ready-flash .7s step-end 8}
+@keyframes carrier-ready-flash{50%{background:#174932;color:#fff}}
+.carrier-waypoint.is-done{background:#0c2723;border-left:3px solid #55c68b;opacity:.85}
+.carrier-waypoint.is-done .wp-type{color:#75e2a1}
+.carrier-waypoint.is-next{background:#10303a;border-left:3px solid var(--accent)}
+.carrier-confirm{display:flex;align-items:center;gap:7px;min-height:44px;cursor:pointer;color:#bde9f3;font-size:.78rem;font-weight:800}
+.carrier-confirm input{width:28px;height:28px;min-width:28px;accent-color:#56cc9b;margin:0}
+.carrier-confirm input:disabled{opacity:.6}
+.carrier-waypoint-actions{display:flex;gap:8px;align-items:center}
+@media(max-width:620px){.carrier-journey-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.carrier-waypoint-actions{flex-direction:column;align-items:flex-start}}
+
 /* Independent responsive ship plotting: never inherit the old 100px column. */
 .ship-route-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 .ship-route-settings>div{min-width:0}
@@ -271,6 +291,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <div class="panel-control"><strong>Waypoint Signal</strong><button class="panel-toggle" type="button" data-panel-visible="navsignal">ON</button><select data-panel-scale="navsignal" aria-label="Waypoint Signal panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navsignal" aria-label="Waypoint Signal profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Fuel Status</strong><button class="panel-toggle" type="button" data-panel-visible="navfuel">ON</button><select data-panel-scale="navfuel" aria-label="Fuel Status panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navfuel" aria-label="Fuel Status profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Scout Network</strong><button class="panel-toggle" type="button" data-panel-visible="navscout">ON</button><select data-panel-scale="navscout" aria-label="Scout Network panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navscout" aria-label="Scout Network profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
+<div class="panel-control"><strong>Fleet Carrier Director</strong><button class="panel-toggle" type="button" data-panel-visible="navcarrier">ON</button><select data-panel-scale="navcarrier" aria-label="Fleet Carrier Director panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navcarrier" aria-label="Fleet Carrier Director profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option><option value="all">Combat + Surface + Navigation</option><option value="all-four">All four profiles</option></select></div>
 
   </div>
     </div>
@@ -335,6 +356,16 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <input id="carrierRouteJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Filled after plotting">
     <div class="layout-hint" id="carrierPlotStatus">No fleet carrier route plotted yet.</div>
     <div class="carrier-summary" id="carrierRouteSummary" aria-live="polite"></div>
+    <div class="carrier-journey-actions" role="group" aria-label="Carrier journey controls">
+      <button type="button" id="carrierJourneyStart">START ROUTE</button>
+      <button type="button" id="carrierJourneyPause">PAUSE</button>
+      <button type="button" id="carrierJourneyResume">RESUME</button>
+      <button type="button" id="carrierJourneyEnd">END ROUTE</button>
+    </div>
+    <div class="carrier-journey-status" id="carrierJourneyStatus" aria-live="polite">Start a loaded route to track jumps.</div>
+    <div class="carrier-journey-progress" id="carrierJourneyProgress"><span style="width:0%"></span></div>
+    <div class="carrier-journey-cooldown" id="carrierJourneyCooldown">Cooldown appears after a confirmed carrier jump.</div>
+    <p class="layout-hint">Scout advances only on a verified carrier jump, not your ship's jumps. When away or offline, mark the next stop manually.</p>
     <h3>CARRIER JUMP PLAN · TRITIUM ESTIMATES</h3>
     <div class="carrier-copy-notice" id="carrierCopyNotice" aria-live="polite">Tap COPY TO PC beside a stop to paste that system into Elite on Serenity.</div>
     <div class="route-manifest" id="carrierRouteManifest"><div class="layout-hint" style="padding:12px">Plot a carrier route, then select CHECK / LOAD RESULT to display its jumps.</div></div>
@@ -531,7 +562,7 @@ function renderLayoutControls(layout){
   setText(el("layoutHint"),layout.locked===false?"Unlocked: drag the labeled panel headers on the PC, adjust sizes here, then lock the layout.":"Locked: overlays are transparent and click-through.");
   document.querySelectorAll("[data-panel-visible]").forEach(function(button){var id=button.getAttribute("data-panel-visible"),cfg=panels[id]||{},text=cfg.visible===false?"OFF":"ON";setText(button,text);button.classList.toggle("active",cfg.visible!==false)});
   document.querySelectorAll("[data-panel-scale]").forEach(function(select){var id=select.getAttribute("data-panel-scale"),cfg=panels[id]||{},value=String(cfg.scale||1);if(select.value!==value)select.value=value});
-  document.querySelectorAll("[data-panel-profile]").forEach(function(select){var id=select.getAttribute("data-panel-profile"),cfg=panels[id]||{},profiles=cfg.profiles||[],value=profiles.includes("exploration")&&profiles.includes("navigation")?"exploration-navigation":profiles.includes("exploration")?"exploration":profiles.includes("combat")&&profiles.includes("surface")&&profiles.includes("navigation")?"all":profiles.includes("combat")&&profiles.includes("navigation")?"combat-navigation":profiles.includes("surface")&&profiles.includes("navigation")?"surface-navigation":profiles.includes("combat")&&profiles.includes("surface")?"both":profiles.includes("navigation")?"navigation":profiles.includes("surface")?"surface":"combat";if(select.value!==value)select.value=value});
+  document.querySelectorAll("[data-panel-profile]").forEach(function(select){var id=select.getAttribute("data-panel-profile"),cfg=panels[id]||{},profiles=cfg.profiles||[],value=["combat","surface","navigation","exploration"].every(function(p){return profiles.includes(p)})?"all-four":profiles.includes("exploration")&&profiles.includes("navigation")?"exploration-navigation":profiles.includes("exploration")?"exploration":profiles.includes("combat")&&profiles.includes("surface")&&profiles.includes("navigation")?"all":profiles.includes("combat")&&profiles.includes("navigation")?"combat-navigation":profiles.includes("surface")&&profiles.includes("navigation")?"surface-navigation":profiles.includes("combat")&&profiles.includes("surface")?"both":profiles.includes("navigation")?"navigation":profiles.includes("surface")?"surface":"combat";if(select.value!==value)select.value=value});
 }
 function tradeSelection(){
   var choice=(state&&state.tradeRouteSelection)||{};
@@ -613,49 +644,77 @@ async function waitForVoiceTest(requestId,label){
   return false;
 }
 function renderCarrierRoute(){
-  var ready=carrierRoute&&carrierRoute.status==="ready",rows=ready&&Array.isArray(carrierRoute.waypoints)?carrierRoute.waypoints:[];
+  var journey=(state&&state.carrierJourney)||null;
+  var tracking=!!(journey&&journey.status!=="ended");
+  var display=tracking?Object.assign({},journey,{status:"ready"}):carrierRoute;
+  var ready=display&&display.status==="ready",rows=ready&&Array.isArray(display.waypoints)?display.waypoints:[];
   el("carrierPlot").disabled=carrierRouteBusy || !(state&&state.connected);
   el("carrierCheck").disabled=carrierRouteBusy || !(state&&state.connected) || !String(el("carrierRouteJobId").value||"").trim();
   var checked=el("carrierDetermineTritium").checked;
   setText(el("carrierFuelModeNotice"),checked?
     "Estimate starting fuel requirements. Entered cargo Tritium is compared with the result, but not supplied to the route calculation.":
     "Plan against entered cargo Tritium, tank fuel and used capacity.");
+  el("carrierJourneyStart").disabled=carrierRouteBusy||!carrierRoute||carrierRoute.status!=="ready"||(tracking&&journey.status==="active"&&journey.id!==carrierRoute.id);
+  el("carrierJourneyPause").disabled=!tracking||journey.status!=="active"||journey.paused;
+  el("carrierJourneyResume").disabled=!tracking||journey.status!=="active"||!journey.paused;
+  el("carrierJourneyEnd").disabled=!tracking||journey.status==="completed";
   if(!ready){
     if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
+    setText(el("carrierJourneyStatus"),"No active carrier journey. Load a route and select START ROUTE.");
     return;
   }
-  var total=Number(carrierRoute.totalTritiumUsed||0),available=Number(carrierRoute.tankFuel||0)+Number(carrierRoute.storedTritium||0);
-  var shortfall=Math.max(0,total-available),hops=Math.max(0,rows.length-1),departure=Number(carrierRoute.departureRestockTritium||0);
+  var total=Number(display.totalTritiumUsed||0),available=Number(display.tankFuel||0)+Number(display.storedTritium||0);
+  var shortfall=Math.max(0,total-available),hops=Math.max(0,rows.length-1),departure=Number(display.departureRestockTritium||0);
   var stock=shortfall>0?
     "Estimated burn exceeds entered tank + cargo stock by "+Math.ceil(shortfall).toLocaleString()+" t.":
     "Entered tank + cargo stock covers estimated burn; verify where refueling is required.";
-  var summaryHtml='<div class="carrier-summary-label">ROUTE SUMMARY · FUEL ESTIMATES</div>'+
-    '<div class="carrier-summary-route">'+escapeHtml(String(carrierRoute.source||""))+' → '+
-        escapeHtml(String(carrierRoute.destination||""))+'</div>'+
+  var summaryHtml='<div class="carrier-summary-label">'+(tracking?"ACTIVE JOURNEY · FUEL ESTIMATES":"ROUTE SUMMARY · FUEL ESTIMATES")+'</div>'+
+    '<div class="carrier-summary-route">'+escapeHtml(String(display.source||""))+' → '+
+        escapeHtml(String(display.destination||""))+'</div>'+
     '<div class="carrier-summary-grid">'+
       '<div class="carrier-summary-stat"><strong>'+hops.toLocaleString()+'</strong><small>Carrier jumps</small></div>'+
-      '<div class="carrier-summary-stat"><strong>'+Math.round(Number(carrierRoute.totalDistance||0)).toLocaleString()+' LY</strong><small>Total distance</small></div>'+
+      '<div class="carrier-summary-stat"><strong>'+Math.round(Number(display.totalDistance||0)).toLocaleString()+' LY</strong><small>Total distance</small></div>'+
       '<div class="carrier-summary-stat"><strong>'+Math.round(total).toLocaleString()+' t</strong><small>Estimated Tritium burn</small></div>'+
     '</div><div class="carrier-summary-notes">'+
-      '<div><strong>'+Number(carrierRoute.restockStops||0)+' marked restock point(s)</strong>'+
+      '<div><strong>'+Number(display.restockStops||0)+' marked restock point(s)</strong>'+
         (departure>0?' · '+Math.round(departure).toLocaleString()+' t estimated at departure':'')+'</div>'+
-      '<div>'+escapeHtml(stock)+'</div>'+
+      (tracking?'<div><strong>'+journey.completedJumps+' / '+journey.totalJumps+' jumps complete</strong> · '+journey.remainingJumps+' remaining · ~'+Math.round(Number(journey.estimatedTritiumRemaining||0)).toLocaleString()+' t estimated to finish</div>':'<div>'+escapeHtml(stock)+'</div>')+
     '</div>';
   if(el("carrierRouteSummary").innerHTML!==summaryHtml)el("carrierRouteSummary").innerHTML=summaryHtml;
+  var completed=tracking?Number(journey.completedIndex||0):-1;
+  var percent=tracking?Math.max(0,Math.min(100,100*Number(journey.completedJumps||0)/Math.max(1,Number(journey.totalJumps||1)))):0;
+  var fill='<span style="width:'+percent.toFixed(1)+'%"></span>';
+  if(el("carrierJourneyProgress").innerHTML!==fill)el("carrierJourneyProgress").innerHTML=fill;
+  setText(el("carrierJourneyStatus"),tracking?(journey.status==="completed"?"ARRIVED · All carrier jumps complete":(journey.paused?"PAUSED · ":"ACTIVE · ")+journey.completedJumps+" / "+journey.totalJumps+" jumps · Next: "+journey.nextSystem):"Not tracking · Select START ROUTE to activate this jump plan.");
+  var cd=tracking?journey.cooldown||{}:{},coolText="Cooldown begins after your first confirmed jump.";
+  if(tracking&&completed>0){
+    if(cd.status==="cooldown"){var sec=Number(cd.remainingSeconds||0);coolText="CARRIER COOLDOWN · "+String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")+" until available";}
+    else if(cd.status==="ready")coolText="COOLDOWN COMPLETE · READY TO JUMP";
+    else coolText="Cooldown timing unavailable";
+    if(journey.completedVia==="manual")coolText+=" · Approximate (manual confirmation time)";
+  }
+  var cdNode=el("carrierJourneyCooldown");setText(cdNode,coolText);
+  cdNode.classList.toggle("ready",cd.status==="ready");
+  cdNode.classList.toggle("flash",cd.status==="ready"&&cd.flashReady===true);
   var html=rows.map(function(w,i){
-    var note=i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
+    var done=tracking&&i<=completed,next=tracking&&i===completed+1;
+    var note=done?"COMPLETE":i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
     if(w.mustRestock)note+=" · RESTOCK";
     var detail=(i?Number(w.distance||0).toFixed(1)+" LY · ":"")+
       Number(w.fuelUsed||0).toLocaleString()+" t estimated burn · "+
       Number(w.fuelInTank||0).toLocaleString()+" t tank"+
       (w.mustRestock?" · "+Number(w.restockAmount||0).toLocaleString()+" t estimated restock":"")+
       (w.hasIcyRing?" · icy ring"+(w.pristine?" / pristine":""):"");
-    return '<div class="carrier-waypoint"><span class="wp-number">'+String(i).padStart(2,"0")+'</span>'+
+    var check=tracking?'<label class="carrier-confirm"><input type="checkbox" data-carrier-complete-index="'+i+'"'+
+      (done?' checked':'')+(!next||journey.paused||journey.status!=="active"?' disabled':'')+
+      ' aria-label="Confirm arrival at '+escapeAttr(String(w.system||"UNKNOWN"))+'">'+
+      (done?'Completed':next?'MARK ARRIVED':'Not reached')+'</label>':'';
+    return '<div class="carrier-waypoint'+(done?' is-done':next?' is-next':'')+'"><span class="wp-number">'+(done?'✓':String(i).padStart(2,"0"))+'</span>'+
       '<span class="wp-name"><strong>'+escapeHtml(String(w.system||"UNKNOWN"))+'</strong>'+
       '<small class="wp-type">'+escapeHtml(note)+'</small>'+
       '<small class="wp-detail">'+escapeHtml(detail)+'</small></span>'+
-      '<button type="button" class="carrier-copy" data-carrier-copy-index="'+i+
-      '" aria-label="Copy '+escapeAttr(String(w.system||"UNKNOWN"))+' to this PC clipboard">COPY TO PC</button></div>';
+      '<span class="carrier-waypoint-actions">'+check+'<button type="button" class="carrier-copy" data-carrier-copy-index="'+i+
+      '" aria-label="Copy '+escapeAttr(String(w.system||"UNKNOWN"))+' to this PC clipboard">COPY TO PC</button></span></div>';
   }).join("");
   if(el("carrierRouteManifest").innerHTML!==html)el("carrierRouteManifest").innerHTML=html;
 }
@@ -1553,7 +1612,7 @@ el("layoutLock").onclick=async function(){holdRefresh(1200);try{var r=await muta
 el("layoutReset").onclick=async function(){holdRefresh(1200);try{var r=await mutate("/api/layout-reset",{});applyLayoutResult(r,"Layout positions reset")}catch(e){showLayoutStatus("Layout reset failed · "+e.message,true)}};
 document.querySelectorAll("[data-panel-visible]").forEach(function(button){button.onclick=async function(){holdRefresh(1200);try{var id=button.getAttribute("data-panel-visible"),r=await mutate("/api/panel",function(){var cfg=((state&&state.layout&&state.layout.panels)||{})[id]||{};return {panel:id,visible:cfg.visible===false}});applyLayoutResult(r,id+" "+(r.layout&&r.layout.panels&&r.layout.panels[id]&&r.layout.panels[id].visible!==false?"shown":"hidden"))}catch(e){showLayoutStatus("Panel toggle failed · "+e.message,true)}}});
 document.querySelectorAll("[data-panel-scale]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-scale"),scale:Number(select.value)});applyLayoutResult(r,"Panel size updated")}catch(e){showLayoutStatus("Panel size failed · "+e.message,true)}}});
-document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,profiles=({"both":["combat","surface"],"all":["combat","surface","navigation"],"combat-navigation":["combat","navigation"],"surface-navigation":["surface","navigation"],"exploration-navigation":["exploration","navigation"]})[value]||[value],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
+document.querySelectorAll("[data-panel-profile]").forEach(function(select){select.onchange=async function(){holdRefresh(1200);try{var value=select.value,profiles=({"both":["combat","surface"],"all":["combat","surface","navigation"],"all-four":["combat","surface","navigation","exploration"],"combat-navigation":["combat","navigation"],"surface-navigation":["surface","navigation"],"exploration-navigation":["exploration","navigation"]})[value]||[value],r=await mutate("/api/panel",{panel:select.getAttribute("data-panel-profile"),profiles:profiles});applyLayoutResult(r,"Panel profile updated")}catch(e){showLayoutStatus("Panel profile failed · "+e.message,true)}}});
 el("hudNotes").addEventListener("input",function(){notesDirty=true;el("notesNotice").textContent="Unsaved changes"});
 el("saveHudNotes").onclick=async function(){try{var r=await api("/api/notes",{notes:el("hudNotes").value});notesDirty=false;el("notesNotice").textContent="Saved";state.notes=r.notes;await load()}catch(e){el("notesNotice").textContent=e.message}};
 el("scanTargetLoadout").onclick=async function(){try{var r=await api("/api/target-scan",{});state=state||{};if(r.scan)state.targetScan=r.scan;render();await load(true)}catch(e){el("targetScanStatus").textContent="Scan failed · "+e.message}};
@@ -1594,6 +1653,44 @@ document.querySelectorAll("[data-pc-system-target]").forEach(function(button){
 el("routeMode").onchange=function(){renderRouteControls()};
 el("carrierDetermineTritium").onchange=renderCarrierRoute;
 el("carrierRouteJobId").oninput=renderCarrierRoute;
+
+
+async function sendCarrierJourney(action,extra){
+  var result=await api("/api/carrier-journey",Object.assign({action:action},extra||{}));
+  if(!result.ok)throw new Error(String(result.error||"carrier_journey_failed"));
+  state=state||{};
+  state.carrierJourney=result.carrierJourney||null;
+  renderCarrierRoute();
+}
+el("carrierJourneyStart").onclick=async function(){
+  if(!carrierRoute||carrierRoute.status!=="ready")return;
+  if(!confirm("Start tracking "+carrierRoute.destination+"? The departure system will be completed automatically."))return;
+  try{
+    await sendCarrierJourney("start",{route:carrierRoute});
+    setText(el("carrierPlotStatus"),"Carrier journey started. Starting system marked complete.");
+  }catch(e){setText(el("carrierPlotStatus"),"Could not start route · "+e.message)}
+};
+el("carrierJourneyPause").onclick=async function(){
+  try{await sendCarrierJourney("pause")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierJourneyResume").onclick=async function(){
+  try{await sendCarrierJourney("resume")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierJourneyEnd").onclick=async function(){
+  if(!confirm("End this carrier journey? Progress will be retained until the next route."))return;
+  try{await sendCarrierJourney("end")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierRouteManifest").onchange=async function(event){
+  var checkbox=event.target,raw=checkbox&&checkbox.getAttribute&&checkbox.getAttribute("data-carrier-complete-index");
+  if(raw===null||raw===undefined||!checkbox.checked||!state||!state.carrierJourney)return;
+  var index=Number(raw),journey=state.carrierJourney;
+  if(!Number.isSafeInteger(index)||index!==Number(journey.completedIndex||0)+1||journey.status!=="active"||journey.paused)return;
+  try{
+    await sendCarrierJourney("confirm",{index:index});
+    setText(el("carrierPlotStatus"),"Manually confirmed "+journey.waypoints[index].system+
+      " · Cooldown is an estimate from the time you checked this stop.");
+  }catch(e){checkbox.checked=false;setText(el("carrierPlotStatus"),"Confirm arrival failed · "+e.message)}
+};
 
 el("carrierRouteManifest").onclick=async function(event){
   var button=event.target&&event.target.closest&&event.target.closest("[data-carrier-copy-index]");

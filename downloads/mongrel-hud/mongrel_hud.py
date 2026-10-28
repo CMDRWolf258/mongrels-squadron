@@ -25,7 +25,7 @@ from array import array
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.7"
+APP_VERSION = "0.18.8"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -213,7 +213,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_log", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_log", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout", "navcarrier")
 VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -241,6 +241,7 @@ PANEL_TITLES = {
     "navsignal": "WAYPOINT SIGNAL",
     "navfuel": "FUEL STATUS",
     "navscout": "SCOUT NETWORK",
+    "navcarrier": "FLEET CARRIER DIRECTOR",
 }
 
 
@@ -818,6 +819,7 @@ def default_layout() -> dict[str, Any]:
             "navfuel": {"x": 40, "y": 470, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
             "navsteps": {"x": 950, "y": 70, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
             "navscout": {"x": 950, "y": 400, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
+        "navcarrier": {"x": 950, "y": 670, "visible": True, "scale": 0.9, "profiles": ["navigation"]},
         },
     }
 
@@ -1402,6 +1404,92 @@ def tactical_module_groups(
     return groups
 
 
+
+def _carrier_cooldown(completed_at: str, *, now: datetime | None = None) -> dict[str, Any]:
+    """Game-minute-aligned cooldown: 10:34:15 → 10:38:00 UTC."""
+    try:
+        completed = datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
+        if completed.tzinfo is None:
+            raise ValueError("timezone_required")
+        completed = completed.astimezone(timezone.utc)
+    except (ValueError, TypeError, OverflowError):
+        return {"status": "unknown", "remainingSeconds": None, "readyAt": None, "flashReady": False}
+    ready = completed.replace(second=0, microsecond=0) + timedelta(minutes=4)
+    current = now or datetime.now(timezone.utc)
+    remaining = max(0, math.ceil((ready - current).total_seconds()))
+    return {"status": "cooldown" if remaining else "ready", "remainingSeconds": remaining,
+            "readyAt": ready.isoformat().replace("+00:00", "Z"),
+            "flashReady": ready <= current < ready + timedelta(seconds=9)}
+
+
+def _carrier_route_identity(value: Any) -> str:
+    name = str(value or "").strip()
+    if not 2 <= len(name) <= 140 or not re.fullmatch(r"[\w .+()'-]{2,140}", name, re.UNICODE):
+        raise ValueError("carrier_journey_invalid_system")
+    return name
+
+
+def _carrier_journey_create(route: Any, carrier_id: str, now: datetime) -> dict[str, Any]:
+    if not isinstance(route, dict) or route.get("status") != "ready" or route.get("routeType") != "fleet_carrier":
+        raise ValueError("carrier_route_not_ready")
+    waypoints = route.get("waypoints")
+    if not isinstance(waypoints, list) or not 2 <= len(waypoints) <= 512:
+        raise ValueError("carrier_route_invalid_waypoints")
+    normalized = []
+    for row in waypoints:
+        if not isinstance(row, dict):
+            raise ValueError("carrier_route_invalid_waypoints")
+        normalized.append({
+            "system": _carrier_route_identity(row.get("system")),
+            "distance": float(row.get("distance") or 0),
+            "fuelUsed": float(row.get("fuelUsed") or 0),
+            "fuelInTank": float(row.get("fuelInTank") or 0),
+            "mustRestock": row.get("mustRestock") is True,
+            "restockAmount": float(row.get("restockAmount") or 0),
+            "hasIcyRing": row.get("hasIcyRing") is True,
+            "pristine": row.get("pristine") is True,
+        })
+    source, destination = _carrier_route_identity(route.get("source")), _carrier_route_identity(route.get("destination"))
+    if normalized[0]["system"].casefold() != source.casefold() or normalized[-1]["system"].casefold() != destination.casefold():
+        raise ValueError("carrier_route_mismatched_endpoints")
+    for row in normalized:
+        if not all(math.isfinite(row[k]) and 0 <= row[k] <= 5000 for k in ("distance", "fuelUsed", "fuelInTank", "restockAmount")):
+            raise ValueError("carrier_route_invalid_waypoints")
+    route_id = str(route.get("id") or "")
+    if not re.fullmatch(r"[0-9a-fA-F-]{24,64}", route_id):
+        raise ValueError("carrier_route_invalid_id")
+    timestamp = now.isoformat().replace("+00:00", "Z")
+    return {
+        "id": route_id, "routeType": "fleet_carrier", "status": "active",
+        "source": source, "destination": destination, "waypoints": normalized,
+        "carrierId": carrier_id if re.fullmatch(r"\d{4,24}", carrier_id or "") else "",
+        "completedIndex": 0, "completedAt": None, "completedVia": "start",
+        "startedAt": timestamp, "updatedAt": timestamp, "paused": False,
+        "totalDistance": sum(row["distance"] for row in normalized),
+        "totalTritiumUsed": sum(row["fuelUsed"] for row in normalized),
+    }
+
+
+def _carrier_journey_snapshot(journey: Any, now: datetime | None = None) -> dict[str, Any] | None:
+    if not isinstance(journey, dict) or not isinstance(journey.get("waypoints"), list):
+        return None
+    current = now or datetime.now(timezone.utc)
+    rows = journey["waypoints"]
+    completed = int(journey.get("completedIndex") or 0)
+    if not rows or completed < 0 or completed >= len(rows):
+        return None
+    result = dict(journey)
+    result["waypoints"] = [dict(row) for row in rows]
+    result["totalJumps"] = len(rows) - 1
+    result["completedJumps"] = completed
+    result["remainingJumps"] = len(rows) - 1 - completed
+    result["nextSystem"] = str(rows[completed + 1].get("system") or "") if completed + 1 < len(rows) else ""
+    result["remainingDistance"] = sum(float(row.get("distance") or 0) for row in rows[completed + 1:])
+    result["estimatedTritiumRemaining"] = sum(float(row.get("fuelUsed") or 0) for row in rows[completed + 1:])
+    result["cooldown"] = _carrier_cooldown(str(journey.get("completedAt") or ""), now=current)
+    return result
+
+
 class LocalStore:
     def __init__(self, path: Path):
         self.path = path
@@ -1615,8 +1703,96 @@ class MongrelHudApp:
                 ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
                 ledger["unclaimed"] = 0
                 self.store.save()
+        self._observe_carrier_journey_event(event)
         self.handle_voice_event(event)
 
+
+
+    def carrier_journey_snapshot(self) -> dict[str, Any] | None:
+        with self.store.lock:
+            return _carrier_journey_snapshot(self.store.data.get("carrierJourney"))
+
+    def carrier_journey_control(self, action: str, *, route: Any = None, index: Any = None) -> dict[str, Any]:
+        if action not in {"start", "pause", "resume", "end", "confirm"}:
+            raise ValueError("carrier_journey_action_invalid")
+        now = datetime.now(timezone.utc)
+        with self.store.lock:
+            if action == "start":
+                existing = self.store.data.get("carrierJourney")
+                if isinstance(existing, dict) and existing.get("status") == "active":
+                    raise ValueError("carrier_journey_already_active")
+                owner = self.scout_state().get("ownerCarrier") or {}
+                carrier_id = str(owner.get("carrierId") or "") if isinstance(owner, dict) else ""
+                journey = _carrier_journey_create(route, carrier_id, now)
+                self.store.data["carrierJourney"] = journey
+            else:
+                journey = self.store.data.get("carrierJourney")
+                if not isinstance(journey, dict):
+                    raise ValueError("carrier_journey_missing")
+                if action == "end":
+                    journey["status"] = "ended"
+                elif action == "pause":
+                    if journey.get("status") != "active":
+                        raise ValueError("carrier_journey_not_active")
+                    journey["paused"] = True
+                elif action == "resume":
+                    if journey.get("status") != "active":
+                        raise ValueError("carrier_journey_not_active")
+                    journey["paused"] = False
+                else:
+                    if journey.get("status") != "active" or journey.get("paused"):
+                        raise ValueError("carrier_journey_not_active")
+                    wanted = int(index) if index is not None and not isinstance(index, bool) else -1
+                    if wanted != int(journey.get("completedIndex") or 0) + 1 or wanted >= len(journey["waypoints"]):
+                        raise ValueError("carrier_journey_confirm_next_only")
+                    journey["completedIndex"] = wanted
+                    journey["completedAt"] = now.isoformat().replace("+00:00", "Z")
+                    journey["completedVia"] = "manual"
+                    if wanted == len(journey["waypoints"]) - 1:
+                        journey["status"] = "completed"
+                journey["updatedAt"] = now.isoformat().replace("+00:00", "Z")
+            self.store.save()
+            return {"ok": True, "carrierJourney": _carrier_journey_snapshot(journey, now)}
+
+    def _observe_carrier_journey_event(self, event: dict[str, Any]) -> None:
+        # A CarrierJump is observed only if the player is aboard. Their ship's
+        # FSDJump and another carrier's jump MUST NOT advance the plan.
+        if event.get("type") != "carrier.jump":
+            return
+        try:
+            observed_time = datetime.fromisoformat(str(event.get("timestamp") or "").replace("Z", "+00:00"))
+            if observed_time.tzinfo is None:
+                return
+            observed_time = observed_time.astimezone(timezone.utc)
+        except (ValueError, TypeError):
+            return
+        observed_name = str(event.get("system") or "").strip()
+        observed_market = str(event.get("marketId") or "")
+        with self.store.lock:
+            journey = self.store.data.get("carrierJourney")
+            if not isinstance(journey, dict) or journey.get("status") != "active" or journey.get("paused"):
+                return
+            carrier_id = str(journey.get("carrierId") or "")
+            # No verified owner carrier ID -> manual confirmation only.
+            if not carrier_id or observed_market != carrier_id:
+                return
+            rows = journey.get("waypoints") or []
+            index = int(journey.get("completedIndex") or 0) + 1
+            if index >= len(rows) or str(rows[index].get("system") or "").casefold() != observed_name.casefold():
+                return
+            try:
+                started = datetime.fromisoformat(str(journey.get("startedAt") or "").replace("Z", "+00:00"))
+            except ValueError:
+                return
+            if observed_time < started or observed_time > datetime.now(timezone.utc) + timedelta(minutes=2):
+                return
+            journey["completedIndex"] = index
+            journey["completedAt"] = observed_time.isoformat().replace("+00:00", "Z")
+            journey["completedVia"] = "journal"
+            journey["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            if index == len(rows) - 1:
+                journey["status"] = "completed"
+            self.store.save()
 
     @staticmethod
     def _carrier_voice_profile_key(profile: dict[str, Any] | None) -> str:
@@ -5179,6 +5355,7 @@ class MongrelHudApp:
             "profile": profile,
             "scout": state,
             "navigationArrival": self._arrival_for_controller(),
+            "carrierJourney": self.carrier_journey_snapshot(),
             "sites": self.sites_for_current_body(),
             "miningLocations": self.mining_locations_for_current_body(),
             "activeLocationSignal": self.active_location_signal(),
@@ -7316,6 +7493,45 @@ class MongrelHudApp:
 
         return width, round(y + 8 * scale)
 
+
+    def _render_carrier_journey_canvas(self, canvas: tk.Canvas, scale: float, flash_on: bool) -> tuple[int, int]:
+        journey = self.carrier_journey_snapshot()
+        width = round(510 * scale)
+        y = self._draw_title(canvas, "FLEET CARRIER DIRECTOR", scale, width)
+        if not journey or journey.get("status") == "ended":
+            self._draw_text(canvas, 10 * scale, y, "NO ACTIVE CARRIER ROUTE", scale, 11, HUD_MUTED, True)
+            return width, round(y + 30 * scale)
+        completed, total = journey["completedJumps"], journey["totalJumps"]
+        paused = journey.get("paused")
+        state = "ROUTE COMPLETED" if journey.get("status") == "completed" else "ROUTE PAUSED" if paused else "ROUTE ACTIVE"
+        self._draw_text(canvas, 10 * scale, y, state + f"  ·  {completed}/{total} JUMPS", scale, 11, HUD_GREEN if state == "ROUTE COMPLETED" else HUD_AMBER if paused else HUD_CYAN, True)
+        y += 24 * scale
+        self._draw_text(canvas, 10 * scale, y, self.clip_line("NEXT  "+str(journey.get("nextSystem") or "DESTINATION REACHED"), 52), scale, 13, HUD_WHITE, True)
+        y += 29 * scale
+        self._draw_text(canvas, 10 * scale, y, f"REMAINING  {journey['remainingJumps']} JUMPS · {journey['remainingDistance']:,.0f} LY", scale, 10, HUD_CYAN, True)
+        y += 22 * scale
+        self._draw_text(canvas, 10 * scale, y, f"TRITIUM  ~{journey['estimatedTritiumRemaining']:,.0f} t REQUIRED (EST.)", scale, 10, HUD_MUTED)
+        y += 23 * scale
+        cooldown = journey.get("cooldown") or {}
+        if completed == 0:
+            label, color = "READY TO PLAN FIRST JUMP · CHECK CARRIER", HUD_MUTED
+        elif cooldown.get("status") == "cooldown":
+            mins, secs = divmod(int(cooldown["remainingSeconds"]), 60)
+            label, color = f"COOLDOWN  {mins:02d}:{secs:02d}  ·  NEXT JUMP LOCKED", HUD_AMBER
+        elif cooldown.get("status") == "ready":
+            label, color = "COOLDOWN COMPLETE · READY TO JUMP", HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
+        else:
+            label, color = "COOLDOWN TIME UNKNOWN", HUD_MUTED
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 59), scale, 11, color, True)
+        y += 22 * scale
+        if journey.get("completedVia") == "manual" and completed:
+            self._draw_text(canvas, 10 * scale, y, "COOLDOWN ESTIMATED FROM MANUAL CONFIRM TIME", scale, 8, HUD_AMBER)
+            y += 15 * scale
+        elif completed:
+            self._draw_text(canvas, 10 * scale, y, "COOLDOWN FROM CONFIRMED CARRIER JUMP", scale, 8, HUD_MUTED)
+            y += 15 * scale
+        return width, round(y + 9 * scale)
+
     def _render_panel_canvas(self, panel_id: str, canvas: tk.Canvas, scale: float, flash_on: bool) -> None:
         canvas.delete("all")
         if panel_id == "own":
@@ -7346,6 +7562,8 @@ class MongrelHudApp:
             width, height = self._render_scoutboard_canvas(canvas, scale)
         elif panel_id == "scoutnearby":
             width, height = self._render_scoutnearby_canvas(canvas, scale)
+        elif panel_id == "navcarrier":
+            width, height = self._render_carrier_journey_canvas(canvas, scale, flash_on)
         elif panel_id in {"navcourse", "navsteps", "navsignal", "navfuel", "navscout"}:
             width, height = self._render_navigation_panel(canvas, scale, panel_id, flash_on)
         elif panel_id == "alerts":
@@ -7961,7 +8179,10 @@ def make_handler(app: MongrelHudApp):
 
         def json_body(self) -> dict[str, Any]:
             try:
-                length = min(int(self.headers.get("Content-Length", "0")), 65536)
+                # A 512-stop Fleet Carrier route can exceed 64 KB; other commands keep
+                # their original, tighter body limit.
+                cap = 262144 if urlparse(self.path).path == "/api/carrier-journey" else 65536
+                length = min(int(self.headers.get("Content-Length", "0")), cap)
                 value = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
                 return value if isinstance(value, dict) else {}
             except Exception:
@@ -8140,6 +8361,8 @@ def make_handler(app: MongrelHudApp):
                         result = {"ok": True, "system": _read_windows_system_clipboard()}
                     else:
                         raise ValueError("invalid_clipboard_action")
+                elif path == "/api/carrier-journey":
+                    result = app.carrier_journey_control(str(body.get("action") or ""), route=body.get("route"), index=body.get("index"))
                 elif path == "/api/route":
                     result = app.route_control(str(body.get("action") or ""), str(body.get("routeId") or ""),
                         destination=str(body.get("destination") or ""),
