@@ -519,6 +519,9 @@ async function drain(h, expected) {
   assert.equal(h.node('carrierJourneyCooldown').classList.contains('ready'),true);
 
 
+  // Return from the completed route status fixture to test sequential marking.
+  h.controller.setState({connected:true,carrierJourney:activeJourney});
+  h.controller.renderCarrierRoute();
   const checkbox={
     checked:true,
     getAttribute(key){return key==='data-carrier-complete-index'?'1':null},
