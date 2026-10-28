@@ -411,7 +411,7 @@ with tempfile.TemporaryDirectory() as td:
         assert not store.data.get("voiceSchedule")
 
     actual_voice_arrival=hud.datetime.now(hud.timezone.utc).isoformat().replace("+00:00","Z")
-app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol","timestamp":actual_voice_arrival})
+    app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol","timestamp":actual_voice_arrival})
     with app.voice_condition:
         assert any(row["cue"]=="carrier.jump" for row in app.voice_pending)
         assert any(row["cue"]=="carrier.cooldown_ready" for row in app.voice_pending)
