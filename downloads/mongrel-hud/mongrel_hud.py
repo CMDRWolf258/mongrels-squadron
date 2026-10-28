@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.11"
+APP_VERSION = "0.18.12"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -7878,8 +7878,10 @@ class MongrelHudApp:
             live = self.carrier_live_snapshot()
             status = live.get("status")
             if status != "unknown":
-                self._draw_text(canvas, 10 * scale, y, self.clip_line("STATUS  "+str(live.get("label") or ""), 61), scale, 11, HUD_AMBER, True)
-                y += 22 * scale
+                self._draw_text(canvas, 10 * scale, y, "STATUS", scale, 9, HUD_MUTED, True)
+                y += 18 * scale
+                self._draw_text(canvas, 10 * scale, y, self.clip_line(str(live.get("label") or "UNKNOWN"), 61), scale, 11, HUD_AMBER, True)
+                y += 23 * scale
                 if status == "plotted":
                     seconds = int(live.get("padRemainingSeconds") or 0)
                     m, ss = divmod(seconds, 60)
@@ -7903,7 +7905,11 @@ class MongrelHudApp:
         self._draw_text(canvas, 10 * scale, y, f"REMAINING  {journey['remainingJumps']} JUMPS · {journey['remainingDistance']:,.0f} LY", scale, 10, HUD_CYAN, True)
         y += 22 * scale
         self._draw_text(canvas, 10 * scale, y, f"TRITIUM  ~{journey['estimatedTritiumRemaining']:,.0f} t REQUIRED (EST.)", scale, 10, HUD_MUTED)
-        y += 23 * scale
+        y += 29 * scale
+        # Separate status heading prevents "STATUS ESTIMATED READY" from
+        # reading as one unbroken sentence on the transparent HUD.
+        self._draw_text(canvas, 10 * scale, y, "STATUS", scale, 9, HUD_MUTED, True)
+        y += 18 * scale
         # Live owner-carrier phases always outrank the journey's last cooldown.
         # A new jump may be plotted AFTER the selected route reached 2/2.
         live = self.carrier_live_snapshot()
@@ -7916,7 +7922,7 @@ class MongrelHudApp:
         clock = f"{hours:02d}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
         color = HUD_AMBER
         if has_live:
-            label = "STATUS  " + str(live.get("label") or "STATUS UNKNOWN")
+            label = str(live.get("label") or "UNKNOWN")
             if status in {"plotted", "lockdown", "transit", "estimated_cooldown", "cooldown"}:
                 label += " · " + clock
             elif status in {"ready", "estimated_ready"}:
@@ -7925,20 +7931,20 @@ class MongrelHudApp:
                 color = HUD_MUTED
         elif status in {"scheduled", "jump_expected", "estimated_cooldown"}:
             label = {
-                "scheduled": "STATUS  JUMP PLOTTED",
-                "jump_expected": "STATUS  IN TRANSIT (EST.)",
-                "estimated_cooldown": "STATUS  CARRIER COOLDOWN (EST.)",
+                "scheduled": "JUMP PLOTTED",
+                "jump_expected": "IN TRANSIT (EST.)",
+                "estimated_cooldown": "CARRIER COOLDOWN (EST.)",
             }[status] + " · " + clock
         elif status in {"estimated_ready", "ready"}:
-            label = ("STATUS  ESTIMATED READY · VERIFY CARRIER" if status == "estimated_ready"
-                     else "STATUS  COOLDOWN COMPLETE · READY TO JUMP")
+            label = ("ESTIMATED READY · VERIFY CARRIER" if status == "estimated_ready"
+                     else "COOLDOWN COMPLETE · READY TO JUMP")
             color = HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
         elif status == "cooldown":
-            label = "STATUS  CARRIER COOLDOWN · " + clock
+            label = "CARRIER COOLDOWN · " + clock
         else:
-            label = "STATUS  AWAITING CARRIER ACTIVITY"
+            label = "AWAITING CARRIER ACTIVITY"
             color = HUD_MUTED
-        self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 62), scale, 10, color, True)
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 62), scale, 11, color, True)
         y += 23 * scale
         if has_live and live.get("padStatus") == "upcoming":
             seconds = max(0, int(live.get("padRemainingSeconds") or 0))
