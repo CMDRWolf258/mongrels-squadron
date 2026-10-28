@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.9"
+APP_VERSION = "0.18.10"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1539,6 +1539,46 @@ def _carrier_journey_snapshot(journey: Any, now: datetime | None = None) -> dict
         result["cooldown"] = _carrier_cooldown(str(journey.get("completedAt") or ""), now=current)
         result["cooldown"]["estimated"] = str(journey.get("completedVia") or "") == "manual"
     return result
+
+
+
+def _normalize_saved_carrier_plan(route: Any, now: datetime | None = None) -> dict[str, Any]:
+    """Persist the actual ready jump manifest, not a 24h Spansh pointer.
+
+    The same strict waypoint validation used by START ROUTE prevents malformed
+    remote payloads from corrupting the locally persisted HUD state.
+    """
+    current = now or datetime.now(timezone.utc)
+    validated = _carrier_journey_create(route, "", current)
+    def tonne(key: str, upper: int) -> int:
+        value = route.get(key)
+        if isinstance(value, bool) or value is None:
+            return 0
+        try:
+            number = int(value)
+        except (ValueError, TypeError, OverflowError):
+            return 0
+        return number if number >= 0 and number <= upper else 0
+    rows = validated["waypoints"]
+    plan = {
+        "ok": True, "status": "ready", "routeType": "fleet_carrier",
+        "id": validated["id"], "source": validated["source"],
+        "destination": validated["destination"],
+        "waypoints": rows, "waypointCount": len(rows),
+        "totalDistance": validated["totalDistance"],
+        "totalTritiumUsed": validated["totalTritiumUsed"],
+        "restockStops": sum(1 for row in rows if row["mustRestock"]),
+        "departureRestockTritium": rows[0]["restockAmount"],
+        "plannedRestockTritium": sum(row["restockAmount"] for row in rows),
+        "usedCapacity": tonne("usedCapacity", 25000),
+        "tankFuel": tonne("tankFuel", 1000),
+        "storedTritium": tonne("storedTritium", 25000),
+        "determineTritium": route.get("determineTritium") is True,
+        "savedAt": current.isoformat().replace("+00:00", "Z"),
+    }
+    if len(json.dumps(plan, allow_nan=False, ensure_ascii=False)) > 200000:
+        raise ValueError("carrier_route_saved_plan_too_large")
+    return plan
 
 
 class LocalStore:
@@ -4275,6 +4315,45 @@ class MongrelHudApp:
         request = urllib.request.Request(MINING_HEALTH_URL, headers={"Accept": "application/json"}, method="GET")
         return request_scout_json(request, "mining_health_unavailable", timeout=15.0)
 
+
+    def saved_carrier_plan(self) -> dict[str, Any]:
+        """Local PC archive; GET only on first controller load, not each 1s poll."""
+        with self.store.lock:
+            plan = self.store.data.get("carrierSavedPlan")
+            pending = self.store.data.get("carrierPendingPlan")
+            return {
+                "ok": True,
+                "route": json.loads(json.dumps(plan, ensure_ascii=False)) if isinstance(plan, dict) else None,
+                "pending": dict(pending) if isinstance(pending, dict) else None,
+            }
+
+    def _remember_carrier_route(self, action: str, mode: str, response: dict[str, Any],
+                                *, source: str = "", destination: str = "") -> None:
+        if response.get("ok") is not True:
+            return
+        if action == "plot" and mode == "carrier" and response.get("status") == "pending":
+            identifier = str(response.get("id") or "")
+            if not re.fullmatch(r"[0-9a-fA-F-]{24,64}", identifier):
+                return
+            pending = {
+                "id": identifier,
+                "source": str(response.get("source") or source)[:140],
+                "destination": str(response.get("destination") or destination)[:140],
+                "savedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            }
+            with self.store.lock:
+                self.store.data["carrierPendingPlan"] = pending
+                self.store.save()
+        elif action == "check" and response.get("status") == "ready" and response.get("routeType") == "fleet_carrier":
+            plan = _normalize_saved_carrier_plan(response)
+            with self.store.lock:
+                self.store.data["carrierSavedPlan"] = plan
+                old = self.store.data.get("carrierPendingPlan") or {}
+                if isinstance(old, dict) and str(old.get("id") or "") == plan["id"]:
+                    self.store.data["carrierPendingPlan"] = None
+                self.store.save()
+
+
     def route_control(self, action: str, route_id: str = "", *, destination: str = "", efficiency: int = 60, mode: str = "neutron", source: str = "", used_capacity: Any = None, tank_fuel: Any = None, stored_tritium: Any = None, determine_tritium: bool = True) -> dict[str, Any]:
         """Paired-controller-only route command; credentials stay in Scout."""
         if action not in {"read", "start", "stop", "plot", "check", "copy"}:
@@ -4303,7 +4382,11 @@ class MongrelHudApp:
                 },
                 method="POST",
             )
-        return request_scout_json(request, "route_control_failed", timeout=18.0)
+        result = request_scout_json(request, "route_control_failed", timeout=18.0)
+        # A preview must survive a HUD/iPad restart even if the Spansh job
+        # expires after 24h; route progress remains in carrierJourney.
+        self._remember_carrier_route(action, mode, result, source=source, destination=destination)
+        return result
 
     def acknowledge_alerts(self, alert_ids: list[str]) -> dict[str, Any]:
         ids: list[str] = []
@@ -8368,12 +8451,15 @@ def make_handler(app: MongrelHudApp):
                 self.end_headers()
                 self.wfile.write(body)
                 return
-            if path in {"/api/state", "/api/route"}:
+            if path in {"/api/state", "/api/route", "/api/carrier-saved-route"}:
                 if not self.authorized():
                     self.send_json({"ok": False, "error": "pair_required"}, 401)
                     return
                 if path == "/api/state":
                     self.send_json(app.controller_state())
+                    return
+                if path == "/api/carrier-saved-route":
+                    self.send_json(app.saved_carrier_plan())
                     return
                 try:
                     route_id = str((parse_qs(urlparse(self.path).query).get("routeId") or [""])[0])
