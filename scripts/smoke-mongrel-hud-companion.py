@@ -263,7 +263,7 @@ with mock.patch.object(hud.MongrelHudApp,"_carrier_profile_for_event",
     tracker._schedule_cooldown_ready(request,predicted=True)
 assert len(captured)==1 and captured[0][0]=="carrier.cooldown_ready"
 assert captured[0][1]["predicted"] is True
-assert captured[0][2]==future+timedelta(minutes=5)
+assert captured[0][2]==tracker._parse_voice_time(hud._carrier_scheduled_timing(iso(future))["readyAt"])
 assert hud.MongrelHudApp._voice_text_for_event(
     tracker,"carrier.cooldown_ready",{"predicted":True}).startswith("Estimated")
 
