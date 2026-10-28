@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.11"
+assert hud.APP_VERSION=="0.18.12"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -97,12 +97,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.11"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.12"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.12"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.13"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.12",
+    "name":"Mongrel HUD Windows v0.18.13",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.12" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.13" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -392,6 +393,43 @@ assert live_app.carrier_live_snapshot()["status"]=="cooldown"
 assert live_app.carrier_live_snapshot()["estimated"] is False
 assert live_app.carrier_journey_snapshot()["completedIndex"]==2
 
+
+# Overlay typography: STATUS is its own muted heading, followed by the
+# actual dynamic carrier state on a separate line, even on completed routes.
+def captured_carrier_overlay(journey, live):
+    calls=[]
+    renderer=types.SimpleNamespace(
+        carrier_journey_snapshot=lambda:journey,
+        carrier_live_snapshot=lambda:live,
+        _draw_title=lambda *args: 24.0,
+        _draw_text=lambda canvas,x,y,value,scale,size,color,bold=False:
+            calls.append((str(value),float(y),int(size),color)),
+        clip_line=lambda value,max_chars:str(value)[:max_chars],
+    )
+    hud.MongrelHudApp._render_carrier_journey_canvas(renderer,None,1.0,False)
+    return calls
+
+finished={
+    "completedJumps":2,"totalJumps":2,"paused":False,"status":"completed",
+    "remainingJumps":0,"remainingDistance":0,"estimatedTritiumRemaining":0,
+    "nextSystem":"","completedVia":"journal","cooldown":{"status":"ready"},
+}
+ready_status={
+    "status":"estimated_ready","label":"ESTIMATED READY · VERIFY CARRIER",
+    "remainingSeconds":0,"estimated":True,"padStatus":"open",
+}
+seen=captured_carrier_overlay(finished,ready_status)
+heading=next(i for i,row in enumerate(seen) if row[0]=="STATUS")
+assert seen[heading][2]==9 and seen[heading][3]==hud.HUD_MUTED
+assert seen[heading+1][0]=="ESTIMATED READY · VERIFY CARRIER"
+assert seen[heading+1][1]>seen[heading][1]
+assert not any(row[0].startswith("STATUS  ") for row in seen)
+# Standalone carrier status, when no route is started, gets the same spacing.
+without_route=captured_carrier_overlay(None,{"status":"cancelled","label":"JUMP CANCELLED"})
+heading=next(i for i,row in enumerate(without_route) if row[0]=="STATUS")
+assert without_route[heading+1][0]=="JUMP CANCELLED"
+assert without_route[heading+1][1]>without_route[heading][1]
+
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
 nav=hud.great_circle_nav(0,0,0,1,6371000,0)
@@ -638,7 +676,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.11"
+    assert hud.APP_VERSION=="0.18.12"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
