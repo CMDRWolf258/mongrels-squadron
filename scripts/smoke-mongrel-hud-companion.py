@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.9"
+assert hud.APP_VERSION=="0.18.10"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -95,12 +95,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.6"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.11"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.10",
+    "name":"Mongrel HUD Windows v0.18.11",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.10" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.11" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -151,6 +152,48 @@ route={
         {"system":"Colonia","distance":400,"fuelUsed":90,"fuelInTank":816},
     ],
 }
+
+# Downloaded Spansh job IDs expire after 24h, so a ready carrier plan must be
+# stored as full local waypoint data and survive even an executable replacement.
+with tempfile.TemporaryDirectory() as carrier_td:
+    persisted=hud.LocalStore(Path(carrier_td)/"state.json")
+    archive_app=object.__new__(hud.MongrelHudApp)
+    archive_app.store=persisted
+    job_id=route["id"]
+    pending={"ok":True,"id":job_id,"status":"pending","source":"Diaba","destination":"Colonia"}
+    archive_app._remember_carrier_route("plot","carrier",pending)
+    assert archive_app.saved_carrier_plan()["pending"]["id"]==job_id
+    assert archive_app.saved_carrier_plan()["route"] is None
+    archive_app._remember_carrier_route("check","neutron",{**route,"ok":True,"tankFuel":1000,
+        "storedTritium":350,"usedCapacity":13000,"determineTritium":True})
+    saved_snapshot=archive_app.saved_carrier_plan()
+    assert saved_snapshot["pending"] is None
+    assert saved_snapshot["route"]["waypoints"][1]["system"]=="Test Carrier Stop"
+    assert saved_snapshot["route"]["totalTritiumUsed"]==184
+    assert saved_snapshot["route"]["tankFuel"]==1000
+    assert saved_snapshot["route"]["storedTritium"]==350
+    assert saved_snapshot["route"]["usedCapacity"]==13000
+    assert saved_snapshot["route"]["status"]=="ready"
+    # A second pending route NEVER discards the last successfully loaded plan.
+    archive_app._remember_carrier_route("plot","carrier",{"ok":True,"status":"pending",
+        "id":"abcdef01-1234-1234-1234-123456789012","source":"Sol","destination":"Beagle Point"})
+    assert archive_app.saved_carrier_plan()["route"]["id"]==job_id
+    # Simulate the same %LOCALAPPDATA%/MongrelHUD/state.json file after the HUD
+    # executable is updated, not just an in-memory app restart.
+    restored=hud.LocalStore(Path(carrier_td)/"state.json")
+    restored_app=object.__new__(hud.MongrelHudApp)
+    restored_app.store=restored
+    assert restored_app.saved_carrier_plan()["route"]["id"]==job_id
+    assert len(restored_app.saved_carrier_plan()["route"]["waypoints"])==3
+    assert restored_app.saved_carrier_plan()["pending"]["source"]=="Sol"
+    for invalid in ({**route,"status":"pending"}, {**route,"waypoints":[]},
+                    {**route,"waypoints":[{**route["waypoints"][0],"system":"wrong"}]+route["waypoints"][1:]}):
+        try:
+            hud._normalize_saved_carrier_plan(invalid)
+            raise AssertionError("An invalid carrier plan was saved")
+        except ValueError:
+            pass
+
 saved=types.SimpleNamespace(lock=threading.RLock(),data={},save=lambda:None)
 tracker=object.__new__(hud.MongrelHudApp)
 tracker.store=saved
@@ -526,7 +569,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.9"
+    assert hud.APP_VERSION=="0.18.10"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
