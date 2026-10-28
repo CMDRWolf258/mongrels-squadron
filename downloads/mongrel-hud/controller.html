@@ -5,6 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+.carrier-journey-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.carrier-journey-actions button{min-height:50px;border:1px solid #3d6876;border-radius:9px;background:#102b35;color:var(--text);font-size:.79rem;font-weight:800;padding:8px}
+.carrier-journey-actions button:disabled{opacity:.43}
+.carrier-journey-actions #carrierJourneyStart{border-color:var(--accent)}
+.carrier-journey-status{color:#bcdbe4;font-size:.87rem;margin:10px 0}
+.carrier-journey-progress{height:9px;background:#17343e;border-radius:10px;overflow:hidden;margin:10px 0}
+.carrier-journey-progress>span{display:block;background:#55d7ef;height:100%;transition:width .3s}
+.carrier-journey-cooldown{padding:10px 12px;border:1px solid #315a69;border-radius:9px;background:#0b2430;color:var(--muted);font-size:.84rem;margin:10px 0}
+.carrier-journey-cooldown.ready{color:#75e2a1;border-color:#347958}
+.carrier-journey-cooldown.flash{animation:carrier-ready-flash .7s step-end 8}
+@keyframes carrier-ready-flash{50%{background:#174932;color:#fff}}
+.carrier-waypoint.is-done{background:#0c2723;border-left:3px solid #55c68b;opacity:.85}
+.carrier-waypoint.is-done .wp-type{color:#75e2a1}
+.carrier-waypoint.is-next{background:#10303a;border-left:3px solid var(--accent)}
+.carrier-confirm{display:flex;align-items:center;gap:7px;min-height:44px;cursor:pointer;color:#bde9f3;font-size:.78rem;font-weight:800}
+.carrier-confirm input{width:28px;height:28px;min-width:28px;accent-color:#56cc9b;margin:0}
+.carrier-confirm input:disabled{opacity:.6}
+.carrier-waypoint-actions{display:flex;gap:8px;align-items:center}
+@media(max-width:620px){.carrier-journey-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.carrier-waypoint-actions{flex-direction:column;align-items:flex-start}}
+
 /* Independent responsive ship plotting: never inherit the old 100px column. */
 .ship-route-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 .ship-route-settings>div{min-width:0}
@@ -271,6 +291,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <div class="panel-control"><strong>Waypoint Signal</strong><button class="panel-toggle" type="button" data-panel-visible="navsignal">ON</button><select data-panel-scale="navsignal" aria-label="Waypoint Signal panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navsignal" aria-label="Waypoint Signal profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Fuel Status</strong><button class="panel-toggle" type="button" data-panel-visible="navfuel">ON</button><select data-panel-scale="navfuel" aria-label="Fuel Status panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navfuel" aria-label="Fuel Status profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Scout Network</strong><button class="panel-toggle" type="button" data-panel-visible="navscout">ON</button><select data-panel-scale="navscout" aria-label="Scout Network panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navscout" aria-label="Scout Network profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
+<div class="panel-control"><strong>Fleet Carrier Director</strong><button class="panel-toggle" type="button" data-panel-visible="navcarrier">ON</button><select data-panel-scale="navcarrier" aria-label="Fleet Carrier Director panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navcarrier" aria-label="Fleet Carrier Director profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 
   </div>
     </div>
@@ -335,6 +356,16 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <input id="carrierRouteJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Filled after plotting">
     <div class="layout-hint" id="carrierPlotStatus">No fleet carrier route plotted yet.</div>
     <div class="carrier-summary" id="carrierRouteSummary" aria-live="polite"></div>
+    <div class="carrier-journey-actions" role="group" aria-label="Carrier journey controls">
+      <button type="button" id="carrierJourneyStart">START ROUTE</button>
+      <button type="button" id="carrierJourneyPause">PAUSE</button>
+      <button type="button" id="carrierJourneyResume">RESUME</button>
+      <button type="button" id="carrierJourneyEnd">END ROUTE</button>
+    </div>
+    <div class="carrier-journey-status" id="carrierJourneyStatus" aria-live="polite">Start a loaded route to track jumps.</div>
+    <div class="carrier-journey-progress" id="carrierJourneyProgress"><span style="width:0%"></span></div>
+    <div class="carrier-journey-cooldown" id="carrierJourneyCooldown">Cooldown appears after a confirmed carrier jump.</div>
+    <p class="layout-hint">Scout advances only on a verified carrier jump, not your ship's jumps. When away or offline, mark the next stop manually.</p>
     <h3>CARRIER JUMP PLAN · TRITIUM ESTIMATES</h3>
     <div class="carrier-copy-notice" id="carrierCopyNotice" aria-live="polite">Tap COPY TO PC beside a stop to paste that system into Elite on Serenity.</div>
     <div class="route-manifest" id="carrierRouteManifest"><div class="layout-hint" style="padding:12px">Plot a carrier route, then select CHECK / LOAD RESULT to display its jumps.</div></div>
