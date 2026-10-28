@@ -135,6 +135,8 @@ schedule=hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(9,4,0))
 assert schedule["status"]=="scheduled" and schedule["remainingSeconds"]==5400
 assert schedule["readyAt"]=="2026-10-27T10:39:00Z"
 assert schedule["estimatedArrivalAt"]=="2026-10-27T10:35:15Z"
+# Seconds in a revised departure timestamp still align readiness to :00.
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:50Z",now=at(9,4,0))["readyAt"]=="2026-10-27T10:40:00Z"
 assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,34,30))["status"]=="jump_expected"
 assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,36,0))["status"]=="estimated_cooldown"
 assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,39,1))["status"]=="estimated_ready"
