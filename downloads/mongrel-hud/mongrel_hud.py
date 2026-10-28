@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.10"
+APP_VERSION = "0.18.11"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1463,6 +1463,92 @@ def _carrier_scheduled_timing(departure_at: str, *, now: datetime | None = None)
     }
 
 
+
+# Source: carrier docking lockdown occurs at T-minus 03:20 to scheduled
+# departure. Treat the countdown as estimated if Frontier updates the slot.
+CARRIER_PAD_LOCKDOWN_LEAD_SECONDS = 3 * 60 + 20
+
+
+def _carrier_live_status(record: Any, *, now: datetime | None = None) -> dict[str, Any]:
+    """Live owner-carrier phase, independent of the selected route's progress.
+
+    A scheduled jump estimates future phases but never proves arrival.
+    """
+    current = now or datetime.now(timezone.utc)
+    empty = {"status": "unknown", "label": "NO CURRENT CARRIER JUMP",
+             "detail": "Awaiting a carrier journal event", "estimated": False,
+             "flashReady": False, "remainingSeconds": None,
+             "padStatus": "unknown", "padRemainingSeconds": None,
+             "destinationSystem": "", "readyAt": None}
+    if not isinstance(record, dict):
+        return empty
+    destination = str(record.get("destinationSystem") or "")[:140]
+    cancelled = str(record.get("cancelledAt") or "")
+    arrival = str(record.get("arrivedAt") or "")
+    schedule = str(record.get("departureAt") or "")
+    output = dict(empty)
+    output["destinationSystem"] = destination
+    if cancelled:
+        try:
+            cancelled_at = datetime.fromisoformat(cancelled.replace("Z", "+00:00"))
+            if cancelled_at.tzinfo is None:
+                return empty
+            # Do not display an old cancellation indefinitely.
+            if current >= cancelled_at.astimezone(timezone.utc) + timedelta(minutes=15):
+                return empty
+        except ValueError:
+            return empty
+        output.update(status="cancelled", label="JUMP CANCELLED",
+                      detail="Carrier departure request cancelled", padStatus="open")
+        return output
+    if arrival:
+        cooldown = _carrier_cooldown(arrival, now=current)
+        if cooldown["status"] == "unknown":
+            return empty
+        output.update(cooldown)
+        output.update(
+            label=("COOLDOWN COMPLETE · READY TO JUMP"
+                   if cooldown["status"] == "ready" else "CARRIER COOLDOWN"),
+            detail="Confirmed CarrierJump",
+            estimated=False, padStatus="open")
+        return output
+    if not schedule:
+        return empty
+    timing = _carrier_scheduled_timing(schedule, now=current)
+    if timing["status"] == "unknown":
+        return empty
+    output.update(timing)
+    output["estimated"] = True
+    departure_at = datetime.fromisoformat(str(timing["departureAt"]).replace("Z", "+00:00"))
+    lock_at = departure_at - timedelta(seconds=CARRIER_PAD_LOCKDOWN_LEAD_SECONDS)
+    until_lock = math.ceil((lock_at - current).total_seconds())
+    if current < lock_at:
+        output.update(status="plotted", label="JUMP PLOTTED",
+                      detail="Scheduled departure · unverified",
+                      padStatus="upcoming", padRemainingSeconds=max(0, until_lock))
+    elif current < departure_at:
+        output.update(status="lockdown", label="PAD LOCKDOWN · JUMP IMMINENT",
+                      detail="Scheduled departure · unverified",
+                      padStatus="locked", padRemainingSeconds=0)
+    elif timing["status"] == "jump_expected":
+        output.update(status="transit", label="IN TRANSIT (EST.)",
+                      detail="Departure reached · arrival not verified",
+                      padStatus="locked", padRemainingSeconds=0)
+    elif timing["status"] == "estimated_cooldown":
+        output.update(status="estimated_cooldown", label="CARRIER COOLDOWN (EST.)",
+                      detail="Carrier arrival not verified",
+                      padStatus="open", padRemainingSeconds=0)
+    elif timing["status"] == "estimated_ready":
+        output.update(status="estimated_ready", label="ESTIMATED READY · VERIFY CARRIER",
+                      detail="Scheduled jump not independently confirmed",
+                      padStatus="open", padRemainingSeconds=0)
+    else:
+        output.update(status="unverified", label="JUMP STATUS UNVERIFIED",
+                      detail="No confirmed arrival received",
+                      padStatus="unknown", padRemainingSeconds=None)
+    return output
+
+
 def _carrier_route_identity(value: Any) -> str:
     name = str(value or "").strip()
     if not 2 <= len(name) <= 140 or not re.fullmatch(r"[\w .+()'-]{2,140}", name, re.UNICODE):
@@ -1794,9 +1880,98 @@ class MongrelHudApp:
                 ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
                 ledger["unclaimed"] = 0
                 self.store.save()
+        self._observe_carrier_live_event(event)
         self._observe_carrier_journey_event(event)
         self.handle_voice_event(event)
 
+
+
+
+    def carrier_live_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            record = self.store.data.get("carrierLive")
+            return _carrier_live_status(record)
+
+    def _observe_carrier_live_event(self, event: dict[str, Any]) -> None:
+        """Track the owner's actual carrier regardless of completed route.
+
+        Never infer a finished jump from DepartureTime, and never treat the
+        commander's FSDJump as a carrier event.
+        """
+        kind = str(event.get("type") or "")
+        if kind not in {"carrier.jump_request", "carrier.jump_cancelled", "carrier.jump"}:
+            return
+        raw_time = str(event.get("timestamp") or "")
+        try:
+            stamp = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                return
+            stamp = stamp.astimezone(timezone.utc)
+        except (ValueError, TypeError, OverflowError):
+            return
+        now = datetime.now(timezone.utc)
+        if stamp > now + timedelta(minutes=2):
+            return
+        if kind == "carrier.jump":
+            market_id = str(event.get("marketId") or event.get("carrierId") or "")
+        else:
+            market_id = str(event.get("carrierId") or "")
+        if not re.fullmatch(r"\d{4,24}", market_id):
+            return
+        owner = self.scout_state().get("ownerCarrier") or {}
+        known_id = str(owner.get("carrierId") or "") if isinstance(owner, dict) else ""
+        with self.store.lock:
+            saved = self.store.data.get("carrierLive")
+            record = dict(saved) if isinstance(saved, dict) else {}
+            saved_id = str(record.get("carrierId") or "")
+            # A new explicit CarrierJumpRequest is an owner action, but every
+            # arrival and cancellation needs an already known carrier match.
+            if kind == "carrier.jump_request":
+                if str(event.get("relationship") or "") != "owner":
+                    return
+                if known_id and market_id != known_id:
+                    return
+                if saved_id and market_id != saved_id and not known_id:
+                    return
+            elif market_id != (known_id or saved_id):
+                return
+            prior_time = str(record.get("eventAt") or "")
+            try:
+                prior = datetime.fromisoformat(prior_time.replace("Z", "+00:00"))
+                if prior.tzinfo is not None and stamp < prior.astimezone(timezone.utc):
+                    return
+            except ValueError:
+                pass
+            at = stamp.isoformat().replace("+00:00", "Z")
+            if kind == "carrier.jump_request":
+                departure = self._parse_voice_time(event.get("departureTime"))
+                destination = str(event.get("destinationSystem") or "").strip()
+                if (not destination or len(destination) > 140 or departure is None
+                        or departure < stamp or departure > stamp + timedelta(hours=6)):
+                    return
+                record = {
+                    "carrierId": market_id, "eventAt": at, "requestedAt": at,
+                    "destinationSystem": destination,
+                    "departureAt": departure.isoformat().replace("+00:00", "Z"),
+                    "arrivedAt": None, "cancelledAt": None,
+                }
+            elif kind == "carrier.jump_cancelled":
+                # Never erase status based on an unrelated or late cancellation.
+                if not record.get("departureAt") or not record.get("requestedAt"):
+                    return
+                record.update(eventAt=at, departureAt=None, cancelledAt=at)
+            else:
+                # CarrierJump is normally emitted when aboard the carrier.
+                # Preserve a standalone confirmed arrival even when the route
+                # has finished; it supersedes any pending schedule.
+                system = str(event.get("system") or "").strip()
+                if not system:
+                    return
+                record.update(carrierId=market_id, eventAt=at, arrivedAt=at,
+                              destinationSystem=system, departureAt=None,
+                              cancelledAt=None)
+            self.store.data["carrierLive"] = record
+            self.store.save()
 
 
     def carrier_journey_snapshot(self) -> dict[str, Any] | None:
@@ -5554,6 +5729,7 @@ class MongrelHudApp:
             "scout": state,
             "navigationArrival": self._arrival_for_controller(),
             "carrierJourney": self.carrier_journey_snapshot(),
+            "carrierLive": self.carrier_live_snapshot(),
             "sites": self.sites_for_current_body(),
             "miningLocations": self.mining_locations_for_current_body(),
             "activeLocationSignal": self.active_location_signal(),
