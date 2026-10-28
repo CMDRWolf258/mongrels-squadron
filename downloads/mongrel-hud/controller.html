@@ -1654,6 +1654,44 @@ el("routeMode").onchange=function(){renderRouteControls()};
 el("carrierDetermineTritium").onchange=renderCarrierRoute;
 el("carrierRouteJobId").oninput=renderCarrierRoute;
 
+
+async function sendCarrierJourney(action,extra){
+  var result=await api("/api/carrier-journey",Object.assign({action:action},extra||{}));
+  if(!result.ok)throw new Error(String(result.error||"carrier_journey_failed"));
+  state=state||{};
+  state.carrierJourney=result.carrierJourney||null;
+  renderCarrierRoute();
+}
+el("carrierJourneyStart").onclick=async function(){
+  if(!carrierRoute||carrierRoute.status!=="ready")return;
+  if(!confirm("Start tracking "+carrierRoute.destination+"? The departure system will be completed automatically."))return;
+  try{
+    await sendCarrierJourney("start",{route:carrierRoute});
+    setText(el("carrierPlotStatus"),"Carrier journey started. Starting system marked complete.");
+  }catch(e){setText(el("carrierPlotStatus"),"Could not start route · "+e.message)}
+};
+el("carrierJourneyPause").onclick=async function(){
+  try{await sendCarrierJourney("pause")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierJourneyResume").onclick=async function(){
+  try{await sendCarrierJourney("resume")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierJourneyEnd").onclick=async function(){
+  if(!confirm("End this carrier journey? Progress will be retained until the next route."))return;
+  try{await sendCarrierJourney("end")}catch(e){setText(el("carrierPlotStatus"),e.message)}
+};
+el("carrierRouteManifest").onchange=async function(event){
+  var checkbox=event.target,raw=checkbox&&checkbox.getAttribute&&checkbox.getAttribute("data-carrier-complete-index");
+  if(raw===null||raw===undefined||!checkbox.checked||!state||!state.carrierJourney)return;
+  var index=Number(raw),journey=state.carrierJourney;
+  if(!Number.isSafeInteger(index)||index!==Number(journey.completedIndex||0)+1||journey.status!=="active"||journey.paused)return;
+  try{
+    await sendCarrierJourney("confirm",{index:index});
+    setText(el("carrierPlotStatus"),"Manually confirmed "+journey.waypoints[index].system+
+      " · Cooldown is an estimate from the time you checked this stop.");
+  }catch(e){checkbox.checked=false;setText(el("carrierPlotStatus"),"Confirm arrival failed · "+e.message)}
+};
+
 el("carrierRouteManifest").onclick=async function(event){
   var button=event.target&&event.target.closest&&event.target.closest("[data-carrier-copy-index]");
   if(!button || button.disabled || !carrierRoute || carrierRoute.status!=="ready")return;
