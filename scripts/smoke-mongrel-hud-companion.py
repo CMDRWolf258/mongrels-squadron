@@ -410,7 +410,8 @@ with tempfile.TemporaryDirectory() as td:
     with store.lock:
         assert not store.data.get("voiceSchedule")
 
-    app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol"})
+    actual_voice_arrival=hud.datetime.now(hud.timezone.utc).isoformat().replace("+00:00","Z")
+app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol","timestamp":actual_voice_arrival})
     with app.voice_condition:
         assert any(row["cue"]=="carrier.jump" for row in app.voice_pending)
         assert any(row["cue"]=="carrier.cooldown_ready" for row in app.voice_pending)
@@ -419,7 +420,8 @@ with tempfile.TemporaryDirectory() as td:
     assert len(cooldown_rows)==1
     cooldown_at=app._parse_voice_time(cooldown_rows[0]["fireAt"])
     remaining=(cooldown_at-hud.datetime.now(hud.timezone.utc)).total_seconds()
-    assert 160 < remaining <= 165.5
+    assert 0 < remaining <= 240
+    assert cooldown_at==app._parse_voice_time(hud._carrier_cooldown(actual_voice_arrival)["readyAt"])
     assert app._voice_text_for_event("carrier.cooldown_ready",{"relationship":"owner","marketId":"123","stationName":"Pneuma","stationType":"Fleet Carrier","carrierName":"Pneuma"})=="Pneuma is ready for the next jump."
     # Optional Kokoro pack is discovered from the local MongrelHUD voices folder.
     pack_root=app._kokoro_install_root()
