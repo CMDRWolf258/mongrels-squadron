@@ -352,7 +352,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <button type="button" id="carrierPlot">PLOT CARRIER ROUTE</button>
       <button type="button" id="carrierCheck">CHECK / LOAD RESULT</button>
     </div>
-    <label for="carrierRouteJobId">Route ID (saved for this session; paste an earlier route ID to reload)</label>
+    <label for="carrierRouteJobId">Route ID (saved locally with the route; cloud job IDs may expire)</label>
     <input id="carrierRouteJobId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Filled after plotting">
     <div class="layout-hint" id="carrierPlotStatus">No fleet carrier route plotted yet.</div>
     <div class="carrier-summary" id="carrierRouteSummary" aria-live="polite"></div>
@@ -545,7 +545,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 (function(){
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
-var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="",carrierRoute=null,carrierRouteBusy=false;
+var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="",carrierRoute=null,carrierRouteBusy=false,carrierPlanRestoreStarted=false;
 var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0,groupScope:"",groupExpanded:Object.create(null),itemExpanded:Object.create(null)};
 var flaggedDepositToReview=null;
  var savedDepositScope="",savedDepositOpen=Object.create(null);
@@ -1499,7 +1499,41 @@ async function loadMiningBrowserCatalog(force,localOnly){
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function escapeAttr(v){return escapeHtml(v)}
-async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render()}catch(e){if(e.code==="pair_required")el("pair").classList.remove("hidden")}}
+
+async function restoreSavedCarrierPlan(){
+  // Local HUD filesystem state, not iPad browser storage or a 24-hour cloud job.
+  // Fetch once per paired controller session; the 1s state poll never re-fetches
+  // the full manifest or overwrites in-progress user edits.
+  if(carrierPlanRestoreStarted)return;
+  carrierPlanRestoreStarted=true;
+  try{
+    var saved=await api("/api/carrier-saved-route"),plan=saved&&saved.route,pending=saved&&saved.pending;
+    if(carrierRoute||carrierRouteBusy||String(el("carrierRouteJobId").value||"").trim())return;
+    if(plan&&plan.routeType==="fleet_carrier"&&plan.status==="ready"&&Array.isArray(plan.waypoints)){
+      carrierRoute=plan;
+      el("carrierRouteSource").value=String(plan.source||"");
+      el("carrierRouteDestination").value=String(plan.destination||"");
+      el("carrierUsedCapacity").value=String(plan.usedCapacity??"");
+      el("carrierTankFuel").value=String(plan.tankFuel??1000);
+      el("carrierStoredTritium").value=String(plan.storedTritium??0);
+      el("carrierDetermineTritium").checked=plan.determineTritium===true;
+      el("carrierRouteJobId").value=String(plan.id||"");
+      setText(el("carrierPlotStatus"),"Saved carrier route restored from this PC · "+plan.source+" → "+plan.destination+". Your jump plan survives HUD updates.");
+    }
+    if(pending&&/^[0-9a-fA-F-]{24,64}$/.test(String(pending.id||""))
+        &&(!plan||pending.id!==plan.id)){
+      el("carrierRouteJobId").value=String(pending.id);
+      setText(el("carrierPlotStatus"),(plan?"Previous saved jump plan restored. ":"")+
+        "Unloaded route request restored · "+String(pending.source||"")+" → "+String(pending.destination||"")+
+        ". Select CHECK / LOAD RESULT while the cloud job is still available.");
+    }
+    renderCarrierRoute();
+  }catch(e){
+    // An older HUD build may lack the saved-route endpoint. Never affect routes.
+    if(e&&e.code!=="not_found")setText(el("carrierPlotStatus"),"Saved-route restore unavailable · "+e.message);
+  }
+}
+async function load(force){if(!force&&(mutationPending||Date.now()<interactionUntil))return;var epoch=mutationEpoch;try{var next=await api("/api/state");if(epoch!==mutationEpoch||mutationPending)return;state=next;el("pair").classList.add("hidden");render();restoreSavedCarrierPlan()}catch(e){if(e.code==="pair_required")el("pair").classList.remove("hidden")}}
 async function mutate(path,body){
   holdRefresh(900);mutationEpoch++;mutationPending++;
   // A profile response includes layout state. Apply each response before the
@@ -1741,7 +1775,7 @@ el("carrierPlot").onclick=async function(){
       usedCapacity:usedCapacity,tankFuel:tankFuel,storedTritium:storedTritium,determineTritium:determineTritium});
     if(!result.ok)throw new Error(String(result.error||"carrier_plot_failed"));
     carrierRoute=null;el("carrierRouteJobId").value=String(result.id||"");
-    setText(el("carrierPlotStatus"),"Route submitted · "+source+" → "+destination+". Select CHECK / LOAD RESULT to retrieve the plan.");
+    setText(el("carrierPlotStatus"),"Route submitted · "+source+" → "+destination+". Job ID saved on this PC. Select CHECK / LOAD RESULT to retrieve and save the full plan.");
     el("carrierRouteManifest").textContent="Waiting for CHECK / LOAD RESULT selection. Tap the button above to fetch your route.";
     setText(el("carrierCopyNotice"),"Tap COPY TO PC beside any stop once the jump plan is loaded.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier plot failed · "+e.message)}
@@ -1758,7 +1792,7 @@ el("carrierCheck").onclick=async function(){
     if(result.routeType!=="fleet_carrier")throw new Error("This is a ship route, not a carrier route.");
     if(result.status==="ready"){
       carrierRoute=result;
-      setText(el("carrierPlotStatus"),"Carrier route loaded. Review each jump and estimated Tritium restock before departing.");
+      setText(el("carrierPlotStatus"),"Carrier route loaded and saved on this PC. Your plan will survive HUD updates.");
       setText(el("carrierCopyNotice"),"Tap COPY TO PC to place any stop in this PC's Windows clipboard.");
     }else setText(el("carrierPlotStatus"),"Route calculation in progress · select CHECK / LOAD RESULT again to refresh.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier result unavailable · "+e.message)}
