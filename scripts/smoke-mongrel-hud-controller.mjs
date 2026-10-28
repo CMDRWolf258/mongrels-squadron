@@ -455,15 +455,15 @@ async function drain(h, expected) {
     scheduledDepartureAt:'2026-10-27T10:34:00Z',
   }});
   h.controller.renderCarrierRoute();
-  assert.match(h.node('carrierJourneyCooldown').textContent,/SCHEDULED DEPARTURE/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/JUMP PLOTTED/);
   assert.match(h.node('carrierJourneyCooldown').textContent,/01:30:00/);
-  assert.match(h.node('carrierJourneyCooldown').textContent,/unverified/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/Estimate from journal schedule/);
   h.controller.setState({connected:true,carrierJourney:{
     ...activeJourney,cooldown:{status:'estimated_cooldown',estimated:true,
       remainingSeconds:225,readyAt:'2026-10-27T10:39:00Z'},
   }});
   h.controller.renderCarrierRoute();
-  assert.match(h.node('carrierJourneyCooldown').textContent,/ESTIMATED COOLDOWN/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/CARRIER COOLDOWN \(EST\.\)/);
   assert.match(h.node('carrierJourneyCooldown').textContent,/03:45/);
   h.controller.setState({connected:true,carrierJourney:{
     ...activeJourney,cooldown:{status:'estimated_ready',estimated:true,remainingSeconds:0,
@@ -474,6 +474,54 @@ async function drain(h, expected) {
   assert.match(h.node('carrierJourneyCooldown').textContent,/Confirm in Carrier Management/);
   assert.equal(h.node('carrierJourneyCooldown').classList.contains('ready'),true);
 
+  // Carrier phases are a distinct persistent feed, even if the old route
+  // is completed. New plotting must immediately replace an old ready status.
+  const completedJourney={
+    ...activeJourney,status:'completed',completedIndex:2,completedJumps:2,
+    remainingJumps:0,nextSystem:'',estimatedTritiumRemaining:0,
+    cooldown:{status:'ready',remainingSeconds:0,flashReady:false},
+  };
+  h.controller.setState({connected:true,carrierJourney:completedJourney,carrierLive:{
+    status:'plotted',label:'JUMP PLOTTED',remainingSeconds:1020,estimated:true,
+    padStatus:'upcoming',padRemainingSeconds:820,destinationSystem:'New System',
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/JUMP PLOTTED/);
+  assert.doesNotMatch(h.node('carrierJourneyCooldown').textContent,/COOLDOWN COMPLETE/);
+  assert.match(h.node('carrierPadLockdown').textContent,/PAD LOCKDOWN IN 13:40/);
+  assert.equal(h.node('carrierPadLockdown').classList.contains('active'),true);
+  h.controller.setState({connected:true,carrierJourney:completedJourney,carrierLive:{
+    status:'lockdown',label:'PAD LOCKDOWN · JUMP IMMINENT',remainingSeconds:200,
+    padStatus:'locked',padRemainingSeconds:0,estimated:true,
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/PAD LOCKDOWN/);
+  assert.match(h.node('carrierPadLockdown').textContent,/No landing or takeoff/);
+  h.controller.setState({connected:true,carrierJourney:completedJourney,carrierLive:{
+    status:'transit',label:'IN TRANSIT (EST.)',remainingSeconds:50,
+    padStatus:'locked',padRemainingSeconds:0,estimated:true,
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/IN TRANSIT/);
+  h.controller.setState({connected:true,carrierJourney:completedJourney,carrierLive:{
+    status:'cooldown',label:'CARRIER COOLDOWN',remainingSeconds:225,
+    padStatus:'open',estimated:false,
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/03:45/);
+  assert.equal(h.node('carrierPadLockdown').textContent,'');
+  h.controller.setState({connected:true,carrierJourney:completedJourney,carrierLive:{
+    status:'ready',label:'COOLDOWN COMPLETE · READY TO JUMP',remainingSeconds:0,
+    padStatus:'open',flashReady:true,estimated:false,
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/COOLDOWN COMPLETE/);
+  assert.equal(h.node('carrierJourneyCooldown').classList.contains('ready'),true);
+
+
+  // Return from the completed route status fixture to test sequential marking.
+  h.controller.setState({connected:true,carrierJourney:activeJourney});
+  h.controller.renderCarrierRoute();
   const checkbox={
     checked:true,
     getAttribute(key){return key==='data-carrier-complete-index'?'1':null},

@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.10"
+APP_VERSION = "0.18.11"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1463,6 +1463,92 @@ def _carrier_scheduled_timing(departure_at: str, *, now: datetime | None = None)
     }
 
 
+
+# Source: carrier docking lockdown occurs at T-minus 03:20 to scheduled
+# departure. Treat the countdown as estimated if Frontier updates the slot.
+CARRIER_PAD_LOCKDOWN_LEAD_SECONDS = 3 * 60 + 20
+
+
+def _carrier_live_status(record: Any, *, now: datetime | None = None) -> dict[str, Any]:
+    """Live owner-carrier phase, independent of the selected route's progress.
+
+    A scheduled jump estimates future phases but never proves arrival.
+    """
+    current = now or datetime.now(timezone.utc)
+    empty = {"status": "unknown", "label": "NO CURRENT CARRIER JUMP",
+             "detail": "Awaiting a carrier journal event", "estimated": False,
+             "flashReady": False, "remainingSeconds": None,
+             "padStatus": "unknown", "padRemainingSeconds": None,
+             "destinationSystem": "", "readyAt": None}
+    if not isinstance(record, dict):
+        return empty
+    destination = str(record.get("destinationSystem") or "")[:140]
+    cancelled = str(record.get("cancelledAt") or "")
+    arrival = str(record.get("arrivedAt") or "")
+    schedule = str(record.get("departureAt") or "")
+    output = dict(empty)
+    output["destinationSystem"] = destination
+    if cancelled:
+        try:
+            cancelled_at = datetime.fromisoformat(cancelled.replace("Z", "+00:00"))
+            if cancelled_at.tzinfo is None:
+                return empty
+            # Do not display an old cancellation indefinitely.
+            if current >= cancelled_at.astimezone(timezone.utc) + timedelta(minutes=15):
+                return empty
+        except ValueError:
+            return empty
+        output.update(status="cancelled", label="JUMP CANCELLED",
+                      detail="Carrier departure request cancelled", padStatus="open")
+        return output
+    if arrival:
+        cooldown = _carrier_cooldown(arrival, now=current)
+        if cooldown["status"] == "unknown":
+            return empty
+        output.update(cooldown)
+        output.update(
+            label=("COOLDOWN COMPLETE · READY TO JUMP"
+                   if cooldown["status"] == "ready" else "CARRIER COOLDOWN"),
+            detail="Confirmed CarrierJump",
+            estimated=False, padStatus="open")
+        return output
+    if not schedule:
+        return empty
+    timing = _carrier_scheduled_timing(schedule, now=current)
+    if timing["status"] == "unknown":
+        return empty
+    output.update(timing)
+    output["estimated"] = True
+    departure_at = datetime.fromisoformat(str(timing["departureAt"]).replace("Z", "+00:00"))
+    lock_at = departure_at - timedelta(seconds=CARRIER_PAD_LOCKDOWN_LEAD_SECONDS)
+    until_lock = math.ceil((lock_at - current).total_seconds())
+    if current < lock_at:
+        output.update(status="plotted", label="JUMP PLOTTED",
+                      detail="Scheduled departure · unverified",
+                      padStatus="upcoming", padRemainingSeconds=max(0, until_lock))
+    elif current < departure_at:
+        output.update(status="lockdown", label="PAD LOCKDOWN · JUMP IMMINENT",
+                      detail="Scheduled departure · unverified",
+                      padStatus="locked", padRemainingSeconds=0)
+    elif timing["status"] == "jump_expected":
+        output.update(status="transit", label="IN TRANSIT (EST.)",
+                      detail="Departure reached · arrival not verified",
+                      padStatus="locked", padRemainingSeconds=0)
+    elif timing["status"] == "estimated_cooldown":
+        output.update(status="estimated_cooldown", label="CARRIER COOLDOWN (EST.)",
+                      detail="Carrier arrival not verified",
+                      padStatus="open", padRemainingSeconds=0)
+    elif timing["status"] == "estimated_ready":
+        output.update(status="estimated_ready", label="ESTIMATED READY · VERIFY CARRIER",
+                      detail="Scheduled jump not independently confirmed",
+                      padStatus="open", padRemainingSeconds=0)
+    else:
+        output.update(status="unverified", label="JUMP STATUS UNVERIFIED",
+                      detail="No confirmed arrival received",
+                      padStatus="unknown", padRemainingSeconds=None)
+    return output
+
+
 def _carrier_route_identity(value: Any) -> str:
     name = str(value or "").strip()
     if not 2 <= len(name) <= 140 or not re.fullmatch(r"[\w .+()'-]{2,140}", name, re.UNICODE):
@@ -1794,9 +1880,98 @@ class MongrelHudApp:
                 ledger = self.store.data.setdefault("bounty", {"unclaimed": 0})
                 ledger["unclaimed"] = 0
                 self.store.save()
+        self._observe_carrier_live_event(event)
         self._observe_carrier_journey_event(event)
         self.handle_voice_event(event)
 
+
+
+
+    def carrier_live_snapshot(self) -> dict[str, Any]:
+        with self.store.lock:
+            record = self.store.data.get("carrierLive")
+            return _carrier_live_status(record)
+
+    def _observe_carrier_live_event(self, event: dict[str, Any]) -> None:
+        """Track the owner's actual carrier regardless of completed route.
+
+        Never infer a finished jump from DepartureTime, and never treat the
+        commander's FSDJump as a carrier event.
+        """
+        kind = str(event.get("type") or "")
+        if kind not in {"carrier.jump_request", "carrier.jump_cancelled", "carrier.jump"}:
+            return
+        raw_time = str(event.get("timestamp") or "")
+        try:
+            stamp = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                return
+            stamp = stamp.astimezone(timezone.utc)
+        except (ValueError, TypeError, OverflowError):
+            return
+        now = datetime.now(timezone.utc)
+        if stamp > now + timedelta(minutes=2):
+            return
+        if kind == "carrier.jump":
+            market_id = str(event.get("marketId") or event.get("carrierId") or "")
+        else:
+            market_id = str(event.get("carrierId") or "")
+        if not re.fullmatch(r"\d{4,24}", market_id):
+            return
+        owner = self.scout_state().get("ownerCarrier") or {}
+        known_id = str(owner.get("carrierId") or "") if isinstance(owner, dict) else ""
+        with self.store.lock:
+            saved = self.store.data.get("carrierLive")
+            record = dict(saved) if isinstance(saved, dict) else {}
+            saved_id = str(record.get("carrierId") or "")
+            # A new explicit CarrierJumpRequest is an owner action, but every
+            # arrival and cancellation needs an already known carrier match.
+            if kind == "carrier.jump_request":
+                if str(event.get("relationship") or "") != "owner":
+                    return
+                if known_id and market_id != known_id:
+                    return
+                if saved_id and market_id != saved_id and not known_id:
+                    return
+            elif market_id != (known_id or saved_id):
+                return
+            prior_time = str(record.get("eventAt") or "")
+            try:
+                prior = datetime.fromisoformat(prior_time.replace("Z", "+00:00"))
+                if prior.tzinfo is not None and stamp < prior.astimezone(timezone.utc):
+                    return
+            except ValueError:
+                pass
+            at = stamp.isoformat().replace("+00:00", "Z")
+            if kind == "carrier.jump_request":
+                departure = self._parse_voice_time(event.get("departureTime"))
+                destination = str(event.get("destinationSystem") or "").strip()
+                if (not destination or len(destination) > 140 or departure is None
+                        or departure < stamp or departure > stamp + timedelta(hours=6)):
+                    return
+                record = {
+                    "carrierId": market_id, "eventAt": at, "requestedAt": at,
+                    "destinationSystem": destination,
+                    "departureAt": departure.isoformat().replace("+00:00", "Z"),
+                    "arrivedAt": None, "cancelledAt": None,
+                }
+            elif kind == "carrier.jump_cancelled":
+                # Never erase status based on an unrelated or late cancellation.
+                if not record.get("departureAt") or not record.get("requestedAt"):
+                    return
+                record.update(eventAt=at, departureAt=None, cancelledAt=at)
+            else:
+                # CarrierJump is normally emitted when aboard the carrier.
+                # Preserve a standalone confirmed arrival even when the route
+                # has finished; it supersedes any pending schedule.
+                system = str(event.get("system") or "").strip()
+                if not system:
+                    return
+                record.update(carrierId=market_id, eventAt=at, arrivedAt=at,
+                              destinationSystem=system, departureAt=None,
+                              cancelledAt=None)
+            self.store.data["carrierLive"] = record
+            self.store.save()
 
 
     def carrier_journey_snapshot(self) -> dict[str, Any] | None:
@@ -5554,6 +5729,7 @@ class MongrelHudApp:
             "scout": state,
             "navigationArrival": self._arrival_for_controller(),
             "carrierJourney": self.carrier_journey_snapshot(),
+            "carrierLive": self.carrier_live_snapshot(),
             "sites": self.sites_for_current_body(),
             "miningLocations": self.mining_locations_for_current_body(),
             "activeLocationSignal": self.active_location_signal(),
@@ -7698,56 +7874,93 @@ class MongrelHudApp:
         y = self._draw_title(canvas, "FLEET CARRIER DIRECTOR", scale, width)
         if not journey or journey.get("status") == "ended":
             self._draw_text(canvas, 10 * scale, y, "NO ACTIVE CARRIER ROUTE", scale, 11, HUD_MUTED, True)
-            return width, round(y + 30 * scale)
+            y += 24 * scale
+            live = self.carrier_live_snapshot()
+            status = live.get("status")
+            if status != "unknown":
+                self._draw_text(canvas, 10 * scale, y, self.clip_line("STATUS  "+str(live.get("label") or ""), 61), scale, 11, HUD_AMBER, True)
+                y += 22 * scale
+                if status == "plotted":
+                    seconds = int(live.get("padRemainingSeconds") or 0)
+                    m, ss = divmod(seconds, 60)
+                    self._draw_text(canvas, 10 * scale, y, f"PAD LOCKDOWN IN {m:02d}:{ss:02d} · EST.", scale, 10, HUD_AMBER, True)
+                    y += 20 * scale
+                elif live.get("padStatus") == "locked":
+                    self._draw_text(canvas, 10 * scale, y, "PADS LOCKED · NO DOCKING (EST.)", scale, 10, HUD_AMBER, True)
+                    y += 20 * scale
+            return width, round(y + 9 * scale)
         completed, total = journey["completedJumps"], journey["totalJumps"]
         paused = journey.get("paused")
         state = "ROUTE COMPLETED" if journey.get("status") == "completed" else "ROUTE PAUSED" if paused else "ROUTE ACTIVE"
         self._draw_text(canvas, 10 * scale, y, state + f"  ·  {completed}/{total} JUMPS", scale, 11, HUD_GREEN if state == "ROUTE COMPLETED" else HUD_AMBER if paused else HUD_CYAN, True)
         y += 24 * scale
-        self._draw_text(canvas, 10 * scale, y, self.clip_line("NEXT  "+str(journey.get("nextSystem") or "DESTINATION REACHED"), 52), scale, 13, HUD_WHITE, True)
+        live_destination = self.carrier_live_snapshot()
+        new_target = (live_destination.get("destinationSystem") or "") if live_destination.get("status") in {"plotted", "lockdown", "transit", "estimated_cooldown"} else ""
+        next_label = ("CARRIER TARGET  " + new_target if journey.get("status") == "completed" and new_target
+                      else "NEXT  " + str(journey.get("nextSystem") or "DESTINATION REACHED"))
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(next_label, 52), scale, 13, HUD_WHITE, True)
         y += 29 * scale
         self._draw_text(canvas, 10 * scale, y, f"REMAINING  {journey['remainingJumps']} JUMPS · {journey['remainingDistance']:,.0f} LY", scale, 10, HUD_CYAN, True)
         y += 22 * scale
         self._draw_text(canvas, 10 * scale, y, f"TRITIUM  ~{journey['estimatedTritiumRemaining']:,.0f} t REQUIRED (EST.)", scale, 10, HUD_MUTED)
         y += 23 * scale
-        cooldown = journey.get("cooldown") or {}
+        # Live owner-carrier phases always outrank the journey's last cooldown.
+        # A new jump may be plotted AFTER the selected route reached 2/2.
+        live = self.carrier_live_snapshot()
+        has_live = live.get("status") != "unknown"
+        cooldown = live if has_live else (journey.get("cooldown") or {})
         status = cooldown.get("status")
-        if status in {"scheduled", "jump_expected", "estimated_cooldown"}:
-            remaining = int(cooldown.get("remainingSeconds") or 0)
-            hours, remainder = divmod(remaining, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            countdown = f"{hours:02d}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes:02d}:{seconds:02d}"
-            title = {
-                "scheduled": "DEPARTURE SCHEDULED",
-                "jump_expected": "JUMP IN PROGRESS (EST.)",
-                "estimated_cooldown": "COOLDOWN (EST.)",
-            }[status]
-            label, color = f"{title} · {countdown}", HUD_AMBER
-        elif status == "estimated_ready":
-            label, color = "ESTIMATED READY · CHECK CARRIER", HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
-        elif status == "unverified":
-            label, color = "CARRIER ARRIVAL NOT VERIFIED", HUD_AMBER
+        remaining = max(0, int(cooldown.get("remainingSeconds") or 0))
+        hours, rem = divmod(remaining, 3600)
+        minutes, secs = divmod(rem, 60)
+        clock = f"{hours:02d}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
+        color = HUD_AMBER
+        if has_live:
+            label = "STATUS  " + str(live.get("label") or "STATUS UNKNOWN")
+            if status in {"plotted", "lockdown", "transit", "estimated_cooldown", "cooldown"}:
+                label += " · " + clock
+            elif status in {"ready", "estimated_ready"}:
+                color = HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
+            elif status == "cancelled":
+                color = HUD_MUTED
+        elif status in {"scheduled", "jump_expected", "estimated_cooldown"}:
+            label = {
+                "scheduled": "STATUS  JUMP PLOTTED",
+                "jump_expected": "STATUS  IN TRANSIT (EST.)",
+                "estimated_cooldown": "STATUS  CARRIER COOLDOWN (EST.)",
+            }[status] + " · " + clock
+        elif status in {"estimated_ready", "ready"}:
+            label = ("STATUS  ESTIMATED READY · VERIFY CARRIER" if status == "estimated_ready"
+                     else "STATUS  COOLDOWN COMPLETE · READY TO JUMP")
+            color = HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
         elif status == "cooldown":
-            mins, secs = divmod(int(cooldown["remainingSeconds"]), 60)
-            label, color = f"COOLDOWN  {mins:02d}:{secs:02d}  ·  NEXT JUMP LOCKED", HUD_AMBER
-        elif status == "ready":
-            label, color = "COOLDOWN COMPLETE · READY TO JUMP", HUD_GREEN if not cooldown.get("flashReady") or flash_on else HUD_WHITE
-        elif completed == 0:
-            label, color = "READY TO PLAN FIRST JUMP · CHECK CARRIER", HUD_MUTED
+            label = "STATUS  CARRIER COOLDOWN · " + clock
         else:
-            label, color = "COOLDOWN TIME UNKNOWN", HUD_MUTED
-        self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 59), scale, 11, color, True)
-        y += 22 * scale
+            label = "STATUS  AWAITING CARRIER ACTIVITY"
+            color = HUD_MUTED
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(label, 62), scale, 10, color, True)
+        y += 23 * scale
+        if has_live and live.get("padStatus") == "upcoming":
+            seconds = max(0, int(live.get("padRemainingSeconds") or 0))
+            h, rem = divmod(seconds, 3600)
+            m, ss = divmod(rem, 60)
+            countdown = f"{h:02d}:{m:02d}:{ss:02d}" if h else f"{m:02d}:{ss:02d}"
+            pad_text = "PAD LOCKDOWN IN " + countdown + " · EST."
+            self._draw_text(canvas, 10 * scale, y, pad_text, scale, 10, HUD_AMBER, True)
+            y += 20 * scale
+        elif has_live and live.get("padStatus") == "locked":
+            self._draw_text(canvas, 10 * scale, y, "PADS LOCKED · NO DOCKING (EST.)", scale, 10, HUD_AMBER, True)
+            y += 20 * scale
         if cooldown.get("estimated"):
-            note, color = "ESTIMATED FROM JOURNAL PLAN · NOT ARRIVAL PROOF", HUD_AMBER
-        elif journey.get("completedVia") == "manual" and completed:
-            note, color = "COOLDOWN ESTIMATED FROM MANUAL CONFIRM TIME", HUD_AMBER
-        elif completed:
-            note, color = "COOLDOWN FROM CONFIRMED CARRIER JUMP", HUD_MUTED
+            note, note_color = "TIMES BASED ON JOURNAL SCHEDULE · UNVERIFIED", HUD_MUTED
+        elif journey.get("completedVia") == "manual" and completed and not has_live:
+            note, note_color = "COOLDOWN ESTIMATED FROM MANUAL CONFIRM TIME", HUD_AMBER
+        elif status in {"cooldown", "ready"} and completed:
+            note, note_color = "COOLDOWN FROM CONFIRMED CARRIER JUMP", HUD_MUTED
         else:
-            note, color = "", HUD_MUTED
+            note, note_color = "", HUD_MUTED
         if note:
-            self._draw_text(canvas, 10 * scale, y, note, scale, 8, color)
+            self._draw_text(canvas, 10 * scale, y, note, scale, 8, note_color)
             y += 15 * scale
         return width, round(y + 9 * scale)
 

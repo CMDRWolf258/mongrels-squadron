@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+.carrier-pad-lockdown{margin:6px 0 10px;color:#e8bb67;font-weight:700;font-size:.83rem;min-height:0}
+.carrier-pad-lockdown.active{border-left:3px solid #e8bb67;padding:6px 10px;background:#251e13;border-radius:5px}
+
 .carrier-journey-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
 .carrier-journey-actions button{min-height:50px;border:1px solid #3d6876;border-radius:9px;background:#102b35;color:var(--text);font-size:.79rem;font-weight:800;padding:8px}
 .carrier-journey-actions button:disabled{opacity:.43}
@@ -364,7 +367,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     </div>
     <div class="carrier-journey-status" id="carrierJourneyStatus" aria-live="polite">Start a loaded route to track jumps.</div>
     <div class="carrier-journey-progress" id="carrierJourneyProgress"><span style="width:0%"></span></div>
-    <div class="carrier-journey-cooldown" id="carrierJourneyCooldown">Cooldown appears after a confirmed carrier jump.</div>
+    <div class="carrier-journey-cooldown" id="carrierJourneyCooldown" aria-live="polite">Awaiting carrier status.</div>
+    <div class="carrier-pad-lockdown" id="carrierPadLockdown" aria-live="polite"></div>
     <p class="layout-hint">Scout advances only on a verified carrier jump, not your ship's jumps. When away or offline, mark the next stop manually.</p>
     <h3>CARRIER JUMP PLAN · TRITIUM ESTIMATES</h3>
     <div class="carrier-copy-notice" id="carrierCopyNotice" aria-live="polite">Tap COPY TO PC beside a stop to paste that system into Elite on Serenity.</div>
@@ -643,6 +647,47 @@ async function waitForVoiceTest(requestId,label){
   el("voiceNotice").textContent=label+" is still processing · see voice runtime";
   return false;
 }
+function carrierCountdown(seconds){
+  seconds=Math.max(0,Math.ceil(Number(seconds||0)));
+  var hh=Math.floor(seconds/3600),mm=Math.floor((seconds%3600)/60),ss=seconds%60;
+  return (hh?String(hh).padStart(2,"0")+":":"")+String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+}
+function renderCarrierStatus(){
+  // Owner carrier live status takes precedence even if the previously
+  // selected Fleet Carrier journey has already reached its last stop.
+  var live=state&&state.carrierLive||{};
+  var journey=state&&state.carrierJourney||{};
+  var hasLive=!!(live.status&&live.status!=="unknown");
+  var cd=hasLive?live:journey.cooldown||{};
+  var status=String(cd.status||"unknown");
+  var name="",time=carrierCountdown(cd.remainingSeconds),estimated=cd.estimated===true;
+  if(hasLive){
+    name=String(live.label||"CARRIER STATUS UNKNOWN");
+    if(["plotted","lockdown","transit","estimated_cooldown","cooldown"].includes(status))name+=" · "+time;
+  }else if(status==="scheduled")name="JUMP PLOTTED · "+time+" to departure";
+  else if(status==="jump_expected")name="IN TRANSIT (EST.) · "+time;
+  else if(status==="estimated_cooldown")name="CARRIER COOLDOWN (EST.) · "+time;
+  else if(status==="estimated_ready")name="ESTIMATED READY · Confirm in Carrier Management";
+  else if(status==="unverified")name="JUMP STATUS UNVERIFIED";
+  else if(status==="cooldown")name="CARRIER COOLDOWN · "+time;
+  else if(status==="ready")name="COOLDOWN COMPLETE · READY TO JUMP";
+  else name="No scheduled carrier jump · awaiting carrier status";
+  if(estimated&&["plotted","lockdown","transit","estimated_cooldown","scheduled","jump_expected"].includes(status))
+    name+=" · Estimate from journal schedule";
+  else if(!hasLive&&journey.completedVia==="manual"&&journey.completedIndex>0)
+    name+=" · Approximate (manual confirmation time)";
+  var box=el("carrierJourneyCooldown");
+  setText(box,name);
+  box.classList.toggle("ready",status==="ready"||status==="estimated_ready");
+  box.classList.toggle("flash",(status==="ready"||status==="estimated_ready")&&cd.flashReady===true);
+  var pad=el("carrierPadLockdown"),padText="";
+  if(hasLive&&live.padStatus==="upcoming")
+    padText="PAD LOCKDOWN IN "+carrierCountdown(live.padRemainingSeconds)+" · Estimated from scheduled departure";
+  else if(hasLive&&live.padStatus==="locked")
+    padText="PAD LOCKDOWN ACTIVE · No landing or takeoff (estimated)";
+  setText(pad,padText);
+  pad.classList.toggle("active",!!padText);
+}
 function renderCarrierRoute(){
   var journey=(state&&state.carrierJourney)||null;
   var tracking=!!(journey&&journey.status!=="ended");
@@ -658,6 +703,7 @@ function renderCarrierRoute(){
   el("carrierJourneyPause").disabled=!tracking||journey.status!=="active"||journey.paused;
   el("carrierJourneyResume").disabled=!tracking||journey.status!=="active"||!journey.paused;
   el("carrierJourneyEnd").disabled=!tracking||journey.status==="completed";
+  renderCarrierStatus();
   if(!ready){
     if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
     setText(el("carrierJourneyStatus"),"No active carrier journey. Load a route and select START ROUTE.");
@@ -686,27 +732,6 @@ function renderCarrierRoute(){
   var fill='<span style="width:'+percent.toFixed(1)+'%"></span>';
   if(el("carrierJourneyProgress").innerHTML!==fill)el("carrierJourneyProgress").innerHTML=fill;
   setText(el("carrierJourneyStatus"),tracking?(journey.status==="completed"?"ARRIVED · All carrier jumps complete":(journey.paused?"PAUSED · ":"ACTIVE · ")+journey.completedJumps+" / "+journey.totalJumps+" jumps · Next: "+journey.nextSystem):"Not tracking · Select START ROUTE to activate this jump plan.");
-  var cd=tracking?journey.cooldown||{}:{},coolText="Cooldown begins after a jump is scheduled or confirmed.";
-  var sec=Math.max(0,Number(cd.remainingSeconds||0));
-  var hh=Math.floor(sec/3600),mm=Math.floor((sec%3600)/60),ss=sec%60;
-  var remainingClock=(hh?String(hh).padStart(2,"0")+":":"")+String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
-  if(tracking){
-    if(cd.status==="scheduled")coolText="SCHEDULED DEPARTURE · "+remainingClock+" remaining";
-    else if(cd.status==="jump_expected")coolText="JUMP EXPECTED IN PROGRESS · ~"+remainingClock+" to arrival";
-    else if(cd.status==="estimated_cooldown")coolText="ESTIMATED COOLDOWN · "+remainingClock+" until next jump";
-    else if(cd.status==="estimated_ready")coolText="ESTIMATED READY · Confirm in Carrier Management";
-    else if(cd.status==="unverified")coolText="Scheduled jump time passed · Arrival not verified";
-    else if(cd.status==="cooldown")coolText="CARRIER COOLDOWN · "+remainingClock+" until next jump";
-    else if(cd.status==="ready")coolText="COOLDOWN COMPLETE · READY TO JUMP";
-    else if(completed>0)coolText="Cooldown timing unavailable";
-    if(cd.estimated===true&&["scheduled","jump_expected","estimated_cooldown"].includes(cd.status))
-      coolText+=" · Based on journal schedule (unverified)";
-    else if(journey.completedVia==="manual"&&completed>0&&!journey.scheduledDepartureAt)
-      coolText+=" · Approximate (manual confirmation time)";
-  }
-  var cdNode=el("carrierJourneyCooldown");setText(cdNode,coolText);
-  cdNode.classList.toggle("ready",cd.status==="ready"||cd.status==="estimated_ready");
-  cdNode.classList.toggle("flash",["ready","estimated_ready"].includes(cd.status)&&cd.flashReady===true);
   var html=rows.map(function(w,i){
     var done=tracking&&i<=completed,next=tracking&&i===completed+1;
     var note=done?"COMPLETE":i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";
