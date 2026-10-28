@@ -8179,7 +8179,10 @@ def make_handler(app: MongrelHudApp):
 
         def json_body(self) -> dict[str, Any]:
             try:
-                length = min(int(self.headers.get("Content-Length", "0")), 65536)
+                # A 512-stop Fleet Carrier route can exceed 64 KB; other commands keep
+                # their original, tighter body limit.
+                cap = 262144 if urlparse(self.path).path == "/api/carrier-journey" else 65536
+                length = min(int(self.headers.get("Content-Length", "0")), cap)
                 value = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
                 return value if isinstance(value, dict) else {}
             except Exception:
