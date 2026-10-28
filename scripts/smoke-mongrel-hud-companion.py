@@ -187,6 +187,19 @@ request={
     "destinationSystem":"Test Carrier Stop","departureTime":iso(future),
     "timestamp":iso(clock),
 }
+
+# First request can establish owner-carrier identity when CarrierStats was not
+# seen before START ROUTE (common when already exploring in the Caspian).
+new_store=types.SimpleNamespace(lock=threading.RLock(),data={
+    "carrierJourney":hud._carrier_journey_create(route,"",clock-timedelta(seconds=3)),
+},save=lambda:None)
+new_tracker=object.__new__(hud.MongrelHudApp)
+new_tracker.store=new_store
+new_tracker._observe_carrier_journey_event(request)
+assert new_store.data["carrierJourney"]["carrierId"]=="3700005632"
+assert new_tracker.carrier_journey_snapshot()["cooldown"]["status"]=="scheduled"
+assert new_tracker.carrier_journey_snapshot()["completedIndex"]==0
+
 tracker._observe_carrier_journey_event({**request,"carrierId":"3700001111"})
 assert not tracker.carrier_journey_snapshot().get("scheduledDepartureAt")
 tracker._observe_carrier_journey_event({**request,"destinationSystem":"Wrong Stop"})
