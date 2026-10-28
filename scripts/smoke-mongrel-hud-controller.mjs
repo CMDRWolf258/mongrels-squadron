@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderCarrierRoute,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -448,6 +448,32 @@ async function drain(h, expected) {
   assert.match(h.node('carrierRouteManifest').innerHTML,/data-carrier-complete-index="1"/);
   assert.match(h.node('carrierRouteManifest').innerHTML,/MARK ARRIVED/);
   assert.match(h.node('carrierJourneyStatus').textContent,/0 \/ 2 jumps/);
+
+  h.controller.setState({connected:true,carrierJourney:{
+    ...activeJourney,cooldown:{status:'scheduled',estimated:true,remainingSeconds:5400,
+      departureAt:'2026-10-27T10:34:00Z'},
+    scheduledDepartureAt:'2026-10-27T10:34:00Z',
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/SCHEDULED DEPARTURE/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/01:30:00/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/unverified/);
+  h.controller.setState({connected:true,carrierJourney:{
+    ...activeJourney,cooldown:{status:'estimated_cooldown',estimated:true,
+      remainingSeconds:225,readyAt:'2026-10-27T10:39:00Z'},
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/ESTIMATED COOLDOWN/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/03:45/);
+  h.controller.setState({connected:true,carrierJourney:{
+    ...activeJourney,cooldown:{status:'estimated_ready',estimated:true,remainingSeconds:0,
+      flashReady:true,readyAt:'2026-10-27T10:39:00Z'},
+  }});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierJourneyCooldown').textContent,/ESTIMATED READY/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/Confirm in Carrier Management/);
+  assert.equal(h.node('carrierJourneyCooldown').classList.contains('ready'),true);
+
   const checkbox={
     checked:true,
     getAttribute(key){return key==='data-carrier-complete-index'?'1':null},
