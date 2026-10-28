@@ -2498,6 +2498,8 @@ class MongrelHudApp:
         return selected
 
     def _voice_text_for_event(self, cue: str, event: dict[str, Any]) -> str:
+        if cue == "carrier.cooldown_ready" and event.get("predicted") is True:
+            return "Estimated carrier cooldown complete. Please verify availability in Carrier Management."
         settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(self._carrier_profile_for_event(event)))
         row = (settings.get("cues") or {}).get(cue) or {}
         phrase = self._dialogue_phrase(cue, event, row)
@@ -2526,7 +2528,7 @@ class MongrelHudApp:
 
     @staticmethod
     def _voice_schedule_context(event: dict[str, Any]) -> dict[str, Any]:
-        allowed = ("relationship", "carrierId", "marketId", "stationName", "destinationSystem", "system", "landingPad", "minutes", "carrierName")
+        allowed = ("relationship", "carrierId", "marketId", "stationName", "destinationSystem", "system", "landingPad", "minutes", "carrierName", "predicted")
         out = {key: event.get(key) for key in allowed if event.get(key) is not None}
         return out
 
@@ -2664,15 +2666,27 @@ class MongrelHudApp:
             fire_at = datetime.fromtimestamp(departure.timestamp() - lead, tz=timezone.utc)
             self._queue_scheduled_voice(cue, context, fire_at)
 
-    def _schedule_cooldown_ready(self, event: dict[str, Any]) -> None:
-        settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(self._carrier_profile_for_event(event)))
+    def _schedule_cooldown_ready(self, event: dict[str, Any], *, predicted: bool = False) -> None:
+        profile = self._carrier_profile_for_event(event)
+        settings = self.voice_settings_snapshot(self._carrier_voice_profile_key(profile))
         row = (settings.get("cues") or {}).get("carrier.cooldown_ready") or {}
         if not settings.get("enabled") or not settings.get("carrierPa") or not row.get("enabled"):
             return
-        delay = max(0.0, min(900.0, float(row.get("offsetSeconds") or 0.0)))
+        if predicted:
+            # Journal DepartureTime already contains server-load-dependent wait.
+            departure = self._parse_voice_time(event.get("departureTime"))
+            if departure is None:
+                return
+            fire_at = departure + timedelta(minutes=5)
+        else:
+            completed = str(event.get("timestamp") or "")
+            verified = _carrier_cooldown(completed)
+            fire_at = self._parse_voice_time(verified.get("readyAt"))
+            if fire_at is None:
+                return
         context = self._voice_schedule_context(event)
         context["carrierName"] = self._carrier_voice_name(event)
-        fire_at = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + delay, tz=timezone.utc)
+        context["predicted"] = predicted
         self._queue_scheduled_voice("carrier.cooldown_ready", context, fire_at)
 
     def handle_voice_event(self, event: dict[str, Any]) -> None:
@@ -2696,10 +2710,15 @@ class MongrelHudApp:
         elif cue == "carrier.jump_request":
             self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready", carrier_key=carrier_key)
             self._schedule_departure_countdowns(event)
+            # Owner-only: planned readiness is explicitly announced as an estimate.
+            owner = self.scout_state().get("ownerCarrier") or {}
+            if (isinstance(owner, dict) and str(owner.get("carrierId") or "")
+                    and str(owner.get("carrierId")) == str(event.get("carrierId") or "")):
+                self._schedule_cooldown_ready(event, predicted=True)
         elif cue == "carrier.jump_cancelled":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready", carrier_key=carrier_key)
         elif cue == "carrier.jump":
-            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", carrier_key=carrier_key)
+            self._cancel_voice_cues("carrier.jump_request", "carrier.countdown_10", "carrier.countdown_5", "carrier.cooldown_ready", carrier_key=carrier_key)
             self._schedule_cooldown_ready(event)
 
         self._queue_configured_voice(cue, event)
