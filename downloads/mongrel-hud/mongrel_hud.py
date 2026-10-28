@@ -7894,7 +7894,11 @@ class MongrelHudApp:
         state = "ROUTE COMPLETED" if journey.get("status") == "completed" else "ROUTE PAUSED" if paused else "ROUTE ACTIVE"
         self._draw_text(canvas, 10 * scale, y, state + f"  ·  {completed}/{total} JUMPS", scale, 11, HUD_GREEN if state == "ROUTE COMPLETED" else HUD_AMBER if paused else HUD_CYAN, True)
         y += 24 * scale
-        self._draw_text(canvas, 10 * scale, y, self.clip_line("NEXT  "+str(journey.get("nextSystem") or "DESTINATION REACHED"), 52), scale, 13, HUD_WHITE, True)
+        live_destination = self.carrier_live_snapshot()
+        new_target = (live_destination.get("destinationSystem") or "") if live_destination.get("status") in {"plotted", "lockdown", "transit", "estimated_cooldown"} else ""
+        next_label = ("CARRIER TARGET  " + new_target if journey.get("status") == "completed" and new_target
+                      else "NEXT  " + str(journey.get("nextSystem") or "DESTINATION REACHED"))
+        self._draw_text(canvas, 10 * scale, y, self.clip_line(next_label, 52), scale, 13, HUD_WHITE, True)
         y += 29 * scale
         self._draw_text(canvas, 10 * scale, y, f"REMAINING  {journey['remainingJumps']} JUMPS · {journey['remainingDistance']:,.0f} LY", scale, 10, HUD_CYAN, True)
         y += 22 * scale
