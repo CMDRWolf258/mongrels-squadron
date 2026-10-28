@@ -358,6 +358,7 @@ live_storage=types.SimpleNamespace(lock=threading.RLock(),data={
 },save=lambda:None)
 live_app=object.__new__(hud.MongrelHudApp)
 live_app.store=live_storage
+live_app.lock=threading.RLock()
 live_app.snapshot=hud.ScoutSnapshot({"ownerCarrier":{"carrierId":"3700005632"}},True,"")
 now_for_live=datetime.now(timezone.utc)
 live_iso=lambda v:v.isoformat().replace("+00:00","Z")
