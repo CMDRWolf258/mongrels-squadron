@@ -686,16 +686,27 @@ function renderCarrierRoute(){
   var fill='<span style="width:'+percent.toFixed(1)+'%"></span>';
   if(el("carrierJourneyProgress").innerHTML!==fill)el("carrierJourneyProgress").innerHTML=fill;
   setText(el("carrierJourneyStatus"),tracking?(journey.status==="completed"?"ARRIVED · All carrier jumps complete":(journey.paused?"PAUSED · ":"ACTIVE · ")+journey.completedJumps+" / "+journey.totalJumps+" jumps · Next: "+journey.nextSystem):"Not tracking · Select START ROUTE to activate this jump plan.");
-  var cd=tracking?journey.cooldown||{}:{},coolText="Cooldown begins after your first confirmed jump.";
-  if(tracking&&completed>0){
-    if(cd.status==="cooldown"){var sec=Number(cd.remainingSeconds||0);coolText="CARRIER COOLDOWN · "+String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")+" until available";}
+  var cd=tracking?journey.cooldown||{}:{},coolText="Cooldown begins after a jump is scheduled or confirmed.";
+  var sec=Math.max(0,Number(cd.remainingSeconds||0));
+  var hh=Math.floor(sec/3600),mm=Math.floor((sec%3600)/60),ss=sec%60;
+  var remainingClock=(hh?String(hh).padStart(2,"0")+":":"")+String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
+  if(tracking){
+    if(cd.status==="scheduled")coolText="SCHEDULED DEPARTURE · "+remainingClock+" remaining";
+    else if(cd.status==="jump_expected")coolText="JUMP EXPECTED IN PROGRESS · ~"+remainingClock+" to arrival";
+    else if(cd.status==="estimated_cooldown")coolText="ESTIMATED COOLDOWN · "+remainingClock+" until next jump";
+    else if(cd.status==="estimated_ready")coolText="ESTIMATED READY · Confirm in Carrier Management";
+    else if(cd.status==="unverified")coolText="Scheduled jump time passed · Arrival not verified";
+    else if(cd.status==="cooldown")coolText="CARRIER COOLDOWN · "+remainingClock+" until next jump";
     else if(cd.status==="ready")coolText="COOLDOWN COMPLETE · READY TO JUMP";
-    else coolText="Cooldown timing unavailable";
-    if(journey.completedVia==="manual")coolText+=" · Approximate (manual confirmation time)";
+    else if(completed>0)coolText="Cooldown timing unavailable";
+    if(cd.estimated===true&&["scheduled","jump_expected","estimated_cooldown"].includes(cd.status))
+      coolText+=" · Based on journal schedule (unverified)";
+    else if(journey.completedVia==="manual"&&completed>0&&!journey.scheduledDepartureAt)
+      coolText+=" · Approximate (manual confirmation time)";
   }
   var cdNode=el("carrierJourneyCooldown");setText(cdNode,coolText);
-  cdNode.classList.toggle("ready",cd.status==="ready");
-  cdNode.classList.toggle("flash",cd.status==="ready"&&cd.flashReady===true);
+  cdNode.classList.toggle("ready",cd.status==="ready"||cd.status==="estimated_ready");
+  cdNode.classList.toggle("flash",["ready","estimated_ready"].includes(cd.status)&&cd.flashReady===true);
   var html=rows.map(function(w,i){
     var done=tracking&&i<=completed,next=tracking&&i===completed+1;
     var note=done?"COMPLETE":i===0?"DEPART":i===rows.length-1?"ARRIVE":"JUMP";

@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.8"
+assert hud.APP_VERSION=="0.18.9"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -94,12 +94,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.5"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.6"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.9",
+    "name":"Mongrel HUD Windows v0.18.10",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.9" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.10" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -126,6 +127,20 @@ assert hud._carrier_cooldown("2026-10-27T10:34:15Z",
 assert hud._carrier_cooldown("2026-10-27T10:34:15Z",
     now=datetime(2026,10,27,10,38,15,tzinfo=timezone.utc))["flashReady"] is False
 assert hud._carrier_cooldown("")["status"]=="unknown"
+
+# Scheduled departure already incorporates server queue time, e.g. 90 minutes.
+from datetime import timedelta
+at=lambda h,m,s:datetime(2026,10,27,h,m,s,tzinfo=timezone.utc)
+schedule=hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(9,4,0))
+assert schedule["status"]=="scheduled" and schedule["remainingSeconds"]==5400
+assert schedule["readyAt"]=="2026-10-27T10:39:00Z"
+assert schedule["estimatedArrivalAt"]=="2026-10-27T10:35:15Z"
+# Seconds in a revised departure timestamp still align readiness to :00.
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:50Z",now=at(9,4,0))["readyAt"]=="2026-10-27T10:40:00Z"
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,34,30))["status"]=="jump_expected"
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,36,0))["status"]=="estimated_cooldown"
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,39,1))["status"]=="estimated_ready"
+assert hud._carrier_scheduled_timing("2026-10-27T10:34:00Z",now=at(10,39,1))["estimated"] is True
 
 route={
     "id":"12345678-1234-1234-1234-123456789012","routeType":"fleet_carrier",
@@ -161,11 +176,62 @@ for sample in [
     tracker._observe_carrier_journey_event(sample)
     assert tracker.carrier_journey_snapshot()["completedIndex"]==0
 
+
+# Journal schedule never counts as arrival. Wrong carrier/system ignored;
+# cancel clears estimate, actual matching CarrierJump supersedes estimate.
+clock=datetime.now(timezone.utc)
+future=clock+timedelta(minutes=90)
+iso=lambda x:x.isoformat().replace("+00:00","Z")
+request={
+    "type":"carrier.jump_request","carrierId":"3700005632",
+    "destinationSystem":"Test Carrier Stop","departureTime":iso(future),
+    "timestamp":iso(clock),
+}
+
+# First request can establish owner-carrier identity when CarrierStats was not
+# seen before START ROUTE (common when already exploring in the Caspian).
+new_store=types.SimpleNamespace(lock=threading.RLock(),data={
+    "carrierJourney":hud._carrier_journey_create(route,"",clock-timedelta(seconds=3)),
+},save=lambda:None)
+new_tracker=object.__new__(hud.MongrelHudApp)
+new_tracker.store=new_store
+new_tracker._observe_carrier_journey_event(request)
+assert new_store.data["carrierJourney"]["carrierId"]=="3700005632"
+assert new_tracker.carrier_journey_snapshot()["cooldown"]["status"]=="scheduled"
+assert new_tracker.carrier_journey_snapshot()["completedIndex"]==0
+
+tracker._observe_carrier_journey_event({**request,"carrierId":"3700001111"})
+assert not tracker.carrier_journey_snapshot().get("scheduledDepartureAt")
+tracker._observe_carrier_journey_event({**request,"destinationSystem":"Wrong Stop"})
+assert not tracker.carrier_journey_snapshot().get("scheduledDepartureAt")
+tracker._observe_carrier_journey_event(request)
+pending=tracker.carrier_journey_snapshot()
+assert pending["cooldown"]["status"]=="scheduled"
+assert 5395<=pending["cooldown"]["remainingSeconds"]<=5401
+assert pending["completedIndex"]==0
+tracker._observe_carrier_journey_event({
+    "type":"travel.fsd_jump","system":"Test Carrier Stop","timestamp":iso(clock),
+})
+assert tracker.carrier_journey_snapshot()["completedIndex"]==0
+tracker._observe_carrier_journey_event({
+    "type":"carrier.jump_cancelled","carrierId":"3700001111","timestamp":iso(clock),
+})
+assert tracker.carrier_journey_snapshot()["cooldown"]["status"]=="scheduled"
+tracker._observe_carrier_journey_event({
+    "type":"carrier.jump_cancelled","carrierId":"3700005632","timestamp":iso(clock),
+})
+assert tracker.carrier_journey_snapshot()["cooldown"]["status"]=="unknown"
+tracker._observe_carrier_journey_event(request)
+assert tracker.carrier_journey_snapshot()["cooldown"]["status"]=="scheduled"
+
 verified={"type":"carrier.jump","system":"Test Carrier Stop","marketId":"3700005632",
           "timestamp":datetime.now(timezone.utc).isoformat()}
 tracker._observe_carrier_journey_event(verified)
 observed=tracker.carrier_journey_snapshot()
 assert observed["completedIndex"]==1 and observed["completedVia"]=="journal"
+assert not observed["scheduledDepartureAt"]
+assert observed["cooldown"]["status"]=="cooldown"
+assert observed["cooldown"]["estimated"] is False
 assert observed["estimatedTritiumRemaining"]==90
 tracker._observe_carrier_journey_event(verified)
 assert tracker.carrier_journey_snapshot()["completedIndex"]==1
@@ -194,6 +260,25 @@ arrived=reopened.carrier_journey_control("confirm",index=2)["carrierJourney"]
 assert arrived["status"]=="completed" and arrived["completedIndex"]==2
 assert arrived["completedVia"]=="manual" and arrived["remainingJumps"]==0
 
+
+
+# Planned / confirmed voice uses exactly the same computed ready timestamp.
+from unittest import mock
+captured=[]
+with mock.patch.object(hud.MongrelHudApp,"_carrier_profile_for_event",
+        return_value={"marketId":"3700005632"}),mock.patch.object(
+        hud.MongrelHudApp,"voice_settings_snapshot",
+        return_value={"enabled":True,"carrierPa":True,
+                      "cues":{"carrier.cooldown_ready":{"enabled":True}}}),mock.patch.object(
+        hud.MongrelHudApp,"_carrier_voice_name",return_value="Pneuma"),mock.patch.object(
+        hud.MongrelHudApp,"_queue_scheduled_voice",
+        side_effect=lambda cue,event,fire_at:captured.append((cue,event,fire_at))):
+    tracker._schedule_cooldown_ready(request,predicted=True)
+assert len(captured)==1 and captured[0][0]=="carrier.cooldown_ready"
+assert captured[0][1]["predicted"] is True
+assert captured[0][2]==tracker._parse_voice_time(hud._carrier_scheduled_timing(iso(future))["readyAt"])
+assert hud.MongrelHudApp._voice_text_for_event(
+    tracker,"carrier.cooldown_ready",{"predicted":True}).startswith("Estimated")
 
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
@@ -338,7 +423,8 @@ with tempfile.TemporaryDirectory() as td:
     with store.lock:
         assert not store.data.get("voiceSchedule")
 
-    app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol"})
+    actual_voice_arrival=hud.datetime.now(hud.timezone.utc).isoformat().replace("+00:00","Z")
+    app.handle_voice_event({"type":"carrier.jump","relationship":"owner","carrierId":"123","carrierName":"Pneuma","system":"Sol","timestamp":actual_voice_arrival})
     with app.voice_condition:
         assert any(row["cue"]=="carrier.jump" for row in app.voice_pending)
         assert any(row["cue"]=="carrier.cooldown_ready" for row in app.voice_pending)
@@ -347,7 +433,8 @@ with tempfile.TemporaryDirectory() as td:
     assert len(cooldown_rows)==1
     cooldown_at=app._parse_voice_time(cooldown_rows[0]["fireAt"])
     remaining=(cooldown_at-hud.datetime.now(hud.timezone.utc)).total_seconds()
-    assert 160 < remaining <= 165.5
+    assert 0 < remaining <= 240
+    assert cooldown_at==app._parse_voice_time(hud._carrier_cooldown(actual_voice_arrival)["readyAt"])
     assert app._voice_text_for_event("carrier.cooldown_ready",{"relationship":"owner","marketId":"123","stationName":"Pneuma","stationType":"Fleet Carrier","carrierName":"Pneuma"})=="Pneuma is ready for the next jump."
     # Optional Kokoro pack is discovered from the local MongrelHUD voices folder.
     pack_root=app._kokoro_install_root()
@@ -439,7 +526,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.8"
+    assert hud.APP_VERSION=="0.18.9"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
