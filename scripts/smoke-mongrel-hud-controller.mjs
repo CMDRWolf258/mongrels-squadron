@@ -463,7 +463,7 @@ async function drain(h, expected) {
       remainingSeconds:225,readyAt:'2026-10-27T10:39:00Z'},
   }});
   h.controller.renderCarrierRoute();
-  assert.match(h.node('carrierJourneyCooldown').textContent,/ESTIMATED COOLDOWN/);
+  assert.match(h.node('carrierJourneyCooldown').textContent,/CARRIER COOLDOWN \(EST\.\)/);
   assert.match(h.node('carrierJourneyCooldown').textContent,/03:45/);
   h.controller.setState({connected:true,carrierJourney:{
     ...activeJourney,cooldown:{status:'estimated_ready',estimated:true,remainingSeconds:0,
