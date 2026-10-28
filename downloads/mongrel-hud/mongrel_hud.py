@@ -1719,7 +1719,7 @@ class MongrelHudApp:
         with self.store.lock:
             if action == "start":
                 existing = self.store.data.get("carrierJourney")
-                if isinstance(existing, dict) and existing.get("status") == "active" and existing.get("id") != (route or {}).get("id"):
+                if isinstance(existing, dict) and existing.get("status") == "active":
                     raise ValueError("carrier_journey_already_active")
                 owner = self.scout_state().get("ownerCarrier") or {}
                 carrier_id = str(owner.get("carrierId") or "") if isinstance(owner, dict) else ""
