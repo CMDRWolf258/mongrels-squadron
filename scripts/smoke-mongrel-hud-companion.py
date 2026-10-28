@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.10"
+assert hud.APP_VERSION=="0.18.11"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -96,12 +96,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.7"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.8"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.11"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.11"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.12"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.11",
+    "name":"Mongrel HUD Windows v0.18.12",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.11" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.12" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -322,6 +323,73 @@ assert captured[0][1]["predicted"] is True
 assert captured[0][2]==tracker._parse_voice_time(hud._carrier_scheduled_timing(iso(future))["readyAt"])
 assert hud.MongrelHudApp._voice_text_for_event(
     tracker,"carrier.cooldown_ready",{"predicted":True}).startswith("Estimated")
+
+
+# Live carrier status is independent of route progress. An already-completed
+# 2/2 journey must not leave the overlay on "COOLDOWN COMPLETE" if a new jump
+# was just plotted. Journal time, not the ship's position, drives status.
+at=lambda h,m,s:datetime(2026,10,27,h,m,s,tzinfo=timezone.utc)
+live={"carrierId":"3700005632","destinationSystem":"Next Carrier System",
+      "departureAt":"2026-10-27T10:34:00Z","requestedAt":"2026-10-27T10:18:00Z",
+      "eventAt":"2026-10-27T10:18:00Z","arrivedAt":None,"cancelledAt":None}
+before_lock=hud._carrier_live_status(live,now=at(10,30,39))
+assert before_lock["status"]=="plotted" and before_lock["padStatus"]=="upcoming"
+assert before_lock["padRemainingSeconds"]==1 and before_lock["label"]=="JUMP PLOTTED"
+at_lock=hud._carrier_live_status(live,now=at(10,30,40))
+assert at_lock["status"]=="lockdown" and at_lock["padStatus"]=="locked"
+assert at_lock["remainingSeconds"]==200
+assert hud._carrier_live_status(live,now=at(10,34,10))["status"]=="transit"
+assert hud._carrier_live_status(live,now=at(10,35,40))["status"]=="estimated_cooldown"
+assert hud._carrier_live_status(live,now=at(10,39,1))["status"]=="estimated_ready"
+assert hud._carrier_live_status(live,now=at(10,39,1))["estimated"] is True
+assert hud._carrier_live_status(live,now=at(12,39,1))["status"]=="unverified"
+assert hud.CARRIER_PAD_LOCKDOWN_LEAD_SECONDS==200
+cancelled={**live,"departureAt":None,"cancelledAt":"2026-10-27T10:21:00Z"}
+assert hud._carrier_live_status(cancelled,now=at(10,21,1))["status"]=="cancelled"
+assert hud._carrier_live_status(cancelled,now=at(10,40,1))["status"]=="unknown"
+arrived={**live,"departureAt":None,"arrivedAt":"2026-10-27T10:35:15Z"}
+assert hud._carrier_live_status(arrived,now=at(10,36,0))["status"]=="cooldown"
+assert hud._carrier_live_status(arrived,now=at(10,39,0))["status"]=="ready"
+assert hud._carrier_live_status(arrived,now=at(10,39,0))["estimated"] is False
+assert hud._carrier_live_status(None,now=at(10,40,0))["status"]=="unknown"
+
+live_storage=types.SimpleNamespace(lock=threading.RLock(),data={
+    "carrierJourney":{**saved.data["carrierJourney"],"status":"completed"}
+},save=lambda:None)
+live_app=object.__new__(hud.MongrelHudApp)
+live_app.store=live_storage
+live_app.snapshot=hud.ScoutSnapshot({"ownerCarrier":{"carrierId":"3700005632"}},True,"")
+now_for_live=datetime.now(timezone.utc)
+live_iso=lambda v:v.isoformat().replace("+00:00","Z")
+future=now_for_live+timedelta(minutes=18)
+new_request={"type":"carrier.jump_request","relationship":"owner",
+  "carrierId":"3700005632","destinationSystem":"Next Carrier System",
+  "departureTime":live_iso(future),"timestamp":live_iso(now_for_live)}
+live_app._observe_carrier_live_event({"type":"travel.fsd_jump","timestamp":live_iso(now_for_live)})
+assert live_app.carrier_live_snapshot()["status"]=="unknown"
+live_app._observe_carrier_live_event({**new_request,"carrierId":"3700001111"})
+assert live_app.carrier_live_snapshot()["status"]=="unknown"
+live_app._observe_carrier_live_event(new_request)
+assert live_app.carrier_live_snapshot()["status"]=="plotted"
+assert live_app.carrier_journey_snapshot()["status"]=="completed"
+assert live_app.carrier_journey_snapshot()["completedIndex"]==2
+live_app._observe_carrier_live_event({
+    "type":"carrier.jump_cancelled","carrierId":"3700001111","timestamp":live_iso(now_for_live),
+})
+assert live_app.carrier_live_snapshot()["status"]=="plotted"
+live_app._observe_carrier_live_event({
+    "type":"carrier.jump_cancelled","carrierId":"3700005632","timestamp":live_iso(now_for_live),
+})
+assert live_app.carrier_live_snapshot()["status"]=="cancelled"
+live_app._observe_carrier_live_event({**new_request,"timestamp":live_iso(now_for_live+timedelta(seconds=1))})
+assert live_app.carrier_live_snapshot()["status"]=="plotted"
+live_app._observe_carrier_live_event({
+    "type":"carrier.jump","marketId":"3700005632","system":"Next Carrier System",
+    "timestamp":live_iso(now_for_live+timedelta(seconds=2)),
+})
+assert live_app.carrier_live_snapshot()["status"]=="cooldown"
+assert live_app.carrier_live_snapshot()["estimated"] is False
+assert live_app.carrier_journey_snapshot()["completedIndex"]==2
 
 assert hud.HUD_RENDER_SCALE>=1.15
 assert hud.HUD_MUTED=="#a9c8d3"
@@ -569,7 +637,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.10"
+    assert hud.APP_VERSION=="0.18.11"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
