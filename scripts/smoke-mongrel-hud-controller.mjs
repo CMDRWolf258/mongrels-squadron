@@ -424,6 +424,49 @@ async function drain(h, expected) {
   assert.match(h.node('carrierCopyNotice').textContent,/Copied X <danger> to this PC/);
   assert.equal(h.requests.length,3,'One explicit copy command per button tap');
 
+  // Starting a carrier journey persists the loaded route (origin completed),
+  // then one large tap-target checkbox confirms only the next hop.
+  const journeyStart=h.node('carrierJourneyStart').onclick();
+  await tick();
+  assert.equal(h.requests[3].path,'/api/carrier-journey');
+  assert.equal(h.requests[3].body.action,'start');
+  assert.equal(h.requests[3].body.route.source,'Diaba');
+  const activeJourney={
+    id:'cccccccc-dddd-eeee-ffff-111111111111',status:'active',
+    routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',
+    completedIndex:0,completedJumps:0,totalJumps:2,remainingJumps:2,
+    nextSystem:'X <danger>',totalDistance:600,totalTritiumUsed:157,estimatedTritiumRemaining:157,
+    waypoints:[
+      {system:'Diaba',distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'X <danger>',distance:400,fuelUsed:94,fuelInTank:906},
+      {system:'Colonia',distance:200,fuelUsed:63,fuelInTank:843},
+    ],cooldown:{status:'unknown'},
+  };
+  h.respond(h.requests[3],null,{ok:true,carrierJourney:activeJourney});
+  await journeyStart;
+  assert.match(h.node('carrierRouteManifest').innerHTML,/is-done/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/data-carrier-complete-index="1"/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/MARK ARRIVED/);
+  assert.match(h.node('carrierJourneyStatus').textContent,/0 \/ 2 jumps/);
+  const checkbox={
+    checked:true,
+    getAttribute(key){return key==='data-carrier-complete-index'?'1':null},
+  };
+  const confirmJump=h.node('carrierRouteManifest').onchange({target:checkbox});
+  await tick();
+  assert.equal(h.requests[4].path,'/api/carrier-journey');
+  assert.deepEqual(h.requests[4].body,{action:'confirm',index:1});
+  h.respond(h.requests[4],null,{ok:true,carrierJourney:{
+    ...activeJourney,completedIndex:1,completedJumps:1,remainingJumps:1,
+    nextSystem:'Colonia',estimatedTritiumRemaining:63,completedVia:'manual',
+    cooldown:{status:'cooldown',remainingSeconds:225,readyAt:'2026-10-27T10:38:00Z'},
+  }});
+  await confirmJump;
+  assert.match(h.node('carrierJourneyCooldown').textContent,/03:45/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/is-next/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/Completed/);
+
+
 }
 {
   const h=harness();
