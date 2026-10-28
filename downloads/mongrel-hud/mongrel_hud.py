@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.8"
+APP_VERSION = "0.18.9"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1422,6 +1422,46 @@ def _carrier_cooldown(completed_at: str, *, now: datetime | None = None) -> dict
             "flashReady": ready <= current < ready + timedelta(seconds=9)}
 
 
+
+def _carrier_scheduled_timing(departure_at: str, *, now: datetime | None = None) -> dict[str, Any]:
+    """A CarrierJumpRequest has a *scheduled* departure, never an actual arrival.
+
+    Carrier animation/transit is approximately 75s; the ready estimate is
+    conservatively tagged unverified throughout. No route progress changes.
+    """
+    try:
+        departure = datetime.fromisoformat(str(departure_at).replace("Z", "+00:00"))
+        if departure.tzinfo is None:
+            raise ValueError("timezone_required")
+        departure = departure.astimezone(timezone.utc)
+    except (ValueError, TypeError, OverflowError):
+        return {"status": "unknown", "remainingSeconds": None, "readyAt": None,
+                "flashReady": False, "estimated": True}
+    arrival = departure + timedelta(seconds=75)
+    # 75s transit + 4-minute next-minute-aligned cooldown = departure + 5m.
+    ready = departure + timedelta(minutes=5)
+    current = now or datetime.now(timezone.utc)
+    if current < departure:
+        status, until = "scheduled", departure
+    elif current < arrival:
+        status, until = "jump_expected", arrival
+    elif current < ready:
+        status, until = "estimated_cooldown", ready
+    elif current < ready + timedelta(hours=2):
+        status, until = "estimated_ready", ready
+    else:
+        status, until = "unverified", ready
+    return {
+        "status": status,
+        "remainingSeconds": max(0, math.ceil((until-current).total_seconds())),
+        "departureAt": departure.isoformat().replace("+00:00", "Z"),
+        "estimatedArrivalAt": arrival.isoformat().replace("+00:00", "Z"),
+        "readyAt": ready.isoformat().replace("+00:00", "Z"),
+        "flashReady": ready <= current < ready + timedelta(seconds=9),
+        "estimated": True,
+    }
+
+
 def _carrier_route_identity(value: Any) -> str:
     name = str(value or "").strip()
     if not 2 <= len(name) <= 140 or not re.fullmatch(r"[\w .+()'-]{2,140}", name, re.UNICODE):
@@ -1465,6 +1505,8 @@ def _carrier_journey_create(route: Any, carrier_id: str, now: datetime) -> dict[
         "carrierId": carrier_id if re.fullmatch(r"\d{4,24}", carrier_id or "") else "",
         "completedIndex": 0, "completedAt": None, "completedVia": "start",
         "startedAt": timestamp, "updatedAt": timestamp, "paused": False,
+        "scheduledDepartureAt": None, "scheduledDestination": None,
+        "scheduledRequestAt": None,
         "totalDistance": sum(row["distance"] for row in normalized),
         "totalTritiumUsed": sum(row["fuelUsed"] for row in normalized),
     }
@@ -1486,7 +1528,15 @@ def _carrier_journey_snapshot(journey: Any, now: datetime | None = None) -> dict
     result["nextSystem"] = str(rows[completed + 1].get("system") or "") if completed + 1 < len(rows) else ""
     result["remainingDistance"] = sum(float(row.get("distance") or 0) for row in rows[completed + 1:])
     result["estimatedTritiumRemaining"] = sum(float(row.get("fuelUsed") or 0) for row in rows[completed + 1:])
-    result["cooldown"] = _carrier_cooldown(str(journey.get("completedAt") or ""), now=current)
+    schedule = str(journey.get("scheduledDepartureAt") or "")
+    expected_destination = str(journey.get("scheduledDestination") or "")
+    next_destination = result["nextSystem"]
+    if (schedule and journey.get("status") == "active" and not journey.get("paused")
+            and next_destination and expected_destination.casefold() == next_destination.casefold()):
+        result["cooldown"] = _carrier_scheduled_timing(schedule, now=current)
+    else:
+        result["cooldown"] = _carrier_cooldown(str(journey.get("completedAt") or ""), now=current)
+        result["cooldown"]["estimated"] = str(journey.get("completedVia") or "") == "manual"
     return result
 
 
@@ -1748,6 +1798,9 @@ class MongrelHudApp:
                     journey["completedIndex"] = wanted
                     journey["completedAt"] = now.isoformat().replace("+00:00", "Z")
                     journey["completedVia"] = "manual"
+                    journey["scheduledDepartureAt"] = None
+                    journey["scheduledDestination"] = None
+                    journey["scheduledRequestAt"] = None
                     if wanted == len(journey["waypoints"]) - 1:
                         journey["status"] = "completed"
                 journey["updatedAt"] = now.isoformat().replace("+00:00", "Z")
@@ -1755,43 +1808,73 @@ class MongrelHudApp:
             return {"ok": True, "carrierJourney": _carrier_journey_snapshot(journey, now)}
 
     def _observe_carrier_journey_event(self, event: dict[str, Any]) -> None:
-        # A CarrierJump is observed only if the player is aboard. Their ship's
-        # FSDJump and another carrier's jump MUST NOT advance the plan.
-        if event.get("type") != "carrier.jump":
+        """Owner carrier journal evidence. Planned departure is NOT arrival."""
+        kind = str(event.get("type") or "")
+        if kind not in {"carrier.jump_request", "carrier.jump_cancelled", "carrier.jump"}:
             return
         try:
             observed_time = datetime.fromisoformat(str(event.get("timestamp") or "").replace("Z", "+00:00"))
             if observed_time.tzinfo is None:
                 return
             observed_time = observed_time.astimezone(timezone.utc)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, OverflowError):
             return
-        observed_name = str(event.get("system") or "").strip()
-        observed_market = str(event.get("marketId") or "")
+        now = datetime.now(timezone.utc)
         with self.store.lock:
             journey = self.store.data.get("carrierJourney")
-            if not isinstance(journey, dict) or journey.get("status") != "active" or journey.get("paused"):
+            if not isinstance(journey, dict) or journey.get("status") != "active":
                 return
             carrier_id = str(journey.get("carrierId") or "")
-            # No verified owner carrier ID -> manual confirmation only.
-            if not carrier_id or observed_market != carrier_id:
+            event_id = str(event.get("carrierId") or "") if kind != "carrier.jump" else str(event.get("marketId") or "")
+            if not carrier_id or event_id != carrier_id:
                 return
             rows = journey.get("waypoints") or []
             index = int(journey.get("completedIndex") or 0) + 1
-            if index >= len(rows) or str(rows[index].get("system") or "").casefold() != observed_name.casefold():
+            if index >= len(rows):
                 return
             try:
                 started = datetime.fromisoformat(str(journey.get("startedAt") or "").replace("Z", "+00:00"))
             except ValueError:
                 return
-            if observed_time < started or observed_time > datetime.now(timezone.utc) + timedelta(minutes=2):
+            if observed_time < started or observed_time > now + timedelta(minutes=2):
                 return
-            journey["completedIndex"] = index
-            journey["completedAt"] = observed_time.isoformat().replace("+00:00", "Z")
-            journey["completedVia"] = "journal"
-            journey["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            if index == len(rows) - 1:
-                journey["status"] = "completed"
+            if kind == "carrier.jump_request":
+                target = str(event.get("destinationSystem") or "").strip()
+                if target.casefold() != str(rows[index].get("system") or "").casefold():
+                    return
+                departure = self._parse_voice_time(event.get("departureTime"))
+                if departure is None or departure < observed_time or departure > observed_time + timedelta(hours=6):
+                    return
+                prior = self._parse_voice_time(journey.get("scheduledRequestAt"))
+                if prior and observed_time < prior:
+                    return
+                journey["scheduledDepartureAt"] = departure.isoformat().replace("+00:00", "Z")
+                journey["scheduledDestination"] = target
+                journey["scheduledRequestAt"] = observed_time.isoformat().replace("+00:00", "Z")
+            elif kind == "carrier.jump_cancelled":
+                scheduled_at = self._parse_voice_time(journey.get("scheduledRequestAt"))
+                if not scheduled_at or observed_time < scheduled_at:
+                    return
+                journey["scheduledDepartureAt"] = None
+                journey["scheduledDestination"] = None
+                journey["scheduledRequestAt"] = None
+            else:
+                # CarrierJump is only reported aboard a carrier; never infer it
+                # from the CMDR's independent FSDJump or scheduled departure.
+                if journey.get("paused"):
+                    return
+                name = str(event.get("system") or "").strip()
+                if name.casefold() != str(rows[index].get("system") or "").casefold():
+                    return
+                journey["completedIndex"] = index
+                journey["completedAt"] = observed_time.isoformat().replace("+00:00", "Z")
+                journey["completedVia"] = "journal"
+                journey["scheduledDepartureAt"] = None
+                journey["scheduledDestination"] = None
+                journey["scheduledRequestAt"] = None
+                if index == len(rows) - 1:
+                    journey["status"] = "completed"
+            journey["updatedAt"] = now.isoformat().replace("+00:00", "Z")
             self.store.save()
 
     @staticmethod
