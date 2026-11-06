@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-05T23:41:29Z",
+  "generatedAt": "2026-11-06T06:52:05Z",
   "source": "EliteHub Vault / EDDN",
   "faction": "Regiment of Imperial Mongrels",
-  "sourcePresenceGeneratedAt": "2026-11-05T23:39:06Z",
+  "sourcePresenceGeneratedAt": "2026-11-06T06:49:46Z",
   "syncOk": true,
   "successfulSystems": 261,
   "requestedSystems": 261,
   "conflictSyncOk": true,
   "conflictError": "",
-  "conflictRecords": 3,
+  "conflictRecords": 4,
   "systemConflictSyncOk": true,
   "systemConflictError": "",
   "systemConflictRecords": 6,
@@ -56,8 +56,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -144,8 +144,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -206,8 +206,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -268,8 +268,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -362,8 +362,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -387,19 +387,19 @@
     "Chingpho": {
       "name": "Chingpho",
       "systemId": "ab76721d-1565-4768-9461-0097477ee081",
-      "updatedAt": "2026-11-05T13:25:29.829000",
+      "updatedAt": "2026-11-05T23:58:39.401000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 58.06,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-30T20:58:36.206000",
+          "updatedAt": "2026-11-05T23:58:39.401000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -466,8 +466,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -526,8 +526,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -588,8 +588,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -648,8 +648,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -708,8 +708,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -770,8 +770,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -832,8 +832,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -894,8 +894,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -958,8 +958,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1020,8 +1020,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1082,8 +1082,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1144,8 +1144,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1206,8 +1206,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1268,8 +1268,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1330,8 +1330,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1392,8 +1392,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1450,8 +1450,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1502,8 +1502,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1564,8 +1564,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1626,8 +1626,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1688,8 +1688,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1750,8 +1750,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1810,8 +1810,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1870,8 +1870,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1934,8 +1934,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -1990,8 +1990,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2052,8 +2052,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2114,8 +2114,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2176,8 +2176,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2238,8 +2238,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2300,8 +2300,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2360,8 +2360,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2420,8 +2420,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2480,8 +2480,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2540,8 +2540,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2600,8 +2600,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2660,8 +2660,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2720,8 +2720,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2802,8 +2802,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2872,8 +2872,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2932,8 +2932,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -2992,8 +2992,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3052,8 +3052,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3110,8 +3110,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3160,8 +3160,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3171,19 +3171,19 @@
     "Col 285 Sector CA-W b16-7": {
       "name": "Col 285 Sector CA-W b16-7",
       "systemId": "8efeedba-1dc5-474b-a03a-cea78a56eef1",
-      "updatedAt": "2026-11-04T17:53:37.190000",
+      "updatedAt": "2026-11-06T04:44:44.459000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 18.96,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-04T17:53:37.190000",
+          "updatedAt": "2026-11-06T04:44:44.459000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3208,8 +3208,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3276,8 +3276,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3287,31 +3287,31 @@
     "Col 285 Sector CP-X b15-3": {
       "name": "Col 285 Sector CP-X b15-3",
       "systemId": "1fd9342f-8dde-47a1-aabe-f4a8a56fe291",
-      "updatedAt": "2026-10-30T19:43:53.008000",
+      "updatedAt": "2026-11-06T01:10:04.949000",
       "factionCount": 5,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 29.03,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-30T19:43:53.008000",
+          "updatedAt": "2026-11-06T01:10:04.949000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Heilelang Patron's Principles",
           "influence": 18.65,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-30T17:47:12.142000",
+          "updatedAt": "2026-11-06T01:10:04.949000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3346,8 +3346,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3408,8 +3408,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3478,8 +3478,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3538,8 +3538,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3588,8 +3588,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3648,8 +3648,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3708,8 +3708,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3768,8 +3768,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3832,8 +3832,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3843,59 +3843,59 @@
     "Col 285 Sector EA-W b16-0": {
       "name": "Col 285 Sector EA-W b16-0",
       "systemId": "3ae04be3-4f16-4260-a812-c1c95ef56d8d",
-      "updatedAt": "2026-11-05T14:13:26.729000",
+      "updatedAt": "2026-11-06T03:38:31.643000",
       "factionCount": 4,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 57.87,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 58.38,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-05T14:13:26.729000",
+          "updatedAt": "2026-11-06T03:38:31.643000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Heilelang Patron's Principles",
-          "influence": 17.87,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 17.66,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-05T14:13:26.729000",
+          "updatedAt": "2026-11-06T03:38:31.643000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 16.45,
+          "influence": 16.24,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-05T14:13:26.729000",
+          "updatedAt": "2026-11-06T03:38:31.643000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Bureau",
-          "influence": 7.82,
+          "influence": 7.72,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-05T14:13:26.729000",
+          "updatedAt": "2026-11-06T03:38:31.643000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3905,19 +3905,19 @@
     "Col 285 Sector EA-W b16-1": {
       "name": "Col 285 Sector EA-W b16-1",
       "systemId": "426baca8-ae23-4fb1-99b5-105c8307c230",
-      "updatedAt": "2026-11-05T11:48:18.269000",
+      "updatedAt": "2026-11-06T01:11:07.579000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 63.68,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-05T11:48:18.269000",
+          "updatedAt": "2026-11-06T01:11:07.579000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3942,8 +3942,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -3953,19 +3953,19 @@
     "Col 285 Sector EA-W b16-2": {
       "name": "Col 285 Sector EA-W b16-2",
       "systemId": "7cc277b2-460e-4ed8-a596-c299252ae8d8",
-      "updatedAt": "2026-11-05T22:45:16.778000",
+      "updatedAt": "2026-11-06T02:02:38.872000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 34.63,
-          "state": "Expansion",
-          "activeStates": [
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-05T22:45:16.778000",
+          "updatedAt": "2026-11-06T02:02:38.872000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -3990,8 +3990,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4050,8 +4050,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4110,8 +4110,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4168,8 +4168,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4232,8 +4232,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4282,8 +4282,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4340,8 +4340,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4398,8 +4398,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4446,8 +4446,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4506,8 +4506,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4566,8 +4566,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4626,8 +4626,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4684,8 +4684,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4746,8 +4746,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4757,7 +4757,7 @@
     "Col 285 Sector JG-U b17-6": {
       "name": "Col 285 Sector JG-U b17-6",
       "systemId": "14014b8e-ec14-44ec-ad9a-3f848295f2a7",
-      "updatedAt": "2026-10-26T20:24:50.177000",
+      "updatedAt": "2026-11-06T01:20:45.280000",
       "factionCount": 5,
       "factions": [
         {
@@ -4765,23 +4765,23 @@
           "influence": 12.73,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-15T19:54:38.304000",
+          "updatedAt": "2026-11-06T01:20:45.280000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 27948 Empire Party",
           "influence": 9.09,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
-          "updatedAt": "2026-10-26T20:24:50.177000",
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-11-06T01:20:45.280000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -4789,23 +4789,21 @@
           "influence": 53.91,
           "state": "None",
           "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-26T20:24:50.177000",
+          "updatedAt": "2026-11-06T01:20:45.280000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
           "influence": 17.45,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [],
-          "recoveringStates": [
+          "state": "Expansion",
+          "activeStates": [
             "Expansion"
           ],
-          "updatedAt": "2026-10-26T20:24:50.177000",
+          "pendingStates": [],
+          "recoveringStates": [],
+          "updatedAt": "2026-11-06T01:20:45.280000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -4820,8 +4818,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4880,8 +4878,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4940,8 +4938,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -4951,49 +4949,45 @@
     "Col 285 Sector OC-L c8-10": {
       "name": "Col 285 Sector OC-L c8-10",
       "systemId": "46b7d0a5-b903-4acf-99d1-5df53d161dd3",
-      "updatedAt": "2026-11-03T23:04:13.191000",
+      "updatedAt": "2026-11-06T04:08:12.777000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 75.98,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 78.3,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-03T23:04:13.191000",
+          "updatedAt": "2026-11-06T04:08:12.777000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Democrats of HIP 32127",
-          "influence": 13.91,
+          "influence": 12.9,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [
-            "CivilWar"
-          ],
-          "updatedAt": "2026-11-03T23:04:13.191000",
+          "recoveringStates": [],
+          "updatedAt": "2026-11-06T04:08:12.777000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 32127 State PLC",
-          "influence": 10.11,
+          "influence": 8.8,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
-          "recoveringStates": [
-            "CivilWar"
-          ],
-          "updatedAt": "2026-11-03T23:04:13.191000",
+          "recoveringStates": [],
+          "updatedAt": "2026-11-06T04:08:12.777000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5052,8 +5046,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5112,8 +5106,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5170,8 +5164,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5220,8 +5214,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5270,8 +5264,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5318,8 +5312,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5376,8 +5370,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5387,47 +5381,47 @@
     "Col 285 Sector RI-J c9-24": {
       "name": "Col 285 Sector RI-J c9-24",
       "systemId": "f49926bb-e6c0-40a4-8919-e137a61b0dad",
-      "updatedAt": "2026-11-02T01:11:27.602000",
+      "updatedAt": "2026-11-06T00:22:58.753000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 74.5,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 74.2,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-02T01:11:27.602000",
+          "updatedAt": "2026-11-06T00:22:58.753000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 27948 Empire Party",
-          "influence": 11.4,
+          "influence": 11.8,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-02T01:11:27.602000",
+          "updatedAt": "2026-11-06T00:22:58.753000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 29444 Empire Consulate",
-          "influence": 14.1,
+          "influence": 14.0,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-02T01:11:27.602000",
+          "updatedAt": "2026-11-06T00:22:58.753000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5486,8 +5480,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5546,8 +5540,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5606,8 +5600,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5666,8 +5660,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5726,8 +5720,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5798,8 +5792,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5856,8 +5850,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -5926,8 +5920,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6006,8 +6000,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6066,8 +6060,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6124,8 +6118,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6186,8 +6180,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6234,8 +6228,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6294,8 +6288,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6369,8 +6363,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": {
         "id": "8c58e4bc-4ad0-4bc7-9ca9-6381ce419121",
@@ -6456,8 +6450,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6514,8 +6508,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6602,8 +6596,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6613,19 +6607,19 @@
     "Duulngari": {
       "name": "Duulngari",
       "systemId": "108e8019-1d65-43c9-9f0b-563f646705a8",
-      "updatedAt": "2026-11-03T17:27:40.762000",
+      "updatedAt": "2026-11-06T03:15:43.403000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 18.33,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 18.23,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-03T17:27:40.762000",
+          "updatedAt": "2026-11-06T03:15:43.403000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -6640,32 +6634,32 @@
         },
         {
           "name": "Duulngari Freedom Party",
-          "influence": 7.17,
+          "influence": 7.57,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-08-31T04:48:06.279000",
+          "updatedAt": "2026-11-06T03:15:43.403000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Duulngari Ltd",
-          "influence": 15.84,
+          "influence": 15.74,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-25T22:33:38.361000",
+          "updatedAt": "2026-11-06T03:15:43.403000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Duulngari Regulatory State",
-          "influence": 15.44,
+          "influence": 15.34,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-25T22:33:38.361000",
+          "updatedAt": "2026-11-06T03:15:43.403000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -6680,20 +6674,20 @@
         },
         {
           "name": "Sacra Oculus",
-          "influence": 34.66,
+          "influence": 34.56,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-03T17:27:40.762000",
+          "updatedAt": "2026-11-06T03:15:43.403000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6754,8 +6748,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6814,8 +6808,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6874,8 +6868,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6934,8 +6928,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -6996,8 +6990,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7056,8 +7050,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7116,8 +7110,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7176,8 +7170,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7236,8 +7230,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7298,8 +7292,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7360,8 +7354,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7418,8 +7412,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7478,8 +7472,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7489,101 +7483,109 @@
     "Gaudu": {
       "name": "Gaudu",
       "systemId": "b5cdfdd3-ad4d-4e97-87c9-d99652d166c9",
-      "updatedAt": "2026-10-29T21:16:33.041000",
+      "updatedAt": "2026-11-06T04:16:47.259000",
       "factionCount": 6,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 14.0,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
+          "influence": 13.41,
+          "state": "War",
+          "activeStates": [
+            "War"
+          ],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Gaudu Blue Dragons",
-          "influence": 2.4,
+          "influence": 1.0,
           "state": "Famine",
           "activeStates": [
             "Famine"
           ],
           "pendingStates": [],
-          "recoveringStates": [
-            "Drought"
-          ],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "recoveringStates": [],
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Gaudu Central & Co",
-          "influence": 10.7,
-          "state": "None",
-          "activeStates": [],
+          "influence": 13.41,
+          "state": "War",
+          "activeStates": [
+            "War"
+          ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 24320 Citizens' Forum",
-          "influence": 30.1,
+          "influence": 30.23,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "HIP 26883 Empire Party",
-          "influence": 21.4,
-          "state": "Expansion, Election",
-          "activeStates": [
-            "Expansion",
-            "Election"
-          ],
+          "influence": 22.92,
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sacra Oculus",
-          "influence": 21.4,
-          "state": "Election",
+          "influence": 19.02,
+          "state": "Expansion",
           "activeStates": [
-            "Election"
-          ],
-          "pendingStates": [
             "Expansion"
           ],
+          "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-29T21:16:33.041000",
+          "updatedAt": "2026-11-06T04:16:47.259000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
-      "conflict": null,
+      "conflict": {
+        "id": "28e9744a-174d-4243-9c32-b9a261d9a89a",
+        "type": "War",
+        "status": "Active",
+        "factionWonDays": 0,
+        "opponentWonDays": 0,
+        "opponentFaction": "Gaudu Central & Co",
+        "factionStake": "Valdes Biological Assembly",
+        "opponentStake": "",
+        "updatedAt": "2026-11-06T04:16:52.767000",
+        "source": "EliteHub Vault / EDDN"
+      },
       "conflictStale": false,
       "systemConflicts": [
         {
-          "id": "2a150220-a7ac-490d-a867-0202b84f74c7",
-          "type": "Election",
+          "id": "28e9744a-174d-4243-9c32-b9a261d9a89a",
+          "type": "War",
           "status": "Active",
-          "faction": "HIP 26883 Empire Party",
+          "faction": "Gaudu Central & Co",
           "factionWonDays": 0,
-          "opponentFaction": "Sacra Oculus",
-          "opponentWonDays": 1,
-          "factionStake": "Giclas Base",
-          "opponentStake": "Mackenzie's Inheritance",
-          "updatedAt": "2026-10-29T21:51:38.417000",
+          "opponentFaction": "Regiment of Imperial Mongrels",
+          "opponentWonDays": 0,
+          "factionStake": "",
+          "opponentStake": "Valdes Biological Assembly",
+          "updatedAt": "2026-11-06T04:16:52.767000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
@@ -7633,8 +7635,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7683,8 +7685,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7741,8 +7743,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7838,8 +7840,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": {
         "id": "c06e2a15-8e6c-42c5-86c2-95951bd12a43",
@@ -7897,8 +7899,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -7955,8 +7957,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8017,8 +8019,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8091,8 +8093,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8141,8 +8143,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8191,8 +8193,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8251,8 +8253,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8309,8 +8311,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8369,8 +8371,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8431,8 +8433,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8493,8 +8495,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8553,8 +8555,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8615,8 +8617,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8677,8 +8679,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8688,47 +8690,45 @@
     "ICZ HL-X b1-0": {
       "name": "ICZ HL-X b1-0",
       "systemId": "50ae902d-48bd-49d1-ab5e-897f567556d4",
-      "updatedAt": "2026-11-01T11:07:18.909000",
+      "updatedAt": "2026-11-06T02:56:01.431000",
       "factionCount": 3,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 18.4,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 17.8,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-11-01T11:07:18.909000",
+          "updatedAt": "2026-11-06T02:56:01.431000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "6th Interstellar Corps",
-          "influence": 56.83,
+          "influence": 57.23,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-01T11:07:18.909000",
+          "updatedAt": "2026-11-06T02:56:01.431000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Lavigny's Legion",
-          "influence": 24.77,
-          "state": "Expansion",
-          "activeStates": [
-            "Expansion"
-          ],
+          "influence": 24.97,
+          "state": "None",
+          "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-11-01T11:07:18.909000",
+          "updatedAt": "2026-11-06T02:56:01.431000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8817,8 +8817,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8895,8 +8895,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -8987,8 +8987,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9045,8 +9045,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9103,8 +9103,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9155,8 +9155,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9205,8 +9205,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9251,8 +9251,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9311,8 +9311,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9371,8 +9371,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9441,8 +9441,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9503,8 +9503,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9563,8 +9563,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9627,8 +9627,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9689,8 +9689,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9753,8 +9753,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9815,8 +9815,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9877,8 +9877,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -9941,8 +9941,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10001,8 +10001,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10061,8 +10061,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10125,8 +10125,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10187,8 +10187,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10239,8 +10239,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10303,8 +10303,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10367,8 +10367,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10429,8 +10429,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10489,8 +10489,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10551,8 +10551,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10613,8 +10613,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10675,8 +10675,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10737,8 +10737,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10799,8 +10799,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10861,8 +10861,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10923,8 +10923,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -10983,8 +10983,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11047,8 +11047,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11109,8 +11109,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11171,8 +11171,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11233,8 +11233,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11295,8 +11295,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11353,8 +11353,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11413,8 +11413,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11477,8 +11477,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11541,8 +11541,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11605,8 +11605,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11658,8 +11658,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11720,8 +11720,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11787,8 +11787,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": {
         "id": "77ea9903-bf93-43e4-b88d-7ff120272d38",
@@ -11887,8 +11887,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -11947,8 +11947,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12011,8 +12011,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12073,8 +12073,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12131,8 +12131,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12195,8 +12195,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12257,8 +12257,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12319,8 +12319,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12377,8 +12377,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12439,8 +12439,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12499,8 +12499,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12561,8 +12561,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12611,8 +12611,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12671,8 +12671,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12735,8 +12735,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12787,8 +12787,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12849,8 +12849,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12911,8 +12911,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -12963,8 +12963,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13013,8 +13013,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13075,8 +13075,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13133,8 +13133,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13191,8 +13191,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13253,8 +13253,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13313,8 +13313,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13363,8 +13363,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13426,8 +13426,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13488,8 +13488,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13550,8 +13550,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13612,8 +13612,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13674,8 +13674,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13736,8 +13736,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13798,8 +13798,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13863,8 +13863,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13915,8 +13915,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -13977,8 +13977,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14039,8 +14039,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14101,8 +14101,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14163,8 +14163,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14223,8 +14223,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14285,8 +14285,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14347,8 +14347,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14409,8 +14409,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14471,8 +14471,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14533,8 +14533,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14593,8 +14593,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14655,8 +14655,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14717,8 +14717,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14807,8 +14807,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14867,8 +14867,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14929,8 +14929,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -14991,8 +14991,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15049,8 +15049,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15146,8 +15146,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15171,89 +15171,89 @@
     "Sui Ren": {
       "name": "Sui Ren",
       "systemId": "2ed547da-b7d5-4a6b-b74a-63c31cc1ce60",
-      "updatedAt": "2026-10-31T02:24:05.297000",
+      "updatedAt": "2026-11-06T00:55:15.026000",
       "factionCount": 7,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
-          "influence": 32.4,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 38.25,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Heilelang Patron's Principles",
-          "influence": 18.25,
-          "state": "Expansion",
-          "activeStates": [
+          "influence": 16.47,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
             "Expansion"
           ],
-          "pendingStates": [],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Social Sui Ren Democrats",
-          "influence": 5.22,
+          "influence": 5.42,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Boys",
-          "influence": 1.1,
+          "influence": 1.0,
           "state": "Bust",
           "activeStates": [
             "Bust"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Bureau",
-          "influence": 4.71,
+          "influence": 4.22,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "Sui Ren Commodities",
-          "influence": 13.14,
+          "influence": 12.55,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         },
         {
           "name": "The Imperial Inquisition",
-          "influence": 25.18,
+          "influence": 22.09,
           "state": "None",
           "activeStates": [],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T02:24:05.297000",
+          "updatedAt": "2026-11-06T00:55:15.026000",
           "source": "EliteHub Vault / EDDN"
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15312,8 +15312,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15372,8 +15372,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15430,8 +15430,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15502,8 +15502,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15562,8 +15562,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15622,8 +15622,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15678,8 +15678,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15738,8 +15738,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15798,8 +15798,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15809,31 +15809,31 @@
     "Tascheter Sector ZZ-Y b4": {
       "name": "Tascheter Sector ZZ-Y b4",
       "systemId": "adb95e35-c3c0-4353-8819-05616e21419a",
-      "updatedAt": "2026-11-03T10:37:58.492000",
+      "updatedAt": "2026-11-06T03:04:31.002000",
       "factionCount": 5,
       "factions": [
         {
           "name": "Regiment of Imperial Mongrels",
           "influence": 9.9,
+          "state": "None",
+          "activeStates": [],
+          "pendingStates": [],
+          "recoveringStates": [
+            "Expansion"
+          ],
+          "updatedAt": "2026-11-06T03:04:31.002000",
+          "source": "EliteHub Vault / EDDN"
+        },
+        {
+          "name": "Flotta Stellare",
+          "influence": 16.8,
           "state": "Expansion",
           "activeStates": [
             "Expansion"
           ],
           "pendingStates": [],
           "recoveringStates": [],
-          "updatedAt": "2026-10-31T17:07:32.719000",
-          "source": "EliteHub Vault / EDDN"
-        },
-        {
-          "name": "Flotta Stellare",
-          "influence": 16.8,
-          "state": "None",
-          "activeStates": [],
-          "pendingStates": [
-            "Expansion"
-          ],
-          "recoveringStates": [],
-          "updatedAt": "2026-10-31T17:07:32.719000",
+          "updatedAt": "2026-11-06T03:04:31.002000",
           "source": "EliteHub Vault / EDDN"
         },
         {
@@ -15872,8 +15872,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -15960,8 +15960,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -16024,8 +16024,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -16086,8 +16086,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -16148,8 +16148,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -16210,8 +16210,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
@@ -16270,8 +16270,8 @@
         }
       ],
       "ok": true,
-      "fetchedAt": "2026-11-05T23:41:29Z",
-      "lastAttemptAt": "2026-11-05T23:41:29Z",
+      "fetchedAt": "2026-11-06T06:52:05Z",
+      "lastAttemptAt": "2026-11-06T06:52:05Z",
       "stale": false,
       "conflict": null,
       "conflictStale": false,
