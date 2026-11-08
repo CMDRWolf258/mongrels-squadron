@@ -720,9 +720,11 @@ function renderCarrierRoute(){
     "Plan against entered cargo Tritium, tank fuel and used capacity.");
   el("carrierJourneyStart").disabled=carrierRouteBusy||!previewReady||
     !!(journey&&journey.status==="active");
-  el("carrierJourneyPause").disabled=!tracking||journey.status!=="active"||journey.paused;
-  el("carrierJourneyResume").disabled=!tracking||journey.status!=="active"||!journey.paused;
-  el("carrierJourneyEnd").disabled=!tracking||journey.status==="completed";
+  // Progress controls apply to the saved active journey even when a NEW
+  // preview is selected. Otherwise END would be inaccessible and block START.
+  el("carrierJourneyPause").disabled=!journey||journey.status!=="active"||journey.paused;
+  el("carrierJourneyResume").disabled=!journey||journey.status!=="active"||!journey.paused;
+  el("carrierJourneyEnd").disabled=!journey||journey.status!=="active";
   renderCarrierStatus();
   if(!ready){
     if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
