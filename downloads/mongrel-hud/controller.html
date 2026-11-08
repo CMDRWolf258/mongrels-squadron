@@ -1558,9 +1558,15 @@ async function restoreSavedCarrierPlan(){
   // the full manifest or overwrites in-progress user edits.
   if(carrierPlanRestoreStarted)return;
   carrierPlanRestoreStarted=true;
+  var revision=carrierInputRevision;
   try{
     var saved=await api("/api/carrier-saved-route"),plan=saved&&saved.route,pending=saved&&saved.pending;
-    if(carrierRoute||carrierRouteBusy||String(el("carrierRouteJobId").value||"").trim())return;
+    // The iPad user may have started typing before the saved-route fetch
+    // completed; never overwrite new 10-16 fields with old saved systems.
+    if(revision!==carrierInputRevision||carrierRoute||carrierRouteBusy||carrierPlottingNew||
+       String(el("carrierRouteSource").value||"").trim()||
+       String(el("carrierRouteDestination").value||"").trim()||
+       String(el("carrierRouteJobId").value||"").trim())return;
     if(plan&&plan.routeType==="fleet_carrier"&&plan.status==="ready"&&Array.isArray(plan.waypoints)){
       carrierRoute=plan;
       el("carrierRouteSource").value=String(plan.source||"");
@@ -1574,10 +1580,16 @@ async function restoreSavedCarrierPlan(){
     }
     if(pending&&/^[0-9a-fA-F-]{24,64}$/.test(String(pending.id||""))
         &&(!plan||pending.id!==plan.id)){
-      el("carrierRouteJobId").value=String(pending.id);
-      setText(el("carrierPlotStatus"),(plan?"Previous saved jump plan restored. ":"")+
-        "Unloaded route request restored · "+String(pending.source||"")+" → "+String(pending.destination||"")+
-        ". Select CHECK / LOAD RESULT while the cloud job is still available.");
+      carrierPendingSelection={id:String(pending.id),source:String(pending.source||""),
+        destination:String(pending.destination||"")};
+      // An older ready route remains archived, but the CURRENT controls
+      // must select the pending route's own systems and job ID.
+      el("carrierRouteSource").value=carrierPendingSelection.source;
+      el("carrierRouteDestination").value=carrierPendingSelection.destination;
+      el("carrierRouteJobId").value=carrierPendingSelection.id;
+      setText(el("carrierPlotStatus"),(plan?"Previous ready plan remains archived. ":"")+
+        "Newer route awaiting result · "+carrierPendingSelection.source+" → "+carrierPendingSelection.destination+
+        ". Select CHECK / LOAD RESULT while that job is available.");
     }
     renderCarrierRoute();
   }catch(e){
