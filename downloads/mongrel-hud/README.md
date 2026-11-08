@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.14 — Recover scans taken before starting an expedition
+
+In the paired iPad **Exploration → Surveyor · Expedition Control**, expand **Include Previous Scans**. Check the journal-confirmed bodies scanned within 24 hours before the expedition started, then press **Include Selected Scans**. The updated Scout local ledger handles the estimates, avoiding double counting and leaving earlier exclusions alone. The new control requires **Scout 1.14.6** and HUD **0.18.14** on the same Elite PC. No EDDiscovery historical credits are added automatically.
+
 ## Mongrel HUD 0.18.13 — Correct carrier route selection and stale job protection
 
 Fixes an iPad Fleet Carrier plotter issue where a previously completed (or active) saved journey would override a newer Spansh route's on-screen Jump Plan, making it appear that **10-16 → the Bubble** was plotting the systems from an older itinerary.
