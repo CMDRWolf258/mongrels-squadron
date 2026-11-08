@@ -735,6 +735,8 @@ function renderCarrierRoute(){
     var awaiting=carrierPlottingNew?"Submitting your NEW route…":
       selectedId?"Waiting for CHECK / LOAD RESULT for "+source+" → "+destination+".":
       "Enter departure and destination, then select PLOT CARRIER ROUTE.";
+    // Clear the old waypoint DOM immediately; no old row can look current.
+    el("carrierRouteManifest").innerHTML="";
     if(el("carrierRouteManifest").textContent!==awaiting)el("carrierRouteManifest").textContent=awaiting;
     return;
   }
