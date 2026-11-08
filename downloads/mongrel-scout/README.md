@@ -1,3 +1,9 @@
+## Scout 1.14.6 — Include selected pre-start Surveyor scans
+
+Surveyor can now include specific scans made up to 24 hours before **Start Exploration**. On the paired iPad HUD, open **Exploration → Surveyor → Include Previous Scans** and select eligible journal-observed bodies from the current system. Those estimated values join the current expedition only when explicitly selected. The local ledger prevents duplicate credits and preserves later DSS mapping increments, Already Explored, and Undo Exclusion. No historical EDD data or manual guessed credit amounts are imported.
+
+Install **Scout 1.14.6** alongside **HUD 0.18.14**; both are required for this control. The on-PC Surveyor SQLite ledger and existing expeditions are preserved when replacing the EDMC plugin folder. No Cloudflare database changes or new recurring requests.
+
 ## Scout 1.14.5 — Spansh Fleet Carrier routing bridge
 
 Adds a separate on-demand authenticated carrier planner to the existing local HUD bridge. The iPad sends carrier departure system, destination, used capacity, tank Tritium and stored Tritium via the paired Windows HUD. Scout forwards them to the Site Admin-protected Route Director endpoint, which resolves exact system id64s and requests **Spansh /api/fleetcarrier/route** using the required repeated-key encoding. Spansh results preserve its per-hop fuel/restock information.
