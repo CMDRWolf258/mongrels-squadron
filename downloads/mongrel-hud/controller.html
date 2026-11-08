@@ -549,7 +549,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 (function(){
 "use strict";
 var state=null,notesDirty=false,interactionUntil=0,mutationEpoch=0,mutationPending=0,mutationQueue=Promise.resolve();
-var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="",carrierRoute=null,carrierRouteBusy=false,carrierPlanRestoreStarted=false;
+var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded=false,routeControlBusy=false,routePendingId="",carrierRoute=null,carrierRouteBusy=false,carrierPlanRestoreStarted=false,carrierPendingSelection=null,carrierDisplayedRoute=null,carrierPlottingNew=false,carrierInputRevision=0;
 var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0,groupScope:"",groupExpanded:Object.create(null),itemExpanded:Object.create(null)};
 var flaggedDepositToReview=null;
  var savedDepositScope="",savedDepositOpen=Object.create(null);
@@ -688,25 +688,52 @@ function renderCarrierStatus(){
   setText(pad,padText);
   pad.classList.toggle("active",!!padText);
 }
+function sameCarrierSystem(a,b){return String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase()}
+function carrierSelectionMatches(route,id,source,destination){
+  return !!(route&&route.routeType==="fleet_carrier"&&
+    (!id||route.id===id)&&
+    (!source||sameCarrierSystem(route.source,source))&&
+    (!destination||sameCarrierSystem(route.destination,destination)));
+}
 function renderCarrierRoute(){
   var journey=(state&&state.carrierJourney)||null;
-  var tracking=!!(journey&&journey.status!=="ended");
-  var display=tracking?Object.assign({},journey,{status:"ready"}):carrierRoute;
-  var ready=display&&display.status==="ready",rows=ready&&Array.isArray(display.waypoints)?display.waypoints:[];
+  var selectedId=String(el("carrierRouteJobId").value||"").trim(),
+      source=String(el("carrierRouteSource").value||"").trim(),
+      destination=String(el("carrierRouteDestination").value||"").trim();
+  // The ID and the two editable systems define WHICH route is on screen.
+  // Never let a completed journey (or a previously restored preview) override
+  // new route inputs or a fresh route job awaiting CHECK / LOAD RESULT.
+  var previewReady=!carrierPlottingNew&&carrierRoute&&carrierRoute.status==="ready"&&
+    carrierSelectionMatches(carrierRoute,selectedId,source,destination);
+  var journeyReady=!carrierPlottingNew&&journey&&journey.status!=="ended"&&
+    carrierSelectionMatches(journey,selectedId,source,destination);
+  var display=previewReady?carrierRoute:journeyReady?Object.assign({},journey,{status:"ready"}):null;
+  var ready=!!(display&&display.status==="ready"&&Array.isArray(display.waypoints));
+  var tracking=!!(journeyReady&&display&&journey.id===display.id);
+  carrierDisplayedRoute=ready?display:null;
+  var rows=ready?display.waypoints:[];
   el("carrierPlot").disabled=carrierRouteBusy || !(state&&state.connected);
   el("carrierCheck").disabled=carrierRouteBusy || !(state&&state.connected) || !String(el("carrierRouteJobId").value||"").trim();
   var checked=el("carrierDetermineTritium").checked;
   setText(el("carrierFuelModeNotice"),checked?
     "Estimate starting fuel requirements. Entered cargo Tritium is compared with the result, but not supplied to the route calculation.":
     "Plan against entered cargo Tritium, tank fuel and used capacity.");
-  el("carrierJourneyStart").disabled=carrierRouteBusy||!carrierRoute||carrierRoute.status!=="ready"||(tracking&&journey.status==="active"&&journey.id!==carrierRoute.id);
+  el("carrierJourneyStart").disabled=carrierRouteBusy||!previewReady||
+    !!(journey&&journey.status==="active");
   el("carrierJourneyPause").disabled=!tracking||journey.status!=="active"||journey.paused;
   el("carrierJourneyResume").disabled=!tracking||journey.status!=="active"||!journey.paused;
   el("carrierJourneyEnd").disabled=!tracking||journey.status==="completed";
   renderCarrierStatus();
   if(!ready){
     if(el("carrierRouteSummary").innerHTML!=="")el("carrierRouteSummary").innerHTML="";
-    setText(el("carrierJourneyStatus"),"No active carrier journey. Load a route and select START ROUTE.");
+    el("carrierJourneyProgress").innerHTML='<span style="width:0%"></span>';
+    setText(el("carrierJourneyStatus"),journey&&journey.status==="active"?
+      "A different carrier journey is active. Its progress remains saved separately.":
+      "No route loaded for the selected systems.");
+    var awaiting=carrierPlottingNew?"Submitting your NEW route…":
+      selectedId?"Waiting for CHECK / LOAD RESULT for "+source+" → "+destination+".":
+      "Enter departure and destination, then select PLOT CARRIER ROUTE.";
+    if(el("carrierRouteManifest").textContent!==awaiting)el("carrierRouteManifest").textContent=awaiting;
     return;
   }
   var total=Number(display.totalTritiumUsed||0),available=Number(display.tankFuel||0)+Number(display.storedTritium||0);
@@ -1716,13 +1743,18 @@ document.querySelectorAll("[data-pc-system-target]").forEach(function(button){
       var system=String(result.system||"").trim();
       if(!system)throw new Error("PC clipboard contains no system name");
       target.value=system;
+      if(targetId==="carrierRouteSource"||targetId==="carrierRouteDestination"){
+        carrierInputRevision++;renderCarrierRoute();
+      }
       setText(notice,"Pasted from this PC: "+system);
     }catch(e){setText(notice,"Paste from PC failed · "+e.message)}
   };
 });
 el("routeMode").onchange=function(){renderRouteControls()};
 el("carrierDetermineTritium").onchange=renderCarrierRoute;
-el("carrierRouteJobId").oninput=renderCarrierRoute;
+["carrierRouteSource","carrierRouteDestination","carrierRouteJobId"].forEach(function(id){
+  el(id).oninput=function(){carrierInputRevision++;renderCarrierRoute()};
+});
 
 
 async function sendCarrierJourney(action,extra){
@@ -1733,7 +1765,7 @@ async function sendCarrierJourney(action,extra){
   renderCarrierRoute();
 }
 el("carrierJourneyStart").onclick=async function(){
-  if(!carrierRoute||carrierRoute.status!=="ready")return;
+  if(!carrierRoute||carrierRoute.status!=="ready"||carrierDisplayedRoute!==carrierRoute)return;
   if(!confirm("Start tracking "+carrierRoute.destination+"? The departure system will be completed automatically."))return;
   try{
     await sendCarrierJourney("start",{route:carrierRoute});
@@ -1764,9 +1796,9 @@ el("carrierRouteManifest").onchange=async function(event){
 
 el("carrierRouteManifest").onclick=async function(event){
   var button=event.target&&event.target.closest&&event.target.closest("[data-carrier-copy-index]");
-  if(!button || button.disabled || !carrierRoute || carrierRoute.status!=="ready")return;
+  if(!button || button.disabled || !carrierDisplayedRoute)return;
   var index=Number(button.getAttribute("data-carrier-copy-index"));
-  var waypoints=carrierRoute.waypoints;
+  var waypoints=carrierDisplayedRoute.waypoints;
   if(!Number.isSafeInteger(index)||index<0||!Array.isArray(waypoints)||index>=waypoints.length)return;
   var system=String(waypoints[index]&&waypoints[index].system||"");
   if(!system)return;
@@ -1794,17 +1826,23 @@ el("carrierPlot").onclick=async function(){
   }
   var determineTritium=el("carrierDetermineTritium").checked;
   if(!confirm("Ask Spansh to calculate a carrier route from "+source+" to "+destination+"? No jumps will be scheduled."))return;
-  carrierRouteBusy=true;renderRouteControls();
+  carrierRouteBusy=true;carrierPlottingNew=true;renderRouteControls();
   try{
     var result=await api("/api/route",{action:"plot",mode:"carrier",source:source,destination:destination,
       usedCapacity:usedCapacity,tankFuel:tankFuel,storedTritium:storedTritium,determineTritium:determineTritium});
     if(!result.ok)throw new Error(String(result.error||"carrier_plot_failed"));
-    carrierRoute=null;el("carrierRouteJobId").value=String(result.id||"");
-    setText(el("carrierPlotStatus"),"Route submitted · "+source+" → "+destination+". Job ID saved on this PC. Select CHECK / LOAD RESULT to retrieve and save the full plan.");
-    el("carrierRouteManifest").textContent="Waiting for CHECK / LOAD RESULT selection. Tap the button above to fetch your route.";
-    setText(el("carrierCopyNotice"),"Tap COPY TO PC beside any stop once the jump plan is loaded.");
+    if(!result.id||result.routeType!=="fleet_carrier"||
+       !sameCarrierSystem(result.source,source)||!sameCarrierSystem(result.destination,destination))
+      throw new Error("The returned job does not match your new departure and destination. The previous plan was kept.");
+    // A successful new job supersedes the screen selection, NOT the archived
+    // route or any active progress. Those remain saved until a new route loads.
+    carrierPendingSelection={id:String(result.id),source:source,destination:destination};
+    carrierRoute=null;
+    el("carrierRouteJobId").value=carrierPendingSelection.id;
+    setText(el("carrierPlotStatus"),"NEW route submitted · "+source+" → "+destination+". Press CHECK / LOAD RESULT for THIS job. Your earlier saved plan is preserved.");
+    setText(el("carrierCopyNotice"),"Copy controls will appear for the new route once loaded.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier plot failed · "+e.message)}
-  finally{carrierRouteBusy=false;renderRouteControls()}
+  finally{carrierPlottingNew=false;carrierRouteBusy=false;renderRouteControls()}
 };
 el("carrierCheck").onclick=async function(){
   if(carrierRouteBusy)return;
@@ -1815,11 +1853,19 @@ el("carrierCheck").onclick=async function(){
     var result=await api("/api/route",{action:"check",routeId:id});
     if(!result.ok)throw new Error(String(result.error||"carrier_route_unavailable"));
     if(result.routeType!=="fleet_carrier")throw new Error("This is a ship route, not a carrier route.");
+    if(String(result.id||"")!==id)throw new Error("Returned a different route ID; previous plan retained.");
+    var expected=carrierPendingSelection&&carrierPendingSelection.id===id?carrierPendingSelection:null;
+    var wantedSource=expected?expected.source:String(el("carrierRouteSource").value||"").trim();
+    var wantedDestination=expected?expected.destination:String(el("carrierRouteDestination").value||"").trim();
+    if(!sameCarrierSystem(result.source,wantedSource)||!sameCarrierSystem(result.destination,wantedDestination))
+      throw new Error("Route ID "+id+" belongs to "+result.source+" → "+result.destination+
+        ", not "+wantedSource+" → "+wantedDestination+". Select PLOT CARRIER ROUTE to make a new job.");
     if(result.status==="ready"){
       carrierRoute=result;
-      setText(el("carrierPlotStatus"),"Carrier route loaded and saved on this PC. Your plan will survive HUD updates.");
-      setText(el("carrierCopyNotice"),"Tap COPY TO PC to place any stop in this PC's Windows clipboard.");
-    }else setText(el("carrierPlotStatus"),"Route calculation in progress · select CHECK / LOAD RESULT again to refresh.");
+      carrierPendingSelection=null;
+      setText(el("carrierPlotStatus"),"NEW carrier route loaded · "+result.source+" → "+result.destination+". Saved on this PC; earlier journey progress is untouched.");
+      setText(el("carrierCopyNotice"),"Tap COPY TO PC for a system from the displayed route.");
+    }else setText(el("carrierPlotStatus"),"Still calculating "+wantedSource+" → "+wantedDestination+". Select CHECK / LOAD RESULT again.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier result unavailable · "+e.message)}
   finally{carrierRouteBusy=false;renderRouteControls()}
 };
