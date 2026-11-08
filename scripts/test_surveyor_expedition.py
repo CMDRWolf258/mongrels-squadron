@@ -139,4 +139,66 @@ with tempfile.TemporaryDirectory() as temp:
     assert restarted["currentSystemEstimate"] == after_map["currentSystemEstimate"]
     assert module.Surveyor(db).snapshot(cmdr)["expedition"]["active"] is True
 
-print("Surveyor expedition: start/end, no historic credit, re-scans, fresh FSS/DSS, cutoff, undo, restart, isolation PASSED")
+    # New local-only choice: recover a scan made immediately BEFORE Start.
+    # The original ledger remains zero until the commander explicitly chooses it.
+    prior_address = "87654321000000001"
+    survey.apply(other, event("FSDJump", stamp(-40),
+        SystemAddress=prior_address, StarSystem="Prestart recovery"))
+    survey.apply(other, event("Scan", stamp(-15),
+        SystemAddress=prior_address, BodyID=1,
+        BodyName="Prestart recovery 1", ScanType="Detailed",
+        PlanetClass="Earth-like world", MassEM=1.1,
+        WasDiscovered=False, WasMapped=False))
+    old_credit = survey.snapshot(other)["currentSystemEstimate"]
+    assert old_credit > 0
+    before = survey.control(other, "start")
+    assert before["expedition"]["estimate"] == 0
+    choices = before["expedition"]["prestartCandidates"]
+    assert len(choices) == 1, choices
+    assert choices[0]["bodyId"] == "1"
+    assert choices[0]["estimatedValue"] == old_credit
+    try:
+        survey.control(other, "include_previous",
+                       {"systemAddress": address, "bodyIds": ["1"]})
+        raise AssertionError("Must reject stale-system selection")
+    except ValueError as ex:
+        assert str(ex) == "invalid_prestart_selection"
+    # Mapping after start is a separate new gain; the saved scan candidate
+    # retains its value and cannot be counted a second time.
+    survey.apply(other, event("SAAScanComplete", stamp(1),
+        SystemAddress=prior_address, BodyID=1,
+        BodyName="Prestart recovery 1", ProbesUsed=4, EfficiencyTarget=7))
+    dss_gain = survey.snapshot(other)["expedition"]["estimate"]
+    assert dss_gain > 0
+    assert len(survey.snapshot(other)["expedition"]["prestartCandidates"]) == 1
+    chosen = {"systemAddress": prior_address, "bodyIds": ["1"]}
+    included = survey.control(other, "include_previous", chosen)
+    assert included["expedition"]["estimate"] == old_credit + dss_gain
+    assert included["expedition"]["countedScans"] == 1
+    assert included["expedition"]["countedMaps"] == 1
+    assert included["expedition"]["prestartCandidates"] == []
+    again = survey.control(other, "include_previous", chosen)
+    assert again["expedition"]["estimate"] == included["expedition"]["estimate"]
+    assert module.Surveyor(db).snapshot(other)["expedition"]["estimate"] == included["expedition"]["estimate"]
+    excluded = survey.control(other, "mark_existing")
+    assert excluded["expedition"]["estimate"] == 0
+    try:
+        survey.control(other, "include_previous", chosen)
+        raise AssertionError("Must undo exclusion before including old work")
+    except ValueError as ex:
+        assert str(ex) == "prior_data_excluded_undo_first"
+    restored = survey.control(other, "undo_existing")
+    assert restored["expedition"]["estimate"] == old_credit + dss_gain
+
+    # An old scan from long before the start must never appear as an option.
+    aged_address = "87654321000000002"
+    survey.apply("OldCmdr", event("FSDJump", stamp(-1700),
+        SystemAddress=aged_address, StarSystem="Sold history"))
+    survey.apply("OldCmdr", event("Scan", stamp(-1600),
+        SystemAddress=aged_address, BodyID=1,
+        BodyName="Sold history 1", ScanType="Detailed",
+        PlanetClass="Water world", MassEM=1.0))
+    old_started = survey.control("OldCmdr", "start")
+    assert old_started["expedition"]["prestartCandidates"] == []
+
+print("Surveyor expedition: start/end, selective prior-scan recovery, DSS increment, exclusion, replay, commander isolation PASSED")
