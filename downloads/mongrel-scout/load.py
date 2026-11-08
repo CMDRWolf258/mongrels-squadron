@@ -456,15 +456,15 @@ def _observe_surveyor(cmdr: str, system: str, entry: Mapping[str, Any],
             _hud_condition.notify_all()
 
 
-def _surveyor_local_control(action: str) -> dict[str, Any]:
+def _surveyor_local_control(action: str, value: Any = None) -> dict[str, Any]:
     """Accept deliberate expedition actions only from the local HUD proxy."""
-    if action not in {"start", "end", "mark_existing", "undo_existing"}:
+    if action not in {"start", "end", "mark_existing", "undo_existing", "include_previous"}:
         raise ValueError("invalid_expedition_action")
     with _hud_condition:
         commander = str(_hud_state.get("commander") or "").strip()
     if not commander:
         raise ValueError("commander_unavailable")
-    result = _get_surveyor().control(commander, action)
+    result = _get_surveyor().control(commander, action, value)
     with _hud_condition:
         # Never publish one Commander's ledger into a different session.
         if str(_hud_state.get("commander") or "").strip().casefold() != commander.casefold():
@@ -1392,7 +1392,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
                 elif action == "record_quote":
                     self._write_json(_surveyor_quote_control(body.get("value"), str(body.get("system") or "")[:140]))
                 else:
-                    result = _surveyor_local_control(action)
+                    result = _surveyor_local_control(action, body.get("value"))
                     self._write_json({"ok": True, "exploration": result})
             except ValueError as exc:
                 self._write_json({"ok": False, "error": str(exc)}, status=409)
