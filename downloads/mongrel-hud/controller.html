@@ -1862,7 +1862,9 @@ el("carrierCheck").onclick=async function(){
   if(!id){setText(el("carrierPlotStatus"),"Enter or plot a carrier route ID.");return}
   carrierRouteBusy=true;renderRouteControls();
   try{
-    var result=await api("/api/route",{action:"check",routeId:id});
+    var result=await api("/api/route",{action:"check",routeId:id,
+      source:String(el("carrierRouteSource").value||"").trim(),
+      destination:String(el("carrierRouteDestination").value||"").trim()});
     if(!result.ok)throw new Error(String(result.error||"carrier_route_unavailable"));
     if(result.routeType!=="fleet_carrier")throw new Error("This is a ship route, not a carrier route.");
     if(String(result.id||"")!==id)throw new Error("Returned a different route ID; previous plan retained.");
@@ -1878,7 +1880,12 @@ el("carrierCheck").onclick=async function(){
       setText(el("carrierPlotStatus"),"NEW carrier route loaded · "+result.source+" → "+result.destination+". Saved on this PC; earlier journey progress is untouched.");
       setText(el("carrierCopyNotice"),"Tap COPY TO PC for a system from the displayed route.");
     }else setText(el("carrierPlotStatus"),"Still calculating "+wantedSource+" → "+wantedDestination+". Select CHECK / LOAD RESULT again.");
-  }catch(e){setText(el("carrierPlotStatus"),"Carrier result unavailable · "+e.message)}
+  }catch(e){
+    var reason=e.code==="carrier_route_system_mismatch"?
+      "That Route ID belongs to an older system pair. Select PLOT CARRIER ROUTE with your NEW departure and destination.":
+      e.message;
+    setText(el("carrierPlotStatus"),"Carrier result not loaded · "+reason);
+  }
   finally{carrierRouteBusy=false;renderRouteControls()}
 };
 el("routePlot").onclick=async function(){
