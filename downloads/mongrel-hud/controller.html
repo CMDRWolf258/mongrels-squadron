@@ -1855,7 +1855,7 @@ el("carrierPlot").onclick=async function(){
     carrierPendingSelection={id:String(result.id),source:source,destination:destination};
     carrierRoute=null;
     el("carrierRouteJobId").value=carrierPendingSelection.id;
-    setText(el("carrierPlotStatus"),"NEW route submitted · "+source+" → "+destination+". Press CHECK / LOAD RESULT for THIS job. Your earlier saved plan is preserved.");
+    setText(el("carrierPlotStatus"),"NEW route submitted · "+source+" → "+destination+". Select CHECK / LOAD RESULT for THIS job. Your earlier saved plan is preserved.");
     setText(el("carrierCopyNotice"),"Copy controls will appear for the new route once loaded.");
   }catch(e){setText(el("carrierPlotStatus"),"Carrier plot failed · "+e.message)}
   finally{carrierPlottingNew=false;carrierRouteBusy=false;renderRouteControls()}
