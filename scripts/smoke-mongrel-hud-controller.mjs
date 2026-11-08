@@ -377,16 +377,16 @@ async function drain(h, expected) {
     action:'plot',mode:'carrier',source:'Diaba',destination:'Colonia',
     usedCapacity:12500,tankFuel:1000,storedTritium:400,determineTritium:true,
   });
-  h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',status:'pending'});
+  h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',status:'pending'});
   await action;
   assert.equal(h.node('carrierRouteJobId').value,'cccccccc-dddd-eeee-ffff-111111111111');
-  assert.match(h.node('carrierRouteManifest').textContent,/Waiting for CHECK \/ LOAD RESULT selection/);
+  assert.match(h.node('carrierRouteManifest').textContent,/Waiting for CHECK \/ LOAD RESULT/);
   assert.match(h.node('carrierPlotStatus').textContent,/Select CHECK \/ LOAD RESULT/);
   const check=h.node('carrierCheck').onclick();
   await tick();
-  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111'});
+  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111',source:'Diaba',destination:'Colonia'});
   h.respond(h.requests[1],null,{
-    ok:true,routeType:'fleet_carrier',status:'ready',
+    ok:true,routeType:'fleet_carrier',status:'ready',id:'cccccccc-dddd-eeee-ffff-111111111111',
     source:'Diaba',destination:'Colonia',totalDistance:600,totalTritiumUsed:157,
     tankFuel:1000,storedTritium:400,restockStops:1,
     waypoints:[
