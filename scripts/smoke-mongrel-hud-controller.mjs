@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -786,6 +786,34 @@ async function drain(h, expected) {
   await restore;
   assert.equal(h.node('carrierRouteSource').value,'NGC 2546 Sector UZ-G d10-16');
   assert.equal(h.node('carrierRouteJobId').value,'');
+}
+
+// Expedition pre-start recovery: show escaped labels and send only selected
+// body IDs with the current system address, never a user-entered credit value.
+{
+  const h=harness();
+  const scan={system:{address:'987'},expedition:{
+    active:true,existingDataExcluded:false,estimate:0,countedScans:0,countedMaps:0,
+    prestartCandidates:[{bodyId:'7',name:'<Test World>',estimatedValue:3000000,
+                         observedAt:'2026-11-07T18:00:00Z'}]
+  }};
+  h.controller.setState({scout:{exploration:scan}});
+  h.controller.renderSurveyorControls();
+  assert.match(h.node('surveyorPrestartRows').innerHTML,/&lt;Test World&gt;/);
+  assert.doesNotMatch(h.node('surveyorPrestartRows').innerHTML,/<Test World>/);
+  h.node('surveyorPrestartRows').querySelectorAll=()=>[{value:'7'}];
+  h.node('surveyorIncludePrevious').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/surveyor');
+  assert.deepEqual(h.requests[0].body,{action:'include_previous',
+    value:{systemAddress:'987',bodyIds:['7']}});
+  h.respond(h.requests[0],null,{ok:true,exploration:{
+    ...scan,expedition:{...scan.expedition,estimate:3000000,
+      countedScans:1,prestartCandidates:[]}
+  }});
+  await tick();
+  assert.match(h.node('surveyorExpeditionNotice').textContent,/previous scans added/i);
+  assert.equal(h.controller.getState().scout.exploration.expedition.estimate,3000000);
 }
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
