@@ -4458,7 +4458,7 @@ class MongrelHudApp:
 
     def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
-        if action not in {"start", "end", "mark_existing", "undo_existing", "intel_on", "intel_off", "intel_refresh", "record_quote", "edd_connect", "edd_off", "edd_refresh"}:
+        if action not in {"start", "end", "mark_existing", "undo_existing", "include_previous", "intel_on", "intel_off", "intel_refresh", "record_quote", "edd_connect", "edd_off", "edd_refresh"}:
             raise ValueError("invalid_expedition_action")
         request = urllib.request.Request(
             SCOUT_SURVEYOR_CONTROL_URL,
