@@ -1159,6 +1159,16 @@ class Surveyor:
                     marked_at TEXT NOT NULL, cutoff_rowid INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY(expedition_id, address)
                 );
+                CREATE TABLE IF NOT EXISTS expedition_prestart_scopes (
+                    expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
+                    PRIMARY KEY(expedition_id, address)
+                );
+                CREATE TABLE IF NOT EXISTS expedition_prestart_candidates (
+                    expedition_id INTEGER NOT NULL, address TEXT NOT NULL,
+                    body_id TEXT NOT NULL, name TEXT NOT NULL,
+                    observed_at TEXT NOT NULL, amount INTEGER NOT NULL,
+                    PRIMARY KEY(expedition_id, address, body_id)
+                );
                 CREATE TABLE IF NOT EXISTS bio_sales (
                     commander TEXT NOT NULL, digest TEXT NOT NULL,
                     base INTEGER NOT NULL, bonus INTEGER NOT NULL,
@@ -1248,7 +1258,63 @@ class Surveyor:
             "ORDER BY id DESC LIMIT 1", (commander,),
         ).fetchone()
 
-    def control(self, commander: str, action: str) -> dict[str, Any]:
+
+    def _capture_prestart_candidates(self, conn: sqlite3.Connection, commander: str,
+                                     session: sqlite3.Row, address: str) -> None:
+        """Freeze recent, unsold, journal-observed body estimates at expedition start.
+
+        For pre-upgrade active expeditions, the first snapshot also captures
+        eligible records. No new historic data gets auto-credited: each body
+        requires an explicit selection. A frozen estimate prevents a later DSS
+        mapping from making the original scan disappear or double-counting it.
+        """
+        if not address:
+            return
+        claimed = conn.execute(
+            "INSERT OR IGNORE INTO expedition_prestart_scopes VALUES (?,?)",
+            (session["id"], address),
+        ).rowcount
+        if not claimed:
+            return
+        try:
+            started = datetime.fromisoformat(session["started_at"].replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return
+        system = self._load(conn, "systems", commander, address)
+        sold_at = _text(system.get("lastKnownSaleAt"))
+        for row in conn.execute(
+            "SELECT body_id,info FROM bodies WHERE commander=? AND address=?",
+            (commander, address),
+        ):
+            raw = json.loads(row["info"])
+            viewed = _body_view(raw)
+            acquired = _text(raw.get("lastDataAcquiredAt"))
+            amount = _int(viewed.get("currentValue"))
+            if not viewed.get("personallyScanned") or amount is None or amount <= 0:
+                continue
+            if not acquired or (sold_at and acquired <= sold_at):
+                continue
+            try:
+                observed = datetime.fromisoformat(acquired.replace("Z", "+00:00"))
+                age = (started - observed).total_seconds()
+            except (ValueError, TypeError):
+                continue
+            if not 0 <= age <= 86400:  # no unrelated old discoveries
+                continue
+            conn.execute(
+                "INSERT OR IGNORE INTO expedition_prestart_candidates "
+                "(expedition_id,address,body_id,name,observed_at,amount) "
+                "VALUES (?,?,?,?,?,?)",
+                (session["id"], address, row["body_id"],
+                 _text(raw.get("name")) or ("Body " + row["body_id"]),
+                 acquired, amount),
+            )
+
+    @staticmethod
+    def _prestart_digest(address: str, body_id: str) -> str:
+        return hashlib.sha256(("prestart-scan:" + address + ":" + body_id).encode("utf-8")).hexdigest()
+
+    def control(self, commander: str, action: str, value: Any = None) -> dict[str, Any]:
         """Local-only user choices. Never remove scans or modify sold records.
 
         'mark_existing' acts as a *time cutoff*: previously credited values for
@@ -1257,7 +1323,7 @@ class Surveyor:
         cmdr = _text(commander)
         if not cmdr:
             raise ValueError("commander_unavailable")
-        if action not in {"start", "end", "mark_existing", "undo_existing"}:
+        if action not in {"start", "end", "mark_existing", "undo_existing", "include_previous"}:
             raise ValueError("invalid_expedition_action")
         with self.lock, self._connect() as conn:
             active = self._active_expedition(conn, cmdr)
@@ -1281,7 +1347,38 @@ class Surveyor:
                 address = row["active_address"] if row else ""
                 if not address:
                     raise ValueError("current_system_unavailable")
-                if action == "mark_existing":
+                if action == "include_previous":
+                    if (not isinstance(value, dict)
+                            or _text(value.get("systemAddress")) != address
+                            or not isinstance(value.get("bodyIds"), list)
+                            or not 1 <= len(value["bodyIds"]) <= 30
+                            or any(not isinstance(body_id, str) or not body_id
+                                   or len(body_id) > 80 for body_id in value["bodyIds"])):
+                        raise ValueError("invalid_prestart_selection")
+                    self._capture_prestart_candidates(conn, cmdr, active, address)
+                    blocked = conn.execute(
+                        "SELECT 1 FROM expedition_exclusions WHERE expedition_id=? AND address=?",
+                        (active["id"], address),
+                    ).fetchone()
+                    if blocked:
+                        raise ValueError("prior_data_excluded_undo_first")
+                    for body_id in set(value["bodyIds"]):
+                        candidate = conn.execute(
+                            "SELECT observed_at,amount FROM expedition_prestart_candidates "
+                            "WHERE expedition_id=? AND address=? AND body_id=?",
+                            (active["id"], address, body_id),
+                        ).fetchone()
+                        if candidate is None:
+                            raise ValueError("prestart_scan_unavailable")
+                        conn.execute(
+                            "INSERT OR IGNORE INTO expedition_credits "
+                            "(expedition_id,digest,address,body_id,occurred_at,kind,amount) "
+                            "VALUES (?,?,?,?,?,?,?)",
+                            (active["id"], self._prestart_digest(address, body_id),
+                             address, body_id, candidate["observed_at"], "PriorScan",
+                             candidate["amount"]),
+                        )
+                elif action == "mark_existing":
                     # Preserve the earliest cutoff across repeat clicks.
                     cutoff = conn.execute(
                         "SELECT COALESCE(MAX(rowid),0) FROM expedition_credits "
@@ -1310,11 +1407,13 @@ class Surveyor:
             return {
                 "active": False, "startedAt": None, "estimate": 0,
                 "currentSystemGain": 0, "existingDataExcluded": False,
+                "prestartCandidates": [],
                 "countedScans": 0, "countedMaps": 0,
                 "exobiology": {"completedSpecies": 0, "estimatedBase": 0,
                                "potentialFirstLoggedBonus": 0, "potentialTotal": 0,
                                "confirmedVistaSales": 0, "uncertainValues": 0},
             }
+        self._capture_prestart_candidates(conn, commander, session, active_address)
         excluded = {
             row["address"]: (row["marked_at"], row["cutoff_rowid"])
             for row in conn.execute(
@@ -1336,7 +1435,7 @@ class Surveyor:
             total += amount
             if row["address"] == active_address:
                 local += amount
-            if row["kind"] == "Scan":
+            if row["kind"] in {"Scan", "PriorScan"}:
                 scans += 1
             elif row["kind"] == "SAAScanComplete":
                 maps += 1
@@ -1361,6 +1460,22 @@ class Surveyor:
             bio_base += base
             if origin.get("ourFirstFootfall") is True:
                 bio_bonus += base * 4  # possible first-logged, NEVER guaranteed
+        prior_candidates = []
+        if active_address:
+            for candidate in conn.execute(
+                "SELECT body_id,name,observed_at,amount FROM expedition_prestart_candidates "
+                "WHERE expedition_id=? AND address=? ORDER BY observed_at DESC LIMIT 80",
+                (session["id"], active_address),
+            ):
+                already_added = conn.execute(
+                    "SELECT 1 FROM expedition_credits WHERE expedition_id=? AND digest=?",
+                    (session["id"], self._prestart_digest(active_address, candidate["body_id"])),
+                ).fetchone()
+                if not already_added:
+                    prior_candidates.append({
+                        "bodyId": candidate["body_id"], "name": candidate["name"],
+                        "observedAt": candidate["observed_at"], "estimatedValue": candidate["amount"],
+                    })
         sold = conn.execute(
             "SELECT COALESCE(SUM(amount),0) FROM expedition_bio_sales "
             "WHERE expedition_id=?", (session["id"],),
@@ -1369,6 +1484,7 @@ class Surveyor:
             "active": True, "startedAt": session["started_at"],
             "estimate": total, "currentSystemGain": local,
             "existingDataExcluded": active_address in excluded,
+            "prestartCandidates": prior_candidates,
             "currentSystemCutoff": excluded[active_address][0] if active_address in excluded else None,
             "countedScans": scans, "countedMaps": maps,
             "exobiology": {
