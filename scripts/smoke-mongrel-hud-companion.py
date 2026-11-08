@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.12"
+assert hud.APP_VERSION=="0.18.13"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -98,12 +98,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.9"}) is Fals
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.10"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.11"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.12"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.13"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.13"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.14"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.13",
+    "name":"Mongrel HUD Windows v0.18.14",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.13" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.14" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -176,6 +177,24 @@ with tempfile.TemporaryDirectory() as carrier_td:
     assert saved_snapshot["route"]["storedTritium"]==350
     assert saved_snapshot["route"]["usedCapacity"]==13000
     assert saved_snapshot["route"]["status"]=="ready"
+
+    # A stale carrier route ID must NOT overwrite the locally archived plan
+    # when the iPad now shows 10-16 → Sol.
+    wrong_request_source="NGC 2546 Sector UZ-G d10-16"
+    with mock.patch.object(hud,"request_scout_json",return_value={**route,"ok":True}):
+        old_result=archive_app.route_control("check",job_id,
+            source=wrong_request_source,destination="Sol")
+    assert old_result["ok"] is False
+    assert old_result["error"]=="carrier_route_system_mismatch"
+    assert old_result["routeSource"]=="Diaba"
+    assert old_result["routeDestination"]=="Colonia"
+    assert archive_app.saved_carrier_plan()["route"]["id"]==job_id
+    with mock.patch.object(hud,"request_scout_json",return_value={**route,"ok":True}):
+        legitimate=archive_app.route_control("check",job_id,
+            source="Diaba",destination="Colonia")
+    assert legitimate["ok"] is True
+    assert archive_app.saved_carrier_plan()["route"]["waypoints"][1]["system"]=="Test Carrier Stop"
+
     # A second pending route NEVER discards the last successfully loaded plan.
     archive_app._remember_carrier_route("plot","carrier",{"ok":True,"status":"pending",
         "id":"abcdef01-1234-1234-1234-123456789012","source":"Sol","destination":"Beagle Point"})
@@ -676,7 +695,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.12"
+    assert hud.APP_VERSION=="0.18.13"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]

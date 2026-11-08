@@ -377,16 +377,16 @@ async function drain(h, expected) {
     action:'plot',mode:'carrier',source:'Diaba',destination:'Colonia',
     usedCapacity:12500,tankFuel:1000,storedTritium:400,determineTritium:true,
   });
-  h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',status:'pending'});
+  h.respond(h.requests[0],null,{ok:true,id:'cccccccc-dddd-eeee-ffff-111111111111',routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',status:'pending'});
   await action;
   assert.equal(h.node('carrierRouteJobId').value,'cccccccc-dddd-eeee-ffff-111111111111');
-  assert.match(h.node('carrierRouteManifest').textContent,/Waiting for CHECK \/ LOAD RESULT selection/);
+  assert.match(h.node('carrierRouteManifest').textContent,/Waiting for CHECK \/ LOAD RESULT/);
   assert.match(h.node('carrierPlotStatus').textContent,/Select CHECK \/ LOAD RESULT/);
   const check=h.node('carrierCheck').onclick();
   await tick();
-  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111'});
+  assert.deepEqual(h.requests[1].body,{action:'check',routeId:'cccccccc-dddd-eeee-ffff-111111111111',source:'Diaba',destination:'Colonia'});
   h.respond(h.requests[1],null,{
-    ok:true,routeType:'fleet_carrier',status:'ready',
+    ok:true,routeType:'fleet_carrier',status:'ready',id:'cccccccc-dddd-eeee-ffff-111111111111',
     source:'Diaba',destination:'Colonia',totalDistance:600,totalTritiumUsed:157,
     tankFuel:1000,storedTritium:400,restockStops:1,
     waypoints:[
@@ -640,5 +640,152 @@ async function drain(h, expected) {
   assert.equal(h.requests.length,1,'No background cloud fetch is required to restore pending ID');
 }
 
+
+
+// Regression: a completed old carrier route must NEVER override a new plot
+// from 10-16 to the Bubble. Previously this always showed the old systems
+// because renderCarrierRoute prioritized carrierJourney over carrierRoute.
+{
+  const h=harness(),oldId='11111111-1111-1111-1111-111111111111',
+    newId='22222222-2222-2222-2222-222222222222',
+    home='NGC 2546 Sector UZ-G d10-16',bubble='Sol';
+  h.node('carrierUsedCapacity').value='16000';
+  h.node('carrierTankFuel').value='1000';
+  h.node('carrierStoredTritium').value='400';
+  h.node('carrierRouteSource').value='Diaba';
+  h.node('carrierRouteDestination').value='Colonia';
+  h.node('carrierRouteJobId').value=oldId;
+  const oldJourney={
+    id:oldId,routeType:'fleet_carrier',status:'completed',
+    source:'Diaba',destination:'Colonia',completedIndex:1,
+    totalJumps:1,completedJumps:1,remainingJumps:0,paused:false,
+    nextSystem:'',remainingDistance:0,estimatedTritiumRemaining:0,
+    totalDistance:500,totalTritiumUsed:119,completedVia:'manual',
+    waypoints:[
+      {system:'Diaba',distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'Colonia',distance:500,fuelUsed:119,fuelInTank:881},
+    ],cooldown:{status:'ready',remainingSeconds:0},
+  };
+  h.controller.setState({connected:true,carrierJourney:oldJourney});
+  h.controller.renderCarrierRoute();
+  assert.match(h.node('carrierRouteManifest').innerHTML,/Colonia/);
+
+  h.node('carrierRouteSource').value=home;
+  h.node('carrierRouteDestination').value=bubble;
+  h.node('carrierRouteSource').oninput();
+  h.node('carrierRouteDestination').oninput();
+  assert.equal(h.node('carrierRouteSummary').innerHTML,'',
+    'Typing new systems immediately hides stale completed route summary');
+  assert.doesNotMatch(h.node('carrierRouteManifest').innerHTML,/Colonia/,
+    'Old route must not appear as the new route');
+
+  const plotted=h.node('carrierPlot').onclick();
+  await tick();
+  assert.equal(h.requests[0].path,'/api/route');
+  assert.equal(h.requests[0].body.source,home);
+  assert.equal(h.requests[0].body.destination,bubble);
+  h.respond(h.requests[0],null,{
+    ok:true,routeType:'fleet_carrier',id:newId,status:'pending',
+    source:home,destination:bubble,
+  });
+  await plotted;
+  assert.equal(h.node('carrierRouteJobId').value,newId);
+  assert.equal(h.node('carrierRouteManifest').innerHTML,'',
+    'New route submission clears the prior completed manifest');
+  assert.match(h.node('carrierRouteManifest').textContent,/CHECK \/ LOAD RESULT/);
+  assert.doesNotMatch(h.node('carrierRouteManifest').textContent,/Colonia/);
+  assert.match(h.node('carrierPlotStatus').textContent,/NEW route submitted/);
+
+  const checked=h.node('carrierCheck').onclick();
+  await tick();
+  assert.deepEqual(h.requests[1].body,{action:'check',routeId:newId,source:home,destination:bubble});
+  h.respond(h.requests[1],null,{
+    ok:true,routeType:'fleet_carrier',id:newId,status:'ready',
+    source:home,destination:bubble,totalDistance:300,totalTritiumUsed:77,
+    tankFuel:1000,storedTritium:400,restockStops:0,
+    waypoints:[
+      {system:home,distance:0,fuelUsed:0,fuelInTank:1000},
+      {system:'LHS 3447',distance:300,fuelUsed:77,fuelInTank:923},
+      {system:bubble,distance:0,fuelUsed:0,fuelInTank:923},
+    ],
+  });
+  await checked;
+  assert.match(h.node('carrierRouteSummary').innerHTML,/Sol/);
+  assert.match(h.node('carrierRouteManifest').innerHTML,/LHS 3447/);
+  assert.doesNotMatch(h.node('carrierRouteManifest').innerHTML,/Colonia/);
+  assert.doesNotMatch(h.node('carrierRouteManifest').innerHTML,/is-done/,
+    'Completed markings from OLD journey must not bleed into new route');
+  assert.equal(h.controller.getState().carrierJourney.id,oldId,
+    'Older completed journey remains saved and untouched');
+  const button={disabled:false,getAttribute:key=>key==='data-carrier-copy-index'?'1':null};
+  const copy=h.node('carrierRouteManifest').onclick({target:{
+    closest:selector=>selector==='[data-carrier-copy-index]'?button:null,
+  }});
+  await tick();
+  assert.deepEqual(h.requests[2].body,{action:'copy_to_pc',system:'LHS 3447'},
+    'Copy to PC must use the CURRENT, visible route');
+  h.respond(h.requests[2],null,{ok:true,system:'LHS 3447'});
+  await copy;
+}
+
+// A stale Route ID cannot quietly load old waypoints into a new system pair.
+{
+  const h=harness(),oldId='11111111-1111-1111-1111-111111111111';
+  h.node('carrierRouteSource').value='NGC 2546 Sector UZ-G d10-16';
+  h.node('carrierRouteDestination').value='Sol';
+  h.node('carrierRouteJobId').value=oldId;
+  const checking=h.node('carrierCheck').onclick();
+  await tick();
+  assert.deepEqual(h.requests[0].body,{
+    action:'check',routeId:oldId,source:'NGC 2546 Sector UZ-G d10-16',
+    destination:'Sol',
+  });
+  h.respond(h.requests[0],null,{
+    ok:true,routeType:'fleet_carrier',status:'ready',id:oldId,
+    source:'Diaba',destination:'Colonia',
+  });
+  await checking;
+  assert.equal(h.node('carrierRouteSummary').innerHTML,'');
+  assert.match(h.node('carrierPlotStatus').textContent,/belongs to Diaba → Colonia/);
+  assert.match(h.node('carrierPlotStatus').textContent,/PLOT CARRIER ROUTE/);
+}
+
+// A pending newer route overrides an older saved preview's input fields
+// during restoration, but the older preview stays archived.
+{
+  const h=harness(),restore=h.controller.restoreSavedCarrierPlan();
+  await tick();
+  h.respond(h.requests[0],null,{ok:true,route:{
+    ok:true,id:'11111111-1111-1111-1111-111111111111',status:'ready',
+    routeType:'fleet_carrier',source:'Diaba',destination:'Colonia',
+    usedCapacity:14000,tankFuel:1000,storedTritium:100,
+    totalDistance:500,totalTritiumUsed:119,
+    waypoints:[{system:'Diaba',fuelUsed:0,distance:0},
+               {system:'Colonia',fuelUsed:119,distance:500}],
+  },pending:{id:'22222222-2222-2222-2222-222222222222',
+    source:'NGC 2546 Sector UZ-G d10-16',destination:'Sol'}});
+  await restore;
+  assert.equal(h.node('carrierRouteSource').value,'NGC 2546 Sector UZ-G d10-16');
+  assert.equal(h.node('carrierRouteDestination').value,'Sol');
+  assert.equal(h.node('carrierRouteJobId').value,'22222222-2222-2222-2222-222222222222');
+  assert.equal(h.node('carrierRouteSummary').innerHTML,'');
+  assert.doesNotMatch(h.node('carrierRouteManifest').innerHTML,/Colonia/);
+}
+
+// A delayed save-restore request must not overwrite inputs entered on iPad.
+{
+  const h=harness(),restore=h.controller.restoreSavedCarrierPlan();
+  await tick();
+  h.node('carrierRouteSource').value='NGC 2546 Sector UZ-G d10-16';
+  h.node('carrierRouteSource').oninput();
+  h.respond(h.requests[0],null,{ok:true,route:{
+    ok:true,id:'11111111-1111-1111-1111-111111111111',
+    routeType:'fleet_carrier',status:'ready',
+    source:'Diaba',destination:'Colonia',waypoints:[],
+  }});
+  await restore;
+  assert.equal(h.node('carrierRouteSource').value,'NGC 2546 Sector UZ-G d10-16');
+  assert.equal(h.node('carrierRouteJobId').value,'');
+}
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');

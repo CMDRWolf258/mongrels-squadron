@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.12"
+APP_VERSION = "0.18.13"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -4558,6 +4558,17 @@ class MongrelHudApp:
                 method="POST",
             )
         result = request_scout_json(request, "route_control_failed", timeout=18.0)
+        if (action == "check" and result.get("ok") is True
+                and result.get("routeType") == "fleet_carrier"):
+            # An old job ID must never replace the saved plan just because
+            # CHECK / LOAD RESULT was tapped with different inputs on the iPad.
+            def same_system(a: Any, b: Any) -> bool:
+                return str(a or "").strip().casefold() == str(b or "").strip().casefold()
+            if ((source and not same_system(source, result.get("source")))
+                    or (destination and not same_system(destination, result.get("destination")))):
+                return {"ok": False, "error": "carrier_route_system_mismatch",
+                        "routeSource": str(result.get("source") or "")[:140],
+                        "routeDestination": str(result.get("destination") or "")[:140]}
         # A preview must survive a HUD/iPad restart even if the Spansh job
         # expires after 24h; route progress remains in carrierJourney.
         self._remember_carrier_route(action, mode, result, source=source, destination=destination)
