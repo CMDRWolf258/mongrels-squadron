@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mongrel HUD Controller</title>
 <style>
+.surveyor-prestart-rows{display:grid;gap:8px;margin:10px 0}
+.surveyor-prestart-row{display:flex;gap:10px;align-items:center;min-height:46px;padding:9px 10px;margin:0;border:1px solid var(--line);border-radius:8px;background:#07131a;color:var(--text)}
+.surveyor-prestart-row input{width:22px;height:22px;flex-shrink:0;margin:0;accent-color:var(--accent)}
+.surveyor-prestart-row span{min-width:0;overflow-wrap:anywhere}
+.surveyor-prestart-row small{display:block;color:var(--muted);margin-top:3px}
+.surveyor-prestart-actions{margin:9px 0 14px}
 .carrier-pad-lockdown{margin:6px 0 10px;color:#e8bb67;font-weight:700;font-size:.83rem;min-height:0}
 .carrier-pad-lockdown.active{border-left:3px solid #e8bb67;padding:6px 10px;background:#251e13;border-radius:5px}
 
@@ -387,7 +393,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   <section id="explorationPanel" class="hidden">
   <div class="card" id="surveyorExpeditionCard">
     <h2>SURVEYOR · EXPEDITION CONTROL</h2>
-    <div class="layout-hint">Private to Serenity. Expedition earnings count only new journal-confirmed scans and DSS gains after Start Exploration. Visiting a system never counts as a scan.</div>
+    <div class="layout-hint">Private to Serenity. Expedition earnings include journal-confirmed scans and DSS gains after Start Exploration, plus any eligible earlier scans you explicitly choose to include. Visiting a system never counts as a scan.</div>
     <div class="layout-hint">The separate Exploration Alerts HUD window highlights live FIRST DISCOVERY scan flags and high-metal-content planets with biological signals. HMC signals do not identify Stratum Tectonicas or prove first footfall; both alerts are local and expire when you leave the system.</div>
     <div class="grid">
       <div><small>CURRENT SYSTEM · OBSERVED</small><strong id="surveyorCurrentEstimate">—</strong><div class="layout-hint">May include data previously sold</div></div>
@@ -401,6 +407,12 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <button type="button" id="surveyorUndo">UNDO EXCLUSION</button>
     </div>
     <div class="notice" id="surveyorExpeditionNotice"></div>
+    <details id="surveyorPrestartSection">
+      <summary>INCLUDE PREVIOUS SCANS</summary>
+      <div class="layout-hint">Choose journal-recorded scans made within 24 hours before this expedition started. Values are frozen estimates, not Frontier sale confirmations. No scans are included automatically; previously sold or older data are not offered.</div>
+      <div id="surveyorPrestartRows" class="surveyor-prestart-rows">Start an expedition to see eligible scans.</div>
+      <div class="surveyor-prestart-actions"><button type="button" id="surveyorIncludePrevious" class="action">INCLUDE SELECTED SCANS</button></div>
+    </details>
     <h3>COMMUNITY CHARTS · EDSM / SPANSH</h3>
     <div class="layout-hint">Optional. When enabled, system name and 64-bit address are shared with EDSM and Spansh. No journals, CMDR identity or earnings leave Serenity. Catalog entries do not prove first discovery.</div>
     <div class="layout-actions"><button id="surveyorCommunityToggle" type="button">ENABLE COMMUNITY CHARTS</button><button id="surveyorCommunityRefresh" type="button">REFRESH THIS SYSTEM</button></div>
@@ -1011,6 +1023,7 @@ function renderBioSurvey(survey){
   }
   setText(el("surveyorBioSales"),message);
 }
+var surveyorPrestartAddress="";
 function renderSurveyorControls(){
   var logLimit=String((state&&state.discoveryLogLimit)||"10");
   if(!["5","10","15","all"].includes(logLimit))logLimit="10";
@@ -1026,6 +1039,23 @@ function renderSurveyorControls(){
   el("surveyorEnd").disabled=!active;
   el("surveyorMark").disabled=!active||excluded||!system.address;
   el("surveyorUndo").disabled=!active||!excluded;
+  var candidates=Array.isArray(exp.prestartCandidates)?exp.prestartCandidates:[];
+  var address=String(system.address||"");
+  var rowsNode=el("surveyorPrestartRows");
+  var selectedBefore=surveyorPrestartAddress===address?
+    Array.from(rowsNode.querySelectorAll('input[type="checkbox"]:checked')).map(function(input){return input.value}):[];
+  surveyorPrestartAddress=address;
+  if(!active)setText(rowsNode,"Start an expedition to see eligible scans.");
+  else if(!candidates.length)setText(rowsNode,"No eligible pre-start scans in this system.");
+  else rowsNode.innerHTML=candidates.map(function(candidate){
+    var id=String(candidate.bodyId||"");
+    return '<label class="surveyor-prestart-row"><input type="checkbox" value="'+escapeAttr(id)+'"'+
+      (selectedBefore.includes(id)?' checked':'')+'><span><strong>'+
+      escapeHtml(candidate.name||"Unnamed body")+'</strong><small>'+
+      Number(candidate.estimatedValue||0).toLocaleString()+' CR estimated · '+escapeHtml(candidate.observedAt||"")+
+      '</small></span></label>';
+  }).join("");
+  el("surveyorIncludePrevious").disabled=!active||excluded||!candidates.length;
   renderSurveyorDiscovery(survey);
   renderBioSurvey(survey);
   var eddEnabled=state.scout&&state.scout.explorationEDDiscoveryEnabled===true;
@@ -1064,15 +1094,17 @@ function renderSurveyorControls(){
   setText(el("surveyorCalibrationStatus"),Number(comparison.references||0)+
     " distinct system quote comparisons · reference only (no blanket multiplier)");
 }
-async function surveyorAction(action){
+async function surveyorAction(action,value){
   holdRefresh(1200);
   try{
-    var response=await api("/api/surveyor",{action:action});
+    var payload={action:action};
+    if(value!==undefined)payload.value=value;
+    var response=await api("/api/surveyor",payload);
     if(!response.ok)throw new Error(String(response.error||"surveyor_action_failed"));
     state=state||{};state.scout=state.scout||{};
     if(response.exploration)state.scout.exploration=response.exploration;
     renderSurveyorControls();
-    setText(el("surveyorExpeditionNotice"),({start:"Expedition started",end:"Expedition ended",mark_existing:"Previous data excluded; future discoveries count",undo_existing:"Exclusion undone"})[action]||"Saved");
+    setText(el("surveyorExpeditionNotice"),({start:"Expedition started",end:"Expedition ended",mark_existing:"Previous data excluded; future discoveries count",undo_existing:"Exclusion undone",include_previous:"Selected previous scans added"})[action]||"Saved");
   }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
 }
 
@@ -1658,6 +1690,16 @@ el("surveyorStart").onclick=function(){surveyorAction("start")};
 el("surveyorEnd").onclick=function(){if(confirm("End this expedition? Recorded exploration data stays in the private ledger."))surveyorAction("end")};
 el("surveyorMark").onclick=function(){if(confirm("Exclude existing expedition earnings in this system? New scans and mappings will still count."))surveyorAction("mark_existing")};
 el("surveyorUndo").onclick=function(){surveyorAction("undo_existing")};
+el("surveyorIncludePrevious").onclick=function(){
+  var survey=(state&&state.scout&&state.scout.exploration)||{};
+  var exp=survey.expedition||{},system=survey.system||{};
+  if(!exp.active||exp.existingDataExcluded||!system.address)return;
+  var selected=Array.from(el("surveyorPrestartRows").querySelectorAll('input[type="checkbox"]:checked'))
+    .map(function(input){return input.value});
+  if(!selected.length){setText(el("surveyorExpeditionNotice"),"Select one or more previous scans first.");return}
+  if(!confirm("Include "+selected.length+" selected pre-start body scan(s) in this expedition? Estimates only."))return;
+  surveyorAction("include_previous",{systemAddress:String(system.address),bodyIds:selected});
+};
 el("surveyorCommunityToggle").onclick=async function(){
   var enabled=state&&state.scout&&state.scout.explorationCommunityEnabled===true;
   if(!enabled&&!confirm("Enable EDSM/Spansh lookup? Only current system name and 64-bit system address are shared."))return;
