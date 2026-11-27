@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.23"
+assert hud.APP_VERSION=="0.18.24"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -109,12 +109,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.21"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.22"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.24",
+    "name":"Mongrel HUD Windows v0.18.25",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.24" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.25" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -705,7 +706,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.23"
+    assert hud.APP_VERSION=="0.18.24"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -965,7 +966,26 @@ assert rows[0]["cost"]==240500
 assert len(rows[0]["materials"])==2
 assert hud.aggregate_sourcing(req,[([dict(base,updatedAt="2000-01-01T00:00:00Z")],True)])==[]
 assert hud.aggregate_sourcing(req,[([dict(base,maxLandingPadSize=None)],True)])==[]
-print("✓ Commodity sourcing filters and station grouping")
+# A rare commodity must appear in the recommended prefix even when many
+# nearby markets repeat common goods. Quantities may span multiple stops.
+plan_req={**req,"needs":{"steel":{"name":"Steel","quantity":80},"water":{"name":"Water","quantity":10},"cmm":{"name":"CMM Composites","quantity":12}}}
+common=[dict(base,marketId=200+i,stationName="Common "+str(i),distance=i+1) for i in range(45)]
+common += [dict(row,commodityName="water",stock=10) for row in common[:]]
+rare=[dict(base,marketId=400,stationName="Rare A",commodityName="cmm",stock=7,distance=45),dict(base,marketId=401,stationName="Rare B",commodityName="cmm",stock=5,distance=46)]
+ranked=hud.aggregate_sourcing(plan_req,[(common+rare,False)])
+recommended=[r for r in ranked if r.get("planOrder")]
+assert len(recommended)==3 and all(r["planOptimal"] for r in recommended)
+assert {r["station"] for r in recommended[:2]}=={"Rare A","Rare B"}
+assert sum(r["planCollect"].get("cmm",0) for r in recommended)==12
+assert sum(r["planCollect"].get("steel",0) for r in recommended)==80
+assert len(ranked)>3 and all(not r.get("planOrder") for r in ranked[3:])
+# Greedy trap: largest first covers four, but the two other stations cover all six.
+trap_needs={k:{"name":k,"quantity":1} for k in "abcdef"}
+trap_rows=[dict(base,marketId=500+i,stationName="Trap "+str(i),commodityName=k,stock=1,distance=i+1) for i,group in enumerate(["abcd","abe","cdf"]) for k in group]
+trap=hud.aggregate_sourcing({**req,"needs":trap_needs},[(trap_rows,False)])
+assert len([r for r in trap if r.get("planOrder")])==2
+assert all(r["planOptimal"] for r in trap if r.get("planOrder"))
+print("✓ Commodity sourcing filters, minimum-stop plan, split quantities and alternatives")
 
 # All available Raven systems, independent custom reference, and Any age.
 sourcing_state["colonization"]["availableProjects"]=[{"system":"Diaba"},{"system":"Achenar"}]

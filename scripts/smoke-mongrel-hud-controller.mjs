@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -884,4 +884,20 @@ console.log("✓ Quiet background Raven refresh, manual-only feedback and stable
   assert.equal(h.node("sourcingSystemRow").style.display,"none");
   assert.match(html,/id="sourcingPaste"/);
   assert.match(html,/<option value="0">Any<\/option>/);
+}
+
+{
+  const h=harness();
+  const material={key:"steel",name:"Steel",need:20,stock:20,price:100};
+  const common={station:"Common",system:"Diaba",distance:1.234,arrival:123.1,pad:3,materials:[material],matched:1,covered:20,averagePrice:100,updatedAt:new Date().toISOString()};
+  const rare={...common,station:"Rare",distance:2.1,arrival:null,planOrder:1,planOptimal:true,planCollect:{steel:20}};
+  h.controller.setSourcingResult({status:"complete",request:{system:"Diaba",radius:50,needs:{steel:{name:"Steel",quantity:20}}},results:[common,rare]});
+  h.controller.renderSourcingResults();
+  const output=h.node("sourcingResults").innerHTML;
+  assert.match(output,/Recommended collection · 1 stop/);
+  assert.match(output,/All required quantities covered/);
+  assert.match(output,/2\.10 LY · — Ls/);
+  assert.match(output,/1\.24 LY · 124 Ls/);
+  assert.ok(output.indexOf("Stop 1 · Rare")<output.indexOf("Alternative stations"));
+  assert.ok(output.indexOf("Alternative stations")<output.indexOf("Common"));
 }

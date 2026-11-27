@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.23"
+APP_VERSION = "0.18.24"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1900,6 +1900,98 @@ def normalize_spansh_sourcing(data, request, key):
     return rows
 
 
+def sourcing_collection_plan(results, needs):
+    """Find the fewest stops for attainable quantities within a bounded search."""
+    keys = list(needs)
+    required = tuple(needs[k]["quantity"] for k in keys)
+    def convenience(r):
+        return (r["distance"], r["arrival"] if r["arrival"] is not None else math.inf,
+                r["system"], r["station"])
+    results = sorted(results, key=convenience)
+    vectors = []
+    for r in results:
+        stock = {m["key"]: m["stock"] for m in r["materials"]}
+        vectors.append(tuple(min(q, stock.get(k, 0)) for k, q in zip(keys, required)))
+    target = tuple(min(q, sum(v[j] for v in vectors)) for j, q in enumerate(required))
+    providers = [tuple(i for i, v in enumerate(vectors) if v[j]) for j in range(len(keys))]
+    def subtract(rem, v):
+        return tuple(max(0, a-b) for a,b in zip(rem,v))
+    def score(i, rem):
+        return sum(min(a,b)/q for a,b,q in zip(rem,vectors[i],target) if a and q)
+    # Feasible starting solution, with redundant stops removed.
+    remaining = target
+    chosen = []
+    unused = set(range(len(results)))
+    while any(remaining):
+        i = max(unused, key=lambda i: (score(i, remaining), -i))
+        chosen.append(i)
+        unused.remove(i)
+        remaining = subtract(remaining, vectors[i])
+    totals = [sum(vectors[i][j] for i in chosen) for j in range(len(keys))]
+    for i in chosen[:]:
+        if all(t-v >= q for t,v,q in zip(totals,vectors[i],target)):
+            chosen.remove(i)
+            totals = [t-v for t,v in zip(totals,vectors[i])]
+    best = chosen[:]
+    # Any completion must contain a provider of every remaining commodity.
+    # Explore all such providers for the tightest remaining requirement.
+    visited = set()
+    deadline = time.monotonic() + 2.0
+    aborted = False
+    def search(selected, rem):
+        nonlocal best, aborted
+        if aborted:
+            return
+        if not any(rem):
+            if len(selected) < len(best):
+                best = list(selected)
+            return
+        if len(selected) + 1 >= len(best) or selected in visited:
+            return
+        if len(visited) >= 20000 or time.monotonic() >= deadline:
+            aborted = True
+            return
+        visited.add(selected)
+        choices = []
+        lower = 0
+        for j, qty in enumerate(rem):
+            if not qty:
+                continue
+            available = [i for i in providers[j] if i not in selected]
+            if not available:
+                return
+            largest = max(vectors[i][j] for i in available)
+            lower = max(lower, (qty + largest - 1) // largest)
+            if len(selected) + lower >= len(best):
+                return
+            if sum(vectors[i][j] for i in available) < qty:
+                return
+            choices.append((len(available), j, available))
+        _, _, available = min(choices)
+        for i in sorted(available, key=lambda i: (-score(i, rem), i)):
+            search(selected | {i}, subtract(rem, vectors[i]))
+            if aborted:
+                return
+    if len(best) > 1:
+        search(frozenset(), target)
+    # Put scarce, irreplaceable supplies first within the selected plan.
+    remaining = target
+    pending = set(best)
+    plan = []
+    while pending:
+        def priority(i):
+            scarce = sum(min(remaining[j], vectors[i][j]) / target[j] / len(providers[j])
+                         for j in range(len(keys)) if remaining[j] and vectors[i][j])
+            return (scarce, score(i, remaining), -i)
+        i = max(pending, key=priority)
+        pending.remove(i)
+        allocation = {k: min(q,v) for k,q,v in zip(keys,remaining,vectors[i]) if q and v}
+        remaining = subtract(remaining, vectors[i])
+        plan.append({**results[i], "planOrder": len(plan)+1, "planCollect": allocation,
+                     "planOptimal": not aborted})
+    return plan
+
+
 def aggregate_sourcing(request, batches):
     needs = request["needs"]
     stations = {}
@@ -1952,6 +2044,8 @@ def aggregate_sourcing(request, batches):
         results.append({**item, "materials": materials, "covered": covered, "cost": cost,
             "averagePrice": round(cost / covered) if covered else None, "matched": len(materials),
             "updatedAt": min(r["updatedAt"] for r in materials)})
+    # Plan over ALL returned candidates before limiting alternatives.
+    plan = sourcing_collection_plan(results, needs)
     # Return a bounded union of convenience, supply and price candidates.
     # Price is a weighted average for the offered subset, not a full-list quote.
     def convenience(r):
@@ -1959,10 +2053,10 @@ def aggregate_sourcing(request, batches):
     ranked = [sorted(results, key=convenience)[:40],
               sorted(results, key=lambda r: (-r["covered"], *convenience(r)))[:40],
               sorted(results, key=lambda r: (r["averagePrice"], *convenience(r)))[:40]]
-    unique = {}
+    unique = {(item["system"], item["station"]): item for item in plan}
     for group in ranked:
         for item in group:
-            unique[(item["system"], item["station"])] = item
+            unique.setdefault((item["system"], item["station"]), item)
     return list(unique.values())
 
 

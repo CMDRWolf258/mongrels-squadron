@@ -353,7 +353,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
       <div><label for="sourcingRadius">Search radius</label><select id="sourcingRadius"><option value="0">Same system</option><option value="25">25 LY</option><option value="50" selected>50 LY</option><option value="100">100 LY</option><option value="200">200 LY</option></select></div>
       <div><label for="sourcingPad">Minimum landing pad</label><select id="sourcingPad"><option value="3" selected>Large</option><option value="2">Medium</option><option value="1">Any</option></select></div>
       <div><label for="sourcingDays">Maximum report age</label><select id="sourcingDays"><option value="1">24 hours</option><option value="3">3 days</option><option value="7" selected>7 days</option><option value="30">30 days</option><option value="0">Any</option></select></div>
-      <div><label for="sourcingSort">Sort results</label><select id="sourcingSort"><option value="convenience">Convenience</option><option value="supply">Required supply</option><option value="price">Average price</option></select></div>
+      <div><label for="sourcingSort">Sort alternatives</label><select id="sourcingSort"><option value="convenience">Convenience</option><option value="supply">Required supply</option><option value="price">Average price</option></select></div>
     </div>
     <button type="button" class="action" id="sourcingSearch">FIND COMMODITIES</button>
     <div id="sourcingStatus" class="muted" role="status" aria-live="polite">Select a project in Colonization Logistics to begin.</div>
@@ -1246,20 +1246,35 @@ function sourcingAge(stamp){
   var minutes=Math.max(0,Math.floor((Date.now()-Date.parse(stamp))/60000));
   return !Number.isFinite(minutes)?"unknown age":minutes<60?minutes+"m":minutes<1440?Math.floor(minutes/60)+"h":Math.floor(minutes/1440)+"d";
 }
+function sourcingDistance(v, places){
+  if(v==null||!Number.isFinite(Number(v)))return "—";
+  var factor=Math.pow(10,places);
+  var rounded=Math.ceil(Number((Number(v)*factor).toFixed(9)))/factor;
+  return rounded.toLocaleString(undefined,{minimumFractionDigits:places,maximumFractionDigits:places});
+}
 function renderSourcingResults(){
   if(!sourcingResult)return;
   var r=sourcingResult,req=r.request||{},rows=(r.results||[]).slice(),sort=el("sourcingSort").value;
   function convenient(a,b){return b.matched-a.matched||a.distance-b.distance||(a.arrival==null?Infinity:a.arrival)-(b.arrival==null?Infinity:b.arrival)||b.covered-a.covered}
-  rows.sort(function(a,b){return sort==="supply"?b.covered-a.covered||convenient(a,b):sort==="price"?a.averagePrice-b.averagePrice||convenient(a,b):convenient(a,b)});
+  var plan=rows.filter(function(p){return p.planOrder>0}).sort(function(a,b){return a.planOrder-b.planOrder});
+  var alternatives=rows.filter(function(p){return !p.planOrder});
+  alternatives.sort(function(a,b){return sort==="supply"?b.covered-a.covered||convenient(a,b):sort==="price"?a.averagePrice-b.averagePrice||convenient(a,b):convenient(a,b)});
   function n(v){return v==null?"—":Number(v).toLocaleString()}
-  var total=Object.keys(req.needs||{}).length;
+  var needs=req.needs||{},total=Object.keys(needs).length,remaining={};
+  Object.keys(needs).forEach(function(k){remaining[k]=needs[k].quantity});
+  plan.forEach(function(p){Object.keys(p.planCollect||{}).forEach(function(k){if(k in remaining)remaining[k]=Math.max(0,remaining[k]-p.planCollect[k])})});
+  var missing=Object.keys(remaining).filter(function(k){return remaining[k]>0});
   var prefix=r.status==="failed"?"Market search failed — no reliable results":rows.length?rows.length+" matching stations near "+req.system:"No matching stations found near "+req.system;
   var errors=r.failedQueries||[],providers=r.providers||[],diagnostics=r.diagnostics||[];
   setText(el("sourcingStatus"),prefix+" · "+total+" materials · "+req.radius+" LY radius · "+(req.days?"reports ≤ "+req.days+" days":"any report age")+(providers.length?" · Source: "+providers.join(", "):"")+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · "+errors.length+" queries incomplete":"")+(diagnostics.length?" · "+diagnostics.join("; "):""));
-  el("sourcingResults").innerHTML=rows.slice(0,20).map(function(p){
-    var materials=p.materials.map(function(m){return '<div class="sourcing-material"><span>'+escapeHtml(m.name)+'</span><span>'+n(m.need)+'</span><span>'+n(m.stock)+'</span><span>'+n(m.price)+'</span></div>'}).join("");
-    return '<article class="sourcing-station"><h3>'+escapeHtml(p.station)+'</h3><div>'+escapeHtml(p.system)+' · '+n(p.distance)+' LY · '+n(p.arrival)+' Ls</div><p class="layout-hint">'+(["","Small","Medium","Large"][p.pad]||"Unknown")+' pad · oldest listed report '+sourcingAge(p.updatedAt)+' · '+p.matched+'/'+total+' materials · '+n(p.covered)+' t of requirements available</p><div class="sourcing-material muted"><span>Commodity</span><span>Need</span><span>Supply</span><span>Cr/t</span></div>'+materials+'<button type="button" class="action sourcing-copy" data-sourcing-copy="'+escapeAttr(p.system)+'">COPY SYSTEM TO PC</button></article>';
-  }).join("")+(rows.length>20?'<p class="layout-hint">Showing the first 20 stations for this sort.</p>':"");
+  function card(p,planned){
+    var materials=p.materials.map(function(m){var qty=planned?(p.planCollect||{})[m.key]||0:m.need;if(planned&&!qty)return "";return '<div class="sourcing-material"><span>'+escapeHtml(m.name)+'</span><span>'+n(qty)+'</span><span>'+n(m.stock)+'</span><span>'+n(m.price)+'</span></div>'}).join("");
+    var detail=planned?n(Object.values(p.planCollect||{}).reduce(function(a,b){return a+b},0))+' t to collect':p.matched+'/'+total+' materials · '+n(p.covered)+' t of requirements available';
+    return '<article class="sourcing-station"><h3>'+(planned?'Stop '+p.planOrder+' · ':'')+escapeHtml(p.station)+'</h3><div>'+escapeHtml(p.system)+' · '+sourcingDistance(p.distance,2)+' LY · '+sourcingDistance(p.arrival,0)+' Ls</div><p class="layout-hint">'+(["","Small","Medium","Large"][p.pad]||"Unknown")+' pad · oldest listed report '+sourcingAge(p.updatedAt)+' · '+detail+'</p><div class="sourcing-material muted"><span>Commodity</span><span>'+(planned?'Collect':'Need')+'</span><span>Supply</span><span>Cr/t</span></div>'+materials+'<button type="button" class="action sourcing-copy" data-sourcing-copy="'+escapeAttr(p.system)+'">COPY SYSTEM TO PC</button></article>';
+  }
+  var summary=plan.length?'<h3>Recommended collection · '+plan.length+' '+(plan.length===1?'stop':'stops')+'</h3><p class="layout-hint">'+(plan[0].planOptimal?'Minimum stops among returned markets.':'Best plan found; minimum not verified.')+(missing.length?' · Partial coverage.':' · All required quantities covered.')+(errors.length?' · Some queries incomplete.':'')+'</p>':"";
+  if(missing.length&&r.status!=="failed")summary+='<p class="layout-hint">Not covered by returned stock: '+missing.map(function(k){return escapeHtml(needs[k].name||k)+' '+n(remaining[k])+' t'}).join(", ")+'</p>';
+  el("sourcingResults").innerHTML=summary+plan.map(function(p){return card(p,true)}).join("")+(alternatives.length?'<h3>Alternative stations</h3>'+alternatives.slice(0,20).map(function(p){return card(p,false)}).join(""):"")+(alternatives.length>20?'<p class="layout-hint">Showing the first 20 alternatives for this sort.</p>':"");
 }
 async function searchSourcing(){
   if(sourcingBusy)return;

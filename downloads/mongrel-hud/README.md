@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.24 — Minimum-stop commodity collection
+
+Commodity Sourcing recommends the smallest verified station set among returned market candidates, accounting for required tonnage and split supply; bounded searches explicitly identify when optimality is not proven. The collection section shows allocated quantities and any unavailable stock, followed by separately sorted alternative stations. Distances round upward to whole light-seconds and two decimal places for light-years. Scout is unchanged.
+
 ## Mongrel HUD 0.18.23 — Verified sourcing HTTPS
 
 The standalone Windows package includes certifi's CA bundle and truststore's native Windows certificate validation. Commodity Sourcing uses Windows/OS roots plus the bundled public CA roots, with native Windows chain building only on missing-issuer errors. Hostname and certificate verification are always required; expired, wrong-host and revoked certificates are not bypassed. Reports now include the certificate verification code and reason. Windows packaging checks the actual frozen executable and runs a live public Spansh probe (probe availability is reported separately). No Scout update required.
