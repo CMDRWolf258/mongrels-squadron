@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.10"
+assert plugin.PLUGIN_VERSION == "1.14.11"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -985,3 +985,40 @@ assert view["projects"][0]["buildType"] == "eupraxia"
 assert view["availableProjects"][0]["buildType"] == "eupraxia"
 assert raven.project_view({"buildId":"unknown","commodities":{}})["buildType"] == ""
 print("✓ Raven facility type retained in selected and available projects")
+
+# English labels are consistent with and without a loaded station market.
+expected_labels = {
+    "emergencypowercells": ("Machinery", "Emergency Power Cells"),
+    "evacuationshelter": ("Consumer Items", "Evacuation Shelter"),
+    "hazardousenvironmentsuits": ("Technology", "H.E. Suits"),
+    "structuralregulators": ("Technology", "Structural Regulators"),
+    "surfacestabilisers": ("Chemicals", "Surface Stabilisers"),
+    "survivalequipment": ("Consumer Items", "Survival Equipment"),
+    "robotics": ("Technology", "Robotics"),
+    "mutomimager": ("Technology", "Muon Imager"),
+    "heliostaticfurnaces": ("Machinery", "Microbial Furnaces"),
+    "marinesupplies": ("Machinery", "Marine Equipment"),
+    "terrainenrichmentsystems": ("Technology", "Land Enrichment Systems"),
+    "cmmcomposite": ("Industrial Materials", "CMM Composite"),
+    "coolinghoses": ("Industrial Materials", "Micro-weave Cooling Hoses"),
+    "geologicalequipment": ("Machinery", "Geological Equipment"),
+    "agriculturalmedicines": ("Medicines", "Agri-Medicines"),
+}
+for key, label in expected_labels.items():
+    assert raven.commodity_label(key) == label
+    assert raven.commodity_label(key, {"name":key,"category":"Other"}) == label
+assert raven.commodity_label("hazardousenvironmentsuits",{"name":"Hazardous Environment Suits"}) == ("Technology","H.E. Suits")
+assert raven.commodity_label("hesuits") == ("Technology","H.E. Suits")
+assert raven.commodity_label("futureunknownthing") == ("Other","Unrecognized commodity")
+assert raven.commodity_label("futureunknownthing",{"name":"Future Unknown Thing","category":"Technology"}) == ("Technology","Future Unknown Thing")
+assert len(raven._COMMODITY_REFERENCE) >= 270
+for symbol, category, name in raven._COMMODITY_REFERENCE:
+    assert raven.commodity_label(raven.commodity_key("$"+symbol+"_Name;")) == (category,name)
+    assert raven.commodity_label(raven.commodity_key(name)) == (category,name)
+    assert category in raven.CATEGORIES
+label_project = raven.project_view({"buildId":"labels","commodities":{key:1 for key in expected_labels}})
+label_view = raven.cart_view({"projects":[label_project],"primary":"labels","stocks":{}},cargo)
+assert {r["key"]:(r["category"],r["name"]) for r in label_view["rows"]} == expected_labels
+assert all(r["category"] != "Other" for r in label_view["rows"])
+assert [(r["category"].casefold(),r["name"].casefold()) for r in label_view["rows"]] == sorted((r["category"].casefold(),r["name"].casefold()) for r in label_view["rows"])
+print("✓ Full commodity reference, verified English labels, market categories and raw-symbol prevention")
