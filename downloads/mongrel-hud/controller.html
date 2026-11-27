@@ -359,7 +359,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div id="sourcingStatus" class="muted" role="status" aria-live="polite">Select a project in Colonization Logistics to begin.</div>
     <div id="sourcingResults"></div>
     <div id="sourcingCopyNotice" class="muted" role="status" aria-live="polite"></div>
-    <p class="layout-hint">Sources: <a href="https://ardent-insight.com/" target="_blank" rel="noopener noreferrer">Ardent Insight</a> and <a href="https://eddata.dev/" target="_blank" rel="noopener noreferrer">EDData</a> / EDDN. Any includes all available ages within provider retention limits. No commander identity or Raven key is sent. Fleet carriers are excluded.</p>
+    <p class="layout-hint">Source: <a href="https://spansh.co.uk/" target="_blank" rel="noopener noreferrer">Spansh</a> / EDDN. Any removes the market age filter. No commander identity or Raven key is sent. Fleet carriers are excluded.</p>
   </section>
   <section id="navigationPanel" class="hidden">
   <p class="layout-hint">Copy a system name on your PC (Ctrl+C), then tap PASTE FROM PC beside a route field. The paired HUD reads the Windows clipboard only when tapped.</p>
@@ -1255,7 +1255,7 @@ function renderSourcingResults(){
   var total=Object.keys(req.needs||{}).length;
   var prefix=r.status==="failed"?"Market search failed — no reliable results":rows.length?rows.length+" matching stations near "+req.system:"No matching stations found near "+req.system;
   var errors=r.failedQueries||[],providers=r.providers||[],diagnostics=r.diagnostics||[];
-  setText(el("sourcingStatus"),prefix+" · "+total+" materials · "+req.radius+" LY radius · "+(req.days?"reports ≤ "+req.days+" days":"any report age")+(providers.length?" · Source: "+providers.join(", "):"")+(r.providerAgeLimited?" · EDData retains a maximum 14-day search window":"")+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · "+errors.length+" queries incomplete":"")+(diagnostics.length?" · "+diagnostics.join("; "):""));
+  setText(el("sourcingStatus"),prefix+" · "+total+" materials · "+req.radius+" LY radius · "+(req.days?"reports ≤ "+req.days+" days":"any report age")+(providers.length?" · Source: "+providers.join(", "):"")+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · "+errors.length+" queries incomplete":"")+(diagnostics.length?" · "+diagnostics.join("; "):""));
   el("sourcingResults").innerHTML=rows.slice(0,20).map(function(p){
     var materials=p.materials.map(function(m){return '<div class="sourcing-material"><span>'+escapeHtml(m.name)+'</span><span>'+n(m.need)+'</span><span>'+n(m.stock)+'</span><span>'+n(m.price)+'</span></div>'}).join("");
     return '<article class="sourcing-station"><h3>'+escapeHtml(p.station)+'</h3><div>'+escapeHtml(p.system)+' · '+n(p.distance)+' LY · '+n(p.arrival)+' Ls</div><p class="layout-hint">'+(["","Small","Medium","Large"][p.pad]||"Unknown")+' pad · oldest listed report '+sourcingAge(p.updatedAt)+' · '+p.matched+'/'+total+' materials · '+n(p.covered)+' t of requirements available</p><div class="sourcing-material muted"><span>Commodity</span><span>Need</span><span>Supply</span><span>Cr/t</span></div>'+materials+'<button type="button" class="action sourcing-copy" data-sourcing-copy="'+escapeAttr(p.system)+'">COPY SYSTEM TO PC</button></article>';

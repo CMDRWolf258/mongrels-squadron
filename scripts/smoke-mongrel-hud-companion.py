@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.21"
+assert hud.APP_VERSION=="0.18.22"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -107,12 +107,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.18"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.19"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.21"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.22"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.22"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.22",
+    "name":"Mongrel HUD Windows v0.18.23",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.22" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.23" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -703,7 +704,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.21"
+    assert hud.APP_VERSION=="0.18.22"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -972,7 +973,32 @@ custom=hud.sourcing_request(sourcing_state,{"reference":"custom","system":"Shinr
 assert custom["system"]=="Shinrarta Dezhra" and custom["days"]==0
 assert custom["needs"]==req["needs"]
 assert hud.aggregate_sourcing(custom,[([dict(base,updatedAt="2020-01-01T00:00:00Z")],True)])
-# Run the actual worker synchronously with simulated network results.
+# Spansh uses a JSON station search POST, including the reference system.
+payload=hud.spansh_sourcing_payload(req,"steel")
+assert payload["reference_system"]=="Diaba"
+assert payload["filters"]["market"][0]["name"]=="Steel"
+assert payload["filters"]["market"][0]["supply"]["value"][0]=="1"
+assert payload["filters"]["has_large_pad"]["value"] is True
+assert payload["filters"]["market_updated_at"]["value"]==["now-7d","now"]
+assert "market_updated_at" not in hud.spansh_sourcing_payload(custom,"steel")["filters"]
+assert hud.spansh_sourcing_payload(custom,"steel")["filters"]["system_name"]["value"]=="Shinrarta Dezhra"
+station={"market_id":"123","name":"Example Port","system_name":"Diaba","type":"Coriolis Starport","distance":0,"distance_to_arrival":150,"has_large_pad":True,"market_updated_at":stamp,"market":[{"commodity":"Steel","buy_price":3000,"sell_price":900,"supply":100},{"commodity":"Water","buy_price":100,"supply":5}]}
+parsed=hud.normalize_spansh_sourcing({"results":[station]},req,"steel")
+assert len(parsed)==2 and parsed[0]["buyPrice"]==3000
+assert parsed[0]["_sourcingProvider"]=="Spansh"
+assert hud.aggregate_sourcing(req,[(parsed,False)])[0]["covered"]==85
+assert hud.normalize_spansh_sourcing({"results":[dict(station,type="Drake-Class Carrier")]},req,"steel")==[]
+assert hud.normalize_spansh_sourcing({"results":[dict(station,has_large_pad=False,medium_pads=2)]},req,"steel")[0]["maxLandingPadSize"]==2
+# Exercise the actual HTTP request with a mocked response and normal TLS defaults.
+response=mock.MagicMock()
+response.__enter__.return_value.read.return_value=hud.json.dumps({"results":[station]}).encode()
+with mock.patch.object(hud.urllib.request,"urlopen",return_value=response) as fetch:
+    assert hud.spansh_sourcing_rows(req,"steel")==parsed
+    call=fetch.call_args
+    assert call.args[0].full_url=="https://spansh.co.uk/api/stations/search"
+    assert call.args[0].get_method()=="POST"
+    assert hud.json.loads(call.args[0].data)==payload
+    assert "context" not in call.kwargs
 def fake_thread(target,**kwargs):
     return types.SimpleNamespace(start=target)
 app=object.__new__(hud.MongrelHudApp)
@@ -981,20 +1007,13 @@ app.sourcing_lock=hud.threading.RLock()
 app.sourcing_cache={}
 app.sourcing_job={}
 app.snapshot=types.SimpleNamespace(connected=True,data=sourcing_state)
-calls=[]
-def fetch_fallback(path,provider):
-    calls.append((path,provider))
-    if provider=="Ardent Insight":
-        raise hud.urllib.error.URLError(hud.socket.gaierror("test"))
-    return [base]
-with mock.patch.object(hud,"ardent_export_rows",side_effect=fetch_fallback),mock.patch.object(hud.threading,"Thread",side_effect=fake_thread):
+with mock.patch.object(hud,"spansh_sourcing_rows",return_value=parsed) as fetch,mock.patch.object(hud.threading,"Thread",side_effect=fake_thread):
     result=app.commodity_sourcing({"action":"search","reference":"custom","system":"Diaba","radius":0,"days":0})
-assert result["status"]=="complete" and result["providers"]==["EDData"]
-assert result["providerAgeLimited"] and result["diagnostics"]==["Ardent Insight: DNS lookup failed"]
-assert "maxDaysAgo=10000" in calls[0][0] and "maxDaysAgo=14" in calls[1][0]
-assert result["results"][0]["materials"][0]["provider"]=="EDData"
+    assert fetch.call_count==2
+assert result["status"]=="complete" and result["providers"]==["Spansh"]
+assert result["results"][0]["materials"][0]["provider"]=="Spansh"
 app.sourcing_cache={}
-with mock.patch.object(hud,"ardent_export_rows",side_effect=hud.urllib.error.URLError("test")),mock.patch.object(hud.threading,"Thread",side_effect=fake_thread):
+with mock.patch.object(hud,"spansh_sourcing_rows",side_effect=hud.urllib.error.URLError(hud.socket.gaierror("test"))),mock.patch.object(hud.threading,"Thread",side_effect=fake_thread):
     result=app.commodity_sourcing({"action":"search","reference":"custom","system":"Diaba","radius":0})
-assert result["status"]=="failed" and not result["results"] and len(result["diagnostics"])==2
-print("✓ Sourcing custom references, Any age, provider fallback and truthful errors")
+assert result["status"]=="failed" and not result["results"] and result["diagnostics"]==["Spansh: DNS lookup failed"]
+print("✓ Spansh station query, market normalization, price direction, verified TLS defaults and sourcing worker")

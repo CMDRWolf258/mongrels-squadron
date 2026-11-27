@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.22 — Spansh commodity sourcing
+
+Commodity Sourcing now uses the Spansh station search POST endpoint instead of Ardent Insight or EDData. It retains project, current and custom reference systems, all-material and single-material searches, age and landing pad filters, five-minute local caching, and explicit PC clipboard copying. The search omits market age filters for Any and continues to verify HTTPS certificates. The provider returns bounded nearby station candidates rather than an exhaustive galaxy-wide list. No Scout update required.
+
 ## Mongrel HUD 0.18.21 — Sourcing references and provider recovery
 
 Commodity Sourcing lists all active project systems available from Scout, supports a custom reference with Paste from PC, and offers Any report age (subject to provider retention). Search reference does not alter selected Raven material requirements. Ardent failures fall back to EDData with provider attribution and a clear 14-day provider limit. Errors distinguish failed lookups from successful empty results and report HTTP, DNS, connection and response problems. Scout 1.14.11 is unchanged.
