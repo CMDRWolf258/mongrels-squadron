@@ -122,6 +122,19 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 #ravenStatus{overflow-wrap:anywhere;margin-top:8px;font-size:.83rem}
 #ravenNotice{min-height:1.5em;margin-top:4px;overflow-wrap:anywhere;font-size:.85rem}
 @media(max-width:520px){#ravenCartPanel .raven-control{grid-template-columns:1fr;gap:6px}}
+
+#commoditySourcingPanel .raven-control{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,2fr);gap:12px;align-items:center;margin:12px 0}
+#commoditySourcingPanel select{width:100%;min-width:0;min-height:54px;font-size:16px}
+#commoditySourcingPanel .sourcing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+#sourcingSearch{width:100%;min-height:64px;margin:8px 0}
+#sourcingStatus,#sourcingCopyNotice{min-height:1.5em;overflow-wrap:anywhere}
+.sourcing-station{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;overflow-wrap:anywhere}
+.sourcing-station h3{margin:0 0 6px;color:var(--accent)}
+.sourcing-material{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.sourcing-material span:not(:first-child){text-align:right}
+.sourcing-copy{width:100%;min-height:48px;margin-top:10px}
+@media(max-width:520px){#commoditySourcingPanel .raven-control{grid-template-columns:1fr;gap:4px}.sourcing-material{gap:4px;font-size:.8rem}}
+
 </style>
 </head>
 <body>
@@ -326,6 +339,25 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
     <div id="ravenSummary"></div>
     <div id="ravenStatus" class="muted">Enable Raven Colonial in Mongrel Scout preferences.</div>
     <div id="ravenNotice" class="muted" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="card" id="commoditySourcingPanel">
+    <h2>COMMODITY SOURCING</h2>
+    <p class="layout-hint">Find stations selling required construction materials. Searches run only when requested. Community market reports are not live stock guarantees.</p>
+    <div class="raven-control"><label for="sourcingReference">Search from</label><select id="sourcingReference"><option value="project">Construction system</option><option value="current">Current system</option></select></div>
+    <div class="raven-control" id="sourcingSystemRow"><label for="sourcingSystem">Construction system</label><select id="sourcingSystem"></select></div>
+    <div class="raven-control"><label for="sourcingCommodity">Material</label><select id="sourcingCommodity"><option value="all">All outstanding materials</option></select></div>
+    <div class="sourcing-grid">
+      <div><label for="sourcingRadius">Search radius</label><select id="sourcingRadius"><option value="0">Same system</option><option value="25">25 LY</option><option value="50" selected>50 LY</option><option value="100">100 LY</option><option value="200">200 LY</option></select></div>
+      <div><label for="sourcingPad">Minimum landing pad</label><select id="sourcingPad"><option value="3" selected>Large</option><option value="2">Medium</option><option value="1">Any</option></select></div>
+      <div><label for="sourcingDays">Maximum report age</label><select id="sourcingDays"><option value="1">24 hours</option><option value="3">3 days</option><option value="7" selected>7 days</option><option value="30">30 days</option></select></div>
+      <div><label for="sourcingSort">Sort results</label><select id="sourcingSort"><option value="convenience">Convenience</option><option value="supply">Required supply</option><option value="price">Average price</option></select></div>
+    </div>
+    <button type="button" class="action" id="sourcingSearch">FIND COMMODITIES</button>
+    <div id="sourcingStatus" class="muted" role="status" aria-live="polite">Select a project in Colonization Logistics to begin.</div>
+    <div id="sourcingResults"></div>
+    <div id="sourcingCopyNotice" class="muted" role="status" aria-live="polite"></div>
+    <p class="layout-hint">Source: <a href="https://ardent-insight.com/" target="_blank" rel="noopener noreferrer">Ardent Insight</a> / EDDN. No commander identity or Raven key is sent. Fleet carriers are excluded.</p>
   </section>
   <section id="navigationPanel" class="hidden">
   <p class="layout-hint">Copy a system name on your PC (Ctrl+C), then tap PASTE FROM PC beside a route field. The paired HUD reads the Windows clipboard only when tapped.</p>
@@ -1176,9 +1208,82 @@ async function ravenAction(body){
     renderRavenCart();
   }
 }
+
+var sourcingBusy=false,sourcingResult=null,sourcingShip="";
+function sourcingOptions(node,options){
+  var signature=JSON.stringify(options);
+  if(node._sourcingSignature===signature)return;
+  var before=node.value;
+  node.innerHTML=options.map(function(o){return '<option value="'+escapeAttr(o[0])+'">'+escapeHtml(o[1])+'</option>'}).join("");
+  node.value=options.some(function(o){return o[0]===before})?before:(options[0]||[""])[0];
+  node._sourcingSignature=signature;
+}
+function renderSourcingControls(){
+  var scout=(state&&state.scout)||{},cart=scout.colonization||{};
+  var systems=Array.from(new Set((cart.projects||[]).map(function(p){return p.system}).filter(Boolean))).sort();
+  sourcingOptions(el("sourcingSystem"),systems.map(function(n){return [n,n]}));
+  var materials=(cart.rows||[]).filter(function(r){return r.need>0}).slice().sort(function(a,b){return a.name.localeCompare(b.name)});
+  sourcingOptions(el("sourcingCommodity"),[["all","All outstanding materials"]].concat(materials.map(function(r){return [r.key,r.name]})));
+  el("sourcingSystemRow").classList.toggle("hidden",el("sourcingReference").value==="current");
+  var ship=String((scout.ship||{}).type||"").toLowerCase();
+  if(ship&&ship!==sourcingShip){
+    sourcingShip=ship;
+    // Known hulls only; unfamiliar types keep the conservative large-pad setting.
+    var small=["sidewinder","eagle","imperial eagle","hauler","adder","viper mk iii","viper mk iv","cobra mk iii","cobra mk iv","cobra mk v","diamondback scout","diamondback explorer","dolphin","imperial courier","vulture"];
+    var medium=["type-6 transporter","type-6","type-8 transporter","type-8","python","python mk ii","krait mk ii","krait phantom","asp explorer","asp scout","fer-de-lance","mamba","alliance chieftain","alliance challenger","alliance crusader","federal dropship","federal assault ship","federal gunship","keelback","corsair","mandalay"];
+    el("sourcingPad").value=small.includes(ship)?"1":medium.includes(ship)?"2":"3";
+  }
+  el("sourcingSearch").disabled=sourcingBusy||!(state&&state.connected&&cart.enabled&&materials.length&&systems.length);
+  ["sourcingReference","sourcingSystem","sourcingCommodity","sourcingRadius","sourcingPad","sourcingDays"].forEach(function(id){el(id).disabled=sourcingBusy});
+}
+function sourcingAge(stamp){
+  var minutes=Math.max(0,Math.floor((Date.now()-Date.parse(stamp))/60000));
+  return !Number.isFinite(minutes)?"unknown age":minutes<60?minutes+"m":minutes<1440?Math.floor(minutes/60)+"h":Math.floor(minutes/1440)+"d";
+}
+function renderSourcingResults(){
+  if(!sourcingResult)return;
+  var r=sourcingResult,req=r.request||{},rows=(r.results||[]).slice(),sort=el("sourcingSort").value;
+  function convenient(a,b){return b.matched-a.matched||a.distance-b.distance||(a.arrival==null?Infinity:a.arrival)-(b.arrival==null?Infinity:b.arrival)||b.covered-a.covered}
+  rows.sort(function(a,b){return sort==="supply"?b.covered-a.covered||convenient(a,b):sort==="price"?a.averagePrice-b.averagePrice||convenient(a,b):convenient(a,b)});
+  function n(v){return v==null?"—":Number(v).toLocaleString()}
+  var total=Object.keys(req.needs||{}).length;
+  var prefix=rows.length?rows.length+" matching stations near "+req.system:"No matching stations found near "+req.system;
+  var errors=r.failedQueries||[];
+  setText(el("sourcingStatus"),prefix+" · "+total+" materials"+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · Partial results: "+errors.length+" queries failed":"")+(r.status==="failed"?" · Market service unavailable":""));
+  el("sourcingResults").innerHTML=rows.slice(0,20).map(function(p){
+    var materials=p.materials.map(function(m){return '<div class="sourcing-material"><span>'+escapeHtml(m.name)+'</span><span>'+n(m.need)+'</span><span>'+n(m.stock)+'</span><span>'+n(m.price)+'</span></div>'}).join("");
+    return '<article class="sourcing-station"><h3>'+escapeHtml(p.station)+'</h3><div>'+escapeHtml(p.system)+' · '+n(p.distance)+' LY · '+n(p.arrival)+' Ls</div><p class="layout-hint">'+(["","Small","Medium","Large"][p.pad]||"Unknown")+' pad · oldest listed report '+sourcingAge(p.updatedAt)+' · '+p.matched+'/'+total+' materials · '+n(p.covered)+' t of requirements available</p><div class="sourcing-material muted"><span>Commodity</span><span>Need</span><span>Supply</span><span>Cr/t</span></div>'+materials+'<button type="button" class="action sourcing-copy" data-sourcing-copy="'+escapeAttr(p.system)+'">COPY SYSTEM TO PC</button></article>';
+  }).join("")+(rows.length>20?'<p class="layout-hint">Showing the first 20 stations for this sort.</p>':"");
+}
+async function searchSourcing(){
+  if(sourcingBusy)return;
+  sourcingBusy=true;sourcingResult=null;el("sourcingResults").innerHTML="";setText(el("sourcingCopyNotice"),"");renderSourcingControls();
+  setText(el("sourcingStatus"),"Searching community markets…");
+  try{
+    var r=await api("/api/commodity-sourcing",{action:"search",reference:el("sourcingReference").value,system:el("sourcingSystem").value,commodity:el("sourcingCommodity").value,radius:Number(el("sourcingRadius").value),pad:Number(el("sourcingPad").value),days:Number(el("sourcingDays").value)});
+    while(r.status==="running"){
+      setText(el("sourcingStatus"),"Searching markets · "+r.done+" / "+r.total+" queries");
+      await sleep(1000);r=await api("/api/commodity-sourcing",{action:"status",id:r.id});
+    }
+    sourcingResult=r;renderSourcingResults();
+  }catch(e){setText(el("sourcingStatus"),"Sourcing search failed · "+e.message)}
+  finally{sourcingBusy=false;renderSourcingControls()}
+}
+el("sourcingReference").onchange=renderSourcingControls;
+el("sourcingSort").onchange=renderSourcingResults;
+el("sourcingSearch").onclick=searchSourcing;
+el("sourcingResults").onclick=async function(e){
+  var button=e.target.closest("[data-sourcing-copy]");if(!button)return;
+  try{var r=await api("/api/clipboard/system",{action:"copy_to_pc",system:button.dataset.sourcingCopy});
+    if(!r.ok)throw new Error("clipboard_write_failed");
+    setText(el("sourcingCopyNotice"),r.system+" copied to PC · paste in Galaxy Map");
+  }catch(err){setText(el("sourcingCopyNotice"),"Copy failed · "+err.message)}
+};
+
 function render(){
   if(!state)return;
   renderRavenCart();
+  renderSourcingControls();
   renderRouteControls();
   renderSurveyorControls();
   var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
