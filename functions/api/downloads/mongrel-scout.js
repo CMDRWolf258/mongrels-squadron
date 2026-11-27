@@ -5,27 +5,41 @@ const FILES = [
   { source:'/downloads/mongrel-scout/surveyor_intel.py', path:'MongrelScout/surveyor_intel.py' },
   { source:'/downloads/mongrel-scout/surveyor_edd_bridge.py', path:'MongrelScout/surveyor_edd_bridge.py' },
   { source:'/downloads/mongrel-scout/mission_sync.py', path:'MongrelScout/mission_sync.py' },
+  { source:'/downloads/mongrel-scout/raven_colonization.py', path:'MongrelScout/raven_colonization.py' },
   { source:'/downloads/mongrel-scout/README.md', path:'README.md' },
   { source:'/downloads/mongrel-scout/THIRD_PARTY_NOTICES.md', path:'THIRD_PARTY_NOTICES.md' },
   { source:'/downloads/mongrel-scout/licenses/Apache-2.0.txt', path:'licenses/Apache-2.0.txt' },
 ];
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, env }) {
   try {
     const entries = [];
+    if (!env?.ASSETS?.fetch) throw new Error('Deployment asset binding unavailable');
+    let version = '';
     for (const file of FILES) {
       const url = new URL(file.source, request.url);
-      const response = await fetch(url.toString(), {headers:{Accept:'text/plain'}, cf:{cacheTtl:300}});
+      // Read directly from this Pages deployment, not the public edge cache.
+      const response = await env.ASSETS.fetch(new Request(url.toString(), {headers:{Accept:'text/plain'}}));
       if (!response.ok) throw new Error(`${file.source} returned ${response.status}`);
-      entries.push({name:file.path,data:new Uint8Array(await response.arrayBuffer())});
+      const data = new Uint8Array(await response.arrayBuffer());
+      if (file.path === 'MongrelScout/load.py') {
+        version = new TextDecoder().decode(data).match(/^PLUGIN_VERSION = "(\d+\.\d+\.\d+)"/m)?.[1] || '';
+        if (!version) throw new Error('Scout version missing');
+        const requested = new URL(request.url).searchParams.get('v');
+        if (requested && /^\d+\.\d+\.\d+$/.test(requested) && requested !== version) {
+          return new Response(`Requested Scout ${requested} is not on this deployment (currently ${version}).`, {status:409,headers:{'Cache-Control':'no-store'}});
+        }
+      }
+      entries.push({name:file.path,data});
     }
     const zip = buildStoredZip(entries);
     return new Response(zip, {
       status:200,
       headers:{
         'Content-Type':'application/zip',
-        'Content-Disposition':'attachment; filename="MongrelScout.zip"',
-        'Cache-Control':'public, max-age=300',
+        'Content-Disposition':`attachment; filename="MongrelScout-${version}.zip"`,
+        'X-Mongrel-Scout-Version':version,
+        'Cache-Control':'no-store, max-age=0',
         'X-Content-Type-Options':'nosniff',
       },
     });
