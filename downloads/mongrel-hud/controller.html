@@ -301,12 +301,23 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 <div class="panel-control"><strong>Fuel Status</strong><button class="panel-toggle" type="button" data-panel-visible="navfuel">ON</button><select data-panel-scale="navfuel" aria-label="Fuel Status panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navfuel" aria-label="Fuel Status profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Scout Network</strong><button class="panel-toggle" type="button" data-panel-visible="navscout">ON</button><select data-panel-scale="navscout" aria-label="Scout Network panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navscout" aria-label="Scout Network profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="all">All three</option></select></div>
 <div class="panel-control"><strong>Fleet Carrier Director</strong><button class="panel-toggle" type="button" data-panel-visible="navcarrier">ON</button><select data-panel-scale="navcarrier" aria-label="Fleet Carrier Director panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="navcarrier" aria-label="Fleet Carrier Director profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option><option value="all">Combat + Surface + Navigation</option><option value="all-four">All four profiles</option></select></div>
+<div class="panel-control"><strong>Colonization Cart</strong><button class="panel-toggle" type="button" data-panel-visible="colonization">ON</button><select data-panel-scale="colonization" aria-label="Colonization Cart panel size"><option value="0.75">75%</option><option value="0.8">80%</option><option value="0.85">85%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.25">125%</option><option value="1.5">150%</option></select><select data-panel-profile="colonization" aria-label="Colonization Cart profiles"><option value="both">Combat + Surface</option><option value="combat">Combat</option><option value="surface">Surface</option><option value="navigation">Navigation</option><option value="combat-navigation">Combat + Navigation</option><option value="surface-navigation">Surface + Navigation</option><option value="exploration">Exploration</option><option value="exploration-navigation">Exploration + Navigation</option><option value="all">Combat + Surface + Navigation</option><option value="all-four">All four profiles</option></select></div>
 
   </div>
     </div>
   </details>
 
 
+  <section class="card" id="ravenCartPanel">
+    <h2>COLONIZATION CART</h2>
+    <div id="ravenStatus">Enable Raven Colonial in Mongrel Scout preferences.</div>
+    <div class="panel-control"><strong>Visibility</strong><select id="ravenMode"><option value="continuous">Continuous</option><option value="automatic">Automatic</option><option value="off">Off</option></select></div>
+    <div class="panel-control"><strong>Build selection</strong><select id="ravenSource"><option value="raven">Follow Raven</option><option value="manual">Manual selection</option></select></div>
+    <div id="ravenProjects"></div>
+    <button type="button" id="ravenRefresh">REFRESH RAVEN</button>
+    <div id="ravenNotice" class="muted"></div>
+    <div id="ravenSummary"></div>
+  </section>
   <section id="navigationPanel" class="hidden">
   <p class="layout-hint">Copy a system name on your PC (Ctrl+C), then tap PASTE FROM PC beside a route field. The paired HUD reads the Windows clipboard only when tapped.</p>
   <div class="card">
@@ -1108,8 +1119,31 @@ async function surveyorAction(action,value){
   }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
 }
 
+function renderRavenCart(){
+  var cart=(state&&state.scout&&state.scout.colonization)||{}, enabled=!!cart.enabled;
+  var status=!enabled?"Enable Raven Colonial in Mongrel Scout preferences.":cart.refreshing?"Refreshing Raven…":cart.error?(cart.stale?"Stale · ":"")+cart.error:cart.updatedAt?"Last synced · "+new Date(cart.updatedAt).toLocaleTimeString():"Waiting for commander / Raven";
+  setText(el("ravenStatus"),status);
+  el("ravenMode").value=cart.mode||"continuous";
+  el("ravenSource").value=cart.source||"raven";
+  ["ravenMode","ravenSource","ravenRefresh"].forEach(function(id){el(id).disabled=!enabled||!state.connected||(id==="ravenRefresh"&&cart.refreshing)});
+  var projects=el("ravenProjects"), selected=(cart.projects||[]).map(function(p){return p.id});
+  var rows=cart.source==="manual"?(cart.availableProjects||[]):(cart.projects||[]);
+  var html=rows.map(function(p){return '<div><label>'+(cart.source==="manual"?'<input type="checkbox" data-raven-project="'+escapeHtml(p.id)+'" '+(selected.includes(p.id)?"checked":"")+' '+(!enabled?"disabled":"")+'> ':'')+escapeHtml(p.name||p.id)+(p.system?" · "+escapeHtml(p.system):"")+'</label></div>'}).join("");
+  if(projects.dataset.rendered!==html){projects.innerHTML=html;projects.dataset.rendered=html}
+  function amount(v){return v==null?"—":Number(v).toLocaleString()}
+  setText(el("ravenSummary"),enabled&&cart.remaining!=null?"Remaining "+amount(cart.remaining)+" t · Collection trips "+amount(cart.collectionTrips)+" · Delivery trips "+amount(cart.deliveryTrips):"");
+}
+async function ravenAction(body){
+  try{
+    var response=await mutate("/api/colonization",body);
+    if(response&&response.colonization&&state&&state.scout){state.scout.colonization=response.colonization;renderRavenCart()}
+    setText(el("ravenNotice"),body.action==="refresh"?"Refresh requested":"Settings saved");
+    await load(true);
+  }catch(e){setText(el("ravenNotice"),"Raven control failed · "+e.message)}
+}
 function render(){
   if(!state)return;
+  renderRavenCart();
   renderRouteControls();
   renderSurveyorControls();
   var panelErrors=Array.isArray(state.renderErrors)?state.renderErrors:[],safePanelErrors=panelErrors.filter(function(row){return row&&/^[a-z]{1,20}$/.test(String(row.panel||""))&&/^[A-Za-z][A-Za-z0-9_]{0,79}$/.test(String(row.errorType||""))&&!String(row.errorType).includes("mscout_")});
@@ -2027,6 +2061,10 @@ el("tradeRouteChoices").onchange=function(event){
   if(target.checked)selected.add(id);else selected.delete(id);
   return updateTradeSelection("custom",Array.from(selected));
 };
+el("ravenMode").onchange=function(){ravenAction({action:"settings",mode:this.value})};
+el("ravenSource").onchange=function(){var cart=(state.scout&&state.scout.colonization)||{};var body={action:"settings",source:this.value};if(this.value==="manual")body.selected=(cart.projects||[]).map(function(p){return p.id});ravenAction(body)};
+el("ravenProjects").onchange=function(e){if(!e.target.matches("[data-raven-project]"))return;var ids=Array.from(this.querySelectorAll("[data-raven-project]:checked")).map(function(box){return box.dataset.ravenProject});ravenAction({action:"settings",source:"manual",selected:ids})};
+el("ravenRefresh").onclick=function(){ravenAction({action:"refresh"})};
 el("cargoPriority").onchange=async function(){try{var faction=el("cargoPriority").value||"auto";await api("/api/cargo-priority",{faction:faction});el("cargoPriorityNotice").textContent=faction==="auto"?"Next Run set to Auto":"Next Run set to "+faction;await load(true)}catch(e){el("cargoPriorityNotice").textContent="Cargo priority failed · "+e.message}};
 async function ackAlertKind(kind){var feed=(state&&state.siteFeed)||(state&&state.scout&&state.scout.siteFeed)||{},ids=(feed.alerts||[]).filter(function(a){return String(a.type||"").toLowerCase()===kind&&!a.acknowledged}).map(function(a){return a.id}).filter(Boolean);if(!ids.length)return;try{await api("/api/alert-ack",{alertIds:ids});await load()}catch(e){el("siteFeedStatus").textContent="Acknowledge failed · "+e.message}}
 el("ackFactionAlerts").onclick=function(){return ackAlertKind("faction")};
