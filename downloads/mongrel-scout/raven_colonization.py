@@ -230,7 +230,9 @@ def cart_view(snapshot, cargo, market=None, *, source="raven", selected=(), cons
     if construction:
         rows.sort(key=lambda r: r["name"].casefold())
     else:
-        rows.sort(key=lambda r: (category_order.get(r["category"], 99), r["category"].casefold(), r["name"].casefold()))
+        rows.sort(key=lambda r: (category_order.get(r["category"], 99), r["category"].casefold(),
+                                 r["marketOrder"] if isinstance(r["marketOrder"], int) else 1000000,
+                                 r["name"].casefold()))
     remaining = sum(r["need"] for r in rows)
     collect = sum(r["toCollect"] for r in rows)
     incomplete_inventory = not hold_known or any(r["carrierUnknown"] for r in rows)
